@@ -17,12 +17,18 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.p2p.*;
-import org.apache.ignite.spi.deployment.uri.*;
-import org.apache.ignite.spi.deployment.uri.scanners.file.*;
-import org.apache.ignite.spi.deployment.uri.scanners.http.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.GridTaskUriDeploymentDeadlockSelfTest;
+import org.apache.ignite.p2p.GridP2PDisabledSelfTest;
+import org.apache.ignite.spi.deployment.uri.GridUriDeploymentClassLoaderMultiThreadedSelfTest;
+import org.apache.ignite.spi.deployment.uri.GridUriDeploymentClassLoaderSelfTest;
+import org.apache.ignite.spi.deployment.uri.GridUriDeploymentClassloaderRegisterSelfTest;
+import org.apache.ignite.spi.deployment.uri.GridUriDeploymentConfigSelfTest;
+import org.apache.ignite.spi.deployment.uri.GridUriDeploymentFileProcessorSelfTest;
+import org.apache.ignite.spi.deployment.uri.GridUriDeploymentMultiScannersSelfTest;
+import org.apache.ignite.spi.deployment.uri.GridUriDeploymentSimpleSelfTest;
+import org.apache.ignite.spi.deployment.uri.scanners.file.GridFileDeploymentUndeploySelfTest;
+import org.apache.ignite.spi.deployment.uri.scanners.http.GridHttpDeploymentSelfTest;
 
 /**
  * Tests against {@link org.apache.ignite.spi.deployment.uri.UriDeploymentSpi}.

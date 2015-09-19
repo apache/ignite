@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.reducefields;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.lang.*;
+import java.util.List;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.query.CacheQuery;
+import org.apache.ignite.lang.IgniteBiTuple;
 
-import java.util.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Reduce fields queries tests for partitioned cache.

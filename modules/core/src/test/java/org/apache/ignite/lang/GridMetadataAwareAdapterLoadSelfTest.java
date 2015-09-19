@@ -17,12 +17,11 @@
 
 package org.apache.ignite.lang;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.eviction.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
+import java.util.UUID;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.eviction.GridCacheMockEntry;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Check how much memory and time required to fill 1_000_000 entries with meta.

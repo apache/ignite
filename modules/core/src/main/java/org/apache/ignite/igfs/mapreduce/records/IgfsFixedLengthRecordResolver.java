@@ -17,12 +17,16 @@
 
 package org.apache.ignite.igfs.mapreduce.records;
 
-import org.apache.ignite.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.igfs.mapreduce.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.igfs.IgfsInputStream;
+import org.apache.ignite.igfs.mapreduce.IgfsFileRange;
+import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Record resolver which adjusts records to fixed length. That is, start offset of the record is shifted to the

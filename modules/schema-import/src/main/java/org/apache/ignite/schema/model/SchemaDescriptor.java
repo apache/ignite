@@ -17,7 +17,8 @@
 
 package org.apache.ignite.schema.model;
 
-import javafx.beans.property.*;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 
 /**
  * Descriptor for schema.

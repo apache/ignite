@@ -17,8 +17,8 @@
 
 package org.apache.ignite.plugin.security;
 
-import java.net.*;
-import java.util.*;
+import java.net.InetSocketAddress;
+import java.util.UUID;
 
 /**
  * Authentication context.

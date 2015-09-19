@@ -31,14 +31,12 @@
     </parent>
 
     <artifactId>ignite-core</artifactId>
-    <version>1.4.1-SNAPSHOT</version>
+    <version>1.5.0-SNAPSHOT</version>
+    <url>http://ignite.apache.org</url>
 
-    <repositories>
-        <repository>
-            <id>ignite-portables-test-repo</id>
-            <url>file://${basedir}/src/test/portables/repo</url>
-        </repository>
-    </repositories>
+    <properties>
+        <ignite.update.notifier.product>apache-ignite</ignite.update.notifier.product>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -171,20 +169,6 @@
             <version>2.4</version>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite.portable</groupId>
-            <artifactId>test1</artifactId>
-            <version>1.1</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite.portable</groupId>
-            <artifactId>test2</artifactId>
-            <version>1.1</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -310,7 +294,7 @@
 
                                         <replaceregexp file="${props.file}" byline="true">
                                             <regexp pattern="ignite.update.status.params=.*" />
-                                            <substitution expression="ignite.update.status.params=ver=${project.version}" />
+                                            <substitution expression="ignite.update.status.params=ver=${project.version}&amp;product=${ignite.update.notifier.product}" />
                                         </replaceregexp>
 
                                         <replaceregexp file="${props.file}" byline="true">

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.hibernate.cache.spi.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.hibernate.cache.spi.TimestampsRegion;
 
 /**
  * Implementation of {@link TimestampsRegion}. This region is automatically created when query

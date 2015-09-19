@@ -17,27 +17,43 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.portable.*;
-
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.lang.reflect.*;
-import java.math.*;
-import java.sql.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.portable.api.PortableMarshaller;
+import org.apache.ignite.internal.portable.api.PortableException;
+import org.apache.ignite.internal.portable.api.PortableIdMapper;
+import org.apache.ignite.internal.portable.api.PortableMarshalAware;
+import org.apache.ignite.internal.portable.api.PortableSerializer;
+import org.jetbrains.annotations.Nullable;
 
-import static java.lang.reflect.Modifier.*;
+import static java.lang.reflect.Modifier.isStatic;
+import static java.lang.reflect.Modifier.isTransient;
 
 /**
  * Portable class descriptor.
  */
-class PortableClassDescriptor {
+public class PortableClassDescriptor {
     /** */
     private final PortableContext ctx;
 
@@ -84,6 +100,9 @@ class PortableClassDescriptor {
     private final boolean registered;
 
     /** */
+    private final boolean useOptMarshaller;
+
+    /** */
     private final boolean excluded;
 
     /**
@@ -97,36 +116,8 @@ class PortableClassDescriptor {
      * @param useTs Use timestamp flag.
      * @param metaDataEnabled Metadata enabled flag.
      * @param keepDeserialized Keep deserialized flag.
-     * @throws PortableException In case of error.
-     */
-    PortableClassDescriptor(
-        PortableContext ctx,
-        Class<?> cls,
-        boolean userType,
-        int typeId,
-        String typeName,
-        @Nullable PortableIdMapper idMapper,
-        @Nullable PortableSerializer serializer,
-        boolean useTs,
-        boolean metaDataEnabled,
-        boolean keepDeserialized
-    ) throws PortableException {
-        this(ctx, cls, userType, typeId, typeName, idMapper, serializer, useTs, metaDataEnabled, keepDeserialized,
-             true);
-    }
-
-    /**
-     * @param ctx Context.
-     * @param cls Class.
-     * @param userType User type flag.
-     * @param typeId Type ID.
-     * @param typeName Type name.
-     * @param idMapper ID mapper.
-     * @param serializer Serializer.
-     * @param useTs Use timestamp flag.
-     * @param metaDataEnabled Metadata enabled flag.
-     * @param keepDeserialized Keep deserialized flag.
      * @param registered Whether typeId has been successfully registered by MarshallerContext or not.
+     * @param predefined Whether the class is predefined or not.
      * @throws PortableException In case of error.
      */
     PortableClassDescriptor(
@@ -140,7 +131,8 @@ class PortableClassDescriptor {
         boolean useTs,
         boolean metaDataEnabled,
         boolean keepDeserialized,
-        boolean registered
+        boolean registered,
+        boolean predefined
     ) throws PortableException {
         assert ctx != null;
         assert cls != null;
@@ -156,6 +148,8 @@ class PortableClassDescriptor {
         this.registered = registered;
 
         excluded = MarshallerExclusions.isExcluded(cls);
+
+        useOptMarshaller = !predefined && initUseOptimizedMarshallerFlag();
 
         if (excluded)
             mode = Mode.EXCLUSION;
@@ -274,7 +268,7 @@ class PortableClassDescriptor {
     /**
      * @return Type ID.
      */
-    int typeId() {
+    public int typeId() {
         return typeId;
     }
 
@@ -302,8 +296,16 @@ class PortableClassDescriptor {
     /**
      * @return Whether typeId has been successfully registered by MarshallerContext or not.
      */
-    public boolean isRegistered() {
+    public boolean registered() {
         return registered;
+    }
+
+    /**
+     * @return {@code true} if {@link OptimizedMarshaller} must be used instead of {@link PortableMarshaller}
+     * for object serialization and deserialization.
+     */
+    public boolean useOptimizedMarshaller() {
+        return useOptMarshaller;
     }
 
     /**
@@ -388,7 +390,7 @@ class PortableClassDescriptor {
                 break;
 
             case DECIMAL:
-                writer.doWriteDecimal((BigDecimal) obj);
+                writer.doWriteDecimal((BigDecimal)obj);
 
                 break;
 
@@ -645,39 +647,32 @@ class PortableClassDescriptor {
      * @return Whether further write is needed.
      */
     private boolean writeHeader(Object obj, PortableWriterExImpl writer) {
-        int handle = writer.handle(obj);
-
-        if (handle >= 0) {
-            writer.doWriteByte(GridPortableMarshaller.HANDLE);
-            writer.doWriteInt(handle);
-
+        if (writer.tryWriteAsHandle(obj))
             return false;
-        }
-        else {
-            int pos = writer.position();
 
-            writer.doWriteByte(GridPortableMarshaller.OBJ);
-            writer.doWriteBoolean(userType);
-            writer.doWriteInt(registered ? typeId : GridPortableMarshaller.UNREGISTERED_TYPE_ID);
-            writer.doWriteInt(obj instanceof CacheObjectImpl ? 0 : obj.hashCode());
+        int pos = writer.position();
 
-            // For length and raw offset.
-            int reserved = writer.reserve(8);
+        writer.doWriteByte(GridPortableMarshaller.OBJ);
+        writer.doWriteBoolean(userType);
+        writer.doWriteInt(registered ? typeId : GridPortableMarshaller.UNREGISTERED_TYPE_ID);
+        writer.doWriteInt(obj instanceof CacheObjectImpl ? 0 : obj.hashCode());
 
-            // Class name in case if typeId registration is failed.
-            if (!registered)
-                writer.doWriteString(cls.getName());
+        // For length and raw offset.
+        int reserved = writer.reserve(8);
 
-            int current = writer.position();
-            int len = current - pos;
+        // Class name in case if typeId registration is failed.
+        if (!registered)
+            writer.doWriteString(cls.getName());
 
-            // Default raw offset (equal to header length).
-            writer.position(reserved + 4);
-            writer.doWriteInt(len);
-            writer.position(current);
+        int current = writer.position();
+        int len = current - pos;
 
-            return true;
-        }
+        // Default raw offset (equal to header length).
+        writer.position(reserved + 4);
+        writer.doWriteInt(len);
+        writer.position(current);
+
+        return true;
     }
 
     /**
@@ -713,6 +708,32 @@ class PortableClassDescriptor {
         catch (IgniteCheckedException e) {
             throw new PortableException("Failed to get constructor for class: " + cls.getName(), e);
         }
+    }
+
+    /**
+     * Determines whether to use {@link OptimizedMarshaller} for serialization or
+     * not.
+     *
+     * @return {@code true} if to use, {@code false} otherwise.
+     */
+    private boolean initUseOptimizedMarshallerFlag() {
+       boolean use;
+
+        try {
+            Method writeObj = cls.getDeclaredMethod("writeObject", ObjectOutputStream.class);
+            Method readObj = cls.getDeclaredMethod("readObject", ObjectInputStream.class);
+
+            if (!Modifier.isStatic(writeObj.getModifiers()) && !Modifier.isStatic(readObj.getModifiers()) &&
+                writeObj.getReturnType() == void.class && readObj.getReturnType() == void.class)
+                use = true;
+            else
+                use = false;
+        }
+        catch (NoSuchMethodException e) {
+            use = false;
+        }
+
+        return use;
     }
 
     /**
@@ -776,7 +797,7 @@ class PortableClassDescriptor {
         else if (cls == PortableObjectImpl.class)
             return Mode.PORTABLE_OBJ;
         else if (PortableMarshalAware.class.isAssignableFrom(cls))
-           return Mode.PORTABLE;
+            return Mode.PORTABLE;
         else if (Externalizable.class.isAssignableFrom(cls))
             return Mode.EXTERNALIZABLE;
         else if (Map.Entry.class.isAssignableFrom(cls))

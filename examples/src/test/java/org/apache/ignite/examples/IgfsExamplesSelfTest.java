@@ -17,9 +17,9 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.igfs.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.examples.igfs.IgfsExample;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
  * IGFS examples self test.

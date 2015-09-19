@@ -17,8 +17,15 @@
 
 package org.apache.ignite.jdbc.suite;
 
-import junit.framework.*;
-import org.apache.ignite.jdbc.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.jdbc.JdbcComplexQuerySelfTest;
+import org.apache.ignite.jdbc.JdbcConnectionSelfTest;
+import org.apache.ignite.jdbc.JdbcEmptyCacheSelfTest;
+import org.apache.ignite.jdbc.JdbcLocalCachesSelfTest;
+import org.apache.ignite.jdbc.JdbcMetadataSelfTest;
+import org.apache.ignite.jdbc.JdbcPreparedStatementSelfTest;
+import org.apache.ignite.jdbc.JdbcResultSetSelfTest;
+import org.apache.ignite.jdbc.JdbcStatementSelfTest;
 
 /**
  * JDBC driver test suite.
@@ -31,6 +38,7 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite JDBC Driver Test Suite");
 
+        // Thin client based driver tests
         suite.addTest(new TestSuite(JdbcConnectionSelfTest.class));
         suite.addTest(new TestSuite(JdbcStatementSelfTest.class));
         suite.addTest(new TestSuite(JdbcPreparedStatementSelfTest.class));
@@ -39,6 +47,16 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(JdbcMetadataSelfTest.class));
         suite.addTest(new TestSuite(JdbcEmptyCacheSelfTest.class));
         suite.addTest(new TestSuite(JdbcLocalCachesSelfTest.class));
+
+        // Ignite client node based driver tests
+        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcConnectionSelfTest.class));
+        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcStatementSelfTest.class));
+        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcPreparedStatementSelfTest.class));
+        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcResultSetSelfTest.class));
+        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcComplexQuerySelfTest.class));
+        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcMetadataSelfTest.class));
+        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcEmptyCacheSelfTest.class));
+        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcLocalCachesSelfTest.class));
 
         return suite;
     }

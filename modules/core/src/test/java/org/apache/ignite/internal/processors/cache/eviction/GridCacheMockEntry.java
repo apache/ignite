@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.eviction;
 
-import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.*;
+import javax.cache.Cache;
+import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Mock cache entry.

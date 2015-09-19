@@ -17,20 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.affinity.*;
-
-import java.util.*;
+import java.util.Collection;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
 /**
  * Update future for atomic cache.
  */
 public interface GridCacheAtomicFuture<R> extends GridCacheFuture<R> {
-    /**
-     * @return Future topology version.
-     */
-    public AffinityTopologyVersion topologyVersion();
-
     /**
      * Gets future that will be completed when it is safe when update is finished on the given version of topology.
      *

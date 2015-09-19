@@ -17,15 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import org.apache.ignite.internal.*;
-import org.h2.command.ddl.*;
-import org.h2.engine.*;
-import org.h2.index.*;
-import org.h2.message.*;
-import org.h2.result.*;
-import org.h2.table.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.UUID;
+import org.apache.ignite.internal.GridKernalContext;
+import org.h2.command.ddl.CreateTableData;
+import org.h2.engine.Session;
+import org.h2.index.Index;
+import org.h2.index.IndexType;
+import org.h2.message.DbException;
+import org.h2.result.Row;
+import org.h2.table.IndexColumn;
+import org.h2.table.TableBase;
 
 /**
  * Merge table for distributed queries.

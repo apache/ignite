@@ -17,7 +17,9 @@
 
 package org.apache.ignite.schema.parser.dialect;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * DB2 specific metadata dialect.

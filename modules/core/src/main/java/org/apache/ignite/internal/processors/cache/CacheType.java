@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MARSH_CACHE_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 
 /**
  *
@@ -72,4 +74,3 @@ public enum CacheType {
         return userCache;
     }
 }
-

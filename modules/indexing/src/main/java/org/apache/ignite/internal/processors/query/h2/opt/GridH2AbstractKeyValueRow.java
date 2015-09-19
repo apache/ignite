@@ -17,17 +17,23 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.h2.message.*;
-import org.h2.result.*;
-import org.h2.value.*;
-import org.jetbrains.annotations.*;
-
-import java.lang.ref.*;
-import java.sql.*;
-import java.util.concurrent.*;
+import java.lang.ref.WeakReference;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.message.DbException;
+import org.h2.result.Row;
+import org.h2.result.SearchRow;
+import org.h2.value.CompareMode;
+import org.h2.value.Value;
+import org.h2.value.ValueNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Table row implementation based on {@link GridQueryTypeDescriptor}.
@@ -176,9 +182,11 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     /** {@inheritDoc} */
     @Override public Value getValue(int col) {
         if (col < DEFAULT_COLUMNS_COUNT) {
-            Value v = peekValue(col);
+            Value v;
 
             if (col == VAL_COL) {
+                v = syncValue(0);
+
                 long start = 0;
                 int attempt = 0;
 
@@ -200,11 +208,15 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
                         Object valObj = desc.readFromSwap(k);
 
                         if (valObj != null) {
-                            Value upd = desc.wrap(valObj, desc.valueType());
+                            // Even if we've found valObj in swap, it is may be some new value,
+                            // while the needed value was already unswapped, so we have to recheck it.
+                            if ((v = WeakValue.unwrap(syncValue(0))) == null && (v = getOffheapValue(VAL_COL)) == null) {
+                                Value upd = desc.wrap(valObj, desc.valueType());
 
-                            v = updateWeakValue(upd);
+                                v = updateWeakValue(upd);
 
-                            return v == null ? upd : v;
+                                return v == null ? upd : v;
+                            }
                         }
                         else {
                             // If nothing found in swap then we should be already unswapped.
@@ -224,18 +236,21 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
                             ". This can happen due to a long GC pause.");
                 }
             }
-
-            if (v == null) {
+            else {
                 assert col == KEY_COL : col;
 
-                v = getOffheapValue(KEY_COL);
+                v = peekValue(KEY_COL);
 
-                assert v != null : v;
+                if (v == null) {
+                    v = getOffheapValue(KEY_COL);
 
-                setValue(KEY_COL, v);
+                    assert v != null;
 
-                if (peekValue(VAL_COL) == null)
-                    cache();
+                    setValue(KEY_COL, v);
+
+                    if (peekValue(VAL_COL) == null)
+                        cache();
+                }
             }
 
             assert !(v instanceof WeakValue) : v;

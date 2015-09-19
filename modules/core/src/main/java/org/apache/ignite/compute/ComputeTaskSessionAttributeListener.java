@@ -17,7 +17,7 @@
 
 package org.apache.ignite.compute;
 
-import java.util.*;
+import java.util.EventListener;
 
 /**
  * This interface defines listener for task session attributes.

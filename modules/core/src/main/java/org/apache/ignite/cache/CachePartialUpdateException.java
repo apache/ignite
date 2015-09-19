@@ -17,10 +17,9 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.internal.processors.cache.*;
-
-import javax.cache.*;
-import java.util.*;
+import java.util.Collection;
+import javax.cache.CacheException;
+import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 
 /**
  * Exception thrown from non-transactional cache in case when update succeeded only partially.

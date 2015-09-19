@@ -17,18 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.testframework.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
@@ -95,6 +96,47 @@ public abstract class IgniteCacheNodeJoinAbstractTest extends IgniteCacheAbstrac
                     return null;
                 }
             }, 10, "test-get");
+
+            try {
+                fut.get(60_000);
+            }
+            finally {
+                stop.set(true);
+            }
+
+            stopGrid(1);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testScanQuery() throws Exception {
+        final IgniteCache<Integer, Integer> cache = jcache(0);
+
+        for (int i = 0; i < 5; i++) {
+            log.info("Iteration: " + i);
+
+            final IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    startGrid(1);
+
+                    return null;
+                }
+            });
+
+            final AtomicBoolean stop = new AtomicBoolean();
+
+            GridTestUtils.runMultiThreaded(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    ScanQuery qry = new ScanQuery();
+
+                    while (!stop.get() && !fut.isDone())
+                        cache.query(qry).getAll();
+
+                    return null;
+                }
+            }, 10, "test-qry");
 
             try {
                 fut.get(60_000);

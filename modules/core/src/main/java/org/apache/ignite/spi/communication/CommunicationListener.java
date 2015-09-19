@@ -17,10 +17,9 @@
 
 package org.apache.ignite.spi.communication;
 
-import org.apache.ignite.lang.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.UUID;
+import org.apache.ignite.lang.IgniteRunnable;
 
 /**
  * Listener SPI notifies IO manager with.

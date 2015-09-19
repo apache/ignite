@@ -17,15 +17,17 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import com.google.common.base.*;
-import org.apache.hadoop.io.*;
-import org.apache.ignite.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.processors.hadoop.examples.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import com.google.common.base.Joiner;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.processors.hadoop.examples.HadoopWordCount2;
 
 /**
  * Tests of Map, Combine and Reduce task executions of any version of hadoop API.

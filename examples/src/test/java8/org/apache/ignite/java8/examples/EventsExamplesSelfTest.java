@@ -17,8 +17,8 @@
 
 package org.apache.ignite.java8.examples;
 
-import org.apache.ignite.examples.java8.events.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.examples.java8.events.EventsExample;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
  * Events examples self test.

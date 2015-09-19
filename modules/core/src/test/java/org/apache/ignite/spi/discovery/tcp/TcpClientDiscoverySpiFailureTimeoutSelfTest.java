@@ -17,13 +17,15 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.spi.discovery.tcp.messages.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Client-based discovery SPI test with failure detection timeout enabled.

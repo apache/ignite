@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.h2.command.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import org.h2.command.Parser;
 
 /**
  * Alias for column or table.

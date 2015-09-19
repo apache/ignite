@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.igfs;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Communication exception indicating a problem between file system and IGFS instance.

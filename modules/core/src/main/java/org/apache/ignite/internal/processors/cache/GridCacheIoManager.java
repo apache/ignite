@@ -17,31 +17,59 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.GridLeanSet;
+import org.apache.ignite.internal.util.GridSpinReadWriteLock;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.internal.GridTopic.*;
+import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 
 /**
  * Cache communication manager.
@@ -118,7 +146,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             if (fut != null && !fut.isDone()) {
                 fut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> t) {
-                        handleMessage(nodeId, cacheMsg);
+                        cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                            @Override public void run() {
+                                handleMessage(nodeId, cacheMsg);
+                            }
+                        });
                     }
                 });
 
@@ -150,8 +182,15 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             c = clsHandlers.get(new ListenerKey(cacheMsg.cacheId(), cacheMsg.getClass()));
 
         if (c == null) {
-            U.warn(log, "Received message without registered handler (will ignore) [msg=" + cacheMsg +
-                ", nodeId=" + nodeId + ']');
+            if (cctx.kernalContext().isStopping()) {
+                if (log.isDebugEnabled())
+                    log.debug("Received message without registered handler (will ignore) [msg=" + cacheMsg +
+                        ", nodeId=" + nodeId + ']');
+            }
+            else {
+                U.warn(log, "Received message without registered handler (will ignore) [msg=" + cacheMsg +
+                    ", nodeId=" + nodeId + ']');
+            }
 
             return;
         }
@@ -564,9 +603,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      *
      * @param msg Message to send.
      * @param destNodeId Destination node ID.
+     * @return {@code True} if should send message.
      * @throws IgniteCheckedException If failed.
      */
-    private void onSend(GridCacheMessage msg, @Nullable UUID destNodeId) throws IgniteCheckedException {
+    private boolean onSend(GridCacheMessage msg, @Nullable UUID destNodeId) throws IgniteCheckedException {
+        if (msg.error() != null && cctx.kernalContext().isStopping())
+            return false;
+
         if (msg.messageId() < 0)
             // Generate and set message ID.
             msg.messageId(idGen.incrementAndGet());
@@ -577,6 +620,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             if (depEnabled && msg instanceof GridCacheDeployable)
                 cctx.deploy().prepare((GridCacheDeployable)msg);
         }
+
+        return true;
     }
 
     /**
@@ -592,7 +637,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     public void send(ClusterNode node, GridCacheMessage msg, byte plc) throws IgniteCheckedException {
         assert !node.isLocal();
 
-        onSend(msg, node.id());
+        if (!onSend(msg, node.id()))
+            return;
 
         if (log.isDebugEnabled())
             log.debug("Sending cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
@@ -611,7 +657,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 if (!cctx.discovery().alive(node.id()) || !cctx.discovery().pingNode(node.id()))
                     throw new ClusterTopologyCheckedException("Node left grid while sending message to: " + node.id(), e);
 
-                if (cnt == retryCnt)
+                if (cnt == retryCnt || cctx.kernalContext().isStopping())
                     throw e;
                 else if (log.isDebugEnabled())
                     log.debug("Failed to send message to node (will retry): " + node.id());
@@ -631,12 +677,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param msg Message to send.
      * @param plc IO policy.
      * @param fallback Callback for failed nodes.
-     * @return {@code True} if nodes are empty or message was sent, {@code false} if
-     *      all nodes have left topology while sending this message.
      * @throws IgniteCheckedException If send failed.
      */
     @SuppressWarnings({"BusyWait", "unchecked"})
-    public boolean safeSend(Collection<? extends ClusterNode> nodes, GridCacheMessage msg, byte plc,
+    public void safeSend(Collection<? extends ClusterNode> nodes, GridCacheMessage msg, byte plc,
         @Nullable IgnitePredicate<ClusterNode> fallback) throws IgniteCheckedException {
         assert nodes != null;
         assert msg != null;
@@ -645,10 +689,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             if (log.isDebugEnabled())
                 log.debug("Message will not be sent as collection of nodes is empty: " + msg);
 
-            return true;
+            return;
         }
 
-        onSend(msg, null);
+        if (!onSend(msg, null))
+            return;
 
         if (log.isDebugEnabled())
             log.debug("Sending cache message [msg=" + msg + ", nodes=" + U.toShortString(nodes) + ']');
@@ -677,7 +722,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                         if (fallback != null && !fallback.apply(n))
                             // If fallback signalled to stop.
-                            return false;
+                            return;
 
                         added = true;
                     }
@@ -689,7 +734,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                             log.debug("Message will not be sent because all nodes left topology [msg=" + msg +
                                 ", nodes=" + U.toShortString(nodes) + ']');
 
-                        return false;
+                        return;
                     }
                 }
 
@@ -705,7 +750,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                         if (fallback != null && !fallback.apply(n))
                             // If fallback signalled to stop.
-                            return false;
+                            return;
 
                         added = true;
                     }
@@ -725,7 +770,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                         log.debug("Message will not be sent because all nodes left topology [msg=" + msg + ", nodes=" +
                             U.toShortString(nodes) + ']');
 
-                    return false;
+                    return;
                 }
 
                 if (log.isDebugEnabled())
@@ -736,8 +781,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Sent cache message [msg=" + msg + ", nodes=" + U.toShortString(nodes) + ']');
-
-        return true;
     }
 
     /**
@@ -768,7 +811,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     public void sendOrderedMessage(ClusterNode node, Object topic, GridCacheMessage msg, byte plc,
         long timeout) throws IgniteCheckedException {
-        onSend(msg, node.id());
+        if (!onSend(msg, node.id()))
+            return;
 
         int cnt = 0;
 
@@ -822,7 +866,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         assert node != null;
         assert msg != null;
 
-        onSend(msg, null);
+        if (!onSend(msg, null))
+            return;
 
         try {
             cctx.gridIO().send(node, TOPIC_CACHE, msg, plc);

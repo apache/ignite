@@ -17,11 +17,23 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.datagrid.*;
-import org.apache.ignite.examples.datagrid.starschema.*;
-import org.apache.ignite.examples.datagrid.store.dummy.*;
-import org.apache.ignite.examples.datastructures.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.examples.datagrid.CacheAffinityExample;
+import org.apache.ignite.examples.datagrid.CacheApiExample;
+import org.apache.ignite.examples.datagrid.CacheContinuousQueryExample;
+import org.apache.ignite.examples.datagrid.CacheDataStreamerExample;
+import org.apache.ignite.examples.datagrid.CachePutGetExample;
+import org.apache.ignite.examples.datagrid.CacheQueryExample;
+import org.apache.ignite.examples.datagrid.CacheTransactionExample;
+import org.apache.ignite.examples.datagrid.starschema.CacheStarSchemaExample;
+import org.apache.ignite.examples.datagrid.store.dummy.CacheDummyStoreExample;
+import org.apache.ignite.examples.datastructures.IgniteAtomicLongExample;
+import org.apache.ignite.examples.datastructures.IgniteAtomicReferenceExample;
+import org.apache.ignite.examples.datastructures.IgniteAtomicSequenceExample;
+import org.apache.ignite.examples.datastructures.IgniteAtomicStampedExample;
+import org.apache.ignite.examples.datastructures.IgniteCountDownLatchExample;
+import org.apache.ignite.examples.datastructures.IgniteQueueExample;
+import org.apache.ignite.examples.datastructures.IgniteSetExample;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
  * Cache examples self test.

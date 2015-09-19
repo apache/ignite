@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.util;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Random to be used from a single thread. Compatible with {@link Random} but faster.

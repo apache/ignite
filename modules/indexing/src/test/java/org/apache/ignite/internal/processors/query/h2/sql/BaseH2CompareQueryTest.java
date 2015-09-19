@@ -17,20 +17,26 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.testframework.*;
-
-import javax.cache.*;
-import java.io.*;
-import java.sql.*;
+import java.io.Serializable;
+import java.sql.Connection;
 import java.sql.Date;
-import java.util.*;
-import java.util.concurrent.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Base set of queries to compare query results from h2 database instance and mixed ignite caches (replicated and partitioned)
@@ -438,20 +444,15 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      * @throws Exception If failed.
      */
     public void testCrossCache() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-829");
-
-        //TODO Investigate (should be 20 results instead of 0).
         compareQueryRes0("select firstName, lastName" +
             "  from \"part\".Person, \"part\".Purchase" +
             "  where Person.id = Purchase.personId");
 
-        //TODO Investigate.
         compareQueryRes0("select concat(firstName, ' ', lastName), Product.name " +
             "  from \"part\".Person, \"part\".Purchase, \"repl\".Product " +
             "  where Person.id = Purchase.personId and Purchase.productId = Product.id" +
             "  group by Product.id");
 
-        //TODO Investigate.
         compareQueryRes0("select concat(firstName, ' ', lastName), count (Product.id) " +
             "  from \"part\".Person, \"part\".Purchase, \"repl\".Product " +
             "  where Person.id = Purchase.personId and Purchase.productId = Product.id" +

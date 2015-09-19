@@ -17,10 +17,12 @@
 
 package org.apache.ignite.examples.java8.computegrid;
 
-import org.apache.ignite.*;
-import org.apache.ignite.examples.*;
-
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ExampleNodeStartup;
 
 /**
  * Demonstrates a simple use of Ignite with reduce closure.

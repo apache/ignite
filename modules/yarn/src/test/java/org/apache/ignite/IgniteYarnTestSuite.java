@@ -17,8 +17,8 @@
 
 package org.apache.ignite;
 
-import junit.framework.*;
-import org.apache.ignite.yarn.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.yarn.IgniteApplicationMasterSelfTest;
 
 /**
  * Apache Hadoop Yarn integration tests.

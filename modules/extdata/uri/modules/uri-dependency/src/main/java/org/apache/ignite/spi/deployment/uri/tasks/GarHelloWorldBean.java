@@ -16,11 +16,11 @@ package org.apache.ignite.spi.deployment.uri.tasks;
  *  limitations under the License.
  */
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Imported class which should be placed in JAR file in GAR/lib folder.

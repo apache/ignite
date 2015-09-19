@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.portable.streams;
 
-import java.util.*;
+import java.util.Arrays;
 
 /**
  * Portable off-heap input stream.

@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.hadoop.planner;
 
-import org.apache.ignite.internal.processors.hadoop.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
+import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Map-reduce plan.

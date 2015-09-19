@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
+import java.io.Serializable;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *

@@ -17,10 +17,19 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.spi.checkpoint.cache.*;
-import org.apache.ignite.spi.checkpoint.jdbc.*;
-import org.apache.ignite.spi.checkpoint.sharedfs.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpiConfigSelfTest;
+import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpiSecondCacheSelfTest;
+import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpiSelfTest;
+import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpiStartStopSelfTest;
+import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpiConfigSelfTest;
+import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpiCustomConfigSelfTest;
+import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpiDefaultConfigSelfTest;
+import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpiStartStopSelfTest;
+import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiConfigSelfTest;
+import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest;
+import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiSelfTest;
+import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiStartStopSelfTest;
 
 /**
  * Grid SPI checkpoint self test suite.

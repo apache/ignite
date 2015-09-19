@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.internal.portable.streams.*;
-import org.apache.ignite.portable.*;
-
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.portable.streams.PortableOutputStream;
+import org.apache.ignite.internal.portable.api.PortableException;
+import org.apache.ignite.internal.portable.api.PortableRawWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Extended writer interface.

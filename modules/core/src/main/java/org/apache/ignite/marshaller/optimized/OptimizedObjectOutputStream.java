@@ -17,19 +17,49 @@
 
 package org.apache.ignite.marshaller.optimized;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.io.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.NotActiveException;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.GridHandleTable;
+import org.apache.ignite.internal.util.io.GridDataOutput;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.MarshallerContext;
 
-import java.io.*;
-import java.lang.reflect.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.HANDLE;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.JDK;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.JDK_MARSH;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.NULL;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.classDescriptor;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getBoolean;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getByte;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getChar;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getDouble;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getFloat;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getInt;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getLong;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getObject;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getShort;
 
 /**
  * Optimized object output stream.

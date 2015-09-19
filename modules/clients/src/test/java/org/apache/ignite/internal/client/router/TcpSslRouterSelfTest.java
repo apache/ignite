@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.client.router;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.client.ssl.*;
-import org.apache.ignite.testframework.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *

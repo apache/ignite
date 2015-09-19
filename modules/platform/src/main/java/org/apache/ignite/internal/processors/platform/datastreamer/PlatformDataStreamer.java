@@ -17,20 +17,24 @@
 
 package org.apache.ignite.internal.processors.platform.datastreamer;
 
-import org.apache.ignite.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.datastreamer.*;
-import org.apache.ignite.internal.processors.platform.*;
-import org.apache.ignite.internal.processors.platform.utils.*;
-import org.apache.ignite.internal.util.lang.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.portable.PortableRawReaderEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
+import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
 
-import java.util.*;
-
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 
 /**
  * Interop data streamer wrapper.
@@ -83,7 +87,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc}  */
-    @Override protected int processInOp(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_UPDATE:
                 int plc = reader.readInt();
@@ -106,7 +110,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                             vals.add(new GridMapEntry(reader.readObjectDetached(), reader.readObjectDetached()));
 
                         PlatformFutureUtils.listen(platformCtx, ldr.addData(vals), futPtr,
-                            PlatformFutureUtils.TYP_OBJ);
+                            PlatformFutureUtils.TYP_OBJ, this);
                     }
 
                     if (plc == PLC_CLOSE) {
@@ -132,7 +136,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                 return TRUE;
 
             default:
-                return throwUnsupported(type);
+                return super.processInStreamOutLong(type, reader);
         }
     }
 

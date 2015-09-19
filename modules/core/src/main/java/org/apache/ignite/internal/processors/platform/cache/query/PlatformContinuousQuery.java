@@ -17,18 +17,17 @@
 
 package org.apache.ignite.internal.processors.platform.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.query.continuous.*;
-import org.apache.ignite.internal.processors.platform.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
 
-import javax.cache.event.*;
+import javax.cache.event.CacheEntryUpdatedListener;
 
 /**
  * Platform continuous query.
  */
-public interface PlatformContinuousQuery extends CacheEntryUpdatedListener, CacheContinuousQueryFilterEx {
+public interface PlatformContinuousQuery extends CacheEntryUpdatedListener, PlatformContinuousQueryFilter {
     /**
      * Start continuous query execution.
      *

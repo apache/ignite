@@ -17,8 +17,8 @@
 
 package org.apache.ignite.compute;
 
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.IgniteException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This exception is thrown when user's code throws undeclared runtime exception. By user code it is

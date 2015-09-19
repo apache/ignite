@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.igfs.common;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
-import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.*;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.HANDSHAKE;
 
 /**
  * Handshake request.

@@ -17,9 +17,12 @@
 
 namespace Apache.Ignite.Core.Impl.Memory
 {
+    using System;
+
     /// <summary>
     /// Platform memory chunk.
     /// </summary>
+    [CLSCompliant(false)]
     public interface IPlatformMemory
     {
         /// <summary>

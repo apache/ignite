@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.configuration.*;
-
-import javax.cache.*;
+import javax.cache.CacheException;
+import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  * Checks behavior on exception while unmarshalling key.

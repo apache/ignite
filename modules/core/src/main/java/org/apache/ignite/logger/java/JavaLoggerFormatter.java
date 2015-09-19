@@ -17,13 +17,13 @@
 
 package org.apache.ignite.logger.java;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
-import java.text.*;
-import java.util.*;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.logging.Formatter;
-import java.util.logging.*;
+import java.util.logging.LogRecord;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Formatter for JUL logger.

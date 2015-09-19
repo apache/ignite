@@ -17,19 +17,22 @@
 
 package org.apache.ignite.internal.util.offheap;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jsr166.*;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMap;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Tests off-heap map.
@@ -39,7 +42,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     private static final Random RAND = new Random();
 
     /** Unsafe map. */
-    private GridOffHeapMap<String> map;
+    private GridOffHeapMap map;
 
     /** */
     protected float load = 0.75f;
@@ -83,7 +86,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      * @return New map.
      */
-    protected abstract <K> GridOffHeapMap<K> newMap();
+    protected abstract GridOffHeapMap newMap();
 
     /**
      *
@@ -548,6 +551,10 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
 
                 evictCnt.incrementAndGet();
             }
+
+            @Override public boolean removeEvicted() {
+                return true;
+            }
         };
 
         map = newMap();
@@ -584,6 +591,10 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
             @Override public void onEvict(int part, int hash, byte[] k, byte[] v) {
                 evictCnt.incrementAndGet();
             }
+
+            @Override public boolean removeEvicted() {
+                return true;
+            }
         };
 
         map = newMap();
@@ -618,6 +629,10 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
         evictLsnr = new GridOffHeapEvictListener() {
             @Override public void onEvict(int part, int hash, byte[] k, byte[] v) {
                 evictCnt.incrementAndGet();
+            }
+
+            @Override public boolean removeEvicted() {
+                return true;
             }
         };
 

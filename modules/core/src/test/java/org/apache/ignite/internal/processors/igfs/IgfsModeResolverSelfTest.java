@@ -17,13 +17,16 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import junit.framework.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.util.typedef.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import junit.framework.TestCase;
+import org.apache.ignite.igfs.IgfsMode;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.util.typedef.T2;
 
-import java.util.*;
-
-import static org.apache.ignite.igfs.IgfsMode.*;
+import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
+import static org.apache.ignite.igfs.IgfsMode.PROXY;
 
 /**
  *

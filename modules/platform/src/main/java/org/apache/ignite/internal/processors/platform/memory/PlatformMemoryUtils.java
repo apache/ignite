@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform.memory;
 
-import org.apache.ignite.internal.util.*;
-import sun.misc.*;
-
-import java.nio.*;
+import java.nio.ByteOrder;
+import org.apache.ignite.internal.util.GridUnsafe;
+import sun.misc.Unsafe;
 
 /**
  * Utility classes for memory management.

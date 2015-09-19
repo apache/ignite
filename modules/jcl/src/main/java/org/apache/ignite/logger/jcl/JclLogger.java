@@ -17,9 +17,10 @@
 
 package org.apache.ignite.logger.jcl;
 
-import org.apache.commons.logging.*;
-import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.ignite.IgniteLogger;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This logger wraps any JCL (<a target=_blank href="http://jakarta.apache.org/commons/logging/">Jakarta Commons Logging</a>)

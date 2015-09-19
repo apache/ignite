@@ -17,36 +17,73 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.worker.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.indexing.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import javax.cache.Cache;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheTypeMetadata;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.query.annotations.QueryTextField;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.events.CacheQueryExecutedEvent;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.GridWorkerFuture;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
-import javax.cache.*;
-import java.lang.reflect.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.IgniteComponentType.*;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.*;
+import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
+import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
+import static org.apache.ignite.internal.processors.query.GridQueryIndexType.FULLTEXT;
+import static org.apache.ignite.internal.processors.query.GridQueryIndexType.GEO_SPATIAL;
+import static org.apache.ignite.internal.processors.query.GridQueryIndexType.SORTED;
 
 /**
  * Indexing processor.
@@ -544,7 +581,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     return idx.query(space, clause, params, type, filters);
                 }
-            });
+            }, false);
         }
         finally {
             busyLock.leaveBusy();
@@ -572,7 +609,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         qry,
                         cctx.keepPortable());
                 }
-            });
+            }, false);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -598,7 +635,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
                     return idx.queryTwoStep(cctx, qry);
                 }
-            });
+            }, true);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -624,7 +661,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 @Override public QueryCursor<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
                     return idx.queryTwoStep(cctx, qry);
                 }
-            });
+            }, false);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -694,7 +731,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             }
                         };
                     }
-                });
+                }, false);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -766,7 +803,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     return cursor;
                 }
-            });
+            }, true);
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
@@ -781,7 +818,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param key Key.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @SuppressWarnings("unchecked")
     public void remove(String space, CacheObject key, CacheObject val) throws IgniteCheckedException {
         assert key != null;
 
@@ -867,7 +903,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         type,
                         filters);
                 }
-            });
+            }, false);
         }
         finally {
             busyLock.leaveBusy();
@@ -896,7 +932,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 @Override public GridQueryFieldsResult applyx() throws IgniteCheckedException {
                     return idx.queryFields(space, clause, params, filters);
                 }
-            });
+            }, false);
         }
         finally {
             busyLock.leaveBusy();
@@ -1442,10 +1478,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * @param cctx Cache context.
      * @param clo Closure.
+     * @param complete Complete.
      */
-    private <R> R executeQuery(GridCacheContext<?,?> cctx, IgniteOutClosureX<R> clo)
+    public <R> R executeQuery(GridCacheContext<?, ?> cctx, IgniteOutClosureX<R> clo, boolean complete)
         throws IgniteCheckedException {
-        final long start = U.currentTimeMillis();
+        final long startTime = U.currentTimeMillis();
 
         Throwable err = null;
 
@@ -1453,6 +1490,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             res = clo.apply();
+
+            if (res instanceof CacheQueryFuture) {
+                CacheQueryFuture fut = (CacheQueryFuture) res;
+
+                err = fut.error();
+            }
 
             return res;
         }
@@ -1467,34 +1510,30 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException(e);
         }
         finally {
-            GridCacheQueryMetricsAdapter metrics = (GridCacheQueryMetricsAdapter)cctx.queries().metrics();
+            cctx.queries().onExecuted(err != null);
 
-            onExecuted(cctx, metrics, res, err, start, U.currentTimeMillis() - start, log);
+            if (complete && err == null)
+                onCompleted(cctx, res, null, startTime, U.currentTimeMillis() - startTime, log);
         }
     }
 
     /**
      * @param cctx Cctx.
-     * @param metrics Metrics.
      * @param res Result.
      * @param err Err.
      * @param startTime Start time.
      * @param duration Duration.
      * @param log Logger.
      */
-    public static void onExecuted(GridCacheContext<?, ?> cctx, GridCacheQueryMetricsAdapter metrics,
-        Object res, Throwable err, long startTime, long duration, IgniteLogger log) {
+    public static void onCompleted(GridCacheContext<?, ?> cctx, Object res, Throwable err,
+        long startTime, long duration, IgniteLogger log) {
         boolean fail = err != null;
 
-        // Update own metrics.
-        metrics.onQueryExecute(duration, fail);
-
-        // Update metrics in query manager.
-        cctx.queries().onMetricsUpdate(duration, fail);
+        cctx.queries().onCompleted(duration, fail);
 
         if (log.isTraceEnabled())
-            log.trace("Query execution finished [startTime=" + startTime +
-                    ", duration=" + duration + ", fail=" + (err != null) + ", res=" + res + ']');
+            log.trace("Query execution completed [startTime=" + startTime +
+                ", duration=" + duration + ", fail=" + fail + ", res=" + res + ']');
     }
 
     /**

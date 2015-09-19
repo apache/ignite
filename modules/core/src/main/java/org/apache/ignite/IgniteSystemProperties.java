@@ -17,11 +17,10 @@
 
 package org.apache.ignite;
 
-import org.jetbrains.annotations.*;
-
-import javax.net.ssl.*;
-import java.lang.management.*;
-import java.util.*;
+import java.lang.management.RuntimeMXBean;
+import java.util.Properties;
+import javax.net.ssl.HostnameVerifier;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Contains constants for all system properties and environmental variables in Ignite.
@@ -356,6 +355,9 @@ public final class IgniteSystemProperties {
 
     /** Number of times pending cache objects will be dumped to the log in case of partition exchange timeout. */
     public static final String IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD = "IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD";
+
+    /** JDBC driver cursor remove delay. */
+    public static final String IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY = "IGNITE_JDBC_DRIVER_CURSOR_RMV_DELAY";
 
     /**
      * Enforces singleton.

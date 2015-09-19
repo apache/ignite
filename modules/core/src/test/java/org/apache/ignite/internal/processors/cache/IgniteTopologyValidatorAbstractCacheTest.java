@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.transactions.*;
-
-import javax.cache.*;
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.Collection;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TopologyValidator;
+import org.apache.ignite.transactions.Transaction;
 
 /**
  * Topology validator test.
@@ -84,13 +86,11 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
      */
     protected void putInvalid(String cacheName) {
         try {
-            assert grid(0).cache(cacheName).get(KEY_VALUE) == null;
-
             grid(0).cache(cacheName).put(KEY_VALUE, KEY_VALUE);
 
             assert false : "topology validation broken";
         }
-        catch (IgniteException | CacheException ex) {
+        catch (CacheException ex) {
             assert ex.getCause() instanceof IgniteCheckedException &&
                 ex.getCause().getMessage().contains("cache topology is not valid");
         }
@@ -103,14 +103,43 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
      */
     protected void putValid(String cacheName) {
         try {
-            assert grid(0).cache(cacheName).get(KEY_VALUE) == null;
-
             grid(0).cache(cacheName).put(KEY_VALUE, KEY_VALUE);
 
             assert grid(0).cache(cacheName).get(KEY_VALUE).equals(KEY_VALUE);
         }
-        catch (IgniteException | CacheException ex) {
+        catch (CacheException ex) {
             assert false : "topology validation broken";
+        }
+    }
+
+    /**
+     * Gets when topology is invalid.
+     *
+     * @param cacheName cache name.
+     */
+    protected void getInvalid(String cacheName) {
+        try {
+            assert grid(0).cache(cacheName).get(KEY_VALUE).equals(KEY_VALUE);
+        }
+        catch (CacheException ex) {
+            assert false : "topology validation broken";
+        }
+    }
+
+    /**
+     * Remove when topology is invalid.
+     *
+     * @param cacheName cache name.
+     */
+    protected void removeInvalid(String cacheName) {
+        try {
+            grid(0).cache(cacheName).remove(KEY_VALUE);
+
+            assert false : "topology validation broken";
+        }
+        catch (CacheException ex) {
+            assert ex.getCause() instanceof IgniteCheckedException &&
+                ex.getCause().getMessage().contains("cache topology is not valid");
         }
     }
 
@@ -123,7 +152,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
         try {
             tx.commit();
         }
-        catch (IgniteException | CacheException ex) {
+        catch (IgniteException ex) {
             assert ex.getCause() instanceof IgniteCheckedException &&
                 ex.getCause().getMessage().contains("cache topology is not valid");
         }
@@ -156,8 +185,10 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
         remove(null);
 
         putInvalid(CACHE_NAME_1);
+        removeInvalid(CACHE_NAME_1);
 
         putInvalid(CACHE_NAME_2);
+        removeInvalid(CACHE_NAME_2);
 
         startGrid(1);
 
@@ -165,7 +196,6 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
         remove(null);
 
         putValid(CACHE_NAME_1);
-        remove(CACHE_NAME_1);
 
         putValid(CACHE_NAME_2);
         remove(CACHE_NAME_2);
@@ -175,7 +205,9 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
         putValid(null);
         remove(null);
 
+        getInvalid(CACHE_NAME_1);
         putInvalid(CACHE_NAME_1);
+        removeInvalid(CACHE_NAME_1);
 
         putValid(CACHE_NAME_2);
         remove(CACHE_NAME_2);

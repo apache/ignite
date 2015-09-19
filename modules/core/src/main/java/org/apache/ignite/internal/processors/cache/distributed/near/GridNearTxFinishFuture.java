@@ -17,35 +17,55 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.transactions.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.transactions.TransactionRollbackException;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
-import static org.apache.ignite.transactions.TransactionState.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
+import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
  *
  */
 public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx>
     implements GridCacheFuture<IgniteInternalTx> {
+    /** */
+    public static final IgniteProductVersion FINISH_NEAR_ONE_PHASE_SINCE = IgniteProductVersion.fromString("1.4.0");
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -206,27 +226,66 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             }
     }
 
+    /**
+     * @param nodeId Sender.
+     * @param res Result.
+     */
+    public void onResult(UUID nodeId, GridDhtTxFinishResponse res) {
+        if (!isDone())
+            for (IgniteInternalFuture<IgniteInternalTx> fut : futures()) {
+                if (isMini(fut)) {
+                    MiniFuture f = (MiniFuture)fut;
+
+                    if (f.futureId().equals(res.miniId())) {
+                        assert f.node().id().equals(nodeId);
+
+                        f.onResult(res);
+                    }
+                }
+            }
+    }
+
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteInternalTx tx, Throwable err) {
+    @Override public boolean onDone(IgniteInternalTx tx0, Throwable err) {
         if ((initialized() || err != null)) {
-            if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING))
-                this.tx.tmCommit();
+            if (tx.needCheckBackup()) {
+                assert tx.onePhaseCommit();
+
+                if (err != null)
+                    err = new TransactionRollbackException("Failed to commit transaction.", err);
+
+                try {
+                    tx.finish(err == null);
+                }
+                catch (IgniteCheckedException e) {
+                    if (err != null)
+                        err.addSuppressed(e);
+                    else
+                        err = e;
+                }
+            }
+
+            if (tx.onePhaseCommit()) {
+                finishOnePhase();
+
+                tx.tmFinish(err == null);
+            }
 
             Throwable th = this.err.get();
 
-            if (super.onDone(tx, th != null ? th : err)) {
+            if (super.onDone(tx0, th != null ? th : err)) {
                 if (error() instanceof IgniteTxHeuristicCheckedException) {
-                    AffinityTopologyVersion topVer = this.tx.topologyVersion();
+                    AffinityTopologyVersion topVer = tx.topologyVersion();
 
-                    for (IgniteTxEntry e : this.tx.writeMap().values()) {
+                    for (IgniteTxEntry e : tx.writeMap().values()) {
                         GridCacheContext cacheCtx = e.context();
 
                         try {
                             if (e.op() != NOOP && !cacheCtx.affinity().localNode(e.key(), topVer)) {
-                                GridCacheEntryEx Entry = cacheCtx.cache().peekEx(e.key());
+                                GridCacheEntryEx entry = cacheCtx.cache().peekEx(e.key());
 
-                                if (Entry != null)
-                                    Entry.invalidate(null, this.tx.xidVersion());
+                                if (entry != null)
+                                    entry.invalidate(null, tx.xidVersion());
                             }
                         }
                         catch (Throwable t) {
@@ -274,52 +333,209 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * Initializes future.
      */
     void finish() {
-        if (tx.onePhaseCommit()) {
-            // No need to send messages as transaction was already committed on remote node.
-            // Finish local mapping only as we need send commit message to backups.
-            for (GridDistributedTxMapping m : mappings.values()) {
-                if (m.node().isLocal()) {
-                    IgniteInternalFuture<IgniteInternalTx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);
+        if (tx.needCheckBackup()) {
+            assert tx.onePhaseCommit();
 
-                    // Add new future.
-                    if (fut != null)
-                        add(fut);
-                }
-            }
+            checkBackup();
 
+            // If checkBackup is set, it means that primary node has crashed and we will not need to send
+            // finish request to it, so we can mark future as initialized.
             markInitialized();
 
             return;
         }
 
-        if (mappings != null) {
-            finish(mappings.values());
+        try {
+            if (tx.finish(commit) || (!commit && tx.state() == UNKNOWN)) {
+                if ((tx.onePhaseCommit() && needFinishOnePhase()) || (!tx.onePhaseCommit() && mappings != null))
+                    finish(mappings.values());
 
-            markInitialized();
+                markInitialized();
 
-            if (!isSync()) {
-                boolean complete = true;
+                if (!isSync()) {
+                    boolean complete = true;
 
-                for (IgniteInternalFuture<?> f : pending())
-                    // Mini-future in non-sync mode gets done when message gets sent.
-                    if (isMini(f) && !f.isDone())
-                        complete = false;
+                    for (IgniteInternalFuture<?> f : pending())
+                        // Mini-future in non-sync mode gets done when message gets sent.
+                        if (isMini(f) && !f.isDone())
+                            complete = false;
 
-                if (complete)
-                    onComplete();
+                    if (complete)
+                        onComplete();
+                }
+            }
+            else
+                onError(new IgniteCheckedException("Failed to commit transaction: " + CU.txString(tx)));
+        }
+        catch (Error | RuntimeException e) {
+            onError(e);
+
+            throw e;
+        }
+        catch (IgniteCheckedException e) {
+            onError(e);
+        }
+    }
+
+    /**
+     *
+     */
+    private void checkBackup() {
+        assert mappings.size() <= 1;
+
+        for (Map.Entry<UUID, GridDistributedTxMapping> entry : mappings.entrySet()) {
+            UUID nodeId = entry.getKey();
+            GridDistributedTxMapping mapping = entry.getValue();
+
+            Collection<UUID> backups = tx.transactionNodes().get(nodeId);
+
+            if (!F.isEmpty(backups)) {
+                assert backups.size() == 1;
+
+                UUID backupId = F.first(backups);
+
+                ClusterNode backup = cctx.discovery().node(backupId);
+
+                MiniFuture mini = new MiniFuture(backup, mapping);
+
+                add(mini);
+
+                // Nothing to do if backup has left the grid.
+                if (backup == null) {
+                    readyNearMappingFromBackup(mapping);
+
+                    ClusterTopologyCheckedException cause =
+                        new ClusterTopologyCheckedException("Backup node left grid: " + backupId);
+
+                    cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+
+                    mini.onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
+                        "(backup has left grid): " + tx.xidVersion(), cause));
+                }
+                else if (backup.isLocal()) {
+                    boolean committed = cctx.tm().txHandler().checkDhtRemoteTxCommitted(tx.xidVersion());
+
+                    readyNearMappingFromBackup(mapping);
+
+                    if (committed)
+                        mini.onDone(tx);
+                    else {
+                        ClusterTopologyCheckedException cause =
+                            new ClusterTopologyCheckedException("Primary node left grid: " + nodeId);
+
+                        cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+
+                        mini.onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
+                            "(transaction has been rolled back on backup node): " + tx.xidVersion(), cause));
+                    }
+                }
+                else {
+                    GridDhtTxFinishRequest finishReq = new GridDhtTxFinishRequest(
+                        cctx.localNodeId(),
+                        futureId(),
+                        mini.futureId(),
+                        tx.topologyVersion(),
+                        tx.xidVersion(),
+                        tx.commitVersion(),
+                        tx.threadId(),
+                        tx.isolation(),
+                        true,
+                        false,
+                        tx.system(),
+                        tx.ioPolicy(),
+                        false,
+                        true,
+                        true,
+                        null,
+                        null,
+                        null,
+                        null,
+                        0,
+                        null,
+                        0);
+
+                    finishReq.checkCommitted(true);
+
+                    try {
+                        if (FINISH_NEAR_ONE_PHASE_SINCE.compareTo(backup.version()) <= 0)
+                            cctx.io().send(backup, finishReq, tx.ioPolicy());
+                        else
+                            mini.onDone(new IgniteTxHeuristicCheckedException("Failed to check for tx commit on " +
+                                "the backup node (node has an old Ignite version) [rmtNodeId=" + backup.id() +
+                                ", ver=" + backup.version() + ']'));
+                    }
+                    catch (ClusterTopologyCheckedException e) {
+                        mini.onResult(e);
+                    }
+                    catch (IgniteCheckedException e) {
+                        mini.onResult(e);
+                    }
+                }
+            }
+            else
+                readyNearMappingFromBackup(mapping);
+        }
+    }
+
+    /**
+     *
+     */
+    private boolean needFinishOnePhase() {
+        if (F.isEmpty(tx.mappings()))
+            return false;
+
+        assert tx.mappings().size() == 1;
+
+        boolean finish = false;
+
+        for (Integer cacheId : tx.activeCacheIds()) {
+            GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
+
+            if (cacheCtx.isNear()) {
+                finish = true;
+
+                break;
             }
         }
-        else {
-            assert !commit;
 
-            try {
-                tx.rollback();
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to rollback empty transaction: " + tx, e);
-            }
+        if (finish) {
+            GridDistributedTxMapping mapping = F.first(tx.mappings().values());
 
-            markInitialized();
+            if (FINISH_NEAR_ONE_PHASE_SINCE.compareTo(mapping.node().version()) > 0)
+                finish = false;
+        }
+
+        return finish;
+    }
+
+    /**
+     *
+     */
+    private void finishOnePhase() {
+        // No need to send messages as transaction was already committed on remote node.
+        // Finish local mapping only as we need send commit message to backups.
+        for (GridDistributedTxMapping m : mappings.values()) {
+            if (m.node().isLocal()) {
+                IgniteInternalFuture<IgniteInternalTx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);
+
+                // Add new future.
+                if (fut != null)
+                    add(fut);
+            }
+        }
+    }
+
+    /**
+     * @param mapping Mapping to finish.
+     */
+    private void readyNearMappingFromBackup(GridDistributedTxMapping mapping) {
+        if (mapping.near()) {
+            GridCacheVersion xidVer = tx.xidVersion();
+
+            mapping.dhtVersion(xidVer, xidVer);
+
+            tx.readyNearLocks(mapping, Collections.<GridCacheVersion>emptyList(), Collections.<GridCacheVersion>emptyList(),
+                Collections.<GridCacheVersion>emptyList());
         }
     }
 
@@ -407,9 +623,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             @SuppressWarnings("unchecked")
             @Override public String apply(IgniteInternalFuture<?> f) {
                 if (isMini(f)) {
-                    return "[node=" + ((MiniFuture) f).node().id() +
-                        ", loc=" + ((MiniFuture) f).node().isLocal() +
-                        ", done=" + f.isDone() + "]";
+                    MiniFuture m = (MiniFuture)f;
+
+                    return "[node=" + m.node().id() + ", loc=" + m.node().isLocal() + ", done=" + f.isDone() + "]";
                 }
                 else
                     return "[loc=true, done=" + f.isDone() + "]";
@@ -436,10 +652,22 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         @GridToStringInclude
         private GridDistributedTxMapping m;
 
+        /** Backup check flag. */
+        private ClusterNode backup;
+
         /**
          * @param m Mapping.
          */
         MiniFuture(GridDistributedTxMapping m) {
+            this.m = m;
+        }
+
+        /**
+         * @param backup Backup to check.
+         * @param m Mapping associated with the backup.
+         */
+        MiniFuture(ClusterNode backup, GridDistributedTxMapping m) {
+            this.backup = backup;
             this.m = m;
         }
 
@@ -454,7 +682,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
          * @return Node ID.
          */
         public ClusterNode node() {
-            return m.node();
+            assert m != null || backup != null;
+
+            return backup != null ? backup : m.node();
         }
 
         /**
@@ -482,16 +712,49 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will fail): " + this);
 
-            // Complete future with tx.
-            onDone(tx);
+            if (backup != null) {
+                readyNearMappingFromBackup(m);
+
+                onDone(e);
+            }
+            else
+                // Complete future with tx.
+                onDone(tx);
         }
 
         /**
          * @param res Result callback.
          */
         void onResult(GridNearTxFinishResponse res) {
+            assert backup == null;
+
             if (res.error() != null)
                 onDone(res.error());
+            else
+                onDone(tx);
+        }
+
+        /**
+         * @param res Response.
+         */
+        void onResult(GridDhtTxFinishResponse res) {
+            assert backup != null;
+
+            readyNearMappingFromBackup(m);
+
+            Throwable err = res.checkCommittedError();
+
+            if (err != null) {
+                if (err instanceof IgniteCheckedException) {
+                    ClusterTopologyCheckedException cause =
+                        ((IgniteCheckedException)err).getCause(ClusterTopologyCheckedException.class);
+
+                    if (cause != null)
+                        cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                }
+
+                onDone(err);
+            }
             else
                 onDone(tx);
         }

@@ -17,21 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.dr.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.*;
-import javax.cache.expiry.*;
-import javax.cache.processor.*;
-import java.util.*;
+import java.util.Collection;
+import java.util.UUID;
+import javax.cache.Cache;
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessorResult;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Internal API for cache entry ({@code 'Ex'} stands for extended).
@@ -639,8 +641,10 @@ public interface GridCacheEntryEx {
      *
      * @return Versioned entry.
      * @throws IgniteCheckedException In case of error.
+     * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public <K, V> GridCacheVersionedEntryEx<K, V> versionedEntry() throws IgniteCheckedException;
+    public <K, V> GridCacheVersionedEntryEx<K, V> versionedEntry()
+        throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * Sets new value if passed in version matches the current version
@@ -863,10 +867,25 @@ public interface GridCacheEntryEx {
     public void updateTtl(@Nullable GridCacheVersion ver, long ttl);
 
     /**
+     * Tries to do offheap -> swap eviction.
+     *
+     * @param entry Serialized swap entry.
+     * @param evictVer Version when entry was selected for eviction.
+     * @param obsoleteVer Obsolete version.
+     * @throws IgniteCheckedException If failed.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     * @return {@code True} if entry was obsoleted and written to swap.
+     */
+    public boolean offheapSwapEvict(byte[] entry, GridCacheVersion evictVer, GridCacheVersion obsoleteVer)
+        throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
      * @return Value.
      * @throws IgniteCheckedException If failed to read from swap storage.
+     * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public CacheObject unswap() throws IgniteCheckedException;
+    @Nullable public CacheObject unswap()
+        throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * Unswap ignoring flags.
@@ -874,8 +893,10 @@ public interface GridCacheEntryEx {
      * @param needVal If {@code false} then do not need to deserialize value during unswap.
      * @return Value.
      * @throws IgniteCheckedException If failed.
+     * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public CacheObject unswap(boolean needVal) throws IgniteCheckedException;
+    @Nullable public CacheObject unswap(boolean needVal)
+        throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * Tests whether or not given metadata is set.

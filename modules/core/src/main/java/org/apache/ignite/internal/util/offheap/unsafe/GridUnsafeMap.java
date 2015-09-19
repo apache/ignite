@@ -17,24 +17,33 @@
 
 package org.apache.ignite.internal.util.offheap.unsafe;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.offheap.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-import org.jsr166.*;
+import java.util.LinkedList;
+import java.util.NoSuchElementException;
+import java.util.Queue;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.offheap.GridOffHeapEventListener;
+import org.apache.ignite.internal.util.offheap.GridOffHeapEvictListener;
+import org.apache.ignite.internal.util.offheap.GridOffHeapMap;
+import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
+import org.apache.ignite.internal.util.typedef.CX2;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.LongAdder8;
 
-import java.util.*;
-import java.util.concurrent.locks.*;
-
-import static org.apache.ignite.internal.util.offheap.GridOffHeapEvent.*;
+import static org.apache.ignite.internal.util.offheap.GridOffHeapEvent.REHASH;
 
 /**
  * Off-heap map based on {@code Unsafe} implementation.
  */
-public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
+public class GridUnsafeMap implements GridOffHeapMap {
     /** Header size. */
     private static final int HEADER = 4 /*hash*/ + 4 /*key-size*/  + 4 /*value-size*/ + 8 /*queue-address*/ +
         8 /*next-address*/;
@@ -69,7 +78,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     private final float load;
 
     /** Segments. */
-    private final Segment<K>[] segs;
+    private final Segment[] segs;
 
     /** Total memory. */
     private final GridUnsafeMemory mem;
@@ -102,6 +111,9 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
 
     /** LRU poller. */
     private final GridUnsafeLruPoller lruPoller;
+
+    /** */
+    private final boolean rmvEvicted;
 
     /**
      * @param concurrency Concurrency.
@@ -172,6 +184,8 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                 }
             }
         };
+
+        rmvEvicted = evictLsnr == null || evictLsnr.removeEvicted();
     }
 
     /**
@@ -217,6 +231,8 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
         segs = new Segment[size];
 
         init(initCap, size);
+
+        rmvEvicted = evictLsnr == null || evictLsnr.removeEvicted();
     }
 
     /**
@@ -239,7 +255,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
 
         for (int i = 0; i < size; i++) {
             try {
-                segs[i] = new Segment<>(i, cap);
+                segs[i] = new Segment(i, cap);
             }
             catch (GridOffHeapOutOfMemoryException e) {
                 destruct();
@@ -316,6 +332,11 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     /** {@inheritDoc} */
     @Override public boolean removex(int hash, byte[] keyBytes) {
         return segmentFor(hash).removex(hash, keyBytes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removex(int hash, byte[] keyBytes, IgniteBiPredicate<Long, Integer> p) {
+        return segmentFor(hash).removex(hash, keyBytes, p);
     }
 
     /** {@inheritDoc} */
@@ -551,7 +572,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     /**
      * Segment.
      */
-    private class Segment<K> {
+    private class Segment {
         /** Lock. */
         private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -1001,41 +1022,51 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                         }
 
                         if (cur != 0) {
-                            long next = Entry.nextAddress(cur, mem);
+                            long qAddr0 = Entry.queueAddress(cur, mem);
 
-                            if (prev != 0)
-                                Entry.nextAddress(prev, next, mem); // Relink.
-                            else {
-                                if (next == 0)
-                                    Bin.clear(binAddr, mem);
-                                else
-                                    Bin.first(binAddr, next, mem);
-                            }
+                            assert qAddr == qAddr0 : "Queue node address mismatch " +
+                                "[qAddr=" + qAddr + ", entryQueueAddr=" + qAddr + ']';
 
                             if (evictLsnr != null) {
                                 keyBytes = Entry.readKeyBytes(cur, mem);
 
-                                // TODO: GG-8123: Inlined as a workaround. Revert when 7u60 is released.
-//                                valBytes = Entry.readValueBytes(cur, mem);
-                                {
-                                    int keyLen = Entry.readKeyLength(cur, mem);
-                                    int valLen = Entry.readValueLength(cur, mem);
+                                int keyLen = Entry.readKeyLength(cur, mem);
+                                int valLen = Entry.readValueLength(cur, mem);
 
-                                    valBytes = mem.readBytes(cur + HEADER + keyLen, valLen);
-                                }
+                                valBytes = mem.readBytes(cur + HEADER + keyLen, valLen);
                             }
 
-                            long a;
+                            if (rmvEvicted) {
+                                long a;
 
-                            assert qAddr == (a = Entry.queueAddress(cur, mem)) : "Queue node address mismatch " +
-                                "[qAddr=" + qAddr + ", entryQueueAddr=" + a + ']';
+                                assert qAddr == (a = Entry.queueAddress(cur, mem)) : "Queue node address mismatch " +
+                                    "[qAddr=" + qAddr + ", entryQueueAddr=" + a + ']';
 
-                            relSize = Entry.size(cur, mem);
-                            relAddr = cur;
+                                long next = Entry.nextAddress(cur, mem);
 
-                            cnt--;
+                                if (prev != 0)
+                                    Entry.nextAddress(prev, next, mem); // Relink.
+                                else {
+                                    if (next == 0)
+                                        Bin.clear(binAddr, mem);
+                                    else
+                                        Bin.first(binAddr, next, mem);
+                                }
 
-                            totalCnt.decrement();
+                                relSize = Entry.size(cur, mem);
+                                relAddr = cur;
+
+                                cnt--;
+
+                                totalCnt.decrement();
+                            }
+                            else {
+                                boolean clear = Entry.clearQueueAddress(cur, qAddr, mem);
+
+                                assert clear;
+
+                                relSize = Entry.size(cur, mem);
+                            }
                         }
                     }
                 }
@@ -1243,7 +1274,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          */
         @SuppressWarnings("TooBroadScope")
         byte[] remove(int hash, byte[] keyBytes) {
-            return remove(hash, keyBytes, true);
+            return remove(hash, keyBytes, true, null);
         }
 
         /**
@@ -1252,17 +1283,28 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @return {@code True} if value was removed.
          */
         boolean removex(int hash, byte[] keyBytes) {
-            return remove(hash, keyBytes, false) == EMPTY_BYTES;
+            return remove(hash, keyBytes, false, null) == EMPTY_BYTES;
+        }
+
+        /**
+         * @param hash Hash.
+         * @param keyBytes Key bytes.
+         * @param p Value predicate.
+         * @return {@code True} if value was removed.
+         */
+        boolean removex(int hash, byte[] keyBytes, IgniteBiPredicate<Long, Integer> p) {
+            return remove(hash, keyBytes, false, p) == EMPTY_BYTES;
         }
 
         /**
          * @param hash Hash.
          * @param keyBytes Key bytes.
          * @param retval {@code True} if need removed value.
+         * @param p Value predicate.
          * @return Removed value bytes.
          */
         @SuppressWarnings("TooBroadScope")
-        byte[] remove(int hash, byte[] keyBytes, boolean retval) {
+        byte[] remove(int hash, byte[] keyBytes, boolean retval, @Nullable IgniteBiPredicate<Long, Integer> p) {
             int relSize = 0;
             long relAddr = 0;
             long qAddr = 0;
@@ -1283,6 +1325,19 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
 
                         // If found match.
                         if (Entry.keyEquals(cur, keyBytes, mem)) {
+                            int keyLen = 0;
+                            int valLen = 0;
+
+                            if (p != null) {
+                                keyLen = Entry.readKeyLength(cur, mem);
+                                valLen = Entry.readValueLength(cur, mem);
+
+                                long valPtr = cur + HEADER + keyLen;
+
+                                if (!p.apply(valPtr, valLen))
+                                    return null;
+                            }
+
                             if (prev != 0)
                                 Entry.nextAddress(prev, next, mem); // Relink.
                             else {
@@ -1292,18 +1347,16 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
                                     Bin.first(binAddr, next, mem);
                             }
 
-                            // TODO: GG-8123: Inlined as a workaround. Revert when 7u60 is released.
-//                            valBytes = retval ? Entry.readValueBytes(cur, mem) : EMPTY_BYTES;
-                            {
-                                if (retval) {
-                                    int keyLen = Entry.readKeyLength(cur, mem);
-                                    int valLen = Entry.readValueLength(cur, mem);
-
-                                    valBytes = mem.readBytes(cur + HEADER + keyLen, valLen);
+                            if (retval) {
+                                if (keyLen == 0) {
+                                    keyLen = Entry.readKeyLength(cur, mem);
+                                    valLen = Entry.readValueLength(cur, mem);
                                 }
-                                else
-                                    valBytes = EMPTY_BYTES;
+
+                                valBytes = mem.readBytes(cur + HEADER + keyLen, valLen);
                             }
+                            else
+                                valBytes = EMPTY_BYTES;
 
                             // Prepare release of memory.
                             qAddr = Entry.queueAddress(cur, mem);
@@ -1374,8 +1427,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
          * @param keyBytes Key bytes.
          * @return Value pointer.
          */
-        @Nullable
-        IgniteBiTuple<Long, Integer> valuePointer(int hash, byte[] keyBytes) {
+        @Nullable IgniteBiTuple<Long, Integer> valuePointer(int hash, byte[] keyBytes) {
             long binAddr = readLock(hash);
 
             try {

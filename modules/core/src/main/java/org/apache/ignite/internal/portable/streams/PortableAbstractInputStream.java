@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.portable.streams;
 
-import org.apache.ignite.portable.*;
+import org.apache.ignite.internal.portable.api.PortableException;
 
 /**
  * Portable abstract input stream.

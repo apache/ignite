@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.visor.query;
 
-import java.io.*;
+import java.io.Serializable;
 
 /**
  * Arguments for {@link VisorQueryTask}.

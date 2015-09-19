@@ -17,33 +17,72 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.igfs.*;
-import org.apache.ignite.igfs.secondary.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.jetbrains.annotations.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
+import org.apache.ignite.igfs.IgfsException;
+import org.apache.ignite.igfs.IgfsFile;
+import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.igfs.IgfsInputStream;
+import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
+import org.apache.ignite.igfs.IgfsIpcEndpointType;
+import org.apache.ignite.igfs.IgfsMode;
+import org.apache.ignite.igfs.IgfsOutputStream;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.IgfsPathNotFoundException;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.lang.reflect.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMemoryMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.igfs.IgfsMode.*;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
+import static org.apache.ignite.igfs.IgfsMode.PROXY;
+import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_GROUP_NAME;
+import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PERMISSION;
+import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
 
 /**
  * Test fo regular igfs operations.
@@ -149,8 +188,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /**
      * Constructor.
      *
-     * @param mode
-     * @param memoryMode
+     * @param mode IGFS mode.
+     * @param memoryMode Memory mode.
      */
     protected IgfsAbstractSelfTest(IgfsMode mode, CacheMemoryMode memoryMode) {
         assert mode != null && mode != PROXY;
@@ -162,9 +201,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * Data chunk.
      *
-     * @param length
-     * @return
+     * @param length Length.
+     * @return Data chunk.
      */
     static byte[] createChunk(int length) {
         byte[] chunk = new byte[length];
@@ -216,6 +256,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @return Started grid instance.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
         @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
@@ -270,9 +311,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * Prepare cache configuration.
      *
-     * @param dataCacheCfg
-     * @param metaCacheCfg
+     * @param dataCacheCfg Data cache configuration.
+     * @param metaCacheCfg Meta cache configuration.
      */
     protected void prepareCacheConfigurations(CacheConfiguration dataCacheCfg, CacheConfiguration metaCacheCfg) {
         // Noop
@@ -743,9 +785,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             boolean ok = igfs.delete(SUBDIR, false);
 
             assertFalse(ok);
-        } catch (IgfsDirectoryNotEmptyException idnee) {
-            // ok, expected
-            U.debug("Expected: " + idnee);
+        }
+        catch (IgfsDirectoryNotEmptyException ignore) {
+            // No-op, expected.
         }
 
         checkExist(igfs, igfsSecondary, SUBDIR, SUBSUBDIR, FILE);
@@ -802,7 +844,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
     /**
      * Ensure that formatting is not propagated to the secondary file system.
-     * 
+     *
      * TODO: IGNITE-586.
      *
      * @throws Exception If failed.
@@ -811,7 +853,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testFormat() throws Exception {
         // Test works too long and fails.
         fail("https://issues.apache.org/jira/browse/IGNITE-586");
-        
+
         IgniteKernal grid = (IgniteKernal)G.ignite("grid");
         GridCacheAdapter cache = grid.internalCache("dataCache");
 
@@ -2210,6 +2252,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         }
     }
 
+    @SuppressWarnings("EmptyTryBlock")
     public void create(UniversalFileSystemAdapter uni, @Nullable IgfsPath[] dirs, @Nullable IgfsPath[] files) throws Exception {
         if (dirs != null) {
             for (IgfsPath dir : dirs)
@@ -2218,8 +2261,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         if (files != null) {
             for (IgfsPath file : files)
-                try (OutputStream os = uni.openOutputStream(file.toString(), false)) {
-                    // noop
+                try (OutputStream ignore = uni.openOutputStream(file.toString(), false)) {
+                    // No-op
                 }
         }
     }
@@ -2253,11 +2296,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * Create the file in the given IGFS and write provided data chunks to it.
      *
      * @param file File.
-     * @param overwrite Overwrite flag.
      * @param chunks Data chunks.
      * @throws IOException In case of IO exception.
      */
-    protected static void createFile(UniversalFileSystemAdapter uni, IgfsPath file, boolean overwrite, @Nullable byte[]... chunks)
+    protected static void createFile(UniversalFileSystemAdapter uni, IgfsPath file, @Nullable byte[]... chunks)
         throws IOException {
         OutputStream os = null;
 
@@ -2270,6 +2312,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             U.closeQuiet(os);
 
             IgfsEx igfsEx = uni.getAdapter(IgfsEx.class);
+
             if (igfsEx != null)
                 awaitFileClose(igfsEx.asSecondary(), file);
         }
@@ -2619,7 +2662,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         for (Map.Entry<IgfsPath, IgfsFileWorkerBatch> entry : workerMap.entrySet()) {
             entry.getValue().cancel();
-            entry.getValue().await();
+
+            try {
+                entry.getValue().await();
+            }
+            catch (IgniteCheckedException e) {
+                if (!entry.getValue().cancelled())
+                    throw e;
+            }
         }
 
         // Clear igfs.
@@ -2636,21 +2686,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public static void clear(UniversalFileSystemAdapter uni) throws Exception {
         IgfsEx igfsEx = uni.getAdapter(IgfsEx.class);
 
-        if (igfsEx != null) {
-            Field workerMapFld = IgfsImpl.class.getDeclaredField("workerMap");
+        if (igfsEx != null)
+            clear(igfsEx);
 
-            workerMapFld.setAccessible(true);
-
-            // Wait for all workers to finish.
-            Map<IgfsPath, IgfsFileWorkerBatch> workerMap = (Map<IgfsPath, IgfsFileWorkerBatch>)workerMapFld.get(igfs);
-
-            for (Map.Entry<IgfsPath, IgfsFileWorkerBatch> entry : workerMap.entrySet()) {
-                entry.getValue().cancel();
-                entry.getValue().await();
-            }
-        }
-
-        // Clear the filesystem:
+        // Clear the filesystem.
         uni.format();
     }
 }

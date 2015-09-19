@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.hadoop.mapreduce.*;
-import org.apache.hadoop.mapreduce.counters.*;
-
-import java.io.*;
-import java.util.*;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.util.Iterator;
+import org.apache.hadoop.mapreduce.Counter;
+import org.apache.hadoop.mapreduce.CounterGroup;
+import org.apache.hadoop.mapreduce.counters.CounterGroupBase;
 
 /**
  * Hadoop +counter group adapter.

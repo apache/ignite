@@ -384,9 +384,10 @@ public class PlatformCallbackUtils {
      * Kernal start callback.
      *
      * @param envPtr Environment pointer.
+     * @param proc Platform processor.
      * @param memPtr Memory pointer.
      */
-    static native void onStart(long envPtr, long memPtr);
+    static native void onStart(long envPtr, Object proc, long memPtr);
 
     /*
      * Kernal stop callback.
@@ -458,6 +459,27 @@ public class PlatformCallbackUtils {
      * @param memPtr Stream pointer.
      */
     static native int clusterNodeFilterApply(long envPtr, long memPtr);
+
+    /**
+     * Extension callback accepting single long argument and returning long result.
+     *
+     * @param envPtr Environment pointer.
+     * @param typ Operation type.
+     * @param arg1 Argument 1.
+     * @return Long result.
+     */
+    static native long extensionCallbackInLongOutLong(long envPtr, int typ, long arg1);
+
+    /**
+     * Extension callback accepting two long arguments and returning long result.
+     *
+     * @param envPtr Environment pointer.
+     * @param typ Operation type.
+     * @param arg1 Argument 1.
+     * @param arg2 Argument 2.
+     * @return Long result.
+     */
+    static native long extensionCallbackInLongLongOutLong(long envPtr, int typ, long arg1, long arg2);
 
     /**
      * Private constructor.

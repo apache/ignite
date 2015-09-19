@@ -17,11 +17,13 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.hibernate.cache.*;
-import org.hibernate.cache.spi.access.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.hibernate.cache.CacheException;
+import org.hibernate.cache.spi.access.AccessType;
+import org.hibernate.cache.spi.access.SoftLock;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of {@link AccessType#TRANSACTIONAL} cache access strategy.

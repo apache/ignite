@@ -17,27 +17,38 @@
 
 package org.apache.ignite.stream.socket;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.stream.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.stream.StreamTupleExtractor;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * Tests {@link SocketStreamer}.
@@ -78,7 +89,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(GRID_CNT);
+        startGridsMultiThreaded(GRID_CNT);
 
         try (ServerSocket sock = new ServerSocket(0)) {
             port = sock.getLocalPort();
@@ -222,8 +233,9 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
      * @param converter Converter.
      * @param r Runnable..
      */
-    private void test(@Nullable SocketMessageConverter<Tuple> converter, @Nullable byte[] delim, Runnable r) throws Exception
-    {
+    private void test(@Nullable SocketMessageConverter<Tuple> converter,
+        @Nullable byte[] delim,
+        Runnable r) throws Exception {
         SocketStreamer<Tuple, Integer, String> sockStmr = null;
 
         Ignite ignite = grid(0);
@@ -233,7 +245,6 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
         cache.clear();
 
         try (IgniteDataStreamer<Integer, String> stmr = ignite.dataStreamer(null)) {
-
             stmr.allowOverwrite(true);
             stmr.autoFlushFrequency(10);
 
@@ -258,8 +269,12 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch latch = new CountDownLatch(CNT);
 
+            final GridConcurrentHashSet<CacheEvent> evts = new GridConcurrentHashSet<>();
+
             IgniteBiPredicate<UUID, CacheEvent> locLsnr = new IgniteBiPredicate<UUID, CacheEvent>() {
                 @Override public boolean apply(UUID uuid, CacheEvent evt) {
+                    evts.add(evt);
+
                     latch.countDown();
 
                     return true;
@@ -274,8 +289,18 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
 
             latch.await();
 
-            for (int i = 0; i < CNT; i++)
-                assertEquals(Integer.toString(i), cache.get(i));
+            for (int i = 0; i < CNT; i++) {
+                Object val = cache.get(i);
+                String exp = Integer.toString(i);
+
+                if (!exp.equals(val))
+                    log.error("Unexpected cache value [key=" + i +
+                        ", exp=" + exp +
+                        ", val=" + val +
+                        ", evts=" + evts + ']');
+
+                assertEquals(exp, val);
+            }
 
             assertEquals(CNT, cache.size(CachePeekMode.PRIMARY));
         }

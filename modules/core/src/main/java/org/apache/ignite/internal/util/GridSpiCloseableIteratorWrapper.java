@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.spi.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 
 /**
  * Wrapper used to covert {@link org.apache.ignite.spi.IgniteSpiCloseableIterator} to {@link GridCloseableIterator}.
@@ -53,5 +53,10 @@ public class GridSpiCloseableIteratorWrapper<T> extends GridCloseableIteratorAda
     /** {@inheritDoc} */
     @Override protected void onClose() throws IgniteCheckedException {
         iter.close();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onRemove() throws IgniteCheckedException {
+        iter.remove();
     }
 }
