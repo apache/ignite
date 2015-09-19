@@ -21,10 +21,10 @@ import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import org.apache.ignite.*;
 import org.apache.ignite.stream.*;
-
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -35,8 +35,6 @@ import java.util.concurrent.*;
  * @author Gianfranco Murador
  */
 public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IRichBolt {
-    /** Retry timeout. */
-    private static final long DFLT_RETRY_TIMEOUT = 10000;
 
     /** Logger. */
     private IgniteLogger log;
@@ -50,12 +48,11 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
     /** Number of threads to process kafka streams. */
     private int threads;
 
-    /** Retry timeout. */
-    private long retryTimeout = DFLT_RETRY_TIMEOUT;
-
     /** Stopped. */
     private volatile boolean stopped;
 
+    /** the storm output collector */
+    private OutputCollector collector;
 
     /**
      * Starts streamer
@@ -73,17 +70,18 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
     }
 
     /**
-     * In this point we can to a
+     * In this point we declare the output collector of the bolt
      * @param map the map derived from topology
      * @param topologyContext the context topology in storm
-     * @param outputCollector the output of the collector
+     * @param collector the output of the collector
      */
     @Override
-    public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
+    public void prepare(Map map, TopologyContext topologyContext, OutputCollector collector) {
+        this.collector = collector;
     }
 
     /**
-     * Exece
+     * This method generates and map and do a put operations
      * @param tuple
      */
     @Override
@@ -94,9 +92,13 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
     public void cleanup() {
     }
 
+    /**
+     * This may not be necessary, as this is the last node topology before Apache Ignite
+     * @param declarer
+     */
     @Override
-    public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+         declarer.declare(new Fields("IgniteGrid"));
     }
 
     @Override
