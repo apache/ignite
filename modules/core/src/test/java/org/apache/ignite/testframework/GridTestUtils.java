@@ -633,11 +633,23 @@ public final class GridTestUtils {
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static <T> IgniteInternalFuture<T> runAsync(final Callable<T> task) {
+        return runAsync(task, "async-runner");
+    }
+
+    /**
+     * Runs callable task asyncronously.
+     *
+     * @param task Callable.
+     * @param threadName Thread name.
+     * @return Future with task result.
+     */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+    public static <T> IgniteInternalFuture<T> runAsync(final Callable<T> task, String threadName) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to start new threads (test is being stopped).");
 
         try {
-            final GridTestSafeThreadFactory thrFactory = new GridTestSafeThreadFactory("async-runner");
+            final GridTestSafeThreadFactory thrFactory = new GridTestSafeThreadFactory(threadName);
 
             final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
                 @Override public boolean cancel() throws IgniteCheckedException {

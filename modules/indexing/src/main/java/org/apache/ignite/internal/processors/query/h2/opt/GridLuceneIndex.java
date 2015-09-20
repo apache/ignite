@@ -51,7 +51,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Version;
-import org.h2.util.Utils;
+import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.KEY_FIELD_NAME;
@@ -363,7 +363,7 @@ public class GridLuceneIndex implements Closeable {
         @SuppressWarnings("unchecked")
         private <Z> Z unmarshall(byte[] bytes, ClassLoader ldr) throws IgniteCheckedException {
             if (coctx == null) // For tests.
-                return (Z)Utils.deserialize(bytes, null);
+                return (Z)JdbcUtils.deserialize(bytes, null);
 
             return (Z)coctx.processor().unmarshal(coctx, bytes, ldr);
         }

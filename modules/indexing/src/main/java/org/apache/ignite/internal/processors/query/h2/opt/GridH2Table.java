@@ -22,8 +22,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -197,10 +199,10 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "SynchronizationOnLocalVariableOrMethodParameter", "unchecked"})
-    @Override public void lock(@Nullable final Session ses, boolean exclusive, boolean force) {
+    @Override public boolean lock(@Nullable final Session ses, boolean exclusive, boolean force) {
         if (ses != null) {
             if (!sessions.add(ses))
-                return;
+                return false;
 
             synchronized (ses) {
                 ses.addLock(this);
@@ -217,7 +219,7 @@ public class GridH2Table extends TableBase {
                 for (int i = 1, len = idxs.size(); i < len; i++)
                     index(i).takeSnapshot(snapshot[i - 1]);
 
-                return;
+                return false;
             }
 
             try {
@@ -251,6 +253,8 @@ public class GridH2Table extends TableBase {
             for (int i = 1, len = idxs.size(); i < len; i++)
                 index(i).takeSnapshot(snapshot[i - 1]);
         }
+
+        return false;
     }
 
     /**
@@ -825,6 +829,16 @@ public class GridH2Table extends TableBase {
         /** {@inheritDoc} */
         @Override public void setSortedInsertMode(boolean sortedInsertMode) {
             // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getPreferedLookupBatchSize() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<Future<Cursor>> findBatched(TableFilter tableFilter, List<SearchRow> list) {
+            throw new IllegalStateException("Must never be called.");
         }
 
         /** {@inheritDoc} */

@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -44,7 +43,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.h2.util.Utils;
+import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -561,7 +560,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         /** {@inheritDoc} */
         @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
-            return Utils.serialize(val, null);
+            return JdbcUtils.serialize(val, null);
         }
 
         /** {@inheritDoc} */

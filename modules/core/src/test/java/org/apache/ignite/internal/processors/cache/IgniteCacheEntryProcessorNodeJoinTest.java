@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -184,20 +185,29 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
 
                     String val = "value-" + k;
 
-                    cache.invoke(key, new Processor(val));
+                    procs.put(key, new Processor(val));
                 }
 
-                cache.invokeAll(procs);
+                Map<String, EntryProcessorResult<Integer>> resMap = cache.invokeAll(procs);
+
+                for (String key : procs.keySet()) {
+                    EntryProcessorResult<Integer> res = resMap.get(key);
+
+                    assertNotNull(res);
+                    assertEquals(k + 1, (Object) res.get());
+                }
             }
             else {
+                IgniteCache<String, Set<String>> cache = ignite(0).cache(null);
+
                 for (int i = 0; i < NUM_SETS; i++) {
                     String key = "set-" + i;
 
                     String val = "value-" + k;
 
-                    IgniteCache<String, Set<String>> cache = ignite(0).cache(null);
+                    Integer valsCnt = cache.invoke(key, new Processor(val));
 
-                    cache.invoke(key, new Processor(val));
+                    assertEquals(k + 1, (Object)valsCnt);
                 }
             }
         }
@@ -275,7 +285,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     }
 
     /** */
-    private static class Processor implements EntryProcessor<String, Set<String>, Void>, Serializable {
+    private static class Processor implements EntryProcessor<String, Set<String>, Integer>, Serializable {
         /** */
         private String val;
 
@@ -287,7 +297,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<String, Set<String>> e, Object... args) {
+        @Override public Integer process(MutableEntry<String, Set<String>> e, Object... args) {
             Set<String> vals = e.getValue();
 
             if (vals == null)
@@ -297,7 +307,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
 
             e.setValue(vals);
 
-            return null;
+            return vals.size();
         }
     }
 }
