@@ -51,7 +51,7 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
     private int threads;
 
     /** Stopped. */
-    private volatile boolean stopped;
+    private volatile boolean stopped = true;
 
     /** the storm output collector */
     private OutputCollector collector;
@@ -61,7 +61,7 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
      * @throws IgniteException If failed.
      */
     public void start()  throws IgniteException{
-        if (stopped)
+        if (!stopped)
             throw new IgniteException("Attempted to stop an already stopped Storm  Streamer");
         A.notNull(getStreamer(), "streamer");
         A.notNull(getIgnite(), "ignite");
@@ -76,7 +76,7 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
      * Stops streamer.
      */
     public void stop()  throws IgniteException  {
-        if (!stopped)
+        if (stopped)
             throw new IgniteException("Attempted to start an already started Storm Streamer");
         stopped = true;
         executor.shutdown();
