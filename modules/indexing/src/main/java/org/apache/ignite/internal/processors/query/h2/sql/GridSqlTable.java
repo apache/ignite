@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.util.Collections;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.command.Parser;
+import org.h2.table.Table;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,17 +34,35 @@ public class GridSqlTable extends GridSqlElement {
     private final String tblName;
 
     /** */
-    private GridH2Table tbl;
+    private final GridH2Table tbl;
 
     /**
      * @param schema Schema.
      * @param tblName Table name.
      */
     public GridSqlTable(@Nullable String schema, String tblName) {
+        this(schema, tblName, null);
+    }
+
+    /**
+     * @param tbl Table.
+     */
+    public GridSqlTable(Table tbl) {
+        this(tbl.getSchema().getName(), tbl.getName(), tbl);
+    }
+
+    /**
+     * @param schema Schema.
+     * @param tblName Table name.
+     * @param tbl H2 Table.
+     */
+    private GridSqlTable(@Nullable String schema, String tblName, @Nullable Table tbl) {
         super(Collections.<GridSqlElement>emptyList());
 
         this.schema = schema;
         this.tblName = tblName;
+
+        this.tbl = tbl instanceof GridH2Table ? (GridH2Table)tbl : null;
     }
 
     /** {@inheritDoc} */
@@ -69,19 +88,9 @@ public class GridSqlTable extends GridSqlElement {
     }
 
     /**
-     * @return Referenced table.
+     * @return Referenced data table.
      */
-    public GridH2Table table() {
+    public GridH2Table dataTable() {
         return tbl;
-    }
-
-    /**
-     * @param tbl Referenced table.
-     * @return {@code this} For chaining.
-     */
-    public GridSqlTable table(GridH2Table tbl) {
-        this.tbl = tbl;
-
-        return this;
     }
 }

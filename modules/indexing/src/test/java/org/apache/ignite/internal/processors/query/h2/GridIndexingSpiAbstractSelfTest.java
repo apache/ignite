@@ -487,6 +487,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
+        @Override public String affinityKey() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public String name() {
             return name;
         }

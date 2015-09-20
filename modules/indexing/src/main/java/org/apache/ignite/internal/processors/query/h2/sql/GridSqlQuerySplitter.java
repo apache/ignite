@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.h2.jdbc.JdbcPreparedStatement;
@@ -133,14 +134,12 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param h2 Indexing.
      * @param stmt Prepared statement.
      * @param params Parameters.
      * @param collocated Collocated query.
      * @return Two step query.
      */
     public static GridCacheTwoStepQuery split(
-        IgniteH2Indexing h2,
         JdbcPreparedStatement stmt,
         Object[] params,
         boolean collocated
@@ -150,7 +149,7 @@ public class GridSqlQuerySplitter {
 
         Set<String> spaces = new HashSet<>();
 
-        GridSqlQuery qry = collectAllSpaces(GridSqlQueryParser.parse(h2, stmt), spaces);
+        GridSqlQuery qry = collectAllSpaces(GridSqlQueryParser.parse(stmt), spaces);
 
         // Build resulting two step query.
         GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(spaces);
@@ -175,7 +174,11 @@ public class GridSqlQuerySplitter {
         return findTablesInFrom(qry.from(), new IgnitePredicate<GridSqlElement>() {
             @Override public boolean apply(GridSqlElement el) {
                 if (el instanceof GridSqlTable) {
-                    GridCacheContext<?,?> cctx = ((GridSqlTable)el).table().rowDescriptor().context();
+                    GridH2Table tbl = ((GridSqlTable)el).dataTable();
+
+                    assert tbl != null : el;
+
+                    GridCacheContext<?,?> cctx = tbl.rowDescriptor().context();
 
                     return !cctx.isLocal() && !cctx.isReplicated();
                 }

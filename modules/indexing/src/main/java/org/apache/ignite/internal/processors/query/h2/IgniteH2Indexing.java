@@ -114,6 +114,7 @@ import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.CommandInterface;
+import org.h2.command.dml.Optimizer;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
 import org.h2.index.SpatialIndex;
@@ -933,11 +934,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         PreparedStatement stmt;
 
+        // We need to just parse the query here.
+        Optimizer.setEnabled(false);
+
         try {
             stmt = c.prepareStatement(sqlQry);
         }
         catch (SQLException e) {
             throw new CacheException("Failed to parse query: " + sqlQry, e);
+        }
+        finally {
+            Optimizer.setEnabled(true);
         }
 
         GridCacheTwoStepQuery twoStepQry;
@@ -946,7 +953,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             bindParameters(stmt, F.asList(qry.getArgs()));
 
-            twoStepQry = GridSqlQuerySplitter.split(this, (JdbcPreparedStatement)stmt, qry.getArgs(), qry.isCollocated());
+            twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(), qry.isCollocated());
 
             meta = meta(stmt.getMetaData());
         }
@@ -1162,7 +1169,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridH2RowDescriptor desc = new RowDescriptor(tbl.type(), schema);
 
-        GridH2Table.Engine.createTable(conn, sql.toString(), desc, tbl, tbl.schema.spaceName);
+        GridH2Table h2Tbl = GridH2Table.Engine.createTable(conn, sql.toString(), desc, tbl, tbl.schema.spaceName);
+
+        String affKey = tbl.type().affinityKey();
+
+        if (affKey == null) {
+            // By default it is a _KEY column.
+            h2Tbl.setAffinityKeyColumn(0);
+        }
+        else {
+            Column affKeyCol = h2Tbl.getColumn(escapeAll ? affKey : affKey.toUpperCase());
+            h2Tbl.setAffinityKeyColumn(affKeyCol.getColumnId());
+        }
     }
 
     /**

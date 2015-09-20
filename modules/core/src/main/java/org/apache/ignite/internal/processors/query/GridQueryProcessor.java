@@ -1937,6 +1937,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
+        @Override public String affinityKey() {
+            return null; // TODO get from indexing config
+        }
+
+        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(TypeDescriptor.class, this);
         }

@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.command.Command;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Explain;
@@ -214,22 +213,11 @@ public class GridSqlQueryParser {
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
-    /** */
-    private final IgniteH2Indexing h2;
-
     /**
-     * @param h2 Indexing.
-     */
-    public GridSqlQueryParser(@Nullable IgniteH2Indexing h2) {
-        this.h2 = h2;
-    }
-
-    /**
-     * @param h2 Indexing.
      * @param stmt Prepared statement.
      * @return Parsed select.
      */
-    public static GridSqlQuery parse(IgniteH2Indexing h2, JdbcPreparedStatement stmt) {
+    public static GridSqlQuery parse(JdbcPreparedStatement stmt) {
         Command cmd = COMMAND.get(stmt);
 
         Getter<Command,Prepared> p = prepared;
@@ -244,7 +232,7 @@ public class GridSqlQueryParser {
 
         Prepared statement = p.get(cmd);
 
-        return new GridSqlQueryParser(h2).parse(statement);
+        return new GridSqlQueryParser().parse(statement);
     }
 
     /**
@@ -256,14 +244,8 @@ public class GridSqlQueryParser {
         if (res == null) {
             Table tbl = filter.getTable();
 
-            if (tbl instanceof TableBase) {
-                String schema = tbl.getSchema().getName();
-
-                res = new GridSqlTable(schema, tbl.getName());
-
-                if (h2 != null) // Set referenced table.
-                    ((GridSqlTable)res).table(h2.table(schema, tbl.getName()));
-            }
+            if (tbl instanceof TableBase)
+                res = new GridSqlTable(tbl);
             else if (tbl instanceof TableView) {
                 Query qry = VIEW_QUERY.get((TableView)tbl);
 

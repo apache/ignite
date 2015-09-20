@@ -79,6 +79,9 @@ public class GridH2Table extends TableBase {
     /** */
     private volatile Object[] actualSnapshot;
 
+    /** */
+    private int affKeyCol = -1;
+
     /**
      * Creates table.
      *
@@ -105,6 +108,21 @@ public class GridH2Table extends TableBase {
 
         // Add scan index at 0 which is required by H2.
         idxs.add(0, new ScanIndex(index(0)));
+    }
+
+    /**
+     * @return Affinity key column.
+     */
+    public Column getAffinityKeyColumn() {
+        return getColumn(affKeyCol);
+    }
+
+    /**
+     * @param affKeyCol Affinity key column.
+     */
+    public void setAffinityKeyColumn(int affKeyCol) {
+        assert affKeyCol >= 0 && affKeyCol < getColumns().length : affKeyCol;
+        this.affKeyCol = affKeyCol;
     }
 
     /** {@inheritDoc} */
