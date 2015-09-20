@@ -25,6 +25,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import org.apache.ignite.*;
 import org.apache.ignite.stream.*;
+
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -46,10 +47,7 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
     /** Executor used to submit storm streams. */
     private ExecutorService executor;
 
-    /** Topic. */
-    private String topic;
-
-    /** Number of threads to process kafka streams. */
+    /** Number of threads to process Storm streams. */
     private int threads;
 
     /** Stopped. */
@@ -67,10 +65,11 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
             throw new IgniteException("Attempted to stop an already stopped Storm  Streamer");
         A.notNull(getStreamer(), "streamer");
         A.notNull(getIgnite(), "ignite");
-        A.notNull(topic, "topic");
         A.ensure(threads > 0, "threads > 0");
         log = getIgnite().log();
 
+        // Now launch all the consumer threads.
+        executor = Executors.newFixedThreadPool(threads);
     }
 
     /**
@@ -80,6 +79,7 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
         if (!stopped)
             throw new IgniteException("Attempted to start an already started Storm Streamer");
         stopped = true;
+        executor.shutdown();
     }
     /**
      * In this point we declare the output collector of the bolt
@@ -87,8 +87,10 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
      * @param topologyContext the context topology in storm
      * @param collector the output of the collector
      */
-    @Override
-    public void prepare(Map map, TopologyContext topologyContext, OutputCollector collector) {
+    @Override public void prepare(Map map, TopologyContext topologyContext, OutputCollector collector) {
+        if (stopped) {
+            start();
+        }
         this.collector = collector;
     }
 
@@ -96,25 +98,40 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
      * This method generates and map and do a put operations
      * @param tuple
      */
-    @Override
-    public void execute(Tuple tuple) {
+    @Override public void execute(Tuple tuple) {
+        Map<K,V> igniteGrid = (Map) tuple.getValueByField("IgniteGrid");
+        if ( log.isDebugEnabled() ) {
+            log.debug("received Tuple from Storm " + tuple.getMessageId());
+        }
+        executor.submit(()-> {
+                for (K k:igniteGrid.keySet()){
+                    try {
+                        getStreamer().addData(k, igniteGrid.get(k));
+                    }catch (Exception e){
+                       log.error(e.toString());
+                    }
+                }
+        });
+        collector.ack(tuple);
     }
 
-    @Override
-    public void cleanup() {
+    /**
+     * Clean-up the streamer when the bolt is going to shut-down
+     */
+    @Override public void cleanup() {
+        stop();
     }
-
     /**
      * This may not be necessary, as this is the last node topology before Apache Ignite
      * @param declarer
      */
-    @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+    @Override public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("IgniteGrid"));
     }
 
-    @Override
-    public Map<String, Object> getComponentConfiguration() {
-        return null;
-    }
+    /**
+     * Not used in this case
+     * @return
+     */
+    @Override public Map<String, Object> getComponentConfiguration() {return null;}
 }

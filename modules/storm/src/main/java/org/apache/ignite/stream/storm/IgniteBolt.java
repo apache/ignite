@@ -19,21 +19,22 @@ package org.apache.ignite.stream.storm;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
-
+import backtype.storm.tuple.Values;
 import java.util.Map;
 
 /**
  * @author  Gianfranco Murador
  * Ignite Bolt, We provide a custom Storm Bolt to setup the input. This bolt could be empty.
+ * The transformation of the input is leave to process abrastct method.
  */
-public abstract class IgniteBolt implements IRichBolt {
+public abstract class IgniteBolt extends BaseRichBolt {
+
     /** the storm output collector */
     private OutputCollector collector;
-
     /**
      * In this point we declare the output collector of the bolt
      * @param map the map derived from topology
@@ -41,7 +42,7 @@ public abstract class IgniteBolt implements IRichBolt {
      * @param collector the output of the collector
      */
     @Override
-    public void prepare(Map map, TopologyContext topologyContext, OutputCollector collector) {
+    public void prepare(Map map, TopologyContext topologyContext, OutputCollector collector){
         this.collector = collector;
     }
 
@@ -51,14 +52,17 @@ public abstract class IgniteBolt implements IRichBolt {
      */
     @Override
     public void execute(Tuple tuple) {
+        try {
+            Map<?,?> res =  process(tuple);
+            collector.emit(new Values(res));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            collector.ack(tuple);
+        }
     }
-
-    @Override
-    public void cleanup() {
-    }
-
     /**
-     * This may not be necessary, as this is the last node topology before Apache Ignite
+     * This may not be necessary
      * @param declarer
      */
     @Override
@@ -66,9 +70,11 @@ public abstract class IgniteBolt implements IRichBolt {
         declarer.declare(new Fields("IgniteGrid"));
     }
 
-    @Override
-    public Map<String, Object> getComponentConfiguration() {
-        return null;
-    }
+    /**
+     * This method should be overridden by providing a way to translate a tuple in a map
+     * @return The format accepted by Ignite
+     * @throws Exception
+     */
+    public abstract Map<?, ?> process(Tuple tuple) throws Exception;
 }
 

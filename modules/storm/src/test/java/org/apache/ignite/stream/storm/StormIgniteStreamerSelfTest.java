@@ -32,6 +32,14 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
      */
     public void testStormStreamer() throws TimeoutException, InterruptedException {
 
+    }
+
+    /**
+     * Test with the IgniteBolt
+     * @throws TimeoutException
+     * @throws InterruptedException
+     */
+    public void testStormStreamerIgniteBolt() throws TimeoutException, InterruptedException {
 
     }
 }
