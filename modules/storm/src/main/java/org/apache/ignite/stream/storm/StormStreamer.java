@@ -33,7 +33,9 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 /**
  * Server for managing stream Apache Storm. This is a Bolt storm the interact with  Apache Ignite.
  * For a description of the design and the way of use, see the page of the form.
- * <a href="">Module Design</a>
+ * How to use streamer inside
+ * <a href="https://cwiki.apache.org/confluence/display/IGNITE/Streamers+Implementation+Guidelines">
+ *     Streamer Implementations Guidelines</a>
  * @author Gianfranco Murador
  */
 public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IRichBolt {

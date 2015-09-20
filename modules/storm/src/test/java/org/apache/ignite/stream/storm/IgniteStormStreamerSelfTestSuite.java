@@ -20,7 +20,8 @@ package org.apache.ignite.stream.storm;
 import junit.framework.*;
 
 /**
- * Apache Kafka streamer tests.
+ * Apache Storm streamer tests.
+ * Tests {@link StormStreamer}.
  */
 public class IgniteStormStreamerSelfTestSuite extends TestSuite {
     /**

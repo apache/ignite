@@ -18,13 +18,20 @@
 package org.apache.ignite.stream.storm;
 import org.apache.ignite.testframework.junits.common.*;
 
+import java.util.concurrent.TimeoutException;
+
 /**
  * Tests {@link StormStreamer}.
  */
 public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
+    /**
+     * Defines a common scenario
+     * @throws TimeoutException
+     * @throws InterruptedException
+     */
+    public void testStormStreamer() throws TimeoutException, InterruptedException {
 
-    public static void main(String[] args) {
 
     }
 }
