@@ -289,11 +289,10 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
 
         // One of participated files does not exist in cache.
         //expectsRenameFail(ROOT_ID, "b", rndId, "b2", rndId, "Failed to lock source directory (not found?)");
-        expectsRenameFail("/b8", "/b2", "Failed to perform move because some component of the source path was not found.");
+        expectsRenameFail("/b8", "/b2", "Failed to perform move because some path component was not found.");
 
 //        expectsRenameFail(b.id(), "b", rndId, "b2", rndId, "Failed to lock source directory (not found?)");
-        expectsRenameFail("/a", "/b/b8", "Failed to perform move because some component of the " +
-            "destination directory was not found.");
+        expectsRenameFail("/a", "/b/b8", "Failed to perform move because some path component was not found.");
 
         expectsRenameFail("/a/f2", "/a/b/f3", "Failed to perform move because destination points to existing file");
 
@@ -309,25 +308,25 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         System.out.println("f3: " + mgr.directoryListing(f3.id()));
 
         //mgr.move(a.id(), "a", ROOT_ID, "a2", ROOT_ID);
-        mgr.move0(path("/a"), path("/a2"));
+        mgr.move(path("/a"), path("/a2"));
         //mgr.move(b.id(), "b", a.id(), "b2", a.id());
-        mgr.move0(path("/a2/b"), path("/a2/b2"));
+        mgr.move(path("/a2/b"), path("/a2/b2"));
 
         assertNotNull(mgr.info(b.id()));
 
         //mgr.move(f3.id(), "f3", b.id(), "f3-2", a.id());
-        mgr.move0(path("/a2/b2/f3"), path("/a2/b2/f3-2"));
+        mgr.move(path("/a2/b2/f3"), path("/a2/b2/f3-2"));
 
         assertNotNull(mgr.info(b.id()));
 
         //mgr.move(f3.id(), "f3-2", a.id(), "f3", b.id());
-        mgr.move0(path("/a2/b2/f3-2"), path("/a2/b2/f3"));
+        mgr.move(path("/a2/b2/f3-2"), path("/a2/b2/f3"));
 
         //mgr.move(b.id(), "b2", a.id(), "b", a.id());
-        mgr.move0(path("/a2/b2"), path("/a2/b"));
+        mgr.move(path("/a2/b2"), path("/a2/b"));
 
         //mgr.move(a.id(), "a2", ROOT_ID, "a", ROOT_ID);
-        mgr.move0(path("/a2"), path("/a"));
+        mgr.move(path("/a2"), path("/a"));
 
         // Validate 'remove' operation.
         for (int i = 0; i < 100; i++) {
@@ -455,7 +454,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
     private void expectsRenameFail(final String src, final String dst, @Nullable String msg) {
         Throwable err = assertThrowsInherited(log, new Callable() {
             @Override public Object call() throws Exception {
-                mgr.move0(new IgfsPath(src), new IgfsPath(dst));
+                mgr.move(new IgfsPath(src), new IgfsPath(dst));
 
                 return null;
             }
@@ -463,30 +462,6 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
 
         assertTrue("Unexpected cause: " + err, err instanceof IgfsException);
     }
-
-//    /**
-//     * Test expected failures for 'move file' operation.
-//     *
-//     * @param fileId File ID to rename.
-//     * @param srcFileName Original file name in the parent's listing.
-//     * @param srcParentId Source parent directory ID.
-//     * @param destFileName New file name in the parent's listing after renaming.
-//     * @param destParentId Destination parent directory ID.
-//     * @param msg Failure message if expected exception was not thrown.
-//     */
-//    private void expectsRenameFail(final IgniteUuid fileId, final String srcFileName, final IgniteUuid srcParentId,
-//        final String destFileName, final IgniteUuid destParentId, @Nullable String msg) {
-//        Throwable err = assertThrowsInherited(log, new Callable() {
-//            @Override
-//            public Object call() throws Exception {
-//                mgr.move(fileId, srcFileName, srcParentId, destFileName, destParentId);
-//
-//                return null;
-//            }
-//        }, IgniteCheckedException.class, msg);
-//
-//        assertTrue("Unexpected cause: " + err.getCause(), err.getCause() instanceof IgfsException);
-//    }
 
     /**
      * Test expected failures for 'remove file' operation.

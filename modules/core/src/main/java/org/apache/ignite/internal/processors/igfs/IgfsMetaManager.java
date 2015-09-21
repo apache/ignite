@@ -22,7 +22,20 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.OutputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
@@ -33,7 +46,15 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.events.IgfsEvent;
-import org.apache.ignite.igfs.*;
+import org.apache.ignite.igfs.IgfsConcurrentModificationException;
+import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
+import org.apache.ignite.igfs.IgfsException;
+import org.apache.ignite.igfs.IgfsFile;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
+import org.apache.ignite.igfs.IgfsPathIsDirectoryException;
+import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
+import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -796,12 +817,13 @@ public class IgfsMetaManager extends IgfsManager {
 
     /**
      * Move routine.
+     *
      * @param srcPath Source path.
      * @param dstPath Destinatoin path.
      * @return File info of renamed entry.
      * @throws IgniteCheckedException In case of exception.
      */
-    public IgfsFileInfo move0(IgfsPath srcPath, IgfsPath dstPath) throws IgniteCheckedException {
+    public IgfsFileInfo move(IgfsPath srcPath, IgfsPath dstPath) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -810,12 +832,20 @@ public class IgfsMetaManager extends IgfsManager {
                 List<IgniteUuid> srcPathIds = fileIds(srcPath);
                 List<IgniteUuid> dstPathIds = fileIds(dstPath);
 
-                final HashSet<IgniteUuid> allIds = new HashSet<>(srcPathIds);
+                final Set<IgniteUuid> allIds = new TreeSet<>(new Comparator<IgniteUuid>() {
+                    @Override
+                    public int compare(IgniteUuid u1, IgniteUuid u2) {
+                        if (u1 == u2)
+                            return 0;
 
-                // For optimization purposes do these checks outside the transaction:
-                if (allIds.remove(null))
-                    throw new IgfsPathNotFoundException("Failed to perform move because some component of the " +
-                        "source path was not found. [src=" + srcPath + ", dst=" + dstPath + ']');
+                        if (u1 == null)
+                            return -1;
+
+                        return u1.compareTo(u2);
+                    }
+                });
+
+                allIds.addAll(srcPathIds);
 
                 final IgniteUuid dstLeafId = dstPathIds.get(dstPathIds.size() - 1);
 
@@ -826,16 +856,17 @@ public class IgfsMetaManager extends IgfsManager {
 
                 allIds.addAll(dstPathIds);
 
-                if (allIds.remove(null))
-                    throw new IgfsPathNotFoundException("Failed to perform move because some component of " +
-                        "the destination directory was not found. [src=" + srcPath + ", dst=" + dstPath + ']');
+                if (allIds.remove(null)) {
+                    throw new IgfsPathNotFoundException("Failed to perform move because some path component was " +
+                            "not found. [src=" + srcPath + ", dst=" + dstPath + ']');
+                }
 
                 // 2. Start transaction.
                 IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     // 3. Obtain the locks.
-                    final Map<IgniteUuid, IgfsFileInfo> allInfos = lockIds(new TreeSet<>(allIds));
+                    final Map<IgniteUuid, IgfsFileInfo> allInfos = lockIds(allIds);
 
                     // 4. Verify integrity of source directory.
                     if (!verifyPathIntegrity(srcPath, srcPathIds, allInfos)) {
@@ -937,8 +968,7 @@ public class IgfsMetaManager extends IgfsManager {
         Map<IgniteUuid, IgfsFileInfo> infos) {
         List<String> pathParts = path.components();
 
-        assert pathParts.size() + 1 == expIds.size();
-        assert !expIds.contains(null);
+        assert pathParts.size() < expIds.size();
 
         for (int i = 0; i < pathParts.size(); i++) {
             IgniteUuid parentId = expIds.get(i);
@@ -1013,7 +1043,8 @@ public class IgfsMetaManager extends IgfsManager {
             throw fsException(new IgfsPathNotFoundException("Failed to lock destination directory (not found?)" +
                 " [destParentId=" + destParentId + ']'));
 
-        assert destInfo.isDirectory();
+        if (!destInfo.isDirectory())
+            throw fsException(new IgfsPathIsNotDirectoryException("Destination is not a directory: " + destInfo));
 
         IgfsFileInfo fileInfo = infoMap.get(fileId);
 
@@ -1030,7 +1061,11 @@ public class IgfsMetaManager extends IgfsManager {
                 " (file not found) [fileId=" + fileId + ", srcFileName=" + srcFileName +
                 ", srcParentId=" + srcParentId + ", srcEntry=" + srcEntry + ']'));
 
-        assert destEntry == null;
+        // If stored file already exist.
+        if (destEntry != null)
+            throw fsException(new IgfsPathAlreadyExistsException("Failed to add file name into the destination " +
+                " directory (file already exists) [fileId=" + fileId + ", destFileName=" + destFileName +
+                ", destParentId=" + destParentId + ", destEntry=" + destEntry + ']'));
 
         assert metaCache.get(srcParentId) != null;
         assert metaCache.get(destParentId) != null;

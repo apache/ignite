@@ -691,7 +691,7 @@ public final class IgfsImpl implements IgfsEx {
                     return null;
                 }
 
-                IgfsFileInfo info = meta.move0(src, dest);
+                IgfsFileInfo info = meta.move(src, dest);
 
                 int evtTyp = info.isFile() ? EVT_IGFS_FILE_RENAMED : EVT_IGFS_DIR_RENAMED;
 
