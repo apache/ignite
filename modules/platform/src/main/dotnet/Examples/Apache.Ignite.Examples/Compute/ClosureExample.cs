@@ -26,21 +26,16 @@ namespace Apache.Ignite.Examples.Compute
     /// <summary>
     /// Example demonstrating closure execution.
     /// <para />
-    /// To run the example please do the following:
-    /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build);
+    /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
+    ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/Examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder.
     /// 2) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
     ///     Application -> Startup object);
-    /// 3) Start application (F5 or Ctrl+F5).
+    /// 3) Start example (F5 or Ctrl+F5).
     /// <para />
-    /// This example can be run in conjunction with standalone Apache Ignite .Net node.
-    /// To start standalone node please do the following:
-    /// 1) Build the project Apache.Ignite.ExamplesDll if you havent't done it yet (select it -> right-click -> Build);
-    /// 2) Locate created Apache.Ignite.ExamplesDll.dll file (Apache.Ignite.ExamplesDll project -> right-click ->
-    ///     Properties -> Build -> Output path);
-    /// 3) Go to .Net binaries folder [IGNITE_HOME]\platforms\dotnet and run Apache.Ignite.exe as follows:
-    /// Apache.Ignite.exe -IgniteHome=[path_to_IGNITE_HOME] -springConfigUrl=modules\platform\src\main\dotnet\examples\config\example-compute.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
-    /// <para />
-    /// As a result you will see console jobs output on one or several nodes.
+    /// This example can be run with standalone Apache Ignite .Net node:
+    /// 1) Run %IGNITE_HOME%/platforms/dotnet/Apache.Ignite/bin/${Platform]/${Configuration}/Apache.Ignite.exe:
+    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-compute.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// 2) Start example.
     /// </summary>
     public class ClosureExample
     {
@@ -52,7 +47,7 @@ namespace Apache.Ignite.Examples.Compute
         {
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = @"modules\platform\src\main\dotnet\examples\config\example-compute.xml",
+                SpringConfigUrl = @"platforms\dotnet\examples\config\example-compute.xml",
                 JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
             };
             

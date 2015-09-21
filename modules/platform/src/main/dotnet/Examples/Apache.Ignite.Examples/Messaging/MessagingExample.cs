@@ -24,22 +24,15 @@ using Apache.Ignite.ExamplesDll.Messaging;
 namespace Apache.Ignite.Examples.Messaging
 {
     /// <summary>
-    /// Example demonstrating Ignite messaging.
+    /// Example demonstrating Ignite messaging. Should be run with standalone Apache Ignite .Net node.
     /// <para />
-    /// This example should be run in conjunction with standalone Apache Ignite .Net node.
-    /// To start standalone node please do the following:
-    /// 1) Build the project Apache.Ignite.ExamplesDll if you havent't done it yet (select it -> right-click -> Build);
-    /// 2) Locate created Apache.Ignite.ExamplesDll.dll file (Apache.Ignite.ExamplesDll project -> right-click -> Properties -> Build -> Output path);
-    /// 3) Locate Apache.Ignite.exe file (Apache.Ignite project -> right-click -> Properties -> Build -> Output path)
-    /// Apache.Ignite.exe -IgniteHome=[path_to_IGNITE_HOME] -springConfigUrl=modules\platform\src\main\dotnet\examples\config\example-compute.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
-    /// <para />
-    /// To run the example please do the following:
-    /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build);
-    /// 2) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
+    /// 1) Run %IGNITE_HOME%/platforms/dotnet/Apache.Ignite/bin/${Platform]/${Configuration}/Apache.Ignite.exe:
+    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-compute.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// 2) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
+    ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/Examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder.
+    /// 3) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
     ///     Application -> Startup object);
-    /// 3) Start application (F5 or Ctrl+F5).
-    /// <para />
-    /// As a result you will see console messages output on all nodes.
+    /// 4) Start example (F5 or Ctrl+F5).
     /// </summary>
     public class MessagingExample
     {
@@ -51,7 +44,7 @@ namespace Apache.Ignite.Examples.Messaging
         {
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = @"modules\platform\src\main\dotnet\examples\config\example-compute.xml",
+                SpringConfigUrl = @"platforms\dotnet\examples\config\example-compute.xml",
                 JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
             };
 

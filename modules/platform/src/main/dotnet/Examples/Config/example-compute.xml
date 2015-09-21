@@ -53,17 +53,17 @@
                 <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_SESSION_ATTR_SET"/>
                 <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_REDUCED"/>
                 
-				<!-- Job execution events -->
-				<util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_MAPPED"/>
-				<util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_RESULTED"/>
-				<util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_FAILED_OVER"/>
-				<util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_STARTED"/>
-				<util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_FINISHED"/>
-				<util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_TIMEDOUT"/>
-				<util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_REJECTED"/>
-				<util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_FAILED"/>
-				<util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_QUEUED"/>
-				<util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_CANCELLED"/>
+                <!-- Job execution events -->
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_MAPPED"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_RESULTED"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_FAILED_OVER"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_STARTED"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_FINISHED"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_TIMEDOUT"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_REJECTED"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_FAILED"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_QUEUED"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_CANCELLED"/>
             </list>
         </property>		
     </bean>

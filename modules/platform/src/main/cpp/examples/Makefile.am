@@ -17,7 +17,7 @@
 
 ACLOCAL_AMFLAGS = "-Im4"
 
-SUBDIRS = . include
+SUBDIRS = .
 DIST_SUBDIRS = . include
 
 AM_CPPFLAGS = -I$(srcdir)/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -DIGNITE_IMPL

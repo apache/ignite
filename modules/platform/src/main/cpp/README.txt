@@ -1,4 +1,4 @@
-Ignite for C++
+Apache Ignite for C++
 ==================================
 
 Ignite C++ provides data grid functionality.
@@ -16,9 +16,6 @@ Support for the following will be added in next releases:
  * Event listening.
  * Compute grid functionality.
 
-Building the Library
-==================================
-
 Full source code is provided. Users should build the library for intended platform.
 
 Building on Linux With Autotools
@@ -33,7 +30,7 @@ Common Requirements:
 Building the library:
 
  * Build Ignite C++ helper "common" library:
-     * Navigate to the directory $IGNITE_HOME/modules/platform/src/main/cpp/common
+     * Navigate to the directory $IGNITE_HOME/platforms/cpp/src/common
      * Execute the following commands one by one:
          * libtoolize
          * aclocal
@@ -44,7 +41,7 @@ Building the library:
          * make
          * make install
  * Build Ignite C++ library:
-     * Navigate to the directory $IGNITE_HOME/modules/platform/src/main/cpp/core
+     * Navigate to the directory $IGNITE_HOME/platforms/cpp/src/core
      * Execute the following commands one by one:
          * libtoolize
          * aclocal
@@ -75,23 +72,24 @@ Building on Windows with Visual Studio (tm)
 
 Common Requirements:
 
- * Microsoft Visual Studio (tm) 2010
+ * Microsoft Visual Studio (tm) 2010 or later
  * Windows SDK 7.1
  * Java Development Kit (JDK) must be installed: https://java.com/en/download/index.jsp
  * JAVA_HOME environment variable must be set pointing to Java installation directory.
 
 Building the library:
 
- * Open and build %IGNITE_HOME%\modules\platform\src\main\cpp\project\vs\ignite.sln (or ignite_86.sln if you are running 32-bit platform).
+ * Open and build %IGNITE_HOME%\platforms\cpp\src\project\vs\ignite.sln (or ignite_86.sln if you are running
+   32-bit platform).
 
 Development:
 
  * IGNITE_HOME environment variable must be set to Ignite installation directory.
  * Update Include Directories in Project Properties with paths to:
-   * platforms\cpp\core\include
-   * platforms\cpp\core\os\win\include
-   * platforms\cpp\common\include
-   * platforms\cpp\common\os\win\include
+   * $(IGNITE_HOME)\platforms\cpp\src\core\include
+   * $(IGNITE_HOME)\platforms\cpp\src\core\os\win\include
+   * $(IGNITE_HOME)\platforms\cpp\src\common\include
+   * $(IGNITE_HOME)\platforms\cpp\src\common\os\win\include
    * $(JAVA_HOME)\include
    * $(JAVA_HOME)\include\win32
  * Update Library Directories with path to the built binaries

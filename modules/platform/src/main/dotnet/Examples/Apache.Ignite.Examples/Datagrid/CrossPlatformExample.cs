@@ -26,7 +26,7 @@ namespace Apache.Ignite.Examples.Datagrid
     /// <summary>
     /// This example demonstrates use of portable objects between different platforms.
     /// <para/>
-    /// This example must be run with standalone Java node. To achieve this start a node from IGNITE_HOME 
+    /// This example must be run with standalone Java node. To achieve this start a node from %IGNITE_HOME%
     /// using "ignite.bat" with proper configuration:
     /// <example>'bin\ignite.bat examples\config\example-server.xml'</example>.
     /// <para />
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = @"modules\platform\src\main\dotnet\examples\config\example-cache.xml",
+                SpringConfigUrl = @"platforms\dotnet\examples\config\example-cache.xml",
                 JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
             };
 

@@ -28,13 +28,11 @@ namespace Apache.Ignite.Examples.Misc
     /// to be able to hook into Apache lifecycle. Example bean will output occurred lifecycle 
     /// events to the console.
     /// <para />
-    /// To run the example please do the following:
-    /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build);
+    /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
+    ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/Examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder.
     /// 2) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
     ///     Application -> Startup object);
-    /// 3) Start application (F5 or Ctrl+F5).
-    /// <para />
-    /// This example does not require remote nodes to be started.
+    /// 3) Start example (F5 or Ctrl+F5).
     /// </summary>
     public class LifecycleExample
     {
@@ -52,7 +50,7 @@ namespace Apache.Ignite.Examples.Misc
 
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = @"modules\platform\src\main\dotnet\examples\config\example-compute.xml",
+                SpringConfigUrl = @"platforms\dotnet\examples\config\example-compute.xml",
                 JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" },
                 LifecycleBeans = new List<ILifecycleBean> { lifecycleExampleBean }
             };
