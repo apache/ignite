@@ -37,7 +37,8 @@
 
     <properties>
         <paho.version>1.0.2</paho.version>
-        <mosquette.version>0.7</mosquette.version>
+        <activemq.version>5.11.1</activemq.version>
+        <guava-retryier.version>2.0.0</guava-retryier.version>
     </properties>
 
     <dependencies>
@@ -54,9 +55,29 @@
         </dependency>
 
         <dependency>
-            <groupId>org.eclipse.moquette</groupId>
-            <artifactId>moquette-broker</artifactId>
-            <version>${mosquette.version}</version>
+            <groupId>com.github.rholder</groupId>
+            <artifactId>guava-retrying</artifactId>
+            <version>${guava-retryier.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-broker</artifactId>
+            <version>${activemq.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-kahadb-store</artifactId>
+            <version>${activemq.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-mqtt</artifactId>
+            <version>${activemq.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -85,16 +106,6 @@
 
     <!-- Repository for Mosquette (embedded MQTT broker for tests) and for Eclipse Paho (MQTT client) -->
     <repositories>
-        <repository>
-            <id>bintray</id>
-            <url>http://dl.bintray.com/andsel/maven/</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
         <repository>
             <id>Eclipse Paho Repo</id>
             <url>https://repo.eclipse.org/content/repositories/paho-releases/</url>
