@@ -62,12 +62,17 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
  *     <li>Specifying the subscriber's QoS for a single topic or for multiple topics.</li>
  *     <li>Allows setting {@link MqttConnectOptions} to support features like last will testament, persistent
  *         sessions, etc.</li>
- *     <li>Specifying the client ID.</li>
+ *     <li>Specifying the client ID. A random one will be generated and maintained throughout reconnections if the user
+ *         does not provide one.</li>
+ *     <li>(Re-)Connection retries based on the <i>guava-retrying</i> library. Retry wait and retry stop policies
+ *         can be configured.</li>
+ *     <li>Blocking the start() method until connected for the first time.</li>
  * </ul>
  *
- * Note: features like durable subscriptions, last will testament, etc. must be configured via the
+ * Note: features like durable subscriptions, last will testament, etc. can be configured via the
  * {@link #connectOptions} property.
  *
+ * @see <a href="https://github.com/rholder/guava-retrying">guava-retrying library</a>
  * @author Raul Kripalani
  */
 public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> implements MqttCallback {
@@ -75,45 +80,64 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
     /** Logger. */
     private IgniteLogger log;
 
+    /** The MQTT client object for internal use. */
     private MqttClient client;
 
+    /** The broker URL, set by the user. */
     private String brokerUrl;
 
+    /** The topic to subscribe to, if a single topic. */
     private String topic;
 
+    /** The quality of service to use for a single topic subscription (optional). */
     private Integer qualityOfService;
 
+    /** The topics to subscribe to, if many. */
     private List<String> topics;
 
+    /** The qualities of service to use for multiple topic subscriptions. If specified, it must contain the same
+     *  number of elements as {@link #topics}. */
     private List<Integer> qualitiesOfService;
 
-    /** Client ID in case we're using durable subscribers. */
+    /** The MQTT client ID (optional). */
     private String clientId;
 
+    /** A configurable persistence mechanism. If not set, Paho will use its default. */
     private MqttClientPersistence persistence;
 
+    /** The MQTT client connect options, where users can configured the last will and testament, durability, etc. */
     private MqttConnectOptions connectOptions;
 
-    // disconnect parameters
+    /** Quiesce timeout on disconnection. */
     private Integer disconnectQuiesceTimeout;
 
+    /** Whether to disconnect forcibly or not. */
     private boolean disconnectForcibly;
 
+    /** If disconnecting forcibly, the timeout. */
     private Integer disconnectForciblyTimeout;
 
+    /** The strategy to determine how long to wait between retry attempts. By default, this streamer uses a
+     *  Fibonacci-based strategy. */
     private WaitStrategy retryWaitStrategy = WaitStrategies.fibonacciWait();
 
+    /** The strategy to determine when to stop retrying to (re-)connect. By default, we never stop. */
     private StopStrategy retryStopStrategy = StopStrategies.neverStop();
 
+    /** The internal connection retrier object with a thread pool of size 1. */
     private MqttConnectionRetrier connectionRetrier;
 
+    /** Whether to block the start() method until connected for the first time. */
+    private boolean blockUntilConnected;
+
+    /** State keeping. */
     private volatile boolean stopped = true;
 
+    /** State keeping. */
     private volatile boolean connected;
 
+    /** Cached log prefix for cache messages. */
     private String cachedLogPrefix;
-
-    private boolean blockUntilConnected;
 
     /**
      * Starts streamer.
@@ -136,7 +160,11 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
             A.ensure(getSingleTupleExtractor() == null || getMultipleTupleExtractor() == null, "cannot provide " +
                 "both single and multiple tuple extractor");
             A.notNullOrEmpty(brokerUrl, "broker URL");
-            A.notNullOrEmpty(clientId, "client ID");
+
+            // if the client ID is empty, generate one
+            if (clientId == null || clientId.length() == 0) {
+                clientId = MqttClient.generateClientId();
+            }
 
             // if we have both a single topic and a list of topics (but the list of topic is not of
             // size 1 and == topic, as this would be a case of re-initialization), fail
@@ -257,6 +285,9 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
     //  MQTT Client callback methods
     // -------------------------------
 
+    /**
+     * {@inheritDoc}
+     */
     @Override public void connectionLost(Throwable throwable) {
         connected = false;
 
@@ -268,6 +299,9 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
         connectionRetrier.connect();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override public void messageArrived(String topic, MqttMessage message) throws Exception {
         if (getMultipleTupleExtractor() != null) {
             Map<K, V> entries = getMultipleTupleExtractor().extract(message);
@@ -285,6 +319,9 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override public void deliveryComplete(IMqttDeliveryToken token) {
         // ignore, as we don't send messages
     }
@@ -293,127 +330,229 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
     //  Getters and setters
     // -------------------------------
 
+    /**
+     * @return
+     */
     public String getBrokerUrl() {
         return brokerUrl;
     }
 
+    /**
+     * @param brokerUrl The Broker URL (compulsory).
+     */
     public void setBrokerUrl(String brokerUrl) {
         this.brokerUrl = brokerUrl;
     }
 
+    /**
+     * @return
+     */
     public String getTopic() {
         return topic;
     }
 
+    /**
+     * @param topic The topic to subscribe to, if a single topic.
+     */
     public void setTopic(String topic) {
         this.topic = topic;
     }
 
+    /**
+     * @return
+     */
     public Integer getQualityOfService() {
         return qualityOfService;
     }
 
+    /**
+     * @param qualityOfService The quality of service to use for a single topic subscription (optional).
+     */
     public void setQualityOfService(Integer qualityOfService) {
         this.qualityOfService = qualityOfService;
     }
 
+    /**
+     * @return
+     */
     public List<String> getTopics() {
         return topics;
     }
 
+    /**
+     * @param topics The topics to subscribe to, if many.
+     */
     public void setTopics(List<String> topics) {
         this.topics = topics;
     }
 
+    /**
+     * @return
+     */
     public List<Integer> getQualitiesOfService() {
         return qualitiesOfService;
     }
 
+    /**
+     * @param qualitiesOfService The qualities of service to use for multiple topic subscriptions.
+     * If specified, the list must contain the same number of elements as {@link #topics}.
+     */
     public void setQualitiesOfService(List<Integer> qualitiesOfService) {
         this.qualitiesOfService = qualitiesOfService;
     }
 
+    /**
+     * @return
+     */
     public String getClientId() {
         return clientId;
     }
 
+    /**
+     * @param clientId The MQTT client ID (optional). If one is not provided, we'll create one for you and maintain
+     * it througout any reconnection attempts.
+     */
     public void setClientId(String clientId) {
         this.clientId = clientId;
     }
 
+    /**
+     * @return
+     */
     public MqttClientPersistence getPersistence() {
         return persistence;
     }
 
+    /**
+     * @param persistence A configurable persistence mechanism. If not set, Paho will use its default.
+     */
     public void setPersistence(MqttClientPersistence persistence) {
         this.persistence = persistence;
     }
 
+    /**
+     * @return
+     */
     public MqttConnectOptions getConnectOptions() {
         return connectOptions;
     }
 
+    /**
+     * @param connectOptions The MQTT client connect options, where users can configured the last will and testament, durability, etc.
+     */
     public void setConnectOptions(MqttConnectOptions connectOptions) {
         this.connectOptions = connectOptions;
     }
 
+    /**
+     * @return
+     */
     public boolean isDisconnectForcibly() {
         return disconnectForcibly;
     }
 
+    /**
+     * @param disconnectForcibly Whether to disconnect forcibly or not. By default, it's false.
+     */
     public void setDisconnectForcibly(boolean disconnectForcibly) {
         this.disconnectForcibly = disconnectForcibly;
     }
 
+    /**
+     * @return
+     */
     public Integer getDisconnectQuiesceTimeout() {
         return disconnectQuiesceTimeout;
     }
 
+    /**
+     * @param disconnectQuiesceTimeout Quiesce timeout on disconnection. If not provided, this streamer won't use any.
+     */
     public void setDisconnectQuiesceTimeout(Integer disconnectQuiesceTimeout) {
         this.disconnectQuiesceTimeout = disconnectQuiesceTimeout;
     }
 
+    /**
+     * @return
+     */
     public Integer getDisconnectForciblyTimeout() {
         return disconnectForciblyTimeout;
     }
 
+    /**
+     * @param disconnectForciblyTimeout If disconnecting forcibly, the timeout. Compulsory in that case.
+     */
     public void setDisconnectForciblyTimeout(Integer disconnectForciblyTimeout) {
         this.disconnectForciblyTimeout = disconnectForciblyTimeout;
     }
 
+    /**
+     * @return
+     */
     public WaitStrategy getRetryWaitStrategy() {
         return retryWaitStrategy;
     }
 
+    /**
+     * @param retryWaitStrategy The strategy to determine how long to wait between retry attempts.
+     * By default, this streamer uses a Fibonacci-based strategy.
+     */
     public void setRetryWaitStrategy(WaitStrategy retryWaitStrategy) {
         this.retryWaitStrategy = retryWaitStrategy;
     }
 
+    /**
+     * @return
+     */
     public StopStrategy getRetryStopStrategy() {
         return retryStopStrategy;
     }
 
+    /**
+     * @param retryStopStrategy The strategy to determine when to stop retrying to (re-)connect. By default, we never stop.
+     */
     public void setRetryStopStrategy(StopStrategy retryStopStrategy) {
         this.retryStopStrategy = retryStopStrategy;
     }
 
+    /**
+     * @return
+     */
     public boolean isBlockUntilConnected() {
         return blockUntilConnected;
     }
 
+    /**
+     * @param blockUntilConnected Whether to block the start() method until connected for the first time. By default,
+     * false.
+     */
     public void setBlockUntilConnected(boolean blockUntilConnected) {
         this.blockUntilConnected = blockUntilConnected;
     }
 
+    /**
+     * A utility class to help us with (re-)connecting to the MQTT broker. It uses a single-threaded executor to perform
+     * the (re-)connections.
+     */
     private class MqttConnectionRetrier {
 
+        /** The guava-retrying retrier object. */
         private final Retryer<Boolean> retrier;
+
+        /** Single-threaded pool. */
         private ExecutorService executor = Executors.newSingleThreadExecutor();
 
+        /**
+         * Constructor.
+         * @param retrier The retryier object.
+         */
         public MqttConnectionRetrier(Retryer<Boolean> retrier) {
             this.retrier = retrier;
         }
 
+        /**
+         * Method that is called by the streamer to ask us to (re-)connect.
+         */
         public void connect() {
             Callable<Boolean> callable = retrier.wrap(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
@@ -460,6 +599,9 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
             }
         }
 
+        /**
+         * Stops this connection utility class by shutting down the thread pool.
+         */
         public void stop() {
             executor.shutdownNow();
         }
