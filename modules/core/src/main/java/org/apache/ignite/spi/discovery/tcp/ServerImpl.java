@@ -4437,9 +4437,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         LT.warn(log, null, "Unknown connection detected (is some other software connecting to " +
                             "this Ignite port?" +
-                            (!spi.isSslEnabled() ? " missed SSL configuration?" : "" ) +
-                            ") [rmtAddr=" + sock.getRemoteSocketAddress() +
-                            ", locAddr=" + sock.getLocalSocketAddress() + ']');
+                            (!spi.isSslEnabled() ? " missing SSL configuration on remote node?" : "" ) +
+                            ") [rmtAddr=" + sock.getInetAddress() + ']', true);
 
                         return;
                     }
@@ -4555,8 +4554,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         U.error(log, "Caught exception on handshake [err=" + e +", sock=" + sock + ']', e);
 
                     if (X.hasCause(e, SSLException.class) && spi.isSslEnabled() && !spi.isNodeStopping0())
-                        LT.warn(log, null, "Failed to initialize connection. Not encrypted data received. " +
-                            "Missed SSL configuration on node? [sock=" + sock + ']');
+                        LT.warn(log, null, "Failed to initialize connection " +
+                            "(missing SSL configuration on remote node?) " +
+                            "[rmtAddr=" + sock.getInetAddress() + ']', true);
                     else if ((X.hasCause(e, ObjectStreamException.class) || !sock.isClosed())
                         && !spi.isNodeStopping0()) {
                         if (U.isMacInvalidArgumentError(e))

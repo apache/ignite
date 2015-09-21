@@ -319,7 +319,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
 
                 assert ctx != null : cacheId;
 
-                if (!topFut.isCacheTopologyValid(ctx)) {
+                Throwable err = topFut.validateCache(ctx);
+
+                if (err != null) {
                     if (invalidCaches != null)
                         invalidCaches.append(", ");
                     else
@@ -343,11 +345,16 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
         }
         else {
             topFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
+                @Override public void apply(final IgniteInternalFuture<AffinityTopologyVersion> fut) {
                     cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                         @Override public void run() {
                             try {
+                                fut.get();
+
                                 prepareOnTopology(remap, c);
+                            }
+                            catch (IgniteCheckedException e) {
+                                onDone(e);
                             }
                             finally {
                                 cctx.txContextReset();
@@ -841,7 +848,14 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
                         if (affFut != null && !affFut.isDone()) {
                             affFut.listen(new CI1<IgniteInternalFuture<?>>() {
                                 @Override public void apply(IgniteInternalFuture<?> fut) {
-                                    remap();
+                                    try {
+                                        fut.get();
+
+                                        remap();
+                                    }
+                                    catch (IgniteCheckedException e) {
+                                        onDone(e);
+                                    }
                                 }
                             });
                         }

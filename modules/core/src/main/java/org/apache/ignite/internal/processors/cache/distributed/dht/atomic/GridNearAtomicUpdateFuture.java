@@ -385,9 +385,10 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             GridDhtTopologyFuture fut = cache.topology().topologyVersionFuture();
 
             if (fut.isDone()) {
-                if (!fut.isCacheTopologyValid(cctx)) {
-                    onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
-                        cctx.name()));
+                Throwable err = fut.validateCache(cctx);
+
+                if (err != null) {
+                    onDone(err);
 
                     return;
                 }
@@ -811,6 +812,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             }
 
             Exception err = null;
+            GridNearAtomicUpdateRequest singleReq0 = null;
             Map<UUID, GridNearAtomicUpdateRequest> pendingMappings = null;
 
             int size = keys.size();
@@ -837,13 +839,13 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                     if (size == 1 && !fastMap) {
                         assert remapKeys == null || remapKeys.size() == 1;
 
-                        singleReq = mapSingleUpdate();
+                        singleReq0 = singleReq = mapSingleUpdate();
                     }
                     else {
                         pendingMappings = mapUpdate(topNodes);
 
                         if (pendingMappings.size() == 1)
-                            singleReq = F.firstValue(pendingMappings);
+                            singleReq0 = singleReq = F.firstValue(pendingMappings);
                         else {
                             if (syncMode == PRIMARY_SYNC) {
                                 mappings = U.newHashMap(pendingMappings.size());
@@ -874,8 +876,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             }
 
             // Optimize mapping for single key.
-            if (singleReq != null)
-                mapSingle(singleReq.nodeId(), singleReq);
+            if (singleReq0 != null)
+                mapSingle(singleReq0.nodeId(), singleReq0);
             else {
                 assert pendingMappings != null;
 
