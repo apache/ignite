@@ -42,7 +42,7 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         final int k = nextRandom(100_000);
 
-        final String[] keys = new String[5]; // TODO impl number.
+        final String[] keys = new String[args.keysCount()];
 
         assert keys.length > 0 : "Count of keys = " + keys.length;
 

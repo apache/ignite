@@ -120,6 +120,14 @@ public class IgniteBenchmarkArguments {
     @Parameter(names = {"-rs", "--restartsleep"}, description = "Restart sleep in seconds")
     private int restartSleep = 2;
 
+    /** */
+    @Parameter(names = {"-checkingPeriod", "--checkingPeriod"}, description = "Period to check cache consistency in seconds")
+    private int cacheConsistencyCheckingPeriod = 2 * 60;
+
+    /** */
+    @Parameter(names = {"-keysCnt", "--keysCount"}, description = "Count of keys")
+    private int keysCnt = 5;
+
     /**
      * @return JDBC url.
      */
@@ -289,11 +297,26 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
+     * @return Keys count.
+     */
+    public int keysCount() {
+        return keysCnt;
+    }
+
+    /**
+     * @return Period in seconds to check cache consistency.
+     */
+    public int cacheConsistencyCheckingPeriod() {
+        return cacheConsistencyCheckingPeriod;
+    }
+
+    /**
      * @return Description.
      */
     public String description() {
         return "-nn=" + nodes + "-b=" + backups + "-sm=" + syncMode + "-cl=" + clientOnly + "-nc=" + nearCacheFlag +
-            (orderMode == null ? "" : "-wom=" + orderMode) + "-txc=" + txConcurrency;
+            (orderMode == null ? "" : "-wom=" + orderMode) + "-txc=" + txConcurrency + "-rd=" + restartDelay + 
+            "-rs=" + restartSleep;
     }
 
     /** {@inheritDoc} */

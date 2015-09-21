@@ -25,6 +25,7 @@
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
     <import resource="ignite-base-config.xml"/>
+    <import resource="ignite-failover-base-config.xml"/>
 
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" parent="base-ignite-failover.cfg">
         <property name="localHost" value="127.0.0.1"/>

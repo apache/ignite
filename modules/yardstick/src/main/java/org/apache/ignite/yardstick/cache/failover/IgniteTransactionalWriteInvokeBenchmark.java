@@ -45,7 +45,7 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         final int k = nextRandom(100_000);
 
-        final String[] keys = new String[5]; // TODO impl number.
+        final String[] keys = new String[args.keysCount()];
 
         assert keys.length > 0 : "Count of keys = " + keys.length;
 
@@ -60,7 +60,6 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
             @Override public Boolean call() throws Exception {
                 switch (scenario) {
                     case 0: // Read scenario.
-
                         Map<String, Long> map = new HashMap<>();
 
                         map.put(masterKey, cache.get(masterKey));

@@ -26,8 +26,8 @@
         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
     <import resource="ignite-base-config.xml"/>
 
-    <bean id="base-ignite-failover.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" 
+    <bean id="base-ignite-failover.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"
           parent="base-ignite.cfg" abstract="true">
-        
+        <property name="failureDetectionTimeout" value="500"/>
     </bean>
 </beans>

@@ -58,7 +58,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
             @Override public void run() {
                 try {
                     while (true) {
-                        Thread.sleep(2 * 60 * 1000); // 2 min. // TODO as param
+                        Thread.sleep(args.cacheConsistencyCheckingPeriod() * 1000);
 
                         rwl.writeLock().lock();
 

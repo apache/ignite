@@ -53,7 +53,7 @@ public final class RestartUtils {
      * But it will affect a performance.
      * @return Result of execution.
      */
-    public static Result kill9(BenchmarkConfiguration cfg, boolean isDebug) {
+    public static Result kill9Server(BenchmarkConfiguration cfg, boolean isDebug) {
         return executeUnderSshConnect(cfg.remoteUser(), cfg.remoteHostName(), isDebug,
             Collections.singletonList("pkill -9 -f 'Dyardstick.server" + cfg.memberId() + "'"));
     }
@@ -153,7 +153,7 @@ public final class RestartUtils {
      * But it will affect a performance.
      * @return Result of execution.
      */
-    public static Result start(BenchmarkConfiguration cfg,
+    public static Result startServer(BenchmarkConfiguration cfg,
         boolean isDebug) {
         String descriptrion = F.isEmpty(cfg.descriptions()) ? "" : "_" + cfg.descriptions().get(0);
         String now = TIME_FORMATTER.format(new Date());

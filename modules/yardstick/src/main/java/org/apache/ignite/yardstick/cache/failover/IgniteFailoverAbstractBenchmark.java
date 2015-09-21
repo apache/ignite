@@ -87,7 +87,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K,V> extends IgniteCacheAb
 
                                 BenchmarkConfiguration bc = srvsCfgs.get(id);
 
-                                RestartUtils.Result res = RestartUtils.kill9(bc, isDebug);
+                                RestartUtils.Result res = RestartUtils.kill9Server(bc, isDebug);
 
                                 println("[RESTARTER] Server with id " + id + " has been killed."
                                     + (isDebug ? " Result:\n" + res : ""));
@@ -100,7 +100,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K,V> extends IgniteCacheAb
 
                                 BenchmarkConfiguration bc = srvsCfgs.get(id);
 
-                                RestartUtils.Result res = RestartUtils.start(bc, isDebug);
+                                RestartUtils.Result res = RestartUtils.startServer(bc, isDebug);
 
                                 println("[RESTARTER] Server with id " + id + " has been started."
                                     + (isDebug ? " Result:\n" + res : ""));
