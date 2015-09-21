@@ -126,43 +126,43 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopValidationSelfTest.class.getName())));
 
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopDefaultMapReducePlannerSelfTest.class.getName())));
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopJobTrackerSelfTest.class.getName())));
-//
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopHashMapSelfTest.class.getName())));
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopDataStreamSelfTest.class.getName())));
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopConcurrentHashMultimapSelftest.class.getName())));
-//
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopSkipListSelfTest.class.getName())));
-//
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopTaskExecutionSelfTest.class.getName())));
-//
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopV2JobSelfTest.class.getName())));
-//
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopSerializationWrapperSelfTest.class.getName())));
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopSplitWrapperSelfTest.class.getName())));
-//
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopTasksV1Test.class.getName())));
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopTasksV2Test.class.getName())));
-//
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceTest.class.getName())));
-//
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceEmbeddedSelfTest.class.getName())));
-//
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopSortingTest.class.getName())));
-//
-////        suite.addTest(new TestSuite(ldr.loadClass(HadoopExternalTaskExecutionSelfTest.class.getName())));
-////        suite.addTest(new TestSuite(ldr.loadClass(HadoopExternalCommunicationSelfTest.class.getName())));
-////        suite.addTest(new TestSuite(ldr.loadClass(HadoopSortingExternalTest.class.getName())));
-//
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopGroupingTest.class.getName())));
-//
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopClientProtocolSelfTest.class.getName())));
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopClientProtocolEmbeddedSelfTest.class.getName())));
-//
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopCommandLineTest.class.getName())));
-//
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopSecondaryFileSystemConfigurationTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopDefaultMapReducePlannerSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopJobTrackerSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopHashMapSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopDataStreamSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopConcurrentHashMultimapSelftest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopSkipListSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopTaskExecutionSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopV2JobSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopSerializationWrapperSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopSplitWrapperSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopTasksV1Test.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopTasksV2Test.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceEmbeddedSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopSortingTest.class.getName())));
+
+//        suite.addTest(new TestSuite(ldr.loadClass(HadoopExternalTaskExecutionSelfTest.class.getName())));
+//        suite.addTest(new TestSuite(ldr.loadClass(HadoopExternalCommunicationSelfTest.class.getName())));
+//        suite.addTest(new TestSuite(ldr.loadClass(HadoopSortingExternalTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopGroupingTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopClientProtocolSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopClientProtocolEmbeddedSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopCommandLineTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopSecondaryFileSystemConfigurationTest.class.getName())));
         return suite;
     }
 
