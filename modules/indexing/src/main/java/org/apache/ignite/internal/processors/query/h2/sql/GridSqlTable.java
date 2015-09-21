@@ -59,6 +59,9 @@ public class GridSqlTable extends GridSqlElement {
     private GridSqlTable(@Nullable String schema, String tblName, @Nullable Table tbl) {
         super(Collections.<GridSqlElement>emptyList());
 
+        assert schema != null : "schema";
+        assert tblName != null : "tblName";
+
         this.schema = schema;
         this.tblName = tblName;
 
@@ -92,5 +95,25 @@ public class GridSqlTable extends GridSqlElement {
      */
     public GridH2Table dataTable() {
         return tbl;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (!super.equals(o))
+            return false;
+
+        GridSqlTable that = (GridSqlTable)o;
+
+        return schema.equals(that.schema) && tblName.equals(that.tblName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = 1;
+
+        result = 31 * result + schema.hashCode();
+        result = 31 * result + tblName.hashCode();
+
+        return result;
     }
 }

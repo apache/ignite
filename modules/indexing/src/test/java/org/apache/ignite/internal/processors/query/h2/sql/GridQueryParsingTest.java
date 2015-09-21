@@ -120,6 +120,8 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         checkQuery("select avg(old) from Person left join Address where Person.addrId = Address.id " +
             "and lower(Address.street) = lower(?)");
+        checkQuery("select avg(old) from Person right join Address where Person.addrId = Address.id " +
+            "and lower(Address.street) = lower(?)");
 
         checkQuery("select avg(old) from Person, Address where Person.addrId = Address.id " +
             "and lower(Address.street) = lower(?)");
@@ -137,6 +139,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select person.* from Person, Address a");
         checkQuery("select p.*, street from Person p, Address a");
         checkQuery("select p.name, a.street from Person p, Address a");
+        checkQuery("select p.name, a.street from Address a, Person p");
         checkQuery("select distinct p.name, a.street from Person p, Address a");
         checkQuery("select distinct name, street from Person, Address group by old");
         checkQuery("select distinct name, street from Person, Address");

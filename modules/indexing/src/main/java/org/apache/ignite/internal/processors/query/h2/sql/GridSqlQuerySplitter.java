@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -253,7 +254,7 @@ public class GridSqlQuerySplitter {
         for (int i = 0, len = mapExps.size(); i < len; i++) // Remember len because mapExps list can grow.
             aggregateFound |= splitSelectExpression(mapExps, rdcExps, colNames, i, collocated);
 
-        // Fill select expressions.
+        // -- SELECT
         mapQry.clearColumns();
 
         for (GridSqlElement exp : mapExps) // Add all map expressions as visible.
@@ -264,6 +265,9 @@ public class GridSqlQuerySplitter {
 
         for (int i = rdcExps.length; i < mapExps.size(); i++)  // Add all extra map columns as invisible reduce columns.
             rdcQry.addColumn(column(((GridSqlAlias)mapExps.get(i)).alias()), false);
+
+        // -- FROM + WHERE
+        getEnforcedJoinColumns(mapQry);
 
         // -- GROUP BY
         if (mapQry.groupColumns() != null && !collocated)
@@ -319,6 +323,17 @@ public class GridSqlQuerySplitter {
 
         return new GridCacheSqlQuery(rdcQry.getSQL(),
             findParams(rdcQry, params, new ArrayList<>()).toArray());
+    }
+
+    /**
+     *
+     *
+     * @return
+     */
+    private static Map<GridSqlTable, GridSqlColumn> getEnforcedJoinColumns(GridSqlSelect mapQry) {
+        mapQry.where();
+
+        return null;
     }
 
     /**
@@ -422,6 +437,7 @@ public class GridSqlQuerySplitter {
                 return true;
 
             // We don't process ON condition because it is not a joining part of from here.
+            return false;
         }
         else if (from instanceof GridSqlAlias)
             return findTablesInFrom(from.child(), c);
@@ -740,7 +756,7 @@ public class GridSqlQuerySplitter {
      * @return Column.
      */
     private static GridSqlColumn column(String name) {
-        return new GridSqlColumn(null, name, name);
+        return new GridSqlColumn(null, null, name, name);
     }
 
     /**

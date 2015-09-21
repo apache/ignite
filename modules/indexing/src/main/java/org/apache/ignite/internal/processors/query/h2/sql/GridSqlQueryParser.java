@@ -437,11 +437,10 @@ public class GridSqlQueryParser {
      */
     private GridSqlElement parseExpression0(Expression expression, boolean calcTypes) {
         if (expression instanceof ExpressionColumn) {
-            TableFilter tblFilter = ((ExpressionColumn)expression).getTableFilter();
+            ExpressionColumn expCol = (ExpressionColumn)expression;
 
-            GridSqlElement gridTblFilter = parseTable(tblFilter);
-
-            return new GridSqlColumn(gridTblFilter, expression.getColumnName(), expression.getSQL());
+            return new GridSqlColumn(expCol.getColumn(), parseTable(expCol.getTableFilter()),
+                expression.getColumnName(), expression.getSQL());
         }
 
         if (expression instanceof Alias)
