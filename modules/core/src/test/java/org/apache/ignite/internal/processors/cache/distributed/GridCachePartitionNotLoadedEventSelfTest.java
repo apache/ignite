@@ -32,6 +32,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -98,7 +99,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         startGrid(1);
         startGrid(2);
 
-        PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
+        final PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
 
         ignite(2).events().localListen(lsnr, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
 
@@ -127,7 +128,11 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         assert !cache.containsKey(key);
 
-        assert !lsnr.lostParts.isEmpty();
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !lsnr.lostParts.isEmpty();
+            }
+        }, getTestTimeout());
     }
 
     /**
@@ -139,7 +144,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         awaitPartitionMapExchange();
 
-        PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
+        final PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
 
         ignite(1).events().localListen(lsnr, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
 
@@ -157,7 +162,11 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         assert !jcache(1).containsKey(key);
 
-        assert !lsnr.lostParts.isEmpty();
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !lsnr.lostParts.isEmpty();
+            }
+        }, getTestTimeout());
     }
 
     /**
@@ -172,7 +181,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         startGrid(0);
 
-        PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
+        final PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
 
         grid(1).events().localListen(lsnr, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
 
@@ -206,7 +215,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         startGrid(1);
 
-        PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
+        final PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
 
         grid(1).events().localListen(lsnr, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
 
@@ -235,7 +244,11 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         awaitPartitionMapExchange();
 
-        assert !lsnr.lostParts.isEmpty();
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !lsnr.lostParts.isEmpty();
+            }
+        }, getTestTimeout());
     }
 
     /**

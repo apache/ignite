@@ -958,7 +958,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
         List<GridCacheEntryEx> locked = new ArrayList<>(keys.size());
 
-        Set<GridCacheEntryEx> notRemove = null;
+        Set<GridCacheEntryEx> notRmv = null;
 
         Collection<GridCacheBatchSwapEntry> swapped = new ArrayList<>(keys.size());
 
@@ -990,10 +990,10 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                 locked.add(entry);
 
                 if (entry.obsolete()) {
-                    if (notRemove == null)
-                        notRemove = new HashSet<>();
+                    if (notRmv == null)
+                        notRmv = new HashSet<>();
 
-                    notRemove.add(entry);
+                    notRmv.add(entry);
 
                     continue;
                 }
@@ -1004,10 +1004,18 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                 GridCacheBatchSwapEntry swapEntry = entry.evictInBatchInternal(obsoleteVer);
 
                 if (swapEntry != null) {
+                    assert entry.obsolete() : entry;
+
                     swapped.add(swapEntry);
 
                     if (log.isDebugEnabled())
                         log.debug("Entry was evicted [entry=" + entry + ", localNode=" + cctx.nodeId() + ']');
+                }
+                else if (!entry.obsolete()) {
+                    if (notRmv == null)
+                        notRmv = new HashSet<>();
+
+                    notRmv.add(entry);
                 }
             }
 
@@ -1025,7 +1033,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
             // Remove entries and fire events outside the locks.
             for (GridCacheEntryEx entry : locked) {
-                if (entry.obsolete() && (notRemove == null || !notRemove.contains(entry))) {
+                if (entry.obsolete() && (notRmv == null || !notRmv.contains(entry))) {
                     entry.onMarkedObsolete();
 
                     cache.removeEntry(entry);
@@ -1935,7 +1943,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                     lock.readLock().unlock();
                 }
 
-                if (res.error())
+                if (res.evictError())
                     // Complete future, since there was a class loading error on at least one node.
                     complete(false);
                 else
@@ -1977,14 +1985,14 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
                 boolean err = F.forAny(resMap.values(), new P1<GridCacheEvictionResponse>() {
                     @Override public boolean apply(GridCacheEvictionResponse res) {
-                        return res.error();
+                        return res.evictError();
                     }
                 });
 
                 if (err) {
                     Collection<UUID> ids = F.view(resMap.keySet(), new P1<UUID>() {
                         @Override public boolean apply(UUID e) {
-                            return resMap.get(e).error();
+                            return resMap.get(e).evictError();
                         }
                     });
 

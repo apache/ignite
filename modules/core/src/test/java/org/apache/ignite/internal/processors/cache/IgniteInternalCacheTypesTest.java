@@ -131,7 +131,7 @@ public class IgniteInternalCacheTypesTest extends GridCommonAbstractTest {
 
         checkCache(ignite, CU.MARSH_CACHE_NAME, MARSH_CACHE_POOL, false, false);
 
-        checkCache(ignite, CU.ATOMICS_CACHE_NAME, SYSTEM_POOL, false, false);
+        checkCache(ignite, CU.ATOMICS_CACHE_NAME, SYSTEM_POOL, false, true);
 
         for (String cache : userCaches)
             checkCache(ignite, cache, SYSTEM_POOL, true, false);

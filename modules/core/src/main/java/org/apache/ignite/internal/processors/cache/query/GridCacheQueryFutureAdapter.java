@@ -155,7 +155,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     @Override public boolean onDone(Collection<R> res, Throwable err) {
         cctx.time().removeTimeoutObject(this);
 
-        qry.query().onExecuted(res, err, startTime(), duration());
+        qry.query().onCompleted(res, err, startTime(), duration());
 
         return super.onDone(res, err);
     }
@@ -181,6 +181,13 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             throw CU.convertToCacheException(e);
         }
     }
+
+    /**
+     * Waits for the first page to be received from remote node(s), if any.
+     *
+     * @throws IgniteCheckedException If query execution failed with an error.
+     */
+    public abstract void awaitFirstPage() throws IgniteCheckedException;
 
     /**
      * Returns next page for the query.
@@ -380,12 +387,12 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 synchronized (mux) {
                     enqueue(Collections.emptyList());
 
-                    onPage(nodeId, true);
-
                     onDone(nodeId != null ?
                         new IgniteCheckedException("Failed to execute query on node [query=" + qry +
                             ", nodeId=" + nodeId + "]", err) :
                         new IgniteCheckedException("Failed to execute query locally: " + qry, err));
+
+                    onPage(nodeId, true);
 
                     mux.notifyAll();
                 }
@@ -412,11 +419,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                     mux.notifyAll();
                 }
             }
-        }
-        catch (Error e) {
-            onPageError(nodeId, e);
-
-            throw e;
         }
         catch (Throwable e) {
             onPageError(nodeId, e);
@@ -446,6 +448,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param col Collection.
      * @return Collection with masked {@code null} values.
      */
+    @SuppressWarnings("unchecked")
     private Collection<Object> maskNulls(Collection<Object> col) {
         assert col != null;
 
@@ -460,6 +463,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param col Collection.
      * @return Collection with unmasked {@code null} values.
      */
+    @SuppressWarnings("unchecked")
     private Collection<Object> unmaskNulls(Collection<Object> col) {
         assert col != null;
 

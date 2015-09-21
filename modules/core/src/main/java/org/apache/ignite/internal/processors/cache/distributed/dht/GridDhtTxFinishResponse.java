@@ -19,6 +19,10 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -35,6 +39,16 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
 
     /** Mini future ID. */
     private IgniteUuid miniId;
+
+    /** Error. */
+    @GridDirectTransient
+    private Throwable checkCommittedErr;
+
+    /** Serialized error. */
+    private byte[] checkCommittedErrBytes;
+
+    /** Flag indicating if this is a check-committed response. */
+    private boolean checkCommitted;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -63,6 +77,51 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
         return miniId;
     }
 
+    /**
+     * @return Error for check committed backup requests.
+     */
+    public Throwable checkCommittedError() {
+        return checkCommittedErr;
+    }
+
+    /**
+     * @param checkCommittedErr Error for check committed backup requests.
+     */
+    public void checkCommittedError(Throwable checkCommittedErr) {
+        this.checkCommittedErr = checkCommittedErr;
+    }
+
+    /**
+     * @return Check committed flag.
+     */
+    public boolean checkCommitted() {
+        return checkCommitted;
+    }
+
+    /**
+     * @param checkCommitted Check committed flag.
+     */
+    public void checkCommitted(boolean checkCommitted) {
+        this.checkCommitted = checkCommitted;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+        super.prepareMarshal(ctx);
+
+        if (checkCommittedErr != null)
+            checkCommittedErrBytes = ctx.marshaller().marshal(checkCommittedErr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr)
+        throws IgniteCheckedException {
+        super.finishUnmarshal(ctx, ldr);
+
+        if (checkCommittedErrBytes != null)
+            checkCommittedErr = ctx.marshaller().unmarshal(checkCommittedErrBytes, ldr);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtTxFinishResponse.class, this, super.toString());
@@ -84,6 +143,18 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
 
         switch (writer.state()) {
             case 5:
+                if (!writer.writeBoolean("checkCommitted", checkCommitted))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
+                if (!writer.writeByteArray("checkCommittedErrBytes", checkCommittedErrBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
@@ -106,6 +177,22 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
 
         switch (reader.state()) {
             case 5:
+                checkCommitted = reader.readBoolean("checkCommitted");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
+                checkCommittedErrBytes = reader.readByteArray("checkCommittedErrBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
@@ -125,6 +212,6 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 8;
     }
 }

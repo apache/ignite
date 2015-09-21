@@ -43,6 +43,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -65,6 +66,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.testframework.GridTestUtils.TestMemoryMode;
 
 /**
  * Test GridDhtInvalidPartitionException handling in ATOMIC cache during restarts.
@@ -83,18 +85,25 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     /** Write sync. */
     private CacheWriteSynchronizationMode writeSync;
 
+    /** Memory mode. */
+    private TestMemoryMode memMode;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER).setForceServerMode(true));
 
-        cfg.setCacheConfiguration(cacheConfiguration());
+        CacheConfiguration ccfg = cacheConfiguration();
+
+        cfg.setCacheConfiguration(ccfg);
 
         cfg.setCommunicationSpi(new DelayCommunicationSpi());
 
         if (testClientNode() && getTestGridName(0).equals(gridName))
             cfg.setClientMode(true);
+
+        GridTestUtils.setMemoryMode(cfg, ccfg, memMode, 100, 1024);
 
         return cfg;
     }
@@ -137,53 +146,99 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testClockFullSync() throws Exception {
-        checkRestarts(CLOCK, FULL_SYNC);
+        checkRestarts(CLOCK, FULL_SYNC, TestMemoryMode.HEAP);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClockFullSyncSwap() throws Exception {
+        checkRestarts(CLOCK, FULL_SYNC, TestMemoryMode.SWAP);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClockFullSyncOffheapTiered() throws Exception {
+        checkRestarts(CLOCK, FULL_SYNC, TestMemoryMode.OFFHEAP_TIERED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClockFullSyncOffheapSwap() throws Exception {
+        checkRestarts(CLOCK, FULL_SYNC, TestMemoryMode.OFFHEAP_EVICT_SWAP);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClockPrimarySync() throws Exception {
-        checkRestarts(CLOCK, PRIMARY_SYNC);
+        checkRestarts(CLOCK, PRIMARY_SYNC, TestMemoryMode.HEAP);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClockFullAsync() throws Exception {
-        checkRestarts(CLOCK, FULL_ASYNC);
+        checkRestarts(CLOCK, FULL_ASYNC, TestMemoryMode.HEAP);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPrimaryFullSync() throws Exception {
-        checkRestarts(PRIMARY, FULL_SYNC);
+        checkRestarts(PRIMARY, FULL_SYNC, TestMemoryMode.HEAP);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryFullSyncSwap() throws Exception {
+        checkRestarts(PRIMARY, FULL_SYNC, TestMemoryMode.SWAP);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryFullSyncOffheapTiered() throws Exception {
+        checkRestarts(PRIMARY, FULL_SYNC, TestMemoryMode.OFFHEAP_TIERED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryFullSyncOffheapSwap() throws Exception {
+        checkRestarts(PRIMARY, FULL_SYNC, TestMemoryMode.OFFHEAP_EVICT_SWAP);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPrimaryPrimarySync() throws Exception {
-        checkRestarts(PRIMARY, PRIMARY_SYNC);
+        checkRestarts(PRIMARY, PRIMARY_SYNC, TestMemoryMode.HEAP);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPrimaryFullAsync() throws Exception {
-        checkRestarts(PRIMARY, FULL_ASYNC);
+        checkRestarts(PRIMARY, FULL_ASYNC, TestMemoryMode.HEAP);
     }
 
     /**
      * @param writeOrder Write order to check.
      * @param writeSync Write synchronization mode to check.
+     * @param memMode Memory mode.
      * @throws Exception If failed.
      */
-    private void checkRestarts(CacheAtomicWriteOrderMode writeOrder, CacheWriteSynchronizationMode writeSync)
+    private void checkRestarts(CacheAtomicWriteOrderMode writeOrder,
+        CacheWriteSynchronizationMode writeSync,
+        TestMemoryMode memMode)
         throws Exception {
         this.writeOrder = writeOrder;
         this.writeSync = writeSync;
+        this.memMode = memMode;
 
         final int gridCnt = 6;
 
@@ -227,16 +282,16 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                         for (int i = 0; i < gridCnt; i++) {
                             ClusterNode locNode = grid(i).localNode();
 
-                            GridCacheAdapter<Object, Object> c = ((IgniteKernal)grid(i)).internalCache();
+                            IgniteCache<Object, Object> cache = grid(i).cache(null);
 
-                            GridCacheEntryEx entry = c.peekEx(key);
+                            Object val = cache.localPeek(key);
 
                             if (affNodes.contains(locNode)) {
-                                if (entry == null)
+                                if (val == null)
                                     return false;
                             }
                             else
-                                assertNull(entry);
+                                assertNull(val);
                         }
 
                         it.remove();
@@ -323,7 +378,20 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
                     GridCacheAdapter<Object, Object> c = ((IgniteKernal)grid(i)).internalCache();
 
-                    GridCacheEntryEx entry = c.peekEx(k);
+                    GridCacheEntryEx entry = null;
+
+                    if (memMode == TestMemoryMode.HEAP)
+                        entry = c.peekEx(k);
+                    else {
+                        try {
+                            entry = c.entryEx(k);
+
+                            entry.unswap();
+                        }
+                        catch (GridDhtInvalidPartitionException e) {
+                            // Skip key.
+                        }
+                    }
 
                     for (int r = 0; r < 10; r++) {
                         try {
@@ -383,7 +451,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
      */
     private static class DelayCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
             throws IgniteSpiException {
             try {
                 if (delayMessage((GridIoMessage)msg))
@@ -393,7 +461,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                 throw new IgniteSpiException(e);
             }
 
-            super.sendMessage(node, msg, ackClosure);
+            super.sendMessage(node, msg, ackC);
         }
 
         /**

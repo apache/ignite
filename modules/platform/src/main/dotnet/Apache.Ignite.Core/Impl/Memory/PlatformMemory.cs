@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// <summary>
     /// Abstract memory chunk.
     /// </summary>
+    [CLSCompliant(false)]
     public abstract class PlatformMemory : IPlatformMemory
     {
         /** Memory pointer. */

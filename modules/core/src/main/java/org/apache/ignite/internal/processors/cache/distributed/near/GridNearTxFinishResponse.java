@@ -75,10 +75,8 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
         this.err = err;
     }
 
-    /**
-     * @return Error.
-     */
-    @Nullable public Throwable error() {
+    /** {@inheritDoc} */
+    @Nullable @Override public Throwable error() {
         return err;
     }
 

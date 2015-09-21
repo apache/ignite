@@ -25,12 +25,15 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -182,27 +185,107 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
 
                     String val = "value-" + k;
 
-                    cache.invoke(key, new Processor(val));
+                    procs.put(key, new Processor(val));
                 }
 
-                cache.invokeAll(procs);
+                Map<String, EntryProcessorResult<Integer>> resMap = cache.invokeAll(procs);
+
+                for (String key : procs.keySet()) {
+                    EntryProcessorResult<Integer> res = resMap.get(key);
+
+                    assertNotNull(res);
+                    assertEquals(k + 1, (Object) res.get());
+                }
             }
             else {
+                IgniteCache<String, Set<String>> cache = ignite(0).cache(null);
+
                 for (int i = 0; i < NUM_SETS; i++) {
                     String key = "set-" + i;
 
                     String val = "value-" + k;
 
-                    IgniteCache<String, Set<String>> cache = ignite(0).cache(null);
+                    Integer valsCnt = cache.invoke(key, new Processor(val));
 
-                    cache.invoke(key, new Processor(val));
+                    assertEquals(k + 1, (Object)valsCnt);
                 }
             }
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReplaceNodeJoin() throws Exception {
+        final AtomicReference<Throwable> error = new AtomicReference<>();
+        final int started = 6;
+
+        try {
+            int keys = 100;
+
+            final AtomicBoolean done = new AtomicBoolean(false);
+
+            for (int i = 0; i < keys; i++)
+                ignite(0).cache(null).put(i, 0);
+
+            IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        for (int i = 0; i < started; i++) {
+                            U.sleep(1_000);
+
+                            IgniteEx grid = startGrid(GRID_CNT + i);
+
+                            info("Test started grid [idx=" + (GRID_CNT + i) + ", nodeId=" + grid.localNode().id() + ']');
+                        }
+                    }
+                    catch (Exception e) {
+                        error.compareAndSet(null, e);
+                    }
+                    finally {
+                        done.set(true);
+                    }
+                }
+            }, 1, "starter");
+
+            int updVal = 0;
+
+            try {
+                while (!done.get()) {
+                    info("Will put: " + (updVal + 1));
+
+                    for (int i = 0; i < keys; i++)
+                        assertTrue("Failed [key=" + i + ", oldVal=" + updVal+ ']',
+                            ignite(0).cache(null).replace(i, updVal, updVal + 1));
+
+                    updVal++;
+                }
+            }
+            finally {
+                fut.get(getTestTimeout());
+            }
+
+            for (int i = 0; i < keys; i++) {
+                for (int g = 0; g < GRID_CNT + started; g++) {
+                    Integer val = ignite(g).<Integer, Integer>cache(null).get(i);
+
+                    GridCacheEntryEx entry = ((IgniteKernal)grid(g)).internalCache(null).peekEx(i);
+
+                    if (updVal != val)
+                        info("Invalid value for grid [g=" + g + ", entry=" + entry + ']');
+
+                    assertEquals((Integer)updVal, val);
+                }
+            }
+        }
+        finally {
+            for (int i = 0; i < started; i++)
+                stopGrid(GRID_CNT + i);
+        }
+    }
+
     /** */
-    private static class Processor implements EntryProcessor<String, Set<String>, Void>, Serializable {
+    private static class Processor implements EntryProcessor<String, Set<String>, Integer>, Serializable {
         /** */
         private String val;
 
@@ -214,7 +297,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<String, Set<String>> e, Object... args) {
+        @Override public Integer process(MutableEntry<String, Set<String>> e, Object... args) {
             Set<String> vals = e.getValue();
 
             if (vals == null)
@@ -224,7 +307,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
 
             e.setValue(vals);
 
-            return null;
+            return vals.size();
         }
     }
 }

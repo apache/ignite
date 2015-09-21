@@ -43,6 +43,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.portable.api.IgnitePortables;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
@@ -1022,6 +1023,11 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
 
         /** {@inheritDoc} */
         @Override public GridKernalContext context() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgnitePortables portables() {
             return null;
         }
     }

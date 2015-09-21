@@ -261,7 +261,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         err = this.err.get();
 
-        if (err == null)
+        if (err == null || tx.needCheckBackup())
             tx.state(PREPARED);
 
         if (super.onDone(tx, err)) {
@@ -339,6 +339,13 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
          * @param e Error.
          */
         void onNodeLeft(ClusterTopologyCheckedException e) {
+            if (tx.onePhaseCommit()) {
+                tx.markForBackupCheck();
+
+                // Do not fail future for one-phase transaction right away.
+                onDone(tx);
+            }
+
             onError(e);
         }
 

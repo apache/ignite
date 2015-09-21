@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
-    
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
 
@@ -30,6 +29,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// Grid future implementation.
     /// </summary>
     [SuppressMessage("ReSharper", "ParameterHidesMember")]
+    [CLSCompliant(false)]
     public sealed class Future<T> : IFutureInternal, IFuture<T>
     {
         /** Converter. */
@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /** <inheritdoc/> */
         public void Listen(Action<IFuture<T>> callback)
         {
-            GridArgumentCheck.NotNull(callback, "callback");
+            IgniteArgumentCheck.NotNull(callback, "callback");
 
             if (!_done)
             {

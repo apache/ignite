@@ -45,11 +45,11 @@ import org.apache.ignite.internal.util.GridEnumCache;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableInvalidClassException;
-import org.apache.ignite.portable.PortableObject;
-import org.apache.ignite.portable.PortableRawReader;
-import org.apache.ignite.portable.PortableReader;
+import org.apache.ignite.internal.portable.api.PortableException;
+import org.apache.ignite.internal.portable.api.PortableInvalidClassException;
+import org.apache.ignite.internal.portable.api.PortableObject;
+import org.apache.ignite.internal.portable.api.PortableRawReader;
+import org.apache.ignite.internal.portable.api.PortableReader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -2156,9 +2156,6 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
                 if (desc == null)
                     throw new PortableInvalidClassException("Unknown type ID: " + typeId);
-
-                // Skip clsName field if any.
-                rawOff += clsNameLen;
 
                 obj = desc.read(this);
 

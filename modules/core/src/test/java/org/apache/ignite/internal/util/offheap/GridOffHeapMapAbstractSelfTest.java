@@ -42,7 +42,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     private static final Random RAND = new Random();
 
     /** Unsafe map. */
-    private GridOffHeapMap<String> map;
+    private GridOffHeapMap map;
 
     /** */
     protected float load = 0.75f;
@@ -86,7 +86,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     /**
      * @return New map.
      */
-    protected abstract <K> GridOffHeapMap<K> newMap();
+    protected abstract GridOffHeapMap newMap();
 
     /**
      *
@@ -551,6 +551,10 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
 
                 evictCnt.incrementAndGet();
             }
+
+            @Override public boolean removeEvicted() {
+                return true;
+            }
         };
 
         map = newMap();
@@ -587,6 +591,10 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
             @Override public void onEvict(int part, int hash, byte[] k, byte[] v) {
                 evictCnt.incrementAndGet();
             }
+
+            @Override public boolean removeEvicted() {
+                return true;
+            }
         };
 
         map = newMap();
@@ -621,6 +629,10 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
         evictLsnr = new GridOffHeapEvictListener() {
             @Override public void onEvict(int part, int hash, byte[] k, byte[] v) {
                 evictCnt.incrementAndGet();
+            }
+
+            @Override public boolean removeEvicted() {
+                return true;
             }
         };
 

@@ -27,9 +27,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableRawWriter;
-import org.apache.ignite.portable.PortableWriter;
+import org.apache.ignite.internal.portable.api.PortableException;
+import org.apache.ignite.internal.portable.api.PortableRawWriter;
+import org.apache.ignite.internal.portable.api.PortableWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**

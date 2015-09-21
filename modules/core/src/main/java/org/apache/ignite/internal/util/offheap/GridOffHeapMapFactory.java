@@ -32,8 +32,8 @@ public class GridOffHeapMapFactory {
      * @param initCap Initial capacity.
      * @return Off-heap map.
      */
-    public static <K> GridOffHeapMap<K> unsafeMap(long initCap) {
-        return new GridUnsafeMap<>(128, 0.75f, initCap, 0, (short)0, null);
+    public static GridOffHeapMap unsafeMap(long initCap) {
+        return new GridUnsafeMap(128, 0.75f, initCap, 0, (short)0, null);
     }
 
     /**
@@ -43,8 +43,8 @@ public class GridOffHeapMapFactory {
      * @param initCap Initial capacity.
      * @return Off-heap map.
      */
-    public static <K> GridOffHeapMap<K> unsafeMap(int concurrency, long initCap) {
-        return new GridUnsafeMap<>(concurrency, 0.75f, initCap, 0, (short)0, null);
+    public static GridOffHeapMap unsafeMap(int concurrency, long initCap) {
+        return new GridUnsafeMap(concurrency, 0.75f, initCap, 0, (short)0, null);
     }
 
     /**
@@ -55,8 +55,8 @@ public class GridOffHeapMapFactory {
      * @param initCap Initial capacity.
      * @return Off-heap map.
      */
-    public static <K> GridOffHeapMap<K> unsafeMap(int concurrency, float load, long initCap) {
-        return new GridUnsafeMap<>(concurrency, load, initCap, 0, (short)0, null);
+    public static GridOffHeapMap unsafeMap(int concurrency, float load, long initCap) {
+        return new GridUnsafeMap(concurrency, load, initCap, 0, (short)0, null);
     }
 
     /**
@@ -68,8 +68,8 @@ public class GridOffHeapMapFactory {
      * @param lruStripes Number of LRU stripes.
      * @return Off-heap map.
      */
-    public static <K> GridOffHeapMap<K> unsafeMap(long initCap, long totalMem, short lruStripes) {
-        return new GridUnsafeMap<>(128, 0.75f, initCap, totalMem, lruStripes, null);
+    public static GridOffHeapMap unsafeMap(long initCap, long totalMem, short lruStripes) {
+        return new GridUnsafeMap(128, 0.75f, initCap, totalMem, lruStripes, null);
     }
 
     /**
@@ -82,9 +82,9 @@ public class GridOffHeapMapFactory {
      * @param lsnr Optional eviction listener which gets notified every time an entry is evicted.
      * @return Off-heap map.
      */
-    public static <K> GridOffHeapMap<K> unsafeMap(long initCap, long totalMem, short lruStripes,
+    public static GridOffHeapMap unsafeMap(long initCap, long totalMem, short lruStripes,
         @Nullable GridOffHeapEvictListener lsnr) {
-        return new GridUnsafeMap<>(128, 0.75f, initCap, totalMem, lruStripes, lsnr);
+        return new GridUnsafeMap(128, 0.75f, initCap, totalMem, lruStripes, lsnr);
     }
 
     /**
@@ -98,9 +98,9 @@ public class GridOffHeapMapFactory {
      * @param lsnr Optional eviction listener which gets notified every time an entry is evicted.
      * @return Off-heap map.
      */
-    public static <K> GridOffHeapMap<K> unsafeMap(int concurrency, long initCap, long totalMem, short lruStripes,
+    public static GridOffHeapMap unsafeMap(int concurrency, long initCap, long totalMem, short lruStripes,
         @Nullable GridOffHeapEvictListener lsnr) {
-        return new GridUnsafeMap<>(concurrency, 0.75f, initCap, totalMem, lruStripes, lsnr);
+        return new GridUnsafeMap(concurrency, 0.75f, initCap, totalMem, lruStripes, lsnr);
     }
 
     /**
@@ -115,9 +115,9 @@ public class GridOffHeapMapFactory {
      * @param lsnr Optional eviction listener which gets notified every time an entry is evicted.
      * @return Off-heap map.
      */
-    public static <K> GridOffHeapMap<K> unsafeMap(int concurrency, float load, long initCap, long totalMem,
+    public static <K> GridOffHeapMap unsafeMap(int concurrency, float load, long initCap, long totalMem,
         short lruStripes, @Nullable GridOffHeapEvictListener lsnr) {
-        return new GridUnsafeMap<>(concurrency, load, initCap, totalMem, lruStripes, lsnr);
+        return new GridUnsafeMap(concurrency, load, initCap, totalMem, lruStripes, lsnr);
     }
 
     /**

@@ -283,7 +283,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                         // Fail the whole thing.
                         if (e instanceof ClusterTopologyCheckedException)
                             fut.onResult((ClusterTopologyCheckedException)e);
-                        else
+                        else if (!cctx.kernalContext().isStopping())
                             fut.onResult(e);
                     }
                 }

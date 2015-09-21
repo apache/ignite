@@ -4,9 +4,9 @@ Apache Ignite Release Notes
 Apache Ignite In-Memory Data Fabric 1.4
 ---------------------------------------
 * Added SSL support to communication and discovery.
-* Added portable objects API.
 * Added support for log4j2.
 * Added versioned entry to cache API.
+* Added client node based JDBC driver implementation.
 * Fixed IGNITE_HOME resolution with JBoss.
 * Fixed configuration file resolution on classpath.
 * Fixed MBean registration for caches.

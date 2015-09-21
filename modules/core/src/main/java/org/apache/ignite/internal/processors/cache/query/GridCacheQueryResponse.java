@@ -193,10 +193,8 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
         return reqId;
     }
 
-    /**
-     * @return Error.
-     */
-    public Throwable error() {
+    /** {@inheritDoc} */
+    @Override public Throwable error() {
         return err;
     }
 

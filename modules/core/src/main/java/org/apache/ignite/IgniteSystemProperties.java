@@ -356,6 +356,9 @@ public final class IgniteSystemProperties {
     /** Number of times pending cache objects will be dumped to the log in case of partition exchange timeout. */
     public static final String IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD = "IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD";
 
+    /** JDBC driver cursor remove delay. */
+    public static final String IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY = "IGNITE_JDBC_DRIVER_CURSOR_RMV_DELAY";
+
     /**
      * Enforces singleton.
      */

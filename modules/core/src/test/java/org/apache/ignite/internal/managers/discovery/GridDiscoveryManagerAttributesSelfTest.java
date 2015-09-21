@@ -159,51 +159,6 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testDifferentPortableProtocolVersions() throws Exception {
-        startGridWithPortableProtocolVer("VER_99_99_99");
-
-        try {
-            startGrid(1);
-
-            fail();
-        }
-        catch (IgniteCheckedException e) {
-            if (!e.getCause().getMessage().startsWith("Remote node has portable protocol version different from local"))
-                throw e;
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNullPortableProtocolVersion() throws Exception {
-        startGridWithPortableProtocolVer(null);
-
-        // Must not fail in order to preserve backward compatibility with the nodes that don't have this property yet.
-        startGrid(1);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void startGridWithPortableProtocolVer(String ver) throws Exception {
-        Ignite ignite = startGrid(0);
-
-        ClusterNode clusterNode = ignite.cluster().localNode();
-
-        Field f = clusterNode.getClass().getDeclaredField("attrs");
-        f.setAccessible(true);
-
-        Map<String, Object> attrs = new HashMap<>((Map<String, Object>)f.get(clusterNode));
-
-        attrs.put(IgniteNodeAttributes.ATTR_PORTABLE_PROTO_VER, ver);
-
-        f.set(clusterNode, attrs);
-    }
-
-    /**
      * @param preferIpV4 {@code java.net.preferIPv4Stack} system property value.
      * @throws Exception If failed.
      */

@@ -18,12 +18,8 @@
 package org.apache.ignite.internal.portable;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
@@ -32,14 +28,13 @@ import java.util.Date;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.portable.streams.PortableHeapOutputStream;
 import org.apache.ignite.internal.portable.streams.PortableOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableRawWriter;
-import org.apache.ignite.portable.PortableWriter;
+import org.apache.ignite.internal.portable.api.PortableException;
+import org.apache.ignite.internal.portable.api.PortableRawWriter;
+import org.apache.ignite.internal.portable.api.PortableWriter;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -91,9 +86,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
     /** */
     private static final int INIT_CAP = 1024;
-
-    /** */
-    private static final ConcurrentHashMap<Class<?>, Boolean> useOptMarshCache = new ConcurrentHashMap<>();
 
     /** */
     private final PortableContext ctx;
@@ -197,7 +189,19 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     void marshal(Object obj, boolean detached) throws PortableException {
         assert obj != null;
 
-        if (useOptimizedMarshaller(obj)) {
+        cls = obj.getClass();
+
+        PortableClassDescriptor desc = ctx.descriptorForClass(cls);
+
+        if (desc == null)
+            throw new PortableException("Object is not portable: [class=" + cls + ']');
+
+        if (desc.excluded()) {
+            doWriteByte(NULL);
+            return;
+        }
+
+        if (desc.useOptimizedMarshaller()) {
             writeByte(OPTM_MARSH);
 
             try {
@@ -211,18 +215,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
                 throw new PortableException("Failed to marshal object with optimized marshaller: " + obj, e);
             }
 
-            return;
-        }
-
-        cls = obj.getClass();
-
-        PortableClassDescriptor desc = ctx.descriptorForClass(cls);
-
-        if (desc == null)
-            throw new PortableException("Object is not portable: [class=" + cls + ']');
-
-        if (desc.excluded()) {
-            doWriteByte(NULL);
             return;
         }
 
@@ -268,44 +260,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
         desc.write(obj, this);
     }
-
-     /**
-      * Determines whether to use {@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller} for serialization
-      * or not.
-      *
-      * @param obj Object to serialize.
-      * @return {@code true} if to use, {@code false} otherwise.
-      */
-     private boolean useOptimizedMarshaller(Object obj) {
-         Class<?> cls = obj.getClass();
-
-         Boolean use = useOptMarshCache.get(cls);
-
-         if (use != null)
-             return use;
-
-         if (ctx.isPredefinedClass(cls))
-             use = false;
-         else {
-             try {
-                 Method writeObj = cls.getDeclaredMethod("writeObject", ObjectOutputStream.class);
-                 Method readObj = cls.getDeclaredMethod("readObject", ObjectInputStream.class);
-
-                 if (!Modifier.isStatic(writeObj.getModifiers()) && !Modifier.isStatic(readObj.getModifiers()) &&
-                     writeObj.getReturnType() == void.class && readObj.getReturnType() == void.class)
-                     use = true;
-                 else
-                     use = false;
-
-             } catch (NoSuchMethodException e) {
-                 use = false;
-             }
-         }
-
-         useOptMarshCache.putIfAbsent(cls, use);
-
-         return use;
-     }
 
     /**
      * @param obj Object.
@@ -803,12 +757,12 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             if (tryWriteAsHandle(val))
                 return;
 
-            PortableContext.Type type = ctx.typeId(val.getClass().getComponentType());
+            PortableClassDescriptor desc = ctx.descriptorForClass(val.getClass().getComponentType());
 
             doWriteByte(OBJ_ARR);
 
-            if (type.registered())
-                doWriteInt(type.id());
+            if (desc.registered())
+                doWriteInt(desc.typeId());
             else {
                 doWriteInt(UNREGISTERED_TYPE_ID);
                 doWriteString(val.getClass().getComponentType().getName());
@@ -887,12 +841,12 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (val == null)
             doWriteByte(NULL);
         else {
-            PortableContext.Type type = ctx.typeId(val.getClass());
+            PortableClassDescriptor desc = ctx.descriptorForClass(val.getClass());
 
             doWriteByte(ENUM);
 
-            if (type.registered())
-                doWriteInt(type.id());
+            if (desc.registered())
+                doWriteInt(desc.typeId());
             else {
                 doWriteInt(UNREGISTERED_TYPE_ID);
                 doWriteString(val.getClass().getName());
@@ -911,12 +865,11 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (val == null)
             doWriteByte(NULL);
         else {
-            PortableContext.Type type = ctx.typeId(val.getClass().getComponentType());
-
+            PortableClassDescriptor desc = ctx.descriptorForClass(val.getClass().getComponentType());
             doWriteByte(ENUM_ARR);
 
-            if (type.registered())
-                doWriteInt(type.id());
+            if (desc.registered())
+                doWriteInt(desc.typeId());
             else {
                 doWriteInt(UNREGISTERED_TYPE_ID);
                 doWriteString(val.getClass().getComponentType().getName());
@@ -937,12 +890,12 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         if (val == null)
             doWriteByte(NULL);
         else {
-            PortableContext.Type type = ctx.typeId(val);
+            PortableClassDescriptor desc = ctx.descriptorForClass(val);
 
             doWriteByte(CLASS);
 
-            if (type.registered())
-                doWriteInt(type.id());
+            if (desc.registered())
+                doWriteInt(desc.typeId());
             else {
                 doWriteInt(UNREGISTERED_TYPE_ID);
                 doWriteString(val.getClass().getName());

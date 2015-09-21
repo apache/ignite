@@ -34,13 +34,6 @@
     <version>1.4.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
-    <repositories>
-        <repository>
-            <id>ignite-portables-test-repo</id>
-            <url>file://${basedir}/src/test/portables/repo</url>
-        </repository>
-    </repositories>
-
     <properties>
         <ignite.update.notifier.product>apache-ignite</ignite.update.notifier.product>
     </properties>
@@ -174,20 +167,6 @@
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>2.4</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite.portable</groupId>
-            <artifactId>test1</artifactId>
-            <version>1.1</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite.portable</groupId>
-            <artifactId>test2</artifactId>
-            <version>1.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
