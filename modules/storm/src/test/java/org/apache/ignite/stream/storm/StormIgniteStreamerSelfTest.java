@@ -23,6 +23,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
  * Created by chandresh.pancholi on 9/13/15.
  */
 public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
+    StormStreamer<String, String, String> stormStreamer = null;
 
     /** Count. */
     private static final int CNT = 100;
@@ -49,11 +50,22 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
             stmr.allowOverwrite(true);
             stmr.autoFlushFrequency(10);
 
-            // Get the cache.
+            stormStreamer = new StormStreamer<>();
+
+            /*  Get the cache. */
             IgniteCache<String, String> cache = ignite.cache(null);
 
+            /*  Set ignite instance */
+            stormStreamer.setIgnite(ignite);
+
+            /* Set streamer instance */
+            stormStreamer.setStreamer(stmr);
+
+            /* set thread count */
+            stormStreamer.setThreads(5);
+
             //Start storm topology
-            startTopology();
+            startTopology(stormStreamer);
 
             //Get key, value from hash map
             HashMap<String,String> keyValMap = new StormSpout().getKeyValMap();
@@ -77,34 +89,34 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    public void startTopology(){
+    public void startTopology(StormStreamer stormStreamer){
 
-        //Storm topology builder
+        /* Storm topology builder */
         TopologyBuilder builder = new TopologyBuilder();
 
-        //Set storm spout in builder
+        /*Set storm spout in topology builder */
         builder.setSpout("spout", new StormSpout());
 
-        //Set storm bolt in builder
-        builder.setBolt("bolt", new StormStreamer<>()).shuffleGrouping("spout");
+        /* Set storm bolt in topology builder */
+        builder.setBolt("bolt", stormStreamer).shuffleGrouping("spout");
 
-        //Storm config for local cluster
+        /*Storm config for local cluster */
         Config config = new Config();
 
-        //Storm local cluster
+        /* Storm local cluster */
         LocalCluster localCluster = new LocalCluster();
 
-        //Submit storm topology to local cluster
+        /* Submit storm topology to local cluster */
         localCluster.submitTopology("test", config, builder.createTopology());
 
-        //Topology will run for 10sec
+        /* Topology will run for 10sec */
         Utils.sleep(10000);
 
-        //Kil "test" topology
-        localCluster.killTopology("test");
-
-        //Local storm cluster shutting down
-        localCluster.shutdown();
+//        /* Kil "test" topology */
+//        localCluster.killTopology("test");
+//
+//        /* Local storm cluster shutting down */
+//        localCluster.shutdown();
     }
 
 }

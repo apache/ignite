@@ -16,11 +16,8 @@ public class StormSpout implements IRichSpout {
     /* Count */
     private static int CNT = 100;
 
-    /** Spout message key prefix. */
-    private static final String KEY_PREFIX = "192.168.2.";
-
     /** Spout message value URL. */
-    private static final String VALUE_URL = ",www.example.com,";
+    private static final String VALUE = "Value,";
 
     /* spout output collector */
     private SpoutOutputCollector collector;
@@ -29,7 +26,7 @@ public class StormSpout implements IRichSpout {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-        outputFieldsDeclarer.declare(new Fields("keyValMap"));
+        outputFieldsDeclarer.declare(new Fields("igniteGrid"));
     }
 
     @Override
@@ -43,21 +40,20 @@ public class StormSpout implements IRichSpout {
         collector.emit(new Values(keyValMap));
     }
     public HashMap<String, String> getKeyValMap(){
-        List<Integer> subnet = new ArrayList<>();
+        List<Integer> numbers = new ArrayList<>();
 
         for (int i = 1; i <= CNT; i++)
-            subnet.add(i);
+            numbers.add(i);
 
-        Collections.shuffle(subnet);
+        Collections.shuffle(numbers);
 
         HashMap<String,String> keyValMap = new HashMap<>();
 
         for(int evt = 0; evt<CNT; evt++) {
-            long runtime = System.currentTimeMillis();
 
-            String ip = KEY_PREFIX + subnet.get(evt);
+            String ip = Integer.toString(numbers.get(evt));
 
-            String msg = runtime + VALUE_URL + ip;
+            String msg = VALUE + ip;
 
             keyValMap.put(ip, msg);
         }
