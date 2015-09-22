@@ -36,52 +36,28 @@
     <files>
         <!-- Copy CPP files. -->
         <file>
-            <source>modules/platform/src/main/cpp/project/vs/ignite.slnrel</source>
-            <outputDirectory>/platforms/cpp/src/project/vs</outputDirectory>
+            <source>modules/platforms/cpp/project/vs/ignite.slnrel</source>
+            <outputDirectory>/platforms/cpp/project/vs</outputDirectory>
             <destName>ignite.sln</destName>
         </file>
 
         <file>
-            <source>modules/platform/src/main/cpp/project/vs/ignite_x86.slnrel</source>
-            <outputDirectory>/platforms/cpp/src/project/vs</outputDirectory>
+            <source>modules/platforms/cpp/project/vs/ignite_x86.slnrel</source>
+            <outputDirectory>/platforms/cpp/project/vs</outputDirectory>
             <destName>ignite_x86.sln</destName>
         </file>
 
         <!-- Copy .Net files. -->
         <file>
-            <source>modules/platform/src/main/dotnet/Apache.Ignite.slnrel</source>
+            <source>modules/platforms/dotnet/Apache.Ignite.slnrel</source>
             <outputDirectory>/platforms/dotnet</outputDirectory>
             <destName>Apache.Ignite.sln</destName>
         </file>
 
         <file>
-            <source>modules/platform/src/main/dotnet/Apache.Ignite_x86.slnrel</source>
+            <source>modules/platforms/dotnet/Apache.Ignite_x86.slnrel</source>
             <outputDirectory>/platforms/dotnet</outputDirectory>
             <destName>Apache.Ignite_x86.sln</destName>
-        </file>
-
-        <file>
-            <source>modules/platform/src/main/dotnet/Apache.Ignite/Apache.Ignite.csprojrel</source>
-            <outputDirectory>/platforms/dotnet/Apache.Ignite</outputDirectory>
-            <destName>Apache.Ignite.csproj</destName>
-        </file>
-
-        <file>
-            <source>modules/platform/src/main/dotnet/Examples/Apache.Ignite.Examples.slnrel</source>
-            <outputDirectory>/platforms/dotnet/Examples</outputDirectory>
-            <destName>Apache.Ignite.Examples.sln</destName>
-        </file>
-
-        <file>
-            <source>modules/platform/src/main/dotnet/Examples/Apache.Ignite.Examples/Apache.Ignite.Examples.csprojrel</source>
-            <outputDirectory>/platforms/dotnet/Examples/Apache.Ignite.Examples</outputDirectory>
-            <destName>Apache.Ignite.Examples.csproj</destName>
-        </file>
-
-        <file>
-            <source>modules/platform/src/main/dotnet/Examples/Apache.Ignite.ExamplesDll/Apache.Ignite.ExamplesDll.csprojrel</source>
-            <outputDirectory>/platforms/dotnet/Examples/Apache.Ignite.ExamplesDll</outputDirectory>
-            <destName>Apache.Ignite.ExamplesDll.csproj</destName>
         </file>
 
         <file>
@@ -106,7 +82,7 @@
     <fileSets>
         <!-- Move .Net readme. -->
         <fileSet>
-            <directory>modules/platform/src/main/dotnet</directory>
+            <directory>modules/platforms/dotnet</directory>
             <outputDirectory>/platforms/dotnet</outputDirectory>
             <includes>
                 <include>README.txt</include>
@@ -115,38 +91,31 @@
 
         <!-- Move .Net "core" module. -->
         <fileSet>
-            <directory>modules/platform/src/main/dotnet/Apache.Ignite.Core</directory>
+            <directory>modules/platforms/dotnet/Apache.Ignite.Core</directory>
             <outputDirectory>/platforms/dotnet/Apache.Ignite.Core</outputDirectory>
         </fileSet>
 
         <!-- Move .Net executable module. -->
         <fileSet>
-            <directory>modules/platform/src/main/dotnet/Apache.Ignite</directory>
+            <directory>modules/platforms/dotnet/Apache.Ignite</directory>
             <outputDirectory>/platforms/dotnet/Apache.Ignite</outputDirectory>
-            <excludes>
-                <exclude>**/*.csproj*</exclude>
-            </excludes>
         </fileSet>
 
         <!-- Move .Net examples. -->
         <fileSet>
-            <directory>modules/platform/src/main/dotnet/Examples</directory>
-            <outputDirectory>/platforms/dotnet/Examples</outputDirectory>
-            <excludes>
-                <exclude>**/*.csproj*</exclude>
-                <exclude>**/*.sln*</exclude>
-            </excludes>
+            <directory>modules/platforms/dotnet/examples</directory>
+            <outputDirectory>/platforms/dotnet/examples</outputDirectory>
         </fileSet>
 
         <!-- Move .Net licenses. -->
         <fileSet>
-            <directory>modules/platform/licenses</directory>
+            <directory>modules/platforms/licenses</directory>
             <outputDirectory>/platforms/dotnet/licenses</outputDirectory>
         </fileSet>
 
         <!-- Move CPP readme. -->
         <fileSet>
-            <directory>modules/platform/src/main/cpp</directory>
+            <directory>modules/platforms/cpp</directory>
             <outputDirectory>/platforms/cpp</outputDirectory>
             <includes>
                 <include>README.txt</include>
@@ -155,25 +124,25 @@
 
         <!-- Move CPP "common" module. -->
         <fileSet>
-            <directory>modules/platform/src/main/cpp/common</directory>
-            <outputDirectory>/platforms/cpp/src/common</outputDirectory>
+            <directory>modules/platforms/cpp/common</directory>
+            <outputDirectory>/platforms/cpp/common</outputDirectory>
         </fileSet>
 
         <!-- Move CPP "core" module. -->
         <fileSet>
-            <directory>modules/platform/src/main/cpp/core</directory>
-            <outputDirectory>/platforms/cpp/src/core</outputDirectory>
+            <directory>modules/platforms/cpp/core</directory>
+            <outputDirectory>/platforms/cpp/core</outputDirectory>
         </fileSet>
 
         <!-- Move CPP examples. -->
         <fileSet>
-            <directory>modules/platform/src/main/cpp/examples</directory>
+            <directory>modules/platforms/cpp/examples</directory>
             <outputDirectory>/platforms/cpp/examples</outputDirectory>
         </fileSet>
 
         <!-- Move CPP licenses. -->
         <fileSet>
-            <directory>modules/platform/licenses</directory>
+            <directory>modules/platforms/licenses</directory>
             <outputDirectory>/platforms/cpp/licenses</outputDirectory>
         </fileSet>
 
