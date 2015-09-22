@@ -17,13 +17,22 @@
 
 package org.apache.ignite.stream;
 
-/**
- * This interface is provided for backwards compatibility with {@link StreamSingleTupleExtractor}.
- *
- * @deprecated Will be removed in 2.0.0.
- * @see StreamSingleTupleExtractor
- */
-@Deprecated
-public interface StreamTupleExtractor<T, K, V> extends StreamSingleTupleExtractor<T, K, V> {
+import java.util.Map;
 
+/**
+ * Stream tuple extractor to convert a single message to zero, one or many tuples.
+ * <p>
+ * For cases where cardinality will always be 1:1 (or 0:1), you may consider {@link StreamTupleExtractor}.
+ *
+ * @see StreamTupleExtractor
+ */
+public interface StreamMultipleTupleExtractor<T, K, V> {
+
+    /**
+     * Extracts a set of key-values from a message.
+     *
+     * @param msg Message.
+     * @return Map containing resulting tuples.
+     */
+    public Map<K, V> extract(T msg);
 }
