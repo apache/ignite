@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.HashSet;
 import javax.cache.Cache;
 import javax.cache.configuration.CompleteConfiguration;
 import javax.cache.configuration.Factory;
@@ -1808,7 +1809,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     protected Object writeReplace() {
         CacheConfiguration<K, V> cfg = new CacheConfiguration<>(this);
 
-        cfg.listenerConfigurations = null;
+        cfg.listenerConfigurations = new HashSet<>();
 
         return cfg;
     }
