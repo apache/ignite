@@ -152,8 +152,6 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEquals(F.asMap("dir", new IgfsListingEntry(dir), "file", new IgfsListingEntry(file)),
             mgr.directoryListing(ROOT_ID));
 
-        //IgfsFileInfo tmp = mgr.info(dir.id());
-
         assertEquals(dir, mgr.info(dir.id()));
         assertEquals(file, mgr.info(file.id()));
 
@@ -284,14 +282,9 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEquals(Arrays.asList(ROOT_ID, a.id(), b.id(), null), mgr.fileIds(new IgfsPath("/a/b/f6")));
         assertEquals(Arrays.asList(ROOT_ID, null, null, null, null), mgr.fileIds(new IgfsPath("/f7/a/b/f6")));
 
-        // Validate 'rename' operation.
-        final IgniteUuid rndId = IgniteUuid.randomUuid();
-
         // One of participated files does not exist in cache.
-        //expectsRenameFail(ROOT_ID, "b", rndId, "b2", rndId, "Failed to lock source directory (not found?)");
         expectsRenameFail("/b8", "/b2", "Failed to perform move because some path component was not found.");
 
-//        expectsRenameFail(b.id(), "b", rndId, "b2", rndId, "Failed to lock source directory (not found?)");
         expectsRenameFail("/a", "/b/b8", "Failed to perform move because some path component was not found.");
 
         expectsRenameFail("/a/f2", "/a/b/f3", "Failed to perform move because destination points to existing file");
@@ -397,6 +390,12 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEmpty(mgr.directoryListing(b.id()));
     }
 
+    /**
+     * Utility method to make IgfsPath.
+     *
+     * @param p The String path.
+     * @return The IgfsPath object.
+     */
     private static IgfsPath path(String p) {
         return new IgfsPath(p);
     }
@@ -420,8 +419,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
     private void expectsUpdatePropertiesFail(@Nullable final IgniteUuid fileId, @Nullable final Map<String, String> props,
         Class<? extends Throwable> cls, @Nullable String msg) {
         assertThrows(log, new Callable() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 return mgr.updateProperties(null, fileId, "file", props);
             }
         }, cls, msg);
