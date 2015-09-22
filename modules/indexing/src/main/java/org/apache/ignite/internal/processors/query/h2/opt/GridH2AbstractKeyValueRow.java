@@ -119,7 +119,9 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
      * @throws IgniteCheckedException If failed.
      */
     public synchronized void onUnswap(Object val, boolean beforeRmv) throws IgniteCheckedException {
-        if (peekValue(VAL_COL) != null)
+        Value val0 = peekValue(VAL_COL);
+
+        if (val0 != null && !(val0 instanceof WeakValue))
             return;
 
         setValue(VAL_COL, desc.wrap(val, desc.valueType()));
