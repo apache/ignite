@@ -244,12 +244,12 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * TODO: IGNITE-599.
-     *
      * @throws Exception If failed.
      */
     public void testSwapEviction() throws Exception {
         try {
+            fail("https://issues.apache.org/jira/browse/IGNITE-599");
+
             final CountDownLatch evicted = new CountDownLatch(10);
 
             startGrids(1);

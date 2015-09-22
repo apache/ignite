@@ -89,13 +89,13 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final AtomicInteger srvIdx = new AtomicInteger();
+    protected static final AtomicInteger srvIdx = new AtomicInteger();
 
     /** */
     private static final AtomicInteger clientIdx = new AtomicInteger();
 
     /** */
-    private static Collection<UUID> srvNodeIds;
+    protected static Collection<UUID> srvNodeIds;
 
     /** */
     private static Collection<UUID> clientNodeIds;
@@ -128,13 +128,13 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     private UUID nodeId;
 
     /** */
-    private TcpDiscoveryVmIpFinder clientIpFinder;
+    protected TcpDiscoveryVmIpFinder clientIpFinder;
 
     /** */
     private long joinTimeout = TcpDiscoverySpi.DFLT_JOIN_TIMEOUT;
 
     /** */
-    private long netTimeout = TcpDiscoverySpi.DFLT_NETWORK_TIMEOUT;
+    protected long netTimeout = TcpDiscoverySpi.DFLT_NETWORK_TIMEOUT;
 
     /** */
     private boolean longSockTimeouts;
@@ -466,7 +466,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             @Override public void apply(Socket sock) {
                 try {
                     latch.await();
-                } catch (InterruptedException e) {
+                }
+                catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -2056,7 +2057,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestTcpDiscoverySpi extends TcpDiscoverySpi {
+    protected static class TestTcpDiscoverySpi extends TcpDiscoverySpi {
         /** */
         private final Object mux = new Object();
 
