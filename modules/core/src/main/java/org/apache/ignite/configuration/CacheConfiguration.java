@@ -20,7 +20,6 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import java.util.Collection;
 import javax.cache.Cache;
-import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.CompleteConfiguration;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.MutableConfiguration;
@@ -44,7 +43,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1810,12 +1808,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     protected Object writeReplace() {
         CacheConfiguration<K, V> cfg = new CacheConfiguration<>(this);
 
-        if (cfg.getCacheEntryListenerConfigurations() != null) {
-            for (CacheEntryListenerConfiguration<K, V> lsnrCfg : cfg.getCacheEntryListenerConfigurations())
-                cfg.removeCacheEntryListenerConfiguration(lsnrCfg);
-        }
-
-        assert F.isEmpty(cfg.getCacheEntryListenerConfigurations());
+        cfg.listenerConfigurations = null;
 
         return cfg;
     }
