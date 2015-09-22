@@ -130,20 +130,23 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     /**
      * Atomically updates weak value.
      *
-     * @param upd New value.
-     * @return {@code null} If update succeeded, unexpected value otherwise.
+     * @param valObj New value.
+     * @return New value if old value is empty, old value otherwise.
+     * @throws IgniteCheckedException If failed.
      */
-    protected synchronized Value updateWeakValue(Value upd) {
+    protected synchronized Value updateWeakValue(Object valObj) throws IgniteCheckedException {
         Value res = peekValue(VAL_COL);
 
         if (res != null && !(res instanceof WeakValue))
             return res;
 
+        Value upd = desc.wrap(valObj, desc.valueType());
+
         setValue(VAL_COL, new WeakValue(upd));
 
         notifyAll();
 
-        return null;
+        return upd;
     }
 
     /**
@@ -188,21 +191,23 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
             Value v;
 
             if (col == VAL_COL) {
-                v = syncValue(0);
+                v = peekValue(VAL_COL);
 
                 long start = 0;
                 int attempt = 0;
 
                 while ((v = WeakValue.unwrap(v)) == null) {
-                    v = getOffheapValue(VAL_COL);
+                    if (!desc.preferSwapValue()) {
+                        v = getOffheapValue(VAL_COL);
 
-                    if (v != null) {
-                        setValue(VAL_COL, v);
+                        if (v != null) {
+                            setValue(VAL_COL, v);
 
-                        if (peekValue(KEY_COL) == null)
-                            cache();
+                            if (peekValue(KEY_COL) == null)
+                                cache();
 
-                        return v;
+                            return v;
+                        }
                     }
 
                     Object k = getValue(KEY_COL).getObject();
@@ -213,16 +218,24 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
                         if (valObj != null) {
                             // Even if we've found valObj in swap, it is may be some new value,
                             // while the needed value was already unswapped, so we have to recheck it.
-                            if ((v = WeakValue.unwrap(syncValue(0))) == null && (v = getOffheapValue(VAL_COL)) == null) {
-                                Value upd = desc.wrap(valObj, desc.valueType());
-
-                                v = updateWeakValue(upd);
-
-                                return v == null ? upd : v;
-                            }
+                            if ((v = getOffheapValue(VAL_COL)) == null)
+                                return updateWeakValue(valObj);
                         }
                         else {
                             // If nothing found in swap then we should be already unswapped.
+                            if (desc.preferSwapValue()) {
+                                v = getOffheapValue(VAL_COL);
+
+                                if (v != null) {
+                                    setValue(VAL_COL, v);
+
+                                    if (peekValue(KEY_COL) == null)
+                                        cache();
+
+                                    return v;
+                                }
+                            }
+
                             v = syncValue(attempt);
                         }
                     }
