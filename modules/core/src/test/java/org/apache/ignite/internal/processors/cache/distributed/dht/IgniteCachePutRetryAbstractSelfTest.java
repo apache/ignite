@@ -168,6 +168,13 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    public void testGetAndPut() throws Exception {
+        checkRetry(Test.GET_AND_PUT, TestMemoryMode.HEAP, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testPutStoreEnabled() throws Exception {
         checkRetry(Test.PUT, TestMemoryMode.HEAP, true);
     }
@@ -267,6 +274,29 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
                         for (int i = 0; i < keysCnt; i++)
                             cache.put(i, val);
+
+                        for (int i = 0; i < keysCnt; i++)
+                            assertEquals(val, cache.get(i));
+                    }
+
+                    break;
+                }
+
+                case GET_AND_PUT: {
+                    for (int i = 0; i < keysCnt; i++)
+                        cache.put(i, 0);
+
+                    while (System.currentTimeMillis() < stopTime) {
+                        Integer expOld = iter;
+
+                        Integer val = ++iter;
+
+                        for (int i = 0; i < keysCnt; i++) {
+                            Integer old = cache.getAndPut(i, val);
+
+                            assertTrue("Unexpected old value [old=" + old + ", exp=" + expOld + ']',
+                                expOld.equals(old) || val.equals(old));
+                        }
 
                         for (int i = 0; i < keysCnt; i++)
                             assertEquals(val, cache.get(i));
@@ -493,6 +523,9 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     enum Test {
         /** */
         PUT,
+
+        /** */
+        GET_AND_PUT,
 
         /** */
         PUT_ALL,
