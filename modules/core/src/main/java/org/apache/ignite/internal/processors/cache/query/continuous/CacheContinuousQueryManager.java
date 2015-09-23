@@ -43,10 +43,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
-import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -55,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
 import org.jsr166.ConcurrentHashMap8;
@@ -271,7 +271,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param bufSize Buffer size.
      * @param timeInterval Time interval.
      * @param autoUnsubscribe Auto unsubscribe flag.
-     * @param grp Cluster group.
+     * @param loc Local flag.
      * @return Continuous routine ID.
      * @throws IgniteCheckedException In case of error.
      */
@@ -280,7 +280,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         int bufSize,
         long timeInterval,
         boolean autoUnsubscribe,
-        ClusterGroup grp) throws IgniteCheckedException
+        boolean loc) throws IgniteCheckedException
     {
         return executeQuery0(
             locLsnr,
@@ -293,7 +293,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             true,
             false,
             true,
-            grp);
+            loc);
     }
 
     /**
@@ -321,7 +321,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             true,
             false,
             true,
-            loc ? cctx.grid().cluster().forLocal() : null);
+            loc);
     }
 
     /**
@@ -383,7 +383,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param oldValRequired Old value required flag.
      * @param sync Synchronous flag.
      * @param ignoreExpired Ignore expired event flag.
-     * @param grp Cluster group.
+     * @param loc Local flag.
      * @return Continuous routine ID.
      * @throws IgniteCheckedException In case of error.
      */
@@ -397,43 +397,14 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         boolean oldValRequired,
         boolean sync,
         boolean ignoreExpired,
-        ClusterGroup grp) throws IgniteCheckedException
+        boolean loc) throws IgniteCheckedException
     {
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-        if (grp == null)
-            grp = cctx.kernalContext().grid().cluster();
-
-        Collection<ClusterNode> nodes = grp.nodes();
-
-        if (nodes.isEmpty())
-            throw new ClusterTopologyException("Failed to execute continuous query (empty cluster group is " +
-                "provided).");
-
-        boolean skipPrimaryCheck = false;
-
-        switch (cctx.config().getCacheMode()) {
-            case LOCAL:
-                if (!nodes.contains(cctx.localNode()))
-                    throw new ClusterTopologyException("Continuous query for LOCAL cache can be executed " +
-                        "only locally (provided projection contains remote nodes only).");
-                else if (nodes.size() > 1)
-                    U.warn(log, "Continuous query for LOCAL cache will be executed locally (provided projection is " +
-                        "ignored).");
-
-                grp = grp.forNode(cctx.localNode());
-
-                break;
-
-            case REPLICATED:
-                if (nodes.size() == 1 && F.first(nodes).equals(cctx.localNode()))
-                    skipPrimaryCheck = cctx.affinityNode();
-
-                break;
-        }
-
         int taskNameHash = !internal && cctx.kernalContext().security().enabled() ?
             cctx.kernalContext().job().currentTaskNameHash() : 0;
+
+        boolean skipPrimaryCheck = loc && cctx.config().getCacheMode() == CacheMode.REPLICATED && cctx.affinityNode();
 
         GridContinuousHandler hnd = new CacheContinuousQueryHandler(
             cctx.name(),
@@ -448,12 +419,17 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             taskNameHash,
             skipPrimaryCheck);
 
+        IgnitePredicate<ClusterNode> pred = null;
+
+        if (loc || cctx.config().getCacheMode() == CacheMode.LOCAL)
+            pred = F.nodeForNodeId(cctx.localNodeId());
+
         UUID id = cctx.kernalContext().continuous().startRoutine(
             hnd,
             bufSize,
             timeInterval,
             autoUnsubscribe,
-            grp.predicate()).get();
+            pred).get();
 
         if (notifyExisting) {
             final Iterator<GridCacheEntryEx> it = cctx.cache().allEntries().iterator();
@@ -635,7 +611,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 cfg.isOldValueRequired(),
                 cfg.isSynchronous(),
                 false,
-                null);
+                false);
         }
 
         /**
