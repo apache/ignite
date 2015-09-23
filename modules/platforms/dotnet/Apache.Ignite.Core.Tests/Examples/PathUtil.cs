@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// <summary>
         /// Examples source code path.
         /// </summary>
-        public static readonly string ExamplesSourcePath = Path.Combine(IgniteHome, @"platforms\dotnet\Examples");
+        public static readonly string ExamplesSourcePath = Path.Combine(IgniteHome, @"platforms\dotnet\examples");
 
         /// <summary>
         /// Gets the full configuration path.
