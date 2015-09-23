@@ -448,8 +448,12 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             taskNameHash,
             skipPrimaryCheck);
 
-        UUID id = cctx.kernalContext().continuous().startRoutine(hnd, bufSize, timeInterval,
-            autoUnsubscribe, grp.predicate()).get();
+        UUID id = cctx.kernalContext().continuous().startRoutine(
+            hnd,
+            bufSize,
+            timeInterval,
+            autoUnsubscribe,
+            grp.predicate()).get();
 
         if (notifyExisting) {
             final Iterator<GridCacheEntryEx> it = cctx.cache().allEntries().iterator();
