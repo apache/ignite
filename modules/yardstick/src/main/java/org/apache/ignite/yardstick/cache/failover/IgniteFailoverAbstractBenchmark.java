@@ -43,7 +43,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K,V> extends IgniteCacheAb
                 @Override public void run() {
                     try {
                         println("[RESTARTER] Servers restarter started. Will start restarting servers after "
-                            + cfg.warmup() * 1000 + " sec. warmup.");
+                            + cfg.warmup() + " sec. warmup.");
 
                         Thread.sleep(cfg.warmup() * 1000);
 
