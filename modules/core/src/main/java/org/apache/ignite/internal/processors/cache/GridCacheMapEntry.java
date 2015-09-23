@@ -512,7 +512,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     }
                 }
                 else
-                    e = detached() ? cctx.swap().read(this, true, true, true) : cctx.swap().readAndRemove(this);
+                    e = detached() ? cctx.swap().read(this, true, true, true, false) : cctx.swap().readAndRemove(this);
 
                 if (log.isDebugEnabled())
                     log.debug("Read swap entry [swapEntry=" + e + ", cacheEntry=" + this + ']');
@@ -1588,6 +1588,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 boolean hasValPtr = hasOffHeapPointer();
 
+                if (old == null)
+                    old = saveValueForIndexUnlocked();
+
                 // Update index inside synchronization since it can be updated
                 // in load methods without actually holding entry lock.
                 clearIndex(old);
@@ -2162,6 +2165,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (writeThrough)
                     // Must persist inside synchronization in non-tx mode.
                     cctx.store().remove(null, keyValue(false));
+
+                if (oldVal == null)
+                    oldVal = saveValueForIndexUnlocked();
 
                 // Update index inside synchronization since it can be updated
                 // in load methods without actually holding entry lock.
@@ -2834,7 +2840,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (offheap || swap) {
-                GridCacheSwapEntry e = cctx.swap().read(this, false, offheap, swap);
+                GridCacheSwapEntry e = cctx.swap().read(this, false, offheap, swap, true);
 
                 return e != null ? e.value() : null;
             }
@@ -3342,7 +3348,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         try {
             synchronized (this) {
-                CacheObject expiredVal = saveValueForIndexUnlocked();
+                CacheObject expiredVal = saveOldValueUnlocked(false);
 
                 boolean hasOldBytes = hasOffHeapPointer();
 
@@ -3523,12 +3529,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         try {
             GridCacheQueryManager qryMgr = cctx.queries();
 
-            if (qryMgr != null && qryMgr.enabled()) {
-                qryMgr.store(key,
-                    val,
-                    ver,
-                    expireTime);
-            }
+            if (qryMgr.enabled())
+                qryMgr.store(key, val, ver, expireTime);
         }
         catch (IgniteCheckedException e) {
             throw new GridCacheIndexUpdateException(e);
@@ -3547,8 +3549,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         try {
             GridCacheQueryManager<?, ?> qryMgr = cctx.queries();
 
-            if (qryMgr != null)
-                qryMgr.remove(key(), prevVal == null ? null : prevVal);
+            if (qryMgr.enabled())
+                qryMgr.remove(key(), prevVal);
         }
         catch (IgniteCheckedException e) {
             throw new GridCacheIndexUpdateException(e);
@@ -3562,22 +3564,25 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @return Previous value or {@code null}.
      * @throws IgniteCheckedException If failed to retrieve previous value.
      */
-    protected CacheObject saveValueForIndexUnlocked() throws IgniteCheckedException {
+    protected final CacheObject saveValueForIndexUnlocked() throws IgniteCheckedException {
+        return saveOldValueUnlocked(true);
+    }
+
+    /**
+     * @param qryOnly If {@code true} reads old value only if query indexing is enabled.
+     * @return Previous value or {@code null}.
+     * @throws IgniteCheckedException If failed to retrieve previous value.
+     */
+    private CacheObject saveOldValueUnlocked(boolean qryOnly) throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
-        if (cctx.queries() == null)
+        if (qryOnly && !cctx.queries().enabled())
             return null;
 
         CacheObject val = rawGetOrUnmarshalUnlocked(false);
 
-        if (val == null) {
-            GridCacheSwapEntry swapEntry = cctx.swap().read(key, true, true);
-
-            if (swapEntry == null)
-                return null;
-
-            return swapEntry.value();
-        }
+        if (val == null)
+            val = cctx.swap().readValue(key, true, true);
 
         return val;
     }
@@ -3681,7 +3686,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (obsoleteVersionExtras() != null)
                         return true;
 
-                    CacheObject prev = saveValueForIndexUnlocked();
+                    CacheObject prev = saveOldValueUnlocked(false);
 
                     if (!hasReaders() && markObsolete0(obsoleteVer, false)) {
                         if (swap) {
@@ -3791,7 +3796,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 GridCacheQueryManager qryMgr = cctx.queries();
 
-                if (qryMgr != null)
+                if (qryMgr.enabled())
                     qryMgr.onUnswap(key, prevVal);
             }
         }
