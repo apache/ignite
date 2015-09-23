@@ -42,6 +42,8 @@ public abstract class IgniteFailoverAbstractBenchmark<K,V> extends IgniteCacheAb
             Thread thread = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
+                        Thread.sleep(cfg.warmup() * 1000);
+
                         // Read servers configs from cache to local map.
                         IgniteCache<Integer, BenchmarkConfiguration> srvsCfgsCache = ignite().
                             getOrCreateCache(new CacheConfiguration<Integer, BenchmarkConfiguration>().
@@ -58,7 +60,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K,V> extends IgniteCacheAb
                         // Destroy cache as redundant.
                         srvsCfgsCache.destroy();
 
-                        assert ignite().cluster().nodes().size() == srvsCfgs.size();
+                        assert ignite().cluster().forServers().nodes().size() == srvsCfgs.size();
 
                         final int backupsCnt = args.backups();
 
@@ -67,8 +69,6 @@ public abstract class IgniteFailoverAbstractBenchmark<K,V> extends IgniteCacheAb
                         final boolean isDebug = ignite().log().isDebugEnabled();
 
                         // Main logic.
-                        Thread.sleep(cfg.warmup() * 1000);
-
                         while (!Thread.currentThread().isInterrupted()) {
                             Thread.sleep(args.restartDelay() * 1000);
 
