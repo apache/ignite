@@ -42,6 +42,9 @@ public abstract class IgniteFailoverAbstractBenchmark<K,V> extends IgniteCacheAb
             Thread thread = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
+                        println("[RESTARTER] Servers restarter started. Will start restarting servers after "
+                            + cfg.warmup() * 1000 + " sec. warmup.");
+
                         Thread.sleep(cfg.warmup() * 1000);
 
                         // Read servers configs from cache to local map.
