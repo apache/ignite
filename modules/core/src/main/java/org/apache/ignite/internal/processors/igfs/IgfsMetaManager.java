@@ -26,13 +26,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
@@ -584,23 +587,29 @@ public class IgfsMetaManager extends IgfsManager {
         assert validTxState(true);
         assert fileIds != null && fileIds.length > 0;
 
-        // Always sort file IDs participating in transaction to escape cache transaction deadlocks.
         Arrays.sort(fileIds);
 
-        // Wrap array as collection (1) to escape superfluous check in projection and (2) to check assertions.
-        Collection<IgniteUuid> keys = Arrays.asList(fileIds);
+        return lockIds(Arrays.asList(fileIds));
+    }
 
+    /**
+     * Lock file IDs.
+     * @param fileIds File IDs (sorted).
+     * @return Map with lock info.
+     * @throws IgniteCheckedException If failed.
+     */
+    private Map<IgniteUuid, IgfsFileInfo> lockIds(Collection<IgniteUuid> fileIds) throws IgniteCheckedException {
         if (log.isDebugEnabled())
-            log.debug("Locking file ids: " + keys);
+            log.debug("Locking file ids: " + fileIds);
 
         // Lock files and get their infos.
-        Map<IgniteUuid, IgfsFileInfo> map = id2InfoPrj.getAll(keys);
+        Map<IgniteUuid, IgfsFileInfo> map = id2InfoPrj.getAll(fileIds);
 
         if (log.isDebugEnabled())
-            log.debug("Locked file ids: " + keys);
+            log.debug("Locked file ids: " + fileIds);
 
         // Force root ID always exist in cache.
-        if (keys.contains(ROOT_ID) && !map.containsKey(ROOT_ID)) {
+        if (fileIds.contains(ROOT_ID) && !map.containsKey(ROOT_ID)) {
             IgfsFileInfo info = new IgfsFileInfo();
 
             id2InfoPrj.putIfAbsent(ROOT_ID, info);
@@ -807,27 +816,131 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
-     * Move or rename file.
+     * Move routine.
      *
-     * @param fileId File ID to move or rename.
-     * @param srcFileName Original file name in the parent's listing.
-     * @param srcParentId Parent directory ID.
-     * @param destFileName New file name in the parent's listing after moving.
-     * @param destParentId New parent directory ID.
-     * @throws IgniteCheckedException If failed.
+     * @param srcPath Source path.
+     * @param dstPath Destinatoin path.
+     * @return File info of renamed entry.
+     * @throws IgniteCheckedException In case of exception.
      */
-    public void move(IgniteUuid fileId, String srcFileName, IgniteUuid srcParentId, String destFileName,
-        IgniteUuid destParentId) throws IgniteCheckedException {
+    public IgfsFileInfo move(IgfsPath srcPath, IgfsPath dstPath) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
 
+                // 1. First get source and destination path IDs.
+                List<IgniteUuid> srcPathIds = fileIds(srcPath);
+                List<IgniteUuid> dstPathIds = fileIds(dstPath);
+
+                final Set<IgniteUuid> allIds = new TreeSet<>(new Comparator<IgniteUuid>() {
+                    @Override
+                    public int compare(IgniteUuid u1, IgniteUuid u2) {
+                        if (u1 == u2)
+                            return 0;
+
+                        if (u1 == null)
+                            return -1;
+
+                        return u1.compareTo(u2);
+                    }
+                });
+
+                allIds.addAll(srcPathIds);
+
+                final IgniteUuid dstLeafId = dstPathIds.get(dstPathIds.size() - 1);
+
+                if (dstLeafId == null) {
+                    // Delete null entry for the unexisting destination element:
+                    dstPathIds.remove(dstPathIds.size() - 1);
+                }
+
+                allIds.addAll(dstPathIds);
+
+                if (allIds.remove(null)) {
+                    throw new IgfsPathNotFoundException("Failed to perform move because some path component was " +
+                            "not found. [src=" + srcPath + ", dst=" + dstPath + ']');
+                }
+
+                // 2. Start transaction.
                 IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
-                    moveNonTx(fileId, srcFileName, srcParentId, destFileName, destParentId);
+                    // 3. Obtain the locks.
+                    final Map<IgniteUuid, IgfsFileInfo> allInfos = lockIds(allIds);
+
+                    // 4. Verify integrity of source directory.
+                    if (!verifyPathIntegrity(srcPath, srcPathIds, allInfos)) {
+                        throw new IgfsPathNotFoundException("Failed to perform move because source directory " +
+                            "structure changed concurrently [src=" + srcPath + ", dst=" + dstPath + ']');
+                    }
+
+                    // 5. Verify integrity of destination directory.
+                    final IgfsPath dstDirPath = dstLeafId != null ? dstPath : dstPath.parent();
+
+                    if (!verifyPathIntegrity(dstDirPath, dstPathIds, allInfos)) {
+                        throw new IgfsPathNotFoundException("Failed to perform move because destination directory " +
+                            "structure changed concurrently [src=" + srcPath + ", dst=" + dstPath + ']');
+                    }
+
+                    // 6. Calculate source and destination targets which will be changed.
+                    IgniteUuid srcTargetId = srcPathIds.get(srcPathIds.size() - 2);
+                    IgfsFileInfo srcTargetInfo = allInfos.get(srcTargetId);
+                    String srcName = srcPath.name();
+
+                    IgniteUuid dstTargetId;
+                    IgfsFileInfo dstTargetInfo;
+                    String dstName;
+
+                    if (dstLeafId != null) {
+                        // Destination leaf exists. Check if it is an empty directory.
+                        IgfsFileInfo dstLeafInfo = allInfos.get(dstLeafId);
+
+                        assert dstLeafInfo != null;
+
+                        if (dstLeafInfo.isDirectory()) {
+                            // Destination is a directory.
+                            dstTargetId = dstLeafId;
+                            dstTargetInfo = dstLeafInfo;
+                            dstName = srcPath.name();
+                        }
+                        else {
+                            // Error, destination is existing file.
+                            throw new IgfsPathAlreadyExistsException("Failed to perform move " +
+                                "because destination points to " +
+                                "existing file [src=" + srcPath + ", dst=" + dstPath + ']');
+                        }
+                    }
+                    else {
+                        // Destination leaf doesn't exist, so we operate on parent.
+                        dstTargetId = dstPathIds.get(dstPathIds.size() - 1);
+                        dstTargetInfo = allInfos.get(dstTargetId);
+                        dstName = dstPath.name();
+                    }
+
+                    assert dstTargetInfo != null;
+                    assert dstTargetInfo.isDirectory();
+
+                    // 7. Last check: does destination target already have listing entry with the same name?
+                    if (dstTargetInfo.listing().containsKey(dstName)) {
+                        throw new IgfsPathAlreadyExistsException("Failed to perform move because destination already " +
+                            "contains entry with the same name existing file [src=" + srcPath +
+                            ", dst=" + dstPath + ']');
+                    }
+
+                    // 8. Actual move: remove from source parent and add to destination target.
+                    IgfsListingEntry entry = srcTargetInfo.listing().get(srcName);
+
+                    id2InfoPrj.invoke(srcTargetId, new UpdateListing(srcName, entry, true));
+                    id2InfoPrj.invoke(dstTargetId, new UpdateListing(dstName, entry, false));
 
                     tx.commit();
+
+                    IgfsPath realNewPath = new IgfsPath(dstDirPath, dstName);
+
+                    IgfsFileInfo moved = allInfos.get(srcPathIds.get(srcPathIds.size() - 1));
+
+                    // Set the new path to the info to simplify event creation:
+                    return IgfsFileInfo.builder(moved).path(realNewPath).build();
                 }
                 finally {
                     tx.close();
@@ -838,9 +951,49 @@ public class IgfsMetaManager extends IgfsManager {
             }
         }
         else
-            throw new IllegalStateException("Failed to move file system entry because Grid is stopping [fileId=" +
-                fileId + ", srcFileName=" + srcFileName + ", srcParentId=" + srcParentId + ", destFileName=" +
-                destFileName + ", destParentId=" + destParentId + ']');
+            throw new IllegalStateException("Failed to perform move because Grid is stopping [srcPath=" +
+                srcPath + ", dstPath=" + dstPath + ']');
+    }
+
+    /**
+     * Verify path integrity.
+     *
+     * @param path Path to verify.
+     * @param expIds Expected IDs for this path. Might contain additional elements, e.g. because they were created
+     *     on a child path.
+     * @param infos Locked infos.
+     * @return
+     */
+    private static boolean verifyPathIntegrity(IgfsPath path, List<IgniteUuid> expIds,
+        Map<IgniteUuid, IgfsFileInfo> infos) {
+        List<String> pathParts = path.components();
+
+        assert pathParts.size() < expIds.size();
+
+        for (int i = 0; i < pathParts.size(); i++) {
+            IgniteUuid parentId = expIds.get(i);
+
+            // If parent ID is null, it doesn't exist.
+            if (parentId != null) {
+                IgfsFileInfo parentInfo = infos.get(parentId);
+
+                // If parent info is null, it doesn't exist.
+                if (parentInfo != null) {
+                    IgfsListingEntry childEntry = parentInfo.listing().get(pathParts.get(i));
+
+                    // If expected child exists.
+                    if (childEntry != null) {
+                        // If child ID matches expected ID.
+                        if (F.eq(childEntry.fileId(), expIds.get(i + 1)))
+                            continue;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
