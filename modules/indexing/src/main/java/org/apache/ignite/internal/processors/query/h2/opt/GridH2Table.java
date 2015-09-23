@@ -57,6 +57,8 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.VAL_COL;
+
 /**
  * H2 Table implementation.
  */
@@ -394,6 +396,12 @@ public class GridH2Table extends TableBase {
             if (!del) {
                 GridH2Row old = pk.put(row); // Put to PK.
 
+                if (old instanceof GridH2AbstractKeyValueRow) { // Unswap value on replace.
+                    GridH2AbstractKeyValueRow kvOld = (GridH2AbstractKeyValueRow)old;
+
+                    kvOld.onUnswap(kvOld.getValue(VAL_COL), true);
+                }
+
                 int len = idxs.size();
 
                 int i = 1;
@@ -421,7 +429,7 @@ public class GridH2Table extends TableBase {
                 GridH2Row old = pk.remove(row);
 
                 if (old instanceof GridH2AbstractKeyValueRow) { // Unswap value.
-                    Value v = row.getValue(GridH2AbstractKeyValueRow.VAL_COL);
+                    Value v = row.getValue(VAL_COL);
 
                     if (v != null)
                         ((GridH2AbstractKeyValueRow)old).onUnswap(v.getObject(), true);

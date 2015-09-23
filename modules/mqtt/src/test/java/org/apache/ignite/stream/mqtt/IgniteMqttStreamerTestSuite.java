@@ -15,15 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.stream;
+package org.apache.ignite.stream.mqtt;
+
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * This interface is provided for backwards compatibility with {@link StreamSingleTupleExtractor}.
+ * MQTT streamer tests.
  *
- * @deprecated Will be removed in 2.0.0.
- * @see StreamSingleTupleExtractor
+ * @author Raul Kripalani
  */
-@Deprecated
-public interface StreamTupleExtractor<T, K, V> extends StreamSingleTupleExtractor<T, K, V> {
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteMqttStreamerTest.class
+})
+public class IgniteMqttStreamerTestSuite {
 
 }

@@ -113,4 +113,9 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @throws IgniteCheckedException If failed.
      */
     public Value wrap(Object o, int type) throws IgniteCheckedException;
+
+    /**
+     * @return {@code True} if should check swap value before offheap.
+     */
+    public boolean preferSwapValue();
 }
