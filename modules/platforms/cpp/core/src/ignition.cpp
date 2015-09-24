@@ -27,6 +27,7 @@
 #include "ignite/impl/utils.h"
 #include "ignite/ignition.h"
 
+using namespace ignite::common::concurrent;
 using namespace ignite::common::java;
 using namespace ignite::impl;
 using namespace ignite::impl::utils;
