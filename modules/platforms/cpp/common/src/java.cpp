@@ -691,9 +691,7 @@ namespace ignite
                 args.ignoreUnrecognized = 0;
 
                 jint res = JNI_CreateJavaVM(jvm, reinterpret_cast<void**>(env), &args);
-
-                std::cout << "JVM CREATE RES: " << res << std::endl;
-
+                
                 delete[] opts0;
 
                 if (res != JNI_OK)
