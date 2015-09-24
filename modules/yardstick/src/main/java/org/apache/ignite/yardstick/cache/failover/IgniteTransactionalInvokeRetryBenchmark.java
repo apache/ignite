@@ -70,7 +70,9 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                     Long cacheVal = cache.get(key);
                                     Long mapVal = map.get(key);
 
-                                    if (!cacheVal.equals(mapVal)) {
+                                    boolean isEquals = cacheVal == null ? mapVal == null : cacheVal.equals(mapVal);
+
+                                    if (!isEquals) {
                                         println(cfg, "Got different values [key='" + key + "', cacheVal=" + cacheVal
                                             + ", localMapVal=" + mapVal + "]");
 
