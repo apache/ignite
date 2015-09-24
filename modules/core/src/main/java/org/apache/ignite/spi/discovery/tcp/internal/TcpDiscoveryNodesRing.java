@@ -17,7 +17,17 @@
 
 package org.apache.ignite.spi.discovery.tcp.internal;
 
-import java.util.ArrayList;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.PN;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,16 +39,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.PN;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Convenient way to represent topology for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}
@@ -81,6 +81,9 @@ public class TcpDiscoveryNodesRing {
     /** */
     private long nodeOrder;
 
+    /** */
+    private long maxInternalOrder;
+
     /** Lock. */
     @GridToStringExclude
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
@@ -99,6 +102,8 @@ public class TcpDiscoveryNodesRing {
             this.locNode = locNode;
 
             clear();
+
+            maxInternalOrder = locNode.internalOrder();
         }
         finally {
             rwLock.writeLock().unlock();
@@ -204,7 +209,9 @@ public class TcpDiscoveryNodesRing {
             if (nodesMap.containsKey(node.id()))
                 return false;
 
-            assert node.internalOrder() > maxInternalOrder() : "Adding node to the middle of the ring " +
+            long maxInternalOrder0 = maxInternalOrder();
+
+            assert node.internalOrder() > maxInternalOrder0 : "Adding node to the middle of the ring " +
                 "[ring=" + this + ", node=" + node + ']';
 
             nodesMap.put(node.id(), node);
@@ -216,6 +223,8 @@ public class TcpDiscoveryNodesRing {
             nodes.add(node);
 
             nodeOrder = node.internalOrder();
+
+            maxInternalOrder = node.internalOrder();
         }
         finally {
             rwLock.writeLock().unlock();
@@ -231,9 +240,13 @@ public class TcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            TcpDiscoveryNode last = nodes.last();
+            if (maxInternalOrder == 0) {
+                TcpDiscoveryNode last = nodes.last();
 
-            return last != null ? last.internalOrder() : -1;
+                return last != null ? maxInternalOrder = last.internalOrder() : -1;
+            }
+
+            return maxInternalOrder;
         }
         finally {
             rwLock.readLock().unlock();
@@ -336,47 +349,6 @@ public class TcpDiscoveryNodesRing {
     }
 
     /**
-     * Removes nodes from the topology.
-     *
-     * @param nodeIds IDs of the nodes to remove.
-     * @return Collection of removed nodes.
-     */
-    public Collection<TcpDiscoveryNode> removeNodes(Collection<UUID> nodeIds) {
-        assert !F.isEmpty(nodeIds);
-
-        rwLock.writeLock().lock();
-
-        try {
-            boolean firstRmv = true;
-
-            Collection<TcpDiscoveryNode> res = null;
-
-            for (UUID id : nodeIds) {
-                TcpDiscoveryNode rmv = nodesMap.remove(id);
-
-                if (rmv != null) {
-                    if (firstRmv) {
-                        nodes = new TreeSet<>(nodes);
-
-                        res = new ArrayList<>(nodeIds.size());
-
-                        firstRmv = false;
-                    }
-
-                    nodes.remove(rmv);
-
-                    res.add(rmv);
-                }
-            }
-
-            return res == null ? Collections.<TcpDiscoveryNode>emptyList() : res;
-        }
-        finally {
-            rwLock.writeLock().unlock();
-        }
-    }
-
-    /**
      * Removes all remote nodes, leaves only local node.
      * <p>
      * This should be called when SPI should be disconnected from topology and
@@ -397,6 +369,7 @@ public class TcpDiscoveryNodesRing {
                 nodesMap.put(locNode.id(), locNode);
 
             nodeOrder = 0;
+            maxInternalOrder = 0;
 
             topVer = 0;
         }
@@ -622,13 +595,8 @@ public class TcpDiscoveryNodesRing {
         rwLock.writeLock().lock();
 
         try {
-            if (nodeOrder == 0) {
-                TcpDiscoveryNode last = nodes.last();
-
-                assert last != null;
-
-                nodeOrder = last.internalOrder();
-            }
+            if (nodeOrder == 0)
+                nodeOrder = maxInternalOrder();
 
             return ++nodeOrder;
         }

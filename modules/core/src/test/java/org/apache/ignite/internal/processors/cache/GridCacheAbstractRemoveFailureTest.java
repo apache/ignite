@@ -365,12 +365,12 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
 
         U.sleep(random(START_DELAY.get1(), START_DELAY.get2()));
 
-        if (stop.get())
-            return;
-
         log.info("Restarting node " + idx);
 
         startGrid(idx);
+
+        if (stop.get())
+            return;
 
         U.sleep(1000);
     }
