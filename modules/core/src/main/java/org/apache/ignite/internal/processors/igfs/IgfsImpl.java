@@ -53,7 +53,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsBlockLocation;
-import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsInvalidPathException;
 import org.apache.ignite.igfs.IgfsMetrics;
@@ -114,7 +113,6 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.ROOT_ID;
-import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.TRASH_ID;
 
 /**
  * Cache-based IGFS implementation.
@@ -767,24 +765,25 @@ public final class IgfsImpl implements IgfsEx {
             return true;
         }
         else {
-            if (recursive) {
-                meta.softDelete(path);
-
-                return true;
-            }
-            else {
-                Map<String, IgfsListingEntry> infoMap = meta.directoryListing(desc.fileId);
-
-                if (F.isEmpty(infoMap)) {
-                    meta.removeFile2(path, true);
-
-                    return true;
-                }
-                else
-                    // Throw exception if not empty and not recursive.
-                    throw new IgfsDirectoryNotEmptyException("Failed to remove directory (directory is not empty " +
-                        "and recursive flag is not set)");
-            }
+            return meta.softDelete(path, recursive) != null;
+//            if (recursive) {
+//
+//
+//                return true;
+//            }
+//            else {
+//                Map<String, IgfsListingEntry> infoMap = meta.directoryListing(desc.fileId);
+//
+//                if (F.isEmpty(infoMap)) {
+//                    meta.removeFile2(path, true);
+//
+//                    return true;
+//                }
+//                else
+//                    // Throw exception if not empty and not recursive.
+//                    throw new IgfsDirectoryNotEmptyException("Failed to remove directory (directory is not empty " +
+//                        "and recursive flag is not set)");
+//            }
         }
     }
 
@@ -1155,7 +1154,7 @@ public final class IgfsImpl implements IgfsEx {
 
                     // Remove old file from the tree.
                     // Only one file is deleted, so we use internal data streamer.
-                    deleteFile(path, new FileDescriptor(parentId, fileName, oldId, oldInfo.isFile()), false);
+                    meta.removeFile2(path, false);
 
                     if (evts.isRecordable(EVT_IGFS_FILE_DELETED))
                         evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_DELETED));
@@ -1450,7 +1449,7 @@ public final class IgfsImpl implements IgfsEx {
      */
     IgniteInternalFuture<?> formatAsync() {
         try {
-            IgniteUuid id = meta.softDelete(new IgfsPath("/"));
+            IgniteUuid id = meta.format();
 
             if (id == null)
                 return new GridFinishedFuture<Object>();
@@ -1535,29 +1534,29 @@ public final class IgfsImpl implements IgfsEx {
         return new FileDescriptor(parentId, path.name(), fileInfo.id(), fileInfo.isFile());
     }
 
-    /**
-     * Remove file from the file system (structure and data).
-     *
-     * @param path Path of the deleted file.
-     * @param desc Detailed file descriptor to remove.
-     * @param rmvLocked Whether to remove this entry in case it is has explicit lock.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void deleteFile(IgfsPath path, FileDescriptor desc, final boolean rmvLocked) throws IgniteCheckedException {
-        IgniteUuid parentId = desc.parentId;
-        IgniteUuid fileId = desc.fileId;
-
-        if (parentId == null || ROOT_ID.equals(fileId)) {
-            assert parentId == null && ROOT_ID.equals(fileId) : "Invalid file descriptor: " + desc;
-
-            return; // Never remove the root directory!
-        }
-
-        if (TRASH_ID.equals(fileId))
-            return; // Never remove trash directory.
-
-        meta.removeFile2(path, rmvLocked);
-    }
+//    /**
+//     * Remove file from the file system (structure and data).
+//     *
+//     * @param path Path of the deleted file.
+//     * @param desc Detailed file descriptor to remove.
+//     * @param rmvLocked Whether to remove this entry in case it is has explicit lock.
+//     * @throws IgniteCheckedException If failed.
+//     */
+//    private void deleteFile(IgfsPath path, FileDescriptor desc, final boolean rmvLocked) throws IgniteCheckedException {
+//        IgniteUuid parentId = desc.parentId;
+//        IgniteUuid fileId = desc.fileId;
+//
+//        if (parentId == null || ROOT_ID.equals(fileId)) {
+//            assert parentId == null && ROOT_ID.equals(fileId) : "Invalid file descriptor: " + desc;
+//
+//            return; // Never remove the root directory!
+//        }
+//
+//        if (TRASH_ID.equals(fileId))
+//            return; // Never remove trash directory.
+//
+//        meta.removeFile2(path, rmvLocked);
+//    }
 
     /**
      * Check whether IGFS with the same name exists among provided attributes.
