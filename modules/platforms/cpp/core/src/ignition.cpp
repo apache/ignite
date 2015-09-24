@@ -163,6 +163,8 @@ namespace ignite
 
                 failed = true;
             }
+            else
+                std::cout << "JVM LIB LOC: " << jvmLib << std::endl;
 
             if (!failed) {
                 if (!LoadJvmLibrary(jvmLib))
@@ -191,6 +193,8 @@ namespace ignite
             else
                 home = ResolveIgniteHome(NULL, &homeFound);
 
+            std::cout << "IGNITE_HOME: " << home << std::endl;
+
             // 3. Create classpath.
             std::string cp;
 
@@ -205,6 +209,8 @@ namespace ignite
 
             if (!cp.empty())
             {
+                std::cout << "CLASSPATH: " << cp << std::endl;
+
                 // 4. Start JVM if needed.
                 JniErrorInfo jniErr;
 
