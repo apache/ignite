@@ -761,10 +761,7 @@ public final class IgfsImpl implements IgfsEx {
      */
     private boolean delete0(FileDescriptor desc, IgfsPath path, boolean recursive)
         throws IgniteCheckedException {
-        //IgfsPath curPath = parentPath == null ? new IgfsPath() : new IgfsPath(parentPath, desc.fileName);
-
         if (desc.isFile) {
-            //deleteFile(path, desc, true);
             meta.removeFile2(path, true);
 
             return true;
@@ -779,7 +776,6 @@ public final class IgfsImpl implements IgfsEx {
                 Map<String, IgfsListingEntry> infoMap = meta.directoryListing(desc.fileId);
 
                 if (F.isEmpty(infoMap)) {
-                    //deleteFile(path, desc, true);
                     meta.removeFile2(path, true);
 
                     return true;
@@ -1560,7 +1556,6 @@ public final class IgfsImpl implements IgfsEx {
         if (TRASH_ID.equals(fileId))
             return; // Never remove trash directory.
 
-        //meta.removeIfEmpty(parentId, desc.fileName, fileId, path, rmvLocked);
         meta.removeFile2(path, rmvLocked);
     }
 

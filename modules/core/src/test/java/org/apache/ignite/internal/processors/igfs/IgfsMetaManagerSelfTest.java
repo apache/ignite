@@ -32,7 +32,6 @@ import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -301,41 +300,32 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         System.out.println("b: " + mgr.directoryListing(b.id()));
         System.out.println("f3: " + mgr.directoryListing(f3.id()));
 
-        //mgr.move(a.id(), "a", ROOT_ID, "a2", ROOT_ID);
         mgr.move(path("/a"), path("/a2"));
-        //mgr.move(b.id(), "b", a.id(), "b2", a.id());
         mgr.move(path("/a2/b"), path("/a2/b2"));
 
         assertNotNull(mgr.info(b.id()));
 
-        //mgr.move(f3.id(), "f3", b.id(), "f3-2", a.id());
         mgr.move(path("/a2/b2/f3"), path("/a2/b2/f3-2"));
 
         assertNotNull(mgr.info(b.id()));
 
-        //mgr.move(f3.id(), "f3-2", a.id(), "f3", b.id());
         mgr.move(path("/a2/b2/f3-2"), path("/a2/b2/f3"));
 
-        //mgr.move(b.id(), "b2", a.id(), "b", a.id());
         mgr.move(path("/a2/b2"), path("/a2/b"));
 
-        //mgr.move(a.id(), "a2", ROOT_ID, "a", ROOT_ID);
         mgr.move(path("/a2"), path("/a"));
 
-//        // Validate 'remove' operation.
-//        for (int i = 0; i < 100; i++) {
-//            // One of participants doesn't exist.
-//            assertNull(mgr.removeFile2(path("/a"), true));
-//            assertNull(mgr.removeFile2(path("/" + IgniteUuid.randomUuid() + "/a"), true));
-//        }
+        // Validate 'remove' operation.
+        for (int i = 0; i < 100; i++) {
+            // One of participants doesn't exist.
+            assertNull(mgr.removeFile2(path("/abba"), true));
+            assertNull(mgr.removeFile2(path("/" + IgniteUuid.randomUuid() + "/a"), true));
+        }
 
         expectsRemoveFail(ROOT_ID, "a", a.id(), new IgfsPath("/a"),
             "Failed to remove file (directory is not empty)");
         expectsRemoveFail(a.id(), "b", b.id(), new IgfsPath("/a/b"),
             "Failed to remove file (directory is not empty)");
-
-//        assertNull(mgr.removeFile2(new IgfsPath("/a"), true));
-//        assertNull(mgr.removeFile2(new IgfsPath("/a/b"), true));
 
         assertEquals(f3, mgr.removeFile2(new IgfsPath("/a/b/f3"), true));
 
@@ -348,9 +338,6 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
             mgr.directoryListing(a.id()));
 
         Map<String, IgfsListingEntry> list = mgr.directoryListing(b.id());
-
-        X.println("list: " + list);
-
         assertEmpty(list);
 
         assertEquals(b, mgr.removeFile2(new IgfsPath("/a/b"), true));

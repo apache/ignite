@@ -101,13 +101,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static final long BLOCK_SIZE = 32 * 1024 * 1024;
 
     /** Default repeat count. */
-    protected static final int REPEAT_CNT = 300; // ***
+    protected static final int REPEAT_CNT = 5; // Diagnostic: 5
 
     /** Concurrent operations count. */
-    protected static final int OPS_CNT = 160; // ***
+    protected static final int OPS_CNT = 16; // Diagnostic: 160
 
     /** Seed. */
-    protected static final long SEED = 0L; //System.currentTimeMillis();
+    protected static final long SEED = System.currentTimeMillis();
 
     /** Amount of blocks to prefetch. */
     protected static final int PREFETCH_BLOCKS = 1;
@@ -1190,7 +1190,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testCreateConsistencyMultithreaded() throws Exception {
+    public void testCreateConsistencyMultithreaded() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
         final AtomicInteger createCtr = new AtomicInteger(); // How many times the file was re-created.
@@ -1881,18 +1881,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testDeadlocksRename() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
-                info(">>>>>> Start deadlock test.");
-
                 checkDeadlocks(5, 2, 2, 2, OPS_CNT, 0, 0, 0, 0);
-
-                info(">>>>>> End deadlock test.");
             }
             finally {
-                info(">>>>>> Start cleanup.");
-
                 clear(igfs, igfsSecondary);
-
-                info(">>>>>> End cleanup.");
             }
         }
     }
@@ -1903,8 +1895,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksDelete() throws Exception {
-        //fail("https://issues.apache.org/jira/browse/IGNITE-1515");
-
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
                 checkDeadlocks(5, 2, 2, 2, 0, OPS_CNT, 0, 0, 0);
@@ -2009,8 +1999,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
-                X.println("======================= Round " + i);
-
                 checkDeadlocks(5, 2, 2, 2,
                         OPS_CNT, // rename
                         OPS_CNT, // delete
@@ -2261,8 +2249,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             thread.start();
 
         U.joinThreads(threads, null);
-
-        X.println("Threads joined.");
     }
 
     /**
