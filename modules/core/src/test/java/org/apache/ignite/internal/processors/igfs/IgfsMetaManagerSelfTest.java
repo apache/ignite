@@ -152,8 +152,6 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEquals(F.asMap("dir", new IgfsListingEntry(dir), "file", new IgfsListingEntry(file)),
             mgr.directoryListing(ROOT_ID));
 
-        //IgfsFileInfo tmp = mgr.info(dir.id());
-
         assertEquals(dir, mgr.info(dir.id()));
         assertEquals(file, mgr.info(file.id()));
 
@@ -215,6 +213,9 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
 
         IgfsFileInfo a = new IgfsFileInfo(true, null);
         IgfsFileInfo b = new IgfsFileInfo(true, null);
+        IgfsFileInfo k = new IgfsFileInfo(true, null);
+        IgfsFileInfo z = new IgfsFileInfo(true, null);
+
         IgfsFileInfo f1 = new IgfsFileInfo(400, null, false, null);
         IgfsFileInfo f2 = new IgfsFileInfo(new IgfsFileInfo(400, null, false, null), 0);
         IgfsFileInfo f3 = new IgfsFileInfo(new IgfsFileInfo(400, null, false, null), 200000L);
@@ -223,6 +224,8 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertNull(mgr.putIfAbsent(ROOT_ID, "a", a));
         assertNull(mgr.putIfAbsent(ROOT_ID, "f1", f1));
         assertNull(mgr.putIfAbsent(a.id(), "b", b));
+        assertNull(mgr.putIfAbsent(a.id(), "k", z));
+        assertNull(mgr.putIfAbsent(b.id(), "k", k));
         assertNull(mgr.putIfAbsent(a.id(), "f2", f2));
         assertNull(mgr.putIfAbsent(b.id(), "f3", f3));
 
@@ -232,15 +235,15 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEquals(F.asMap("a", new IgfsListingEntry(a), "f1", new IgfsListingEntry(f1)),
             mgr.directoryListing(ROOT_ID));
 
-        assertEquals(F.asMap("b", new IgfsListingEntry(b), "f2", new IgfsListingEntry(f2)),
+        assertEquals(F.asMap("b", new IgfsListingEntry(b), "f2", new IgfsListingEntry(f2), "k", new IgfsListingEntry(z)),
             mgr.directoryListing(a.id()));
 
-        assertEquals(F.asMap("f3", new IgfsListingEntry(f3)), mgr.directoryListing(b.id()));
+        assertEquals(F.asMap("f3", new IgfsListingEntry(f3),
+            "k", new IgfsListingEntry(k)), mgr.directoryListing(b.id()));
 
         // Validate empty files listings.
-        for (IgfsFileInfo info : Arrays.asList(f1, f2, f3)) {
+        for (IgfsFileInfo info : Arrays.asList(f1, f2, f3))
             assertEmpty(mgr.directoryListing(info.id()));
-        }
 
         // Validate 'file info' operations.
         for (IgfsFileInfo info : Arrays.asList(rootInfo, a, b, f1, f2, f3)) {
@@ -279,51 +282,44 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEquals(Arrays.asList(ROOT_ID, a.id(), b.id(), null), mgr.fileIds(new IgfsPath("/a/b/f6")));
         assertEquals(Arrays.asList(ROOT_ID, null, null, null, null), mgr.fileIds(new IgfsPath("/f7/a/b/f6")));
 
-        // Validate 'rename' operation.
-        final IgniteUuid rndId = IgniteUuid.randomUuid();
-
         // One of participated files does not exist in cache.
-        expectsRenameFail(ROOT_ID, "b", rndId, "b2", rndId, "Failed to lock source directory (not found?)");
-        expectsRenameFail(b.id(), "b", rndId, "b2", rndId, "Failed to lock source directory (not found?)");
-        expectsRenameFail(ROOT_ID, "b", ROOT_ID, "b2", rndId, "Failed to lock destination directory (not found?)");
-        expectsRenameFail(b.id(), "b", ROOT_ID, "b2", rndId, "Failed to lock destination directory (not found?)");
-        expectsRenameFail(rndId, "b", ROOT_ID, "b2", ROOT_ID, "Failed to lock target file (not found?)");
-        expectsRenameFail(rndId, "b", b.id(), "b2", b.id(), "Failed to lock target file (not found?)");
+        expectsRenameFail("/b8", "/b2", "Failed to perform move because some path component was not found.");
 
-        // Target file ID differ from the file ID resolved from the source directory for source file name.
-        expectsRenameFail(b.id(), "a", ROOT_ID, "q", ROOT_ID, "Failed to remove file name from the source directory");
-        expectsRenameFail(f1.id(), "a", ROOT_ID, "q", ROOT_ID, "Failed to remove file name from the source directory");
-        expectsRenameFail(f2.id(), "a", ROOT_ID, "q", ROOT_ID, "Failed to remove file name from the source directory");
-        expectsRenameFail(f3.id(), "a", ROOT_ID, "q", ROOT_ID, "Failed to remove file name from the source directory");
+        expectsRenameFail("/a", "/b/b8", "Failed to perform move because some path component was not found.");
 
-        // Invalid source file name (not found).
-        expectsRenameFail(a.id(), "u1", ROOT_ID, "q", ROOT_ID, "Failed to remove file name from the source");
-        expectsRenameFail(a.id(), "u2", ROOT_ID, "q", ROOT_ID, "Failed to remove file name from the source");
-        expectsRenameFail(a.id(), "u3", ROOT_ID, "q", ROOT_ID, "Failed to remove file name from the source");
+        expectsRenameFail("/a/f2", "/a/b/f3", "Failed to perform move because destination points to existing file");
 
-        // Invalid destination file - already exists.
-        expectsRenameFail(a.id(), "a", ROOT_ID, "f1", ROOT_ID, "Failed to add file name into the destination");
-        expectsRenameFail(f2.id(), "f2", a.id(), "f1", ROOT_ID, "Failed to add file name into the destination");
-        expectsRenameFail(f3.id(), "f3", b.id(), "f1", ROOT_ID, "Failed to add file name into the destination");
-        expectsRenameFail(b.id(), "b", a.id(), "f2", a.id(), "Failed to add file name into the destination");
+        expectsRenameFail("/a/k", "/a/b/", "Failed to perform move because destination already " +
+            "contains entry with the same name existing file");
+
+        mgr.delete(a.id(), "k", k.id());
+        mgr.delete(b.id(), "k", z.id());
 
         System.out.println("/: " + mgr.directoryListing(ROOT_ID));
         System.out.println("a: " + mgr.directoryListing(a.id()));
         System.out.println("b: " + mgr.directoryListing(b.id()));
         System.out.println("f3: " + mgr.directoryListing(f3.id()));
 
-        mgr.move(a.id(), "a", ROOT_ID, "a2", ROOT_ID);
-        mgr.move(b.id(), "b", a.id(), "b2", a.id());
+        //mgr.move(a.id(), "a", ROOT_ID, "a2", ROOT_ID);
+        mgr.move(path("/a"), path("/a2"));
+        //mgr.move(b.id(), "b", a.id(), "b2", a.id());
+        mgr.move(path("/a2/b"), path("/a2/b2"));
 
         assertNotNull(mgr.info(b.id()));
 
-        mgr.move(f3.id(), "f3", b.id(), "f3-2", a.id());
+        //mgr.move(f3.id(), "f3", b.id(), "f3-2", a.id());
+        mgr.move(path("/a2/b2/f3"), path("/a2/b2/f3-2"));
 
         assertNotNull(mgr.info(b.id()));
 
-        mgr.move(f3.id(), "f3-2", a.id(), "f3", b.id());
-        mgr.move(b.id(), "b2", a.id(), "b", a.id());
-        mgr.move(a.id(), "a2", ROOT_ID, "a", ROOT_ID);
+        //mgr.move(f3.id(), "f3-2", a.id(), "f3", b.id());
+        mgr.move(path("/a2/b2/f3-2"), path("/a2/b2/f3"));
+
+        //mgr.move(b.id(), "b2", a.id(), "b", a.id());
+        mgr.move(path("/a2/b2"), path("/a2/b"));
+
+        //mgr.move(a.id(), "a2", ROOT_ID, "a", ROOT_ID);
+        mgr.move(path("/a2"), path("/a"));
 
         // Validate 'remove' operation.
         for (int i = 0; i < 100; i++) {
@@ -345,7 +341,9 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEquals(F.asMap("a", new IgfsListingEntry(a), "f1", new IgfsListingEntry(f1)),
             mgr.directoryListing(ROOT_ID));
 
-        assertEquals(F.asMap("b", new IgfsListingEntry(b), "f2", new IgfsListingEntry(f2)),
+        assertEquals(
+            F.asMap("b", new IgfsListingEntry(b),
+                "f2", new IgfsListingEntry(f2)),
             mgr.directoryListing(a.id()));
 
         assertEmpty(mgr.directoryListing(b.id()));
@@ -393,6 +391,16 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * Utility method to make IgfsPath.
+     *
+     * @param p The String path.
+     * @return The IgfsPath object.
+     */
+    private static IgfsPath path(String p) {
+        return new IgfsPath(p);
+    }
+
+    /**
      * Validate passed map is empty.
      *
      * @param map Map to validate it is empty.
@@ -411,8 +419,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
     private void expectsUpdatePropertiesFail(@Nullable final IgniteUuid fileId, @Nullable final Map<String, String> props,
         Class<? extends Throwable> cls, @Nullable String msg) {
         assertThrows(log, new Callable() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 return mgr.updateProperties(null, fileId, "file", props);
             }
         }, cls, msg);
@@ -440,25 +447,18 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
     /**
      * Test expected failures for 'move file' operation.
      *
-     * @param fileId File ID to rename.
-     * @param srcFileName Original file name in the parent's listing.
-     * @param srcParentId Source parent directory ID.
-     * @param destFileName New file name in the parent's listing after renaming.
-     * @param destParentId Destination parent directory ID.
      * @param msg Failure message if expected exception was not thrown.
      */
-    private void expectsRenameFail(final IgniteUuid fileId, final String srcFileName, final IgniteUuid srcParentId,
-        final String destFileName, final IgniteUuid destParentId, @Nullable String msg) {
+    private void expectsRenameFail(final String src, final String dst, @Nullable String msg) {
         Throwable err = assertThrowsInherited(log, new Callable() {
-            @Override
-            public Object call() throws Exception {
-                mgr.move(fileId, srcFileName, srcParentId, destFileName, destParentId);
+            @Override public Object call() throws Exception {
+                mgr.move(new IgfsPath(src), new IgfsPath(dst));
 
                 return null;
             }
-        }, IgniteCheckedException.class, msg);
+        }, IgfsException.class, msg);
 
-        assertTrue("Unexpected cause: " + err.getCause(), err.getCause() instanceof IgfsException);
+        assertTrue("Unexpected cause: " + err, err instanceof IgfsException);
     }
 
     /**
