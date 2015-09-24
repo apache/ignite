@@ -467,6 +467,7 @@
             <id>examples</id>
             <modules>
                 <module>examples</module>
+                <module>examples/schema-import</module>
             </modules>
         </profile>
 
