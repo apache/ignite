@@ -722,7 +722,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 if (childrenModes.contains(PRIMARY)) {
                     if (desc != null)
-                        res = delete0(desc, path.parent(), recursive);
+                        res = delete0(desc, path, recursive);
                     else if (mode == PRIMARY)
                         checkConflictWithPrimary(path);
                 }
@@ -754,25 +754,24 @@ public final class IgfsImpl implements IgfsEx {
      * Internal procedure for (optionally) recursive file and directory deletion.
      *
      * @param desc File descriptor of file or directory to delete.
-     * @param parentPath Parent path. If specified, events will be fired for each deleted file
-     *      or directory. If not specified, events will not be fired.
      * @param recursive Recursive deletion flag.
      * @return {@code True} if file was successfully deleted. If directory is not empty and
      *      {@code recursive} flag is false, will return {@code false}.
      * @throws IgniteCheckedException In case of error.
      */
-    private boolean delete0(FileDescriptor desc, @Nullable IgfsPath parentPath, boolean recursive)
+    private boolean delete0(FileDescriptor desc, IgfsPath path, boolean recursive)
         throws IgniteCheckedException {
-        IgfsPath curPath = parentPath == null ? new IgfsPath() : new IgfsPath(parentPath, desc.fileName);
+        //IgfsPath curPath = parentPath == null ? new IgfsPath() : new IgfsPath(parentPath, desc.fileName);
 
         if (desc.isFile) {
-            deleteFile(curPath, desc, true);
+            //deleteFile(path, desc, true);
+            meta.removeFile2(path, true);
 
             return true;
         }
         else {
             if (recursive) {
-                meta.softDelete(desc.parentId, desc.fileName, desc.fileId);
+                meta.softDelete(path);
 
                 return true;
             }
@@ -780,7 +779,8 @@ public final class IgfsImpl implements IgfsEx {
                 Map<String, IgfsListingEntry> infoMap = meta.directoryListing(desc.fileId);
 
                 if (F.isEmpty(infoMap)) {
-                    deleteFile(curPath, desc, true);
+                    //deleteFile(path, desc, true);
+                    meta.removeFile2(path, true);
 
                     return true;
                 }
@@ -1454,7 +1454,7 @@ public final class IgfsImpl implements IgfsEx {
      */
     IgniteInternalFuture<?> formatAsync() {
         try {
-            IgniteUuid id = meta.softDelete(null, null, ROOT_ID);
+            IgniteUuid id = meta.softDelete(new IgfsPath("/"));
 
             if (id == null)
                 return new GridFinishedFuture<Object>();
@@ -1547,7 +1547,7 @@ public final class IgfsImpl implements IgfsEx {
      * @param rmvLocked Whether to remove this entry in case it is has explicit lock.
      * @throws IgniteCheckedException If failed.
      */
-    private void deleteFile(IgfsPath path, FileDescriptor desc, boolean rmvLocked) throws IgniteCheckedException {
+    private void deleteFile(IgfsPath path, FileDescriptor desc, final boolean rmvLocked) throws IgniteCheckedException {
         IgniteUuid parentId = desc.parentId;
         IgniteUuid fileId = desc.fileId;
 
@@ -1560,7 +1560,8 @@ public final class IgfsImpl implements IgfsEx {
         if (TRASH_ID.equals(fileId))
             return; // Never remove trash directory.
 
-        meta.removeIfEmpty(parentId, desc.fileName, fileId, path, rmvLocked);
+        //meta.removeIfEmpty(parentId, desc.fileName, fileId, path, rmvLocked);
+        meta.removeFile2(path, rmvLocked);
     }
 
     /**

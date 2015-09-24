@@ -101,13 +101,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static final long BLOCK_SIZE = 32 * 1024 * 1024;
 
     /** Default repeat count. */
-    protected static final int REPEAT_CNT = 5;
+    protected static final int REPEAT_CNT = 300; // ***
 
     /** Concurrent operations count. */
-    protected static final int OPS_CNT = 16;
+    protected static final int OPS_CNT = 160; // ***
 
     /** Seed. */
-    protected static final long SEED = System.currentTimeMillis();
+    protected static final long SEED = 0L; //System.currentTimeMillis();
 
     /** Amount of blocks to prefetch. */
     protected static final int PREFETCH_BLOCKS = 1;
@@ -1190,7 +1190,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testCreateConsistencyMultithreaded() throws Exception {
+    public void _testCreateConsistencyMultithreaded() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
         final AtomicInteger createCtr = new AtomicInteger(); // How many times the file was re-created.
@@ -1903,7 +1903,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksDelete() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1515");
+        //fail("https://issues.apache.org/jira/browse/IGNITE-1515");
 
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
@@ -1948,6 +1948,42 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * Ensure that deadlocks do not occur during concurrent delete & rename operations.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDeadlocksDeleteRename() throws Exception {
+        for (int i = 0; i < REPEAT_CNT; i++) {
+            try {
+                checkDeadlocks(5, 2, 2, 2,
+                    OPS_CNT, OPS_CNT, 0, 0, 0);
+            }
+            finally {
+                clear(igfs, igfsSecondary);
+            }
+        }
+    }
+
+    /**
+     * Ensure that deadlocks do not occur during concurrent delete & rename operations.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDeadlocksDeleteMkdirs() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1541");
+
+        for (int i = 0; i < REPEAT_CNT; i++) {
+            try {
+                checkDeadlocks(5, 2, 2, 2,
+                     0, OPS_CNT, 0, OPS_CNT, 0);
+            }
+            finally {
+                clear(igfs, igfsSecondary);
+            }
+        }
+    }
+
+    /**
      * Ensure that deadlocks do not occur during concurrent file creation operations.
      *
      * @throws Exception If failed.
@@ -1969,11 +2005,18 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocks() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1515");
+        fail("https://issues.apache.org/jira/browse/IGNITE-1541");
 
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
-                checkDeadlocks(5, 2, 2, 2, OPS_CNT, OPS_CNT, OPS_CNT, OPS_CNT, OPS_CNT);
+                X.println("======================= Round " + i);
+
+                checkDeadlocks(5, 2, 2, 2,
+                        OPS_CNT, // rename
+                        OPS_CNT, // delete
+                        OPS_CNT, // update
+                        OPS_CNT, // mkdirs
+                        OPS_CNT); // create
             }
             finally {
                 clear(igfs, igfsSecondary);
@@ -2218,6 +2261,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             thread.start();
 
         U.joinThreads(threads, null);
+
+        X.println("Threads joined.");
     }
 
     /**
