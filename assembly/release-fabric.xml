@@ -88,12 +88,11 @@
             <includes>
                 <include>rest/**</include>
                 <include>memcached/**</include>
-                <include>schema-import/**</include>
+                <include>schema-import/src/**</include>
+                <include>schema-import/bin/**</include>
+                <include>schema-import/README.txt</include>
                 <include>README.txt</include>
             </includes>
-            <excludes>
-                <exclude>schema-import/pom*.xml</exclude>
-            </excludes>
         </fileSet>
 
         <fileSet>
