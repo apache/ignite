@@ -51,6 +51,12 @@
             <outputDirectory>/examples</outputDirectory>
             <destName>pom.xml</destName>
         </file>
+
+        <file>
+            <source>examples/schema-import/pom-standalone.xml</source>
+            <outputDirectory>/examples/schema-import</outputDirectory>
+            <destName>pom.xml</destName>
+        </file>
     </files>
 
     <fileSets>
@@ -85,6 +91,9 @@
                 <include>schema-import/**</include>
                 <include>README.txt</include>
             </includes>
+            <excludes>
+                <exclude>schema-import/pom*.xml</exclude>
+            </excludes>
         </fileSet>
 
         <fileSet>
