@@ -219,6 +219,11 @@ namespace ignite
                 int optsLen;
                 char** opts = CreateJvmOptions(cfg, homeFound ? &home : NULL, cp, &optsLen);
 
+                for (int i = 0; i < optsLen; i++)
+                {
+                    std::cout << "OPTION: " << *(opts + i) << std::endl;
+                }
+
                 envTarget = new SharedPointer<IgniteEnvironment>(env);
                 
                 SharedPointer<JniContext> ctx(
