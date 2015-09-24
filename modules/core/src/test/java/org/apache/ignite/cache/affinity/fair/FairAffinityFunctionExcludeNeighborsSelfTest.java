@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.cache.affinity.fair;
 
 import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.affinity.AffinityFunctionExcludeNeighborsAbstractSelfTest;
 
 /**
- * Tests exclude neighbors flag for rendezvous affinity function.
+ * Tests exclude neighbors flag for {@link FairAffinityFunction}.
  */
-public class GridCacheRendezvousAffinityFunctionExcludeNeighborsSelfTest extends
-    GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest {
+public class FairAffinityFunctionExcludeNeighborsSelfTest extends AffinityFunctionExcludeNeighborsAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected AffinityFunction affinityFunction() {
-        return new RendezvousAffinityFunction(true);
+        return new FairAffinityFunction(true);
     }
 }

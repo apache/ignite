@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.affinity.fair;
+package org.apache.ignite.cache.affinity;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
-import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
@@ -37,7 +36,17 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class GridFairAffinityFunctionSelfTest extends GridCommonAbstractTest {
+public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstractTest {
+    /** MAC prefix. */
+    private static final String MAC_PREF = "MAC";
+
+    /**
+     * Returns affinity function.
+     *
+     * @return Affinity function.
+     */
+    protected abstract AffinityFunction affinityFunction();
+
     /**
      * @throws Exception If failed.
      */
@@ -97,10 +106,16 @@ public class GridFairAffinityFunctionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    private void checkNodeRemoved(int backups) throws Exception {
-        int parts = 256;
+    protected void checkNodeRemoved(int backups) throws Exception {
+        checkNodeRemoved(backups, 1, 1);
+    }
 
-        AffinityFunction aff = new FairAffinityFunction(parts);
+    /**
+     * @throws Exception If failed.
+     */
+    protected void checkNodeRemoved(int backups, int neighborsPerHost, int neighborsPeriod) throws Exception {
+
+        AffinityFunction aff = affinityFunction();
 
         int nodesCnt = 50;
 
@@ -115,18 +130,21 @@ public class GridFairAffinityFunctionSelfTest extends GridCommonAbstractTest {
 
             ClusterNode node = new GridTestNode(UUID.randomUUID());
 
+            if (neighborsPerHost > 0)
+                node.attribute(MAC_PREF + ((i / neighborsPeriod) % (nodesCnt / neighborsPerHost)));
+
             nodes.add(node);
 
-            DiscoveryEvent discoEvt = new DiscoveryEvent(node, "", EventType.EVT_NODE_JOINED,
-                node);
+            DiscoveryEvent discoEvt = new DiscoveryEvent(node, "", EventType.EVT_NODE_JOINED, node);
 
-            List<List<ClusterNode>> assignment = aff.assignPartitions(
-                new GridAffinityFunctionContextImpl(nodes, prev, discoEvt, new AffinityTopologyVersion(i),
-                    backups));
+            GridAffinityFunctionContextImpl ctx =
+                new GridAffinityFunctionContextImpl(nodes, prev, discoEvt, new AffinityTopologyVersion(i), backups);
+
+            List<List<ClusterNode>> assignment = aff.assignPartitions(ctx);
 
             info("Assigned.");
 
-            verifyAssignment(assignment, backups, parts, nodes.size());
+            verifyAssignment(assignment, backups, aff.partitions(), nodes.size());
 
             prev = assignment;
         }
@@ -150,17 +168,17 @@ public class GridFairAffinityFunctionSelfTest extends GridCommonAbstractTest {
 
             info("Assigned.");
 
-            verifyAssignment(assignment, backups, parts, nodes.size());
+            verifyAssignment(assignment, backups, aff.partitions(), nodes.size());
 
             prev = assignment;
         }
     }
 
-    @SuppressWarnings("IfMayBeConditional")
-    private void checkRandomReassignment(int backups) {
-        int parts = 256;
-
-        AffinityFunction aff = new FairAffinityFunction(parts);
+    /**
+     * @param backups Backups.
+     */
+    protected void checkRandomReassignment(int backups) {
+        AffinityFunction aff = affinityFunction();
 
         Random rnd = new Random();
 
@@ -221,13 +239,14 @@ public class GridFairAffinityFunctionSelfTest extends GridCommonAbstractTest {
                 new GridAffinityFunctionContextImpl(nodes, prev, discoEvt, new AffinityTopologyVersion(i),
                     backups));
 
-            verifyAssignment(assignment, backups, parts, nodes.size());
+            verifyAssignment(assignment, backups, aff.partitions(), nodes.size());
 
             prev = assignment;
 
             i++;
         }
     }
+
 
     /**
      * @param assignment Assignment to verify.
@@ -264,6 +283,10 @@ public class GridFairAffinityFunctionSelfTest extends GridCommonAbstractTest {
             "maxDev=" + deviation(max, ideal) + "%");
     }
 
+    /**
+     * @param val Value.
+     * @param ideal Ideal.
+     */
     private static int deviation(int val, int ideal) {
         return Math.round(Math.abs(((float)val - ideal) / ideal * 100));
     }
