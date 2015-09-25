@@ -640,6 +640,7 @@ public class IgfsMetaManager extends IgfsManager {
      */
     private Map<IgniteUuid, IgfsFileInfo> lockIds(Collection<IgniteUuid> fileIds) throws IgniteCheckedException {
         assert isSorted(fileIds);
+        assert validTxState(true);
 
         if (log.isDebugEnabled())
             log.debug("Locking file ids: " + fileIds);
@@ -1154,9 +1155,10 @@ public class IgfsMetaManager extends IgfsManager {
 
                     assert victimId != null;
 
-                    if (ROOT_ID.equals(victimId) || TRASH_ID.equals(victimId))
-                        // Do not allow to delete root or trash,
-                        // just return:
+                    assert !TRASH_ID.equals(victimId) : "TRASH does not have path, it cannot ever be deletion victim.";
+
+                    if (ROOT_ID.equals(victimId))
+                        // Do not allow to delete root, just return:
                         return null;
 
                     IgniteUuid parentId = pathIdList.get(pathIdList.size() - 2);
@@ -1291,8 +1293,7 @@ public class IgfsMetaManager extends IgfsManager {
                             new IgfsListingEntry(newInfo), false));
 
                     // Remove listing entries from root.
-                    for (Map.Entry<String, IgfsListingEntry> entry : transferListing.entrySet())
-                        id2InfoPrj.invoke(ROOT_ID, new UpdateListing(entry.getKey(), entry.getValue(), true));
+                    id2InfoPrj.invoke(ROOT_ID, new UpdateMultipleListingEntries(transferListing, true/*remove*/));
 
                     tx.commit();
 
@@ -1333,8 +1334,11 @@ public class IgfsMetaManager extends IgfsManager {
 
                 final IgniteUuid victimId = pathIdList.get(pathIdList.size() - 1);
 
-                if (ROOT_ID.equals(victimId) || TRASH_ID.equals(victimId))
-                    return null; // Simply return.
+                assert !TRASH_ID.equals(victimId) : "TRASH does not have path, it cannot ever be deletion victim.";
+
+                if (ROOT_ID.equals(victimId))
+                    // Do not allow to delete root, just return:
+                    return null;
 
                 allIds.addAll(pathIdList);
 
@@ -3338,6 +3342,117 @@ public class IgfsMetaManager extends IgfsManager {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(UpdateListing.class, this);
+        }
+    }
+
+    /**
+     * Update multiple directory listing entries closure.
+     */
+    @GridInternal
+    private static final class UpdateMultipleListingEntries implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
+            Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Map fileName -> IgfsListingEntry: the elements to add or remove. */
+        private Map<String, IgfsListingEntry> entryMap;
+
+        /** Update operation: remove entry from listing if {@code true} or add entry to listing if {@code false}. */
+        private boolean rmv;
+
+        /**
+         * Constructs update directory listing closure.
+         *
+         * @param fileName File name to add into parent listing.
+         * @param entry Listing entry to add or remove.
+         * @param rmv Remove entry from listing if {@code true} or add entry to listing if {@code false}.
+         */
+        private UpdateMultipleListingEntries(Map<String, IgfsListingEntry> entryMap, boolean rmv) {
+            assert entryMap != null;
+
+            this.entryMap = entryMap;
+            this.rmv = rmv;
+        }
+
+        /**
+         * Empty constructor required for {@link Externalizable}.
+         *
+         */
+        public UpdateMultipleListingEntries() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void process(MutableEntry<IgniteUuid, IgfsFileInfo> e, Object... args) {
+            IgfsFileInfo fileInfo = e.getValue();
+
+            assert fileInfo != null : "File info not found for id: " + e.getKey();
+            assert fileInfo.isDirectory();
+
+            Map<String, IgfsListingEntry> listing =
+                    U.newHashMap(fileInfo.listing().size() + (rmv ? 0 : entryMap.size()));
+
+            listing.putAll(fileInfo.listing());
+
+            String fileName;
+            IgfsListingEntry entry;
+            if (rmv) {
+                // Remove all the entries contained in 'entryMap':
+                for (Map.Entry<String, IgfsListingEntry> entryToRemove : entryMap.entrySet()) {
+                    fileName = entryToRemove.getKey();
+
+                    entry = entryToRemove.getValue();
+
+                    IgfsListingEntry oldEntry = listing.get(fileName);
+
+                    if (oldEntry == null
+                            || !oldEntry.fileId().equals(entry.fileId()))
+                        throw new IgniteException("Directory listing doesn't contain expected file" +
+                                " [listing=" + listing + ", fileName=" + fileName + ", entry=" + entry + ']');
+
+                    // Modify listing in-place.
+                    IgfsListingEntry removed = listing.remove(fileName);
+
+                    assert removed == oldEntry;
+                }
+            }
+            else {
+                // Add all the entries contained in 'entryMap':
+                for (Map.Entry<String, IgfsListingEntry> entryToRemove : entryMap.entrySet()) {
+                    fileName = entryToRemove.getKey();
+
+                    entry = entryToRemove.getValue();
+
+                    // Modify listing in-place.
+                    IgfsListingEntry oldEntry = listing.put(fileName, entry);
+
+                    if (oldEntry != null && !oldEntry.fileId().equals(entry.fileId()))
+                        throw new IgniteException("Directory listing contains unexpected file" +
+                                " [listing=" + listing + ", fileName=" + fileName + ", entry=" + entry +
+                                ", oldEntry=" + oldEntry + ']');
+                }
+            }
+
+            e.setValue(new IgfsFileInfo(listing, fileInfo));
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeMap(out, entryMap);
+            out.writeBoolean(rmv);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            entryMap = U.readMap(in);
+            rmv = in.readBoolean();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(UpdateMultipleListingEntries.class, this);
         }
     }
 

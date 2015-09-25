@@ -760,12 +760,14 @@ public final class IgfsImpl implements IgfsEx {
     private boolean delete0(FileDescriptor desc, IgfsPath path, boolean recursive)
         throws IgniteCheckedException {
         if (desc.isFile) {
-            meta.removeFile2(path, true);
+            IgfsFileInfo deletedInfo = meta.removeFile2(path, true);
 
-            return true;
+            return deletedInfo != null;
         }
         else {
-            return meta.softDelete(path, recursive) != null;
+            IgniteUuid deletedId = meta.softDelete(path, recursive);
+
+            return deletedId != null;
 //            if (recursive) {
 //
 //
