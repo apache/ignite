@@ -1132,121 +1132,28 @@ public class IgfsMetaManager extends IgfsManager {
      * @return The last actual file info or {@code null} if such file no more exist.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable IgfsFileInfo removeFile(final IgfsPath path, final boolean rmvLocked)
-            throws IgniteCheckedException {
+    @Nullable public IgfsFileInfo removeIfEmpty(IgniteUuid parentId, String fileName, IgniteUuid fileId,
+        IgfsPath path, boolean rmvLocked)
+        throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
 
-                final List<IgniteUuid> pathIdList = fileIds(path);
-
-                final SortedSet<IgniteUuid> allIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
-
-                allIds.addAll(pathIdList);
-
-                if (allIds.remove(null))
-                    return null; // Some path component not found, so the file doesn't exist already.
-
-                // Start Tx:
                 IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
-                    assert validTxState(true);
+                    if (parentId != null)
+                        lockIds(parentId, fileId, TRASH_ID);
+                    else
+                        lockIds(fileId, TRASH_ID);
 
-                    boolean added = allIds.add(TRASH_ID);
-                    assert added;
-
-                    Map<IgniteUuid, IgfsFileInfo> infoMap = lockIds(allIds);
-
-                    final IgniteUuid victimId = pathIdList.get(pathIdList.size() - 1);
-
-                    assert victimId != null;
-
-                    assert !TRASH_ID.equals(victimId) : "TRASH does not have path, it cannot ever be deletion victim.";
-
-                    if (ROOT_ID.equals(victimId))
-                        // Do not allow to delete root, just return:
-                        return null;
-
-                    IgniteUuid parentId = pathIdList.get(pathIdList.size() - 2);
-
-                    assert parentId != null;
-
-                    final String fileName = path.name();
-
-                    assert fileName != null;
-
-                    IgfsFileInfo destInfo = infoMap.get(TRASH_ID);
-
-                    assert destInfo != null;
-
-                    final String destFileName = pathIdList.get(pathIdList.size() - 1).toString();
-
-                    if (destInfo.listing().get(destFileName) != null)
-                        throw fsException(new IgfsPathAlreadyExistsException("Failed to add file name into the destination " +
-                                " directory (file already exists) [destName=" + destFileName + ']'));
-
-                    if (log.isDebugEnabled())
-                        log.debug("Remove file: [parentId=" + parentId + ", fileName= " + fileName + ", fileId=" + victimId + ']');
-
-                    // Safe gets because locks are obtained in removeIfEmpty.
-                    IgfsFileInfo fileInfo = infoMap.get(victimId);
-                    IgfsFileInfo parentInfo = infoMap.get(parentId);
-
-                    if (fileInfo == null || parentInfo == null) {
-                        if (parentInfo != null) { // fileInfo == null
-                            IgfsListingEntry entry = parentInfo.listing().get(fileName);
-
-                            // If file info does not exists but listing entry exists, throw inconsistent exception.
-                            if (entry != null && entry.fileId().equals(victimId))
-                                throw new IgniteCheckedException("Failed to remove file (file system is in inconsistent state) " +
-                                        "[fileInfo=" + fileInfo + ", fileName=" + fileName + ", fileId=" + victimId + ']');
-                        }
-
-                        return null; // Parent directory or removed file cannot be locked (not found?).
-                    }
-
-                    assert parentInfo.isDirectory();
-
-                    if (!rmvLocked && fileInfo.lockId() != null)
-                        throw fsException("Failed to remove file (file is opened for writing) [fileName=" +
-                                fileName + ", fileId=" + victimId + ", lockId=" + fileInfo.lockId() + ']');
-
-                    // Validate own directory listing.
-                    if (fileInfo.isDirectory()) {
-                        Map<String, IgfsListingEntry> listing = fileInfo.listing();
-
-                        if (!F.isEmpty(listing))
-                            //return null;
-                            throw fsException(new IgfsDirectoryNotEmptyException("Failed to remove file (directory is not empty)" +
-                                    " [fileId=" + victimId + ", listing=" + listing + ']'));
-                    }
-
-                    // Validate file in the parent listing.
-                    IgfsListingEntry listingEntry = parentInfo.listing().get(fileName);
-
-                    if (listingEntry == null || !listingEntry.fileId().equals(victimId))
-                        return null;
-
-                    if (!verifyPathIntegrity(path, pathIdList, infoMap)) {
-                        throw new IgfsPathNotFoundException("Failed to perform delete because target directory " +
-                                "structure changed concurrently [path=" + path + ']');
-                    }
-
-                    id2InfoPrj.invoke(parentId, new UpdateListing(fileName, listingEntry, true));
-
-                    // Add listing entry into the destination parent listing.
-                    id2InfoPrj.invoke(TRASH_ID, new UpdateListing(destFileName, listingEntry, false));
-
-                    // Update a file info of the removed file with a file path,
-                    // which will be used by delete worker for event notifications.
-                    id2InfoPrj.invoke(victimId, new UpdatePath(path));
+                    IgfsFileInfo fileInfo = removeIfEmptyNonTx(parentId, fileName, fileId, path, rmvLocked);
 
                     tx.commit();
 
                     delWorker.signal();
 
-                    return builder(fileInfo).path(path).build();
+                    return fileInfo;
                 }
                 finally {
                     tx.close();
@@ -1257,8 +1164,79 @@ public class IgfsMetaManager extends IgfsManager {
             }
         }
         else
-            throw new IllegalStateException("Failed to remove file system entry because " +
-                    "Grid is stopping [path=" + path + ']');
+            throw new IllegalStateException("Failed to remove file system entry because Grid is stopping [parentId=" +
+                parentId + ", fileName=" + fileName + ", fileId=" + fileId + ", path=" + path + ']');
+    }
+
+    /**
+     * Remove file from the file system structure in existing transaction.
+     *
+     * @param parentId Parent file ID.
+     * @param fileName New file name in the parent's listing.
+     * @param fileId File ID to remove.
+     * @param path Path of the deleted file.
+     * @param rmvLocked Whether to remove this entry in case it has explicit lock.
+     * @return The last actual file info or {@code null} if such file no more exist.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable private IgfsFileInfo removeIfEmptyNonTx(@Nullable IgniteUuid parentId, String fileName, IgniteUuid fileId,
+        IgfsPath path, boolean rmvLocked)
+        throws IgniteCheckedException {
+        assert validTxState(true);
+        assert parentId != null;
+        assert fileName != null;
+        assert fileId != null;
+        assert !ROOT_ID.equals(fileId);
+
+        if (log.isDebugEnabled())
+            log.debug("Remove file: [parentId=" + parentId + ", fileName= " + fileName + ", fileId=" + fileId + ']');
+
+        // Safe gets because locks are obtained in removeIfEmpty.
+        IgfsFileInfo fileInfo = id2InfoPrj.get(fileId);
+        IgfsFileInfo parentInfo = id2InfoPrj.get(parentId);
+
+        if (fileInfo == null || parentInfo == null) {
+            if (parentInfo != null) { // fileInfo == null
+                IgfsListingEntry entry = parentInfo.listing().get(fileName);
+
+                // If file info does not exists but listing entry exists, throw inconsistent exception.
+                if (entry != null && entry.fileId().equals(fileId))
+                    throw new IgniteCheckedException("Failed to remove file (file system is in inconsistent state) " +
+                        "[fileInfo=" + fileInfo + ", fileName=" + fileName + ", fileId=" + fileId + ']');
+            }
+
+            return null; // Parent directory or removed file cannot be locked (not found?).
+        }
+
+        assert parentInfo.isDirectory();
+
+        if (!rmvLocked && fileInfo.lockId() != null)
+            throw fsException("Failed to remove file (file is opened for writing) [fileName=" +
+                fileName + ", fileId=" + fileId + ", lockId=" + fileInfo.lockId() + ']');
+
+        // Validate own directory listing.
+        if (fileInfo.isDirectory()) {
+            Map<String, IgfsListingEntry> listing = fileInfo.listing();
+
+            if (!F.isEmpty(listing))
+                throw fsException(new IgfsDirectoryNotEmptyException("Failed to remove file (directory is not empty)" +
+                    " [fileId=" + fileId + ", listing=" + listing + ']'));
+        }
+
+        // Validate file in the parent listing.
+        IgfsListingEntry listingEntry = parentInfo.listing().get(fileName);
+
+        if (listingEntry == null || !listingEntry.fileId().equals(fileId))
+            return null;
+
+        // Actual remove.
+        softDeleteNonTx(parentId, fileName, fileId);
+
+        // Update a file info of the removed file with a file path,
+        // which will be used by delete worker for event notifications.
+        id2InfoPrj.invoke(fileId, new UpdatePath(path));
+
+        return builder(fileInfo).path(path).build();
     }
 
     /**
@@ -1326,14 +1304,14 @@ public class IgfsMetaManager extends IgfsManager {
      * @return ID of an entry located directly under the trash directory.
      * @throws IgniteCheckedException If failed.
      */
-    IgniteUuid softDelete(final List<IgniteUuid> pathIdList, final IgfsPath path, final boolean recursive) throws IgniteCheckedException {
+    IgniteUuid softDelete(final IgfsPath path, final boolean recursive) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
 
                 final SortedSet<IgniteUuid> allIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
-                final Map<String, IgfsListingEntry> rootListingMap;
+                List<IgniteUuid> pathIdList = fileIds(path);
 
                 assert pathIdList.size() > 1;
 
@@ -3350,117 +3328,6 @@ public class IgfsMetaManager extends IgfsManager {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(UpdateListing.class, this);
-        }
-    }
-
-    /**
-     * Update multiple directory listing entries closure.
-     */
-    @GridInternal
-    private static final class UpdateMultipleListingEntries implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
-            Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Map fileName -> IgfsListingEntry: the elements to add or remove. */
-        private Map<String, IgfsListingEntry> entryMap;
-
-        /** Update operation: remove entry from listing if {@code true} or add entry to listing if {@code false}. */
-        private boolean rmv;
-
-        /**
-         * Constructs update directory listing closure.
-         *
-         * @param fileName File name to add into parent listing.
-         * @param entry Listing entry to add or remove.
-         * @param rmv Remove entry from listing if {@code true} or add entry to listing if {@code false}.
-         */
-        private UpdateMultipleListingEntries(Map<String, IgfsListingEntry> entryMap, boolean rmv) {
-            assert entryMap != null;
-
-            this.entryMap = entryMap;
-            this.rmv = rmv;
-        }
-
-        /**
-         * Empty constructor required for {@link Externalizable}.
-         *
-         */
-        public UpdateMultipleListingEntries() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<IgniteUuid, IgfsFileInfo> e, Object... args) {
-            IgfsFileInfo fileInfo = e.getValue();
-
-            assert fileInfo != null : "File info not found for id: " + e.getKey();
-            assert fileInfo.isDirectory();
-
-            Map<String, IgfsListingEntry> listing =
-                    U.newHashMap(fileInfo.listing().size() + (rmv ? 0 : entryMap.size()));
-
-            listing.putAll(fileInfo.listing());
-
-            String fileName;
-            IgfsListingEntry entry;
-            if (rmv) {
-                // Remove all the entries contained in 'entryMap':
-                for (Map.Entry<String, IgfsListingEntry> entryToRemove : entryMap.entrySet()) {
-                    fileName = entryToRemove.getKey();
-
-                    entry = entryToRemove.getValue();
-
-                    IgfsListingEntry oldEntry = listing.get(fileName);
-
-                    if (oldEntry == null
-                            || !oldEntry.fileId().equals(entry.fileId()))
-                        throw new IgniteException("Directory listing doesn't contain expected file" +
-                                " [listing=" + listing + ", fileName=" + fileName + ", entry=" + entry + ']');
-
-                    // Modify listing in-place.
-                    IgfsListingEntry removed = listing.remove(fileName);
-
-                    assert removed == oldEntry;
-                }
-            }
-            else {
-                // Add all the entries contained in 'entryMap':
-                for (Map.Entry<String, IgfsListingEntry> entryToRemove : entryMap.entrySet()) {
-                    fileName = entryToRemove.getKey();
-
-                    entry = entryToRemove.getValue();
-
-                    // Modify listing in-place.
-                    IgfsListingEntry oldEntry = listing.put(fileName, entry);
-
-                    if (oldEntry != null && !oldEntry.fileId().equals(entry.fileId()))
-                        throw new IgniteException("Directory listing contains unexpected file" +
-                                " [listing=" + listing + ", fileName=" + fileName + ", entry=" + entry +
-                                ", oldEntry=" + oldEntry + ']');
-                }
-            }
-
-            e.setValue(new IgfsFileInfo(listing, fileInfo));
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeMap(out, entryMap);
-            out.writeBoolean(rmv);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            entryMap = U.readMap(in);
-            rmv = in.readBoolean();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(UpdateMultipleListingEntries.class, this);
         }
     }
 

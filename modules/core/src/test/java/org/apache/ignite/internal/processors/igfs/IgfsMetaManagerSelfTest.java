@@ -192,8 +192,8 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
             assertNull(mgr.updateProperties(ROOT_ID, fileId, "not_exists", F.<String, String>asMap(key2, null)));
         }
 
-        mgr.removeFile(new IgfsPath("/dir"), true);
-        mgr.removeFile(new IgfsPath("/file"), true);
+        mgr.removeIfEmpty(ROOT_ID, "dir", dir.id(), new IgfsPath("/dir"), true);
+        mgr.removeIfEmpty(ROOT_ID, "file", file.id(), new IgfsPath("/file"), true);
 
         assertNull(mgr.updateProperties(ROOT_ID, dir.id(), "dir", F.asMap("p", "7")));
         assertNull(mgr.updateProperties(ROOT_ID, file.id(), "file", F.asMap("q", "8")));
@@ -318,16 +318,19 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         // Validate 'remove' operation.
         for (int i = 0; i < 100; i++) {
             // One of participants doesn't exist.
-            assertNull(mgr.removeFile(path("/abba"), true));
-            assertNull(mgr.removeFile(path("/" + IgniteUuid.randomUuid() + "/a"), true));
+            assertNull(mgr.removeIfEmpty(ROOT_ID, "a", IgniteUuid.randomUuid(), new IgfsPath("/a"), true));
+            assertNull(mgr.removeIfEmpty(IgniteUuid.randomUuid(), "a", IgniteUuid.randomUuid(),
+                new IgfsPath("/" + IgniteUuid.randomUuid() + "/a"), true));
         }
 
         expectsRemoveFail(ROOT_ID, "a", a.id(), new IgfsPath("/a"),
-                "Failed to remove file (directory is not empty)");
+            "Failed to remove file (directory is not empty)");
         expectsRemoveFail(a.id(), "b", b.id(), new IgfsPath("/a/b"),
-                "Failed to remove file (directory is not empty)");
+            "Failed to remove file (directory is not empty)");
+        assertNull(mgr.removeIfEmpty(ROOT_ID, "a", f1.id(), new IgfsPath("/a"), true));
+        assertNull(mgr.removeIfEmpty(a.id(), "b", f1.id(), new IgfsPath("/a/b"), true));
 
-        assertEquals(f3, mgr.removeFile(new IgfsPath("/a/b/f3"), true));
+        assertEquals(f3, mgr.removeIfEmpty(b.id(), "f3", f3.id(), new IgfsPath("/a/b/f3"), true));
 
         assertEquals(F.asMap("a", new IgfsListingEntry(a), "f1", new IgfsListingEntry(f1)),
             mgr.directoryListing(ROOT_ID));
@@ -337,10 +340,9 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
                 "f2", new IgfsListingEntry(f2)),
             mgr.directoryListing(a.id()));
 
-        Map<String, IgfsListingEntry> list = mgr.directoryListing(b.id());
-        assertEmpty(list);
+        assertEmpty(mgr.directoryListing(b.id()));
 
-        assertEquals(b, mgr.removeFile(new IgfsPath("/a/b"), true));
+        assertEquals(b, mgr.removeIfEmpty(a.id(), "b", b.id(), new IgfsPath("/a/b"), true));
 
         assertEquals(F.asMap("a", new IgfsListingEntry(a), "f1", new IgfsListingEntry(f1)),
             mgr.directoryListing(ROOT_ID));
@@ -360,7 +362,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEquals(f2.id(), newF2.id());
         assertNotSame(f2, newF2);
 
-        assertEquals(newF2, mgr.removeFile(new IgfsPath("/a/f2"), true));
+        assertEquals(newF2, mgr.removeIfEmpty(a.id(), "f2", f2.id(), new IgfsPath("/a/f2"), true));
 
         assertEquals(F.asMap("a", new IgfsListingEntry(a), "f1", new IgfsListingEntry(f1)),
             mgr.directoryListing(ROOT_ID));
@@ -368,14 +370,14 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEmpty(mgr.directoryListing(a.id()));
         assertEmpty(mgr.directoryListing(b.id()));
 
-        assertEquals(f1, mgr.removeFile(new IgfsPath("/f1"), true));
+        assertEquals(f1, mgr.removeIfEmpty(ROOT_ID, "f1", f1.id(), new IgfsPath("/f1"), true));
 
         assertEquals(F.asMap("a", new IgfsListingEntry(a)), mgr.directoryListing(ROOT_ID));
 
         assertEmpty(mgr.directoryListing(a.id()));
         assertEmpty(mgr.directoryListing(b.id()));
 
-        assertEquals(a, mgr.removeFile(new IgfsPath("/a"), true));
+        assertEquals(a, mgr.removeIfEmpty(ROOT_ID, "a", a.id(), new IgfsPath("/a"), true));
 
         assertEmpty(mgr.directoryListing(ROOT_ID));
         assertEmpty(mgr.directoryListing(a.id()));
@@ -466,7 +468,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         final IgfsPath path, @Nullable String msg) {
         Throwable err = assertThrows(log, new Callable() {
             @Nullable @Override public Object call() throws Exception {
-                mgr.removeFile(path, true);
+                mgr.removeIfEmpty(parentId, fileName, fileId, path, true);
 
                 return null;
             }
