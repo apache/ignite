@@ -635,6 +635,7 @@ public class IgfsMetaManager extends IgfsManager {
 
     /**
      * Lock file IDs.
+     *
      * @param fileIds File IDs (sorted).
      * @return Map with lock info.
      * @throws IgniteCheckedException If failed.
@@ -652,29 +653,34 @@ public class IgfsMetaManager extends IgfsManager {
         if (log.isDebugEnabled())
             log.debug("Locked file ids: " + fileIds);
 
-        // Force root ID always exist in cache.
-        if (fileIds.contains(ROOT_ID) && !map.containsKey(ROOT_ID)) {
-            IgfsFileInfo info = new IgfsFileInfo();
-
-            id2InfoPrj.putIfAbsent(ROOT_ID, info);
-
-            map = new GridLeanMap<>(map);
-
-            map.put(ROOT_ID, info);
-        }
-
-        if (fileIds.contains(TRASH_ID) && !map.containsKey(TRASH_ID)) {
-            IgfsFileInfo info = new IgfsFileInfo();
-
-            id2InfoPrj.putIfAbsent(TRASH_ID, info);
-
-            map = new GridLeanMap<>(map);
-
-            map.put(TRASH_ID, info);
-        }
+        // Force root & trash IDs always exist in cache.
+        addInfoIfNeeded(fileIds, map, ROOT_ID);
+        addInfoIfNeeded(fileIds, map, TRASH_ID);
 
         // Returns detail's map for locked IDs.
         return map;
+    }
+
+    /**
+     * Adds FileInfo into the cache if it is requested in fileIds and is not present in the map.
+     *
+     * @param fileIds A list that may contain the id.
+     * @param map The map that may not contain the id.
+     * @param id The id to check.
+     * @throws IgniteCheckedException On error.
+     */
+    private void addInfoIfNeeded(Collection<IgniteUuid> fileIds, Map<IgniteUuid, IgfsFileInfo> map, IgniteUuid id) throws IgniteCheckedException {
+        assert validTxState(true);
+
+        if (fileIds.contains(id) && !map.containsKey(id)) {
+            IgfsFileInfo info = new IgfsFileInfo(id);
+
+            assert info.listing() != null;
+
+            id2InfoPrj.putIfAbsent(id, info);
+
+            map.put(id, info);
+        }
     }
 
     /**
@@ -1126,7 +1132,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return The last actual file info or {@code null} if such file no more exist.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable IgfsFileInfo removeFile2(final IgfsPath path, final boolean rmvLocked)
+    @Nullable IgfsFileInfo removeFile(final IgfsPath path, final boolean rmvLocked)
             throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
@@ -1171,6 +1177,8 @@ public class IgfsMetaManager extends IgfsManager {
                     assert fileName != null;
 
                     IgfsFileInfo destInfo = infoMap.get(TRASH_ID);
+
+                    assert destInfo != null;
 
                     final String destFileName = pathIdList.get(pathIdList.size() - 1).toString();
 
@@ -1268,7 +1276,7 @@ public class IgfsMetaManager extends IgfsManager {
                 final IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
                 try {
                     // NB: We may lock root because its id is less than any other id:
-                    final IgfsFileInfo rootInfo = lockIds(ROOT_ID).get(ROOT_ID);
+                    final IgfsFileInfo rootInfo = lockIds(ROOT_ID, TRASH_ID).get(ROOT_ID);
 
                     assert rootInfo != null;
 
@@ -1280,21 +1288,19 @@ public class IgfsMetaManager extends IgfsManager {
                         return null; // Root is empty, nothing to do.
                     }
 
-                    lockIds(TRASH_ID);
-
                     // Construct new info and move locked entries from root to it.
                     Map<String, IgfsListingEntry> transferListing = new HashMap<>(rootListingMap);
 
                     IgfsFileInfo newInfo = new IgfsFileInfo(transferListing);
 
-                    id2InfoPrj.getAndPut(newInfo.id(), newInfo);
+                    id2InfoPrj.put(newInfo.id(), newInfo);
 
                     // Add new info to trash listing.
                     id2InfoPrj.invoke(TRASH_ID, new UpdateListing(newInfo.id().toString(),
                             new IgfsListingEntry(newInfo), false));
 
-                    // Remove listing entries from root.
-                    id2InfoPrj.invoke(ROOT_ID, new UpdateMultipleListingEntries(transferListing, true/*remove*/));
+                    // Remove listing entries from root:
+                    id2InfoPrj.put(ROOT_ID, new IgfsFileInfo());
 
                     tx.commit();
 
@@ -1364,6 +1370,8 @@ public class IgfsMetaManager extends IgfsManager {
                             "and recursive flag is not set).");
 
                     IgfsFileInfo destInfo = infoMap.get(TRASH_ID);
+
+                    assert destInfo != null;
 
                     final String srcFileName = path.name();
 

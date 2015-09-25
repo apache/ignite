@@ -1127,7 +1127,7 @@ public final class IgfsImpl implements IgfsEx {
 
                     // Remove old file from the tree.
                     // Only one file is deleted, so we use internal data streamer.
-                    meta.removeFile2(path, false);
+                    meta.removeFile(path, false);
 
                     if (evts.isRecordable(EVT_IGFS_FILE_DELETED))
                         evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_DELETED));
@@ -1509,30 +1509,6 @@ public final class IgfsImpl implements IgfsEx {
 
         return new T2<>(new FileDescriptor(parentId, path.name(), fileInfo.id(), fileInfo.isFile()), ids);
     }
-
-//    /**
-//     * Remove file from the file system (structure and data).
-//     *
-//     * @param path Path of the deleted file.
-//     * @param desc Detailed file descriptor to remove.
-//     * @param rmvLocked Whether to remove this entry in case it is has explicit lock.
-//     * @throws IgniteCheckedException If failed.
-//     */
-//    private void deleteFile(IgfsPath path, FileDescriptor desc, final boolean rmvLocked) throws IgniteCheckedException {
-//        IgniteUuid parentId = desc.parentId;
-//        IgniteUuid fileId = desc.fileId;
-//
-//        if (parentId == null || ROOT_ID.equals(fileId)) {
-//            assert parentId == null && ROOT_ID.equals(fileId) : "Invalid file descriptor: " + desc;
-//
-//            return; // Never remove the root directory!
-//        }
-//
-//        if (TRASH_ID.equals(fileId))
-//            return; // Never remove trash directory.
-//
-//        meta.removeFile2(path, rmvLocked);
-//    }
 
     /**
      * Check whether IGFS with the same name exists among provided attributes.

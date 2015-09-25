@@ -1600,6 +1600,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentMkdirsDelete() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1541");
+
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
 
