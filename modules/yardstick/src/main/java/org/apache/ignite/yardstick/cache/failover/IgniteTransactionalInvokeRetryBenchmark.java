@@ -57,7 +57,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
         Thread thread = new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    while (true) {
+                    while (!Thread.currentThread().isInterrupted()) {
                         Thread.sleep(args.cacheConsistencyCheckingPeriod() * 1000);
 
                         rwl.writeLock().lock();
@@ -77,6 +77,8 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                             + ", localMapVal=" + mapVal + "]");
 
                                         isValidCacheState = false;
+
+                                        return;
                                     }
                                 }
                             }
