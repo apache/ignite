@@ -1355,8 +1355,10 @@ public class IgfsMetaManager extends IgfsManager {
                     final Map<IgniteUuid, IgfsFileInfo> infoMap = lockIds(allIds);
 
                     if (!verifyPathIntegrity(path, pathIdList, infoMap)) {
-                        throw new IgfsPathNotFoundException("Failed to perform delete because target directory " +
-                                "structure changed concurrently [path=" + path + ']');
+//                        throw new IgfsPathNotFoundException("Failed to perform delete because target directory " +
+//                                "structure changed concurrently [path=" + path + ']');
+                        // Directory starure was changed concurrently, so the original path no longer exists.
+                        return null;
                     }
 
                     final IgfsFileInfo victimInfo = infoMap.get(victimId);
@@ -1368,7 +1370,7 @@ public class IgfsMetaManager extends IgfsManager {
                         throw new IgfsDirectoryNotEmptyException("Failed to remove directory (directory is not empty " +
                             "and recursive flag is not set)");
 
-                        IgfsFileInfo destInfo = infoMap.get(TRASH_ID);
+                    IgfsFileInfo destInfo = infoMap.get(TRASH_ID);
 
                     final String destFileName = victimId.toString();
 

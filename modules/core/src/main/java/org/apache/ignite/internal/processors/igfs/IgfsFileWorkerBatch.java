@@ -130,7 +130,7 @@ public abstract class IgfsFileWorkerBatch implements Runnable {
                     byte[] data = queue.poll(1000, TimeUnit.MILLISECONDS);
 
                     if (data == STOP_MARKER) {
-                        assert queue.isEmpty();
+                        assert queue.isEmpty(); // *** sometimes fails there.
 
                         break;
                     }
