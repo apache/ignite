@@ -711,7 +711,7 @@ public final class IgfsImpl implements IgfsEx {
                     log.debug("Deleting file [path=" + path + ", recursive=" + recursive + ']');
 
                 if (IgfsPath.SLASH.equals(path.toString()))
-                    return false; // Prevent root deletion in early stage.
+                    return false;
 
                 IgfsMode mode = resolveMode(path);
 
@@ -1058,8 +1058,7 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(bufSize >= 0, "bufSize >= 0");
 
         return safeOp(new Callable<IgfsOutputStream>() {
-            @Override
-            public IgfsOutputStream call() throws Exception {
+            @Override public IgfsOutputStream call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Open file for writing [path=" + path + ", bufSize=" + bufSize + ", overwrite=" +
                             overwrite + ", props=" + props + ']');

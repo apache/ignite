@@ -393,6 +393,7 @@ public class IgfsMetaManager extends IgfsManager {
 
     /**
      * Gets file info by its ID.
+     * NB: this method is used both in Tx and out of Tx.
      *
      * @param fileId File ID to get details for.
      * @return File info.
@@ -1333,19 +1334,15 @@ public class IgfsMetaManager extends IgfsManager {
                 final IgniteUuid victimId = pathIdList.get(pathIdList.size() - 1);
 
                 assert !TRASH_ID.equals(victimId) : "TRASH does not have path, it cannot ever be deletion victim.";
-
-                if (ROOT_ID.equals(victimId))
-                    // Do not allow to delete root, just return:
-                    return null;
+                assert !ROOT_ID.equals(victimId); // root deletion is prevented in earlier stages.
 
                 allIds.addAll(pathIdList);
 
                 if (allIds.remove(null))
-                    return null; // Path does not exist.
+                    return null; // A fragment of the path no longer exists.
 
                 boolean added = allIds.add(TRASH_ID);
                 assert added;
-                assert ROOT_ID.equals(allIds.iterator().next()); // root must be the 1st.
 
                 final IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
@@ -1353,7 +1350,7 @@ public class IgfsMetaManager extends IgfsManager {
                     final Map<IgniteUuid, IgfsFileInfo> infoMap = lockIds(allIds);
 
                     if (!verifyPathIntegrity(path, pathIdList, infoMap)) {
-                        // Directory starure was changed concurrently, so the original path no longer exists.
+                        // Directory starure was changed concurrently, so the original path no longer exists:
                         return null;
                     }
 
@@ -1364,7 +1361,7 @@ public class IgfsMetaManager extends IgfsManager {
                             && !victimInfo.listing().isEmpty())
                         // Throw exception if not empty and not recursive.
                         throw new IgfsDirectoryNotEmptyException("Failed to remove directory (directory is not empty " +
-                            "and recursive flag is not set)");
+                            "and recursive flag is not set).");
 
                     IgfsFileInfo destInfo = infoMap.get(TRASH_ID);
 
