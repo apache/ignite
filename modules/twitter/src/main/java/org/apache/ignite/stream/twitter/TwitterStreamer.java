@@ -17,15 +17,20 @@
 
 package org.apache.ignite.stream.twitter;
 
-import java.util.*;
-import java.util.concurrent.*;
-
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.twitter.hbc.ClientBuilder;
-import com.twitter.hbc.core.*;
-import com.twitter.hbc.core.endpoint.*;
+import com.twitter.hbc.core.Client;
+import com.twitter.hbc.core.HttpConstants;
+import com.twitter.hbc.core.HttpHosts;
+import com.twitter.hbc.core.endpoint.DefaultStreamingEndpoint;
+import com.twitter.hbc.core.endpoint.SitestreamEndpoint;
+import com.twitter.hbc.core.endpoint.StatusesFilterEndpoint;
+import com.twitter.hbc.core.endpoint.StatusesFirehoseEndpoint;
+import com.twitter.hbc.core.endpoint.StatusesSampleEndpoint;
+import com.twitter.hbc.core.endpoint.StreamingEndpoint;
+import com.twitter.hbc.core.endpoint.UserstreamEndpoint;
 import com.twitter.hbc.core.processor.StringDelimitedProcessor;
 import com.twitter.hbc.httpclient.auth.Authentication;
 import com.twitter.hbc.httpclient.auth.OAuth1;
@@ -36,6 +41,17 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.stream.StreamAdapter;
 import twitter4j.Status;
 import twitter4j.TwitterObjectFactory;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Streamer that consumes from a Twitter Streaming API and feeds transformed key-value pairs, by default < tweetId, text>,
@@ -53,7 +69,6 @@ import twitter4j.TwitterObjectFactory;
  *     <li>Provide all params in apiParams map. https://dev.twitter.com/streaming/overview/request-parameters</li>
  * </ul>
  *
- * @author Lalit Jha
  */
 public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
 
@@ -72,23 +87,27 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
     /** Twitter streaming API endpoint example, '/statuses/filter.json' or '/statuses/firehose.json' */
     private String endpointUrl;
 
-    /** BasicAuth not supported by Streaming API https://dev.twitter.com/streaming/overview/connecting */
-    private Class<? extends Authentication> authenticationScheme = OAuth1.class;
+    /**
+     * Twitter streaming Host. This is paired with endpoint in @link{com.twitter.hbc.core.HttpHosts} constants.
+     * This is for configuring mock or enterprise endpoint.
+     */
+    private HttpHosts hosts;
 
-    /** OAuth params */
-    private String consumerKey;
-    private String consumerSecret;
-    private String accessToken;
-    private String accessTokenSecret;
+    /** OAuth params holder */
+    private OAuthSettings oAuthSettings;
 
     private volatile boolean stopped;
     private Integer bufferCapacity = 100000;
     private Client client;
 
     /** Process stream asynchronously */
-    private ExecutorService tweetStreamProcesser = Executors.newSingleThreadExecutor();
+    private final ExecutorService tweetStreamProcessor = Executors.newSingleThreadExecutor();
 
     private String SITE_USER_ID_KEY = "follow";
+
+    public TwitterStreamer(OAuthSettings oAuthSettings){
+        this.oAuthSettings = oAuthSettings;
+    }
 
     /**
      * Starts streamer.
@@ -99,37 +118,38 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
         if (stopped)
             throw new IgniteException("Attempted to start an already started Twitter Streamer");
 
-        try {
-            validate();
+        validate();
 
-            log = getIgnite().log();
+        log = getIgnite().log();
 
-            BlockingQueue<String> tweetQueue = new LinkedBlockingQueue<String>(bufferCapacity);
-            client = getStreamingEndpoint(tweetQueue);
+        BlockingQueue<String> tweetQueue = new LinkedBlockingQueue<String>(bufferCapacity);
+        client = getStreamingEndpoint(tweetQueue);
 
-            client.connect();
+        client.connect();
 
-            if(transformer == null){
-                transformer = new DefaultTweetTransformer();
-            }
-            Callable<Boolean> task = new Callable<Boolean>() {
+        if(transformer == null){
+            transformer = new DefaultTweetTransformer();
+        }
+        Callable<Boolean> task = new Callable<Boolean>() {
 
-                @Override
-                public Boolean call() throws Exception {
-                    while (!client.isDone() && !stopped) {
+            @Override
+            public Boolean call(){
+                while (!client.isDone() && !stopped) {
+                    try{
                         String tweet = tweetQueue.take();
                         Map<K, V> value = transformer.apply(tweet);
                         if (value != null){
                             getStreamer().addData(value);
                         }
+                    }catch (InterruptedException e){
+                        // no op
                     }
-                    return stopped;
+
                 }
-            };
-            tweetStreamProcesser.submit(task);
-        }catch (Throwable t) {
-            throw new IgniteException("Exception while initializing TwitterStreamer", t);
-        }
+                return stopped;
+            }
+        };
+        tweetStreamProcessor.submit(task);
 
     }
 
@@ -138,26 +158,20 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
      */
     public void stop() throws IgniteException {
 
-        try {
-            stopped = true;
-            client.stop();
-        }catch (Throwable t) {
-            throw new IgniteException("Exception while stopping TwitterStreamer", t);
-        }finally {
-            /** Even if client.stop() fails, this need to be executed */
-            if (tweetStreamProcesser != null) {
-                tweetStreamProcesser.shutdown();
+        stopped = true;
 
-                try {
-                    if (!tweetStreamProcesser.awaitTermination(5000, TimeUnit.MILLISECONDS))
-                        if (log.isDebugEnabled())
-                            log.debug("Timed out waiting for consumer threads to shut down, exiting uncleanly.");
-                } catch (InterruptedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Interrupted during shutdown, exiting uncleanly.");
-                }
-            }
+        tweetStreamProcessor.shutdown();
+
+        try {
+            if (!tweetStreamProcessor.awaitTermination(5000, TimeUnit.MILLISECONDS))
+                if (log.isDebugEnabled())
+                    log.debug("Timed out waiting for consumer threads to shut down, exiting uncleanly.");
+        } catch (InterruptedException e) {
+            if (log.isDebugEnabled())
+                log.debug("Interrupted during shutdown, exiting uncleanly.");
         }
+
+        client.stop();
     }
 
     private void validate(){
@@ -165,15 +179,6 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
         A.notNull(getIgnite(), "ignite");
 
         A.notNull(endpointUrl, "Twitter Streaming API endpoint");
-        A.notNull(authenticationScheme, "twitter Streaming API authentication scheme");
-        A.ensure(authenticationScheme.isAssignableFrom(OAuth1.class),
-                "twitter Streaming API authentication scheme must be OAuth1");
-        if(authenticationScheme.isAssignableFrom(OAuth1.class)){
-            A.notNull(consumerKey, "OAuth consumer key");
-            A.notNull(consumerSecret, "OAuth consumer secret");
-            A.notNull(accessToken, "OAuth access token");
-            A.notNull(accessTokenSecret, "OAuth access token secret");
-        }
 
         if(endpointUrl.equalsIgnoreCase(SitestreamEndpoint.PATH)){
             String followParam = apiParams.get(SITE_USER_ID_KEY);
@@ -184,35 +189,46 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
 
     private Client getStreamingEndpoint(BlockingQueue<String> tweetQueue){
         StreamingEndpoint endpoint;
-        Authentication authentication = null;
+        Authentication authentication = new OAuth1(this.oAuthSettings.getConsumerKey(), this.oAuthSettings.getConsumerSecret(),
+                this.oAuthSettings.getAccessToken(), this.oAuthSettings.getAccessTokenSecret());
 
-        if(this.endpointUrl.equalsIgnoreCase(StatusesFilterEndpoint.PATH)){
-            endpoint = new StatusesFilterEndpoint();
-        }else if(this.endpointUrl.equalsIgnoreCase(StatusesFirehoseEndpoint.PATH)){
-            endpoint = new StatusesFirehoseEndpoint();
-        }else if(this.endpointUrl.equalsIgnoreCase(StatusesSampleEndpoint.PATH)){
-            endpoint = new StatusesSampleEndpoint(); //for testing
-        }else if(this.endpointUrl.equalsIgnoreCase(UserstreamEndpoint.PATH)){
-            endpoint = new UserstreamEndpoint();
-        }else if(this.endpointUrl.equalsIgnoreCase(SitestreamEndpoint.PATH)){
-            String follow = apiParams.remove(SITE_USER_ID_KEY);
-            List<Long> followers = Lists.newArrayList();
-            for(String follower : Splitter.on(',').trimResults().omitEmptyStrings().split(follow)){
-                followers.add(Long.valueOf(follower));
-            }
-            endpoint = new SitestreamEndpoint(followers);
-        }else {
-            endpoint = new DefaultStreamingEndpoint(this.endpointUrl, HttpConstants.HTTP_GET, false);
+        switch (this.endpointUrl.toLowerCase()){
+            case StatusesFilterEndpoint.PATH:
+                endpoint = new StatusesFilterEndpoint();
+                hosts = HttpHosts.STREAM_HOST;
+                break;
+            case StatusesFirehoseEndpoint.PATH:
+                endpoint = new StatusesFirehoseEndpoint();
+                hosts = HttpHosts.STREAM_HOST;
+                break;
+            case StatusesSampleEndpoint.PATH:
+                endpoint = new StatusesSampleEndpoint();
+                hosts = HttpHosts.STREAM_HOST;
+                break;
+            case UserstreamEndpoint.PATH:
+                endpoint = new UserstreamEndpoint();
+                hosts = HttpHosts.USERSTREAM_HOST;
+                break;
+            case SitestreamEndpoint.PATH:
+                String follow = apiParams.remove(SITE_USER_ID_KEY);
+                List<Long> followers = Lists.newArrayList();
+                for(String follower : Splitter.on(',').trimResults().omitEmptyStrings().split(follow)){
+                    followers.add(Long.valueOf(follower));
+                }
+                endpoint = new SitestreamEndpoint(followers);
+                hosts = HttpHosts.SITESTREAM_HOST;
+                break;
+            default:
+                endpoint = new DefaultStreamingEndpoint(this.endpointUrl, HttpConstants.HTTP_GET, false);
+                if(hosts == null){
+                    hosts = HttpHosts.STREAM_HOST;
+                }
         }
 
         for(Map.Entry<String, String> entry : apiParams.entrySet()){
             endpoint.addPostParameter(entry.getKey(), entry.getValue());
         }
 
-        if(authenticationScheme.isAssignableFrom(OAuth1.class)){
-            authentication = new OAuth1(consumerKey, consumerSecret, accessToken, accessTokenSecret);
-        }
-        Hosts hosts = new HttpHosts(Constants.STREAM_HOST);
         ClientBuilder builder = new ClientBuilder()
                 .name("Ignite-Twitter-Client")
                 .hosts(hosts)
@@ -241,22 +257,6 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
         }
     }
 
-    public void setAccessToken(String accessToken) {
-        this.accessToken = accessToken;
-    }
-
-    public void setAccessTokenSecret(String accessTokenSecret) {
-        this.accessTokenSecret = accessTokenSecret;
-    }
-
-    public void setConsumerKey(String consumerKey) {
-        this.consumerKey = consumerKey;
-    }
-
-    public void setConsumerSecret(String consumerSecret) {
-        this.consumerSecret = consumerSecret;
-    }
-
     public void setTransformer(TweetTransformer<K, V> transformer) {
         this.transformer = transformer;
     }
@@ -271,5 +271,10 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
 
     public void setBufferCapacity(Integer bufferCapacity) {
         this.bufferCapacity = bufferCapacity;
+    }
+
+    /** only for mock and enterprise endpoint. Otherwise mapped with endpoint url */
+    public void setHosts(HttpHosts hosts) {
+        this.hosts = hosts;
     }
 }

@@ -17,13 +17,12 @@
 
 package org.apache.ignite.stream.twitter;
 
-import org.junit.runner.*;
-import org.junit.runners.*;
+
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Twitter streamer tests.
- *
- * @author Lalit Jha
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({

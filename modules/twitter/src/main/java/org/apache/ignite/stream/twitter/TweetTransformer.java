@@ -24,7 +24,6 @@ import java.util.Map;
  *
  * @param <K> The type of the cache key.
  * @param <V> The type of the cache value.
- * @author Lalit Jha
  */
 public interface TweetTransformer<K, V> {
 
