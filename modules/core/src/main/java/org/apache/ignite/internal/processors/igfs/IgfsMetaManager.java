@@ -1125,7 +1125,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return The last actual file info or {@code null} if such file no more exist.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgfsFileInfo removeFile2(IgfsPath path, boolean rmvLocked)
+    @Nullable IgfsFileInfo removeFile2(final IgfsPath path, final boolean rmvLocked)
             throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
@@ -1319,7 +1319,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return ID of an entry located directly under the trash directory.
      * @throws IgniteCheckedException If failed.
      */
-    IgniteUuid softDelete(final IgfsPath path, final boolean recursive) throws IgniteCheckedException {
+    IgniteUuid softDelete(final List<IgniteUuid> pathIdList, final IgfsPath path, final boolean recursive) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -1327,8 +1327,6 @@ public class IgfsMetaManager extends IgfsManager {
                 final SortedSet<IgniteUuid> allIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
                 final Map<String, IgfsListingEntry> rootListingMap;
-
-                final List<IgniteUuid> pathIdList = fileIds(path);
 
                 assert pathIdList.size() > 1;
 
@@ -1355,8 +1353,6 @@ public class IgfsMetaManager extends IgfsManager {
                     final Map<IgniteUuid, IgfsFileInfo> infoMap = lockIds(allIds);
 
                     if (!verifyPathIntegrity(path, pathIdList, infoMap)) {
-//                        throw new IgfsPathNotFoundException("Failed to perform delete because target directory " +
-//                                "structure changed concurrently [path=" + path + ']');
                         // Directory starure was changed concurrently, so the original path no longer exists.
                         return null;
                     }
@@ -1366,18 +1362,18 @@ public class IgfsMetaManager extends IgfsManager {
                     if (!recursive
                             && victimInfo.isDirectory()
                             && !victimInfo.listing().isEmpty())
-                          // Throw exception if not empty and not recursive.
+                        // Throw exception if not empty and not recursive.
                         throw new IgfsDirectoryNotEmptyException("Failed to remove directory (directory is not empty " +
                             "and recursive flag is not set)");
 
                     IgfsFileInfo destInfo = infoMap.get(TRASH_ID);
 
+                    final String srcFileName = path.name();
+
                     final String destFileName = victimId.toString();
 
                     assert destInfo.listing().get(destFileName) == null : "Failed to add file name into the destination " +
                             " directory (file already exists) [destName=" + destFileName + ']';
-
-                    final String srcFileName = path.name();
 
                     IgfsFileInfo srcParentInfo = infoMap.get(pathIdList.get(pathIdList.size() - 2));
 
@@ -1396,6 +1392,11 @@ public class IgfsMetaManager extends IgfsManager {
 
                     // Add listing entry into the destination parent listing.
                     id2InfoPrj.invoke(TRASH_ID, new UpdateListing(destFileName, srcEntry, false));
+
+                    if (victimInfo.isFile())
+                        // Update a file info of the removed file with a file path,
+                        // which will be used by delete worker for event notifications.
+                        id2InfoPrj.invoke(victimId, new UpdatePath(path));
 
                     tx.commit();
 
