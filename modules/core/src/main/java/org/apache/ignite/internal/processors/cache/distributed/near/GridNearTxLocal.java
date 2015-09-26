@@ -114,7 +114,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     private Map<IgniteTxKey, IgniteCacheExpiryPolicy> accessMap;
 
     /** */
-    private boolean needCheckBackup;
+    private Boolean needCheckBackup;
 
     /** */
     private boolean hasRemoteLocks;
@@ -255,8 +255,23 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     /**
      * @return If need to check tx commit on backup.
      */
+    public boolean onNeedCheckBackup() {
+        Boolean check = needCheckBackup;
+
+        if (check != null && check) {
+            needCheckBackup = false;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return If backup check was requested.
+     */
     public boolean needCheckBackup() {
-        return needCheckBackup;
+        return needCheckBackup != null;
     }
 
     /**
