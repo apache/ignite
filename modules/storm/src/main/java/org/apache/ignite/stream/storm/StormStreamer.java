@@ -48,13 +48,22 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
     private ExecutorService executor;
 
     /** Number of threads to process Storm streams. */
-    private int threads;
+    private int threads  = 1;
 
     /** Stopped. */
     private volatile boolean stopped = true;
 
     /** the storm output collector */
     private OutputCollector collector;
+
+    public int getThreads() {
+        return threads;
+    }
+
+    public void setThreads(int threads) {
+        this.threads = threads;
+    }
+
 
     /**
      * Starts streamer
