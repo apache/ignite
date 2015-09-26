@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.portable.*;
-import org.apache.ignite.portable.*;
+import org.apache.ignite.internal.portable.api.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
