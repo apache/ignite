@@ -57,7 +57,6 @@ import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
 import org.h2.table.TableView;
-import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;
@@ -84,6 +83,7 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperatio
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.SMALLER_EQUAL;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.SPATIAL_INTERSECTS;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlType.fromColumn;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlType.fromExpression;
 
 /**
  * H2 Query parser.
@@ -420,18 +420,8 @@ public class GridSqlQueryParser {
         if (res == null) {
             res = parseExpression0(expression, calcTypes);
 
-            if (calcTypes) {
-                GridSqlType type = GridSqlType.UNKNOWN;
-
-                if (expression.getType() != Value.UNKNOWN) {
-                    Column c = new Column(null, expression.getType(), expression.getPrecision(), expression.getScale(),
-                        expression.getDisplaySize());
-
-                    type = fromColumn(c);
-                }
-
-                res.resultType(type);
-            }
+            if (calcTypes)
+                res.resultType(fromExpression(expression));
 
             h2ObjToGridObj.put(expression, res);
         }
@@ -608,11 +598,8 @@ public class GridSqlQueryParser {
                 }
             }
 
-            if (f.getFunctionType() == Function.CAST || f.getFunctionType() == Function.CONVERT) {
-                Column c = new Column(null, f.getType(), f.getPrecision(), f.getScale(), f.getDisplaySize());
-
-                res.resultType(fromColumn(c));
-            }
+            if (f.getFunctionType() == Function.CAST || f.getFunctionType() == Function.CONVERT)
+                res.resultType(fromExpression(f));
 
             return res;
         }

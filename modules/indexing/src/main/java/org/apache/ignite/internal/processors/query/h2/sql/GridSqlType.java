@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.h2.expression.Expression;
 import org.h2.table.Column;
 import org.h2.value.Value;
 import org.h2.value.ValueDouble;
@@ -83,6 +84,17 @@ public final class GridSqlType {
             c = new Column(null, c.getType(), c.getPrecision(), c.getScale(), c.getDisplaySize());
 
         return new GridSqlType(c.getType(), c.getScale(), c.getPrecision(), c.getDisplaySize(), c.getCreateSQL());
+    }
+
+    /**
+     * @param e Expression to take type from.
+     * @return Type.
+     */
+    public static GridSqlType fromExpression(Expression e) {
+        if (e.getType() == Value.UNKNOWN)
+            return UNKNOWN;
+
+        return fromColumn(new Column(null, e.getType(), e.getPrecision(), e.getScale(), e.getDisplaySize()));
     }
 
     /**
