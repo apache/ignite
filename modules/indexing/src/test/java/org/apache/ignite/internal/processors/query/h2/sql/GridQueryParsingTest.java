@@ -98,6 +98,29 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAllExamples() throws Exception {
+        checkQuery("select 42");
+        checkQuery("select ()");
+        checkQuery("select (1)");
+        checkQuery("select (1 + 1)");
+        checkQuery("select (1,)");
+        checkQuery("select (?)");
+        checkQuery("select (?,)");
+        checkQuery("select (1, 2)");
+        checkQuery("select (?, ? + 1, 2 + 2) as z");
+        checkQuery("select (1,(1,(1,(1,(1,?)))))");
+
+        checkQuery("select extract(year from ?)");
+
+        checkQuery("select * from table(id bigint = 1)");
+        checkQuery("select * from table(id bigint = (1))");
+        checkQuery("select * from table(id bigint = (1,))");
+        checkQuery("select * from table(id bigint = (1,), name varchar = 'asd')");
+        checkQuery("select * from table(id bigint = (1,2), name varchar = 'asd')");
+        checkQuery("select * from table(id bigint = (1,2), name varchar = ('asd',))");
+        checkQuery("select * from table(id bigint = (1,2), name varchar = ?)");
+        checkQuery("select * from table(id bigint = (1,2), name varchar = (?,))");
+        checkQuery("select * from table(id bigint = ?, name varchar = ('abc', 'def', 100, ?)) t");
+
         checkQuery("select ? limit ? offset ?");
 
         checkQuery("select cool1()");

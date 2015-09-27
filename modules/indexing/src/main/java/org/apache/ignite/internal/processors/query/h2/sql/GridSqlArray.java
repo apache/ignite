@@ -17,34 +17,36 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import org.h2.util.StatementBuilder;
 
 /**
- * Placeholder.
+ * SQL Array: (1, 2, ?, 'abc')
  */
-public class GridSqlPlaceholder extends GridSqlElement {
-    /** */
-    public static final GridSqlPlaceholder EMPTY = new GridSqlPlaceholder("");
-
-    /** */
-    private final String sql;
-
+public class GridSqlArray extends GridSqlElement implements GridSqlValue {
     /**
-     * @param sql SQL.
+     * @param size Array size.
      */
-    public GridSqlPlaceholder(String sql) {
-        super(Collections.<GridSqlElement>emptyList());
-
-        this.sql = sql;
+    public GridSqlArray(int size) {
+        super(size == 0 ? Collections.<GridSqlElement>emptyList() : new ArrayList<GridSqlElement>(size));
     }
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        return sql;
-    }
+        if (size() == 0)
+            return "()";
 
-    /** {@inheritDoc} */
-    @Override public GridSqlElement resultType(GridSqlType type) {
-        throw new IllegalStateException();
+        StatementBuilder buff = new StatementBuilder("(");
+
+        for (GridSqlElement e : children) {
+            buff.appendExceptFirst(", ");
+            buff.append(e.getSQL());
+        }
+
+        if (size() == 1)
+            buff.append(',');
+
+        return buff.append(')').toString();
     }
 }
