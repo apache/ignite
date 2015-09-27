@@ -35,8 +35,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -45,6 +47,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
+import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -52,11 +55,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
@@ -87,6 +93,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private UUID nodeId;
 
+    /** */
+    private TcpDiscoverySpi nodeSpi;
+
     /**
      * @throws Exception If fails.
      */
@@ -99,8 +108,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi spi = gridName.contains("testPingInterruptedOnNodeFailedFailingNode") ?
-            new TestTcpDiscoverySpi() : new TcpDiscoverySpi();
+        TcpDiscoverySpi spi = nodeSpi;
+
+        if (spi == null)
+            spi = gridName.contains("testPingInterruptedOnNodeFailedFailingNode") ?
+                new TestTcpDiscoverySpi() : new TcpDiscoverySpi();
 
         discoMap.put(gridName, spi);
 
@@ -1160,6 +1172,305 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed
+     */
+    public void testCustomEventRace1_1() throws Exception {
+        try {
+            customEventRace1(true, false);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed
+     */
+    public void testCustomEventRace1_2() throws Exception {
+        try {
+            customEventRace1(false, false);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed
+     */
+    public void testCustomEventRace1_3() throws Exception {
+        try {
+            customEventRace1(true, true);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @param cacheStartFrom1 If {code true} starts cache from node1.
+     * @param stopCrd If {@code true} stops coordinator.
+     * @throws Exception If failed
+     */
+    private void customEventRace1(final boolean cacheStartFrom1, boolean stopCrd) throws Exception {
+        TestCustomEventRaceSpi spi0 = new TestCustomEventRaceSpi();
+
+        nodeSpi = spi0;
+
+        final Ignite ignite0 = startGrid(0);
+
+        nodeSpi = new TestCustomEventRaceSpi();
+
+        final Ignite ignite1 = startGrid(1);
+
+        CountDownLatch latch1 = new CountDownLatch(1);
+        CountDownLatch latch2 = new CountDownLatch(1);
+
+        spi0.nodeAdded1 = latch1;
+        spi0.nodeAdded2 = latch2;
+        spi0.debug = true;
+
+        IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                log.info("Start 2");
+
+                nodeSpi = new TestCustomEventRaceSpi();
+
+                Ignite ignite2 = startGrid(2);
+
+                return null;
+            }
+        });
+
+        latch1.await();
+
+        final String CACHE_NAME = "cache";
+
+        IgniteInternalFuture<?> fut2 = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                CacheConfiguration ccfg = new CacheConfiguration();
+
+                ccfg.setName(CACHE_NAME);
+
+                Ignite ignite = cacheStartFrom1 ? ignite1 : ignite0;
+
+                ignite.createCache(ccfg);
+
+                return null;
+            }
+        });
+
+        if (stopCrd) {
+            spi0.stop = true;
+
+            latch2.countDown();
+
+            ignite0.close();
+        }
+        else {
+            U.sleep(500);
+
+            latch2.countDown();
+        }
+
+        fut1.get();
+        fut2.get();
+
+        IgniteCache<Object, Object> cache = grid(2).cache(CACHE_NAME);
+
+        assertNotNull(cache);
+
+        cache.put(1, 1);
+
+        assertEquals(1, cache.get(1));
+
+        nodeSpi = new TestCustomEventRaceSpi();
+
+        Ignite ignite = startGrid(3);
+
+        cache = ignite.cache(CACHE_NAME);
+
+        cache.put(2, 2);
+
+        assertEquals(1, cache.get(1));
+        assertEquals(2, cache.get(2));
+    }
+
+    /**
+     * @throws Exception If failed
+     */
+    public void testCustomEventCoordinatorFailure1() throws Exception {
+        try {
+            customEventCoordinatorFailure(true);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed
+     */
+    public void testCustomEventCoordinatorFailure2() throws Exception {
+        try {
+            customEventCoordinatorFailure(false);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @param twoNodes If {@code true} starts two nodes, otherwise three.
+     * @throws Exception If failed
+     */
+    private void customEventCoordinatorFailure(boolean twoNodes) throws Exception {
+        TestCustomEventCoordinatorFailureSpi spi0 = new TestCustomEventCoordinatorFailureSpi();
+
+        nodeSpi = spi0;
+
+        Ignite ignite0 = startGrid(0);
+
+        nodeSpi = new TestCustomEventCoordinatorFailureSpi();
+
+        Ignite ignite1 = startGrid(1);
+
+        nodeSpi = new TestCustomEventCoordinatorFailureSpi();
+
+        Ignite ignite2 = twoNodes ? null : startGrid(2);
+
+        final Ignite createCacheNode = ignite2 != null ? ignite2 : ignite1;
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        spi0.latch = latch;
+
+        final String CACHE_NAME = "test-cache";
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                log.info("Create test cache");
+
+                CacheConfiguration ccfg = new CacheConfiguration();
+
+                ccfg.setName(CACHE_NAME);
+
+                createCacheNode.createCache(ccfg);
+
+                return null;
+            }
+        }, "create-cache-thread");
+
+        ((TcpCommunicationSpi)ignite0.configuration().getCommunicationSpi()).simulateNodeFailure();
+
+        latch.await();
+
+        ignite0.close();
+
+        fut.get();
+
+        IgniteCache<Object, Object> cache = grid(1).cache(CACHE_NAME);
+
+        assertNotNull(cache);
+
+        cache.put(1, 1);
+
+        assertEquals(1, cache.get(1));
+
+        log.info("Try start one more node.");
+
+        nodeSpi = new TestCustomEventCoordinatorFailureSpi();
+
+        Ignite ignite = startGrid(twoNodes ? 2 : 3);
+
+        cache = ignite.cache(CACHE_NAME);
+
+        assertNotNull(cache);
+
+        cache.put(2, 2);
+
+        assertEquals(1, cache.get(1));
+        assertEquals(2, cache.get(2));
+    }
+
+    /**
+     *
+     */
+    private static class TestCustomEventCoordinatorFailureSpi extends TcpDiscoverySpi {
+        /** */
+        private volatile CountDownLatch latch;
+
+        /** */
+        private boolean stop;
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
+            GridByteArrayOutputStream bout, long timeout) throws IOException, IgniteCheckedException {
+            if (msg instanceof TcpDiscoveryCustomEventMessage && latch != null) {
+                log.info("Stop node on custom event: " + msg);
+
+                latch.countDown();
+
+                stop = true;
+            }
+
+            if (stop)
+                return;
+
+            super.writeToSocket(sock, msg, bout, timeout);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestCustomEventRaceSpi extends TcpDiscoverySpi {
+        /** */
+        private volatile CountDownLatch nodeAdded1;
+
+        /** */
+        private volatile CountDownLatch nodeAdded2;
+
+        /** */
+        private volatile boolean stop;
+
+        /** */
+        private boolean debug;
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
+            GridByteArrayOutputStream bout, long timeout) throws IOException, IgniteCheckedException {
+            if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                if (nodeAdded1 != null) {
+                    nodeAdded1.countDown();
+
+                    if (debug)
+                        log.info("--- Wait node added: " + msg);
+
+                    U.await(nodeAdded2);
+
+                    nodeAdded1 = null;
+                    nodeAdded2 = null;
+                }
+
+                if (stop)
+                    return;
+
+                if (debug)
+                    log.info("--- Send node added: " + msg);
+            }
+
+            if (debug && msg instanceof TcpDiscoveryNodeAddFinishedMessage)
+                log.info("--- Send node finished: " + msg);
+
+            if (debug && msg instanceof TcpDiscoveryCustomEventMessage)
+                log.info("--- Send custom event: " + msg);
+
+            super.writeToSocket(sock, msg, bout, timeout);
         }
     }
 

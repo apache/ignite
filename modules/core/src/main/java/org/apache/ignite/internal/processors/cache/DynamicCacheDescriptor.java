@@ -39,9 +39,6 @@ public class DynamicCacheDescriptor {
     @GridToStringExclude
     private CacheConfiguration cacheCfg;
 
-    /** Cancelled flag. */
-    private boolean cancelled;
-
     /** Locally configured flag. */
     private boolean locCfg;
 
@@ -153,6 +150,13 @@ public class DynamicCacheDescriptor {
         }
 
         return false;
+    }
+
+    /**
+     * @return Started flag.
+     */
+    public boolean started() {
+        return started;
     }
 
     /**

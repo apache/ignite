@@ -311,6 +311,11 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         if (super.onDone(res, err)) {
             cctx.mvcc().removeAtomicFuture(version());
 
+            if (err != null) {
+                for (KeyCacheObject key : keys)
+                    updateRes.addFailedKey(key, err);
+            }
+
             if (updateReq.writeSynchronizationMode() == FULL_SYNC)
                 completionCb.apply(updateReq, updateRes);
 
