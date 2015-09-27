@@ -154,7 +154,9 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
         executor.submit(()-> {
                 for (K k:igniteGrid.keySet()){
                     try {
-                        log.info("inserimento " + k + " " + igniteGrid.get(k));
+                        if ( log.isDebugEnabled() ) {
+                            log.debug("get tuple from storm  " + k + ", " + igniteGrid.get(k));
+                        }
                         getStreamer().addData(k, igniteGrid.get(k));
                     }catch (Exception e){
                        log.error(e.toString());
