@@ -37,6 +37,10 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * How to use streamer inside
  * <a href="https://cwiki.apache.org/confluence/display/IGNITE/Streamers+Implementation+Guidelines">
  *     Streamer Implementations Guidelines</a>
+ * For this stream we have the particular conditions of execution that may not reflect
+ * the ordinary use of the stream in ignite.
+ * Documentation is provided at:
+ * <a href="">Storm Stream in Ignite </a>
  * @author Gianfranco Murador
  */
 public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IRichBolt {
@@ -56,10 +60,38 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
     /** the storm output collector */
     private OutputCollector collector;
 
+
+    /** define a configuration file  */
+    private String configurationfile = "config/default-config.xml";
+
+    /** define the cache name  */
+    private String cacheName = "igniteCache";
+
+    public String getCacheName() {
+        return cacheName;
+    }
+
+    public void setCacheName(String cacheName) {
+        this.cacheName = cacheName;
+    }
+
+
+    /** */
+    public String getConfigurationFile() {
+        return configurationfile;
+    }
+
+    /** */
+    public void setConfigurationFile(String configurationfile) {
+        this.configurationfile = configurationfile;
+    }
+
+    /** */
     public int getThreads() {
         return threads;
     }
 
+    /** */
     public void setThreads(int threads) {
         this.threads = threads;
     }
@@ -98,6 +130,13 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
      */
     @Override public void prepare(Map map, TopologyContext topologyContext, OutputCollector collector) {
         if (stopped) {
+            try (Ignite ignite = Ignition.start(getConfigurationFile()) ) {
+                setIgnite(ignite);
+                // Use getOrCreateCache
+                ignite.getOrCreateCache(getCacheName());
+                setStreamer(ignite.dataStreamer(getCacheName()));
+            }
+
             start();
         }
         this.collector = collector;
@@ -115,6 +154,7 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
         executor.submit(()-> {
                 for (K k:igniteGrid.keySet()){
                     try {
+                        log.info("inserimento " + k + " " + igniteGrid.get(k));
                         getStreamer().addData(k, igniteGrid.get(k));
                     }catch (Exception e){
                        log.error(e.toString());
@@ -129,6 +169,7 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
      */
     @Override public void cleanup() {
         stop();
+       // getIgnite().close();
     }
     /**
      * This may not be necessary, as this is the last node topology before Apache Ignite

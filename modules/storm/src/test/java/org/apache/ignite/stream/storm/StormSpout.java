@@ -45,7 +45,7 @@ public class StormSpout implements IRichSpout {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
-        outputFieldsDeclarer.declare(new Fields("igniteGrid"));
+        outputFieldsDeclarer.declare(new Fields("IgniteGrid"));
     }
 
     @Override

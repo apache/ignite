@@ -21,24 +21,13 @@ import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.utils.Utils;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.events.CacheEvent;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeoutException;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * Tests {@link StormStreamer}.
+ * @author  Gianfranco Murador
+ * @author  chandresh pancholi
  */
 public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
@@ -58,58 +47,20 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
     }
 
-
-
     /**
-     * Defines a common scenario
+     * Test with the bolt Ignite started in bolt
+     * NOTE: the only working solutions for now
      * @throws TimeoutException
      * @throws InterruptedException
      */
-    public void testStormStreamer() throws TimeoutException, InterruptedException {
+    public void testStormStreamerIgniteBolt() throws TimeoutException, InterruptedException {
 
-      try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-
-          // Use getOrCreateCache
-          IgniteCache<String,String> cache = ignite.getOrCreateCache("igniteCache");
-          IgniteDataStreamer<String, String> dataStreamer = ignite.dataStreamer("igniteCache");
-
-          stormStreamer = new StormStreamer<>();
-
-            /*  Set ignite instance */
-          stormStreamer.setIgnite(ignite);
-
-            /* Set streamer instance */
-          stormStreamer.setStreamer(dataStreamer);
-
-            /* set thread count */
-          stormStreamer.setThreads(5);
-
-          //Start storm topology
-          startTopology(stormStreamer);
-
-          //Get key, value from hash map
-          HashMap<String,String> keyValMap = new StormSpout().getKeyValMap();
-
-          final CountDownLatch latch = new CountDownLatch(CNT);
-
-          IgniteBiPredicate<UUID, CacheEvent> locLsnr = new IgniteBiPredicate<UUID, CacheEvent>() {
-              @Override public boolean apply(UUID uuid, CacheEvent evt) {
-                  latch.countDown();
-
-                  return true;
-              }
-          };
-
-          ignite.events(ignite.cluster().forCacheNodes(null)).remoteListen(locLsnr, null, EVT_CACHE_OBJECT_PUT);
-          latch.await();
-
-          for (Map.Entry<String, String> entry : keyValMap.entrySet())
-              assertEquals(entry.getValue(), cache.get(entry.getKey()));
-
-
-      }
+        stormStreamer = new StormStreamer<>();
+        stormStreamer.setThreads(5);
+        startTopology(stormStreamer);
 
     }
+
 
     public void startTopology(StormStreamer stormStreamer){
         /* Storm topology builder */
@@ -136,12 +87,9 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
     }
 
 
-    /**
-     * Test with the IgniteBolt
-     * @throws TimeoutException
-     * @throws InterruptedException
-     */
-    public void testStormStreamerIgniteBolt() throws TimeoutException, InterruptedException {
 
-    }
+
+
+
+
 }
