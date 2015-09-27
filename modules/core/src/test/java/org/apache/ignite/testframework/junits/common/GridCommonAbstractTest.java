@@ -487,7 +487,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                         ", readVer=" + readyVer +
                                         ", locNode=" + g.cluster().localNode() + ']');
 
-                                Thread.sleep(200); // Busy wait.
+                                Thread.sleep(20); // Busy wait.
 
                                 continue;
                             }

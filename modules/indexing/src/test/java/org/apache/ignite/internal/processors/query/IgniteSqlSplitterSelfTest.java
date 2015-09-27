@@ -93,6 +93,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             Integer.class, Integer.class));
 
         try {
+            awaitPartitionMapExchange();
+
             List<Integer> res = new ArrayList<>();
 
             Random rnd = new GridRandom();
@@ -132,6 +134,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             Integer.class, GroupIndexTestValue.class));
 
         try {
+            awaitPartitionMapExchange();
+
             // Check group index usage.
             String qry = "select 1 from GroupIndexTestValue ";
 
@@ -202,11 +206,16 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    public void testNonCollocatedJoins() {
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonCollocatedJoins() throws Exception {
         IgniteCache<Integer, Object> c = ignite(0).getOrCreateCache(cacheConfig("persOrg", true,
             Integer.class, Person.class, Integer.class, Organization.class));
 
         try {
+            awaitPartitionMapExchange();
+
             int key = 0;
             for (int i = 0; i < 3000; i++) {
                 Organization o = new Organization();

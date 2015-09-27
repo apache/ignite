@@ -57,6 +57,7 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.VAL_COL;
 
 /**
@@ -82,7 +83,7 @@ public class GridH2Table extends TableBase {
     private volatile Object[] actualSnapshot;
 
     /** */
-    private int affKeyCol = -1;
+    private Column affKeyCol;
 
     /**
      * Creates table.
@@ -98,33 +99,35 @@ public class GridH2Table extends TableBase {
 
         assert idxsFactory != null;
 
+        lock = new ReentrantReadWriteLock();
+
         this.desc = desc;
         this.spaceName = spaceName;
 
+        if (desc != null) {
+            String affKey = desc.type().affinityKey();
+
+            affKeyCol = affKey == null ? getColumn(KEY_COL) :
+                getColumn(desc.context().config().isSqlEscapeAll() ? affKey : affKey.toUpperCase());
+
+            assert affKeyCol != null;
+        }
+
+        // Indexes must be created in the end when everything is ready.
         idxs = idxsFactory.createIndexes(this);
 
         assert idxs != null;
         assert idxs.size() >= 1;
-
-        lock =  new ReentrantReadWriteLock();
 
         // Add scan index at 0 which is required by H2.
         idxs.add(0, new ScanIndex(index(0)));
     }
 
     /**
-     * @return Affinity key column.
+     * @return Affinity key column or {@code null} if not available.
      */
     public Column getAffinityKeyColumn() {
-        return getColumn(affKeyCol);
-    }
-
-    /**
-     * @param affKeyCol Affinity key column.
-     */
-    public void setAffinityKeyColumn(int affKeyCol) {
-        assert affKeyCol >= 0 && affKeyCol < getColumns().length : affKeyCol;
-        this.affKeyCol = affKeyCol;
+        return affKeyCol;
     }
 
     /** {@inheritDoc} */

@@ -120,6 +120,7 @@ import org.h2.index.SpatialIndex;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.message.DbException;
 import org.h2.mvstore.cache.CacheLongKeyLIRS;
+import org.h2.result.SortOrder;
 import org.h2.server.web.WebServer;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
@@ -153,8 +154,7 @@ import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.FULLTEXT;
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.GEO_SPATIAL;
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.SORTED;
-import static org.h2.result.SortOrder.ASCENDING;
-import static org.h2.result.SortOrder.DESCENDING;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
 
 /**
  * Indexing implementation based on H2 database engine. In this implementation main query language is SQL,
@@ -1166,18 +1166,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridH2RowDescriptor desc = new RowDescriptor(tbl.type(), schema);
 
-        GridH2Table h2Tbl = GridH2Table.Engine.createTable(conn, sql.toString(), desc, tbl, tbl.schema.spaceName);
-
-        String affKey = tbl.type().affinityKey();
-
-        if (affKey == null) {
-            // By default it is a _KEY column.
-            h2Tbl.setAffinityKeyColumn(0);
-        }
-        else {
-            Column affKeyCol = h2Tbl.getColumn(escapeAll ? affKey : affKey.toUpperCase());
-            h2Tbl.setAffinityKeyColumn(affKeyCol.getColumnId());
-        }
+        GridH2Table.Engine.createTable(conn, sql.toString(), desc, tbl, tbl.schema.spaceName);
     }
 
     /**
@@ -1575,6 +1564,54 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * @param tbl Table.
+     * @return Affinity index column.
+     */
+    private static IndexColumn affinityIndexColumn(GridH2Table tbl) {
+        Column affCol = tbl.getAffinityKeyColumn();
+
+        // Affinity column exists and it is not a primary key.
+        if (affCol != null && affCol.getColumnId() != KEY_COL)
+            return tbl.indexColumn(affCol.getColumnId(), SortOrder.ASCENDING);
+
+        return null;
+    }
+
+    /**
+     * @param cols Columns list.
+     * @param col Column to find.
+     * @return {@code true} If found.
+     */
+    private static boolean containsColumn(List<IndexColumn> cols, IndexColumn col) {
+        int colId = col.column.getColumnId();
+
+        for (IndexColumn c : cols) {
+            if (c.column.getColumnId() == colId)
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param cols Columns list.
+     * @param keyCol Primary key column.
+     * @param affCol Affinity key column.
+     * @return The same list back.
+     */
+    private static List<IndexColumn> treeIndexColumns(List<IndexColumn> cols, IndexColumn keyCol, IndexColumn affCol) {
+        assert keyCol != null;
+
+        if (!containsColumn(cols, keyCol))
+            cols.add(keyCol);
+
+        if (affCol != null && !containsColumn(cols, affCol))
+            cols.add(affCol);
+
+        return cols;
+    }
+
+    /**
      * Wrapper to store connection and flag is schema set or not.
      */
     private static class ConnectionWrapper {
@@ -1841,7 +1878,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             ArrayList<Index> idxs = new ArrayList<>();
 
-            idxs.add(new GridH2TreeIndex("_key_PK", tbl, true, tbl.indexColumn(0, ASCENDING)));
+            IndexColumn keyCol = tbl.indexColumn(KEY_COL, SortOrder.ASCENDING);
+            IndexColumn affCol = affinityIndexColumn(tbl);
+
+            // Add primary key index.
+            idxs.add(new GridH2TreeIndex("_key_PK", tbl, true,
+                treeIndexColumns(new ArrayList<IndexColumn>(2), keyCol, affCol)));
 
             if (type().valueClass() == String.class) {
                 try {
@@ -1865,27 +1907,28 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
                 }
                 else {
-                    IndexColumn[] cols = new IndexColumn[idx.fields().size()];
-
-                    int i = 0;
+                    List<IndexColumn> cols = new ArrayList<>(idx.fields().size() + 2);
 
                     boolean escapeAll = schema.escapeAll();
 
                     for (String field : idx.fields()) {
-                        // H2 reserved keywords used as column name is case sensitive.
                         String fieldName = escapeAll ? field : escapeName(field, false).toUpperCase();
 
                         Column col = tbl.getColumn(fieldName);
 
-                        cols[i++] = tbl.indexColumn(col.getColumnId(), idx.descending(field) ? DESCENDING : ASCENDING);
+                        cols.add(tbl.indexColumn(col.getColumnId(),
+                            idx.descending(field) ? SortOrder.DESCENDING : SortOrder.ASCENDING));
                     }
 
-                    if (idx.type() == SORTED)
+                    if (idx.type() == SORTED) {
+                        cols = treeIndexColumns(cols, keyCol, affCol);
+
                         idxs.add(new GridH2TreeIndex(name, tbl, false, cols));
+                    }
                     else if (idx.type() == GEO_SPATIAL)
-                        idxs.add(createH2SpatialIndex(tbl, name, cols));
+                        idxs.add(createH2SpatialIndex(tbl, name, cols.toArray(new IndexColumn[cols.size()])));
                     else
-                        throw new IllegalStateException();
+                        throw new IllegalStateException("Index type: " + idx.type());
                 }
             }
 
@@ -1964,6 +2007,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override protected IgniteBiTuple<K, V> createRow() {
             K key = (K)row[0];
             V val = (V)row[1];
@@ -2175,6 +2219,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             valType = DataType.getTypeFromClass(type.valueClass());
 
             preferSwapVal = schema.cctx.config().getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridQueryTypeDescriptor type() {
+            return type;
         }
 
         /** {@inheritDoc} */

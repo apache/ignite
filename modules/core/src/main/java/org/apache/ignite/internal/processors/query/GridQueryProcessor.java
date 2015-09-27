@@ -176,6 +176,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             Object.class :
                             U.classForName(meta.getKeyType(), Object.class));
 
+                    desc.affinityKey(null); // TODO get affinity key field alias from config
+
                     TypeId typeId;
 
                     if (valCls == null || ctx.cacheObjects().isPortableEnabled(ccfg)) {
@@ -1741,6 +1743,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** */
         private boolean valTextIdx;
 
+        /** */
+        private String affKey;
+
         /** SPI can decide not to register this type. */
         private boolean registered;
 
@@ -1906,7 +1911,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public String affinityKey() {
-            return null; // TODO get from indexing config
+            return affKey;
+        }
+
+        /**
+         * @param affKey Affinity key field.
+         */
+        void affinityKey(String affKey) {
+            this.affKey = affKey;
         }
 
         /** {@inheritDoc} */

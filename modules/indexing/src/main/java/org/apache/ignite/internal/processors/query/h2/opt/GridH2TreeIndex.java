@@ -18,15 +18,16 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.io.Closeable;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -60,16 +61,11 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * @param name Index name.
      * @param tbl Table.
      * @param pk If this index is primary key.
-     * @param cols Index columns list.
+     * @param colsList Index columns list.
      */
     @SuppressWarnings("unchecked")
-    public GridH2TreeIndex(String name, GridH2Table tbl, boolean pk, IndexColumn... cols) {
-        if (!pk) {
-            // For other indexes we add primary key at the end to avoid conflicts.
-            cols = Arrays.copyOf(cols, cols.length + 1);
-
-            cols[cols.length - 1] = tbl.indexColumn(GridH2AbstractKeyValueRow.KEY_COL, SortOrder.ASCENDING);
-        }
+    public GridH2TreeIndex(String name, GridH2Table tbl, boolean pk, List<IndexColumn> colsList) {
+        IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
         IndexColumn.mapColumns(cols, tbl);
 
@@ -460,10 +456,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     @Override public GridH2TreeIndex rebuild() throws InterruptedException {
         IndexColumn[] cols = getIndexColumns();
 
-        if (!getIndexType().isUnique())
-            cols = Arrays.copyOf(cols, cols.length - 1);
-
-        GridH2TreeIndex idx = new GridH2TreeIndex(getName(), (GridH2Table)getTable(), getIndexType().isUnique(), cols);
+        GridH2TreeIndex idx = new GridH2TreeIndex(getName(), (GridH2Table)getTable(),
+            getIndexType().isUnique(), F.asList(cols));
 
         Thread thread = Thread.currentThread();
 

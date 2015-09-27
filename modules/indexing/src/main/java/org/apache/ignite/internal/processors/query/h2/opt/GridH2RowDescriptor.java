@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSmartPointerFactory;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -30,6 +31,13 @@ import org.jetbrains.annotations.Nullable;
  * Row descriptor.
  */
 public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<GridH2KeyValueRowOffheap> {
+    /**
+     * Gets type descriptor.
+     *
+     * @return Type descriptor.
+     */
+    public GridQueryTypeDescriptor type();
+
     /**
      * Gets cache context for this row descriptor.
      *
