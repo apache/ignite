@@ -40,7 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * For this stream we have the particular conditions of execution that may not reflect
  * the ordinary use of the stream in ignite.
  * Documentation is provided at:
- * <a href="">Storm Stream in Ignite </a>
+ * <a href="https://cwiki.apache.org/confluence/display/IGNITE/Storm+Integration+Guidelines">Storm Stream in Ignite </a>
  * @author Gianfranco Murador
  */
 public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IRichBolt {
