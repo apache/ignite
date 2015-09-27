@@ -48,9 +48,12 @@ import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.h2.value.ValueGeometry;
 
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
+
 /**
  * Spatial index.
  */
+@SuppressWarnings("unused"/*reflection*/)
 public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex {
     /** */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -80,12 +83,8 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
      * @param tbl Table.
      * @param idxName Index name.
      * @param cols Columns.
-     * @param keyCol Key column.
-     * @param valCol Value column.
      */
-    public GridH2SpatialIndex(Table tbl, String idxName, IndexColumn[] cols, int keyCol, int valCol) {
-        super(keyCol, valCol);
-
+    public GridH2SpatialIndex(Table tbl, String idxName, IndexColumn... cols) {
         if (cols.length > 1)
             throw DbException.getUnsupportedException("can only do one column");
 
@@ -122,6 +121,8 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
     /** {@inheritDoc} */
     @Override public GridH2Row put(GridH2Row row) {
+        assert row instanceof GridH2AbstractKeyValueRow : "requires key to be at 0";
+
         Lock l = lock.writeLock();
 
         l.lock();
@@ -129,7 +130,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         try {
             checkClosed();
 
-            Value key = row.getValue(keyCol);
+            Value key = row.getValue(KEY_COL);
 
             assert key != null;
 
@@ -183,7 +184,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         try {
             checkClosed();
 
-            Value key = row.getValue(keyCol);
+            Value key = row.getValue(KEY_COL);
 
             assert key != null;
 

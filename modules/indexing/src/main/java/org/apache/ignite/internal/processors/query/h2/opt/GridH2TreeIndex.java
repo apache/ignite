@@ -60,18 +60,15 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * @param name Index name.
      * @param tbl Table.
      * @param pk If this index is primary key.
-     * @param keyCol Primary key column index.
-     * @param valCol Value column index.
      * @param cols Index columns list.
      */
     @SuppressWarnings("unchecked")
-    public GridH2TreeIndex(String name, GridH2Table tbl, boolean pk, int keyCol, int valCol, IndexColumn... cols) {
-        super(keyCol, valCol);
+    public GridH2TreeIndex(String name, GridH2Table tbl, boolean pk, IndexColumn... cols) {
         if (!pk) {
             // For other indexes we add primary key at the end to avoid conflicts.
             cols = Arrays.copyOf(cols, cols.length + 1);
 
-            cols[cols.length - 1] = tbl.indexColumn(keyCol, SortOrder.ASCENDING);
+            cols[cols.length - 1] = tbl.indexColumn(GridH2AbstractKeyValueRow.KEY_COL, SortOrder.ASCENDING);
         }
 
         IndexColumn.mapColumns(cols, tbl);
@@ -466,8 +463,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         if (!getIndexType().isUnique())
             cols = Arrays.copyOf(cols, cols.length - 1);
 
-        GridH2TreeIndex idx = new GridH2TreeIndex(getName(), (GridH2Table)getTable(), getIndexType().isUnique(),
-            keyCol, valCol, cols);
+        GridH2TreeIndex idx = new GridH2TreeIndex(getName(), (GridH2Table)getTable(), getIndexType().isUnique(), cols);
 
         Thread thread = Thread.currentThread();
 

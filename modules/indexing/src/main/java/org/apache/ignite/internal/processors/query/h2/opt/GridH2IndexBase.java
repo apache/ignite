@@ -29,27 +29,15 @@ import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.VAL_COL;
+
 /**
  * Index base.
  */
 public abstract class GridH2IndexBase extends BaseIndex {
     /** */
     protected static final ThreadLocal<IndexingQueryFilter> filters = new ThreadLocal<>();
-
-    /** */
-    protected final int keyCol;
-
-    /** */
-    protected final int valCol;
-
-    /**
-     * @param keyCol Key column.
-     * @param valCol Value column.
-     */
-    protected GridH2IndexBase(int keyCol, int valCol) {
-        this.keyCol = keyCol;
-        this.valCol = valCol;
-    }
 
     /**
      * Sets key filters for current thread.
@@ -164,7 +152,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * Iterator which filters by expiration time and predicate.
      */
-    protected class FilteringIterator extends GridFilteredIterator<GridH2Row> {
+    protected static class FilteringIterator extends GridFilteredIterator<GridH2Row> {
         /** */
         private final IgniteBiPredicate<Object, Object> fltr;
 
@@ -197,8 +185,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
             if (fltr == null)
                 return true;
 
-            Object key = row.getValue(keyCol).getObject();
-            Object val = row.getValue(valCol).getObject();
+            Object key = row.getValue(KEY_COL).getObject();
+            Object val = row.getValue(VAL_COL).getObject();
 
             assert key != null;
             assert val != null;

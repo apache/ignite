@@ -153,8 +153,6 @@ import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.FULLTEXT;
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.GEO_SPATIAL;
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.SORTED;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.VAL_COL;
 import static org.h2.result.SortOrder.ASCENDING;
 import static org.h2.result.SortOrder.DESCENDING;
 
@@ -1843,7 +1841,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             ArrayList<Index> idxs = new ArrayList<>();
 
-            idxs.add(new GridH2TreeIndex("_key_PK", tbl, true, KEY_COL, VAL_COL, tbl.indexColumn(0, ASCENDING)));
+            idxs.add(new GridH2TreeIndex("_key_PK", tbl, true, tbl.indexColumn(0, ASCENDING)));
 
             if (type().valueClass() == String.class) {
                 try {
@@ -1883,9 +1881,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
 
                     if (idx.type() == SORTED)
-                        idxs.add(new GridH2TreeIndex(name, tbl, false, KEY_COL, VAL_COL, cols));
+                        idxs.add(new GridH2TreeIndex(name, tbl, false, cols));
                     else if (idx.type() == GEO_SPATIAL)
-                        idxs.add(createH2SpatialIndex(tbl, name, cols, KEY_COL, VAL_COL));
+                        idxs.add(createH2SpatialIndex(tbl, name, cols));
                     else
                         throw new IllegalStateException();
                 }
@@ -1898,15 +1896,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param tbl Table.
          * @param idxName Index name.
          * @param cols Columns.
-         * @param keyCol Key column.
-         * @param valCol Value column.
          */
         private SpatialIndex createH2SpatialIndex(
             Table tbl,
             String idxName,
-            IndexColumn[] cols,
-            int keyCol,
-            int valCol
+            IndexColumn[] cols
         ) {
             String className = "org.apache.ignite.internal.processors.query.h2.opt.GridH2SpatialIndex";
 
@@ -1916,14 +1910,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 Constructor<?> ctor = cls.getConstructor(
                     Table.class,
                     String.class,
-                    IndexColumn[].class,
-                    int.class,
-                    int.class);
+                    IndexColumn[].class);
 
                 if (!ctor.isAccessible())
                     ctor.setAccessible(true);
 
-                return (SpatialIndex)ctor.newInstance(tbl, idxName, cols, keyCol, valCol);
+                return (SpatialIndex)ctor.newInstance(tbl, idxName, cols);
             }
             catch (Exception e) {
                 throw new IgniteException("Failed to instantiate: " + className, e);

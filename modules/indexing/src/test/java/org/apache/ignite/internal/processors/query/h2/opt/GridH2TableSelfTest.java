@@ -95,9 +95,9 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
                 IndexColumn str = tbl.indexColumn(2, SortOrder.DESCENDING);
                 IndexColumn x = tbl.indexColumn(3, SortOrder.DESCENDING);
 
-                idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, 0, 1, id));
-                idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, 0, 1, x, t));
-                idxs.add(new GridH2TreeIndex(STR_IDX_NAME, tbl, false, 0, 1, str));
+                idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, id));
+                idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, x, t));
+                idxs.add(new GridH2TreeIndex(STR_IDX_NAME, tbl, false, str));
 
                 return idxs;
             }

@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -154,7 +153,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    public void initializeCache(GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
+    private void initializeCache(GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
         CacheConfiguration<?,?> ccfg = cctx.config();
 
         idx.registerCache(cctx, cctx.config());
@@ -584,37 +583,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     return idx.query(space, clause, params, type, filters);
                 }
             }, false);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * @param space Space name.
-     * @param qry Query.
-     * @return Cursor.
-     */
-    public Iterable<List<?>> queryTwoStep(String space, final GridCacheTwoStepQuery qry) {
-        checkxEnabled();
-
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to execute query (grid is stopping).");
-
-        try {
-            final GridCacheContext<Object, Object> cctx = ctx.cache().internalCache(space).context();
-
-            return executeQuery(cctx, new IgniteOutClosureX<Iterable<List<?>>>() {
-                @Override public Iterable<List<?>> applyx() throws IgniteCheckedException {
-                    return idx.queryTwoStep(
-                        cctx,
-                        qry,
-                        cctx.keepPortable());
-                }
-            }, false);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
         }
         finally {
             busyLock.leaveBusy();
