@@ -71,7 +71,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -2108,6 +2107,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** */
         private final GridUnsafeGuard guard;
 
+        /** */
+        private final boolean preferSwapVal;
+
         /**
          * @param type Type descriptor.
          * @param schema Schema.
@@ -2136,6 +2138,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             keyType = DataType.getTypeFromClass(type.keyClass());
             valType = DataType.getTypeFromClass(type.valueClass());
+
+            preferSwapVal = schema.ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED;
         }
 
         /** {@inheritDoc} */
@@ -2263,14 +2267,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (cctx.isNear())
                 cctx = cctx.near().dht().context();
 
-            GridCacheSwapEntry e = cctx.swap().read(cctx.toCacheKeyObject(key), true, true);
+            CacheObject v = cctx.swap().readValue(cctx.toCacheKeyObject(key), true, true);
 
-            if (e == null)
+            if (v == null)
                 return null;
-
-            CacheObject v = e.value();
-
-            assert v != null : "swap must unmarshall it for us";
 
             return v.value(cctx.cacheObjectContext(), false);
         }
@@ -2311,6 +2311,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             return new GridH2KeyValueRowOffheap(this, ptr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean preferSwapValue() {
+            return preferSwapVal;
         }
     }
 }

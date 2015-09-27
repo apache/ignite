@@ -351,8 +351,6 @@ namespace Apache.Ignite.Core.Impl
             {
                 AppendTestClasses(ggHome + "\\examples", cpStr);
                 AppendTestClasses(ggHome + "\\modules", cpStr);
-                AppendTestClasses(ggHome + "\\..\\incubator-ignite\\examples", cpStr);
-                AppendTestClasses(ggHome + "\\..\\incubator-ignite\\modules", cpStr);
             }
 
             string ggLibs = ggHome + "\\libs";

@@ -271,7 +271,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cfg.setRebalanceMode(ASYNC);
 
         if (cfg.getAtomicityMode() == null)
-            cfg.setAtomicityMode(ATOMIC);
+            cfg.setAtomicityMode(CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE);
 
         if (cfg.getWriteSynchronizationMode() == null)
             cfg.setWriteSynchronizationMode(PRIMARY_SYNC);
@@ -1522,10 +1522,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Collection of started cache names.
      */
     public Collection<String> cacheNames() {
-        return F.viewReadOnly(registeredCaches.keySet(),
-            new IgniteClosure<String, String>() {
-                @Override public String apply(String s) {
-                    return unmaskNull(s);
+        return F.viewReadOnly(registeredCaches.values(),
+            new IgniteClosure<DynamicCacheDescriptor, String>() {
+                @Override public String apply(DynamicCacheDescriptor desc) {
+                    return desc.cacheConfiguration().getName();
+                }
+            },
+            new IgnitePredicate<DynamicCacheDescriptor>() {
+                @Override public boolean apply(DynamicCacheDescriptor desc) {
+                    return desc.started();
                 }
             });
     }
@@ -1568,6 +1573,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 req.deploymentId(),
                 topVer
             );
+
+            DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
+
+            if (desc != null)
+                desc.onStart();
         }
 
         // Start statically configured caches received from remote nodes during exchange.
@@ -2759,17 +2769,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (spaceName.equals(CU.swapSpaceName(cctx))) {
             GridCacheQueryManager qryMgr = cctx.queries();
 
-            if (qryMgr != null) {
+            if (qryMgr.enabled()) {
                 try {
                     KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
 
-                    GridCacheSwapEntry swapEntry = GridCacheSwapEntryImpl.unmarshal(valBytes);
+                    GridCacheSwapEntry swapEntry = GridCacheSwapEntryImpl.unmarshal(valBytes, true);
 
                     CacheObject val = swapEntry.value();
-
-                    if (val == null)
-                        val = cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), swapEntry.type(),
-                            swapEntry.valueBytes());
 
                     assert val != null;
 

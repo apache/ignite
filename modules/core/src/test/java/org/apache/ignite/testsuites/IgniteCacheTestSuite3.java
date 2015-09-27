@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedEventSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedEvictionEventSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedGetAndTransformStoreSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedInvalidateSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedLockSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeLockSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeSelfTest;
@@ -104,7 +103,6 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedEventSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedSynchronousCommitTest.class);
 
-        suite.addTestSuite(GridCacheReplicatedInvalidateSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedLockSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedMultiNodeLockSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedMultiNodeSelfTest.class);
