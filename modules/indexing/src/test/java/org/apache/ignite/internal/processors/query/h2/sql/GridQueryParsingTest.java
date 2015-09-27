@@ -110,6 +110,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select (1,(1,(1,(1,(1,?)))))");
 
         checkQuery("select extract(year from ?)");
+        checkQuery("select convert(?, timestamp)");
 
         checkQuery("select * from table(id bigint = 1)");
         checkQuery("select * from table(id bigint = (1))");

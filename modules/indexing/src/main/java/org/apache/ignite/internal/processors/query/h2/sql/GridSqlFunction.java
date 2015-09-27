@@ -122,7 +122,7 @@ public class GridSqlFunction extends GridSqlElement {
                 assert !F.isEmpty(castType) : castType;
 
                 buff.append(child().getSQL());
-                buff.append(type == CAST ? " AS " : ", ");
+                buff.append(type == CAST ? " AS " : ",");
                 buff.append(castType);
 
                 break;
