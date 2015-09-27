@@ -155,11 +155,12 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
                 for (K k:igniteGrid.keySet()){
                     try {
                         if ( log.isDebugEnabled() ) {
-                            log.debug("get tuple from storm  " + k + ", " + igniteGrid.get(k));
+                            log.info("get tuple from storm  " + k + ", " + igniteGrid.get(k));
                         }
                         getStreamer().addData(k, igniteGrid.get(k));
                     }catch (Exception e){
-                       log.debug(e.toString());
+                        if ( log.isDebugEnabled())
+                            log.debug(e.toString());
                     }
                 }
         });
@@ -171,7 +172,7 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
      */
     @Override public void cleanup() {
         stop();
-       // getIgnite().close();
+        getIgnite().close();
     }
     /**
      * This may not be necessary, as this is the last node topology before Apache Ignite

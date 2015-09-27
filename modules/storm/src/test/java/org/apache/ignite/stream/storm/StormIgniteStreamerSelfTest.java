@@ -21,7 +21,11 @@ import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.utils.Utils;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.testframework.junits.common.*;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -83,7 +87,7 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
         localCluster.submitTopology("test", config, builder.createTopology());
 
         /* Topology will run for 10sec */
-        Utils.sleep(10000);
+        Utils.sleep(20000);
     }
 
 
