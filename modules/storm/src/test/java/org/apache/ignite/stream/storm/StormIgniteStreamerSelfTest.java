@@ -21,11 +21,8 @@ import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.utils.Utils;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.testframework.junits.common.*;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 /**
