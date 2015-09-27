@@ -159,7 +159,7 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
                         }
                         getStreamer().addData(k, igniteGrid.get(k));
                     }catch (Exception e){
-                       log.error(e.toString());
+                       log.debug(e.toString());
                     }
                 }
         });
