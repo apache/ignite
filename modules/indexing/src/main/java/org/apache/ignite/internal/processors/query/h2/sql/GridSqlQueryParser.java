@@ -17,11 +17,28 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+<<<<<<< HEAD
+import org.apache.ignite.*;
+import org.h2.command.*;
+import org.h2.command.dml.*;
+import org.h2.engine.*;
+import org.h2.expression.*;
+import org.h2.expression.Parameter; 
+import org.h2.jdbc.*;
+import org.h2.result.*;
+import org.h2.table.*;
+import org.h2.value.*;
+import org.jetbrains.annotations.*;
+
+import java.lang.reflect.*;
+import java.util.*;
+=======
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
+>>>>>>> c28cec1cd3b893adb4b5168af86d67bf5a998854
 import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.h2.command.Command;
