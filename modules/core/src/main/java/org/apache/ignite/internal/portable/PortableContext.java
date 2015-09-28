@@ -571,9 +571,8 @@ public class PortableContext implements Externalizable {
         userTypes.put(typeId, desc);
         descByCls.put(cls, desc);
 
-        // TODO uncomment for https://issues.apache.org/jira/browse/IGNITE-1377
-//        if (registerMetadata && isMetaDataEnabled(typeId))
-//            metaHnd.addMeta(typeId, new PortableMetaDataImpl(typeName, desc.fieldsMeta(), null));
+        if (registerMetadata && isMetaDataEnabled(typeId))
+            metaHnd.addMeta(typeId, new PortableMetaDataImpl(typeName, desc.fieldsMeta(), null));
 
         return desc;
     }
