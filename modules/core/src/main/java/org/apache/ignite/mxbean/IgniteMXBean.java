@@ -366,4 +366,10 @@ public interface IgniteMXBean {
      */
     @MXBeanDescription("Prints last suppressed errors.")
     public void printLastErrors();
+
+    /**
+     * Dumps debug information for the current node.
+     */
+    @MXBeanDescription("Dumps debug information for the current node.")
+    public void dumpDebugInfo();
 }

@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -142,9 +143,24 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         }
 
         if (callOnPage)
-            // We consider node departure as a reception of last empty
-            // page from this node.
-            onPage(nodeId, Collections.emptyList(), null, true);
+            onPage(nodeId, Collections.emptyList(),
+                new ClusterTopologyCheckedException("Remote node has left topology: " + nodeId), true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void awaitFirstPage() throws IgniteCheckedException {
+        try {
+            firstPageLatch.await();
+
+            if (isDone() && error() != null)
+                // Throw the exception if future failed.
+                get();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedCheckedException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -229,9 +245,12 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** {@inheritDoc} */
     @Override public boolean onDone(Collection<R> res, Throwable err) {
+        boolean done = super.onDone(res, err);
+
+        // Must release the lath after onDone() in order for a waiting thread to see an exception, if any.
         firstPageLatch.countDown();
 
-        return super.onDone(res, err);
+        return done;
     }
 
     /** {@inheritDoc} */

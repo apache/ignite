@@ -1806,8 +1806,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 notifyLifecycleBeansEx(LifecycleEventType.BEFORE_NODE_STOP);
             }
 
-            GridCacheProcessor cacheProcessor = ctx.cache();
-
             List<GridComponent> comps = ctx.components();
 
             ctx.marshallerContext().onKernalStop();
@@ -1855,11 +1853,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     // Preserve interrupt status & ignore.
                     // Note that interrupted flag is cleared.
                     interrupted = true;
-                }
-                finally {
-                    // Cleanup even on successful acquire.
-                    if (cacheProcessor != null)
-                        cacheProcessor.cancelUserOperations();
                 }
             }
 
@@ -3160,9 +3153,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         return ctx.isDaemon() && U.hasAnnotation(comp.getClass(), SkipDaemon.class);
     }
 
-    /**
-     *
-     */
+    /** {@inheritDoc} */
     public void dumpDebugInfo() {
         U.warn(log, "Dumping debug info for node [id=" + ctx.localNodeId() +
             ", name=" + ctx.gridName() +

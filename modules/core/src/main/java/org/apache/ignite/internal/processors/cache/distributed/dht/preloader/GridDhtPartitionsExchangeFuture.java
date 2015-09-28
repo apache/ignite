@@ -1081,9 +1081,22 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isCacheTopologyValid(GridCacheContext cctx) {
-        return cctx.config().getTopologyValidator() != null && cacheValidRes.containsKey(cctx.cacheId()) ?
-            cacheValidRes.get(cctx.cacheId()) : true;
+    @Override public Throwable validateCache(GridCacheContext cctx) {
+        Throwable err = error();
+
+        if (err != null)
+            return err;
+
+        if (cctx.config().getTopologyValidator() != null) {
+            Boolean res = cacheValidRes.get(cctx.cacheId());
+
+            if (res != null && !res) {
+                return new IgniteCheckedException("Failed to perform cache operation " +
+                    "(cache topology is not valid): " + cctx.name());
+            }
+        }
+
+        return null;
     }
 
     /**

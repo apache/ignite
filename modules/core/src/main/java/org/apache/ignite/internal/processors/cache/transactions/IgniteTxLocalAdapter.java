@@ -1105,6 +1105,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
     /**
      * Commits transaction to transaction manager. Used for one-phase commit transactions only.
+     *
+     * @param commit If {@code true} commits transaction, otherwise rollbacks.
      */
     public void tmFinish(boolean commit) {
         assert onePhaseCommit();
@@ -1118,7 +1120,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             state(commit ? COMMITTED : ROLLED_BACK);
 
-            boolean needsCompletedVersions = needsCompletedVersions();
+            boolean needsCompletedVersions = commit && needsCompletedVersions();
 
             assert !needsCompletedVersions || completedBase != null;
             assert !needsCompletedVersions || committedVers != null;

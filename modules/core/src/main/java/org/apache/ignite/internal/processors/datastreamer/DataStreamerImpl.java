@@ -1569,8 +1569,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                     GridCacheEntryEx entry = internalCache.entryEx(e.getKey(), topVer);
 
-                    entry.unswap(false);
-
                     if (plc != null) {
                         ttl = CU.toTtl(plc.getExpiryForCreation());
 

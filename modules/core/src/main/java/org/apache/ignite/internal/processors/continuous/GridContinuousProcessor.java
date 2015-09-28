@@ -795,7 +795,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             try {
                 IgnitePredicate<ClusterNode> prjPred = data.projectionPredicate();
 
-                ctx.resource().injectGeneric(prjPred);
+                if (prjPred != null)
+                    ctx.resource().injectGeneric(prjPred);
 
                 if (prjPred == null || prjPred.apply(ctx.discovery().node(ctx.localNodeId()))) {
                     registered = registerHandler(node.id(), routineId, hnd, data.bufferSize(), data.interval(),
