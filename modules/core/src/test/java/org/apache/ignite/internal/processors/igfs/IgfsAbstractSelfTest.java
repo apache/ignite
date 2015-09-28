@@ -252,6 +252,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         clear(igfs, igfsSecondary);
+
+        assert igfs.listFiles(new IgfsPath("/")).isEmpty();
     }
 
     /** {@inheritDoc} */
