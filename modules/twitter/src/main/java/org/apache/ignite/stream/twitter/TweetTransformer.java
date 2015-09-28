@@ -26,7 +26,6 @@ import java.util.Map;
  * @param <V> The type of the cache value.
  */
 public interface TweetTransformer<K, V> {
-
     /**
      * Transformation function.
      *
@@ -34,5 +33,4 @@ public interface TweetTransformer<K, V> {
      * @return Set of cache entries to add to the cache. It could be empty or null if the message should be skipped.
      */
     Map<K, V> apply(String tweet);
-
 }

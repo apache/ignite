@@ -43,7 +43,6 @@ import twitter4j.Status;
 import twitter4j.TwitterObjectFactory;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -54,7 +53,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Streamer that consumes from a Twitter Streaming API and feeds transformed key-value pairs, by default < tweetId, text>,
+ * Streamer that consumes from a Twitter Streaming API and feeds transformed key-value pairs, by default <tweetId, text>,
  * into an {@link IgniteDataStreamer} instance.
  * <p>
  * This streamer uses https://dev.twitter.com/streaming API and supports Public API, User Streams, Site Streams and Firehose.
@@ -63,12 +62,10 @@ import java.util.concurrent.TimeUnit;
  * default transformer.
  * <p>
  * This Streamer features:
- *
  * <ul>
  *     <li>Supports OAuth1 authentication scheme. <br/> BasicAuth not supported by Streaming API https://dev.twitter.com/streaming/overview/connecting</li>
  *     <li>Provide all params in apiParams map. https://dev.twitter.com/streaming/overview/request-parameters</li>
  * </ul>
- *
  */
 public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
 
@@ -82,7 +79,7 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
     private TweetTransformer<K, V> transformer;
 
     /** Twitter Streaming API params. See https://dev.twitter.com/streaming/overview/request-parameters */
-    private Map<String, String> apiParams = new HashMap<String, String>();
+    private Map<String, String> apiParams = Collections.EMPTY_MAP;
 
     /** Twitter streaming API endpoint example, '/statuses/filter.json' or '/statuses/firehose.json' */
     private String endpointUrl;
@@ -96,13 +93,20 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
     /** OAuth params holder */
     private OAuthSettings oAuthSettings;
 
+    /** shared variable to communicate/signal stopping the streamer */
     private volatile boolean stopped;
+
+    /** Size of buffer for streaming, as for some tracking terms traffic can be low and for others high,
+     * this is configurable */
     private Integer bufferCapacity = 100000;
+
+    /** Twitter streaming client (Twitter HBC) to interact with stream */
     private Client client;
 
     /** Process stream asynchronously */
     private final ExecutorService tweetStreamProcessor = Executors.newSingleThreadExecutor();
 
+    /** Param key name constant for Site streaming */
     private final String SITE_USER_ID_KEY = "follow";
 
     public TwitterStreamer(OAuthSettings oAuthSettings){
@@ -142,26 +146,22 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
                             getStreamer().addData(value);
                         }
                     }catch (InterruptedException e){
-                        // no op
+                        //No-op
                     }
-
                 }
                 return stopped;
             }
         };
         tweetStreamProcessor.submit(task);
-
     }
 
     /**
      * Stops streamer.
      */
     public void stop() throws IgniteException {
-
         stopped = true;
 
         tweetStreamProcessor.shutdown();
-
         try {
             if (!tweetStreamProcessor.awaitTermination(5000, TimeUnit.MILLISECONDS))
                 if (log.isDebugEnabled())
@@ -170,14 +170,12 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
             if (log.isDebugEnabled())
                 log.debug("Interrupted during shutdown, exiting uncleanly.");
         }
-
         client.stop();
     }
 
     private void validate(){
         A.notNull(getStreamer(), "streamer");
         A.notNull(getIgnite(), "ignite");
-
         A.notNull(endpointUrl, "Twitter Streaming API endpoint");
 
         if(endpointUrl.equalsIgnoreCase(SitestreamEndpoint.PATH)){
