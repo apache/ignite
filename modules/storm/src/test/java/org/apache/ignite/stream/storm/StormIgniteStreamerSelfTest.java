@@ -16,13 +16,23 @@
  */
 
 package org.apache.ignite.stream.storm;
+import backtype.storm.ILocalCluster;
+import backtype.storm.Testing;
+import backtype.storm.generated.StormTopology;
+import backtype.storm.testing.CompleteTopologyParam;
+import backtype.storm.testing.MkClusterParam;
+import backtype.storm.testing.MockedSources;
+import backtype.storm.testing.TestJob;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
+import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
 import org.apache.ignite.testframework.junits.common.*;
 
+import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -58,11 +68,18 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
         stormStreamer = new StormStreamer<>();
         stormStreamer.setThreads(5);
-        startTopology(stormStreamer);
+        startSimulatedTopology(stormStreamer);
+
+        // startTopology(stormStreamer);
 
     }
 
 
+    /**
+     * Not usable in Test regression phase
+     * @param stormStreamer
+     */
+    @Deprecated
     public void startTopology(StormStreamer stormStreamer){
         /* Storm topology builder */
         TopologyBuilder builder = new TopologyBuilder();
@@ -88,9 +105,47 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
     }
 
 
+    public void startSimulatedTopology ( StormStreamer stormStreamer) {
+
+        MkClusterParam mkClusterParam = new MkClusterParam();
+        mkClusterParam.setSupervisors(4);
+        Config daemonConf = new Config();
+        daemonConf.put(Config.STORM_LOCAL_MODE_ZMQ, false);
+        mkClusterParam.setDaemonConf(daemonConf);
+
+        Testing.withSimulatedTimeLocalCluster(mkClusterParam, new TestJob() {
+                    @Override
+                    public void run(ILocalCluster cluster) throws IOException {
+                        TopologyBuilder builder = new TopologyBuilder();
+
+                        StormSpout stormSpout = new StormSpout();
+                        builder.setSpout("testSpout", stormSpout);
+
+                        builder.setBolt("bolt", stormStreamer)
+                                .shuffleGrouping("spout");
+
+                        StormTopology topology = builder.createTopology();
+
+                        MockedSources mockedSources = new MockedSources();
+
+                        //Our spout will be processing this values.
+                        mockedSources.addMockData("testSpout", new Values(stormSpout.getKeyValMap()));
 
 
+                        // prepare the config
+                        Config conf = new Config();
+                        conf.setNumWorkers(2);
 
+                        CompleteTopologyParam completeTopologyParam = new CompleteTopologyParam();
+                        completeTopologyParam.setMockedSources(mockedSources);
+                        completeTopologyParam.setStormConf(conf);
 
+                        Map result = Testing.completeTopology(cluster, topology, completeTopologyParam);
+                    }
+                }
+        );
+
+    }
 
 }
+
