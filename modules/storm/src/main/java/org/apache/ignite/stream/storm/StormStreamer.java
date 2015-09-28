@@ -103,7 +103,7 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
      */
     public void start()  throws IgniteException{
         if (!stopped)
-            throw new IgniteException("Attempted to stop an already stopped Storm  Streamer");
+            throw new IgniteException("Attempted to start an already started Storm  Streamer");
         A.notNull(getStreamer(), "streamer");
         A.notNull(getIgnite(), "ignite");
         A.ensure(threads > 0, "threads > 0");
@@ -118,7 +118,7 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
      */
     public void stop()  throws IgniteException  {
         if (stopped)
-            throw new IgniteException("Attempted to start an already started Storm Streamer");
+            throw new IgniteException("Attempted to stop an already stopped Storm Streamer");
         stopped = true;
         executor.shutdown();
     }
@@ -138,6 +138,7 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
             }
 
             start();
+            stopped = false;
         }
         this.collector = collector;
     }

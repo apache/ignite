@@ -105,6 +105,13 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
     }
 
 
+    /**
+     * Note to run this on TC: the time out has to be setted in according
+     * to power of the server. In a simple dual core it takes 6 sec.
+     * look setMessageTimeoutSecs parameter.
+     * @author Gianfranco Murador
+     * @param stormStreamer the storm streamer in Ignite
+     */
     public void startSimulatedTopology ( StormStreamer stormStreamer) {
 
         MkClusterParam mkClusterParam = new MkClusterParam();
@@ -119,7 +126,7 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
                         TopologyBuilder builder = new TopologyBuilder();
 
                         StormSpout stormSpout = new StormSpout();
-                        builder.setSpout("testSpout", stormSpout);
+                        builder.setSpout("spout", stormSpout);
 
                         builder.setBolt("bolt", stormStreamer)
                                 .shuffleGrouping("spout");
@@ -129,12 +136,14 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
                         MockedSources mockedSources = new MockedSources();
 
                         //Our spout will be processing this values.
-                        mockedSources.addMockData("testSpout", new Values(stormSpout.getKeyValMap()));
+                        mockedSources.addMockData("spout", new Values(stormSpout.getKeyValMap()));
 
 
                         // prepare the config
                         Config conf = new Config();
                         conf.setNumWorkers(2);
+                        // this parameter is necessary
+                        conf.setMessageTimeoutSecs(6000);
 
                         CompleteTopologyParam completeTopologyParam = new CompleteTopologyParam();
                         completeTopologyParam.setMockedSources(mockedSources);
