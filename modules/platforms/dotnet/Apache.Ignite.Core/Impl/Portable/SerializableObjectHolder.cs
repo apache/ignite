@@ -49,9 +49,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             var writer0 = (PortableWriterImpl)writer.RawWriter();
 
-            writer0.DetachNext();
-
-            PortableUtils.WriteSerializable(writer0, Item);
+            writer0.WithDetach(w => PortableUtils.WriteSerializable(w, Item));
         }
 
         /// <summary>

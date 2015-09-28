@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Cache.Store
 {
+    using System;
     using System.Collections;
     using System.Diagnostics;
     using Apache.Ignite.Core.Cache.Store;
@@ -242,8 +243,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                 {
                     foreach (var obj in objects)
                     {
-                        writer.DetachNext();
-                        writer.WriteObject(obj);
+                        var obj0 = obj;
+
+                        writer.WithDetach(w => w.WriteObject(obj0));
                     }
                 }
                 finally

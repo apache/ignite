@@ -155,8 +155,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             var writer0 = (PortableWriterImpl)writer.RawWriter();
 
-            writer0.DetachNext();
-            PortableUtils.WritePortableOrSerializable(writer0, Filter);
+            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, Filter));
         }
 
         /// <summary>

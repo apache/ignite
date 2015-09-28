@@ -220,8 +220,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             PortableWriterImpl writer0 = (PortableWriterImpl) writer.RawWriter();
 
-            writer0.DetachNext();
-            PortableUtils.WritePortableOrSerializable(writer0, _job);
+            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _job));
         }
 
         /// <summary>

@@ -67,11 +67,8 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         {
             PortableWriterImpl writer0 = (PortableWriterImpl) writer.RawWriter();
 
-            writer0.DetachNext();
-            PortableUtils.WritePortableOrSerializable(writer0, _clo);
-
-            writer0.DetachNext();
-            PortableUtils.WritePortableOrSerializable(writer0, _arg);
+            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _clo));
+            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _arg));
         }
 
         /// <summary>

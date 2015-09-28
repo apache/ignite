@@ -57,18 +57,12 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Current metadata handler. */
         private IPortableMetadataHandler _curMetaHnd;
-
-        /** Current raw flag. */
-        private bool _curRaw;
-
+        
         /** Current raw position. */
         private long _curRawPos;
-
-        /** Ignore handles flag. */
-        private bool _detach;
-
-        /** Object started ignore mode. */
-        private bool _detachMode;
+        
+        /** Whether we are currently detaching an object. */
+        private bool _detaching;
 
         /// <summary>
         /// Gets the marshaller.
@@ -718,11 +712,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </returns>
         public IPortableRawWriter RawWriter()
         {
-            if (!_curRaw)
-            {
-                _curRaw = true;
+            if (_curRawPos == 0)
                 _curRawPos = _stream.Position;
-            }
 
             return this;
         }
@@ -769,183 +760,142 @@ namespace Apache.Ignite.Core.Impl.Portable
         [SuppressMessage("ReSharper", "FunctionComplexityOverflow")]
         internal void Write<T>(T obj, object handler)
         {
-            // Apply detach mode if needed.
-            PortableHandleDictionary<object, long> oldHnds = null;
-
-            bool resetDetach = false;
-
-            if (_detach)
+            // Write null.
+            if (obj == null)
             {
-                _detach = false;
-                _detachMode = true;
-                resetDetach = true;
+                _stream.WriteByte(PortableUtils.HdrNull);
 
-                oldHnds = _hnds;
-
-                _hnds = null;
+                return;
             }
 
-            try
+            if (_builder != null)
             {
-                // Write null.
-                if (obj == null)
+                // Special case for portable object during build.
+                PortableUserObject portObj = obj as PortableUserObject;
+
+                if (portObj != null)
                 {
-                    _stream.WriteByte(PortableUtils.HdrNull);
+                    if (!WriteHandle(_stream.Position, portObj))
+                        _builder.ProcessPortable(_stream, portObj);
 
                     return;
                 }
 
-                if (_builder != null)
+                // Special case for builder during build.
+                PortableBuilderImpl portBuilder = obj as PortableBuilderImpl;
+
+                if (portBuilder != null)
                 {
-                    // Special case for portable object during build.
-                    PortableUserObject portObj = obj as PortableUserObject;
-
-                    if (portObj != null)
-                    {
-                        if (!WriteHandle(_stream.Position, portObj))
-                            _builder.ProcessPortable(_stream, portObj);
-
-                        return;
-                    }
-
-                    // Special case for builder during build.
-                    PortableBuilderImpl portBuilder = obj as PortableBuilderImpl;
-
-                    if (portBuilder != null)
-                    {
-                        if (!WriteHandle(_stream.Position, portBuilder))
-                            _builder.ProcessBuilder(_stream, portBuilder);
-
-                        return;
-                    }
-                }                
-
-                // Try writting as well-known type.
-                if (InvokeHandler(handler, handler as PortableSystemWriteDelegate, obj))
-                    return;
-
-                Type type = obj.GetType();
-
-                IPortableTypeDescriptor desc = _marsh.Descriptor(type);
-
-                object typedHandler;
-                PortableSystemWriteDelegate untypedHandler;
-
-                if (desc == null)
-                {
-                    typedHandler = null;
-                    untypedHandler = PortableSystemHandlers.WriteHandler(type);
-                }
-                else
-                {
-                    typedHandler = desc.TypedHandler;
-                    untypedHandler = desc.UntypedHandler;
-                }
-
-                if (InvokeHandler(typedHandler, untypedHandler, obj))
-                    return;
-
-                if (desc == null)
-                {
-                    if (!type.IsSerializable)
-                        // If neither handler, nor descriptor exist, and not serializable, this is an exception.
-                        throw new PortableException("Unsupported object type [type=" + type +
-                            ", object=" + obj + ']');
-
-                    Write(new SerializableObjectHolder(obj));
+                    if (!WriteHandle(_stream.Position, portBuilder))
+                        _builder.ProcessBuilder(_stream, portBuilder);
 
                     return;
                 }
+            }
 
-                int pos = _stream.Position;
+            // Try writting as well-known type.
+            if (InvokeHandler(handler, handler as PortableSystemWriteDelegate, obj))
+                return;
 
-                // Dealing with handles.
-                if (!(desc.Serializer is IPortableSystemTypeSerializer) && WriteHandle(pos, obj))
-                    return;
+            Type type = obj.GetType();
 
-                // Write header.
-                _stream.WriteByte(PortableUtils.HdrFull);
+            IPortableTypeDescriptor desc = _marsh.Descriptor(type);
 
-                _stream.WriteBool(desc.UserType);
-                _stream.WriteInt(desc.TypeId);
-                _stream.WriteInt(obj.GetHashCode());
+            object typedHandler;
+            PortableSystemWriteDelegate untypedHandler;
 
-                // Skip length as it is not known in the first place.
-                _stream.Seek(8, SeekOrigin.Current);
+            if (desc == null)
+            {
+                typedHandler = null;
+                untypedHandler = PortableSystemHandlers.WriteHandler(type);
+            }
+            else
+            {
+                typedHandler = desc.TypedHandler;
+                untypedHandler = desc.UntypedHandler;
+            }
 
-                // Preserve old frame.
-                int oldTypeId = _curTypeId;
-                IPortableNameMapper oldConverter = _curConverter;
-                IPortableIdMapper oldMapper = _curMapper;
-                IPortableMetadataHandler oldMetaHnd = _curMetaHnd;
-                bool oldRaw = _curRaw;
-                long oldRawPos = _curRawPos;
+            if (InvokeHandler(typedHandler, untypedHandler, obj))
+                return;
 
-                // Push new frame.
-                _curTypeId = desc.TypeId;
-                _curConverter = desc.NameConverter;
-                _curMapper = desc.Mapper;
-                _curMetaHnd = desc.MetadataEnabled ? _marsh.MetadataHandler(desc) : null;
-                _curRaw = false;
-                _curRawPos = 0;
+            if (desc == null)
+            {
+                if (!type.IsSerializable)
+                    // If neither handler, nor descriptor exist, and not serializable, this is an exception.
+                    throw new PortableException("Unsupported object type [type=" + type +
+                        ", object=" + obj + ']');
 
-                // Write object fields.
-                desc.Serializer.WritePortable(obj, this);
+                Write(new SerializableObjectHolder(obj));
 
-                // Calculate and write length.
-                int retPos = _stream.Position;
+                return;
+            }
 
-                _stream.Seek(pos + 10, SeekOrigin.Begin);
+            int pos = _stream.Position;
 
-                int len = retPos - pos;
+            // Dealing with handles.
+            if (!(desc.Serializer is IPortableSystemTypeSerializer) && WriteHandle(pos, obj))
+                return;
 
+            // Write header.
+            _stream.WriteByte(PortableUtils.HdrFull);
+
+            _stream.WriteBool(desc.UserType);
+            _stream.WriteInt(desc.TypeId);
+            _stream.WriteInt(obj.GetHashCode());
+
+            // Skip length as it is not known in the first place.
+            _stream.Seek(8, SeekOrigin.Current);
+
+            // Preserve old frame.
+            int oldTypeId = _curTypeId;
+            IPortableNameMapper oldConverter = _curConverter;
+            IPortableIdMapper oldMapper = _curMapper;
+            IPortableMetadataHandler oldMetaHnd = _curMetaHnd;
+            long oldRawPos = _curRawPos;
+
+            // Push new frame.
+            _curTypeId = desc.TypeId;
+            _curConverter = desc.NameConverter;
+            _curMapper = desc.Mapper;
+            _curMetaHnd = desc.MetadataEnabled ? _marsh.MetadataHandler(desc) : null;
+            _curRawPos = 0;
+
+            // Write object fields.
+            desc.Serializer.WritePortable(obj, this);
+
+            // Calculate and write length.
+            int retPos = _stream.Position;
+
+            _stream.Seek(pos + 10, SeekOrigin.Begin);
+
+            int len = retPos - pos;
+
+            _stream.WriteInt(len);
+
+            if (_curRawPos != 0)
+                // When set, it is difference between object head and raw position.
+                _stream.WriteInt((int)(_curRawPos - pos));
+            else
+                // When no set, it is equal to object length.
                 _stream.WriteInt(len);
 
-                if (_curRawPos != 0)
-                    // When set, it is difference between object head and raw position.
-                    _stream.WriteInt((int)(_curRawPos - pos));
-                else
-                    // When no set, it is equal to object length.
-                    _stream.WriteInt(len);
+            _stream.Seek(retPos, SeekOrigin.Begin);
 
-                _stream.Seek(retPos, SeekOrigin.Begin);
-
-                // 13. Collect metadata.
-                if (_curMetaHnd != null)
-                {
-                    IDictionary<string, int> meta = _curMetaHnd.OnObjectWriteFinished();
-
-                    if (meta != null)
-                        SaveMetadata(_curTypeId, desc.TypeName, desc.AffinityKeyFieldName, meta);
-                }
-
-                // Restore old frame.
-                _curTypeId = oldTypeId;
-                _curConverter = oldConverter;
-                _curMapper = oldMapper;
-                _curMetaHnd = oldMetaHnd;
-                _curRaw = oldRaw;
-                _curRawPos = oldRawPos;
-            }
-            finally
+            // 13. Collect metadata.
+            if (_curMetaHnd != null)
             {
-                // Restore handles if needed.
-                if (resetDetach)
-                {
-                    // Add newly recorded handles without overriding already existing ones.
-                    if (_hnds != null)
-                    {
-                        if (oldHnds == null)
-                            oldHnds = _hnds;
-                        else
-                            oldHnds.Merge(_hnds);
-                    }
+                IDictionary<string, int> meta = _curMetaHnd.OnObjectWriteFinished();
 
-                    _hnds = oldHnds;
-
-                    _detachMode = false;
-                }
+                if (meta != null)
+                    SaveMetadata(_curTypeId, desc.TypeName, desc.AffinityKeyFieldName, meta);
             }
+
+            // Restore old frame.
+            _curTypeId = oldTypeId;
+            _curConverter = oldConverter;
+            _curMapper = oldMapper;
+            _curMetaHnd = oldMetaHnd;
+            _curRawPos = oldRawPos;
         }
 
         /// <summary>
@@ -1104,14 +1054,40 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             WriteFieldLength(_stream, pos);
         }
-
+        
         /// <summary>
-        /// Enable detach mode for the next object.
+        /// Perform action with detached semantics.
         /// </summary>
-        internal void DetachNext()
+        /// <param name="a"></param>
+        internal void WithDetach(Action<PortableWriterImpl> a)
         {
-            if (!_detachMode)
-                _detach = true;
+            if (_detaching)
+                a(this);
+            else
+            {
+                _detaching = true;
+
+                PortableHandleDictionary<object, long> oldHnds = _hnds;
+                _hnds = null;
+
+                try
+                {
+                    a(this);
+                }
+                finally
+                {
+                    _detaching = false;
+
+                    if (oldHnds != null)
+                    {
+                        // Merge newly recorded handles with old ones and restore old on the stack.
+                        // Otherwise we can use current handles right away.
+                        oldHnds.Merge(_hnds);
+
+                        _hnds = oldHnds;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -1261,7 +1237,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private void CheckNotRaw()
         {
-            if (_curRaw)
+            if (_curRawPos != 0)
                 throw new PortableException("Cannot write named fields after raw data is written.");
         }
 

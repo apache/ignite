@@ -105,9 +105,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             var writer0 = (PortableWriterImpl) writer.RawWriter();
 
-            writer0.DetachNext();
-            PortableUtils.WritePortableOrSerializable(writer0, _proc);
-            PortableUtils.WritePortableOrSerializable(writer0, _arg);
+            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _proc));
+            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _arg));
         }
 
         /// <summary>
