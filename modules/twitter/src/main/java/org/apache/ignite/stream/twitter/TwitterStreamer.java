@@ -103,7 +103,7 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
     /** Process stream asynchronously */
     private final ExecutorService tweetStreamProcessor = Executors.newSingleThreadExecutor();
 
-    private String SITE_USER_ID_KEY = "follow";
+    private final String SITE_USER_ID_KEY = "follow";
 
     public TwitterStreamer(OAuthSettings oAuthSettings){
         this.oAuthSettings = oAuthSettings;

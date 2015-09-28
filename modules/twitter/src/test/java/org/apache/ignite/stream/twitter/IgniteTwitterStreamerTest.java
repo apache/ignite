@@ -53,7 +53,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
     private static final String MOCK_TWEET_PATH = "/tweet/mock";
 
     /** sample tweet */
-    String tweet = "{\"created_at\":\"Fri Sep 25 11:43:20 +0000 2015\",\"id\":647375831971590144,\"id_str\":\"647375831971590144\",\"text\":\"\\u041f\\u044f\\u0442\\u043d\\u0438\\u0446\\u0430 \\u0442\\u0430\\u043a \\u043f\\u044f\\u0442\\u043d\\u0438\\u0446\\u0430\\ud83d\\udc4d\\ud83c\\udffc\\ud83d\\udc4d\\ud83c\\udffc\\ud83d\\udc4d\\ud83c\\udffc\\ud83d\\ude04 (@ \\u041f\\u0440\\u043e\\u0441\\u043f\\u0435\\u043a\\u0442 \\u041b\\u044e\\u0431\\u0438\\u043c\\u043e\\u0432\\u0430 in Minsk) https:\\/\\/t.co\\/JcQrQtQcV6\",\"source\":\"\\u003ca href=\\\"http:\\/\\/foursquare.com\\\" rel=\\\"nofollow\\\"\\u003eFoursquare\\u003c\\/a\\u003e\",\"truncated\":false,\"in_reply_to_status_id\":null,\"in_reply_to_status_id_str\":null,\"in_reply_to_user_id\":null,\"in_reply_to_user_id_str\":null,\"in_reply_to_screen_name\":null,\"user\":{\"id\":953599657,\"id_str\":\"953599657\",\"name\":\"K A T Y A\",\"screen_name\":\"Lady_Kolber\",\"location\":\"\\u041c\\u0438\\u043d\\u0441\\u043a\",\"url\":null,\"description\":null,\"protected\":false,\"verified\":false,\"followers_count\":98,\"friends_count\":62,\"listed_count\":8,\"favourites_count\":818,\"statuses_count\":7667,\"created_at\":\"Sat Nov 17 13:41:18 +0000 2012\",\"utc_offset\":10800,\"time_zone\":\"Baghdad\",\"geo_enabled\":true,\"lang\":\"ru\",\"contributors_enabled\":false,\"is_translator\":false,\"profile_background_color\":\"0099B9\",\"profile_background_image_url\":\"http:\\/\\/pbs.twimg.com\\/profile_background_images\\/378800000159769086\\/x2fWF2nQ.jpeg\",\"profile_background_image_url_https\":\"https:\\/\\/pbs.twimg.com\\/profile_background_images\\/378800000159769086\\/x2fWF2nQ.jpeg\",\"profile_background_tile\":true,\"profile_link_color\":\"0099B9\",\"profile_sidebar_border_color\":\"FFFFFF\",\"profile_sidebar_fill_color\":\"95E8EC\",\"profile_text_color\":\"3C3940\",\"profile_use_background_image\":true,\"profile_image_url\":\"http:\\/\\/pbs.twimg.com\\/profile_images\\/636313079224139776\\/z93GNw7-_normal.jpg\",\"profile_image_url_https\":\"https:\\/\\/pbs.twimg.com\\/profile_images\\/636313079224139776\\/z93GNw7-_normal.jpg\",\"profile_banner_url\":\"https:\\/\\/pbs.twimg.com\\/profile_banners\\/953599657\\/1440236650\",\"default_profile\":false,\"default_profile_image\":false,\"following\":null,\"follow_request_sent\":null,\"notifications\":null},\"geo\":{\"type\":\"Point\",\"coordinates\":[53.863376,27.458605]},\"coordinates\":{\"type\":\"Point\",\"coordinates\":[27.458605,53.863376]},\"place\":{\"id\":\"333a5811d6b0c1cb\",\"url\":\"https:\\/\\/api.twitter.com\\/1.1\\/geo\\/id\\/333a5811d6b0c1cb.json\",\"place_type\":\"country\",\"name\":\"\\u0411\\u0435\\u043b\\u0430\\u0440\\u0443\\u0441\\u044c\",\"full_name\":\"\\u0411\\u0435\\u043b\\u0430\\u0440\\u0443\\u0441\\u044c\",\"country_code\":\"BY\",\"country\":\"Belarus'\",\"bounding_box\":{\"type\":\"Polygon\",\"coordinates\":[[[23.179217,51.2626423],[23.179217,56.1717339],[32.7769812,56.1717339],[32.7769812,51.2626423]]]},\"attributes\":{}},\"contributors\":null,\"retweet_count\":0,\"favorite_count\":0,\"entities\":{\"hashtags\":[],\"trends\":[],\"urls\":[{\"url\":\"https:\\/\\/t.co\\/JcQrQtQcV6\",\"expanded_url\":\"https:\\/\\/www.swarmapp.com\\/c\\/jAFkmVxZnFQ\",\"display_url\":\"swarmapp.com\\/c\\/jAFkmVxZnFQ\",\"indices\":[58,81]}],\"user_mentions\":[],\"symbols\":[]},\"favorited\":false,\"retweeted\":false,\"possibly_sensitive\":false,\"filter_level\":\"low\",\"lang\":\"ru\",\"timestamp_ms\":\"1443181400660\"}\n";
+    private static final String tweet = "{\"id\":647375831971590144,\"text\":\"sample tweet to test Twitter streamer\"}\n";
 
     /** Constructor. */
     public IgniteTwitterStreamerTest() {
@@ -62,8 +62,8 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
 
     @Rule
     /** embedded mock HTTP server for Twitter API */
-    public WireMockRule wireMockRule = new WireMockRule();
-    WireMockServer mockServer = new WireMockServer(); //starts server on 8080 port
+    public final WireMockRule wireMockRule = new WireMockRule();
+    public final WireMockServer mockServer = new WireMockServer(); //starts server on 8080 port
 
     @Before @SuppressWarnings("unchecked")
     public void beforeTest() throws Exception {
@@ -84,11 +84,13 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
     public void testStatusesFilterEndpointOAuth1() throws Exception {
         try (IgniteDataStreamer<String, String> dataStreamer = grid().dataStreamer(null)) {
             TwitterStreamer<String, String> streamer = newStreamerInstance(dataStreamer);
+
             streamer.setHosts(new HttpHosts("http://localhost:8080"));
             streamer.setEndpointUrl(MOCK_TWEET_PATH);
             Map<String, String> params = new HashMap<>();
             params.put("track", "apache, twitter");
             streamer.setApiParams(params);
+
             executeStreamer(streamer);
         }
     }
@@ -104,11 +106,13 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
             latch.await(1, TimeUnit.SECONDS);
         }
         unsubscribeToPutEvents(listener);
+
         assertTrue(latch.getCount() < CACHE_ENTRY_COUNT);
         Status status = TwitterObjectFactory.createStatus(tweet);
         String cachedValue = grid().<String, String>cache(null).get(String.valueOf(status.getId()));
         assertTrue(cachedValue != null);
         assertTrue(cachedValue.equals(status.getText()));
+
         streamer.stop();
     }
 
@@ -129,12 +133,13 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
 
     private TwitterStreamer<String, String> newStreamerInstance(IgniteDataStreamer<String, String> dataStreamer) {
         OAuthSettings oAuthSettings = new OAuthSettings("<dummy>", "<dummy>", "<dummy>", "<dummy>");
+
         TwitterStreamer<String, String> streamer = new TwitterStreamer<>(oAuthSettings);
         streamer.setIgnite(grid());
         streamer.setStreamer(dataStreamer);
-
         dataStreamer.allowOverwrite(true);
         dataStreamer.autoFlushFrequency(10);
+
         return streamer;
     }
 
