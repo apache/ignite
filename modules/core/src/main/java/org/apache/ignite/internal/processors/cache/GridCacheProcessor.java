@@ -115,7 +115,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.internal.portable.api.PortableMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 
@@ -615,8 +614,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.discovery().setCustomEventListener(DynamicCacheChangeBatch.class,
             new CustomEventListener<DynamicCacheChangeBatch>() {
-                @Override public void onCustomEvent(ClusterNode snd, DynamicCacheChangeBatch msg) {
-                    onCacheChangeRequested(msg);
+                @Override public void onCustomEvent(ClusterNode snd,
+                    DynamicCacheChangeBatch msg,
+                    AffinityTopologyVersion topVer) {
+                    onCacheChangeRequested(msg, topVer);
                 }
             });
 
@@ -2363,8 +2364,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * Callback invoked from discovery thread when cache deployment request is received.
      *
      * @param batch Change request batch.
+     * @param topVer Current topology version.
      */
-    private void onCacheChangeRequested(DynamicCacheChangeBatch batch) {
+    private void onCacheChangeRequested(DynamicCacheChangeBatch batch, AffinityTopologyVersion topVer) {
         for (DynamicCacheChangeRequest req : batch.requests()) {
             if (req.template()) {
                 CacheConfiguration ccfg = req.startCacheConfiguration();
@@ -2421,6 +2423,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         DynamicCacheDescriptor startDesc =
                             new DynamicCacheDescriptor(ctx, ccfg, req.cacheType(), false, req.deploymentId());
 
+                        startDesc.startTopologyVersion(topVer);
+
                         DynamicCacheDescriptor old = registeredCaches.put(maskNull(ccfg.getName()), startDesc);
 
                         assert old == null :
@@ -2469,6 +2473,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         }
                     }
                 }
+
+                if (!needExchange && desc != null)
+                    req.cacheFutureTopologyVersion(desc.startTopologyVersion());
             }
             else {
                 assert req.stop() ^ req.close() : req;

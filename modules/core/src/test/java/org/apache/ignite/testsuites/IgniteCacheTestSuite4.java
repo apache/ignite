@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheTxPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxPreloadNoWriteTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxReplicatedPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxStoreValueTest;
+import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheFilterTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartNoExchangeTimeoutTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheWithConfigStartSelfTest;
@@ -76,9 +77,12 @@ import org.apache.ignite.internal.processors.cache.IgniteStartCacheInTransaction
 import org.apache.ignite.internal.processors.cache.IgniteSystemCacheOnClientTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAffinityEarlyTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheNoValueClassOnServerNodeTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtTxPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheLockFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheMultiTxLockSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearTxPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheNearReadCommittedTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridReplicatedTxPreloadTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLoadAllTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLoaderWriterTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLocalLoadAllTest;
@@ -260,6 +264,12 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheVersionedEntryReplicatedTransactionalOffHeapSelfTest.class);
 
         suite.addTestSuite(CacheSwapUnswapGetTest.class);
+
+        suite.addTestSuite(GridCacheDhtTxPreloadSelfTest.class);
+        suite.addTestSuite(GridCacheNearTxPreloadSelfTest.class);
+        suite.addTestSuite(GridReplicatedTxPreloadTest.class);
+
+        suite.addTestSuite(IgniteDynamicCacheFilterTest.class);
 
         return suite;
     }
