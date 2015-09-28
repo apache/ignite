@@ -1277,8 +1277,9 @@ public class IgfsMetaManager extends IgfsManager {
                     id2InfoPrj.invoke(TRASH_ID, new UpdateListing(newInfo.id().toString(),
                             new IgfsListingEntry(newInfo), false));
 
-                    // Remove listing entries from root:
-                    id2InfoPrj.put(ROOT_ID, new IgfsFileInfo());
+                    // Remove listing entries from root.
+                    // Note that root directory properties and other attributes are preserved:
+                    id2InfoPrj.put(ROOT_ID, new IgfsFileInfo(null/*listing*/, rootInfo));
 
                     tx.commit();
 
@@ -2567,10 +2568,12 @@ public class IgfsMetaManager extends IgfsManager {
 
                         fs.update(path, props);
 
-                        assert path.parent() == null || infos.get(path.parent()) != null;
+                        IgfsFileInfo parentInfo = infos.get(path.parent());
 
-                        return updatePropertiesNonTx(infos.get(path.parent()).id(), infos.get(path).id(), path.name(),
-                            props);
+                        assert path.parent() == null || parentInfo != null;
+
+                        return updatePropertiesNonTx(parentInfo == null ? null : parentInfo.id(), infos.get(path).id(), path.name(),
+                                props);
                     }
 
                     @Override public IgfsFileInfo onFailure(@Nullable Exception err) throws IgniteCheckedException {

@@ -925,6 +925,23 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * Tests that root directory properties persist afetr the #format() operation.
+     *
+     * @throws Exception If failed.
+     */
+    public void testRootPropertiesPersistAfterFormat() throws Exception {
+        igfs.update(new IgfsPath("/"), Collections.singletonMap("foo", "moo"));
+
+        igfs.format();
+
+        IgfsFile file = igfs.info(new IgfsPath("/"));
+
+        Map<String,String> props = file.properties();
+
+        assertEquals("moo", props.get("foo"));
+    }
+
+    /**
      * Test regular file open.
      *
      * @throws Exception If failed.
