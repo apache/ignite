@@ -1285,10 +1285,12 @@ public class IgfsMetaManager extends IgfsManager {
                     delWorker.signal();
 
                     return newInfo.id();
-                } finally {
+                }
+                finally {
                     tx.close();
                 }
-            } finally {
+            }
+            finally {
                 busyLock.leaveBusy();
             }
         } else
@@ -1386,15 +1388,18 @@ public class IgfsMetaManager extends IgfsManager {
                     delWorker.signal();
 
                     return victimId;
-                } finally {
+                }
+                finally {
                     tx.close();
                 }
-            } finally {
+            }
+            finally {
                 busyLock.leaveBusy();
             }
-        } else
+        }
+        else
             throw new IllegalStateException("Failed to perform soft delete because Grid is " +
-                    "stopping [path=" + path + ']');
+                "stopping [path=" + path + ']');
     }
 
     /**

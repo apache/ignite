@@ -2002,11 +2002,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
                 checkDeadlocks(5, 2, 2, 2,
-                        OPS_CNT, // rename
-                        OPS_CNT, // delete
-                        OPS_CNT, // update
-                        OPS_CNT, // mkdirs
-                        OPS_CNT); // create
+                    OPS_CNT, // rename
+                    OPS_CNT, // delete
+                    OPS_CNT, // update
+                    OPS_CNT, // mkdirs
+                    OPS_CNT); // create
             }
             finally {
                 clear(igfs, igfsSecondary);
