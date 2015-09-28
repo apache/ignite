@@ -24,8 +24,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Tests cache transaction during preloading.
- *
- * TODO: IGNITE-808.
  */
 public class GridReplicatedTxPreloadTest extends IgniteTxPreloadAbstractTest {
     /** {@inheritDoc} */
