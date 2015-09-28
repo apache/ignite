@@ -527,7 +527,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         if (list != null) {
                             for (CustomEventListener<DiscoveryCustomMessage> lsnr : list) {
                                 try {
-                                    lsnr.onCustomEvent(node, customMsg);
+                                    lsnr.onCustomEvent(node, customMsg, nextTopVer);
                                 }
                                 catch (Exception e) {
                                     U.error(log, "Failed to notify direct custom event listener: " + customMsg, e);
