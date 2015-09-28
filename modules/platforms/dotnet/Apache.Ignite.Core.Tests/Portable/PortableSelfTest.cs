@@ -1890,17 +1890,15 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 writer.WriteString("before", Before);
 
-                writer0.DetachNext();
-                writer.WriteObject("inner", Inner);
-
+                writer0.WithDetach(w => w.WriteObject("inner", Inner));
+                
                 writer.WriteString("after", After);
 
                 IPortableRawWriter rawWriter = writer.RawWriter();
 
                 rawWriter.WriteString(RawBefore);
 
-                writer0.DetachNext();
-                rawWriter.WriteObject(RawInner);
+                writer0.WithDetach(w => w.WriteObject(RawInner));
 
                 rawWriter.WriteString(RawAfter);
             }
