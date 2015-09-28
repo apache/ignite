@@ -93,8 +93,8 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
     /** OAuth params holder */
     private OAuthSettings oAuthSettings;
 
-    /** shared variable to communicate/signal stopping the streamer */
-    private volatile boolean stopped;
+    /** shared variable to communicate/signal that streamer is already running or can be started */
+    private volatile boolean running = false;
 
     /** Size of buffer for streaming, as for some tracking terms traffic can be low and for others high,
      * this is configurable */
@@ -119,8 +119,9 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
      * @throws IgniteException If failed.
      */
     public void start() throws IgniteException {
-        if (stopped)
+        if (running)
             throw new IgniteException("Attempted to start an already started Twitter Streamer");
+        running = true;
 
         validate();
 
@@ -138,7 +139,7 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
 
             @Override
             public Boolean call(){
-                while (!client.isDone() && !stopped) {
+                while (!client.isDone() && running) {
                     try{
                         String tweet = tweetQueue.take();
                         Map<K, V> value = transformer.apply(tweet);
@@ -149,7 +150,7 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
                         //No-op
                     }
                 }
-                return stopped;
+                return running;
             }
         };
         tweetStreamProcessor.submit(task);
@@ -159,7 +160,7 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
      * Stops streamer.
      */
     public void stop() throws IgniteException {
-        stopped = true;
+        running = false;
 
         tweetStreamProcessor.shutdown();
         try {
