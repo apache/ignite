@@ -786,7 +786,7 @@ public final class IgfsImpl implements IgfsEx {
                 List<String> components = path.components();
 
                 assert ids.size() == components.size() + 1 : "Components doesn't contain ROOT element" +
-                        " [ids=" + ids + ", components=" + components + ']';
+                    " [ids=" + ids + ", components=" + components + ']';
 
                 IgniteUuid parentId = ROOT_ID;
 
@@ -814,7 +814,7 @@ public final class IgfsImpl implements IgfsEx {
                         catch (IgniteCheckedException e) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to create directory [path=" + path + ", parentId=" + parentId +
-                                        ", fileName=" + fileName + ", step=" + step + ", e=" + e.getMessage() + ']');
+                                    ", fileName=" + fileName + ", step=" + step + ", e=" + e.getMessage() + ']');
 
                             // Check directory with such name already exists.
                             IgfsFileInfo stored = meta.info(meta.fileId(parentId, fileName));
@@ -824,7 +824,7 @@ public final class IgfsImpl implements IgfsEx {
 
                             if (!stored.isDirectory())
                                 throw new IgfsParentNotDirectoryException("Failed to create directory (parent " +
-                                        "element is not a directory)");
+                                    "element is not a directory)");
 
                             fileId = stored.id(); // Update node ID.
                         }
