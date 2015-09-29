@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.DataStructures
 {
     using System.Linq;
+    using Apache.Ignite.Core.Common;
     using NUnit.Framework;
 
     /// <summary>
@@ -25,6 +26,9 @@ namespace Apache.Ignite.Core.Tests.DataStructures
     /// </summary>
     public class AtomicLongTest : IgniteTestBase
     {
+        /** */
+        private const string AtomicLongName = "testAtomicLong";
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AtomicLongTest"/> class.
         /// </summary>
@@ -33,27 +37,60 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             // No-op.
         }
 
+        /** <inheritdoc /> */
+        public override void TestSetUp()
+        {
+            base.TestSetUp();
+
+            // Close test atomic if there is any
+            Grid.GetAtomicLong(AtomicLongName, 0, true).Close();
+        }
+
         /// <summary>
         /// Tests lifecycle of the AtomicLong.
         /// </summary>
         [Test]
         public void TestCreateClose()
         {
-            var al = Grid.GetAtomicLong("test", 10, true);
+            // Nonexistent long without create flag throws
+            // TODO: Incorrect exception in Java
+            Assert.Throws<IgniteException>(() => Grid.GetAtomicLong(AtomicLongName, 10, false));
 
-            Assert.AreEqual("test", al.Name);
+            // Create new
+            var al = Grid.GetAtomicLong(AtomicLongName, 10, true);
+            Assert.AreEqual(AtomicLongName, al.Name);
             Assert.AreEqual(10, al.Read());
             Assert.AreEqual(false, al.IsClosed());
 
-            var al2 = Grid.GetAtomicLong("test", 5, true);
-            Assert.AreEqual("test", al2.Name);
+            // Get existing with create flag
+            var al2 = Grid.GetAtomicLong(AtomicLongName, 5, true);
+            Assert.AreEqual(AtomicLongName, al2.Name);
             Assert.AreEqual(10, al2.Read());
             Assert.AreEqual(false, al2.IsClosed());
+
+            // Get existing without create flag
+            var al3 = Grid.GetAtomicLong(AtomicLongName, 5, false);
+            Assert.AreEqual(AtomicLongName, al3.Name);
+            Assert.AreEqual(10, al3.Read());
+            Assert.AreEqual(false, al3.IsClosed());
 
             al.Close();
 
             Assert.AreEqual(true, al.IsClosed());
             Assert.AreEqual(true, al2.IsClosed());
+            Assert.AreEqual(true, al3.IsClosed());
+        }
+
+        /// <summary>
+        /// Tests modification methods.
+        /// </summary>
+        [Test]
+        public void TestModify()
+        {
+            var al = Grid.GetAtomicLong(AtomicLongName, 10, true);
+            var al2 = Grid.GetAtomicLong(AtomicLongName, 10, false);
+
+            // TODO
         }
 
         /// <summary>
@@ -62,14 +99,12 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         [Test]
         public void TestMultithreaded()
         {
-            // TODO: Profile.
-
             const int atomicCnt = 10;
             const int threadCnt = 5;
             const int iterations = 3000;
 
             // 10 atomics with same name
-            var atomics = Enumerable.Range(1, atomicCnt).Select(x => Grid.GetAtomicLong("test", 0, true)).ToList();
+            var atomics = Enumerable.Range(1, atomicCnt).Select(x => Grid.GetAtomicLong(AtomicLongName, 0, true)).ToList();
 
             // 5 threads increment 30000 times
             TestUtils.RunMultiThreaded(() =>
