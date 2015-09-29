@@ -220,7 +220,7 @@ import org.jetbrains.annotations.Nullable;
  * - this becomes the URL collection (to GAR files) to deploy. It's important that HTTP scanner
  * uses URLConnection.getLastModified() method to check if there were any changes since last iteration
  * for each GAR-file before redeploying.
- * Following parameters are supported for FILE protocol:
+ * Following parameters are supported for the protocol:
  * <table class="doctable">
  *  <tr>
  *      <th>Parameter</th>
