@@ -19,9 +19,8 @@ namespace GridGain.Client.Benchmark.Interop
 {
     using System.Collections.Generic;
     using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Portable;
     using GridGain.Client.Benchmark.Model;
-    using GridGain.Impl;
-    using GridGain.Portable;
     using BU = GridClientBenchmarkUtils;
 
     /// <summary>
@@ -58,7 +57,7 @@ namespace GridGain.Client.Benchmark.Interop
             for (int i = 0; i < emps.Length; i++)
                 emps[i] = BU.RandomEmployee(Payload);
 
-            GridConfiguration cfg = new GridConfiguration
+            IgniteConfiguration cfg = new IgniteConfiguration
             {
                 PortableConfiguration = GetPortableConfiguration(),
                 JvmOptions = new List<string>
@@ -68,7 +67,7 @@ namespace GridGain.Client.Benchmark.Interop
                     "-DIGNITE_QUIET=false",
                     "-DIGNITE_NO_SHUTDOWN_HOOK=true"
                 },
-                JvmClasspath = Classpath ?? GridManager.CreateClasspath(),
+                JvmClasspath = Classpath ?? IgniteManager.CreateClasspath(),
                 JvmDllPath = DllPath,
                 SpringConfigUrl = ConfigPath
             };

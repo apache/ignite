@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// </summary>
     public static class PathUtil
     {
-        public static readonly string IgniteHome = IgniteManager.GetIgniteHome(null);
+        public static readonly string IgniteHome = Impl.Common.IgniteHome.Resolve(null);
 
         /// <summary>
         /// Full Apache.Ignite.exe path.
