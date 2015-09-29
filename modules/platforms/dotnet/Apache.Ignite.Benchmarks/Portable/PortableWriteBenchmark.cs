@@ -35,7 +35,7 @@ namespace Apache.Ignite.Benchmarks.Portable
         private readonly PlatformMemoryManager _memMgr = new PlatformMemoryManager(1024);
 
         /** Pre-allocated addess. */
-        private readonly Address _address = BenchmarkUtils.RandomAddress();
+        private readonly Address _address = BenchmarkUtils.GetRandomAddress();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PortableWriteBenchmark"/> class.

@@ -292,7 +292,7 @@ namespace Apache.Ignite.Benchmarks
         /// <returns>True if argument was consumed.</returns>
         public void Configure(string name, string val)
         {
-            var prop = BenchmarkUtils.FindProperty(this, name);
+            var prop = BenchmarkUtils.GetProperty(this, name);
 
             if (prop != null)
                 BenchmarkUtils.SetProperty(this, prop, val);
@@ -453,7 +453,7 @@ namespace Apache.Ignite.Benchmarks
         /// Get current throughput across all currenlty running threads.
         /// </summary>
         /// <returns>Current throughput.</returns>
-        private IDictionary<string, Tuple<long, long>> CurrentThroughput()
+        private IDictionary<string, Tuple<long, long>> GetCurrentThroughput()
         {
             var total = new Dictionary<string, Tuple<long, long>>(_descs.Count);
 
@@ -467,14 +467,13 @@ namespace Apache.Ignite.Benchmarks
         }
 
         /** <inheritDoc /> */
-
         public override string ToString()
         {
             var sb = new StringBuilder(GetType().Name).Append('[');
 
             var first = true;
 
-            var props = BenchmarkUtils.ListProperties(this);
+            var props = BenchmarkUtils.GetProperties(this);
 
             foreach (var prop in props)
             {
@@ -652,7 +651,7 @@ namespace Apache.Ignite.Benchmarks
 
                         var desc = _descs.Length == 1
                             ? _descs[0]
-                            : _descs[BenchmarkUtils.RandomInt(_descs.Length)];
+                            : _descs[BenchmarkUtils.GetRandomInt(_descs.Length)];
 
                         var res = true;
 
@@ -859,7 +858,7 @@ namespace Apache.Ignite.Benchmarks
 
                     if (_benchmark._start && !_benchmark._warmup)
                     {
-                        var results = _benchmark.CurrentThroughput();
+                        var results = _benchmark.GetCurrentThroughput();
 
                         if (_benchmark._finishedThreads > 0)
                             return; // Threads are stopping, do not collect any more.

@@ -72,9 +72,9 @@ namespace Apache.Ignite.Benchmarks
         /// </summary>
         /// <param name="max">Maximum value (exclusive).</param>
         /// <returns></returns>
-        public static int RandomInt(int max)
+        public static int GetRandomInt(int max)
         {
-            return RandomInt(0, max);
+            return GetRandomInt(0, max);
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Benchmarks
         /// <param name="min">Minimum value (inclusive).</param>
         /// <param name="max">Maximum value (exclusive).</param>
         /// <returns></returns>
-        public static int RandomInt(int min, int max)
+        public static int GetRandomInt(int min, int max)
         {
             return Rand.Value.Next(min, max);
         }
@@ -93,7 +93,7 @@ namespace Apache.Ignite.Benchmarks
         /// </summary>
         /// <param name="len">Length.</param>
         /// <returns>String.</returns>
-        public static string RandomString(int len)
+        public static string GetRandomString(int len)
         {
             var rand = Rand.Value;
 
@@ -109,13 +109,13 @@ namespace Apache.Ignite.Benchmarks
         /// Generate random address.
         /// </summary>
         /// <returns>Address.</returns>
-        public static Address RandomAddress()
+        public static Address GetRandomAddress()
         {
             return new Address(
-                RandomString(15),
-                RandomString(20),
-                RandomInt(1, 500),
-                RandomInt(1, 35)
+                GetRandomString(15),
+                GetRandomString(20),
+                GetRandomInt(1, 500),
+                GetRandomInt(1, 35)
             );
         }
 
@@ -123,14 +123,14 @@ namespace Apache.Ignite.Benchmarks
         /// Generate random company.
         /// </summary>
         /// <returns>Company.</returns>
-        public static Company RandomCompany()
+        public static Company GetRandomCompany()
         {
             return new Company(
-                RandomInt(0, 100),
-                RandomString(20),
-                RandomInt(100, 3000),
-                RandomAddress(),
-                RandomString(20)
+                GetRandomInt(0, 100),
+                GetRandomString(20),
+                GetRandomInt(100, 3000),
+                GetRandomAddress(),
+                GetRandomString(20)
             );
         }
 
@@ -139,17 +139,17 @@ namespace Apache.Ignite.Benchmarks
         /// </summary>
         /// <param name="payload">Payload size.</param>
         /// <returns>Employee.</returns>
-        public static Employee RandomEmployee(int payload)
+        public static Employee GetRandomEmployee(int payload)
         {
             return new Employee(
-                RandomInt(0, 1000),
-                RandomString(15),
-                RandomInt(0, 1000),
-                RandomInt(18, 60),
-                (Sex)RandomInt(0, 1),
-                RandomInt(10000, 30000),
-                RandomAddress(),
-                (Department)RandomInt(0, 5),
+                GetRandomInt(0, 1000),
+                GetRandomString(15),
+                GetRandomInt(0, 1000),
+                GetRandomInt(18, 60),
+                (Sex)GetRandomInt(0, 1),
+                GetRandomInt(10000, 30000),
+                GetRandomAddress(),
+                (Department)GetRandomInt(0, 5),
                 payload
             );
         }
@@ -159,7 +159,7 @@ namespace Apache.Ignite.Benchmarks
         /// </summary>
         /// <param name="obj">Object.</param>
         /// <returns>Properties.</returns>
-        public static PropertyInfo[] ListProperties(object obj)
+        public static PropertyInfo[] GetProperties(object obj)
         {
             return obj.GetType().GetProperties(PropFlags);
         }
@@ -170,9 +170,9 @@ namespace Apache.Ignite.Benchmarks
         /// <param name="obj">Object.</param>
         /// <param name="name">Name.</param>
         /// <returns>Property.</returns>
-        public static PropertyInfo FindProperty(object obj, string name)
+        public static PropertyInfo GetProperty(object obj, string name)
         {
-            return ListProperties(obj)
+            return GetProperties(obj)
                 .FirstOrDefault(prop => prop.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         }
 

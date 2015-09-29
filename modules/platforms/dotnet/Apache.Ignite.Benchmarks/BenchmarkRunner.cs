@@ -77,7 +77,7 @@ namespace Apache.Ignite.Benchmarks
                 else
                     continue;
 
-                var prop = BenchmarkUtils.FindProperty(benchmark, arg);
+                var prop = BenchmarkUtils.GetProperty(benchmark, arg);
 
                 if (prop != null)
                     benchmark.Configure(prop.Name, prop.PropertyType == typeof(bool) ? bool.TrueString : args[++i]);

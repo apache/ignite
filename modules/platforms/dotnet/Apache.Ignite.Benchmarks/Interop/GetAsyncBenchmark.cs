@@ -56,7 +56,7 @@ namespace Apache.Ignite.Benchmarks.Interop
         /// </summary>
         private void GetAsync(BenchmarkState state)
         {
-            int idx = BenchmarkUtils.RandomInt(Dataset);
+            int idx = BenchmarkUtils.GetRandomInt(Dataset);
 
             _cache.Get(idx);
 

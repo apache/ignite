@@ -54,7 +54,7 @@ namespace Apache.Ignite.Benchmarks.Interop
             Emps = new Employee[Dataset];
 
             for (var i = 0; i < Emps.Length; i++)
-                Emps[i] = BenchmarkUtils.RandomEmployee(Payload);
+                Emps[i] = BenchmarkUtils.GetRandomEmployee(Payload);
 
             var cfg = new IgniteConfiguration
             {

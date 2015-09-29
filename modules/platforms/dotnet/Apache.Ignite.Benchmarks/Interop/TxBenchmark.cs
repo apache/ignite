@@ -51,7 +51,7 @@ namespace Apache.Ignite.Benchmarks.Interop
         /// </summary>
         private void PutTx(BenchmarkState state)
         {
-            int idx = BenchmarkUtils.RandomInt(Dataset);
+            int idx = BenchmarkUtils.GetRandomInt(Dataset);
 
             using (var tx = Node.GetTransactions().TxStart(TransactionConcurrency.Pessimistic,
                 TransactionIsolation.RepeatableRead))

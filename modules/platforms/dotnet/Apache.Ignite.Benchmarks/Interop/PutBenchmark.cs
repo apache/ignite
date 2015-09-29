@@ -50,7 +50,7 @@ namespace Apache.Ignite.Benchmarks.Interop
         /// </summary>
         private void Put(BenchmarkState state)
         {
-            int idx = BenchmarkUtils.RandomInt(Dataset);
+            int idx = BenchmarkUtils.GetRandomInt(Dataset);
 
             _cache.Put(idx, Emps[idx]);
         }
