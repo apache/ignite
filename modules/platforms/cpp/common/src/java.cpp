@@ -1912,7 +1912,7 @@ namespace ignite
             {
                 JNIEnv* env = Attach();
 
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_add);
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_add, value);
 
                 ExceptionCheck(env);
 
@@ -1934,7 +1934,7 @@ namespace ignite
             {
                 JNIEnv* env = Attach();
 
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_exchange);
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_exchange, value);
 
                 ExceptionCheck(env);
 
@@ -1945,7 +1945,7 @@ namespace ignite
             {
                 JNIEnv* env = Attach();
 
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_compareExchange);
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_compareExchange, value, comparand);
 
                 ExceptionCheck(env);
 
