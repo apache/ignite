@@ -104,7 +104,8 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             const int iterations = 3000;
 
             // 10 atomics with same name
-            var atomics = Enumerable.Range(1, atomicCnt).Select(x => Grid.GetAtomicLong(AtomicLongName, 0, true)).ToList();
+            var atomics = Enumerable.Range(1, atomicCnt)
+                .Select(x => Grid.GetAtomicLong(AtomicLongName, 0, true)).ToList();
 
             // 5 threads increment 30000 times
             TestUtils.RunMultiThreaded(() =>
