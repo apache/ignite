@@ -293,7 +293,10 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Value indicating whether specified dir looks like a Ignite home.</returns>
         private static bool IsIgniteHome(DirectoryInfo dir)
         {
-            return dir.Exists && dir.EnumerateDirectories().Count(x => x.Name == "examples" || x.Name == "bin") == 2;
+            return dir.Exists &&
+                dir.EnumerateDirectories().Count(x => x.Name == "examples" || x.Name == "bin") == 2 &&
+                (dir.EnumerateDirectories().Count(x => x.Name == "modules") == 1 ||
+                    dir.EnumerateDirectories().Count(x => x.Name == "platforms") == 1);
         }
 
         /// <summary>
