@@ -28,18 +28,18 @@ namespace Apache.Ignite.Benchmarks
         private bool _warmup = true;
 
         /** Counter within the batch. */
-        private int _ctr;
+        private int _counter;
 
         /** Array of attached objects. */
-        private object[] _arr;
+        private object[] _attachedObjects;
 
         /// <summary>
         /// Reset state.
         /// </summary>
         public void Reset()
         {
-            _ctr = 0;
-            _arr = null;
+            _counter = 0;
+            _attachedObjects = null;
         }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace Apache.Ignite.Benchmarks
         /// </summary>
         public void IncrementCounter()
         {
-            _ctr++;
+            _counter++;
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Benchmarks
         /// </summary>
         public int Counter
         {
-            get { return _ctr; }
+            get { return _counter; }
         }
 
         /// <summary>
@@ -83,23 +83,23 @@ namespace Apache.Ignite.Benchmarks
         {
             get
             {
-                return (_arr == null || idx >= _arr.Length) ? null : _arr[idx];
+                return (_attachedObjects == null || idx >= _attachedObjects.Length) ? null : _attachedObjects[idx];
             }
 
             set
             {
-                if (_arr == null)
-                    _arr = new object[idx + 1];
-                else if (idx >= _arr.Length)
+                if (_attachedObjects == null)
+                    _attachedObjects = new object[idx + 1];
+                else if (idx >= _attachedObjects.Length)
                 {
-                    object[] arr0 = new object[idx + 1];
+                    var arr0 = new object[idx + 1];
 
-                    Array.Copy(_arr, 0, arr0, 0, arr0.Length);
+                    Array.Copy(_attachedObjects, 0, arr0, 0, arr0.Length);
 
-                    _arr = arr0;
+                    _attachedObjects = arr0;
                 }
 
-                _arr[idx] = value;
+                _attachedObjects[idx] = value;
             }
         }
     }

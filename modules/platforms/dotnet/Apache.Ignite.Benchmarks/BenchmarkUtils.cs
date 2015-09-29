@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Benchmarks
 {
     using System;
+    using System.Linq;
     using System.Reflection;
     using System.Text;
     using System.Threading;
@@ -29,7 +30,7 @@ namespace Apache.Ignite.Benchmarks
     internal static class BenchmarkUtils
     {
         /** Property binding flags. */
-        public static BindingFlags PropFlags = BindingFlags.Instance | BindingFlags.Public;
+        private static readonly BindingFlags PropFlags = BindingFlags.Instance | BindingFlags.Public;
 
         /** Thread-local random. */
         private static readonly ThreadLocal<Random> Rand;
@@ -45,23 +46,24 @@ namespace Apache.Ignite.Benchmarks
         /// </summary>
         static BenchmarkUtils()
         {
-            Rand = new ThreadLocal<Random>(() => {
-                int seed = Interlocked.Add(ref _seedCtr, 100);
+            Rand = new ThreadLocal<Random>(() =>
+            {
+                var seed = Interlocked.Add(ref _seedCtr, 100);
 
-                return new Random(seed); 
+                return new Random(seed);
             });
 
             Chars = new char[10 + 26 + 26];
 
-            int pos = 0;
+            var pos = 0;
 
-            for (char i = '0'; i < '0' + 10; i++)
+            for (var i = '0'; i < '0' + 10; i++)
                 Chars[pos++] = i;
 
-            for (char i = 'A'; i < 'A' + 26; i++)
+            for (var i = 'A'; i < 'A' + 26; i++)
                 Chars[pos++] = i;
 
-            for (char i = 'a'; i < 'a' + 26; i++)
+            for (var i = 'a'; i < 'a' + 26; i++)
                 Chars[pos++] = i;
         }
 
@@ -93,11 +95,11 @@ namespace Apache.Ignite.Benchmarks
         /// <returns>String.</returns>
         public static string RandomString(int len)
         {
-            Random rand = Rand.Value;
+            var rand = Rand.Value;
 
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
-            for (int i = 0; i < len; i++)
+            for (var i = 0; i < len; i++)
                 sb.Append(Chars[rand.Next(Chars.Length)]);
 
             return sb.ToString();
@@ -145,7 +147,7 @@ namespace Apache.Ignite.Benchmarks
                 RandomInt(0, 1000),
                 RandomInt(18, 60),
                 (Sex)RandomInt(0, 1),
-                (long)RandomInt(10000, 30000),
+                RandomInt(10000, 30000),
                 RandomAddress(),
                 (Department)RandomInt(0, 5),
                 payload
@@ -168,18 +170,10 @@ namespace Apache.Ignite.Benchmarks
         /// <param name="obj">Object.</param>
         /// <param name="name">Name.</param>
         /// <returns>Property.</returns>
-        public static PropertyInfo FindProperty(object obj, string name) {
-            PropertyInfo[] props = ListProperties(obj);
-
-            name = name.ToLower();
-
-            foreach (PropertyInfo prop in props)
-            {
-                if (prop.Name.ToLower().Equals(name))
-                    return prop;
-            }
-
-            return null;
+        public static PropertyInfo FindProperty(object obj, string name)
+        {
+            return ListProperties(obj)
+                .FirstOrDefault(prop => prop.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -192,7 +186,7 @@ namespace Apache.Ignite.Benchmarks
         {
             object val0;
 
-            Type propType = prop.PropertyType;
+            var propType = prop.PropertyType;
 
             if (propType == typeof(int))
             {
