@@ -251,6 +251,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Indicates object array. */
         public const int ObjTypeId = -1;
 
+        /** Length of tpye ID. */
+        public const int LengthTypeId = 1;
+
+        /** Length of array size. */
+        public const int LengthArraySize = 4;
+
         /** Int type. */
         public static readonly Type TypInt = typeof(int);
 
@@ -631,13 +637,12 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="val">Date.</param>
          * <param name="stream">Stream.</param>
          */
-        public static void WriteDate(DateTime? val, IPortableStream stream)
+        public static void WriteDate(DateTime val, IPortableStream stream)
         {
             long high;
             int low;
 
-            Debug.Assert(val.HasValue);
-            ToJavaDate(val.Value, out high, out low);
+            ToJavaDate(val, out high, out low);
 
             stream.WriteLong(high);
             stream.WriteInt(low);
@@ -657,11 +662,28 @@ namespace Apache.Ignite.Core.Impl.Portable
             return ToDotNetDate(high, low, local);
         }
 
-        /**
-         * <summary>Write date array.</summary>
-         * <param name="vals">Date array.</param>
-         * <param name="stream">Stream.</param>
-         */
+        /// <summary>
+        /// Write date array.
+        /// </summary>
+        /// <param name="vals">Values.</param>
+        /// <param name="stream">Stream.</param>
+        public static void WriteDateArray(DateTime[] vals, IPortableStream stream)
+        {
+            stream.WriteInt(vals.Length);
+
+            foreach (DateTime val in vals)
+            {
+                stream.WriteByte(TypeDate);
+
+                WriteDate(val, stream);
+            }
+        }
+
+        /// <summary>
+        /// Write nullable date array.
+        /// </summary>
+        /// <param name="vals">Values.</param>
+        /// <param name="stream">Stream.</param>
         public static void WriteDateArray(DateTime?[] vals, IPortableStream stream)
         {
             stream.WriteInt(vals.Length);
@@ -669,7 +691,11 @@ namespace Apache.Ignite.Core.Impl.Portable
             foreach (DateTime? val in vals)
             {
                 if (val.HasValue)
-                    PortableSystemHandlers.WriteHndDateTyped(stream, val);
+                {
+                    stream.WriteByte(TypeDate);
+
+                    WriteDate(val.Value, stream);
+                }
                 else
                     stream.WriteByte(HdrNull);
             }
@@ -727,7 +753,10 @@ namespace Apache.Ignite.Core.Impl.Portable
             foreach (string val in vals)
             {
                 if (val != null)
-                    PortableSystemHandlers.WriteHndStringTyped(stream, val); 
+                {
+                    stream.WriteByte(TypeString);
+                    WriteString(val, stream);
+                }
                 else
                     stream.WriteByte(HdrNull);
             }
@@ -960,10 +989,9 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="val">GUID.</param>
          * <param name="stream">Stream.</param>
          */
-        public static unsafe void WriteGuid(Guid? val, IPortableStream stream)
+        public static unsafe void WriteGuid(Guid val, IPortableStream stream)
         {
-            Debug.Assert(val.HasValue);
-            byte[] bytes = val.Value.ToByteArray();
+            byte[] bytes = val.ToByteArray();
 
             // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _g, _h, _i, _j, _k.
             // And _a, _b and _c are always in little endian format irrespective of system configuration.
@@ -1050,11 +1078,28 @@ namespace Apache.Ignite.Core.Impl.Portable
             return new Guid(bytes);
         }
 
-        /**
-         * <summary>Write GUID array.</summary>
-         * <param name="vals">GUID array.</param>
-         * <param name="stream">Stream.</param>
-         */
+        /// <summary>
+        /// Write GUID array.
+        /// </summary>
+        /// <param name="vals">Values.</param>
+        /// <param name="stream">Stream.</param>
+        public static void WriteGuidArray(Guid[] vals, IPortableStream stream)
+        {
+            stream.WriteInt(vals.Length);
+
+            foreach (Guid val in vals)
+            {
+                stream.WriteByte(TypeGuid);
+
+                WriteGuid(val, stream);
+            }
+        }
+
+        /// <summary>
+        /// Write GUID array.
+        /// </summary>
+        /// <param name="vals">Values.</param>
+        /// <param name="stream">Stream.</param>
         public static void WriteGuidArray(Guid?[] vals, IPortableStream stream)
         {
             stream.WriteInt(vals.Length);
@@ -1062,7 +1107,11 @@ namespace Apache.Ignite.Core.Impl.Portable
             foreach (Guid? val in vals)
             {
                 if (val.HasValue)
-                    PortableSystemHandlers.WriteHndGuidTyped(stream, val);
+                {
+                    stream.WriteByte(TypeGuid);
+
+                    WriteGuid(val.Value, stream);
+                }
                 else
                     stream.WriteByte(HdrNull);
             }

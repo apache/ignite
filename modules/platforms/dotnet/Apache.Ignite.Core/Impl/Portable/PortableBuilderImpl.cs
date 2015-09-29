@@ -197,7 +197,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             try
             {
                 // Write.
-                writer.Write(this, null);
+                writer.Write(this);
                 
                 // Process metadata.
                 _portables.Marshaller.FinishMarshal(writer);
@@ -409,7 +409,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     object cachedVal;
 
                     if (_parent._cache != null && _parent._cache.TryGetValue(inStartPos, out cachedVal)) {
-                        ctx.Writer.Write(cachedVal, null);
+                        ctx.Writer.Write(cachedVal);
                     }
                     else
                     {
@@ -445,7 +445,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                                 {
                                     // Replace field with new value.
                                     if (fieldVal != PortableBuilderField.RmvMarkerObj)
-                                        ctx.Writer.Write(fieldVal, null);
+                                        ctx.Writer.Write(fieldVal);
 
                                     vals.Remove(inFieldId);
                                 }
@@ -453,7 +453,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                                 {
                                     // If field was requested earlier, then we must write tracked value
                                     if (_parent._cache != null && _parent._cache.TryGetValue(inFieldDataPos, out fieldVal))
-                                        ctx.Writer.Write(fieldVal, null);
+                                        ctx.Writer.Write(fieldVal);
                                     else
                                         // Filed is not tracked, re-write as is.
                                         Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);                                    
@@ -481,7 +481,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                                 outStream.Seek(4, SeekOrigin.Current);
 
-                                ctx.Writer.Write(valEntry.Value, null);
+                                ctx.Writer.Write(valEntry.Value);
 
                                 int fieldEndPos = outStream.Position;
 

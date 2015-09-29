@@ -77,49 +77,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                     throw new PortableException("Assembly name cannot be empty string: " + typeCfg);
             }
 
-            // Define predefined types.
-            AddPredefinedType(typeof(bool), PortableUtils.TypeBool, PortableSystemHandlers.WriteHndBoolTyped, PortableSystemHandlers.WriteHndBool);
-            AddPredefinedType(typeof(byte), PortableUtils.TypeByte, PortableSystemHandlers.WriteHndByteTyped, PortableSystemHandlers.WriteHndByte);
-            AddPredefinedType(typeof(short), PortableUtils.TypeShort, PortableSystemHandlers.WriteHndShortTyped, PortableSystemHandlers.WriteHndShort);
-            AddPredefinedType(typeof(char), PortableUtils.TypeChar, PortableSystemHandlers.WriteHndCharTyped, PortableSystemHandlers.WriteHndChar);
-            AddPredefinedType(typeof(int), PortableUtils.TypeInt, PortableSystemHandlers.WriteHndIntTyped, PortableSystemHandlers.WriteHndInt);
-            AddPredefinedType(typeof(long), PortableUtils.TypeLong, PortableSystemHandlers.WriteHndLongTyped, PortableSystemHandlers.WriteHndLong);
-            AddPredefinedType(typeof(float), PortableUtils.TypeFloat, PortableSystemHandlers.WriteHndFloatTyped, PortableSystemHandlers.WriteHndFloat);
-            AddPredefinedType(typeof(double), PortableUtils.TypeDouble, PortableSystemHandlers.WriteHndDoubleTyped, PortableSystemHandlers.WriteHndDouble);
-            AddPredefinedType(typeof(string), PortableUtils.TypeString, PortableSystemHandlers.WriteHndStringTyped, PortableSystemHandlers.WriteHndString);
-            AddPredefinedType(typeof(decimal), PortableUtils.TypeDecimal, PortableSystemHandlers.WriteHndDecimalTyped, PortableSystemHandlers.WriteHndDecimal);
-            AddPredefinedType(typeof(DateTime), PortableUtils.TypeDate, PortableSystemHandlers.WriteHndDateTyped, PortableSystemHandlers.WriteHndDate);
-            AddPredefinedType(typeof(Guid), PortableUtils.TypeGuid, PortableSystemHandlers.WriteHndGuidTyped, PortableSystemHandlers.WriteHndGuid);
-
-            // TODO: Remove this registration
-            AddPredefinedType(typeof(PortableUserObject), PortableUtils.TypePortable, PortableSystemHandlers.WriteHndPortableTyped, 
-                PortableSystemHandlers.WriteHndPortable);
-
-            AddPredefinedType(typeof(bool[]), PortableUtils.TypeArrayBool, PortableSystemHandlers.WriteHndBoolArrayTyped,
-                PortableSystemHandlers.WriteHndBoolArray);
-            AddPredefinedType(typeof(byte[]), PortableUtils.TypeArrayByte, PortableSystemHandlers.WriteHndByteArrayTyped,
-                PortableSystemHandlers.WriteHndByteArray);
-            AddPredefinedType(typeof(short[]), PortableUtils.TypeArrayShort, PortableSystemHandlers.WriteHndShortArrayTyped,
-                PortableSystemHandlers.WriteHndShortArray);
-            AddPredefinedType(typeof(char[]), PortableUtils.TypeArrayChar, PortableSystemHandlers.WriteHndCharArrayTyped,
-                PortableSystemHandlers.WriteHndCharArray);
-            AddPredefinedType(typeof(int[]), PortableUtils.TypeArrayInt, PortableSystemHandlers.WriteHndIntArrayTyped,
-                PortableSystemHandlers.WriteHndIntArray);
-            AddPredefinedType(typeof(long[]), PortableUtils.TypeArrayLong, PortableSystemHandlers.WriteHndLongArrayTyped,
-                PortableSystemHandlers.WriteHndLongArray);
-            AddPredefinedType(typeof(float[]), PortableUtils.TypeArrayFloat, PortableSystemHandlers.WriteHndFloatArrayTyped,
-                PortableSystemHandlers.WriteHndFloatArray);
-            AddPredefinedType(typeof(double[]), PortableUtils.TypeArrayDouble, PortableSystemHandlers.WriteHndDoubleArrayTyped,
-                PortableSystemHandlers.WriteHndDoubleArray);
-            AddPredefinedType(typeof(decimal[]), PortableUtils.TypeArrayDecimal, PortableSystemHandlers.WriteHndDecimalArrayTyped,
-                PortableSystemHandlers.WriteHndDecimalArray);
-            AddPredefinedType(typeof(string[]), PortableUtils.TypeArrayString, PortableSystemHandlers.WriteHndStringArrayTyped,
-                PortableSystemHandlers.WriteHndStringArray);
-            AddPredefinedType(typeof(DateTime?[]), PortableUtils.TypeArrayDate, PortableSystemHandlers.WriteHndDateArrayTyped,
-                PortableSystemHandlers.WriteHndDateArray);
-            AddPredefinedType(typeof(Guid?[]), PortableUtils.TypeArrayGuid, PortableSystemHandlers.WriteHndGuidArrayTyped,
-                PortableSystemHandlers.WriteHndGuidArray);
-
             // Define system types. They use internal reflective stuff, so configuration doesn't affect them.
             AddSystemTypes();
 
@@ -457,7 +414,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     refSerializer.Register(type, typeId, nameMapper, idMapper);
 
                 AddType(type, typeId, typeName, true, metaEnabled, keepDeserialized, nameMapper, idMapper, serializer,
-                    typeCfg.AffinityKeyFieldName, null, null);
+                    typeCfg.AffinityKeyFieldName);
             }
             else
             {
@@ -467,7 +424,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 int typeId = PortableUtils.TypeId(typeName, nameMapper, idMapper);
 
                 AddType(null, typeId, typeName, true, metaEnabled, keepDeserialized, nameMapper, idMapper, null,
-                    typeCfg.AffinityKeyFieldName, null, null);
+                    typeCfg.AffinityKeyFieldName);
             }
         }
 
@@ -482,21 +439,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 ? PortableMarshalAwareSerializer.Instance 
                 : null;
         }
-
-        /// <summary>
-        /// Add predefined type.
-        /// </summary>
-        /// <param name="type">Type.</param>
-        /// <param name="typeId">Type ID.</param>
-        /// <param name="typedHandler">Typed handler.</param>
-        /// <param name="untypedHandler">Untyped handler.</param>
-        private void AddPredefinedType(Type type, int typeId, object typedHandler,
-            PortableSystemWriteDelegate untypedHandler)
-        {
-            AddType(type, typeId, GetTypeName(type), false, false, false, null, null, null, null, typedHandler,
-                untypedHandler);
-        }
-
+        
         /// <summary>
         /// Add type.
         /// </summary>
@@ -510,12 +453,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="idMapper">ID mapper.</param>
         /// <param name="serializer">Serializer.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
-        /// <param name="typedHandler">Typed handler.</param>
-        /// <param name="untypedHandler">Untyped handler.</param>
         private void AddType(Type type, int typeId, string typeName, bool userType, bool metaEnabled,
             bool keepDeserialized, IPortableNameMapper nameMapper, IPortableIdMapper idMapper,
-            IPortableSerializer serializer, string affKeyFieldName, object typedHandler,
-            PortableSystemWriteDelegate untypedHandler)
+            IPortableSerializer serializer, string affKeyFieldName)
         {
             long typeKey = PortableUtils.TypeKey(userType, typeId);
 
@@ -533,7 +473,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             IPortableTypeDescriptor descriptor =
                 new PortableFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, serializer,
-                    metaEnabled, keepDeserialized, affKeyFieldName, typedHandler, untypedHandler);
+                    metaEnabled, keepDeserialized, affKeyFieldName);
 
             if (type != null)
                 _typeToDesc[type] = descriptor;
@@ -553,7 +493,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var serializer = new PortableSystemTypeSerializer<T>(ctor);
 
-            AddType(type, typeId, GetTypeName(type), false, false, false, null, null, serializer, null, null, null);
+            AddType(type, typeId, GetTypeName(type), false, false, false, null, null, serializer, null);
         }
 
         /// <summary>
