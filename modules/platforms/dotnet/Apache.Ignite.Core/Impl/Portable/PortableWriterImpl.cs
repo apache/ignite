@@ -1082,7 +1082,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     {
                         // Merge newly recorded handles with old ones and restore old on the stack.
                         // Otherwise we can use current handles right away.
-                        oldHnds.Merge(_hnds);
+                        if (_hnds != null)
+                            oldHnds.Merge(_hnds);
 
                         _hnds = oldHnds;
                     }

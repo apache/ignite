@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
 
             atomics.ForEach(x => Assert.AreEqual(5, x.Read()));
 
-            atomics[0].Add(5);
+            Assert.AreEqual(10, atomics[0].Add(5));
             atomics.ForEach(x => Assert.AreEqual(10, x.Read()));
         }
 
