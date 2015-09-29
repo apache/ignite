@@ -41,7 +41,7 @@ namespace Apache.Ignite.Benchmarks.Interop
         }
 
         /** <inheritDoc /> */
-        protected override void Descriptors(ICollection<BenchmarkOperationDescriptor> descs)
+        protected override void GetDescriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
             descs.Add(BenchmarkOperationDescriptor.Create("PutTx", PutTx, 1));
         }

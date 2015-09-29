@@ -21,12 +21,12 @@ namespace Apache.Ignite.Benchmarks.Interop
     using Apache.Ignite.Core.Compute;
 
     /// <summary>
-    /// 
+    /// Compute func benchmark.
     /// </summary>
     internal class ClosureBenchmark : PlatformBenchmarkBase
     {
         /** <inheritDoc /> */
-        protected override void Descriptors(ICollection<BenchmarkOperationDescriptor> descs)
+        protected override void GetDescriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
             descs.Add(BenchmarkOperationDescriptor.Create("ExecuteClosureTask", ExecuteClosureTask, 1));
         }
@@ -40,16 +40,24 @@ namespace Apache.Ignite.Benchmarks.Interop
         }
     }
 
+    /// <summary>
+    /// Compute func.
+    /// </summary>
     public class MyClosure : IComputeFunc<int>
     {
         /** */
         private readonly string _s;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MyClosure"/> class.
+        /// </summary>
+        /// <param name="s">The s.</param>
         public MyClosure(string s)
         {
             _s = s;
         }
 
+        /** <inheritdoc /> */
         public int Invoke()
         {
             return _s.Length;

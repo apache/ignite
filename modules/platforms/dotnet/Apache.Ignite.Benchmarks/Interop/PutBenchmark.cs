@@ -21,7 +21,7 @@ namespace Apache.Ignite.Benchmarks.Interop
     using Apache.Ignite.Core.Cache;
 
     /// <summary>
-    /// 
+    /// Cache put benchmark.
     /// </summary>
     internal class PutBenchmark : PlatformBenchmarkBase
     {
@@ -40,7 +40,7 @@ namespace Apache.Ignite.Benchmarks.Interop
         }
 
         /** <inheritDoc /> */
-        protected override void Descriptors(ICollection<BenchmarkOperationDescriptor> descs)
+        protected override void GetDescriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
             descs.Add(BenchmarkOperationDescriptor.Create("Put", Put, 1));
         }

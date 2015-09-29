@@ -55,7 +55,7 @@ namespace Apache.Ignite.Benchmarks.Portable
         /// Populate descriptors.
         /// </summary>
         /// <param name="descs">Descriptors.</param>
-        protected override void Descriptors(ICollection<BenchmarkOperationDescriptor> descs)
+        protected override void GetDescriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
             descs.Add(BenchmarkOperationDescriptor.Create("WriteAddress", WriteAddress, 1));
         }

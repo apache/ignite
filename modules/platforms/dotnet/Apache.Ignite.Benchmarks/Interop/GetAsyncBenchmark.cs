@@ -22,7 +22,7 @@ namespace Apache.Ignite.Benchmarks.Interop
     using Apache.Ignite.Core.Cache;
 
     /// <summary>
-    /// 
+    /// Async Get benchmark.
     /// </summary>
     internal class GetAsyncBenchmark : PlatformBenchmarkBase
     {
@@ -46,7 +46,7 @@ namespace Apache.Ignite.Benchmarks.Interop
         }
 
         /** <inheritDoc /> */
-        protected override void Descriptors(ICollection<BenchmarkOperationDescriptor> descs)
+        protected override void GetDescriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
             descs.Add(BenchmarkOperationDescriptor.Create("GetAsync", GetAsync, 1));
         }

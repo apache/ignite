@@ -21,7 +21,7 @@ namespace Apache.Ignite.Benchmarks.Interop
     using Apache.Ignite.Core.Cache;
 
     /// <summary>
-    /// 
+    /// Async Put benchmark.
     /// </summary>
     internal class PutAsyncBenchmark : PlatformBenchmarkBase
     {
@@ -40,7 +40,7 @@ namespace Apache.Ignite.Benchmarks.Interop
         }
 
         /** <inheritDoc /> */
-        protected override void Descriptors(ICollection<BenchmarkOperationDescriptor> descs)
+        protected override void GetDescriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
             descs.Add(BenchmarkOperationDescriptor.Create("PutAsync", PutAsync, 1));
         }

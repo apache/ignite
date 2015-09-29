@@ -128,7 +128,7 @@ namespace Apache.Ignite.Benchmarks
             {
                 _descs = new List<BenchmarkOperationDescriptor>();
 
-                Descriptors(_descs);
+                GetDescriptors(_descs);
 
                 if (_descs.Count == 0)
                     throw new Exception("No tasks provided for benchmark.");
@@ -381,7 +381,7 @@ namespace Apache.Ignite.Benchmarks
         /// Add operation descriptors.
         /// </summary>
         /// <param name="descs">Collection where operation descriptors must be added.</param>
-        protected abstract void Descriptors(ICollection<BenchmarkOperationDescriptor> descs);
+        protected abstract void GetDescriptors(ICollection<BenchmarkOperationDescriptor> descs);
 
         /// <summary>
         /// Invoked when single thread is ready to actual execution.

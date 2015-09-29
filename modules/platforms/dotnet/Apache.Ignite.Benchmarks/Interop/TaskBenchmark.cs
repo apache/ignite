@@ -22,12 +22,12 @@ namespace Apache.Ignite.Benchmarks.Interop
     using Apache.Ignite.Core.Compute;
 
     /// <summary>
-    ///
+    /// Compute task benchmark.
     /// </summary>
     internal class TaskBenchmark : PlatformBenchmarkBase
     {
         /** <inheritDoc /> */
-        protected override void Descriptors(ICollection<BenchmarkOperationDescriptor> descs)
+        protected override void GetDescriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
             descs.Add(BenchmarkOperationDescriptor.Create("ExecuteEmptyTask", ExecuteEmptyTask, 1));
         }
@@ -42,16 +42,11 @@ namespace Apache.Ignite.Benchmarks.Interop
     }
 
     /// <summary>
-    ///
+    /// Compute task.
     /// </summary>
     public class MyEmptyTask : IComputeTask<object, object, object>
     {
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="subgrid"></param>
-        /// <param name="arg"></param>
-        /// <returns></returns>
+        /** <inheritDoc /> */
         public IDictionary<IComputeJob<object>, IClusterNode> Map(IList<IClusterNode> subgrid, object arg)
         {
             return new Dictionary<IComputeJob<object>, IClusterNode>
@@ -60,22 +55,13 @@ namespace Apache.Ignite.Benchmarks.Interop
             };
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="res"></param>
-        /// <param name="rcvd"></param>
-        /// <returns></returns>
+        /** <inheritDoc /> */
         public ComputeJobResultPolicy Result(IComputeJobResult<object> res, IList<IComputeJobResult<object>> rcvd)
         {
             return ComputeJobResultPolicy.Wait;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="results"></param>
-        /// <returns></returns>
+        /** <inheritDoc /> */
         public object Reduce(IList<IComputeJobResult<object>> results)
         {
             return results.Count == 0 ? null : results[0];
@@ -83,30 +69,29 @@ namespace Apache.Ignite.Benchmarks.Interop
     }
 
     /// <summary>
-    ///
+    /// Compute job.
     /// </summary>
     public class MyJob : IComputeJob<object>
     {
         /** */
         private readonly string _s;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MyJob"/> class.
+        /// </summary>
+        /// <param name="s">The s.</param>
         public MyJob(string s)
         {
             _s = s;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <returns></returns>
+        /** <inheritDoc /> */
         public object Execute()
         {
             return _s.Length;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
+        /** <inheritDoc /> */
         public void Cancel()
         {
             // No-op.
