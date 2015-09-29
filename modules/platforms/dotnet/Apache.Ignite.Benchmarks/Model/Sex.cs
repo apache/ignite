@@ -23,9 +23,9 @@ namespace Apache.Ignite.Benchmarks.Model
     public enum Sex
     {
         /** Male. */
-        MALE, 
+        Male, 
         
         /** Female. */
-        FEMALE
+        Female
     }
 }

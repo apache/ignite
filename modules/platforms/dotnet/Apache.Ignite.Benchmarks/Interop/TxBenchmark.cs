@@ -27,17 +27,17 @@ namespace Apache.Ignite.Benchmarks.Interop
     internal class TxBenchmark : PlatformBenchmarkBase
     {
         /** Cache name. */
-        private const string CACHE_NAME = "cache_tx";
+        private const string CacheName = "cache_tx";
 
         /** Native cache wrapper. */
-        private ICache<object, object> cache;
+        private ICache<object, object> _cache;
 
         /** <inheritDoc /> */
         protected override void OnStarted()
         {
             base.OnStarted();
 
-            cache = node.GetCache<object, object>(CACHE_NAME);
+            _cache = Node.GetCache<object, object>(CacheName);
         }
 
         /** <inheritDoc /> */
@@ -53,10 +53,10 @@ namespace Apache.Ignite.Benchmarks.Interop
         {
             int idx = BenchmarkUtils.RandomInt(Dataset);
 
-            using (var tx = node.GetTransactions().TxStart(TransactionConcurrency.Pessimistic,
+            using (var tx = Node.GetTransactions().TxStart(TransactionConcurrency.Pessimistic,
                 TransactionIsolation.RepeatableRead))
             {
-                cache.Put(idx, emps[idx]);
+                _cache.Put(idx, Emps[idx]);
 
                 tx.Commit();
             }

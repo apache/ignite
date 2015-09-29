@@ -36,23 +36,23 @@ namespace Apache.Ignite.Benchmarks.Interop
         /// </summary>
         private void ExecuteClosureTask(BenchmarkState state)
         {
-            node.GetCompute().Call(new MyClosure("zzzz"));
+            Node.GetCompute().Call(new MyClosure("zzzz"));
         }
     }
 
     public class MyClosure : IComputeFunc<int>
     {
         /** */
-        private readonly string s;
+        private readonly string _s;
 
         public MyClosure(string s)
         {
-            this.s = s;
+            this._s = s;
         }
 
         public int Invoke()
         {
-            return s.Length;
+            return _s.Length;
         }
     }
 }

@@ -28,28 +28,28 @@ namespace Apache.Ignite.Benchmarks.Result
     internal class BenchmarkConsoleResultWriter : IBenchmarkResultWriter
     {
         /** Cached culture. */
-        private static readonly CultureInfo CULTURE = new CultureInfo("en-US");
+        private static readonly CultureInfo Culture = new CultureInfo("en-US");
 
         /** Benchmark. */
-        private volatile BenchmarkBase benchmark;
+        private volatile BenchmarkBase _benchmark;
 
         /** <inheritdoc/> */
         public void Initialize(BenchmarkBase benchmark, ICollection<string> opNames)
         {
-            this.benchmark = benchmark;
+            this._benchmark = benchmark;
         }
 
         /** <inheritdoc/> */
-        public void WriteThroughput(string opName, long dur, long cnt)
+        public void WriteThroughput(string opName, long duration, long opCount)
         {
-            cnt = cnt * benchmark.BatchSize;
+            opCount = opCount * _benchmark.BatchSize;
 
-            double durSec = (double)dur / Stopwatch.Frequency;
+            double durSec = (double)duration / Stopwatch.Frequency;
 
-            Console.WriteLine(opName + ": operations=" + cnt
-                + ", duration=" + durSec.ToString("F2", CULTURE) + "s"
-                + ", throughput=" + (cnt / durSec) + " (op/s)"
-                + ", latency=" + (durSec * 1000 / cnt).ToString("F3", CULTURE) + "ms"
+            Console.WriteLine(opName + ": operations=" + opCount
+                + ", duration=" + durSec.ToString("F2", Culture) + "s"
+                + ", throughput=" + (opCount / durSec) + " (op/s)"
+                + ", latency=" + (durSec * 1000 / opCount).ToString("F3", Culture) + "ms"
                 );
         }
 

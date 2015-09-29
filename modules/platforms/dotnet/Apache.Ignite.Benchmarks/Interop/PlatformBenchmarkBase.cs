@@ -28,33 +28,33 @@ namespace Apache.Ignite.Benchmarks.Interop
     internal abstract class PlatformBenchmarkBase : BenchmarkBase
     {
         /** Default dataset. */
-        private const int DFLT_DATASET = 100000;
+        private const int DfltDataset = 100000;
 
         /** Default payload. */
-        private const int DFLT_PAYLOAD = 128;
+        private const int DfltPayload = 128;
 
         /** Native node. */
-        protected IIgnite node;
+        protected IIgnite Node;
 
         /** Employees. */
-        protected Employee[] emps;
+        protected Employee[] Emps;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         protected PlatformBenchmarkBase()
         {
-            Dataset = DFLT_DATASET;
-            Payload = DFLT_PAYLOAD;
+            Dataset = DfltDataset;
+            Payload = DfltPayload;
         }
 
         /** <inheritDoc /> */
         protected override void OnStarted()
         {
-            emps = new Employee[Dataset];
+            Emps = new Employee[Dataset];
 
-            for (int i = 0; i < emps.Length; i++)
-                emps[i] = BenchmarkUtils.RandomEmployee(Payload);
+            for (int i = 0; i < Emps.Length; i++)
+                Emps[i] = BenchmarkUtils.RandomEmployee(Payload);
 
             IgniteConfiguration cfg = new IgniteConfiguration
             {
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Benchmarks.Interop
                 SpringConfigUrl = ConfigPath
             };
 
-            node = Ignition.Start(cfg);
+            Node = Ignition.Start(cfg);
         }
 
         /// <summary>

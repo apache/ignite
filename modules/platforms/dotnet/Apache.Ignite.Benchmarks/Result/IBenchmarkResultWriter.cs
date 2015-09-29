@@ -27,18 +27,17 @@ namespace Apache.Ignite.Benchmarks.Result
         /// <summary>
         /// Initialize writer.
         /// </summary>
-        /// <param name="ctx">Benchmark.</param>
+        /// <param name="benchmark">Benchmark.</param>
         /// <param name="opNames">Operation names.</param>
         void Initialize(BenchmarkBase benchmark, ICollection<string> opNames);
 
         /// <summary>
         /// Write throughput results.
         /// </summary>
-        /// <param name="opName">Opeartion name.</param>
-        /// <param name="threadCnt">Thread count.</param>
-        /// <param name="dur">Duration.</param>
-        /// <param name="cnt">Operations count.</param>
-        void WriteThroughput(string opName, long dur, long cnt);
+        /// <param name="opName">Operation name.</param>
+        /// <param name="duration">Duration.</param>
+        /// <param name="opCount">Operations count.</param>
+        void WriteThroughput(string opName, long duration, long opCount);
 
         /// <summary>
         /// Write percentile results.

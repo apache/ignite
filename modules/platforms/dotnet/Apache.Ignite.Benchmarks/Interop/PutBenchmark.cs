@@ -26,17 +26,17 @@ namespace Apache.Ignite.Benchmarks.Interop
     internal class PutBenchmark : PlatformBenchmarkBase
     {
         /** Cache name. */
-        private const string CACHE_NAME = "cache";
+        private const string CacheName = "cache";
 
         /** Native cache wrapper. */
-        private ICache<object, object> cache;
+        private ICache<object, object> _cache;
 
         /** <inheritDoc /> */
         protected override void OnStarted()
         {
             base.OnStarted();
 
-            cache = node.GetCache<object, object>(CACHE_NAME);
+            _cache = Node.GetCache<object, object>(CacheName);
         }
 
         /** <inheritDoc /> */
@@ -52,7 +52,7 @@ namespace Apache.Ignite.Benchmarks.Interop
         {
             int idx = BenchmarkUtils.RandomInt(Dataset);
 
-            cache.Put(idx, emps[idx]);
+            _cache.Put(idx, Emps[idx]);
 
             //object res = cache.Get(idx);
 

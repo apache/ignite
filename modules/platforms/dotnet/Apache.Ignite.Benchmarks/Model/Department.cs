@@ -23,18 +23,18 @@ namespace Apache.Ignite.Benchmarks.Model
     public enum Department
     {
         /** PR. */
-        PR, 
+        Pr, 
         
         /** Sales. */
-        SALES, 
+        Sales, 
         
         /** Development. */
-        DEVELOPMENT, 
+        Development, 
         
         /** Engineering. */
-        ENGINEERING, 
+        Engineering, 
         
         /** Nose scrunches. */
-        NOSE_SCRUNCHES
+        NoseScrunches
     }
 }

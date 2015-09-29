@@ -37,7 +37,7 @@ namespace Apache.Ignite.Benchmarks.Interop
         /// </summary>
         private void ExecuteEmptyTask(BenchmarkState state)
         {
-            node.GetCompute().Execute(new MyEmptyTask(), "zzzz");
+            Node.GetCompute().Execute(new MyEmptyTask(), "zzzz");
         }
     }
 
@@ -88,11 +88,11 @@ namespace Apache.Ignite.Benchmarks.Interop
     public class MyJob : IComputeJob<object>
     {
         /** */
-        private readonly string s;
+        private readonly string _s;
 
         public MyJob(string s)
         {
-            this.s = s;
+            this._s = s;
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace Apache.Ignite.Benchmarks.Interop
         /// <returns></returns>
         public object Execute()
         {
-            return s.Length;
+            return _s.Length;
         }
 
         /// <summary>

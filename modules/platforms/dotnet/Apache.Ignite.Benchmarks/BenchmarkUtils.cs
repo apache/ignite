@@ -29,40 +29,40 @@ namespace Apache.Ignite.Benchmarks
     internal static class BenchmarkUtils
     {
         /** Property binding flags. */
-        public static BindingFlags PROP_FLAGS = BindingFlags.Instance | BindingFlags.Public;
+        public static BindingFlags PropFlags = BindingFlags.Instance | BindingFlags.Public;
 
         /** Thread-local random. */
-        private static readonly ThreadLocal<Random> RAND;
+        private static readonly ThreadLocal<Random> Rand;
 
         /** Cached ANSI chcracters. */
-        private static readonly char[] CHARS;
+        private static readonly char[] Chars;
 
         /** Seed to randoms. */
-        private static int SEED_CTR;
+        private static int _seedCtr;
 
         /// <summary>
         /// Static initializer.
         /// </summary>
         static BenchmarkUtils()
         {
-            RAND = new ThreadLocal<Random>(() => {
-                int seed = Interlocked.Add(ref SEED_CTR, 100);
+            Rand = new ThreadLocal<Random>(() => {
+                int seed = Interlocked.Add(ref _seedCtr, 100);
 
                 return new Random(seed); 
             });
 
-            CHARS = new char[10 + 26 + 26];
+            Chars = new char[10 + 26 + 26];
 
             int pos = 0;
 
             for (char i = '0'; i < '0' + 10; i++)
-                CHARS[pos++] = i;
+                Chars[pos++] = i;
 
             for (char i = 'A'; i < 'A' + 26; i++)
-                CHARS[pos++] = i;
+                Chars[pos++] = i;
 
             for (char i = 'a'; i < 'a' + 26; i++)
-                CHARS[pos++] = i;
+                Chars[pos++] = i;
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Benchmarks
         /// <returns></returns>
         public static int RandomInt(int min, int max)
         {
-            return RAND.Value.Next(min, max);
+            return Rand.Value.Next(min, max);
         }
 
         /// <summary>
@@ -93,12 +93,12 @@ namespace Apache.Ignite.Benchmarks
         /// <returns>String.</returns>
         public static string RandomString(int len)
         {
-            Random rand = RAND.Value;
+            Random rand = Rand.Value;
 
             StringBuilder sb = new StringBuilder();
 
             for (int i = 0; i < len; i++)
-                sb.Append(CHARS[rand.Next(CHARS.Length)]);
+                sb.Append(Chars[rand.Next(Chars.Length)]);
 
             return sb.ToString();
         }
@@ -159,7 +159,7 @@ namespace Apache.Ignite.Benchmarks
         /// <returns>Properties.</returns>
         public static PropertyInfo[] ListProperties(object obj)
         {
-            return obj.GetType().GetProperties(PROP_FLAGS);
+            return obj.GetType().GetProperties(PropFlags);
         }
 
         /// <summary>

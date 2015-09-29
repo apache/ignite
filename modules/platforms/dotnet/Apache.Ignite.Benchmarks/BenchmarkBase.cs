@@ -31,79 +31,79 @@ namespace Apache.Ignite.Benchmarks
     internal abstract class BenchmarkBase
     {
         /** Result writer type: console. */
-        protected const string RES_WRITER_CONSOLE = "console";
+        protected const string ResWriterConsole = "console";
 
         /** Result writer type: file. */
-        protected const string RES_WRITER_FILE = "file";
+        protected const string ResWriterFile = "file";
 
         /** Default duration. */
-        private const int DFLT_DUR = 60;
+        private const int DfltDur = 60;
 
         /** Default maximum errors count. */
-        private const int DFLT_MAX_ERRS = 100;
+        private const int DfltMaxErrs = 100;
 
         /** Default percentile result buckets count. */
-        private const int DFLT_RES_BUCKET_CNT = 10000;
+        private const int DfltResBucketCnt = 10000;
 
         /** Default percentile result bucket interval. */
-        private const int DFLT_RES_BUCKET_INTERVAL = 100;
+        private const int DfltResBucketInterval = 100;
 
         /** Default batch size. */
-        private const int DFLT_BATCH_SIZE = 1;
+        private const int DfltBatchSize = 1;
 
         /** Default result wrier. */
-        private const string DFLT_RES_WRITER = RES_WRITER_CONSOLE;
+        private const string DfltResWriter = ResWriterConsole;
 
         /** Start flag. */
-        private volatile bool start;
+        private volatile bool _start;
 
         /** Stop flag. */
-        private volatile bool stop;
+        private volatile bool _stop;
 
         /** Warmup flag. */
-        private volatile bool warmup = true;
+        private volatile bool _warmup = true;
 
         /** Ready threads. */
-        private int readyThreads;
+        private int _readyThreads;
 
         /** Finished threads. */
-        private volatile int finishedThreads;
+        private volatile int _finishedThreads;
 
         /** Descriptors. */
-        private volatile ICollection<BenchmarkOperationDescriptor> descs;
+        private volatile ICollection<BenchmarkOperationDescriptor> _descs;
 
         /** Benchmark tasks. */
-        private volatile ICollection<BenchmarkTask> tasks;
+        private volatile ICollection<BenchmarkTask> _tasks;
 
         /** Percentile results. */
-        private volatile IDictionary<string, long[]> percentiles;
+        private volatile IDictionary<string, long[]> _percentiles;
 
         /** Currently completed operations. */
-        private long curOps;
+        private long _curOps;
 
         /** Error count. */
-        private long errs;
+        private long _errs;
 
         /** Watches to count total execution time. */
-        private readonly Stopwatch totalWatch = new Stopwatch();
+        private readonly Stopwatch _totalWatch = new Stopwatch();
 
         /** Warmup barrier. */
-        private Barrier barrier;
+        private Barrier _barrier;
 
         /** Benchmark result writer. */
-        private IBenchmarkResultWriter writer;
+        private IBenchmarkResultWriter _writer;
 
         /// <summary>
         /// Default constructor.
         /// </summary>
         protected BenchmarkBase()
         {
-            Duration = DFLT_DUR;
-            MaxErrors = DFLT_MAX_ERRS;
-            ResultBucketCount = DFLT_RES_BUCKET_CNT;
-            ResultBucketInterval = DFLT_RES_BUCKET_INTERVAL;
-            BatchSize = DFLT_BATCH_SIZE;
-            ResultWriter = DFLT_RES_WRITER;
+            Duration = DfltDur;
+            MaxErrors = DfltMaxErrs;
+            ResultBucketCount = DfltResBucketCnt;
+            ResultBucketInterval = DfltResBucketInterval;
+            BatchSize = DfltBatchSize;
+            ResultWriter = DfltResWriter;
         }
 
         /// <summary>
@@ -115,10 +115,10 @@ namespace Apache.Ignite.Benchmarks
 
             ValidateArguments();
 
-            if (ResultWriter.ToLower().Equals(RES_WRITER_CONSOLE))
-                writer = new BenchmarkConsoleResultWriter();
+            if (ResultWriter.ToLower().Equals(ResWriterConsole))
+                _writer = new BenchmarkConsoleResultWriter();
             else
-                writer = new BenchmarkFileResultWriter();
+                _writer = new BenchmarkFileResultWriter();
 
             OnStarted();
 
@@ -126,17 +126,17 @@ namespace Apache.Ignite.Benchmarks
 
             try
             {
-                descs = new List<BenchmarkOperationDescriptor>();
+                _descs = new List<BenchmarkOperationDescriptor>();
 
-                Descriptors(descs);
+                Descriptors(_descs);
 
-                if (descs.Count == 0)
+                if (_descs.Count == 0)
                     throw new Exception("No tasks provided for benchmark.");
 
                 // Initialize writer.
-                ICollection<string> opNames = new List<string>(descs.Count);
+                ICollection<string> opNames = new List<string>(_descs.Count);
 
-                foreach (BenchmarkOperationDescriptor desc in descs)
+                foreach (BenchmarkOperationDescriptor desc in _descs)
                     opNames.Add(desc.Name);
 
                 PrintDebug(() =>
@@ -149,20 +149,20 @@ namespace Apache.Ignite.Benchmarks
                     return sb.ToString();
                 });
 
-                writer.Initialize(this, opNames);
+                _writer.Initialize(this, opNames);
 
                 PrintDebug("Initialized result writer.");
 
                 // Start worker threads.
-                tasks = new List<BenchmarkTask>(Threads);
+                _tasks = new List<BenchmarkTask>(Threads);
 
                 PrintDebug("Starting worker threads: " + Threads);
 
                 for (int i = 0; i < Threads; i++)
                 {
-                    BenchmarkTask task = new BenchmarkTask(this, descs);
+                    BenchmarkTask task = new BenchmarkTask(this, _descs);
 
-                    tasks.Add(task);
+                    _tasks.Add(task);
 
                     new Thread(task.Run).Start();
                 }
@@ -170,7 +170,7 @@ namespace Apache.Ignite.Benchmarks
                 PrintDebug("Waiting worker threads to start: " + Threads);
 
                 // Await for all threads to start in spin loop.
-                while (Thread.VolatileRead(ref readyThreads) < Threads)
+                while (Thread.VolatileRead(ref _readyThreads) < Threads)
                     Thread.Sleep(10);
 
                 PrintDebug("Worker threads started: " + Threads);
@@ -196,13 +196,13 @@ namespace Apache.Ignite.Benchmarks
                     PrintDebug("Started warmup timeout thread: " + Warmup);
                 }
                 else
-                    this.warmup = false;
+                    this._warmup = false;
 
-                barrier = new Barrier(Threads, (b) =>
+                _barrier = new Barrier(Threads, (b) =>
                 {
                     Console.WriteLine("Warmup finished.");
 
-                    totalWatch.Start();
+                    _totalWatch.Start();
                 });
 
                 // Start timeout thread if needed.
@@ -224,7 +224,7 @@ namespace Apache.Ignite.Benchmarks
                 }
 
                 // Let workers start execution.
-                start = true;
+                _start = true;
 
                 // Await workers completion.
                 PrintDebug("Awaiting worker threads completion.");
@@ -233,7 +233,7 @@ namespace Apache.Ignite.Benchmarks
 
                 try
                 {
-                    while (finishedThreads < Threads)
+                    while (_finishedThreads < Threads)
                         Monitor.Wait(this);
                 }
                 finally
@@ -247,23 +247,23 @@ namespace Apache.Ignite.Benchmarks
             {
                 OnFinished();
 
-                totalWatch.Stop();
+                _totalWatch.Stop();
 
                 PrintDebug("Tear down invoked.");
 
                 if (PrintThroughputInfo())
                 {
-                    long avgThroughput = totalWatch.ElapsedMilliseconds == 0
+                    long avgThroughput = _totalWatch.ElapsedMilliseconds == 0
                         ? 0
-                        : this.curOps*1000/totalWatch.ElapsedMilliseconds;
+                        : this._curOps*1000/_totalWatch.ElapsedMilliseconds;
 
-                    double avgLatency = this.curOps == 0
+                    double avgLatency = this._curOps == 0
                         ? 0
-                        : (double) totalWatch.ElapsedMilliseconds*Threads/this.curOps;
+                        : (double) _totalWatch.ElapsedMilliseconds*Threads/this._curOps;
 
                     Console.WriteLine("Finishing benchmark [name=" + GetType().Name +
-                                      ", time=" + totalWatch.ElapsedMilliseconds +
-                                      "ms, ops=" + this.curOps +
+                                      ", time=" + _totalWatch.ElapsedMilliseconds +
+                                      "ms, ops=" + this._curOps +
                                       ", threads=" + Threads +
                                       ", avgThroughput=" + avgThroughput +
                                       ", avgLatency=" + String.Format("{0:0.000}ms", avgLatency) + ']');
@@ -271,24 +271,24 @@ namespace Apache.Ignite.Benchmarks
                 else
                 {
                     Console.WriteLine("Finishing benchmark [name=" + GetType().Name +
-                                      ", time=" + totalWatch.ElapsedMilliseconds +
+                                      ", time=" + _totalWatch.ElapsedMilliseconds +
                                       "ms, ops=" + Operations +
                                       ", threads=" + Threads + ']');
                 }
             }
 
-            percentiles = new Dictionary<string, long[]>(descs.Count);
+            _percentiles = new Dictionary<string, long[]>(_descs.Count);
 
-            foreach (BenchmarkOperationDescriptor desc in descs)
-                percentiles[desc.Name] = new long[ResultBucketCount];
+            foreach (BenchmarkOperationDescriptor desc in _descs)
+                _percentiles[desc.Name] = new long[ResultBucketCount];
 
-            foreach (BenchmarkTask task in tasks)
-                task.CollectPercentiles(percentiles);
+            foreach (BenchmarkTask task in _tasks)
+                task.CollectPercentiles(_percentiles);
 
-            foreach (KeyValuePair<string, long[]> percentile in percentiles)
-                writer.WritePercentiles(percentile.Key, ResultBucketInterval, percentile.Value);
+            foreach (KeyValuePair<string, long[]> percentile in _percentiles)
+                _writer.WritePercentiles(percentile.Key, ResultBucketInterval, percentile.Value);
 
-            writer.Commit();
+            _writer.Commit();
 
             PrintDebug("Results committed to output writer.");
         }
@@ -403,7 +403,7 @@ namespace Apache.Ignite.Benchmarks
         /// </summary>
         private void OnThreadReady()
         {
-            Interlocked.Increment(ref readyThreads);
+            Interlocked.Increment(ref _readyThreads);
         }
 
         /// <summary>
@@ -415,7 +415,7 @@ namespace Apache.Ignite.Benchmarks
 
             try
             {
-                finishedThreads++;
+                _finishedThreads++;
 
                 Monitor.PulseAll(this);
             }
@@ -449,11 +449,11 @@ namespace Apache.Ignite.Benchmarks
                 if (MaxErrors < 0)
                     throw new Exception("MaxErrors cannot be negative: " + MaxErrors);
 
-                if (ResultWriter == null || !ResultWriter.ToLower().Equals(RES_WRITER_CONSOLE)
-                    && !ResultWriter.ToLower().Equals(RES_WRITER_FILE))
+                if (ResultWriter == null || !ResultWriter.ToLower().Equals(ResWriterConsole)
+                    && !ResultWriter.ToLower().Equals(ResWriterFile))
                     throw new Exception("Invalid ResultWriter: " + ResultWriter);
 
-                if (ResultWriter.ToLower().Equals(RES_WRITER_FILE) && ResultFolder == null)
+                if (ResultWriter.ToLower().Equals(ResWriterFile) && ResultFolder == null)
                     throw new Exception("ResultFolder must be set for file result writer.");
 
                 if (ResultBucketCount <= 0)
@@ -470,12 +470,12 @@ namespace Apache.Ignite.Benchmarks
         /// <returns>Current throughput.</returns>
         private IDictionary<string, Tuple<long, long>> CurrentThroughput()
         {
-            IDictionary<string, Tuple<long, long>> total = new Dictionary<string, Tuple<long, long>>(descs.Count);
+            IDictionary<string, Tuple<long, long>> total = new Dictionary<string, Tuple<long, long>>(_descs.Count);
 
-            foreach (BenchmarkOperationDescriptor desc in descs)
+            foreach (BenchmarkOperationDescriptor desc in _descs)
                 total[desc.Name] = new Tuple<long, long>(0, 0);
 
-            foreach (BenchmarkTask task in tasks)
+            foreach (BenchmarkTask task in _tasks)
                 task.CollectThroughput(total);
 
             return total;
@@ -571,22 +571,22 @@ namespace Apache.Ignite.Benchmarks
         private class BenchmarkTask
         {
             /** Benchmark. */
-            private readonly BenchmarkBase benchmark;
+            private readonly BenchmarkBase _benchmark;
 
             /** Descriptors. */
-            private BenchmarkOperationDescriptor[] descs;
+            private BenchmarkOperationDescriptor[] _descs;
 
             /** Results. */
-            private readonly IDictionary<string, Result> results;
+            private readonly IDictionary<string, Result> _results;
 
             /** Stop watch. */
-            private readonly Stopwatch watch = new Stopwatch();
+            private readonly Stopwatch _watch = new Stopwatch();
 
             /** Benchmark state. */
-            private readonly BenchmarkState state;
+            private readonly BenchmarkState _state;
 
             /** Thread ID. */
-            public volatile int threadId;
+            public volatile int ThreadId;
 
             /// <summary>
             /// Constructor.
@@ -595,11 +595,11 @@ namespace Apache.Ignite.Benchmarks
             public BenchmarkTask(BenchmarkBase benchmark,
                 ICollection<BenchmarkOperationDescriptor> descList)
             {
-                this.benchmark = benchmark;
+                this._benchmark = benchmark;
 
-                state = new BenchmarkState();
+                _state = new BenchmarkState();
 
-                results = new Dictionary<string, Result>(descList.Count);
+                _results = new Dictionary<string, Result>(descList.Count);
 
                 int totalWeight = 0;
 
@@ -610,19 +610,19 @@ namespace Apache.Ignite.Benchmarks
 
                 foreach (BenchmarkOperationDescriptor desc in descList)
                 {
-                    results[desc.Name] = new Result(benchmark.ResultBucketCount, ticksPerSlot);
+                    _results[desc.Name] = new Result(benchmark.ResultBucketCount, ticksPerSlot);
 
                     totalWeight += desc.Weight;
                 }
 
-                descs = new BenchmarkOperationDescriptor[totalWeight];
+                _descs = new BenchmarkOperationDescriptor[totalWeight];
 
                 int idx = 0;
 
                 foreach (BenchmarkOperationDescriptor desc in descList)
                 {
                     for (int i = 0; i < desc.Weight; i++)
-                        descs[idx++] = desc;
+                        _descs[idx++] = desc;
                 }
             }
 
@@ -631,65 +631,65 @@ namespace Apache.Ignite.Benchmarks
             /// </summary>
             public void Run()
             {
-                threadId = Thread.CurrentThread.ManagedThreadId;
+                ThreadId = Thread.CurrentThread.ManagedThreadId;
 
                 try
                 {
-                    benchmark.OnThreadReady();
+                    _benchmark.OnThreadReady();
 
-                    benchmark.PrintDebug("Worker thread ready.");
+                    _benchmark.PrintDebug("Worker thread ready.");
 
-                    while (!benchmark.start)
+                    while (!_benchmark._start)
                         Thread.Sleep(10);
 
-                    benchmark.PrintDebug("Worker thread started benchmark execution.");
+                    _benchmark.PrintDebug("Worker thread started benchmark execution.");
 
                     bool warmupIteration = true;
 
                     long maxDur = 0;
 
-                    long maxOps = benchmark.Operations;
+                    long maxOps = _benchmark.Operations;
 
-                    while (!benchmark.stop)
+                    while (!_benchmark._stop)
                     {
-                        if (warmupIteration && !benchmark.warmup)
+                        if (warmupIteration && !_benchmark._warmup)
                         {
                             warmupIteration = false;
 
-                            benchmark.OnWarmupFinished();
+                            _benchmark.OnWarmupFinished();
 
-                            state.StopWarmup();
+                            _state.StopWarmup();
 
-                            benchmark.barrier.SignalAndWait();
+                            _benchmark._barrier.SignalAndWait();
                         }
 
                         if (!warmupIteration)
                         {
-                            if (maxOps > 0 && Interlocked.Read(ref benchmark.curOps) > maxOps)
+                            if (maxOps > 0 && Interlocked.Read(ref _benchmark._curOps) > maxOps)
                                 break;
                         }
 
-                        BenchmarkOperationDescriptor desc = descs.Length == 1
-                            ? descs[0]
-                            : descs[BenchmarkUtils.RandomInt(descs.Length)];
+                        BenchmarkOperationDescriptor desc = _descs.Length == 1
+                            ? _descs[0]
+                            : _descs[BenchmarkUtils.RandomInt(_descs.Length)];
 
                         bool res = true;
 
-                        benchmark.OnBatchStarted(state);
+                        _benchmark.OnBatchStarted(_state);
 
-                        watch.Start();
+                        _watch.Start();
 
                         try
                         {
-                            for (int i = 0; i < benchmark.BatchSize; i++)
+                            for (int i = 0; i < _benchmark.BatchSize; i++)
                             {
-                                desc.Operation(state);
+                                desc.Operation(_state);
 
-                                state.IncrementCounter();
+                                _state.IncrementCounter();
                             }
 
                             if (!warmupIteration)
-                                Interlocked.Add(ref benchmark.curOps, benchmark.BatchSize);
+                                Interlocked.Add(ref _benchmark._curOps, _benchmark.BatchSize);
                         }
                         catch (Exception e)
                         {
@@ -697,13 +697,13 @@ namespace Apache.Ignite.Benchmarks
 
                             res = false;
 
-                            if (benchmark.MaxErrors > 0 &&
-                                Interlocked.Increment(ref benchmark.errs) > benchmark.MaxErrors)
+                            if (_benchmark.MaxErrors > 0 &&
+                                Interlocked.Increment(ref _benchmark._errs) > _benchmark.MaxErrors)
                             {
-                                lock (benchmark)
+                                lock (_benchmark)
                                 {
                                     Console.WriteLine("Benchmark is stopped due to too much errors: " +
-                                                      benchmark.MaxErrors);
+                                                      _benchmark.MaxErrors);
 
                                     Environment.Exit(-1);
                                 }
@@ -711,35 +711,35 @@ namespace Apache.Ignite.Benchmarks
                         }
                         finally
                         {
-                            watch.Stop();
+                            _watch.Stop();
 
-                            long curDur = watch.ElapsedTicks;
+                            long curDur = _watch.ElapsedTicks;
 
                             if (res)
-                                res = benchmark.OnBatchFinished(state, curDur);
+                                res = _benchmark.OnBatchFinished(_state, curDur);
 
-                            state.Reset();
+                            _state.Reset();
 
                             if (curDur > maxDur)
                             {
                                 maxDur = curDur;
 
-                                benchmark.PrintDebug("The longest execution [warmup=" + warmupIteration +
+                                _benchmark.PrintDebug("The longest execution [warmup=" + warmupIteration +
                                                      ", dur(nsec)=" + maxDur*1000000000/Stopwatch.Frequency + ']');
                             }
 
-                            watch.Reset();
+                            _watch.Reset();
 
                             if (!warmupIteration && res)
-                                results[desc.Name].Add(curDur);
+                                _results[desc.Name].Add(curDur);
                         }
                     }
                 }
                 finally
                 {
-                    benchmark.PrintDebug("Worker thread stopped.");
+                    _benchmark.PrintDebug("Worker thread stopped.");
 
-                    benchmark.OnThreadFinished();
+                    _benchmark.OnThreadFinished();
                 }
             }
 
@@ -749,12 +749,12 @@ namespace Apache.Ignite.Benchmarks
             /// <param name="total">Total result.</param>
             public void CollectThroughput(IDictionary<string, Tuple<long, long>> total)
             {
-                foreach (KeyValuePair<string, Result> result in results)
+                foreach (KeyValuePair<string, Result> result in _results)
                 {
                     Tuple<long, long> old = total[result.Key];
 
-                    total[result.Key] = new Tuple<long, long>(old.Item1 + result.Value.dur,
-                        old.Item2 + result.Value.cnt);
+                    total[result.Key] = new Tuple<long, long>(old.Item1 + result.Value.Dur,
+                        old.Item2 + result.Value.Cnt);
                 }
             }
 
@@ -764,12 +764,12 @@ namespace Apache.Ignite.Benchmarks
             /// <param name="total"></param>
             public void CollectPercentiles(IDictionary<string, long[]> total)
             {
-                foreach (KeyValuePair<string, Result> result in results)
+                foreach (KeyValuePair<string, Result> result in _results)
                 {
                     long[] arr = total[result.Key];
 
                     for (int i = 0; i < arr.Length; i++)
-                        arr[i] += result.Value.slots[i];
+                        arr[i] += result.Value.Slots[i];
                 }
             }
         }
@@ -780,10 +780,10 @@ namespace Apache.Ignite.Benchmarks
         private class TimeoutTask
         {
             /** Benchmark. */
-            private readonly BenchmarkBase benchmark;
+            private readonly BenchmarkBase _benchmark;
 
             /** Duration. */
-            private readonly long dur;
+            private readonly long _dur;
 
             /// <summary>
             /// Constructor.
@@ -792,8 +792,8 @@ namespace Apache.Ignite.Benchmarks
             /// <param name="dur">Duration.</param>
             public TimeoutTask(BenchmarkBase benchmark, long dur)
             {
-                this.benchmark = benchmark;
-                this.dur = dur;
+                this._benchmark = benchmark;
+                this._dur = dur;
             }
 
             /// <summary>
@@ -803,11 +803,11 @@ namespace Apache.Ignite.Benchmarks
             {
                 try
                 {
-                    Thread.Sleep(TimeSpan.FromSeconds(dur));
+                    Thread.Sleep(TimeSpan.FromSeconds(_dur));
                 }
                 finally
                 {
-                    benchmark.stop = true;
+                    _benchmark._stop = true;
                 }
             }
         }
@@ -818,10 +818,10 @@ namespace Apache.Ignite.Benchmarks
         private class WarmupTask
         {
             /** Benchmark. */
-            private readonly BenchmarkBase benchmark;
+            private readonly BenchmarkBase _benchmark;
 
             /** Duration. */
-            private readonly long dur;
+            private readonly long _dur;
 
             /// <summary>
             /// Constructor.
@@ -830,8 +830,8 @@ namespace Apache.Ignite.Benchmarks
             /// <param name="dur">Duration.</param>
             public WarmupTask(BenchmarkBase benchmark, long dur)
             {
-                this.benchmark = benchmark;
-                this.dur = dur;
+                this._benchmark = benchmark;
+                this._dur = dur;
             }
 
             /// <summary>
@@ -841,11 +841,11 @@ namespace Apache.Ignite.Benchmarks
             {
                 try
                 {
-                    Thread.Sleep(TimeSpan.FromSeconds(dur));
+                    Thread.Sleep(TimeSpan.FromSeconds(_dur));
                 }
                 finally
                 {
-                    benchmark.warmup = false;
+                    _benchmark._warmup = false;
                 }
             }
         }
@@ -856,10 +856,10 @@ namespace Apache.Ignite.Benchmarks
         private class ThroughputTask
         {
             /** Benchmark. */
-            private readonly BenchmarkBase benchmark;
+            private readonly BenchmarkBase _benchmark;
 
             /** Last recorded result. */
-            private IDictionary<string, Tuple<long, long>> lastResults;
+            private IDictionary<string, Tuple<long, long>> _lastResults;
 
             /// <summary>
             /// Constructor.
@@ -867,35 +867,35 @@ namespace Apache.Ignite.Benchmarks
             /// <param name="benchmark">Benchmark.</param>
             public ThroughputTask(BenchmarkBase benchmark)
             {
-                this.benchmark = benchmark;
+                this._benchmark = benchmark;
             }
 
             public void Run()
             {
-                while (!benchmark.stop)
+                while (!_benchmark._stop)
                 {
                     Thread.Sleep(1000);
 
-                    if (benchmark.start && !benchmark.warmup)
+                    if (_benchmark._start && !_benchmark._warmup)
                     {
-                        IDictionary<string, Tuple<long, long>> results = benchmark.CurrentThroughput();
+                        IDictionary<string, Tuple<long, long>> results = _benchmark.CurrentThroughput();
 
-                        if (benchmark.finishedThreads > 0)
+                        if (_benchmark._finishedThreads > 0)
                             return; // Threads are stopping, do not collect any more.
 
                         foreach (KeyValuePair<string, Tuple<long, long>> pair in results)
                         {
                             Tuple<long, long> old;
 
-                            if (lastResults != null && lastResults.TryGetValue(pair.Key, out old))
-                                benchmark.writer.WriteThroughput(pair.Key, pair.Value.Item1 - old.Item1,
+                            if (_lastResults != null && _lastResults.TryGetValue(pair.Key, out old))
+                                _benchmark._writer.WriteThroughput(pair.Key, pair.Value.Item1 - old.Item1,
                                     pair.Value.Item2 - old.Item2);
                             else
-                                benchmark.writer.WriteThroughput(pair.Key, pair.Value.Item1,
+                                _benchmark._writer.WriteThroughput(pair.Key, pair.Value.Item1,
                                     pair.Value.Item2);
                         }
 
-                        lastResults = results;
+                        _lastResults = results;
                     }
                 }
             }
@@ -907,16 +907,16 @@ namespace Apache.Ignite.Benchmarks
         private class Result
         {
             /** Slots. */
-            public readonly long[] slots;
+            public readonly long[] Slots;
 
             /** Slot duration in ticks. */
-            private readonly long slotDur;
+            private readonly long _slotDur;
 
             /** Total operations count. */
-            public long cnt;
+            public long Cnt;
 
             /** Total duration. */
-            public long dur;
+            public long Dur;
 
             /// <summary>
             /// Constructor.
@@ -925,9 +925,9 @@ namespace Apache.Ignite.Benchmarks
             /// <param name="slotDur">Slot duration in ticks.</param>
             public Result(long slotCnt, long slotDur)
             {
-                slots = new long[slotCnt];
+                Slots = new long[slotCnt];
 
-                this.slotDur = slotDur;
+                this._slotDur = slotDur;
             }
 
             /// <summary>
@@ -936,15 +936,15 @@ namespace Apache.Ignite.Benchmarks
             /// <param name="curDur">Current duration in ticks.</param>
             public void Add(long curDur)
             {
-                int idx = (int) (curDur/slotDur);
+                int idx = (int) (curDur/_slotDur);
 
-                if (idx >= slots.Length)
-                    idx = slots.Length - 1;
+                if (idx >= Slots.Length)
+                    idx = Slots.Length - 1;
 
-                slots[idx] += 1;
+                Slots[idx] += 1;
 
-                cnt++;
-                dur += curDur;
+                Cnt++;
+                Dur += curDur;
             }
         }
     }

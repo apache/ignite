@@ -28,35 +28,35 @@ namespace Apache.Ignite.Benchmarks.Result
     internal class BenchmarkFileResultWriter : IBenchmarkResultWriter
     {
         /** Probe file name: percentile. */
-        private const string PROBE_PERCENTILE = "PercentileProbe.csv";
+        private const string ProbePercentile = "PercentileProbe.csv";
 
         /** Probe file name: throughput. */
-        private const string PROBE_THROUGHPUT = "ThroughputLatencyProbe.csv";
+        private const string ProbeThroughput = "ThroughputLatencyProbe.csv";
 
         /** File header: percentile probe. */
-        private const string HDR_PERCENTILE = "**\"Latency, microseconds\",\"Operations, %\"";
+        private const string HdrPercentile = "**\"Latency, microseconds\",\"Operations, %\"";
 
         /** File header: throughput probe. */
-        private const string HDR_THROUGHPUT = "**\"Time, sec\",\"Operations/sec (more is better)\",\"Latency, nsec (less is better)\"";
+        private const string HdrThroughput = "**\"Time, sec\",\"Operations/sec (more is better)\",\"Latency, nsec (less is better)\"";
 
         /** Cached culture. */
-        private static readonly CultureInfo CULTURE = new CultureInfo("en-US");
+        private static readonly CultureInfo Culture = new CultureInfo("en-US");
 
         /** Writer. */
-        private readonly Writer writer = new Writer();
+        private readonly Writer _writer = new Writer();
 
         /** Benchmarks. */
-        private volatile IDictionary<string, BenchmarkTask> benchmarks;
+        private volatile IDictionary<string, BenchmarkTask> _benchmarks;
 
         /** Amount of threads. */
-        private volatile int threadCnt;
+        private volatile int _threadCnt;
 
         /** <inheritdoc/> */
         public void Initialize(BenchmarkBase benchmark, ICollection<string> opNames)
         {
-            threadCnt = benchmark.Threads;
+            _threadCnt = benchmark.Threads;
 
-            benchmarks = new Dictionary<string, BenchmarkTask>(opNames.Count);
+            _benchmarks = new Dictionary<string, BenchmarkTask>(opNames.Count);
 
             // 1. Create folder for results.
             DateTime now = DateTime.Now;
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Benchmarks.Result
             String suffix = "-t=" + benchmark.Threads + "-d=" + benchmark.Duration +
                 "-w=" + benchmark.Warmup;
 
-            String path = benchmark.ResultFolder + "\\" + now.ToString("yyyyMMdd-HHmmss", CULTURE) + "-" +
+            String path = benchmark.ResultFolder + "\\" + now.ToString("yyyyMMdd-HHmmss", Culture) + "-" +
                 benchmark.GetType().Name + suffix;
 
             if (Directory.Exists(path))
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Benchmarks.Result
 
             Directory.CreateDirectory(path);
 
-            String dateStr = "--Created " + DateTime.Now.ToString("yyyyMMdd-HHmmss", CULTURE);
+            String dateStr = "--Created " + DateTime.Now.ToString("yyyyMMdd-HHmmss", Culture);
             String cfgStr = "--Benchmark config: " + benchmark;
 
             // 2. For each operation create separate folder and initialize probe files there.
@@ -83,41 +83,41 @@ namespace Apache.Ignite.Benchmarks.Result
 
                 Directory.CreateDirectory(opPath);
 
-                BenchmarkTask task = new BenchmarkTask(opPath + "\\" + PROBE_PERCENTILE,
-                    opPath + "\\" + PROBE_THROUGHPUT);
+                BenchmarkTask task = new BenchmarkTask(opPath + "\\" + ProbePercentile,
+                    opPath + "\\" + ProbeThroughput);
 
-                benchmarks[opName] = task;
+                _benchmarks[opName] = task;
 
                 File.AppendAllText(task.FilePercentile, dateStr + "\n");
                 File.AppendAllText(task.FilePercentile, cfgStr + "\n");
                 File.AppendAllText(task.FilePercentile, "--Description: " + opDesc + "\n");
                 File.AppendAllText(task.FilePercentile, "@@" + benchmark.GetType().Name + "\n");
-                File.AppendAllText(task.FilePercentile, HDR_PERCENTILE + "\n");
+                File.AppendAllText(task.FilePercentile, HdrPercentile + "\n");
 
                 File.AppendAllText(task.FileThroughput, dateStr + "\n");
                 File.AppendAllText(task.FileThroughput, cfgStr + "\n");
                 File.AppendAllText(task.FileThroughput, "--Description: " + opDesc + "\n");
                 File.AppendAllText(task.FileThroughput, "@@" + benchmark.GetType().Name + "\n");
-                File.AppendAllText(task.FileThroughput, HDR_THROUGHPUT + "\n");
+                File.AppendAllText(task.FileThroughput, HdrThroughput + "\n");
             }
 
             // 3. Start writer thread.
-            new Thread(writer.Run).Start();
+            new Thread(_writer.Run).Start();
         }
 
         /** <inheritdoc/> */
-        public void WriteThroughput(string opName, long dur, long cnt)
+        public void WriteThroughput(string opName, long duration, long opCount)
         {
-            BenchmarkTask benchmark = benchmarks[opName];
+            BenchmarkTask benchmark = _benchmarks[opName];
 
             if (!benchmark.FirstThroughput())
             {
                 int sec = benchmark.Counter();
 
-                float ops = (float)cnt;
-                float latency = (float)dur * 1000000000 / (cnt * Stopwatch.Frequency);
+                float ops = (float)opCount;
+                float latency = (float)duration * 1000000000 / (opCount * Stopwatch.Frequency);
 
-                string text = sec + "," + ops.ToString("F2", CULTURE) + "," + latency.ToString("F2", CULTURE);
+                string text = sec + "," + ops.ToString("F2", Culture) + "," + latency.ToString("F2", Culture);
 
                 Write0(benchmark.FileThroughput, text);
             }
@@ -126,7 +126,7 @@ namespace Apache.Ignite.Benchmarks.Result
         /** <inheritdoc/> */
         public void WritePercentiles(string opName, long interval, long[] slots)
         {
-            BenchmarkTask benchmark = benchmarks[opName];
+            BenchmarkTask benchmark = _benchmarks[opName];
 
             long total = 0;
 
@@ -139,7 +139,7 @@ namespace Apache.Ignite.Benchmarks.Result
             {
                 float val = (float)slot / total;
 
-                Write0(benchmark.FilePercentile, time + "," + val.ToString("F2", CULTURE));
+                Write0(benchmark.FilePercentile, time + "," + val.ToString("F2", Culture));
 
                 time += interval;
             }
@@ -148,9 +148,9 @@ namespace Apache.Ignite.Benchmarks.Result
         /** <inheritdoc/> */
         public void Commit()
         {
-            writer.Add(new StopTask().Run);
+            _writer.Add(new StopTask().Run);
 
-            writer.AwaitStop();
+            _writer.AwaitStop();
         }
 
         /// <summary>
@@ -160,7 +160,7 @@ namespace Apache.Ignite.Benchmarks.Result
         /// <param name="text">Text.</param>
         private void Write0(string path, string text)
         {
-            writer.Add(new WriteTask(path, text).Run);
+            _writer.Add(new WriteTask(path, text).Run);
         }
 
         /// <summary>
@@ -169,19 +169,19 @@ namespace Apache.Ignite.Benchmarks.Result
         private class Writer
         {
             /** Queue. */
-            private readonly BlockingCollection<Task> queue = new BlockingCollection<Task>();
+            private readonly BlockingCollection<Task> _queue = new BlockingCollection<Task>();
 
             /** Stop flag. */
-            private volatile bool stop;
+            private volatile bool _stop;
 
             /// <summary>
             /// Runner method.
             /// </summary>
             public void Run()
             {
-                while (!stop)
+                while (!_stop)
                 {
-                    Task task = queue.Take();
+                    Task task = _queue.Take();
 
                     task.Invoke(this);
                 }
@@ -193,7 +193,7 @@ namespace Apache.Ignite.Benchmarks.Result
             /// <param name="task">Task.</param>
             public void Add(Task task)
             {
-                queue.Add(task);
+                _queue.Add(task);
             }
 
             /// <summary>
@@ -203,7 +203,7 @@ namespace Apache.Ignite.Benchmarks.Result
             {
                 lock (this)
                 {
-                    stop = true;
+                    _stop = true;
 
                     Monitor.PulseAll(this);
                 }
@@ -217,7 +217,7 @@ namespace Apache.Ignite.Benchmarks.Result
             {
                 lock (this)
                 {
-                    while (!stop)
+                    while (!_stop)
                         Monitor.Wait(this);
                 }
             }
@@ -235,10 +235,10 @@ namespace Apache.Ignite.Benchmarks.Result
         private class WriteTask
         {
             /** File name. */
-            private readonly string fileName;
+            private readonly string _fileName;
 
             /** Text. */
-            private readonly string text;
+            private readonly string _text;
 
             /// <summary>
             /// Constructor.
@@ -247,8 +247,8 @@ namespace Apache.Ignite.Benchmarks.Result
             /// <param name="text">Text.</param>
             public WriteTask(string fileName, string text)
             {
-                this.fileName = fileName;
-                this.text = text;
+                this._fileName = fileName;
+                this._text = text;
             }
 
             /// <summary>
@@ -256,7 +256,7 @@ namespace Apache.Ignite.Benchmarks.Result
             /// </summary>
             public void Run(Writer writer)
             {
-                File.AppendAllText(fileName, text + "\n");
+                File.AppendAllText(_fileName, _text + "\n");
             }
         }
 
@@ -280,10 +280,10 @@ namespace Apache.Ignite.Benchmarks.Result
         private class BenchmarkTask
         {
             /** Counter. */
-            private int ctr;
+            private int _ctr;
 
             /** First throughput flag. */
-            private int first;
+            private int _first;
 
             /// <summary>
             /// Constructor.
@@ -320,7 +320,7 @@ namespace Apache.Ignite.Benchmarks.Result
             /// <returns>Counter value.</returns>
             public int Counter()
             {
-                return Interlocked.Increment(ref ctr);
+                return Interlocked.Increment(ref _ctr);
             }
 
             /// <summary>
@@ -329,7 +329,7 @@ namespace Apache.Ignite.Benchmarks.Result
             /// <returns>True if first.</returns>
             public bool FirstThroughput()
             {
-                return Interlocked.CompareExchange(ref first, 1, 0) == 0;
+                return Interlocked.CompareExchange(ref _first, 1, 0) == 0;
             }
         }
     }

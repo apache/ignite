@@ -27,22 +27,22 @@ namespace Apache.Ignite.Benchmarks.Interop
     internal class GetAsyncBenchmark : PlatformBenchmarkBase
     {
         /** Cache name. */
-        private const string CACHE_NAME = "cache";
+        private const string CacheName = "cache";
 
         /** Native cache wrapper. */
-        private ICache<int, Employee> cache;
+        private ICache<int, Employee> _cache;
 
         /** <inheritDoc /> */
         protected override void OnStarted()
         {
             base.OnStarted();
 
-            cache = node.GetCache<int, Employee>(CACHE_NAME);
+            _cache = Node.GetCache<int, Employee>(CacheName);
 
-            for (int i = 0; i < emps.Length; i++)
-                cache.Put(i, emps[i]);
+            for (int i = 0; i < Emps.Length; i++)
+                _cache.Put(i, Emps[i]);
 
-            cache = cache.WithAsync();
+            _cache = _cache.WithAsync();
         }
 
         /** <inheritDoc /> */
@@ -58,9 +58,9 @@ namespace Apache.Ignite.Benchmarks.Interop
         {
             int idx = BenchmarkUtils.RandomInt(Dataset);
 
-            cache.Get(idx);
+            _cache.Get(idx);
 
-            cache.GetFuture<Employee>().ToTask().Wait();
+            _cache.GetFuture<Employee>().ToTask().Wait();
 
             //System.Console.WriteLine(res);
         }

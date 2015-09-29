@@ -30,12 +30,12 @@ namespace Apache.Ignite.Benchmarks.Portable
     class PortableWriteBenchmark : BenchmarkBase
     {
         /** Marshaller. */
-        private readonly PortableMarshaller marsh;
+        private readonly PortableMarshaller _marsh;
 
-        private readonly PlatformMemoryManager memMgr = new PlatformMemoryManager(1024);
+        private readonly PlatformMemoryManager _memMgr = new PlatformMemoryManager(1024);
 
         /** Pre-allocated addess. */
-        private readonly Address a = BenchmarkUtils.RandomAddress();
+        private readonly Address _a = BenchmarkUtils.RandomAddress();
 
         public PortableWriteBenchmark()
         {
@@ -51,7 +51,7 @@ namespace Apache.Ignite.Benchmarks.Portable
                 }
             };
 
-            marsh = new PortableMarshaller(cfg);
+            _marsh = new PortableMarshaller(cfg);
         }
 
         /// <summary>
@@ -69,13 +69,13 @@ namespace Apache.Ignite.Benchmarks.Portable
         /// <param name="state">State.</param>
         public void WriteAddress(BenchmarkState state)
         {
-            IPlatformMemory mem = memMgr.Allocate();
+            IPlatformMemory mem = _memMgr.Allocate();
 
             try
             {
                 IPortableStream stream = mem.Stream();
 
-                marsh.StartMarshal(stream).Write(a);
+                _marsh.StartMarshal(stream).Write(_a);
             }
             finally
             {

@@ -25,21 +25,21 @@ namespace Apache.Ignite.Benchmarks
     public class BenchmarkState
     {
         /** Warmup flag. */
-        private bool warmup = true;
+        private bool _warmup = true;
 
         /** Counter within the batch. */
-        private int ctr;
+        private int _ctr;
 
         /** Array of attached objects. */
-        private object[] arr;
+        private object[] _arr;
 
         /// <summary>
         /// Reset state.
         /// </summary>
         public void Reset()
         {
-            ctr = 0;
-            arr = null;
+            _ctr = 0;
+            _arr = null;
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace Apache.Ignite.Benchmarks
         /// </summary>
         public void StopWarmup()
         {
-            warmup = false;
+            _warmup = false;
         }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace Apache.Ignite.Benchmarks
         /// </summary>
         public void IncrementCounter()
         {
-            ctr++;
+            _ctr++;
         }
 
         /// <summary>
@@ -63,7 +63,7 @@ namespace Apache.Ignite.Benchmarks
         /// </summary>
         public bool Warmup
         {
-            get { return warmup; }
+            get { return _warmup; }
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Benchmarks
         /// </summary>
         public int Counter
         {
-            get { return ctr; }
+            get { return _ctr; }
         }
 
         /// <summary>
@@ -83,23 +83,23 @@ namespace Apache.Ignite.Benchmarks
         {
             get
             {
-                return (arr == null || idx >= arr.Length) ? null : arr[idx];
+                return (_arr == null || idx >= _arr.Length) ? null : _arr[idx];
             }
 
             set
             {
-                if (arr == null)
-                    arr = new object[idx + 1];
-                else if (idx >= arr.Length)
+                if (_arr == null)
+                    _arr = new object[idx + 1];
+                else if (idx >= _arr.Length)
                 {
                     object[] arr0 = new object[idx + 1];
 
-                    Array.Copy(arr, 0, arr0, 0, arr0.Length);
+                    Array.Copy(_arr, 0, arr0, 0, arr0.Length);
 
-                    arr = arr0;
+                    _arr = arr0;
                 }
 
-                arr[idx] = value;
+                _arr[idx] = value;
             }
         }
     }
