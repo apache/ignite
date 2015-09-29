@@ -79,7 +79,17 @@ public class UriDeploymentHttpScanner implements UriDeploymentScanner {
         return "http".equals(proto) || "https".equals(proto);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Scan the given URI.
+     *
+     * It tries to read DOM of the html according to {@link UriDeploymentScannerContext#getUri()}
+     * and parses out href attributes of all <a > tags -
+     * this is becomes the URL collection (to GAR files) to deploy.
+     *
+     * Alredy deployed GAR-file will be redeployed then and only then the GAR-file has updated timestamp.
+     *
+     * @param scanCtx Scan context.
+     */
     @Override public void scan(UriDeploymentScannerContext scanCtx) {
         URI uri = scanCtx.getUri();
 
