@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.DataStructures
 {
     using System.Linq;
-    using Apache.Ignite.Core.Common;
     using NUnit.Framework;
 
     /// <summary>
@@ -52,9 +51,8 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         [Test]
         public void TestCreateClose()
         {
-            // Nonexistent long without create flag throws
-            // TODO: Incorrect exception in Java
-            Assert.Throws<IgniteException>(() => Grid.GetAtomicLong(AtomicLongName, 10, false));
+            // Nonexistent long returns null
+            Assert.IsNull(Grid.GetAtomicLong(AtomicLongName, 10, false));
 
             // Create new
             var al = Grid.GetAtomicLong(AtomicLongName, 10, true);

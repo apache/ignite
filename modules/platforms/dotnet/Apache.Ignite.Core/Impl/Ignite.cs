@@ -432,7 +432,12 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            return new AtomicLong(UU.ProcessorAtomicLong(_proc, name, initialValue, create), Marshaller, name);
+            var nativeLong = UU.ProcessorAtomicLong(_proc, name, initialValue, create);
+
+            if (nativeLong == null)
+                return null;
+
+            return new AtomicLong(nativeLong, Marshaller, name);
         }
 
         /// <summary>

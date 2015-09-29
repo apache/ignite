@@ -326,6 +326,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     @Override public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException {
         GridCacheAtomicLongImpl atomicLong = (GridCacheAtomicLongImpl)ignite().atomicLong(name, initVal, create);
 
+        if (atomicLong == null)
+            return null;
+
         return new PlatformAtomicLong(platformCtx, atomicLong);
     }
 

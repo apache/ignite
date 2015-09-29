@@ -759,7 +759,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 var res = PROCESSOR_ATOMIC_LONG(target.Context, target.Target, name0, initialValue, create);
 
-                return target.ChangeTarget(res);
+                return res == null ? null : target.ChangeTarget(res);
             }
             finally
             {

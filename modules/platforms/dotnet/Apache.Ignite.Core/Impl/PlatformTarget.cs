@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Common;
@@ -73,6 +74,9 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="marsh">Marshaller.</param>
         protected PlatformTarget(IUnmanagedTarget target, PortableMarshaller marsh)
         {
+            Debug.Assert(target != null);
+            Debug.Assert(marsh != null);
+
             _target = target;
             _marsh = marsh;
         }
