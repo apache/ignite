@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace GridGain.Client.Benchmark.Result
+namespace Apache.Ignite.Benchmarks.Result
 {
     using System;
     using System.Collections.Concurrent;
@@ -24,8 +24,6 @@ namespace GridGain.Client.Benchmark.Result
     using System.Globalization;
     using System.IO;
     using System.Threading;
-
-    using GridGain.Client.Benchmark;
 
     internal class GridClientBenchmarkFileResultWriter : IIgniteClientBenchmarkResultWriter
     {

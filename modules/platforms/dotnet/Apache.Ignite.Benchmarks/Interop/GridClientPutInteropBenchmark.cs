@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace GridGain.Client.Benchmark.Interop
+namespace Apache.Ignite.Benchmarks.Interop
 {
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache;

@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-namespace GridGain.Client.Benchmark.Interop
+namespace Apache.Ignite.Benchmarks.Interop
 {
     using System.Collections.Generic;
+    using Apache.Ignite.Benchmarks.Model;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Portable;
-    using GridGain.Client.Benchmark.Model;
     using BU = GridClientBenchmarkUtils;
 
     /// <summary>

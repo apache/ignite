@@ -15,14 +15,13 @@
  * limitations under the License.
  */
 
-namespace GridGain.Client.Benchmark
+namespace Apache.Ignite.Benchmarks
 {
     using System;
     using System.Reflection;
     using System.Text;
     using System.Threading;
-
-    using GridGain.Client.Benchmark.Model;
+    using Apache.Ignite.Benchmarks.Model;
 
     /// <summary>
     /// Utility methods for benchmarks.

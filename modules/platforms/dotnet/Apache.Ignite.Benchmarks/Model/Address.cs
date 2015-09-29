@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace GridGain.Client.Benchmark.Model
+namespace Apache.Ignite.Benchmarks.Model
 {
     using System;
     using Apache.Ignite.Core.Portable;

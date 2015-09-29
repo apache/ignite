@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-namespace GridGain.Client.Benchmark.Portable
+namespace Apache.Ignite.Benchmarks.Portable
 {
     using System.Collections.Generic;
-
+    using Apache.Ignite.Benchmarks.Model;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Portable;
-    using GridGain.Client.Benchmark.Model;
 
     /// <summary>
     /// Portable write benchmark.

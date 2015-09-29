@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace GridGain.Client.Benchmark.Model
+namespace Apache.Ignite.Benchmarks.Model
 {
     /// <summary>
     /// Sex enumeration.
