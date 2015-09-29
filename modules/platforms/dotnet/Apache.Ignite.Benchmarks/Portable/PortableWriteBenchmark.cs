@@ -21,11 +21,8 @@ namespace GridGain.Client.Benchmark.Portable
 
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Portable.IO;
-
+    using Apache.Ignite.Core.Portable;
     using GridGain.Client.Benchmark.Model;
-    using GridGain.Impl.Memory;
-    using GridGain.Impl.Portable;
-    using GridGain.Portable;
 
     /// <summary>
     /// Portable write benchmark.

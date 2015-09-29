@@ -18,8 +18,7 @@
 namespace GridGain.Client.Benchmark.Model
 {
     using System;
-
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Address.

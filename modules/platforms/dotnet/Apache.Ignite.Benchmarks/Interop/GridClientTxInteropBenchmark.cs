@@ -18,8 +18,8 @@
 namespace GridGain.Client.Benchmark.Interop
 {
     using System.Collections.Generic;
-    using GridGain.Cache;
-    using GridGain.Transactions;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     ///
@@ -37,7 +37,7 @@ namespace GridGain.Client.Benchmark.Interop
         {
             base.OnStarted();
 
-            cache = node.Cache<object, object>(CACHE_NAME);
+            cache = node.GetCache<object, object>(CACHE_NAME);
         }
 
         /** <inheritDoc /> */
@@ -53,8 +53,8 @@ namespace GridGain.Client.Benchmark.Interop
         {
             int idx = GridClientBenchmarkUtils.RandomInt(Dataset);
 
-            using (var tx = node.Transactions.TxStart(TransactionConcurrency.PESSIMISTIC,
-                TransactionIsolation.REPEATABLE_READ))
+            using (var tx = node.GetTransactions().TxStart(TransactionConcurrency.Pessimistic,
+                TransactionIsolation.RepeatableRead))
             {
                 cache.Put(idx, emps[idx]);
 

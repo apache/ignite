@@ -18,8 +18,8 @@
 namespace GridGain.Client.Benchmark.Interop
 {
     using System.Collections.Generic;
-    using GridGain.Cluster;
-    using GridGain.Compute;
+    using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Compute;
 
     /// <summary>
     ///
@@ -37,7 +37,7 @@ namespace GridGain.Client.Benchmark.Interop
         /// </summary>
         private void ExecuteEmptyTask(GridClientBenchmarkState state)
         {
-            node.Compute().Execute(new MyEmptyTask(), "zzzz");
+            node.GetCompute().Execute(new MyEmptyTask(), "zzzz");
         }
     }
 
@@ -68,7 +68,7 @@ namespace GridGain.Client.Benchmark.Interop
         /// <returns></returns>
         public ComputeJobResultPolicy Result(IComputeJobResult<object> res, IList<IComputeJobResult<object>> rcvd)
         {
-            return ComputeJobResultPolicy.WAIT;
+            return ComputeJobResultPolicy.Wait;
         }
 
         /// <summary>

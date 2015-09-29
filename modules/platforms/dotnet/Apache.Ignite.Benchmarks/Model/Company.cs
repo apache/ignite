@@ -17,7 +17,7 @@
 
 namespace GridGain.Client.Benchmark.Model
 {
-    using GridGain.Portable;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Company.

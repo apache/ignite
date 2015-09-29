@@ -67,19 +67,19 @@ namespace GridGain.Client.Benchmark.Interop
                     "-DIGNITE_QUIET=false",
                     "-DIGNITE_NO_SHUTDOWN_HOOK=true"
                 },
-                JvmClasspath = Classpath ?? IgniteManager.CreateClasspath(),
+                JvmClasspath = Classpath ?? Apache.Ignite.Core.Impl.Common.Classpath.CreateClasspath(),
                 JvmDllPath = DllPath,
                 SpringConfigUrl = ConfigPath
             };
 
-            node = GridFactory.Start(cfg);
+            node = Ignition.Start(cfg);
         }
 
         /// <summary>
         /// Get portable configuration.
         /// </summary>
         /// <returns>Portable configuration.</returns>
-        protected PortableConfiguration GetPortableConfiguration()
+        protected static PortableConfiguration GetPortableConfiguration()
         {
             return new PortableConfiguration
             {
