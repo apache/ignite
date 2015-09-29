@@ -20,6 +20,7 @@ namespace Apache.Ignite.Benchmarks
     using System;
     using System.Diagnostics;
     using System.Text;
+    using Apache.Ignite.Benchmarks.Interop;
     using Apache.Ignite.Benchmarks.Portable;
 
     /// <summary>
@@ -35,7 +36,7 @@ namespace Apache.Ignite.Benchmarks
         public static void Main(string[] args)
         {
             args = new[] { 
-                typeof(PortableWriteBenchmark).FullName,
+                typeof(GetBenchmark).FullName,
                 "-ConfigPath", @"modules\platforms\dotnet\Apache.Ignite.Benchmarks\Config\benchmark.xml",
                 "-Threads", "1",
                 "-Warmup", "0",

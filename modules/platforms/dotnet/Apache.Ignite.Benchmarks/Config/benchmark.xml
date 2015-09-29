@@ -23,12 +23,10 @@
         http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
-        <!-- Set to local host address just for examples. -->
         <property name="localHost" value="127.0.0.1"/>
 
         <property name="metricsLogFrequency" value="0"/>
 
-        <!-- Cache configuration. -->
         <property name="cacheConfiguration">
             <list>
                 <bean id="cacheCfgBase" class="org.apache.ignite.configuration.CacheConfiguration">
@@ -37,7 +35,6 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="rebalanceMode" value="SYNC"/>
                     <property name="backups" value="0"/>
-                    <property name="portableEnabled" value="true"/>
                     <property name="atomicityMode" value="ATOMIC"/>
                 </bean>
 
@@ -47,22 +44,10 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="rebalanceMode" value="SYNC"/>
                     <property name="backups" value="0"/>
-                    <property name="portableEnabled" value="true"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                 </bean>
             </list>
         </property>
-
-        <!--<property name="portableConfiguration">
-            <bean class="org.gridgain.grid.portables.GridPortableConfiguration">
-                <property name="classNames">
-                    <list>
-                        <value>org.gridgain.benchmarks.portable.model.*</value>
-                    </list>
-                </property>
-                <property name="metaDataEnabled" value="false" />
-            </bean>
-        </property>-->
 
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
