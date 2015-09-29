@@ -43,26 +43,26 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
     /** Frequency */
     private static final int FREQ = 5000;
 
-    /** Gar-file which contains libs. */
+    /** */
     public static final String LIBS_GAR = "libs-file.gar";
 
-    /** Gar-file which contains classes (cannot be used without libs). */
+    /** */
     public static final String CLASSES_GAR = "classes-file.gar";
 
-    /** Gar-file which caontains both libs and classes. */
+    /** */
     public static final String ALL_GAR = "file.gar";
 
-    /** */
+    /** Gar-file which contains libs. */
     public static final String LIBS_GAR_FILE_PATH = U.resolveIgnitePath(
         GridTestProperties.getProperty("ant.urideployment.gar.libs-file")).getPath();
 
-    /** */
-    public static final String ALL_GAR_FILE_PATH = U.resolveIgnitePath(
-        GridTestProperties.getProperty("ant.urideployment.gar.file")).getPath();
-
-    /** */
+    /** Gar-file which contains classes (cannot be used without libs). */
     public static final String CLASSES_GAR_FILE_PATH = U.resolveIgnitePath(
         GridTestProperties.getProperty("ant.urideployment.gar.classes-file")).getPath();
+
+    /** Gar-file which caontains both libs and classes. */
+    public static final String ALL_GAR_FILE_PATH = U.resolveIgnitePath(
+        GridTestProperties.getProperty("ant.urideployment.gar.file")).getPath();
 
     /** Jetty. */
     private static Server srv;
