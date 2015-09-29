@@ -31,11 +31,12 @@ namespace Apache.Ignite.Benchmarks
         /// Entry point.
         /// </summary>
         /// <param name="args">Arguments.</param>
+        // ReSharper disable once RedundantAssignment
         public static void Main(string[] args)
         {
             args = new[] { 
                 typeof(PortableWriteBenchmark).FullName,
-                "-ConfigPath", "benchmarks/yardstick/config/single-node.xml",
+                "-ConfigPath", @"modules\platforms\dotnet\Apache.Ignite.Benchmarks\Config\benchmark.xml",
                 "-Threads", "1",
                 "-Warmup", "0",
                 "-Duration", "60",
