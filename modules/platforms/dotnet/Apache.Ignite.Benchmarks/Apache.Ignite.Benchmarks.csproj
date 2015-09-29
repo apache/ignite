@@ -31,18 +31,43 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>GridGain.Client.Benchmark.GridClientBenchmarkRunner</StartupObject>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BenchmarkRunner.cs" />
+    <Compile Include="GridClientAbstractBenchmark.cs" />
+    <Compile Include="GridClientBenchmarkOperationDescriptor.cs" />
+    <Compile Include="GridClientBenchmarkRunner.cs" />
+    <Compile Include="GridClientBenchmarkState.cs" />
+    <Compile Include="GridClientBenchmarkUtils.cs" />
+    <Compile Include="Interop\GridClientAbstractInteropBenchmark.cs" />
+    <Compile Include="Interop\GridClientClosureBenchmark.cs" />
+    <Compile Include="Interop\GridClientGetAsyncInteropBenchmark.cs" />
+    <Compile Include="Interop\GridClientGetInteropBenchmark.cs" />
+    <Compile Include="Interop\GridClientPutAsyncInteropBenchmark.cs" />
+    <Compile Include="Interop\GridClientPutInteropBenchmark.cs" />
+    <Compile Include="Interop\GridClientTaskBenchmark.cs" />
+    <Compile Include="Interop\GridClientTxInteropBenchmark.cs" />
+    <Compile Include="Model\Address.cs" />
+    <Compile Include="Model\Company.cs" />
+    <Compile Include="Model\Department.cs" />
+    <Compile Include="Model\Employee.cs" />
+    <Compile Include="Model\Sex.cs" />
+    <Compile Include="Portable\PortableWriteBenchmark.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Result\GridClientBenchmarkConsoleResultWriter.cs" />
+    <Compile Include="Result\GridClientBenchmarkFileResultWriter.cs" />
+    <Compile Include="Result\IGridClientBenchmarkResultWriter.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj">
+      <Project>{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}</Project>
+      <Name>Apache.Ignite.Core</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
