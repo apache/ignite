@@ -134,6 +134,18 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="val">Decimal array.</param>
         void WriteDecimalArray(decimal[] val);
 
+//        /// <summary>
+//        /// Write date value.
+//        /// </summary>
+//        /// <param name="val">Date value.</param>
+//        void WriteDate(DateTime val);
+//
+//        /// <summary>
+//        /// Write date array.
+//        /// </summary>
+//        /// <param name="val">Date array.</param>
+//        void WriteDateArray(DateTime[] val);
+
         /// <summary>
         /// Write date value.
         /// </summary>
@@ -157,6 +169,18 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="val">String array.</param>
         void WriteStringArray(string[] val);
+
+//        /// <summary>
+//        /// Write GUID value.
+//        /// </summary>
+//        /// <param name="val">GUID value.</param>
+//        void WriteGuid(Guid val);
+//
+//        /// <summary>
+//        /// Write GUID array.
+//        /// </summary>
+//        /// <param name="val">GUID array.</param>
+//        void WriteGuidArray(Guid[] val);
 
         /// <summary>
         /// Write GUID value.
