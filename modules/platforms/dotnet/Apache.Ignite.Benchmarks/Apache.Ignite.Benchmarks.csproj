@@ -36,14 +36,14 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GridClientAbstractBenchmark.cs" />
-    <Compile Include="GridClientBenchmarkOperationDescriptor.cs" />
-    <Compile Include="GridClientBenchmarkRunner.cs" />
-    <Compile Include="GridClientBenchmarkState.cs" />
-    <Compile Include="GridClientBenchmarkUtils.cs" />
-    <Compile Include="Interop\GridClientAbstractInteropBenchmark.cs" />
-    <Compile Include="Interop\GridClientClosureBenchmark.cs" />
-    <Compile Include="Interop\GridClientGetAsyncInteropBenchmark.cs" />
+    <Compile Include="BenchmarkBase.cs" />
+    <Compile Include="BenchmarkOperationDescriptor.cs" />
+    <Compile Include="BenchmarkRunner.cs" />
+    <Compile Include="BenchmarkState.cs" />
+    <Compile Include="BenchmarkUtils.cs" />
+    <Compile Include="Interop\PlatformBenchmarkBase.cs" />
+    <Compile Include="Interop\ClosureBenchmark.cs" />
+    <Compile Include="Interop\GetAsyncBenchmark.cs" />
     <Compile Include="Interop\GridClientGetInteropBenchmark.cs" />
     <Compile Include="Interop\GridClientPutAsyncInteropBenchmark.cs" />
     <Compile Include="Interop\GridClientPutInteropBenchmark.cs" />

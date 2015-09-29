@@ -29,7 +29,7 @@ namespace Apache.Ignite.Benchmarks.Result
         /// </summary>
         /// <param name="ctx">Benchmark.</param>
         /// <param name="opNames">Operation names.</param>
-        void Initialize(GridClientAbstractBenchmark benchmark, ICollection<string> opNames);
+        void Initialize(BenchmarkBase benchmark, ICollection<string> opNames);
 
         /// <summary>
         /// Write throughput results.

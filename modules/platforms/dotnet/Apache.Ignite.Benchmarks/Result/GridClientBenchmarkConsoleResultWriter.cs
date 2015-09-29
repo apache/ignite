@@ -31,10 +31,10 @@ namespace Apache.Ignite.Benchmarks.Result
         private static readonly CultureInfo CULTURE = new CultureInfo("en-US");
 
         /** Benchmark. */
-        private volatile GridClientAbstractBenchmark benchmark;
+        private volatile BenchmarkBase benchmark;
 
         /** <inheritdoc/> */
-        public void Initialize(GridClientAbstractBenchmark benchmark, ICollection<string> opNames)
+        public void Initialize(BenchmarkBase benchmark, ICollection<string> opNames)
         {
             this.benchmark = benchmark;
         }

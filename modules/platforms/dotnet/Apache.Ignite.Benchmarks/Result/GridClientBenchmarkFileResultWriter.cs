@@ -52,7 +52,7 @@ namespace Apache.Ignite.Benchmarks.Result
         private volatile int threadCnt;
 
         /** <inheritdoc/> */
-        public void Initialize(GridClientAbstractBenchmark benchmark, ICollection<string> opNames)
+        public void Initialize(BenchmarkBase benchmark, ICollection<string> opNames)
         {
             threadCnt = benchmark.Threads;
 

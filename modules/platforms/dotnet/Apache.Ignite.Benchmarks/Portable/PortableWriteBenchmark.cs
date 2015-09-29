@@ -27,7 +27,7 @@ namespace Apache.Ignite.Benchmarks.Portable
     /// <summary>
     /// Portable write benchmark.
     /// </summary>
-    class PortableWriteBenchmark : GridClientAbstractBenchmark
+    class PortableWriteBenchmark : BenchmarkBase
     {
         /** Marshaller. */
         private readonly PortableMarshaller marsh;
@@ -35,7 +35,7 @@ namespace Apache.Ignite.Benchmarks.Portable
         private readonly PlatformMemoryManager memMgr = new PlatformMemoryManager(1024);
 
         /** Pre-allocated addess. */
-        private readonly Address a = GridClientBenchmarkUtils.RandomAddress();
+        private readonly Address a = BenchmarkUtils.RandomAddress();
 
         public PortableWriteBenchmark()
         {
@@ -58,16 +58,16 @@ namespace Apache.Ignite.Benchmarks.Portable
         /// Populate descriptors.
         /// </summary>
         /// <param name="descs">Descriptors.</param>
-        protected override void Descriptors(ICollection<GridClientBenchmarkOperationDescriptor> descs)
+        protected override void Descriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
-            descs.Add(GridClientBenchmarkOperationDescriptor.Create("WriteAddress", WriteAddress, 1));
+            descs.Add(BenchmarkOperationDescriptor.Create("WriteAddress", WriteAddress, 1));
         }
 
         /// <summary>
         /// Write address.
         /// </summary>
         /// <param name="state">State.</param>
-        public void WriteAddress(GridClientBenchmarkState state)
+        public void WriteAddress(BenchmarkState state)
         {
             IPlatformMemory mem = memMgr.Allocate();
 

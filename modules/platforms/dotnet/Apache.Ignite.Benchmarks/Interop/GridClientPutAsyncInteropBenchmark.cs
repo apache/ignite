@@ -23,7 +23,7 @@ namespace Apache.Ignite.Benchmarks.Interop
     /// <summary>
     /// 
     /// </summary>
-    internal class GridClientPutAsyncInteropBenchmark : GridClientAbstractInteropBenchmark
+    internal class GridClientPutAsyncInteropBenchmark : PlatformBenchmarkBase
     {
         /** Cache name. */
         private const string CACHE_NAME = "cache";
@@ -40,17 +40,17 @@ namespace Apache.Ignite.Benchmarks.Interop
         }
 
         /** <inheritDoc /> */
-        protected override void Descriptors(ICollection<GridClientBenchmarkOperationDescriptor> descs)
+        protected override void Descriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
-            descs.Add(GridClientBenchmarkOperationDescriptor.Create("PutAsync", PutAsync, 1));
+            descs.Add(BenchmarkOperationDescriptor.Create("PutAsync", PutAsync, 1));
         }
         
         /// <summary>
         /// Cache putAsync.
         /// </summary>
-        private void PutAsync(GridClientBenchmarkState state)
+        private void PutAsync(BenchmarkState state)
         {
-            int idx = GridClientBenchmarkUtils.RandomInt(Dataset);
+            int idx = BenchmarkUtils.RandomInt(Dataset);
 
             cache.Put(idx, emps[idx]);
 

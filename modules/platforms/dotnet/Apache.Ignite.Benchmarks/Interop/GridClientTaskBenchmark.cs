@@ -24,18 +24,18 @@ namespace Apache.Ignite.Benchmarks.Interop
     /// <summary>
     ///
     /// </summary>
-    internal class GridClientTaskBenchmark : GridClientAbstractInteropBenchmark
+    internal class GridClientTaskBenchmark : PlatformBenchmarkBase
     {
         /** <inheritDoc /> */
-        protected override void Descriptors(ICollection<GridClientBenchmarkOperationDescriptor> descs)
+        protected override void Descriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
-            descs.Add(GridClientBenchmarkOperationDescriptor.Create("ExecuteEmptyTask", ExecuteEmptyTask, 1));
+            descs.Add(BenchmarkOperationDescriptor.Create("ExecuteEmptyTask", ExecuteEmptyTask, 1));
         }
 
         /// <summary>
         /// Executes task.
         /// </summary>
-        private void ExecuteEmptyTask(GridClientBenchmarkState state)
+        private void ExecuteEmptyTask(BenchmarkState state)
         {
             node.GetCompute().Execute(new MyEmptyTask(), "zzzz");
         }

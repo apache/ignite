@@ -24,7 +24,7 @@ namespace Apache.Ignite.Benchmarks.Interop
     /// <summary>
     ///
     /// </summary>
-    internal class GridClientTxInteropBenchmark : GridClientAbstractInteropBenchmark
+    internal class GridClientTxInteropBenchmark : PlatformBenchmarkBase
     {
         /** Cache name. */
         private const string CACHE_NAME = "cache_tx";
@@ -41,17 +41,17 @@ namespace Apache.Ignite.Benchmarks.Interop
         }
 
         /** <inheritDoc /> */
-        protected override void Descriptors(ICollection<GridClientBenchmarkOperationDescriptor> descs)
+        protected override void Descriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
-            descs.Add(GridClientBenchmarkOperationDescriptor.Create("PutTx", PutTx, 1));
+            descs.Add(BenchmarkOperationDescriptor.Create("PutTx", PutTx, 1));
         }
 
         /// <summary>
         /// Cache put.
         /// </summary>
-        private void PutTx(GridClientBenchmarkState state)
+        private void PutTx(BenchmarkState state)
         {
-            int idx = GridClientBenchmarkUtils.RandomInt(Dataset);
+            int idx = BenchmarkUtils.RandomInt(Dataset);
 
             using (var tx = node.GetTransactions().TxStart(TransactionConcurrency.Pessimistic,
                 TransactionIsolation.RepeatableRead))

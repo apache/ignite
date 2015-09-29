@@ -24,7 +24,7 @@ namespace Apache.Ignite.Benchmarks.Interop
     /// <summary>
     /// 
     /// </summary>
-    internal class GridClientGetInteropBenchmark : GridClientAbstractInteropBenchmark
+    internal class GridClientGetInteropBenchmark : PlatformBenchmarkBase
     {
         /** Cache name. */
         private const string CACHE_NAME = "cache";
@@ -44,17 +44,17 @@ namespace Apache.Ignite.Benchmarks.Interop
         }
 
         /** <inheritDoc /> */
-        protected override void Descriptors(ICollection<GridClientBenchmarkOperationDescriptor> descs)
+        protected override void Descriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
-            descs.Add(GridClientBenchmarkOperationDescriptor.Create("Get", Get, 1));
+            descs.Add(BenchmarkOperationDescriptor.Create("Get", Get, 1));
         }
         
         /// <summary>
         /// Cache get.
         /// </summary>
-        private void Get(GridClientBenchmarkState state)
+        private void Get(BenchmarkState state)
         {
-            var idx = GridClientBenchmarkUtils.RandomInt(Dataset);
+            var idx = BenchmarkUtils.RandomInt(Dataset);
 
             cache.Get(idx);
         }
