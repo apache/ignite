@@ -421,7 +421,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     @Override protected void updateExplicitVersion(IgniteTxEntry txEntry, GridCacheEntryEx entry)
         throws GridCacheEntryRemovedException {
         if (entry.detached()) {
-            GridCacheMvccCandidate cand = cctx.mvcc().explicitLock(threadId(), entry.key());
+            GridCacheMvccCandidate cand = cctx.mvcc().explicitLock(threadId(), entry.txKey());
 
             if (cand != null && !xidVersion().equals(cand.version())) {
                 GridCacheVersion candVer = cand.version();
