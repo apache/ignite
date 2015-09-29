@@ -101,7 +101,7 @@ public class PlatformAtomicLong extends PlatformAbstractTarget {
      *
      * @return {@code true} if atomic was removed from cache, {@code false} in other case.
      */
-    public boolean isRemoved() {
+    public boolean isClosed() {
         return atomicLong.removed();
     }
 

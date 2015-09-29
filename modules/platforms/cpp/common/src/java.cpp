@@ -358,7 +358,7 @@ namespace ignite
             JniMethod M_PLATFORM_ATOMIC_LONG_DECREMENT = JniMethod("decrement", "()J", false);
             JniMethod M_PLATFORM_ATOMIC_LONG_EXCHANGE = JniMethod("exchange", "(J)J", false);
             JniMethod M_PLATFORM_ATOMIC_LONG_COMPARE_EXCHANGE = JniMethod("compareExchange", "(JJ)J", false);
-            JniMethod M_PLATFORM_ATOMIC_LONG_IS_REMOVED = JniMethod("isRemoved", "()Z", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_IS_CLOSED = JniMethod("isClosed", "()Z", false);
             JniMethod M_PLATFORM_ATOMIC_LONG_CLOSE = JniMethod("close", "()V", false);
 
             /* STATIC STATE. */
@@ -644,7 +644,7 @@ namespace ignite
                 m_PlatformAtomicLong_decrement = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_DECREMENT);
                 m_PlatformAtomicLong_exchange = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_EXCHANGE);
                 m_PlatformAtomicLong_compareExchange = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_COMPARE_EXCHANGE);
-                m_PlatformAtomicLong_isRemoved = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_IS_REMOVED);
+                m_PlatformAtomicLong_isClosed = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_IS_CLOSED);
                 m_PlatformAtomicLong_close = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_CLOSE);
 
                 // Find utility classes which are not used from context, but are still required in other places.
@@ -1952,11 +1952,11 @@ namespace ignite
                 return res;
             }
 
-            bool JniContext::AtomicLongIsRemoved(jobject obj)
+            bool JniContext::AtomicLongIsClosed(jobject obj)
             {
                 JNIEnv* env = Attach();
 
-                bool res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_isRemoved);
+                bool res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_isClosed);
 
                 ExceptionCheck(env);
 

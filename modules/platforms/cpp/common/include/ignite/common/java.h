@@ -341,7 +341,7 @@ namespace ignite
                 jmethodID m_PlatformAtomicLong_decrement;
                 jmethodID m_PlatformAtomicLong_exchange;
                 jmethodID m_PlatformAtomicLong_compareExchange;
-                jmethodID m_PlatformAtomicLong_isRemoved;
+                jmethodID m_PlatformAtomicLong_isClosed;
                 jmethodID m_PlatformAtomicLong_close;
 
                 /**
@@ -580,7 +580,7 @@ namespace ignite
                 long long AtomicLongDecrement(jobject obj);
                 long long AtomicLongExchange(jobject obj, long long value);
                 long long AtomicLongCompareExchange(jobject obj, long long value, long long comparand);
-                bool AtomicLongIsRemoved(jobject obj);
+                bool AtomicLongIsClosed(jobject obj);
                 void AtomicLongClose(jobject obj);
 
                 jobject Acquire(jobject obj);
