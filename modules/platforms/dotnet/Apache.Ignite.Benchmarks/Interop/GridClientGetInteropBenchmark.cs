@@ -39,9 +39,8 @@ namespace Apache.Ignite.Benchmarks.Interop
 
             cache = node.GetCache<int, Employee>(CACHE_NAME);
 
-            for (int i = 0; i < emps.Length; i++) {
+            for (int i = 0; i < emps.Length; i++)
                 cache.Put(i, emps[i]);
-            }
         }
 
         /** <inheritDoc /> */
@@ -55,11 +54,9 @@ namespace Apache.Ignite.Benchmarks.Interop
         /// </summary>
         private void Get(GridClientBenchmarkState state)
         {
-            int idx = GridClientBenchmarkUtils.RandomInt(Dataset);
+            var idx = GridClientBenchmarkUtils.RandomInt(Dataset);
 
-            Employee e = cache.Get(idx);
-
-            //System.Console.WriteLine(res);
+            cache.Get(idx);
         }
     }
 }
