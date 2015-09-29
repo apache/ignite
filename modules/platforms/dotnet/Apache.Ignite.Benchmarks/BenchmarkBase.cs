@@ -91,7 +91,7 @@ namespace Apache.Ignite.Benchmarks
         private Barrier barrier;
 
         /** Benchmark result writer. */
-        private IIgniteClientBenchmarkResultWriter writer;
+        private IBenchmarkResultWriter writer;
 
         /// <summary>
         /// Default constructor.
@@ -118,7 +118,7 @@ namespace Apache.Ignite.Benchmarks
             if (ResultWriter.ToLower().Equals(RES_WRITER_CONSOLE))
                 writer = new BenchmarkConsoleResultWriter();
             else
-                writer = new GridClientBenchmarkFileResultWriter();
+                writer = new BenchmarkFileResultWriter();
 
             OnStarted();
 

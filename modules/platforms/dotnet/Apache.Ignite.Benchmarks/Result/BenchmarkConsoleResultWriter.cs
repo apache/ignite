@@ -25,7 +25,7 @@ namespace Apache.Ignite.Benchmarks.Result
     /// <summary>
     /// Benchmark console result writer.
     /// </summary>
-    internal class BenchmarkConsoleResultWriter : IIgniteClientBenchmarkResultWriter
+    internal class BenchmarkConsoleResultWriter : IBenchmarkResultWriter
     {
         /** Cached culture. */
         private static readonly CultureInfo CULTURE = new CultureInfo("en-US");
