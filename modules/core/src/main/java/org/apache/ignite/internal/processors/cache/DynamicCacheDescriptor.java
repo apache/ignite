@@ -22,11 +22,13 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache start descriptor.
@@ -63,6 +65,9 @@ public class DynamicCacheDescriptor {
     /** */
     private boolean updatesAllowed = true;
 
+    /** */
+    private AffinityTopologyVersion startTopVer;
+
     /**
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
@@ -81,6 +86,20 @@ public class DynamicCacheDescriptor {
         this.deploymentId = deploymentId;
 
         pluginMgr = new CachePluginManager(ctx, cacheCfg);
+    }
+
+    /**
+     * @return Start topology version.
+     */
+    @Nullable public AffinityTopologyVersion startTopologyVersion() {
+        return startTopVer;
+    }
+
+    /**
+     * @param startTopVer Start topology version.
+     */
+    public void startTopologyVersion(AffinityTopologyVersion startTopVer) {
+        this.startTopVer = startTopVer;
     }
 
     /**

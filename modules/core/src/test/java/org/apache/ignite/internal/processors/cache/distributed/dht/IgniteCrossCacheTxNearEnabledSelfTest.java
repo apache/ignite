@@ -14,19 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
-import org.apache.ignite.cache.CacheMemoryMode;
-
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 /**
  *
  */
-public class GridCachePartitionedAtomicOffheapQueueCreateMultiNodeSelfTest
-    extends GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest {
+public class IgniteCrossCacheTxNearEnabledSelfTest extends IgniteCrossCacheTxSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheMemoryMode collectionMemoryMode() {
-        return OFFHEAP_TIERED;
+    @Override protected boolean nearEnabled() {
+        return true;
     }
 }
