@@ -21,7 +21,6 @@ namespace Apache.Ignite.Benchmarks
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using System.Reflection;
     using System.Text;
     using System.Threading;
     using Apache.Ignite.Benchmarks.Result;
@@ -291,18 +290,12 @@ namespace Apache.Ignite.Benchmarks
         /// <param name="name">Argument name.</param>
         /// <param name="val">Value.</param>
         /// <returns>True if argument was consumed.</returns>
-        public bool Configure(string name, string val)
+        public void Configure(string name, string val)
         {
             var prop = BenchmarkUtils.FindProperty(this, name);
 
             if (prop != null)
-            {
                 BenchmarkUtils.SetProperty(this, prop, val);
-
-                return true;
-            }
-            else
-                return false;
         }
 
         /// <summary>
@@ -334,9 +327,9 @@ namespace Apache.Ignite.Benchmarks
         /// Batch execution finished callback.
         /// </summary>
         /// <param name="state">State.</param>
-        /// <param name="dur">Duration.</param>
+        /// <param name="duration">Duration.</param>
         /// <returns>True if this result must be counted.</returns>
-        protected virtual bool OnBatchFinished(BenchmarkState state, long dur)
+        protected virtual bool OnBatchFinished(BenchmarkState state, long duration)
         {
             return true;
         }
@@ -377,7 +370,7 @@ namespace Apache.Ignite.Benchmarks
         /// <summary>
         /// Print debug to console.
         /// </summary>
-        /// <param name="msg">Message delegate.</param>
+        /// <param name="msgFunc">Message delegate.</param>
         protected void PrintDebug(Func<string> msgFunc)
         {
             if (Debug)
@@ -462,7 +455,7 @@ namespace Apache.Ignite.Benchmarks
         /// <returns>Current throughput.</returns>
         private IDictionary<string, Tuple<long, long>> CurrentThroughput()
         {
-            IDictionary<string, Tuple<long, long>> total = new Dictionary<string, Tuple<long, long>>(_descs.Count);
+            var total = new Dictionary<string, Tuple<long, long>>(_descs.Count);
 
             foreach (var desc in _descs)
                 total[desc.Name] = new Tuple<long, long>(0, 0);
@@ -566,7 +559,7 @@ namespace Apache.Ignite.Benchmarks
             private readonly BenchmarkBase _benchmark;
 
             /** Descriptors. */
-            private BenchmarkOperationDescriptor[] _descs;
+            private readonly BenchmarkOperationDescriptor[] _descs;
 
             /** Results. */
             private readonly IDictionary<string, Result> _results;
@@ -577,13 +570,11 @@ namespace Apache.Ignite.Benchmarks
             /** Benchmark state. */
             private readonly BenchmarkState _state;
 
-            /** Thread ID. */
-            public volatile int ThreadId;
-
             /// <summary>
             /// Constructor.
             /// </summary>
             /// <param name="benchmark">Benchmark.</param>
+            /// <param name="descList">Descriptor list.</param>
             public BenchmarkTask(BenchmarkBase benchmark,
                 ICollection<BenchmarkOperationDescriptor> descList)
             {
@@ -623,8 +614,6 @@ namespace Apache.Ignite.Benchmarks
             /// </summary>
             public void Run()
             {
-                ThreadId = Thread.CurrentThread.ManagedThreadId;
-
                 try
                 {
                     _benchmark.OnThreadReady();
