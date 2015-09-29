@@ -24,9 +24,11 @@ import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -44,8 +46,10 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.stream.StreamTupleExtractor;
+import org.apache.ignite.stream.StreamSingleTupleExtractor;
+import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
@@ -112,7 +116,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
                     Marshaller marsh = new JdkMarshaller();
 
                     for (int i = 0; i < CNT; i++) {
-                        byte[] msg = marsh.marshal(new Tuple(i));
+                        byte[] msg = marsh.marshal(new Message(i));
 
                         os.write(msg.length >>> 24);
                         os.write(msg.length >>> 16);
@@ -126,21 +130,52 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
                     throw new IgniteException(e);
                 }
             }
-        });
+        }, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMultipleEntriesFromOneMessage() throws Exception {
+        test(null, null, new Runnable() {
+            @Override public void run() {
+                try (Socket sock = new Socket(InetAddress.getLocalHost(), port);
+                     OutputStream os = new BufferedOutputStream(sock.getOutputStream())) {
+                    Marshaller marsh = new JdkMarshaller();
+
+                    int[] values = new int[CNT];
+                    for (int i = 0; i < CNT; i++) {
+                        values[i] = i;
+                    }
+
+                    byte[] msg = marsh.marshal(new Message(values));
+
+                    os.write(msg.length >>> 24);
+                    os.write(msg.length >>> 16);
+                    os.write(msg.length >>> 8);
+                    os.write(msg.length);
+
+                    os.write(msg);
+                }
+                catch (IOException | IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+        }, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSizeBasedCustomConverter() throws Exception {
-        SocketMessageConverter<Tuple> converter = new SocketMessageConverter<Tuple>() {
-            @Override public Tuple convert(byte[] msg) {
+        SocketMessageConverter<Message> converter = new SocketMessageConverter<Message>() {
+            @Override public Message convert(byte[] msg) {
                 int i = (msg[0] & 0xFF) << 24;
                 i |= (msg[1] & 0xFF) << 16;
                 i |= (msg[2] & 0xFF) << 8;
                 i |= msg[3] & 0xFF;
 
-                return new Tuple(i);
+                return new Message(i);
             }
         };
 
@@ -165,7 +200,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
                     throw new IgniteException(e);
                 }
             }
-        });
+        }, true);
     }
 
     /**
@@ -179,7 +214,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
                     Marshaller marsh = new JdkMarshaller();
 
                     for (int i = 0; i < CNT; i++) {
-                        byte[] msg = marsh.marshal(new Tuple(i));
+                        byte[] msg = marsh.marshal(new Message(i));
 
                         os.write(msg);
                         os.write(DELIM);
@@ -189,7 +224,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
                     throw new IgniteException(e);
                 }
             }
-        });
+        }, true);
 
     }
 
@@ -197,14 +232,14 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDelimiterBasedCustomConverter() throws Exception {
-        SocketMessageConverter<Tuple> converter = new SocketMessageConverter<Tuple>() {
-            @Override public Tuple convert(byte[] msg) {
+        SocketMessageConverter<Message> converter = new SocketMessageConverter<Message>() {
+            @Override public Message convert(byte[] msg) {
                 int i = (msg[0] & 0xFF) << 24;
                 i |= (msg[1] & 0xFF) << 16;
                 i |= (msg[2] & 0xFF) << 8;
                 i |= msg[3] & 0xFF;
 
-                return new Tuple(i);
+                return new Message(i);
             }
         };
 
@@ -226,17 +261,18 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
                     throw new IgniteException(e);
                 }
             }
-        });
+        }, true);
     }
 
     /**
      * @param converter Converter.
      * @param r Runnable..
      */
-    private void test(@Nullable SocketMessageConverter<Tuple> converter,
-        @Nullable byte[] delim,
-        Runnable r) throws Exception {
-        SocketStreamer<Tuple, Integer, String> sockStmr = null;
+    private void test(@Nullable SocketMessageConverter<Message> converter, 
+        @Nullable byte[] delim, 
+        Runnable r,
+        boolean oneMessagePerTuple) throws Exception {
+        SocketStreamer<Message, Integer, String> sockStmr = null;
 
         Ignite ignite = grid(0);
 
@@ -258,11 +294,24 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
 
             sockStmr.setDelimiter(delim);
 
-            sockStmr.setTupleExtractor(new StreamTupleExtractor<Tuple, Integer, String>() {
-                @Override public Map.Entry<Integer, String> extract(Tuple msg) {
-                    return new IgniteBiTuple<>(msg.key, msg.val);
-                }
-            });
+            if (oneMessagePerTuple) {
+                sockStmr.setSingleTupleExtractor(new StreamSingleTupleExtractor<Message, Integer, String>() {
+                    @Override public Map.Entry<Integer, String> extract(Message msg) {
+                        return new IgniteBiTuple<>(msg.key, msg.val);
+                    }
+                });
+            }
+            else {
+                sockStmr.setMultipleTupleExtractor(new StreamMultipleTupleExtractor<Message, Integer, String>() {
+                    @Override public Map<Integer, String> extract(Message msg) {
+                        Map<Integer, String> answer = new HashMap<>();
+                        for (int value : msg.values) {
+                            answer.put(value, Integer.toString(value));
+                        }
+                        return answer;
+                    }
+                });
+            }
 
             if (converter != null)
                 sockStmr.setConverter(converter);
@@ -312,9 +361,9 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tuple.
+     * Message.
      */
-    private static class Tuple implements Serializable {
+    private static class Message implements Serializable {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -324,12 +373,25 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
         /** Value. */
         private final String val;
 
+        /** Multiple values. */
+        private final int[] values;
+
         /**
          * @param key Key.
          */
-        Tuple(int key) {
+        Message(int key) {
             this.key = key;
             this.val = Integer.toString(key);
+            this.values = new int[0];
+        }
+
+        /**
+         * @param values Multiple values.
+         */
+        Message(int[] values) {
+            this.key = -1;
+            this.val = null;
+            this.values = values;
         }
     }
 }
