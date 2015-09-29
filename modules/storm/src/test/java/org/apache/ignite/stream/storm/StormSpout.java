@@ -33,7 +33,7 @@ import java.util.*;
  */
 public class StormSpout implements IRichSpout {
     /* Count */
-    private static int CNT = 100;
+    private static int CNT = 10;
 
     /** Spout message value URL. */
     private static final String VALUE = "Value,";
