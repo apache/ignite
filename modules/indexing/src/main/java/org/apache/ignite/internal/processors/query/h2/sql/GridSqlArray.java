@@ -24,7 +24,7 @@ import org.h2.util.StatementBuilder;
 /**
  * SQL Array: (1, 2, ?, 'abc')
  */
-public class GridSqlArray extends GridSqlElement implements GridSqlValue {
+public class GridSqlArray extends GridSqlElement {
     /**
      * @param size Array size.
      */
