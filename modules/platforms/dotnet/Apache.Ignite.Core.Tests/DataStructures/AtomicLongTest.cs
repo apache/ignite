@@ -77,6 +77,8 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             Assert.AreEqual(true, al.IsClosed());
             Assert.AreEqual(true, al2.IsClosed());
             Assert.AreEqual(true, al3.IsClosed());
+
+            Assert.IsNull(Grid.GetAtomicLong(AtomicLongName, 10, false));
         }
 
         /// <summary>
@@ -85,10 +87,13 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         [Test]
         public void TestModify()
         {
-            var al = Grid.GetAtomicLong(AtomicLongName, 10, true);
-            var al2 = Grid.GetAtomicLong(AtomicLongName, 10, false);
+            var atomics = Enumerable.Range(1, 10)
+                .Select(x => Grid.GetAtomicLong(AtomicLongName, 5, true)).ToList();
 
-            // TODO
+            atomics.ForEach(x => Assert.AreEqual(5, x.Read()));
+
+            atomics[0].Add(5);
+            atomics.ForEach(x => Assert.AreEqual(10, x.Read()));
         }
 
         /// <summary>
