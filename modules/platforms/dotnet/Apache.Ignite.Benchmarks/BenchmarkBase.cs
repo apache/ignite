@@ -116,7 +116,7 @@ namespace Apache.Ignite.Benchmarks
             ValidateArguments();
 
             if (ResultWriter.ToLower().Equals(RES_WRITER_CONSOLE))
-                writer = new GridClientBenchmarkConsoleResultWriter();
+                writer = new BenchmarkConsoleResultWriter();
             else
                 writer = new GridClientBenchmarkFileResultWriter();
 

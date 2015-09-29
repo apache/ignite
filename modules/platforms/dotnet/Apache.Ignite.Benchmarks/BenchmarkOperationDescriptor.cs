@@ -20,12 +20,6 @@ namespace Apache.Ignite.Benchmarks
     using System;
 
     /// <summary>
-    /// Benchmark operation.
-    /// </summary>
-    /// <param name="state">Benchmark state.</param>
-    public delegate void BenchmarkOperation(BenchmarkState state);
-
-    /// <summary>
     /// Benchmark operation descriptor.
     /// </summary>
     internal class BenchmarkOperationDescriptor
@@ -34,15 +28,15 @@ namespace Apache.Ignite.Benchmarks
         /// Create new operation descriptor.
         /// </summary>
         /// <param name="name">Name.</param>
-        /// <param name="opertaion">Operation.</param>
+        /// <param name="operation">Operation.</param>
         /// <param name="weight">Weight.</param>
         /// <returns>Operation descriptor.</returns>
-        public static BenchmarkOperationDescriptor Create(string name, BenchmarkOperation opertaion, int weight)
+        public static BenchmarkOperationDescriptor Create(string name, Action<BenchmarkState> operation, int weight)
         {
             if (name == null || name.Length == 0)
                 throw new Exception("Operation name cannot be null or empty.");
 
-            if (opertaion == null)
+            if (operation == null)
                 throw new Exception("Operation cannot be null: " + name);
 
             if (weight <= 0)
@@ -51,7 +45,7 @@ namespace Apache.Ignite.Benchmarks
             BenchmarkOperationDescriptor desc = new BenchmarkOperationDescriptor();
 
             desc.Name = name;
-            desc.Operation = opertaion;
+            desc.Operation = operation;
             desc.Weight = weight;
 
             return desc;
@@ -69,7 +63,7 @@ namespace Apache.Ignite.Benchmarks
         /// <summary>
         /// Operation delegate.
         /// </summary>
-        public BenchmarkOperation Operation
+        public Action<BenchmarkState> Operation
         {
             get;
             private set;

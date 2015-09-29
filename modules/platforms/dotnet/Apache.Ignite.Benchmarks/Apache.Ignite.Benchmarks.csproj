@@ -13,7 +13,7 @@
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>GridGain.Client.Benchmark.GridClientBenchmarkRunner</StartupObject>
+    <StartupObject>Apache.Ignite.Benchmarks.BenchmarkRunner</StartupObject>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <PlatformTarget>x86</PlatformTarget>
@@ -56,7 +56,7 @@
     <Compile Include="Model\Sex.cs" />
     <Compile Include="Portable\PortableWriteBenchmark.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Result\GridClientBenchmarkConsoleResultWriter.cs" />
+    <Compile Include="Result\BenchmarkConsoleResultWriter.cs" />
     <Compile Include="Result\GridClientBenchmarkFileResultWriter.cs" />
     <Compile Include="Result\IGridClientBenchmarkResultWriter.cs" />
   </ItemGroup>
