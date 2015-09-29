@@ -47,7 +47,7 @@ namespace Apache.Ignite.Benchmarks.Interop
 
         public MyClosure(string s)
         {
-            this._s = s;
+            _s = s;
         }
 
         public int Invoke()

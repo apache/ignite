@@ -92,7 +92,7 @@ namespace Apache.Ignite.Benchmarks.Interop
 
         public MyJob(string s)
         {
-            this._s = s;
+            _s = s;
         }
 
         /// <summary>

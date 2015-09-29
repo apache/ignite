@@ -247,8 +247,8 @@ namespace Apache.Ignite.Benchmarks.Result
             /// <param name="text">Text.</param>
             public WriteTask(string fileName, string text)
             {
-                this._fileName = fileName;
-                this._text = text;
+                _fileName = fileName;
+                _text = text;
             }
 
             /// <summary>

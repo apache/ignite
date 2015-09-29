@@ -36,7 +36,7 @@ namespace Apache.Ignite.Benchmarks.Result
         /** <inheritdoc/> */
         public void Initialize(BenchmarkBase benchmark, ICollection<string> opNames)
         {
-            this._benchmark = benchmark;
+            _benchmark = benchmark;
         }
 
         /** <inheritdoc/> */
