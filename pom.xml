@@ -78,6 +78,7 @@
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
         <module>modules/platform</module>
+        <module>modules/storm</module>
     </modules>
 
     <profiles>
