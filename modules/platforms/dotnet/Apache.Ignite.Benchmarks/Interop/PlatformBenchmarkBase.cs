@@ -53,10 +53,10 @@ namespace Apache.Ignite.Benchmarks.Interop
         {
             Emps = new Employee[Dataset];
 
-            for (int i = 0; i < Emps.Length; i++)
+            for (var i = 0; i < Emps.Length; i++)
                 Emps[i] = BenchmarkUtils.RandomEmployee(Payload);
 
-            IgniteConfiguration cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration
             {
                 PortableConfiguration = GetPortableConfiguration(),
                 JvmOptions = new List<string>
@@ -97,46 +97,26 @@ namespace Apache.Ignite.Benchmarks.Interop
         /// <summary>
         /// Classpath.
         /// </summary>
-        public string Classpath
-        {
-            get;
-            set;
-        }
+        public string Classpath { get; set; }
 
         /// <summary>
         /// Path to JVM.DLL.
         /// </summary>
-        public string DllPath
-        {
-            get;
-            set;
-        }
+        public string DllPath { get; set; }
 
         /// <summary>
         /// Path to XML configuration.
         /// </summary>
-        public string ConfigPath
-        {
-            get;
-            set;
-        }
+        public string ConfigPath { get; set; }
 
         /// <summary>
         /// Data set size.
         /// </summary>
-        public int Dataset
-        {
-            get;
-            set;
-        }
+        public int Dataset { get; set; }
 
         /// <summary>
         /// Payload.
         /// </summary>
-        public int Payload
-        {
-            get;
-            set;
-        }
+        public int Payload { get; set; }
     }
 }

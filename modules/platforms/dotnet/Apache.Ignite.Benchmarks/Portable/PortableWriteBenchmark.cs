@@ -31,6 +31,7 @@ namespace Apache.Ignite.Benchmarks.Portable
         /** Marshaller. */
         private readonly PortableMarshaller _marsh;
 
+        /** Memory manager. */
         private readonly PlatformMemoryManager _memMgr = new PlatformMemoryManager(1024);
 
         /** Pre-allocated addess. */

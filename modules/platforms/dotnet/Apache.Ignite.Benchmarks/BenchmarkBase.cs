@@ -257,7 +257,7 @@ namespace Apache.Ignite.Benchmarks
                                       "ms, ops=" + _curOps +
                                       ", threads=" + Threads +
                                       ", avgThroughput=" + avgThroughput +
-                                      ", avgLatency=" + String.Format("{0:0.000}ms", avgLatency) + ']');
+                                      ", avgLatency=" + string.Format("{0:0.000}ms", avgLatency) + ']');
                 }
                 else
                 {
@@ -734,8 +734,8 @@ namespace Apache.Ignite.Benchmarks
                 {
                     var old = total[result.Key];
 
-                    total[result.Key] = new Tuple<long, long>(old.Item1 + result.Value.Dur,
-                        old.Item2 + result.Value.Cnt);
+                    total[result.Key] = new Tuple<long, long>(old.Item1 + result.Value.Duration,
+                        old.Item2 + result.Value.OpCount);
                 }
             }
 
@@ -891,24 +891,24 @@ namespace Apache.Ignite.Benchmarks
             public readonly long[] Slots;
 
             /** Slot duration in ticks. */
-            private readonly long _slotDur;
+            private readonly long _slotDuration;
 
             /** Total operations count. */
-            public long Cnt;
+            public long OpCount;
 
             /** Total duration. */
-            public long Dur;
+            public long Duration;
 
             /// <summary>
             /// Constructor.
             /// </summary>
             /// <param name="slotCnt">Slot count.</param>
-            /// <param name="slotDur">Slot duration in ticks.</param>
-            public Result(long slotCnt, long slotDur)
+            /// <param name="slotDuration">Slot duration in ticks.</param>
+            public Result(long slotCnt, long slotDuration)
             {
                 Slots = new long[slotCnt];
 
-                _slotDur = slotDur;
+                _slotDuration = slotDuration;
             }
 
             /// <summary>
@@ -917,15 +917,15 @@ namespace Apache.Ignite.Benchmarks
             /// <param name="curDur">Current duration in ticks.</param>
             public void Add(long curDur)
             {
-                var idx = (int) (curDur/_slotDur);
+                var idx = (int) (curDur/_slotDuration);
 
                 if (idx >= Slots.Length)
                     idx = Slots.Length - 1;
 
                 Slots[idx] += 1;
 
-                Cnt++;
-                Dur += curDur;
+                OpCount++;
+                Duration += curDur;
             }
         }
     }

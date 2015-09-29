@@ -53,10 +53,6 @@ namespace Apache.Ignite.Benchmarks.Interop
             int idx = BenchmarkUtils.RandomInt(Dataset);
 
             _cache.Put(idx, Emps[idx]);
-
-            //object res = cache.Get(idx);
-
-            //System.Console.WriteLine(res);
         }
     }
 }

@@ -49,8 +49,6 @@ namespace Apache.Ignite.Benchmarks.Model
         /// </summary>
         public string Occupation { get; set; }
 
-        public Company() { }
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -75,15 +73,7 @@ namespace Apache.Ignite.Benchmarks.Model
             writer.WriteInt("size", Size);
             writer.WriteString("name", Name);
             writer.WriteString("occupation", Occupation);
-            writer.WriteObject<Address>("address", Address);
-
-            //IIgnitePortableRawWriter rawWriter = writer.RawWriter();
-
-            //rawWriter.WriteInt(Id);
-            //rawWriter.WriteInt(Size);
-            //rawWriter.WriteString(Name);
-            //rawWriter.WriteString(Occupation);
-            //rawWriter.WriteObject<Address>(Address);
+            writer.WriteObject("address", Address);
         }
 
         /** <inheritDoc /> */

@@ -115,20 +115,7 @@ namespace Apache.Ignite.Benchmarks.Model
             writer.WriteLong("salary", Salary);
             writer.WriteByteArray("payload", Payload);
             writer.WriteString("name", Name);
-            writer.WriteObject<Address>("address", Address);
-
-            //IIgnitePortableRawWriter rawWiter = writer.RawWriter();
-
-            //rawWiter.WriteInt(Id);
-            //rawWiter.WriteInt(CompanyId);
-            //rawWiter.WriteInt(Age);
-            //rawWiter.WriteInt(Points);
-            //rawWiter.WriteByte((byte)SexType);
-            //rawWiter.WriteByte((byte)Department);
-            //rawWiter.WriteLong(Salary);
-            //rawWiter.WriteByteArray(Payload);
-            //rawWiter.WriteString(Name);
-            //rawWiter.WriteObject<Address>(Address);
+            writer.WriteObject("address", Address);
         }
 
         /** <inheritDoc /> */

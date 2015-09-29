@@ -61,8 +61,6 @@ namespace Apache.Ignite.Benchmarks.Interop
             _cache.Get(idx);
 
             _cache.GetFuture<Employee>().ToTask().Wait();
-
-            //System.Console.WriteLine(res);
         }
     }
 }

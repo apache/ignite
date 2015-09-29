@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Benchmarks.Model
 {
-    using System;
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
@@ -28,12 +27,12 @@ namespace Apache.Ignite.Benchmarks.Model
         /// <summary>
         /// City.
         /// </summary>
-        public String City { get; set; }
+        public string City { get; set; }
         
         /// <summary>
         /// Street.
         /// </summary>
-        public String Street { get; set; }
+        public string Street { get; set; }
         
         /// <summary>
         /// Street number.
@@ -52,7 +51,7 @@ namespace Apache.Ignite.Benchmarks.Model
         /// <param name="street">Street.</param>
         /// <param name="streetNum">Street number.</param>
         /// <param name="flatNum">Flat number.</param>
-        public Address(String city, String street, int streetNum, int flatNum)
+        public Address(string city, string street, int streetNum, int flatNum)
         {
             City = city;
             Street = street;
@@ -67,13 +66,6 @@ namespace Apache.Ignite.Benchmarks.Model
             writer.WriteInt("flatNum", FlatNumber);
             writer.WriteString("city", City);
             writer.WriteString("street", Street);
-
-            //IIgnitePortableRawWriter rawWriter = writer.RawWriter();
-
-            //rawWriter.WriteInt(StreetNumber);
-            //rawWriter.WriteInt(FlatNumber);
-            //rawWriter.WriteString(City);
-            //rawWriter.WriteString(Street);
         }
 
         /** <inheritDoc /> */

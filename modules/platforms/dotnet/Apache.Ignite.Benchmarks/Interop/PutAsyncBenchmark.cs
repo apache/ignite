@@ -55,8 +55,6 @@ namespace Apache.Ignite.Benchmarks.Interop
             _cache.Put(idx, Emps[idx]);
 
             _cache.GetFuture<object>().Get();
-
-            //System.Console.WriteLine(res);
         }
     }
 }
