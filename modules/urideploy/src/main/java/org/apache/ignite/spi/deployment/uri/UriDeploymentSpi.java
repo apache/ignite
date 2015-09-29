@@ -80,7 +80,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * SPI tracks all changes of every given URI. This means that if any file is
  * changed or deleted, SPI will re-deploy or delete corresponding tasks.
- * Note that the very first apply to {@link #findResource(String)} findClassLoader(String)}
+ * Note that the very first apply to {@link #findResource(String)}
  * is blocked until SPI finishes scanning all URI's at least once.
  * <p>
  * There are several deployable unit types supported:
@@ -150,6 +150,13 @@ import org.jetbrains.annotations.Nullable;
  * parameters (there are no mandatory parameters):
  * <ul>
  * <li>
+ * Array of {@link UriDeploymentScanner}-s which will be used to deploy resources
+ * (see {@link #setScanners(UriDeploymentScanner...) setScanners(UriDeploymentScanner...)}).
+ * If not specified, then preconfigured file-scanner and http(s)-scanner is used (see
+ * {@link UriDeploymentFileScanner} and {@link UriDeploymentHttpScanner}). You can implement your own scanner
+ * by implementing {@link UriDeploymentScanner} interface.
+ * </li>
+ * <li>
  * Temporary directory path where scanned GAR files and directories are
  * copied to (see {@link #setTemporaryDirectoryPath(String) setTemporaryDirectoryPath(String)}).
  * </li>
@@ -163,10 +170,10 @@ import org.jetbrains.annotations.Nullable;
  * </li>
  * </ul>
  * <h1 class="header">Protocols</h1>
- * Following protocols are supported in SPI:
+ * Following protocols are supported in SPI by default (it's can be changed
+ * by using {@link #setScanners(UriDeploymentScanner...)}):
  * <ul>
  * <li><a href="#file">file://</a> - File protocol</li>
- * <li><a href="#classes">classes://</a> - Custom File protocol.</li>
  * <li><a href="#http">http://</a> - HTTP protocol</li>
  * <li><a href="#http">https://</a> - Secure HTTP protocol</li>
  * </ul>
@@ -175,7 +182,6 @@ import org.jetbrains.annotations.Nullable;
  * have different configuration parameters described below. Parameters are
  * separated by '{@code ;}' character.
  * <p>
- * <a name="file"></a>
  * <h1 class="header">File</h1>
  * For this protocol SPI will scan folder specified by URI on file system and
  * download any GAR files or directories that end with .gar from source
@@ -189,6 +195,12 @@ import org.jetbrains.annotations.Nullable;
  *      <th>Optional</th>
  *      <th>Default</th>
  *  </tr>
+ *  <tr>
+ *      <td>freq</td>
+ *      <td>File directory scan frequency in milliseconds.</td>
+ *      <td>Yes</td>
+ *      <td>{@code 5000} ms specified in {@link UriDeploymentFileScanner#DFLT_SCAN_FREQ}.</td>
+ *  </tr>
  * </table>
  * <h2 class="header">File URI Example</h2>
  * The following example will scan {@code 'c:/Program files/ignite/deployment'}
@@ -198,15 +210,17 @@ import org.jetbrains.annotations.Nullable;
  * <blockquote class="snippet">
  * {@code file://freq=5000@localhost/c:/Program files/ignite/deployment}
  * </blockquote>
+ * Or just
+ * <blockquote class="snippet">
+ * {@code file:///c:/Program files/ignite/deployment}
+ * </blockquote>
  * <a name="classes"></a>
- * <h1 class="header">Classes</h1>
- * For this protocol SPI will scan folder specified by URI on file system
- * looking for compiled classes that implement {@link org.apache.ignite.compute.ComputeTask} interface.
- * This protocol comes very handy during development, as it allows developer
- * to specify IDE compilation output folder as URI and all task classes
- * in that folder will be deployed automatically.
- * <p>
- * Following parameters are supported for CLASSES protocol:
+ * <h2 class="header">HTTP/HTTPS</h2>
+ * URI deployment scanner tries to read DOM of the html it points to and parses out href attributes of all &lt;a&gt;-tags
+ * - this becomes the URL collection (to GAR files) to deploy. It's important that HTTP scanner
+ * uses URLConnection.getLastModified() method to check if there were any changes since last iteration
+ * for each GAR-file before redeploying.
+ * Following parameters are supported for FILE protocol:
  * <table class="doctable">
  *  <tr>
  *      <th>Parameter</th>
@@ -214,16 +228,13 @@ import org.jetbrains.annotations.Nullable;
  *      <th>Optional</th>
  *      <th>Default</th>
  *  </tr>
+ *  <tr>
+ *      <td>freq</td>
+ *      <td>Scan frequency in milliseconds.</td>
+ *      <td>Yes</td>
+ *      <td>{@code 300000} ms specified in {@link UriDeploymentHttpScanner#DFLT_SCAN_FREQ}.</td>
+ *  </tr>
  * </table>
- * <h2 class="header">Classes URI Example</h2>
- * The following example will scan {@code 'c:/Program files/ignite/deployment'}
- * folder on local box every {@code '5000'} milliseconds. Note that since path
- * has spaces, {@link #setEncodeUri(boolean) setEncodeUri(boolean)} parameter must
- * be set to {@code true} (which is default behavior).
- * <blockquote class="snippet">
- * {@code classes://freq=5000@localhost/c:/Program files/ignite/deployment}
- * </blockquote>
- * <a name="http"></a>
  * <h2 class="header">HTTP URI Example</h2>
  * The following example will scan {@code 'ignite/deployment'} folder with
  * on site {@code 'www.mysite.com'} using authentication
@@ -238,14 +249,9 @@ import org.jetbrains.annotations.Nullable;
  *
  * IgniteConfiguration cfg = new IgniteConfiguration();
  *
- * List&lt;String&gt; uris = new ArrayList&lt;String&gt;(5);
- *
- * uris.add("http://www.site.com/tasks");
- * uris.add("file://freq=20000@localhost/c:/Program files/gg-deployment");
- * uris.add("classes:///c:/Java_Projects/myproject/out");
- *
  * // Set URIs.
- * deploySpi.setUriList(uris);
+ * deploySpi.setUriList(Arrays.asList("http://www.site.com/tasks",
+ *                                    "file://freq=20000@localhost/c:/Program files/gg-deployment"));
  *
  * // Override temporary directory path.
  * deploySpi.setTemporaryDirectoryPath("c:/tmp/grid");
@@ -254,7 +260,7 @@ import org.jetbrains.annotations.Nullable;
  * cfg.setDeploymentSpi(deploySpi);
  *
  * //  Start grid.
- * G.start(cfg);
+ * Ignition.start(cfg);
  * </pre>
  * <p>
  * <h2 class="header">Spring Example</h2>
@@ -269,7 +275,6 @@ import org.jetbrains.annotations.Nullable;
  *                     &lt;list&gt;
  *                         &lt;value&gt;http://www.site.com/tasks&lt;/value&gt;
  *                         &lt;value&gt;file://freq=20000@localhost/c:/Program files/gg-deployment&lt;/value&gt;
- *                         &lt;value&gt;classes:///c:/Java_Projects/myproject/out&lt;/value&gt;
  *                     &lt;/list&gt;
  *                 &lt;/property&gt;
  *             &lt;/bean&gt;
@@ -277,6 +282,19 @@ import org.jetbrains.annotations.Nullable;
  *         ...
  * &lt;/bean&gt;
  * </pre>
+ * <p>
+ * Notes:
+ * <ul>
+ * <li>Peer class loading and GAR deployment are two different ways of managing classes deployment on cluster nodes.
+ * You should use only one of them. Deployment mode affects only peer loading.</li>
+ * <li>'libs' folder can be used for explicit deployment. You just put JAR files there before node start
+ * and they will be added to classpath. If you have all classes in 'libs' folder on all nodes,
+ * you don't need to you any other deployment techniques. But in this case you can't change classes without
+ * restarting the nodes.</li>
+ * <li>Ignite uses <code>org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask</code> task (module 'tools') to package GAR-files
+ * by Apache Ant. Module 'tools' is not a part of a final bin package, but the source code can be
+ * helpful for user projects.</li>
+ * </ul>
  * <p>
  * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>

@@ -64,7 +64,7 @@ import org.w3c.tidy.Tidy;
  */
 public class UriDeploymentHttpScanner implements UriDeploymentScanner {
     /** Default scan frequency. */
-    private static final int DFLT_SCAN_FREQ = 300000;
+    public static final int DFLT_SCAN_FREQ = 300000;
 
     /** Secure socket protocol to use. */
     private static final String PROTOCOL = "TLS";
