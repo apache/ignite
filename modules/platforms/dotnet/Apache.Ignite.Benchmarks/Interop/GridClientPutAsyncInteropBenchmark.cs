@@ -18,8 +18,7 @@
 namespace GridGain.Client.Benchmark.Interop
 {
     using System.Collections.Generic;
-
-    using GridGain.Cache;
+    using Apache.Ignite.Core.Cache;
 
     /// <summary>
     /// 
@@ -37,7 +36,7 @@ namespace GridGain.Client.Benchmark.Interop
         {
             base.OnStarted();
 
-            cache = node.Cache<object, object>(CACHE_NAME).WithAsync();
+            cache = node.GetCache<object, object>(CACHE_NAME).WithAsync();
         }
 
         /** <inheritDoc /> */

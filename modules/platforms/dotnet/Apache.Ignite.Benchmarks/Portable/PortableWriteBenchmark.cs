@@ -20,6 +20,7 @@ namespace GridGain.Client.Benchmark.Portable
     using System.Collections.Generic;
 
     using Apache.Ignite.Core.Impl.Memory;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Portable;
     using GridGain.Client.Benchmark.Model;
@@ -32,7 +33,7 @@ namespace GridGain.Client.Benchmark.Portable
         /** Marshaller. */
         private readonly PortableMarshaller marsh;
 
-        private readonly InteropMemoryManager memMgr = new InteropMemoryManager(1024);
+        private readonly PlatformMemoryManager memMgr = new PlatformMemoryManager(1024);
 
         /** Pre-allocated addess. */
         private readonly Address a = GridClientBenchmarkUtils.RandomAddress();

@@ -18,8 +18,7 @@
 namespace GridGain.Client.Benchmark.Interop
 {
     using System.Collections.Generic;
-
-    using GridGain.Compute;
+    using Apache.Ignite.Core.Compute;
 
     /// <summary>
     /// 
@@ -37,7 +36,7 @@ namespace GridGain.Client.Benchmark.Interop
         /// </summary>
         private void ExecuteClosureTask(GridClientBenchmarkState state)
         {
-            node.Compute().Call(new MyClosure("zzzz"));
+            node.GetCompute().Call(new MyClosure("zzzz"));
         }
     }
 

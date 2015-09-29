@@ -42,5 +42,6 @@ using System.Runtime.InteropServices;
 
 [assembly: InternalsVisibleTo("Apache.Ignite")]
 [assembly: InternalsVisibleTo("Apache.Ignite.Core.Tests")]
+[assembly: InternalsVisibleTo("Apache.Ignite.Benchmarks")]
 
 #endif
