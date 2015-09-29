@@ -93,7 +93,7 @@ public class PlatformAtomicLong extends PlatformAbstractTarget {
      * @return Original atomic long value.
      */
     public long compareExchange(long val, long cmp) {
-        return atomicLong.compareAndSetAndGet(val, cmp);
+        return atomicLong.compareAndSetAndGet(cmp, val);
     }
 
     /**

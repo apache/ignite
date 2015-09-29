@@ -94,6 +94,12 @@ namespace Apache.Ignite.Core.Tests.DataStructures
 
             Assert.AreEqual(10, atomics[0].Add(5));
             atomics.ForEach(x => Assert.AreEqual(10, x.Read()));
+
+            Assert.AreEqual(10, atomics[0].CompareExchange(33, 10));  // successful exchange
+            atomics.ForEach(x => Assert.AreEqual(33, x.Read()));
+
+            Assert.AreEqual(33, atomics[0].CompareExchange(44, 10));  // failed exchange
+            atomics.ForEach(x => Assert.AreEqual(33, x.Read()));
         }
 
         /// <summary>
