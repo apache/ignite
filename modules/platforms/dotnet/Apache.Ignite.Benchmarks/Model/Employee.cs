@@ -22,7 +22,7 @@ namespace Apache.Ignite.Benchmarks.Model
     /// <summary>
     /// Employee.
     /// </summary>
-    public class Employee : IPortableMarshalAware
+    internal class Employee : IPortableMarshalAware
     {
         /// <summary>
         /// ID.

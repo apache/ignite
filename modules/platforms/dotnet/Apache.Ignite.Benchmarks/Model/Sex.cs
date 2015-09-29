@@ -20,7 +20,7 @@ namespace Apache.Ignite.Benchmarks.Model
     /// <summary>
     /// Sex enumeration.
     /// </summary>
-    public enum Sex
+    internal enum Sex
     {
         /** Male. */
         Male, 

@@ -22,7 +22,7 @@ namespace Apache.Ignite.Benchmarks
     /// <summary>
     /// Benchmark state.
     /// </summary>
-    public class BenchmarkState
+    internal class BenchmarkState
     {
         /** Warmup flag. */
         private bool _warmup = true;

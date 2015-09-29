@@ -44,7 +44,7 @@ namespace Apache.Ignite.Benchmarks.Interop
     /// <summary>
     /// Compute task.
     /// </summary>
-    public class MyEmptyTask : IComputeTask<object, object, object>
+    internal class MyEmptyTask : IComputeTask<object, object, object>
     {
         /** <inheritDoc /> */
         public IDictionary<IComputeJob<object>, IClusterNode> Map(IList<IClusterNode> subgrid, object arg)
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Benchmarks.Interop
     /// <summary>
     /// Compute job.
     /// </summary>
-    public class MyJob : IComputeJob<object>
+    internal class MyJob : IComputeJob<object>
     {
         /** */
         private readonly string _s;

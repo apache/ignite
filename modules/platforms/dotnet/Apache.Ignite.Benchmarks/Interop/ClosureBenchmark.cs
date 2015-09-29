@@ -43,7 +43,7 @@ namespace Apache.Ignite.Benchmarks.Interop
     /// <summary>
     /// Compute func.
     /// </summary>
-    public class MyClosure : IComputeFunc<int>
+    internal class MyClosure : IComputeFunc<int>
     {
         /** */
         private readonly string _s;

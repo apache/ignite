@@ -20,7 +20,7 @@ namespace Apache.Ignite.Benchmarks.Model
     /// <summary>
     /// Department.
     /// </summary>
-    public enum Department
+    internal enum Department
     {
         /** PR. */
         Pr, 

@@ -22,7 +22,7 @@ namespace Apache.Ignite.Benchmarks.Model
     /// <summary>
     /// Address.
     /// </summary>
-    public class Address : IPortableMarshalAware
+    internal class Address : IPortableMarshalAware
     {
         /// <summary>
         /// City.

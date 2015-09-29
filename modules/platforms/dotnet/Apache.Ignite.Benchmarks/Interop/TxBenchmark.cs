@@ -22,7 +22,7 @@ namespace Apache.Ignite.Benchmarks.Interop
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
-    ///
+    /// Transactions benchmark.
     /// </summary>
     internal class TxBenchmark : PlatformBenchmarkBase
     {
