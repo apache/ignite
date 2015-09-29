@@ -28,14 +28,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         public static readonly string IgniteHome = IgniteManager.GetIgniteHome(null);
 
         /// <summary>
-        /// Full Apache.Ignite.exe path.
-        /// </summary>
-        public static readonly string IgniteExePath = typeof(IgniteRunner).Assembly.Location;
-
-        /// <summary>
         /// Examples source code path.
         /// </summary>
-        public static readonly string ExamplesSourcePath = Path.Combine(IgniteHome, @"platforms\dotnet\examples");
+        public static readonly string ExamplesSourcePath = Path.Combine(IgniteHome, @"modules\platforms\dotnet\examples");
 
         /// <summary>
         /// Examples source code path.

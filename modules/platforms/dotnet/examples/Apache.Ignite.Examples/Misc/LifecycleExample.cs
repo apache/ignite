@@ -29,7 +29,7 @@ namespace Apache.Ignite.Examples.Misc
     /// events to the console.
     /// <para />
     /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
-    ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder.
+    ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/modules/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder.
     /// 2) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
     ///     Application -> Startup object);
     /// 3) Start example (F5 or Ctrl+F5).
@@ -50,7 +50,7 @@ namespace Apache.Ignite.Examples.Misc
 
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-compute.xml",
+                SpringConfigUrl = @"modules\platforms\dotnet\examples\config\example-compute.xml",
                 JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" },
                 LifecycleBeans = new List<ILifecycleBean> { lifecycleExampleBean }
             };

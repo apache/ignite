@@ -30,14 +30,14 @@ namespace Apache.Ignite.Examples.Datagrid
     /// full text queries over this data.
     /// <para />
     /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
-    ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder.
+    ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/modules/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder.
     /// 2) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
     ///     Application -> Startup object);
     /// 3) Start example (F5 or Ctrl+F5).
     /// <para />
     /// This example can be run with standalone Apache Ignite .Net node:
-    /// 1) Run %IGNITE_HOME%/platforms/dotnet/Apache.Ignite/bin/${Platform]/${Configuration}/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-cache-query.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// 1) Run %IGNITE_HOME%/modules/platforms/dotnet/examples/Apache.Ignite/bin/${Platform]/${Configuration}/Apache.Ignite.exe:
+    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=modules\platforms\dotnet\examples\config\example-cache-query.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
     public class QueryExample
@@ -47,7 +47,7 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-cache-query.xml",
+                SpringConfigUrl = @"modules\platforms\dotnet\examples\config\example-cache-query.xml",
                 JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
             };
 
