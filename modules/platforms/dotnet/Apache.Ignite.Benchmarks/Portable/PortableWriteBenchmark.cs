@@ -21,13 +21,12 @@ namespace Apache.Ignite.Benchmarks.Portable
     using Apache.Ignite.Benchmarks.Model;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Portable write benchmark.
     /// </summary>
-    class PortableWriteBenchmark : BenchmarkBase
+    internal class PortableWriteBenchmark : BenchmarkBase
     {
         /** Marshaller. */
         private readonly PortableMarshaller _marsh;
@@ -35,23 +34,20 @@ namespace Apache.Ignite.Benchmarks.Portable
         private readonly PlatformMemoryManager _memMgr = new PlatformMemoryManager(1024);
 
         /** Pre-allocated addess. */
-        private readonly Address _a = BenchmarkUtils.RandomAddress();
+        private readonly Address _address = BenchmarkUtils.RandomAddress();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PortableWriteBenchmark"/> class.
+        /// </summary>
         public PortableWriteBenchmark()
         {
-            var addrCfg = new PortableTypeConfiguration(typeof (Address));
-
-            addrCfg.MetadataEnabled = false;
-
-            PortableConfiguration cfg = new PortableConfiguration
+            _marsh = new PortableMarshaller(new PortableConfiguration
             {
                 TypeConfigurations = new List<PortableTypeConfiguration>
                 {
-                    addrCfg
+                    new PortableTypeConfiguration(typeof (Address)) {MetadataEnabled = false}
                 }
-            };
-
-            _marsh = new PortableMarshaller(cfg);
+            });
         }
 
         /// <summary>
@@ -67,15 +63,15 @@ namespace Apache.Ignite.Benchmarks.Portable
         /// Write address.
         /// </summary>
         /// <param name="state">State.</param>
-        public void WriteAddress(BenchmarkState state)
+        private void WriteAddress(BenchmarkState state)
         {
-            IPlatformMemory mem = _memMgr.Allocate();
+            var mem = _memMgr.Allocate();
 
             try
             {
-                IPortableStream stream = mem.Stream();
+                var stream = mem.Stream();
 
-                _marsh.StartMarshal(stream).Write(_a);
+                _marsh.StartMarshal(stream).Write(_address);
             }
             finally
             {

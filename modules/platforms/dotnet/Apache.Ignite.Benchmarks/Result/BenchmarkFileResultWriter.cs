@@ -23,6 +23,7 @@ namespace Apache.Ignite.Benchmarks.Result
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
+    using System.Linq;
     using System.Threading;
 
     internal class BenchmarkFileResultWriter : IBenchmarkResultWriter
@@ -37,7 +38,9 @@ namespace Apache.Ignite.Benchmarks.Result
         private const string HdrPercentile = "**\"Latency, microseconds\",\"Operations, %\"";
 
         /** File header: throughput probe. */
-        private const string HdrThroughput = "**\"Time, sec\",\"Operations/sec (more is better)\",\"Latency, nsec (less is better)\"";
+
+        private const string HdrThroughput =
+            "**\"Time, sec\",\"Operations/sec (more is better)\",\"Latency, nsec (less is better)\"";
 
         /** Cached culture. */
         private static readonly CultureInfo Culture = new CultureInfo("en-US");
@@ -48,42 +51,37 @@ namespace Apache.Ignite.Benchmarks.Result
         /** Benchmarks. */
         private volatile IDictionary<string, BenchmarkTask> _benchmarks;
 
-        /** Amount of threads. */
-        private volatile int _threadCnt;
-
         /** <inheritdoc/> */
         public void Initialize(BenchmarkBase benchmark, ICollection<string> opNames)
         {
-            _threadCnt = benchmark.Threads;
-
             _benchmarks = new Dictionary<string, BenchmarkTask>(opNames.Count);
 
             // 1. Create folder for results.
-            DateTime now = DateTime.Now;
+            var now = DateTime.Now;
 
-            String suffix = "-t=" + benchmark.Threads + "-d=" + benchmark.Duration +
-                "-w=" + benchmark.Warmup;
+            var suffix = "-t=" + benchmark.Threads + "-d=" + benchmark.Duration +
+                         "-w=" + benchmark.Warmup;
 
-            String path = benchmark.ResultFolder + "\\" + now.ToString("yyyyMMdd-HHmmss", Culture) + "-" +
-                benchmark.GetType().Name + suffix;
+            var path = benchmark.ResultFolder + "\\" + now.ToString("yyyyMMdd-HHmmss", Culture) + "-" +
+                       benchmark.GetType().Name + suffix;
 
             if (Directory.Exists(path))
                 Directory.Delete(path, true);
 
             Directory.CreateDirectory(path);
 
-            String dateStr = "--Created " + DateTime.Now.ToString("yyyyMMdd-HHmmss", Culture);
-            String cfgStr = "--Benchmark config: " + benchmark;
+            var dateStr = "--Created " + DateTime.Now.ToString("yyyyMMdd-HHmmss", Culture);
+            var cfgStr = "--Benchmark config: " + benchmark;
 
             // 2. For each operation create separate folder and initialize probe files there.
-            foreach (string opName in opNames)
+            foreach (var opName in opNames)
             {
-                String opDesc = benchmark.GetType().Name + "-" + opName + suffix;
-                String opPath = path + "\\" + opDesc;
+                var opDesc = benchmark.GetType().Name + "-" + opName + suffix;
+                var opPath = path + "\\" + opDesc;
 
                 Directory.CreateDirectory(opPath);
 
-                BenchmarkTask task = new BenchmarkTask(opPath + "\\" + ProbePercentile,
+                var task = new BenchmarkTask(opPath + "\\" + ProbePercentile,
                     opPath + "\\" + ProbeThroughput);
 
                 _benchmarks[opName] = task;
@@ -108,16 +106,16 @@ namespace Apache.Ignite.Benchmarks.Result
         /** <inheritdoc/> */
         public void WriteThroughput(string opName, long duration, long opCount)
         {
-            BenchmarkTask benchmark = _benchmarks[opName];
+            var benchmark = _benchmarks[opName];
 
             if (!benchmark.FirstThroughput())
             {
-                int sec = benchmark.Counter();
+                var sec = benchmark.Counter();
 
-                float ops = (float)opCount;
-                float latency = (float)duration * 1000000000 / (opCount * Stopwatch.Frequency);
+                var ops = (float) opCount;
+                var latency = (float) duration*1000000000/(opCount*Stopwatch.Frequency);
 
-                string text = sec + "," + ops.ToString("F2", Culture) + "," + latency.ToString("F2", Culture);
+                var text = sec + "," + ops.ToString("F2", Culture) + "," + latency.ToString("F2", Culture);
 
                 Write0(benchmark.FileThroughput, text);
             }
@@ -126,18 +124,15 @@ namespace Apache.Ignite.Benchmarks.Result
         /** <inheritdoc/> */
         public void WritePercentiles(string opName, long interval, long[] slots)
         {
-            BenchmarkTask benchmark = _benchmarks[opName];
+            var benchmark = _benchmarks[opName];
 
-            long total = 0;
-
-            foreach (long slot in slots)
-                total += slot;
+            var total = slots.Sum();
 
             long time = 0;
 
-            foreach (long slot in slots)
+            foreach (var slot in slots)
             {
-                float val = (float)slot / total;
+                var val = (float) slot/total;
 
                 Write0(benchmark.FilePercentile, time + "," + val.ToString("F2", Culture));
 
@@ -181,7 +176,7 @@ namespace Apache.Ignite.Benchmarks.Result
             {
                 while (!_stop)
                 {
-                    Task task = _queue.Take();
+                    var task = _queue.Take();
 
                     task.Invoke(this);
                 }
@@ -299,20 +294,12 @@ namespace Apache.Ignite.Benchmarks.Result
             /// <summary>
             /// File percentile.
             /// </summary>
-            public string FilePercentile
-            {
-                get;
-                private set;
-            }
+            public string FilePercentile { get; private set; }
 
             /// <summary>
             /// File throughput.
             /// </summary>
-            public string FileThroughput
-            {
-                get;
-                private set;
-            }
+            public string FileThroughput { get; private set; }
 
             /// <summary>
             /// Get counter value.
