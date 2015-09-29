@@ -33,7 +33,7 @@ namespace Apache.Ignite.Benchmarks
         /// <returns>Operation descriptor.</returns>
         public static BenchmarkOperationDescriptor Create(string name, Action<BenchmarkState> operation, int weight)
         {
-            if (name == null || name.Length == 0)
+            if (string.IsNullOrEmpty(name))
                 throw new Exception("Operation name cannot be null or empty.");
 
             if (operation == null)
@@ -42,40 +42,27 @@ namespace Apache.Ignite.Benchmarks
             if (weight <= 0)
                 throw new Exception("Operation weight cannot be negative [name=" + name + ", weight=" + weight + ']');
 
-            BenchmarkOperationDescriptor desc = new BenchmarkOperationDescriptor();
-
-            desc.Name = name;
-            desc.Operation = operation;
-            desc.Weight = weight;
-
-            return desc;
+            return new BenchmarkOperationDescriptor
+            {
+                Name = name,
+                Operation = operation,
+                Weight = weight
+            };
         }
 
         /// <summary>
         /// Unique operation name.
         /// </summary>
-        public string Name
-        {
-            get;
-            private set;
-        }
+        public string Name { get; private set; }
 
         /// <summary>
         /// Operation delegate.
         /// </summary>
-        public Action<BenchmarkState> Operation
-        {
-            get;
-            private set;
-        }
+        public Action<BenchmarkState> Operation { get; private set; }
 
         /// <summary>
         /// Weight.
         /// </summary>
-        public int Weight
-        {
-            get;
-            private set;
-        }
+        public int Weight { get; private set; }
     }
 }

@@ -19,7 +19,6 @@ namespace Apache.Ignite.Benchmarks
 {
     using System;
     using System.Diagnostics;
-    using System.Reflection;
     using System.Text;
     using Apache.Ignite.Benchmarks.Portable;
 
@@ -34,9 +33,8 @@ namespace Apache.Ignite.Benchmarks
         /// <param name="args">Arguments.</param>
         public static void Main(string[] args)
         {
-            args = new string[] { 
+            args = new[] { 
                 typeof(PortableWriteBenchmark).FullName,
-                //"GridGain.Client.Benchmark.Interop.GridClientTaskBenchmark", 
                 "-ConfigPath", "benchmarks/yardstick/config/single-node.xml",
                 "-Threads", "1",
                 "-Warmup", "0",
@@ -44,7 +42,7 @@ namespace Apache.Ignite.Benchmarks
                 "-BatchSize", "1000"
             };
 
-            bool gcSrv = System.Runtime.GCSettings.IsServerGC;
+            var gcSrv = System.Runtime.GCSettings.IsServerGC;
 
             Console.WriteLine("GC Server: " + gcSrv);
 
@@ -53,30 +51,33 @@ namespace Apache.Ignite.Benchmarks
 
             Console.WriteLine("DotNet benchmark process started: " + Process.GetCurrentProcess().Id);
 
-            StringBuilder argsStr = new StringBuilder();
+            var argsStr = new StringBuilder();
 
-            foreach (string arg in args)
+            foreach (var arg in args)
                 argsStr.Append(arg + " ");
             
             if (args.Length < 1)
-                throw new Exception("Not enough arguments: " + argsStr.ToString());
-            else
-                Console.WriteLine("Arguments: " + argsStr.ToString());
+                throw new Exception("Not enough arguments: " + argsStr);
+            
+            Console.WriteLine("Arguments: " + argsStr);
 
-            Type benchmarkType = Type.GetType(args[0]);
+            var benchmarkType = Type.GetType(args[0]);
 
-            BenchmarkBase benchmark = (BenchmarkBase)Activator.CreateInstance(benchmarkType);
+            if (benchmarkType == null)
+                throw new InvalidOperationException("Could not find benchmark type: " + args[0]);
 
-            for (int i = 1; i < args.Length; i++)
+            var benchmark = (BenchmarkBase)Activator.CreateInstance(benchmarkType);
+
+            for (var i = 1; i < args.Length; i++)
             {
-                string arg = args[i];
+                var arg = args[i];
 
                 if (arg.StartsWith("-"))
                     arg = arg.Substring(1);
                 else
                     continue;
 
-                PropertyInfo prop = BenchmarkUtils.FindProperty(benchmark, arg);
+                var prop = BenchmarkUtils.FindProperty(benchmark, arg);
 
                 if (prop != null)
                     benchmark.Configure(prop.Name, prop.PropertyType == typeof(bool) ? bool.TrueString : args[++i]);
