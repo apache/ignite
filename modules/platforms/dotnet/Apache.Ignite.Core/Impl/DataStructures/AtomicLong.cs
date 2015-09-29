@@ -96,7 +96,6 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** <inheritDoc /> */
         public bool IsClosed()
         {
-            // TODO: Rename to IsClosed
             return UU.AtomicLongIsClosed(Target);
         }
     }
