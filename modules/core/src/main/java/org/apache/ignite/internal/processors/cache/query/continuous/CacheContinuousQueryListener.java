@@ -60,7 +60,14 @@ interface CacheContinuousQueryListener<K, V> {
      * @param cacheName Cache name.
      * @param partId Partition ID.
      */
-    public void partitionLost(String cacheName, int partId);
+    public void firePartitionLostEvent(String cacheName, int partId);
+
+    /**
+     * Handle partition lost event.
+     *
+     * @param partId Partition ID.
+     */
+    public void partitionLost(int partId);
 
     /**
      * Flushes backup queue.

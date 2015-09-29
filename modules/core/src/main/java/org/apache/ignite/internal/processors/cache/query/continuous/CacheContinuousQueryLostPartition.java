@@ -18,27 +18,22 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.nio.ByteBuffer;
-import javax.cache.event.EventType;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import java.util.UUID;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Continuous query entry.
  */
-public class CacheContinuousQueryLostPartition extends CacheContinuousQueryEntry {
+public class CacheContinuousQueryLostPartition extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Cache name. */
-    private int cacheId;
+    /** Routine ID. */
+    private UUID routineId;
 
     /** Partition. */
     private int part;
@@ -54,16 +49,10 @@ public class CacheContinuousQueryLostPartition extends CacheContinuousQueryEntry
      * @param cacheId Cache ID.
      * @param part Partition ID.
      */
-    CacheContinuousQueryLostPartition(int cacheId, int part) {
+    CacheContinuousQueryLostPartition(UUID routineId, int cacheId, int part) {
+        this.routineId = routineId;
         this.cacheId = cacheId;
         this.part = part;
-    }
-
-    /**
-     * @return Cache ID.
-     */
-    int cacheId() {
-        return cacheId;
     }
 
     /**
@@ -73,14 +62,24 @@ public class CacheContinuousQueryLostPartition extends CacheContinuousQueryEntry
         return part;
     }
 
+    /**
+     * @return Routine ID.
+     */
+    UUID routineId() {
+        return routineId;
+    }
+
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 116;
+        return 115;
     }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
+
+        if (!super.writeTo(buf, writer))
+            return false;
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType(), fieldsCount()))
@@ -90,17 +89,18 @@ public class CacheContinuousQueryLostPartition extends CacheContinuousQueryEntry
         }
 
         switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt("cacheId", cacheId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
+            case 3:
                 if (!writer.writeInt("part", part))
                     return false;
 
                 writer.incrementState();
+
+            case 4:
+                if (!writer.writeUuid("routineId", routineId))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -113,40 +113,32 @@ public class CacheContinuousQueryLostPartition extends CacheContinuousQueryEntry
         if (!reader.beforeMessageRead())
             return false;
 
+        if (!super.readFrom(buf, reader))
+            return false;
+
         switch (reader.state()) {
-            case 0:
-                cacheId = reader.readInt("cacheId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
+            case 3:
                 part = reader.readInt("part");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
+
+            case 4:
+                routineId = reader.readUuid("routineId");
+
+                if (!reader.isLastRead())
+                    return false;
+
         }
 
-        return reader.afterMessageRead(CacheContinuousQueryLostPartition.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override void prepareMarshal(GridCacheContext cctx) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override void unmarshal(GridCacheContext cctx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
-        // No-op.
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 5;
     }
 
     /** {@inheritDoc} */

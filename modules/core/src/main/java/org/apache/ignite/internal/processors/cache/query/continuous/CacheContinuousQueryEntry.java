@@ -83,6 +83,9 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     private long updateIdx;
 
     /** */
+    private boolean filtered;
+
+    /** */
     @GridToStringInclude
     @GridDirectTransient
     private AffinityTopologyVersion topVer;
@@ -152,6 +155,13 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /**
+     * Mark this event as filtered.
+     */
+    void markFiltered() {
+        filtered = true;
+    }
+
+    /**
      * @return Update index.
      */
     long updateIndex() {
@@ -162,7 +172,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @return Filtered entry.
      */
     boolean filtered() {
-        return false;
+        return filtered;
     }
 
     /**
@@ -286,6 +296,12 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
                 writer.incrementState();
 
+            case 7:
+                if (!writer.writeBoolean("filtered", filtered))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -353,6 +369,14 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
             case 6:
                 updateIdx = reader.readLong("updateIdx");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
+                filtered = reader.readBoolean("filtered");
 
                 if (!reader.isLastRead())
                     return false;

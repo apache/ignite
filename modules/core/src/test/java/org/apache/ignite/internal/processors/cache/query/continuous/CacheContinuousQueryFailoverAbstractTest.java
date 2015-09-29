@@ -264,6 +264,84 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    public void testStartStopQuery() throws Exception {
+        this.backups = 1;
+
+        final int SRV_NODES = 3;
+
+        startGridsMultiThreaded(SRV_NODES);
+
+        client = true;
+
+        final Ignite qryClient = startGrid(SRV_NODES);
+
+        client = false;
+
+        IgniteCache<Object, Object> clnCache = qryClient.cache(null);
+
+        Ignite igniteSrv = ignite(0);
+
+        IgniteCache<Object, Object> srvCache = igniteSrv.cache(null);
+
+        List<Integer> keys = testKeys(srvCache, 1);
+
+        int keyCnt = keys.size();
+
+        for (int j = 0; j < 50; ++j) {
+            ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+            final TestLocalListener lsnr = new TestLocalListener();
+
+            qry.setLocalListener(lsnr);
+
+            int keyIter = 0;
+
+            for (; keyIter < keyCnt / 2; keyIter++) {
+                int key = keys.get(keyIter);
+
+                clnCache.put(key, key);
+            }
+
+            assert lsnr.evts.isEmpty();
+
+            QueryCursor<Cache.Entry<Object, Object>> query = clnCache.query(qry);
+
+            Map<Object, T2<Object, Object>> updates = new HashMap<>();
+
+            final List<T3<Object, Object, Object>> expEvts = new ArrayList<>();
+
+            Affinity<Object> aff = affinity(srvCache);
+
+            for (; keyIter < keys.size(); keyIter++) {
+                int key = keys.get(keyIter);
+
+                log.info("Put [key=" + key + ", part=" + aff.partition(key) + ']');
+
+                T2<Object, Object> t = updates.get(key);
+
+                if (t == null) {
+                    updates.put(key, new T2<>((Object)key, null));
+
+                    expEvts.add(new T3<>((Object)key, (Object)key, null));
+                }
+                else {
+                    updates.put(key, new T2<>((Object)key, (Object)key));
+
+                    expEvts.add(new T3<>((Object)key, (Object)key, (Object)key));
+                }
+
+                srvCache.put(key, key);
+            }
+
+            checkEvents(expEvts, lsnr);
+
+            query.close();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testLeftPrimaryAndBackupNodes() throws Exception {
         this.backups = 1;
 
@@ -745,8 +823,13 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
      * @param expEvts Expected events.
      * @param lsnr Listener.
      */
-    private void checkEvents(List<T3<Object, Object, Object>> expEvts, TestLocalListener lsnr) {
-        assert lsnr.evts.size() == expEvts.size();
+    private void checkEvents(final List<T3<Object, Object, Object>> expEvts, final TestLocalListener lsnr)
+        throws Exception {
+        assert GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return lsnr.evts.size() == expEvts.size();
+            }
+        }, 2000L);
 
         for (T3<Object, Object, Object> exp : expEvts) {
             CacheEntryEvent<?, ?> e = lsnr.evts.get(exp.get1());

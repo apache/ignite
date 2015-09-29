@@ -46,7 +46,6 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -128,6 +127,16 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 }
             });
 
+        cctx.io().addHandler(cctx.cacheId(), CacheContinuousQueryLostPartition.class,
+            new CI2<UUID, CacheContinuousQueryLostPartition>() {
+                @Override public void apply(UUID uuid, CacheContinuousQueryLostPartition msg) {
+                    CacheContinuousQueryListener lsnr = lsnrs.get(msg.routineId());
+
+                    if (lsnr != null)
+                        lsnr.partitionLost(msg.partition());
+                }
+            });
+
         cctx.time().schedule(new Runnable() {
             @Override public void run() {
                 for (CacheContinuousQueryListener lsnr : lsnrs.values())
@@ -145,10 +154,10 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 CacheRebalancingEvent evt0 = (CacheRebalancingEvent)evt;
 
                 for (CacheContinuousQueryListener lsnr : lsnrs.values())
-                    lsnr.partitionLost(evt0.cacheName(), evt0.partition());
+                    lsnr.firePartitionLostEvent(evt0.cacheName(), evt0.partition());
 
                 for (CacheContinuousQueryListener lsnr : intLsnrs.values())
-                    lsnr.partitionLost(evt0.cacheName(), evt0.partition());
+                    lsnr.firePartitionLostEvent(evt0.cacheName(), evt0.partition());
             }
         }, EVT_CACHE_REBALANCE_PART_DATA_LOST);
     }
