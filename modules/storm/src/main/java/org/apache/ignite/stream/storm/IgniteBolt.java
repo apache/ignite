@@ -27,42 +27,48 @@ import backtype.storm.tuple.Values;
 import java.util.Map;
 
 /**
- * @author  Gianfranco Murador
- * Ignite Bolt, We provide a custom Storm Bolt to setup the input. This bolt could be empty.
- * The transformation of the input is leave to process abrastct method.
+ * Ignite Bolt, We provide a custom Storm Bolt to setup the input. This bolt could be empty. The transformation of the
+ * input is leave to process abstract method.
  */
 public abstract class IgniteBolt extends BaseRichBolt {
 
     /** the storm output collector */
     private OutputCollector collector;
+
     /**
      * In this point we declare the output collector of the bolt
+     *
      * @param map the map derived from topology
      * @param topologyContext the context topology in storm
      * @param collector the output of the collector
      */
     @Override
-    public void prepare(Map map, TopologyContext topologyContext, OutputCollector collector){
+    public void prepare(Map map, TopologyContext topologyContext, OutputCollector collector) {
         this.collector = collector;
     }
 
     /**
-     * This method generates and map and do a put operations
+     * This method generates and map and do a put operation
+     *
      * @param tuple
      */
     @Override
     public void execute(Tuple tuple) {
         try {
-            Map<?,?> res =  process(tuple);
+            Map<?, ?> res = process(tuple);
             collector.emit(new Values(res));
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             e.printStackTrace();
-        }finally {
+        }
+        finally {
             collector.ack(tuple);
         }
     }
+
     /**
      * This may not be necessary
+     *
      * @param declarer
      */
     @Override
@@ -72,6 +78,7 @@ public abstract class IgniteBolt extends BaseRichBolt {
 
     /**
      * This method should be overridden by providing a way to translate a tuple in a map
+     *
      * @return The format accepted by Ignite
      * @throws Exception
      */

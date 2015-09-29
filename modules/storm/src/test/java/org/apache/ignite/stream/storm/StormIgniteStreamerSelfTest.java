@@ -29,7 +29,7 @@ import backtype.storm.LocalCluster;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.io.IOException;
 import java.util.Map;
@@ -37,8 +37,6 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * Tests {@link StormStreamer}.
- * @author  Gianfranco Murador
- * @author  chandresh pancholi
  */
 public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
@@ -109,7 +107,6 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
      * Note to run this on TC: the time out has to be setted in according
      * to power of the server. In a simple dual core it takes 6 sec.
      * look setMessageTimeoutSecs parameter.
-     * @author Gianfranco Murador
      * @param stormStreamer the storm streamer in Ignite
      */
     public void startSimulatedTopology ( StormStreamer stormStreamer) {
@@ -150,6 +147,8 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
                         completeTopologyParam.setStormConf(conf);
 
                         Map result = Testing.completeTopology(cluster, topology, completeTopologyParam);
+
+
                     }
                 }
         );

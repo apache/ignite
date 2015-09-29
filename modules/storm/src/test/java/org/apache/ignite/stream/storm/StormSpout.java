@@ -24,16 +24,18 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
 
 /**
  * Defines a testing spout mandatory for Storm
- * @author  Gianfranco Murador
- * @author  Chandresh  Pancholi
  */
 public class StormSpout implements IRichSpout {
-    /* Count */
-    private static int CNT = 10;
+    /** Count */
+    private static final int CNT = 10;
 
     /** Spout message value URL. */
     private static final String VALUE = "Value,";
@@ -41,7 +43,7 @@ public class StormSpout implements IRichSpout {
     /* spout output collector */
     private SpoutOutputCollector collector;
 
-    private HashMap<String,String> keyValMap = new HashMap<>();
+    private HashMap<String, String> keyValMap = new HashMap<>();
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
@@ -58,7 +60,8 @@ public class StormSpout implements IRichSpout {
         HashMap<String, String> keyValMap = getKeyValMap();
         collector.emit(new Values(keyValMap));
     }
-    public HashMap<String, String> getKeyValMap(){
+
+    public HashMap<String, String> getKeyValMap() {
         List<Integer> numbers = new ArrayList<>();
 
         for (int i = 1; i <= CNT; i++)
@@ -66,9 +69,9 @@ public class StormSpout implements IRichSpout {
 
         Collections.shuffle(numbers);
 
-        HashMap<String,String> keyValMap = new HashMap<>();
+        HashMap<String, String> keyValMap = new HashMap<>();
 
-        for(int evt = 0; evt<CNT; evt++) {
+        for (int evt = 0; evt < CNT; evt++) {
 
             String ip = Integer.toString(numbers.get(evt));
 
@@ -78,20 +81,26 @@ public class StormSpout implements IRichSpout {
         }
         return keyValMap;
     }
-    @Override
-    public void ack(Object o) {}
 
     @Override
-    public void fail(Object o) {}
+    public void ack(Object o) {
+    }
 
     @Override
-    public void close() {}
+    public void fail(Object o) {
+    }
 
     @Override
-    public void activate() {}
+    public void close() {
+    }
 
     @Override
-    public void deactivate() {}
+    public void activate() {
+    }
+
+    @Override
+    public void deactivate() {
+    }
 
     @Override
     public Map<String, Object> getComponentConfiguration() {

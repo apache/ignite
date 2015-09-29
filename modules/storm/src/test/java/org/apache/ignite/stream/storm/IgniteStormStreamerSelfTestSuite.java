@@ -17,11 +17,10 @@
 
 package org.apache.ignite.stream.storm;
 
-import junit.framework.*;
+import junit.framework.TestSuite;
 
 /**
- * Apache Storm streamer tests.
- * Tests {@link StormStreamer}.
+ * Apache Storm streamer tests. Tests {@link StormStreamer}.
  */
 public class IgniteStormStreamerSelfTestSuite extends TestSuite {
     /**
