@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Events
 {
+    using System.Globalization;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Portable;
 
@@ -90,9 +91,10 @@ namespace Apache.Ignite.Core.Events
         /** <inheritDoc /> */
 	    public override string ToShortString()
 	    {
-	        return string.Format("{0}: CacheName={1}, Partition={2}, DiscoveryNode={3}, DiscoveryEventType={4}, " +
-	                             "DiscoveryEventName={5}, DiscoveryTimestamp={6}", Name, CacheName, Partition,
-	                             DiscoveryNode, DiscoveryEventType, DiscoveryEventName, DiscoveryTimestamp);
+	        return string.Format(CultureInfo.InvariantCulture,
+	            "{0}: CacheName={1}, Partition={2}, DiscoveryNode={3}, DiscoveryEventType={4}, " +
+	            "DiscoveryEventName={5}, DiscoveryTimestamp={6}", Name, CacheName, Partition,
+	            DiscoveryNode, DiscoveryEventType, DiscoveryEventName, DiscoveryTimestamp);
 	    }
     }
 }

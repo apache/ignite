@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Events
 {
     using System;
+    using System.Globalization;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Portable;
@@ -47,7 +48,7 @@ namespace Apache.Ignite.Core.Events
         private readonly string _name;
 
         /** */
-        private readonly DateTime _timeStamp;
+        private readonly DateTime _timestamp;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EventBase"/> class.
@@ -64,7 +65,7 @@ namespace Apache.Ignite.Core.Events
             _message = r.ReadString();
             _type = r.ReadInt();
             _name = r.ReadString();
-            _timeStamp = r.ReadDate() ?? DateTime.Now;
+            _timestamp = r.ReadDate() ?? DateTime.Now;
         }
 
         /** <inheritDoc /> */
@@ -104,9 +105,9 @@ namespace Apache.Ignite.Core.Events
         }
 
         /** <inheritDoc /> */
-        public DateTime TimeStamp
+        public DateTime Timestamp
         {
-            get { return _timeStamp; }
+            get { return _timestamp; }
         }
 
         /** <inheritDoc /> */
@@ -143,8 +144,8 @@ namespace Apache.Ignite.Core.Events
         /** <inheritDoc /> */
         public override string ToString()
         {
-            return string.Format("CacheEntry [Name={0}, Type={1}, TimeStamp={2}, Message={3}]", Name, Type, TimeStamp,
-                Message);
+            return string.Format(CultureInfo.InvariantCulture, 
+                "CacheEntry [Name={0}, Type={1}, Timestamp={2}, Message={3}]", Name, Type, Timestamp, Message);
         }
 
         /// <summary>

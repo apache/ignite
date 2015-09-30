@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Events
 {
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Globalization;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Portable;
@@ -73,7 +74,8 @@ namespace Apache.Ignite.Core.Events
         /** <inheritDoc /> */
 	    public override string ToShortString()
 	    {
-	        return string.Format("{0}: EventNode={1}, TopologyVersion={2}, TopologyNodes={3}", Name, EventNode, 
+            return string.Format(CultureInfo.InvariantCulture, 
+                "{0}: EventNode={1}, TopologyVersion={2}, TopologyNodes={3}", Name, EventNode, 
                 TopologyVersion, TopologyNodes.Count);
 	    }
     }

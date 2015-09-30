@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Services
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
 
@@ -124,6 +125,8 @@ namespace Apache.Ignite.Core.Services
         /// Gets metadata about all deployed services.
         /// </summary>
         /// <returns>Metadata about all deployed services.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
+            Justification = "Expensive operation.")]
         ICollection<IServiceDescriptor> GetServiceDescriptors();
 
         /// <summary>

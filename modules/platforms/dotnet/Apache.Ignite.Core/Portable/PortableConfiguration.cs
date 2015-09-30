@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Portable
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Portable type configuration.
@@ -59,6 +60,7 @@ namespace Apache.Ignite.Core.Portable
         /// <summary>
         /// Type configurations.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<PortableTypeConfiguration> TypeConfigurations
         {
             get;
@@ -68,6 +70,7 @@ namespace Apache.Ignite.Core.Portable
         /// <summary>
         /// Portable types. Shorthand for creating PortableTypeConfiguration.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<string> Types
         {
             get;

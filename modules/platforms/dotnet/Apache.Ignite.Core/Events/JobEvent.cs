@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Events
 {
     using System;
+    using System.Globalization;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Portable;
@@ -92,9 +93,10 @@ namespace Apache.Ignite.Core.Events
         /** <inheritDoc /> */
 	    public override string ToShortString()
 	    {
-	        return string.Format("{0}: TaskName={1}, TaskClassName={2}, TaskSessionId={3}, JobId={4}, TaskNode={5}, " +
-	                             "TaskSubjectId={6}", Name, TaskName, TaskClassName, TaskSessionId, JobId, TaskNode, 
-                                 TaskSubjectId);
+	        return string.Format(CultureInfo.InvariantCulture,
+	            "{0}: TaskName={1}, TaskClassName={2}, TaskSessionId={3}, JobId={4}, TaskNode={5}, " +
+	            "TaskSubjectId={6}", Name, TaskName, TaskClassName, TaskSessionId, JobId, TaskNode,
+	            TaskSubjectId);
 	    }
     }
 }

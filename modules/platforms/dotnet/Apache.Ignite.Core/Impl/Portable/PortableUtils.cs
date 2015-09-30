@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Reflection;
     using System.Runtime.Serialization.Formatters.Binary;
@@ -1543,7 +1544,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (Enum.GetUnderlyingType(val.GetType()) == TypInt)
             {
                 stream.WriteInt(ObjTypeId);
-                stream.WriteInt(Convert.ToInt32(val));
+                stream.WriteInt((int) (object) val);
             }
             else
                 throw new PortableException("Only Int32 underlying type is supported for enums: " +
@@ -1610,7 +1611,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         public static string CleanFieldName(string fieldName)
         {
-            if (fieldName.StartsWith("<") && fieldName.EndsWith(">k__BackingField"))
+            if (fieldName.StartsWith("<", StringComparison.Ordinal)
+                && fieldName.EndsWith(">k__BackingField", StringComparison.Ordinal))
                 return fieldName.Substring(1, fieldName.IndexOf(">", StringComparison.Ordinal) - 1);
             
             return fieldName;
@@ -1934,6 +1936,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="writer">Writer.</param>
         /// <param name="success">Success flag.</param>
         /// <param name="res">Result.</param>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public static void WriteWrappedInvocationResult(PortableWriterImpl writer, bool success, object res)
         {
             var pos = writer.Stream.Position;
@@ -1976,6 +1979,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="writer">Writer.</param>
         /// <param name="success">Success flag.</param>
         /// <param name="res">Result.</param>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public static void WriteInvocationResult(PortableWriterImpl writer, bool success, object res)
         {
             var pos = writer.Stream.Position;

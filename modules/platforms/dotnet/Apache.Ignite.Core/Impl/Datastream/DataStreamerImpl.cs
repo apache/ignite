@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Datastream;
@@ -523,6 +524,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -671,12 +673,18 @@ namespace Apache.Ignite.Core.Impl.Datastream
             private const int StateStopped = 2;
 
             /** Data streamer. */
+            [SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields",
+                Justification = "Incorrect warning")]
             private readonly WeakReference _ldrRef;
 
             /** Finish flag. */
+            [SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields",
+                Justification = "Incorrect warning")]
             private int _state;
 
             /** Flush frequency. */
+            [SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields",
+                Justification = "Incorrect warning")]
             private long _freq;
 
             /// <summary>

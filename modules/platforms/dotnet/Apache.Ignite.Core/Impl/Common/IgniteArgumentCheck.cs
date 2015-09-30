@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
 
     /// <summary>
     /// Arguments check helpers.
@@ -44,8 +45,8 @@ namespace Apache.Ignite.Core.Impl.Common
         public static void NotNullOrEmpty(string arg, string argName)
         {
             if (string.IsNullOrEmpty(arg))
-                throw new ArgumentException(string.Format("'{0}' argument should not be null or empty.", argName),
-                    argName);
+                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture,
+                    "'{0}' argument should not be null or empty.", argName), argName);
         }
 
         /// <summary>
@@ -56,8 +57,8 @@ namespace Apache.Ignite.Core.Impl.Common
         public static void NotNullOrEmpty<T>(ICollection<T> collection, string argName)
         {
             if (collection == null || collection.Count == 0)
-                throw new ArgumentException(string.Format("'{0}' argument should not be null or empty.", argName),
-                    argName);
+                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, 
+                    "'{0}' argument should not be null or empty.", argName), argName);
         }
 
         /// <summary>
@@ -69,8 +70,8 @@ namespace Apache.Ignite.Core.Impl.Common
         public static void Ensure(bool condition, string argName, string message)
         {
             if (!condition)
-                throw new ArgumentException(string.Format("'{0}' argument is invalid: {1}", argName, message), 
-                    argName);
+                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, 
+                    "'{0}' argument is invalid: {1}", argName, message), argName);
         }
     }
 }

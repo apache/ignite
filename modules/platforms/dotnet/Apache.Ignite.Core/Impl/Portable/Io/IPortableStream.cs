@@ -19,6 +19,7 @@
 namespace Apache.Ignite.Core.Impl.Portable.IO
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Text;
 
@@ -26,6 +27,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
     /// Stream capable of working with portable objects.
     /// </summary>
     [CLSCompliant(false)]
+    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
     public unsafe interface IPortableStream : IDisposable
     {
         /// <summary>

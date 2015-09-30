@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -98,6 +99,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Static initializer.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
         static Ignition()
         {
             AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
@@ -165,7 +167,7 @@ namespace Apache.Ignite.Core
 
                 var cbs = new UnmanagedCallbacks();
 
-                void* ctx = IgniteManager.GetContext(cfg, cbs);
+                IgniteManager.CreateJvmContext(cfg, cbs);
 
                 sbyte* cfgPath0 = IgniteUtils.StringToUtf8Unmanaged(cfg.SpringConfigUrl ?? DefaultCfg);
 
@@ -173,7 +175,7 @@ namespace Apache.Ignite.Core
                 sbyte* gridName0 = IgniteUtils.StringToUtf8Unmanaged(gridName);
 
                 // 3. Create startup object which will guide us through the rest of the process.
-                _startup = new Startup(cfg, cbs) { Context = ctx };
+                _startup = new Startup(cfg, cbs);
 
                 IUnmanagedTarget interopProc = null;
 
@@ -606,7 +608,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Value object to pass data between .Net methods during startup bypassing Java.
         /// </summary>
-        private unsafe class Startup
+        private class Startup
         {
             /// <summary>
             /// Constructor.
@@ -647,11 +649,6 @@ namespace Apache.Ignite.Core
             /// Start error.
             /// </summary>
             internal Exception Error { get; set; }
-
-            /// <summary>
-            /// Gets or sets the context.
-            /// </summary>
-            internal void* Context { get; set; }
 
             /// <summary>
             /// Gets or sets the ignite.

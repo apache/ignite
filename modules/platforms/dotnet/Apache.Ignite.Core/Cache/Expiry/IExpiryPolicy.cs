@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Cache.Expiry
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Defines functions to determine when cache entries will expire based on
@@ -34,6 +35,7 @@ namespace Apache.Ignite.Core.Cache.Expiry
         /// If <c>null</c> is returned, no change to previously understood expiry is performed.
         /// </summary>
         /// <returns>Expiry for create opeartion.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         TimeSpan? GetExpiryForCreate();
 
         /// <summary>
@@ -44,6 +46,7 @@ namespace Apache.Ignite.Core.Cache.Expiry
         /// If <c>null</c> is returned, no change to previously understood expiry is performed.
         /// </summary>
         /// <returns>Expiry for update operation.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         TimeSpan? GetExpiryForUpdate();
 
         /// <summary>
@@ -54,6 +57,7 @@ namespace Apache.Ignite.Core.Cache.Expiry
         /// If <c>null</c> is returned, no change to previously understood expiry is performed.
         /// </summary>
         /// <returns>Expiry for access operation.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         TimeSpan? GetExpiryForAccess();
     }
 }

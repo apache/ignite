@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
@@ -533,7 +534,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var args = type.GetGenericArguments().Select(GetTypeName).Aggregate((x, y) => x + "," + y);
 
-            return string.Format("{0}[{1}]", type.Name, args);
+            return string.Format(CultureInfo.InvariantCulture, "{0}[{1}]", type.Name, args);
         }
     }
 }
