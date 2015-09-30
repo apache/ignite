@@ -123,6 +123,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             Ignition.ClientMode = false;
             IgniteProcess.KillAll();
+            
+            // do not interfere with other tests
+            Environment.SetEnvironmentVariable("IGNITE_SPRING_CONFIG_URL_PREFIX", null);  
         }
 
         /// <summary>
