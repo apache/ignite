@@ -101,10 +101,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static final long BLOCK_SIZE = 32 * 1024 * 1024;
 
     /** Default repeat count. */
-    protected static final int REPEAT_CNT = 50; // Diagnostic: ~100, up to 250; Regression: 5
+    protected static final int REPEAT_CNT = 10; // Diagnostic: ~100, up to 250; Regression: 5
 
     /** Concurrent operations count. */
-    protected static final int OPS_CNT = 50; // Diagnostic: ~160, up to 400; Regression: 16
+    protected static final int OPS_CNT = 32; // Diagnostic: ~160, up to 400; Regression: 16
 
     /** Renames count. */
     protected static final int RENAME_CNT = OPS_CNT;
