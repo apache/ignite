@@ -38,9 +38,10 @@ namespace Apache.Ignite.Core.Tests.Examples
                 .SelectMany(src => Regex.Matches(src, @"platforms[^\s]+.xml").OfType<Match>())
                 .Where(match => match.Success)
                 .Select(match => PathUtil.GetFullConfigPath(match.Value))
+                .Distinct()
                 .ToList();
 
-            Assert.AreEqual(24, paths.Count);
+            Assert.AreEqual(4, paths.Count);
 
             paths.ForEach(path => Assert.IsTrue(File.Exists(path), "Config file does not exist: " + path));
         }
