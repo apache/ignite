@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
@@ -52,20 +53,12 @@ namespace Apache.Ignite.Core.Impl
         private static PlatformMemoryManager _mem;
 
         /// <summary>
-        /// Static initializer.
-        /// </summary>
-        static IgniteManager()
-        {
-            // No-op.
-        }
-
-        /// <summary>
         /// Create JVM.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
         /// <param name="cbs">Callbacks.</param>
         /// <returns>Context.</returns>
-        internal static void* GetContext(IgniteConfiguration cfg, UnmanagedCallbacks cbs)
+        internal static void CreateJvmContext(IgniteConfiguration cfg, UnmanagedCallbacks cbs)
         {
             lock (SyncRoot)
             {
@@ -95,8 +88,6 @@ namespace Apache.Ignite.Core.Impl
                     _jvmCfg = jvmCfg;
                     _mem = new PlatformMemoryManager(1024);
                 }
-
-                return ctx;
             }
         }
         
@@ -184,10 +175,10 @@ namespace Apache.Ignite.Core.Impl
 
             // JvmInitialMemoryMB / JvmMaxMemoryMB have lower priority than CMD_JVM_OPT
             if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmMinMemJava, StringComparison.OrdinalIgnoreCase)))
-                jvmOpts.Add(string.Format("{0}{1}m", CmdJvmMinMemJava, cfg.JvmInitialMemoryMb));
+                jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}{1}m", CmdJvmMinMemJava, cfg.JvmInitialMemoryMb));
 
             if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmMaxMemJava, StringComparison.OrdinalIgnoreCase)))
-                jvmOpts.Add(string.Format("{0}{1}m", CmdJvmMaxMemJava, cfg.JvmMaxMemoryMb));
+                jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}{1}m", CmdJvmMaxMemJava, cfg.JvmMaxMemoryMb));
 
             return jvmOpts;
         }

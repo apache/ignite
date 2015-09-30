@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Events
         /// Note that more than one event can be generated with the same timestamp. 
         /// For ordering purposes use <see cref="LocalOrder"/> instead.
         /// </summary>
-        DateTime TimeStamp { get; }
+        DateTime Timestamp { get; }
 
         /// <summary>
         /// Gets shortened version of ToString result.

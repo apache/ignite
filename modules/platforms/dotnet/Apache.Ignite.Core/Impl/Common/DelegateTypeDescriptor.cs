@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Globalization;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Datastream;
@@ -191,9 +192,8 @@ namespace Apache.Ignite.Core.Impl.Common
         private static void ThrowIfMultipleInterfaces(object check, Type userType, Type interfaceType)
         {
             if (check != null)
-                throw new InvalidOperationException(
-                    string.Format("Not Supported: Type {0} implements interface {1} multiple times.", userType,
-                        interfaceType));
+                throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, 
+                    "Not Supported: Type {0} implements interface {1} multiple times.", userType, interfaceType));
         }
 
         /// <summary>

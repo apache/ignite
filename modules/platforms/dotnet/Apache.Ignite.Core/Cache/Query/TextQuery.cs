@@ -29,9 +29,9 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="typ">Type.</param>
-        /// <param name="txt">Text.</param>
-        public TextQuery(Type typ, string txt) : this(typ, txt, false)
+        /// <param name="queryType">Type.</param>
+        /// <param name="text">Text.</param>
+        public TextQuery(Type queryType, string text) : this(queryType, text, false)
         {
             // No-op.
         }
@@ -39,10 +39,10 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="typ">Type.</param>
-        /// <param name="txt">Text.</param>
-        /// <param name="loc">Whether query should be executed locally.</param>
-        public TextQuery(Type typ, string txt, bool loc) : this(typ.Name, txt, loc)
+        /// <param name="queryType">Type.</param>
+        /// <param name="text">Text.</param>
+        /// <param name="local">Whether query should be executed locally.</param>
+        public TextQuery(Type queryType, string text, bool local) : this(queryType.Name, text, local)
         {
             // No-op.
         }
@@ -50,9 +50,9 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="typ">Type.</param>
-        /// <param name="txt">Text.</param>
-        public TextQuery(string typ, string txt) : this(typ, txt, false)
+        /// <param name="queryType">Type.</param>
+        /// <param name="text">Text.</param>
+        public TextQuery(string queryType, string text) : this(queryType, text, false)
         {
             // No-op.
         }
@@ -60,20 +60,20 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="typ">Type.</param>
-        /// <param name="txt">Text.</param>
-        /// <param name="loc">Whether query should be executed locally.</param>
-        public TextQuery(string typ, string txt, bool loc)
+        /// <param name="queryType">Type.</param>
+        /// <param name="text">Text.</param>
+        /// <param name="local">Whether query should be executed locally.</param>
+        public TextQuery(string queryType, string text, bool local)
         {
-            Type = typ;
-            Text = txt;
-            Local = loc;
+            QueryType = queryType;
+            Text = text;
+            Local = local;
         }
 
         /// <summary>
         /// Type.
         /// </summary>
-        public string Type { get; set; }
+        public string QueryType { get; set; }
 
         /// <summary>
         /// Text.
@@ -86,12 +86,12 @@ namespace Apache.Ignite.Core.Cache.Query
             if (string.IsNullOrEmpty(Text))
                 throw new ArgumentException("Text cannot be null or empty");
 
-            if (string.IsNullOrEmpty(Type))
-                throw new ArgumentException("Type cannot be null or empty");
+            if (string.IsNullOrEmpty(QueryType))
+                throw new ArgumentException("QueryType cannot be null or empty");
 
             writer.WriteBoolean(Local);
             writer.WriteString(Text);
-            writer.WriteString(Type);
+            writer.WriteString(QueryType);
             writer.WriteInt(PageSize);
         }
 

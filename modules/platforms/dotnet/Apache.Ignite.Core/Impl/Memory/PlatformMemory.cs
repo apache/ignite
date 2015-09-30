@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     public abstract class PlatformMemory : IPlatformMemory
     {
         /** Memory pointer. */
-        protected readonly long MemPtr;
+        private readonly long _memPtr;
 
         /// <summary>
         /// Constructor.
@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <param name="memPtr">Memory pointer.</param>
         protected PlatformMemory(long memPtr)
         {
-            MemPtr = memPtr;
+            _memPtr = memPtr;
         }
 
         /** <inheritdoc /> */
@@ -47,26 +47,26 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public long Pointer
         {
-            get { return MemPtr; }
+            get { return _memPtr; }
         }
 
         /** <inheritdoc /> */
         public long Data
         {
-            get { return PlatformMemoryUtils.Data(MemPtr); }
+            get { return PlatformMemoryUtils.GetData(_memPtr); }
         }
 
         /** <inheritdoc /> */
         public int Capacity
         {
-            get { return PlatformMemoryUtils.Capacity(MemPtr); }
+            get { return PlatformMemoryUtils.GetCapacity(_memPtr); }
         }
 
         /** <inheritdoc /> */
         public int Length
         {
-            get { return PlatformMemoryUtils.Length(MemPtr); }
-            set { PlatformMemoryUtils.Length(MemPtr, value); }
+            get { return PlatformMemoryUtils.GetLength(_memPtr); }
+            set { PlatformMemoryUtils.SetLength(_memPtr, value); }
         }
 
         /** <inheritdoc /> */

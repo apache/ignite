@@ -40,6 +40,8 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// Can be called only once, throws exception on consequent calls.
         /// </summary>
         /// <returns>Initial query cursor.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
+            Justification = "Semantics: result differs from call to call.")]
         IQueryCursor<T> GetInitialQueryCursor();
     }
 }

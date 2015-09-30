@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Events
 {
+    using System.Globalization;
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
@@ -44,7 +45,7 @@ namespace Apache.Ignite.Core.Events
         /** <inheritDoc /> */
 	    public override string ToShortString()
 	    {
-	        return string.Format("{0}: Key={1}", Name, Key);
+            return string.Format(CultureInfo.InvariantCulture, "{0}: Key={1}", Name, Key);
 	    }
     }
 }

@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Common
 {
     using System;
+    using System.Globalization;
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
@@ -83,7 +84,8 @@ namespace Apache.Ignite.Core.Common
         /** <inheritDoc /> */
         public override string ToString()
         {
-            return string.Format("IgniteGuid [GlobalId={0}, LocalId={1}]", GlobalId, LocalId);
+            return string.Format(CultureInfo.InvariantCulture, 
+                "IgniteGuid [GlobalId={0}, LocalId={1}]", GlobalId, LocalId);
         }
 
         /// <summary>

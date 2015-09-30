@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Cluster
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Messaging;
@@ -64,6 +65,7 @@ namespace Apache.Ignite.Core.Cluster
         /// this projection.
         /// </summary>
         /// <returns>Compute instance over this grid projection.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         ICompute GetCompute();
 
         /// <summary>
@@ -181,6 +183,7 @@ namespace Apache.Ignite.Core.Cluster
         /// Gets read-only collections of nodes in this projection.
         /// </summary>
         /// <returns>All nodes in this projection.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         ICollection<IClusterNode> GetNodes();
 
         /// <summary>
@@ -195,12 +198,14 @@ namespace Apache.Ignite.Core.Cluster
         /// Gets first node from the list of nodes in this projection.
         /// </summary>
         /// <returns>Node.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IClusterNode GetNode();
 
         /// <summary>
         /// Gets a metrics snapshot for this projection
         /// </summary>
         /// <returns>Grid projection metrics snapshot.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IClusterMetrics GetMetrics();
 
         /// <summary>
@@ -208,6 +213,7 @@ namespace Apache.Ignite.Core.Cluster
         /// <see cref="IMessaging"/>> instance will only include nodes from current cluster group.
         /// </summary>
         /// <returns>Messaging instance over this cluster group.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IMessaging GetMessaging();
 
         /// <summary>
@@ -215,6 +221,7 @@ namespace Apache.Ignite.Core.Cluster
         /// <see cref="IEvents"/>> instance will only include nodes from current cluster group.
         /// </summary>
         /// <returns>Events instance over this cluster group.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IEvents GetEvents();
 
         /// <summary>
@@ -222,6 +229,7 @@ namespace Apache.Ignite.Core.Cluster
         /// <see cref="IServices"/>> instance will only include nodes from current cluster group.
         /// </summary>
         /// <returns>Services instance over this cluster group.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IServices GetServices();
     }
 }

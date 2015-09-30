@@ -223,11 +223,11 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.NotNull(_grid);
 
-                int arg1 = Argument<int>(0);
+                int arg1 = GetArgument<int>(0);
 
                 Assert.AreEqual(100, arg1);
 
-                string arg2 = Argument<string>(1);
+                string arg2 = GetArgument<string>(1);
 
                 Assert.AreEqual("str", arg2);
 
@@ -259,11 +259,11 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.NotNull(_grid);
 
-                int arg1 = Argument<int>(0);
+                int arg1 = GetArgument<int>(0);
 
                 Assert.AreEqual(100, arg1);
 
-                string arg2 = Argument<string>(1);
+                string arg2 = GetArgument<string>(1);
 
                 Assert.AreEqual("str", arg2);
 

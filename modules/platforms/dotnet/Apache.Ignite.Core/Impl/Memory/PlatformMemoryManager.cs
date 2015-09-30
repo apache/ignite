@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <returns>Memory.</returns>
         public IPlatformMemory Get(long memPtr)
         {
-            int flags = PlatformMemoryUtils.Flags(memPtr);
+            int flags = PlatformMemoryUtils.GetFlags(memPtr);
 
             return PlatformMemoryUtils.IsExternal(flags) ? GetExternalMemory(memPtr)
                 : PlatformMemoryUtils.IsPooled(flags) ? Pool().Get(memPtr) : new PlatformUnpooledMemory(memPtr);

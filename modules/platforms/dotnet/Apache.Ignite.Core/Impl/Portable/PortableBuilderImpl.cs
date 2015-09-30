@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -66,6 +67,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Static initializer.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
         static PortableBuilderImpl()
         {
             TypeIds = new Dictionary<Type, int>();
@@ -106,18 +108,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             TypeIds[typeof(DateTime?)] = PortableUtils.TypeDate;
             TypeIds[typeof(DateTime[])] = PortableUtils.TypeArrayDate;
             TypeIds[typeof(DateTime?[])] = PortableUtils.TypeArrayDate;
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="portables">Portables.</param>
-        /// <param name="obj">Initial portable object.</param>
-        /// <param name="desc">Type descriptor.</param>
-        public PortableBuilderImpl(PortablesImpl portables, PortableUserObject obj,
-            IPortableTypeDescriptor desc) : this(portables, null, obj, desc) 
-        { 
-            // No-op.
         }
 
         /// <summary>
@@ -220,7 +210,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Child builder.</returns>
         public PortableBuilderImpl Child(PortableUserObject obj)
         {
-            return _portables.ChildBuilder(_parent, obj);
+            var desc = _portables.Marshaller.Descriptor(true, obj.TypeId);
+
+            return new PortableBuilderImpl(_portables, null, obj, desc);
         }
         
         /// <summary>

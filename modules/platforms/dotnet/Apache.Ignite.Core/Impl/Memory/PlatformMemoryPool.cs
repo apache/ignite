@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <param name="cap">Minimum capacity.</param>
-        public void Reallocate(long memPtr, int cap)
+        public static void Reallocate(long memPtr, int cap)
         {
             PlatformMemoryUtils.ReallocatePooled(memPtr, cap);
         }
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// Release pooled memory chunk.
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
-        public void Release(long memPtr)
+        public static void Release(long memPtr)
         {
             PlatformMemoryUtils.ReleasePooled(memPtr);
         }
@@ -85,12 +85,12 @@ namespace Apache.Ignite.Core.Impl.Memory
             long delta = memPtr - handle.ToInt64();
 
             if (delta == PlatformMemoryUtils.PoolHdrOffMem1) 
-                return _mem1 ?? (_mem1 = new PlatformPooledMemory(this, memPtr));
+                return _mem1 ?? (_mem1 = new PlatformPooledMemory(memPtr));
             
             if (delta == PlatformMemoryUtils.PoolHdrOffMem2) 
-                return _mem2 ?? (_mem2 = new PlatformPooledMemory(this, memPtr));
+                return _mem2 ?? (_mem2 = new PlatformPooledMemory(memPtr));
 
-            return _mem3 ?? (_mem3 = new PlatformPooledMemory(this, memPtr));
+            return _mem3 ?? (_mem3 = new PlatformPooledMemory(memPtr));
         }
 
         /** <inheritdoc /> */

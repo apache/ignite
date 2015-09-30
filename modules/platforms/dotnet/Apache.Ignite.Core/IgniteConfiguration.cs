@@ -106,6 +106,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Collection of options passed to JVM on Ignite start.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<string> JvmOptions { get; set; }
 
         /// <summary>
@@ -113,6 +114,7 @@ namespace Apache.Ignite.Core
         /// fully qualified assembly name, path to assembly to DLL or path to a directory when 
         /// assemblies reside.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public IList<string> Assemblies { get; set; }
 
         /// <summary>
@@ -123,6 +125,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Lifecycle beans.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<ILifecycleBean> LifecycleBeans { get; set; }
 
         /// <summary>

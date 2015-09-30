@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
             NonHeapMemoryCommitted = reader.ReadLong();
             NonHeapMemoryMaximum = reader.ReadLong();
             NonHeapMemoryTotal = reader.ReadLong();
-            UpTime = reader.ReadLong();
+            Uptime = reader.ReadLong();
 
             DateTime? startTime0 = reader.ReadDate();
 
@@ -184,7 +184,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public long TotalBusyTime
         {
-            get { return UpTime - TotalIdleTime; }
+            get { return Uptime - TotalIdleTime; }
         }
 
         /** <inheritDoc /> */
@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public float IdleTimePercentage
         {
-            get { return TotalIdleTime / (float) UpTime; }
+            get { return TotalIdleTime / (float) Uptime; }
         }
 
         /** <inheritDoc /> */
@@ -248,7 +248,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         public long NonHeapMemoryTotal { get; private set; }
 
         /** <inheritDoc /> */
-        public long UpTime { get; private set; }
+        public long Uptime { get; private set; }
 
         /** <inheritDoc /> */
         public DateTime StartTime { get; private set; }

@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Handle
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
 
@@ -197,6 +198,7 @@ namespace Apache.Ignite.Core.Impl.Handle
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="quiet">Whether release must be quiet or not.</param>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static void Release0(object target, bool quiet)
         {
             IHandle target0 = target as IHandle;
@@ -316,7 +318,8 @@ namespace Apache.Ignite.Core.Impl.Handle
         /// <summary>
         /// Gets a snapshot of currently referenced objects list.
         /// </summary>
-        public List<KeyValuePair<long, object>> GetItems()
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        public IList<KeyValuePair<long, object>> GetItems()
         {
             Thread.MemoryBarrier();
 
