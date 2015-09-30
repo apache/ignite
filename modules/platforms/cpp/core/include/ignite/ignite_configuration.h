@@ -39,13 +39,13 @@ namespace ignite
             // No-op.    
         }
 
-		/**
-		* Copy constructor.
-		*/
-		IgniteJvmOption(const IgniteJvmOption& option) : opt()
-		{
-			this->opt = impl::utils::CopyChars(option.opt);
-		}
+        /**
+        * Copy constructor.
+        */
+        IgniteJvmOption(const IgniteJvmOption& option) : opt()
+        {
+            this->opt = impl::utils::CopyChars(option.opt);
+        }
 
         /**
          * Constructor.
@@ -54,26 +54,26 @@ namespace ignite
          */
         IgniteJvmOption(const char* opt) : opt()
         {
-			this->opt = impl::utils::CopyChars(opt);
+            this->opt = impl::utils::CopyChars(opt);
         }
 
-		/**
-		* Destructor.
-		*/
-		~IgniteJvmOption()
-		{
-			impl::utils::ReleaseChars(opt);
-		}
+        /**
+        * Destructor.
+        */
+        ~IgniteJvmOption()
+        {
+            impl::utils::ReleaseChars(opt);
+        }
 
-		/**
-		* Copy operator.
-		*/
-		IgniteJvmOption& operator=(const IgniteJvmOption& option)
-		{
-			impl::utils::ReleaseChars(opt);
-			this->opt = impl::utils::CopyChars(option.opt);
-			return *this;
-		}
+        /**
+        * Copy operator.
+        */
+        IgniteJvmOption& operator=(const IgniteJvmOption& option)
+        {
+            impl::utils::ReleaseChars(opt);
+            this->opt = impl::utils::CopyChars(option.opt);
+            return *this;
+        }
     };
 
     /**
