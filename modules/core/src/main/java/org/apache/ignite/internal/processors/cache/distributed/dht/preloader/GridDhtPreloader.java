@@ -260,6 +260,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public void onReconnected() {
         startFut = new GridFutureAdapter<>();
+
+        long topVer0 = cctx.kernalContext().discovery().topologyVersion();
+
+        assert topVer0 > 0 : topVer0;
+
+        topVer.set(topVer0);
     }
 
     /** {@inheritDoc} */

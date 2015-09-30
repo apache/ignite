@@ -26,6 +26,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -196,6 +197,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** */
     private Map<String, DynamicCacheDescriptor> cachesOnDisconnect;
+
+    /** */
+    private Map<UUID, DynamicCacheChangeBatch> clientReconnectReqs;
 
     /**
      * @param ctx Kernal context.
@@ -1050,6 +1054,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
+        if (clientReconnectReqs != null) {
+            for (Map.Entry<UUID, DynamicCacheChangeBatch> e : clientReconnectReqs.entrySet())
+                processClientReconnectData(e.getKey(), e.getValue());
+
+            clientReconnectReqs = null;
+        }
+
         sharedCtx.onReconnected();
 
         for (GridCacheAdapter cache : reconnected)
@@ -1881,28 +1892,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheChangeBatch batch = (DynamicCacheChangeBatch)data;
 
             if (batch.clientReconnect()) {
-                for (DynamicCacheChangeRequest req : batch.requests()) {
-                    assert !req.template() : req;
+                if (ctx.clientDisconnected()) {
+                    if (clientReconnectReqs == null)
+                        clientReconnectReqs = new LinkedHashMap<>();
 
-                    String name = req.cacheName();
+                    clientReconnectReqs.put(joiningNodeId, batch);
 
-                    boolean sysCache = CU.isMarshallerCache(name) || CU.isUtilityCache(name) || CU.isAtomicsCache(name);
-
-                    if (!sysCache) {
-                        DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
-
-                        if (desc != null && desc.deploymentId().equals(req.deploymentId())) {
-                            Map<UUID, Boolean> nodes = batch.clientNodes().get(name);
-
-                            assert nodes != null : req;
-                            assert nodes.containsKey(joiningNodeId) : nodes;
-
-                            ctx.discovery().addClientNode(req.cacheName(), joiningNodeId, nodes.get(joiningNodeId));
-                        }
-                    }
-                    else
-                        ctx.discovery().addClientNode(req.cacheName(), joiningNodeId, false);
+                    return;
                 }
+
+                processClientReconnectData(joiningNodeId, batch);
             }
             else {
                 for (DynamicCacheChangeRequest req : batch.requests()) {
@@ -1979,6 +1978,37 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * @param clientNodeId Client node ID.
+     * @param batch Cache change batch.
+     */
+    private void processClientReconnectData(UUID clientNodeId, DynamicCacheChangeBatch batch) {
+        assert batch.clientReconnect() : batch;
+
+        for (DynamicCacheChangeRequest req : batch.requests()) {
+            assert !req.template() : req;
+
+            String name = req.cacheName();
+
+            boolean sysCache = CU.isMarshallerCache(name) || CU.isUtilityCache(name) || CU.isAtomicsCache(name);
+
+            if (!sysCache) {
+                DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
+
+                if (desc != null && desc.deploymentId().equals(req.deploymentId())) {
+                    Map<UUID, Boolean> nodes = batch.clientNodes().get(name);
+
+                    assert nodes != null : req;
+                    assert nodes.containsKey(clientNodeId) : nodes;
+
+                    ctx.discovery().addClientNode(req.cacheName(), clientNodeId, nodes.get(clientNodeId));
+                }
+            }
+            else
+                ctx.discovery().addClientNode(req.cacheName(), clientNodeId, false);
         }
     }
 
