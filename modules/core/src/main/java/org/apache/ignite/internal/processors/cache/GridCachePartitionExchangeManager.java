@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -626,6 +627,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * Schedules next full partitions update.
      */
     public void scheduleResendPartitions() {
+        log.info("scheduleResendPartitoins");
+
         ResendTimeoutObject timeout = pendingResend.get();
 
         if (timeout == null || timeout.started()) {
@@ -668,6 +671,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 log.debug("Refreshing local partitions from non-oldest node: " +
                     cctx.localNodeId());
 
+            log.info("Refreshing local partitions from non-oldest node: [locNode= " +
+                cctx.localNodeId() + ']');
+
             sendLocalPartitions(oldest, null);
         }
     }
@@ -701,9 +707,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private boolean sendAllPartitions(Collection<? extends ClusterNode> nodes) {
         GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(null, null, AffinityTopologyVersion.NONE);
 
+        List<String> caches = new ArrayList<>();
+
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (!cacheCtx.isLocal() && cacheCtx.started())
+            if (!cacheCtx.isLocal() && cacheCtx.started()) {
                 m.addFullPartitionsMap(cacheCtx.cacheId(), cacheCtx.topology().partitionMap(true));
+                caches.add(cacheCtx.name());
+            }
         }
 
         // It is important that client topologies be added after contexts.
@@ -713,9 +723,20 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (log.isDebugEnabled())
             log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
 
+        log.info("Before sending all partitions: [rmtNodes=" + nodes + ']');
+
         for (ClusterNode node : nodes) {
             try {
+                long time = System.currentTimeMillis();
+
+                log.info("Start sending all partitions [caches=" + caches + ", time=" + new Date(time) + ", node=" + node + ']');
+
                 cctx.io().sendNoRetry(node, m, SYSTEM_POOL);
+
+                long passed = System.currentTimeMillis();
+
+                log.info("Stop sending all partitions [caches=" + caches + ",time=" + new Date(passed) + ", diff=" + (passed - time) +
+                    ", node=" + node + ']');
             }
             catch (ClusterTopologyCheckedException ignore) {
                 if (log.isDebugEnabled())
@@ -904,6 +925,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (log.isDebugEnabled())
                     log.debug("Received full partition update [node=" + node.id() + ", msg=" + msg + ']');
 
+                log.info("Received full partition update [node=" + node.id() + ", msg=" + msg + ", time=" + new Date() + ']');
+
                 boolean updated = false;
 
                 for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
@@ -925,8 +948,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         updated |= top.update(null, entry.getValue()) != null;
                 }
 
-                if (!cctx.kernalContext().clientNode() && updated)
+                if (!cctx.kernalContext().clientNode() && updated) {
+                    log.info("refreshPartitions: processFullPartitionUpdate");
                     refreshPartitions();
+                }
             }
             else
                 exchangeFuture(msg.exchangeId(), null, null).onReceive(node.id(), msg);
@@ -950,6 +975,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     log.debug("Received local partition update [nodeId=" + node.id() + ", parts=" +
                         msg + ']');
 
+                log.info("Received local partition update [nodeId=" + node.id() + ", parts=" +
+                    msg + ']');
+
                 boolean updated = false;
 
                 for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg.partitions().entrySet()) {
@@ -968,8 +996,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         updated |= top.update(null, entry.getValue()) != null;
                 }
 
-                if (updated)
+                if (updated) {
+                    log.info("Partitions updated, schedule: [sender=" + node + ']');
                     scheduleResendPartitions();
+                }
             }
             else {
                 if (msg.client()) {
@@ -1149,6 +1179,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     // If not first preloading and no more topology events present,
                     // then we periodically refresh partition map.
                     if (!cctx.kernalContext().clientNode() && futQ.isEmpty() && preloadFinished) {
+                        log.info("refreshPartitions: preloadFinished");
+
                         refreshPartitions(timeout);
 
                         timeout = cctx.gridConfig().getNetworkTimeout();
@@ -1214,8 +1246,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             startEvtFired = true;
 
-                            if (!cctx.kernalContext().clientNode() && changed && futQ.isEmpty())
+                            if (!cctx.kernalContext().clientNode() && changed && futQ.isEmpty()) {
+                                log.info("refreshPartitions: ExcahngeWorker body");
+
                                 refreshPartitions();
+                            }
                         }
                         else {
                             if (log.isDebugEnabled())
@@ -1311,8 +1346,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         return;
 
                     try {
-                        if (started.compareAndSet(false, true))
+                        if (started.compareAndSet(false, true)) {
+                            log.info("refreshPartitions: ResendTimeoutObject");
+
                             refreshPartitions();
+                        }
                     }
                     finally {
                         busyLock.readLock().unlock();
