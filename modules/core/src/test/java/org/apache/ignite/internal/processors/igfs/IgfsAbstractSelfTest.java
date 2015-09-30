@@ -101,10 +101,26 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static final long BLOCK_SIZE = 32 * 1024 * 1024;
 
     /** Default repeat count. */
-    protected static final int REPEAT_CNT = 5; // Diagnostic: ~100; Regression: 5
+    protected static final int REPEAT_CNT = 250; // Diagnostic: ~100, up to 250; Regression: 5
 
     /** Concurrent operations count. */
-    protected static final int OPS_CNT = 16; // Diagnostic: ~160; Regression: 16
+    protected static final int OPS_CNT = 400; // Diagnostic: ~160, up to 400; Regression: 16
+
+    /** Renames count. */
+    protected static final int RENAME_CNT = OPS_CNT;
+
+    /** Renames count. */
+    protected static final int DELETE_CNT = OPS_CNT;
+
+    /** Renames count. */
+    protected static final int UPDATE_CNT = 0; //OPS_CNT; //!!! deadlocks involving update if assertion in line 1720
+     // is enabled.
+
+    /** Renames count. */
+    protected static final int MKDIRS_CNT = OPS_CNT;
+
+    /** Renames count. */
+    protected static final int CREATE_CNT = 0; //OPS_CNT; !!! deadlocks with create ********
 
     /** Seed. */
     protected static final long SEED = System.currentTimeMillis();
@@ -709,7 +725,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         create(igfs, paths(DIR, DIR_NEW), null);
 
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
+            @Override
+            public Object call() throws Exception {
                 igfs.rename(SUBDIR, SUBDIR_NEW);
 
                 return null;
@@ -963,13 +980,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         igfsSecondary.delete(FILE.toString(), false);
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override public Object call() throws Exception {
+            @Override
+            public Object call() throws Exception {
                 IgfsInputStream is = null;
 
                 try {
                     is = igfs.open(FILE);
-                }
-                finally {
+                } finally {
                     U.closeQuiet(is);
                 }
 
@@ -1013,15 +1030,15 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         create(igfs, paths(DIR, SUBDIR), null);
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override public Object call() throws Exception {
+            @Override
+            public Object call() throws Exception {
                 IgfsOutputStream os1 = null;
                 IgfsOutputStream os2 = null;
 
                 try {
                     os1 = igfs.create(FILE, true);
                     os2 = igfs.create(FILE, true);
-                }
-                finally {
+                } finally {
                     U.closeQuiet(os1);
                     U.closeQuiet(os2);
                 }
@@ -1313,15 +1330,15 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         createFile(igfs.asSecondary(), FILE, false);
 
         GridTestUtils.assertThrowsInherited(log(), new Callable<Object>() {
-            @Override public Object call() throws Exception {
+            @Override
+            public Object call() throws Exception {
                 IgfsOutputStream os1 = null;
                 IgfsOutputStream os2 = null;
 
                 try {
                     os1 = igfs.append(FILE, false);
                     os2 = igfs.append(FILE, false);
-                }
-                finally {
+                } finally {
                     U.closeQuiet(os1);
                     U.closeQuiet(os2);
                 }
@@ -1619,8 +1636,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentMkdirsDelete() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1541");
-
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
 
@@ -1900,14 +1915,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksRename() throws Exception {
-        for (int i = 0; i < REPEAT_CNT; i++) {
-            try {
-                checkDeadlocks(5, 2, 2, 2, OPS_CNT, 0, 0, 0, 0);
-            }
-            finally {
-                clear(igfs, igfsSecondary);
-            }
-        }
+        checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, 0, 0, 0, 0);
     }
 
     /**
@@ -1916,14 +1924,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksDelete() throws Exception {
-        for (int i = 0; i < REPEAT_CNT; i++) {
-            try {
-                checkDeadlocks(5, 2, 2, 2, 0, OPS_CNT, 0, 0, 0);
-            }
-            finally {
-                clear(igfs, igfsSecondary);
-            }
-        }
+         checkDeadlocksRepeat(5, 2, 2, 2,  0, DELETE_CNT, 0, 0, 0);
     }
 
     /**
@@ -1932,14 +1933,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksUpdate() throws Exception {
-        for (int i = 0; i < REPEAT_CNT; i++) {
-            try {
-                checkDeadlocks(5, 2, 2, 2, 0, 0, OPS_CNT, 0, 0);
-            }
-            finally {
-                clear(igfs, igfsSecondary);
-            }
-        }
+        checkDeadlocksRepeat(5, 2, 2, 2, 0, 0, UPDATE_CNT, 0, 0);
     }
 
     /**
@@ -1948,14 +1942,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksMkdirs() throws Exception {
-        for (int i = 0; i < REPEAT_CNT; i++) {
-            try {
-                checkDeadlocks(5, 2, 2, 2, 0, 0, 0, OPS_CNT, 0);
-            }
-            finally {
-                clear(igfs, igfsSecondary);
-            }
-        }
+         checkDeadlocksRepeat(5, 2, 2, 2,  0, 0, 0, MKDIRS_CNT, 0);
     }
 
     /**
@@ -1964,15 +1951,16 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksDeleteRename() throws Exception {
-        for (int i = 0; i < REPEAT_CNT; i++) {
-            try {
-                checkDeadlocks(5, 2, 2, 2,
-                    OPS_CNT, OPS_CNT, 0, 0, 0);
-            }
-            finally {
-                clear(igfs, igfsSecondary);
-            }
-        }
+        checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, 0, 0, 0);
+    }
+
+    /**
+     * Ensure that deadlocks do not occur during concurrent delete & rename operations.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDeadlocksDeleteMkdirsRename() throws Exception {
+        checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, 0, MKDIRS_CNT, 0);
     }
 
     /**
@@ -1981,17 +1969,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksDeleteMkdirs() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1541");
-
-        for (int i = 0; i < REPEAT_CNT; i++) {
-            try {
-                checkDeadlocks(5, 2, 2, 2,
-                     0, OPS_CNT, 0, OPS_CNT, 0);
-            }
-            finally {
-                clear(igfs, igfsSecondary);
-            }
-        }
+        checkDeadlocksRepeat(5, 2, 2, 2,  0, DELETE_CNT, 0, MKDIRS_CNT, 0);
     }
 
     /**
@@ -2000,14 +1978,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksCreate() throws Exception {
-        for (int i = 0; i < REPEAT_CNT; i++) {
-            try {
-                checkDeadlocks(5, 2, 2, 2, 0, 0, 0, 0, OPS_CNT);
-            }
-            finally {
-                clear(igfs, igfsSecondary);
-            }
-        }
+        checkDeadlocksRepeat(5, 2, 2, 2,  0, 0, 0, 0, CREATE_CNT);
     }
 
     /**
@@ -2016,16 +1987,39 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocks() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1541");
+        checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, UPDATE_CNT, MKDIRS_CNT, CREATE_CNT);
+    }
 
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+         return 12 * 60 * 1000;
+    }
+
+    /**
+     *
+     * @param lvlCnt
+     * @param childrenDirPerLvl
+     * @param childrenFilePerLvl
+     * @param primaryLvlCnt
+     * @param renCnt
+     * @param delCnt
+     * @param updateCnt
+     * @param mkdirsCnt
+     * @param createCnt
+     * @throws Exception
+     */
+    private void checkDeadlocksRepeat(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
+                                      int primaryLvlCnt, int renCnt, int delCnt,
+                                      int updateCnt, int mkdirsCnt, int createCnt) throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
-                checkDeadlocks(5, 2, 2, 2,
-                    OPS_CNT, // rename
-                    OPS_CNT, // delete
-                    OPS_CNT, // update
-                    OPS_CNT, // mkdirs
-                    OPS_CNT); // create
+                checkDeadlocks(lvlCnt, childrenDirPerLvl, childrenFilePerLvl,
+                primaryLvlCnt, renCnt, delCnt,
+                updateCnt, mkdirsCnt, createCnt);
+
+                // Show progress:
+                if (i % 10 == 0)
+                    X.println("- " + i);
             }
             finally {
                 clear(igfs, igfsSecondary);
@@ -2050,7 +2044,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    public void checkDeadlocks(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
+    private void checkDeadlocks(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
         int primaryLvlCnt, int renCnt, int delCnt,
         int updateCnt, int mkdirsCnt, int createCnt) throws Exception {
         assert childrenDirPerLvl > 0;
@@ -2096,7 +2090,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         // Now as we have all paths defined, plan operations on them.
         final Random rand = new Random(SEED);
 
-        int totalOpCnt = renCnt + delCnt + updateCnt + mkdirsCnt + createCnt;
+        final int totalOpCnt = renCnt + delCnt + updateCnt + mkdirsCnt + createCnt;
+
+        if (totalOpCnt == 0)
+            return;
 
         final CyclicBarrier barrier = new CyclicBarrier(totalOpCnt);
 

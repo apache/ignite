@@ -51,6 +51,7 @@ import org.apache.ignite.igfs.IgfsConcurrentModificationException;
 import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
+import org.apache.ignite.igfs.IgfsParentNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
 import org.apache.ignite.igfs.IgfsPathIsDirectoryException;
@@ -165,6 +166,20 @@ public class IgfsMetaManager extends IgfsManager {
         log = igfsCtx.kernalContext().log(IgfsMetaManager.class);
     }
 
+    /**
+     * Adds constant entry into the cache projection.
+     *
+     * @param id The id to add.
+     * @throws IgniteCheckedException On error.
+     */
+    private void add0(IgniteUuid id) throws IgniteCheckedException {
+        IgfsFileInfo info = new IgfsFileInfo(id);
+
+        boolean put = id2InfoPrj.putIfAbsent(id, info);
+
+        assert put;
+    }
+
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         metaCache = igfsCtx.kernalContext().cache().getOrStartCache(cfg.getMetaCacheName());
@@ -179,6 +194,9 @@ public class IgfsMetaManager extends IgfsManager {
             });
 
         id2InfoPrj = (IgniteInternalCache<IgniteUuid, IgfsFileInfo>)metaCache.<IgniteUuid, IgfsFileInfo>cache();
+
+        add0(ROOT_ID);
+        add0(TRASH_ID);
 
         locNode = igfsCtx.kernalContext().discovery().localNode();
 
@@ -651,34 +669,8 @@ public class IgfsMetaManager extends IgfsManager {
         if (log.isDebugEnabled())
             log.debug("Locked file ids: " + fileIds);
 
-        // Force root & trash IDs always exist in cache.
-        addInfoIfNeeded(fileIds, map, ROOT_ID);
-        addInfoIfNeeded(fileIds, map, TRASH_ID);
-
         // Returns detail's map for locked IDs.
         return map;
-    }
-
-    /**
-     * Adds FileInfo into the cache if it is requested in fileIds and is not present in the map.
-     *
-     * @param fileIds A list that may contain the id.
-     * @param map The map that may not contain the id.
-     * @param id The id to check.
-     * @throws IgniteCheckedException On error.
-     */
-    private void addInfoIfNeeded(Collection<IgniteUuid> fileIds, Map<IgniteUuid, IgfsFileInfo> map, IgniteUuid id) throws IgniteCheckedException {
-        assert validTxState(true);
-
-        if (fileIds.contains(id) && !map.containsKey(id)) {
-            IgfsFileInfo info = new IgfsFileInfo(id);
-
-            assert info.listing() != null;
-
-            id2InfoPrj.putIfAbsent(id, info);
-
-            map.put(id, info);
-        }
     }
 
     /**
@@ -1662,7 +1654,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Updated file info or {@code null} if such file ID not found.
      * @throws IgniteCheckedException If operation failed.
      */
-    @Nullable private IgfsFileInfo updatePropertiesNonTx(@Nullable IgniteUuid parentId, IgniteUuid fileId,
+    @Nullable private IgfsFileInfo updatePropertiesNonTx(final @Nullable IgniteUuid parentId, final IgniteUuid fileId,
         String fileName, Map<String, String> props) throws IgniteCheckedException {
         assert fileId != null;
         assert !F.isEmpty(props) : "Expects not-empty file's properties";
@@ -1672,8 +1664,8 @@ public class IgfsMetaManager extends IgfsManager {
             log.debug("Update file properties [fileId=" + fileId + ", props=" + props + ']');
 
         try {
-            IgfsFileInfo oldInfo;
-            IgfsFileInfo parentInfo;
+            final IgfsFileInfo oldInfo;
+            final IgfsFileInfo parentInfo;
 
             // Lock file ID for this transaction.
             if (parentId == null) {
@@ -1689,8 +1681,6 @@ public class IgfsMetaManager extends IgfsManager {
                 if (parentInfo == null)
                     return null; // Parent not found.
             }
-
-            assert validTxState(true);
 
             if (oldInfo == null)
                 return null; // File not found.
@@ -1724,7 +1714,7 @@ public class IgfsMetaManager extends IgfsManager {
             if (parentId != null) {
                 IgfsListingEntry entry = new IgfsListingEntry(newInfo);
 
-                assert metaCache.get(parentId) != null;
+                assert id2InfoPrj.get(parentId) != null; // (NB: was: metaCache) ********** !!! deadlock there
 
                 id2InfoPrj.invoke(parentId, new UpdateListing(fileName, entry, false));
             }
@@ -3384,5 +3374,132 @@ public class IgfsMetaManager extends IgfsManager {
         @Override public String toString() {
             return S.toString(UpdatePath.class, this);
         }
+    }
+
+    /**
+     * Mkdirs implementation.
+     */
+    void mkdirs(final IgfsPath path, final Map<String, String> props) throws IgniteCheckedException {
+        assert props != null;
+        assert validTxState(false);
+
+        if (busyLock.enterBusy()) {
+            try {
+                retryLoop: while (true) {
+                    // Take the ids in *path* order out of transaction:
+                    final List<IgniteUuid> idList = fileIds(path);
+
+                    final SortedSet<IgniteUuid> idSet = new TreeSet<IgniteUuid>(PATH_ID_SORTING_COMPARATOR);
+
+                    final List<String> components = path.components();
+
+                    // Store all the non-null ids in the set & construct existing path in one loop:
+                    IgfsPath curPath = path.root();
+
+                    assert idList.size() == components.size() + 1;
+
+                    // Find the lowermost existing id:
+                    IgniteUuid parentId = null;
+
+                    int idIdx = 0;
+
+                    for (IgniteUuid id: idList) {
+                        if (id == null)
+                            break;
+
+                        parentId = id;
+
+                        boolean added = idSet.add(id);
+
+                        assert added;
+
+                        if (idIdx >= 1) // skip root.
+                            curPath = new IgfsPath(curPath, components.get(idIdx - 1));
+
+                        idIdx++;
+                    }
+
+                    // Start Tx:
+                    IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+
+                    try {
+                        final Map<IgniteUuid, IgfsFileInfo> lockedInfos = lockIds(idSet);
+
+                        // Check if the locked parents are only directories.
+                        // If taht is not the case, fail right there.
+                        for (IgfsFileInfo f: lockedInfos.values()) {
+                            if (!f.isDirectory()) {
+                                throw new IgfsParentNotDirectoryException("Failed to create directory (parent " +
+                                    "element is not a directory)");
+                            }
+                        }
+
+                        // If the path was changed, we close the current Tx and repeat the procedure again
+                        // starting from taking the path ids.
+                        if (verifyPathIntegrity(curPath, idList, lockedInfos)) {
+                            // Locked path okay, trying to proceed with the remainder creation.
+                            IgfsFileInfo parentInfo = lockedInfos.get(parentId);
+
+                            // This loop creates the missing directory chain:
+                            for (int i = idSet.size() - 1; i < components.size(); i++) {
+                                String shortName = components.get(i);
+
+                                Map<String, IgfsListingEntry> parentListing = parentInfo.listing();
+
+                                assert parentListing != null : "listing may be empty, but should not be null.";
+
+                                IgfsListingEntry entry = parentListing.get(shortName);
+
+                                if (entry == null) {
+                                    // Required entry does not exist.
+                                    IgfsFileInfo newDirInfo = new IgfsFileInfo(true/*dir*/, props); // Create new directory info.
+
+                                    boolean put = id2InfoPrj.putIfAbsent(newDirInfo.id(), newDirInfo);
+
+                                    assert put; // because we used a new id that should be unic.
+
+                                    id2InfoPrj.invoke(parentId,
+                                            new UpdateListing(shortName, new IgfsListingEntry(newDirInfo), false));
+
+                                    parentId = newDirInfo.id();
+
+                                    parentInfo = newDirInfo;
+                                }
+                                else {
+                                    // Another thread created file or directory with the same name:
+                                    if (!entry.isDirectory()) {
+                                        throw new IgfsParentNotDirectoryException("Failed to create directory (parent " +
+                                                "element is not a directory)");
+                                    }
+
+                                    //X.println("Directory was created concurrently, Retrying.");
+
+                                    tx.rollback(); // TODO: We need that?
+
+                                    // Try again, because we cannot lock this directory without
+                                    // lock ordering rule violation:
+                                    continue retryLoop;
+                                }
+                            }
+
+                            tx.commit();
+
+                            break retryLoop;
+                        }
+                        else {
+                            tx.rollback(); // TODO: We need that?
+
+                            //X.println("Path verification failed, Retrying.");
+                        }
+                    }
+                    finally {
+                        tx.close();
+                    }
+                } // retry loop ===============================
+            } finally {
+                busyLock.leaveBusy();
+            }
+        } else
+            throw new IllegalStateException("Failed to mkdir because Grid is stopping. [path=" + path + ']');
     }
 }
