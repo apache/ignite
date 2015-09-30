@@ -124,8 +124,14 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             Ignition.ClientMode = false;
             IgniteProcess.KillAll();
-            
-            // do not interfere with other tests
+        }
+
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
             Environment.SetEnvironmentVariable(Ignition.EnvIgniteSpringConfigUrlPrefix, null);
         }
 
