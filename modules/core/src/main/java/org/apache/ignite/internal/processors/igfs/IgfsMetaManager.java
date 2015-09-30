@@ -166,20 +166,6 @@ public class IgfsMetaManager extends IgfsManager {
         log = igfsCtx.kernalContext().log(IgfsMetaManager.class);
     }
 
-    /**
-     * Adds constant entry into the cache projection.
-     *
-     * @param id The id to add.
-     * @throws IgniteCheckedException On error.
-     */
-    private void add0(IgniteUuid id) throws IgniteCheckedException {
-        IgfsFileInfo info = new IgfsFileInfo(id);
-
-        boolean put = id2InfoPrj.putIfAbsent(id, info);
-
-        assert put;
-    }
-
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         metaCache = igfsCtx.kernalContext().cache().getOrStartCache(cfg.getMetaCacheName());
@@ -194,9 +180,6 @@ public class IgfsMetaManager extends IgfsManager {
             });
 
         id2InfoPrj = (IgniteInternalCache<IgniteUuid, IgfsFileInfo>)metaCache.<IgniteUuid, IgfsFileInfo>cache();
-
-        add0(ROOT_ID);
-        add0(TRASH_ID);
 
         locNode = igfsCtx.kernalContext().discovery().localNode();
 
@@ -669,8 +652,35 @@ public class IgfsMetaManager extends IgfsManager {
         if (log.isDebugEnabled())
             log.debug("Locked file ids: " + fileIds);
 
+        // Force root & trash IDs always exist in cache.
+        addInfoIfNeeded(fileIds, map, ROOT_ID);
+        addInfoIfNeeded(fileIds, map, TRASH_ID);
+
         // Returns detail's map for locked IDs.
         return map;
+    }
+
+    /**
+     * Adds FileInfo into the cache if it is requested in fileIds and is not present in the map.
+     *
+     * @param fileIds A list that may contain the id.
+     * @param map The map that may not contain the id.
+     * @param id The id to check.
+     * @throws IgniteCheckedException On error.
+     */
+    private void addInfoIfNeeded(Collection<IgniteUuid> fileIds, Map<IgniteUuid, IgfsFileInfo> map, IgniteUuid id) throws IgniteCheckedException {
+        assert validTxState(true);
+
+        if (fileIds.contains(id) && !map.containsKey(id)) {
+            IgfsFileInfo info = new IgfsFileInfo(id);
+
+            IgfsFileInfo anotherInfo = id2InfoPrj.getAndPutIfAbsent(id, info);
+
+            if (anotherInfo != null)
+                info = anotherInfo;
+
+            map.put(id, info);
+        }
     }
 
     /**
@@ -1714,7 +1724,7 @@ public class IgfsMetaManager extends IgfsManager {
             if (parentId != null) {
                 IgfsListingEntry entry = new IgfsListingEntry(newInfo);
 
-                assert id2InfoPrj.get(parentId) != null; // (NB: was: metaCache) ********** !!! deadlock there
+                assert id2InfoPrj.get(parentId) != null;
 
                 id2InfoPrj.invoke(parentId, new UpdateListing(fileName, entry, false));
             }
@@ -3378,14 +3388,18 @@ public class IgfsMetaManager extends IgfsManager {
 
     /**
      * Mkdirs implementation.
+     *
+     * @param path The path to create.
+     * @param props The properties to use for created directories.
+     * @throws IgniteCheckedException If a non-directory file exists on the requested path, and in case of other errors.
      */
-    void mkdirs(final IgfsPath path, final Map<String, String> props) throws IgniteCheckedException {
+    boolean mkdirs(final IgfsPath path, final Map<String, String> props) throws IgniteCheckedException {
         assert props != null;
         assert validTxState(false);
 
         if (busyLock.enterBusy()) {
             try {
-                retryLoop: while (true) {
+                while (true) {
                     // Take the ids in *path* order out of transaction:
                     final List<IgniteUuid> idList = fileIds(path);
 
@@ -3394,7 +3408,7 @@ public class IgfsMetaManager extends IgfsManager {
                     final List<String> components = path.components();
 
                     // Store all the non-null ids in the set & construct existing path in one loop:
-                    IgfsPath curPath = path.root();
+                    IgfsPath existingPath = path.root();
 
                     assert idList.size() == components.size() + 1;
 
@@ -3414,7 +3428,7 @@ public class IgfsMetaManager extends IgfsManager {
                         assert added;
 
                         if (idIdx >= 1) // skip root.
-                            curPath = new IgfsPath(curPath, components.get(idIdx - 1));
+                            existingPath = new IgfsPath(existingPath, components.get(idIdx - 1));
 
                         idIdx++;
                     }
@@ -3426,7 +3440,7 @@ public class IgfsMetaManager extends IgfsManager {
                         final Map<IgniteUuid, IgfsFileInfo> lockedInfos = lockIds(idSet);
 
                         // Check if the locked parents are only directories.
-                        // If taht is not the case, fail right there.
+                        // If that is not the case, fail right there.
                         for (IgfsFileInfo f: lockedInfos.values()) {
                             if (!f.isDirectory()) {
                                 throw new IgfsParentNotDirectoryException("Failed to create directory (parent " +
@@ -3436,27 +3450,38 @@ public class IgfsMetaManager extends IgfsManager {
 
                         // If the path was changed, we close the current Tx and repeat the procedure again
                         // starting from taking the path ids.
-                        if (verifyPathIntegrity(curPath, idList, lockedInfos)) {
+                        if (verifyPathIntegrity(existingPath, idList, lockedInfos)) {
+                            if (idSet.size() == components.size() + 1) {
+                                assert existingPath.equals(path);
+                                assert lockedInfos.size() == idSet.size();
+
+                                // The target directory already exists, nothing to do.
+                                // (The fact that all the path consisns of directories is already checked above).
+                                // Note that properties are not updated in this case.
+                                return false;
+                            }
+
                             // Locked path okay, trying to proceed with the remainder creation.
                             IgfsFileInfo parentInfo = lockedInfos.get(parentId);
 
-                            // This loop creates the missing directory chain:
-                            for (int i = idSet.size() - 1; i < components.size(); i++) {
-                                String shortName = components.get(i);
+                            Map<String, IgfsListingEntry> parentListing = parentInfo.listing();
 
-                                Map<String, IgfsListingEntry> parentListing = parentInfo.listing();
+                            String shortName = components.get(idSet.size() - 1);
 
-                                assert parentListing != null : "listing may be empty, but should not be null.";
+                            IgfsListingEntry entry = parentListing.get(shortName);
 
-                                IgfsListingEntry entry = parentListing.get(shortName);
+                            if (entry == null) {
+                                // This loop creates the missing directory chain:
+                                for (int i = idSet.size() - 1; i < components.size(); i++) {
+                                    shortName = components.get(i);
 
-                                if (entry == null) {
                                     // Required entry does not exist.
-                                    IgfsFileInfo newDirInfo = new IgfsFileInfo(true/*dir*/, props); // Create new directory info.
+                                    // Create new directory info:
+                                    IgfsFileInfo newDirInfo = new IgfsFileInfo(true/*dir*/, props);
 
                                     boolean put = id2InfoPrj.putIfAbsent(newDirInfo.id(), newDirInfo);
 
-                                    assert put; // because we used a new id that should be unic.
+                                    assert put; // Because we used a new id that should be unic.
 
                                     id2InfoPrj.invoke(parentId,
                                             new UpdateListing(shortName, new IgfsListingEntry(newDirInfo), false));
@@ -3464,38 +3489,37 @@ public class IgfsMetaManager extends IgfsManager {
                                     parentId = newDirInfo.id();
 
                                     parentInfo = newDirInfo;
+
+                                    parentListing = parentInfo.listing();
                                 }
-                                else {
-                                    // Another thread created file or directory with the same name:
-                                    if (!entry.isDirectory()) {
-                                        throw new IgfsParentNotDirectoryException("Failed to create directory (parent " +
-                                                "element is not a directory)");
-                                    }
 
-                                    //X.println("Directory was created concurrently, Retrying.");
+                                // Note that we send only one event even if a chain of directories is created.
+                                if (evts.isRecordable(EVT_IGFS_DIR_CREATED))
+                                    evts.record(new IgfsEvent(path, locNode, EVT_IGFS_DIR_CREATED));
 
-                                    tx.rollback(); // TODO: We need that?
+                                // We're close to finish:
+                                tx.commit();
 
-                                    // Try again, because we cannot lock this directory without
-                                    // lock ordering rule violation:
-                                    continue retryLoop;
-                                }
+                                return true;
                             }
+                            else {
+                                // Another thread created file or directory with the same name.
+                                if (!entry.isDirectory()) {
+                                    // Entry exists, and it is not a directory:
+                                    throw new IgfsParentNotDirectoryException("Failed to create directory (parent " +
+                                            "element is not a directory)");
+                                }
 
-                            tx.commit();
-
-                            break retryLoop;
-                        }
-                        else {
-                            tx.rollback(); // TODO: We need that?
-
-                            //X.println("Path verification failed, Retrying.");
+                                // If this is a directory, we continue the repeat loop,
+                                // because we cannot lock this directory without
+                                // lock ordering rule violation.
+                            }
                         }
                     }
                     finally {
                         tx.close();
                     }
-                } // retry loop ===============================
+                } // retry loop
             } finally {
                 busyLock.leaveBusy();
             }

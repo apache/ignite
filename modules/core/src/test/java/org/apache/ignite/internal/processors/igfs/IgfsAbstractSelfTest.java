@@ -101,28 +101,27 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static final long BLOCK_SIZE = 32 * 1024 * 1024;
 
     /** Default repeat count. */
-    protected static final int REPEAT_CNT = 250; // Diagnostic: ~100, up to 250; Regression: 5
+    protected static final int REPEAT_CNT = 50; // Diagnostic: ~100, up to 250; Regression: 5
 
     /** Concurrent operations count. */
-    protected static final int OPS_CNT = 400; // Diagnostic: ~160, up to 400; Regression: 16
+    protected static final int OPS_CNT = 50; // Diagnostic: ~160, up to 400; Regression: 16
 
     /** Renames count. */
     protected static final int RENAME_CNT = OPS_CNT;
 
-    /** Renames count. */
+    /** Deletes count. */
     protected static final int DELETE_CNT = OPS_CNT;
 
-    /** Renames count. */
-    protected static final int UPDATE_CNT = 0; //OPS_CNT; //!!! deadlocks involving update if assertion in line 1720
-     // is enabled.
+    /** Updates count. */
+    protected static final int UPDATE_CNT = OPS_CNT;
 
-    /** Renames count. */
+    /** Mkdirs count. */
     protected static final int MKDIRS_CNT = OPS_CNT;
 
-    /** Renames count. */
-    protected static final int CREATE_CNT = 0; //OPS_CNT; !!! deadlocks with create ********
+    /** Create count. */
+    protected static final int CREATE_CNT = 0; // TODO: See https://issues.apache.org/jira/browse/IGNITE-1590
 
-    /** Seed. */
+    /** Seed to generate random numbers. */
     protected static final long SEED = System.currentTimeMillis();
 
     /** Amount of blocks to prefetch. */
@@ -1131,7 +1130,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         create(igfs, paths(DIR, SUBDIR), null);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
+            @Override
+            public Object call() throws Exception {
                 IgfsOutputStream os = null;
 
                 try {
@@ -1145,8 +1145,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                         U.sleep(100);
 
                     os.close();
-                }
-                finally {
+                } finally {
                     U.closeQuiet(os);
                 }
 
@@ -1191,7 +1190,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         int threadCnt = 10;
 
         multithreaded(new Runnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 int idx = ctr.incrementAndGet();
 
                 IgfsPath path = new IgfsPath("/file" + idx);
@@ -1210,8 +1210,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     awaitFileClose(igfs.asSecondary(), path);
 
                     checkFileContent(igfs, path, chunk);
-                }
-                catch (IOException | IgniteCheckedException e) {
+                } catch (IOException | IgniteCheckedException e) {
                     err.compareAndSet(null, e); // Log the very first error.
                 }
             }
@@ -1439,7 +1438,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         createFile(igfs.asSecondary(), FILE, false);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
+            @Override
+            public Object call() throws Exception {
                 IgfsOutputStream os = null;
 
                 try {
@@ -1455,8 +1455,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     os.write(chunk);
 
                     os.close();
-                }
-                finally {
+                } finally {
                     U.closeQuiet(os);
                 }
 
@@ -1990,23 +1989,20 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, UPDATE_CNT, MKDIRS_CNT, CREATE_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-         return 12 * 60 * 1000;
-    }
-
     /**
+     * Invokes {@link #checkDeadlocks(int, int, int, int, int, int, int, int, int)}
+     *  {@link #REPEAT_CNT} times.
      *
-     * @param lvlCnt
-     * @param childrenDirPerLvl
-     * @param childrenFilePerLvl
-     * @param primaryLvlCnt
-     * @param renCnt
-     * @param delCnt
-     * @param updateCnt
-     * @param mkdirsCnt
-     * @param createCnt
-     * @throws Exception
+     * @param lvlCnt Total levels in folder hierarchy.
+     * @param childrenDirPerLvl How many children directories to create per level.
+     * @param childrenFilePerLvl How many children file to create per level.
+     * @param primaryLvlCnt How many levels will exist in the primary file system before check start.
+     * @param renCnt How many renames to perform.
+     * @param delCnt How many deletes to perform.
+     * @param updateCnt How many updates to perform.
+     * @param mkdirsCnt How many directory creations to perform.
+     * @param createCnt How many file creations to perform.
+     * @throws Exception If failed.
      */
     private void checkDeadlocksRepeat(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
                                       int primaryLvlCnt, int renCnt, int delCnt,

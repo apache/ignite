@@ -771,17 +771,19 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
+                final boolean dirCreated; // For now the value is ignored.
+
                 if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
                     await(path);
 
-                    meta.mkdirsDual(secondaryFs, path, props0);
+                    dirCreated = meta.mkdirsDual(secondaryFs, path, props0);
 
                     return null;
                 }
 
-                meta.mkdirs(path, props0);
+                dirCreated = meta.mkdirs(path, props0);
 
                 return null;
             }
