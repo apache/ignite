@@ -37,4 +37,8 @@ public class GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return ATOMIC;
     }
+
+    @Override public void testTx(){
+        fail("https://issues.apache.org/jira/browse/IGNITE-1591");
+    }
 }
