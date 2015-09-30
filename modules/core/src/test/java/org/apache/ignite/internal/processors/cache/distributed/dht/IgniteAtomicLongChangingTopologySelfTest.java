@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -36,32 +37,22 @@ import java.util.concurrent.atomic.*;
  *
  */
 public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstractTest {
-    /**
-     * Grid count.
-     */
+    /** Grid count. */
     private static final int GRID_CNT = 5;
 
-    /**
-     * Restart count.
-     */
+    /** Restart cound. */
     private static final int RESTART_CNT = 15;
 
-    /**
-     * Atomic long name.
-     */
+    /** Atomic long name. */
     private static final String ATOMIC_LONG_NAME = "test-atomic-long";
 
-    /**
-     * Queue.
-     */
+    /** Queue. */
     private final Queue<Long> queue = new ConcurrentLinkedQueue<>();
 
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -77,12 +68,12 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
 
         cfg.setAtomicConfiguration(atomicCfg);
 
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
+
         return cfg;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
@@ -90,7 +81,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testQueueCreateNodesJoin() throws Exception {
         CountDownLatch startLatch = new CountDownLatch(GRID_CNT);
