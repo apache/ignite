@@ -171,11 +171,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         this.accessTtl = accessTtl;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean allowForStartup() {
-        return true;
-    }
-
     /**
      * @return Near node ID.
      */

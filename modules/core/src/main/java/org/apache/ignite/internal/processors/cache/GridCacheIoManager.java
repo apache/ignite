@@ -270,62 +270,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             if (cacheMsg.classError() != null)
                 processFailedMessage(nodeId, cacheMsg);
-            else {
-                if (cacheMsg.allowForStartup())
-                    processMessage(nodeId, cacheMsg, c);
-                else {
-                    IgniteInternalFuture<?> startFut = startFuture(cacheMsg);
-
-                    if (startFut.isDone())
-                        processMessage(nodeId, cacheMsg, c);
-                    else {
-                        if (log.isDebugEnabled())
-                            log.debug("Waiting for start future to complete for message [nodeId=" + nodeId +
-                                ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
-
-                        // Don't hold this thread waiting for preloading to complete.
-                        startFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                            @Override public void apply(final IgniteInternalFuture<?> f) {
-                                cctx.kernalContext().closure().runLocalSafe(
-                                    new GridPlainRunnable() {
-                                        @Override public void run() {
-                                            rw.readLock();
-
-                                            try {
-                                                if (stopping) {
-                                                    if (log.isDebugEnabled())
-                                                        log.debug("Received cache communication message while stopping " +
-                                                            "(will ignore) [nodeId=" + nodeId + ", msg=" + cacheMsg + ']');
-
-                                                    return;
-                                                }
-
-                                                f.get();
-
-                                                if (log.isDebugEnabled())
-                                                    log.debug("Start future completed for message [nodeId=" + nodeId +
-                                                        ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
-
-                                                processMessage(nodeId, cacheMsg, c);
-                                            }
-                                            catch (IgniteCheckedException e) {
-                                                // Log once.
-                                                if (startErr.compareAndSet(false, true))
-                                                    U.error(log, "Failed to complete preload start future " +
-                                                        "(will ignore message) " +
-                                                        "[fut=" + f + ", nodeId=" + nodeId + ", msg=" + cacheMsg + ']', e);
-                                            }
-                                            finally {
-                                                rw.readUnlock();
-                                            }
-                                        }
-                                    }
-                                );
-                            }
-                        });
-                    }
-                }
-            }
+            else
+                processMessage(nodeId, cacheMsg, c);
         }
         catch (Throwable e) {
             U.error(log, "Failed to process message [senderId=" + nodeId + ", messageType=" + cacheMsg.getClass() + ']', e);
@@ -545,24 +491,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             default:
                 throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [message="
                     + msg + "]");
-        }
-    }
-
-    /**
-     * @param cacheMsg Cache message to get start future.
-     * @return Preloader start future.
-     */
-    @SuppressWarnings("unchecked")
-    private IgniteInternalFuture<Object> startFuture(GridCacheMessage cacheMsg) {
-        int cacheId = cacheMsg.cacheId();
-
-        if (cacheId != 0)
-            return cctx.cacheContext(cacheId).preloader().startFuture();
-        else {
-            if (F.eq(cacheMsg.topologyVersion(), AffinityTopologyVersion.NONE))
-                return new GridFinishedFuture<>();
-
-            return cctx.preloadersStartFuture(cacheMsg.topologyVersion());
         }
     }
 

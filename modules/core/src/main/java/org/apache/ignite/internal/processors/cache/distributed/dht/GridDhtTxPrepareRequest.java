@@ -164,11 +164,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         return nearXidVer;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean allowForStartup() {
-        return true;
-    }
-
     /**
      * @return Near node ID.
      */
@@ -215,6 +210,8 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /**
      * Marks last added key for preloading.
+     *
+     * @param idx Key index.
      */
     public void markKeyForPreload(int idx) {
         if (preloadKeys == null)
