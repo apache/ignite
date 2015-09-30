@@ -3471,6 +3471,9 @@ public class IgfsMetaManager extends IgfsManager {
                             IgfsListingEntry entry = parentListing.get(shortName);
 
                             if (entry == null) {
+                                Collection<IgfsEvent> events
+                                        = new ArrayList<>(components.size() - idSet.size() + 1);
+
                                 // This loop creates the missing directory chain:
                                 for (int i = idSet.size() - 1; i < components.size(); i++) {
                                     shortName = components.get(i);
@@ -3486,6 +3489,10 @@ public class IgfsMetaManager extends IgfsManager {
                                     id2InfoPrj.invoke(parentId,
                                             new UpdateListing(shortName, new IgfsListingEntry(newDirInfo), false));
 
+                                    existingPath = new IgfsPath(existingPath, shortName);
+
+                                    events.add(new IgfsEvent(existingPath, locNode, EVT_IGFS_DIR_CREATED));
+
                                     parentId = newDirInfo.id();
 
                                     parentInfo = newDirInfo;
@@ -3493,12 +3500,14 @@ public class IgfsMetaManager extends IgfsManager {
                                     parentListing = parentInfo.listing();
                                 }
 
-                                // Note that we send only one event even if a chain of directories is created.
-                                if (evts.isRecordable(EVT_IGFS_DIR_CREATED))
-                                    evts.record(new IgfsEvent(path, locNode, EVT_IGFS_DIR_CREATED));
-
                                 // We're close to finish:
                                 tx.commit();
+
+                                // Note that we send separate event for each created directory:
+                                if (evts.isRecordable(EVT_IGFS_DIR_CREATED))
+                                    for (IgfsEvent e: events) {
+                                        evts.record(e);
+                                    }
 
                                 return true;
                             }
