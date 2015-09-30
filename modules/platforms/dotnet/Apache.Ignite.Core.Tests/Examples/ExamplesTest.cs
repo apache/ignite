@@ -112,6 +112,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         public void FixtureSetUp()
         {
             Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
+            Environment.SetEnvironmentVariable("IGNITE_SPRING_CONFIG_URL_PREFIX", "modules\\");
 
             Directory.SetCurrentDirectory(PathUtil.IgniteHome);
         }
