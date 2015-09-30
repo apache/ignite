@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Cache
 {
     using System.Collections.Generic;
+    using System.Globalization;
     using Apache.Ignite.Core.Cache;
 
     /// <summary>
@@ -94,7 +95,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public override string ToString()
         {
-            return string.Format("CacheEntry [Key={0}, Value={1}]", _key, _val);
+            return string.Format(CultureInfo.CurrentCulture, "CacheEntry [Key={0}, Value={1}]", _key, _val);
         }
 
         /// <summary>

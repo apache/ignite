@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq.Expressions;
 
     /// <summary>
@@ -34,6 +35,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <typeparam name="TFrom">Source type to cast from.</typeparam>
         /// <param name="obj">The object to cast.</param>
         /// <returns>Casted object.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes",
+            Justification = "Intended usage to leverage compiler caching.")]
         public static T Cast<TFrom>(TFrom obj)
         {
             return Casters<TFrom>.Caster(obj);
@@ -47,6 +50,10 @@ namespace Apache.Ignite.Core.Impl.Common
             /// <summary>
             /// Compiled caster delegate.
             /// </summary>
+            [SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields", 
+                Justification = "Incorrect warning")]
+            [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes",
+                Justification = "Intended usage to leverage compiler caching.")]
             internal static readonly Func<TFrom, T> Caster = Compile();
 
             /// <summary>

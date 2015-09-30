@@ -578,7 +578,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(EventType.EvtSwapSpaceCleared, evt.Type);
             Assert.IsNotNullOrEmpty(evt.Name);
             Assert.AreNotEqual(Guid.Empty, evt.Id.GlobalId);
-            Assert.IsTrue((evt.TimeStamp - DateTime.Now).TotalSeconds < 10);
+            Assert.IsTrue((evt.Timestamp - DateTime.Now).TotalSeconds < 10);
         }
 
         /// <summary>

@@ -117,17 +117,5 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             get { return null; }
         }
-
-        /** <inheritDoc /> */
-        public object TypedHandler
-        {
-            get { return null; }
-        }
-
-        /** <inheritDoc /> */
-        public PortableSystemWriteDelegate UntypedHandler
-        {
-            get { return null; }
-        }
     }
 }

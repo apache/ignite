@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -63,20 +64,12 @@ namespace Apache.Ignite.Core.Impl
         private static PlatformMemoryManager _mem;
 
         /// <summary>
-        /// Static initializer.
-        /// </summary>
-        static IgniteManager()
-        {
-            // No-op.
-        }
-
-        /// <summary>
         /// Create JVM.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
         /// <param name="cbs">Callbacks.</param>
         /// <returns>Context.</returns>
-        internal static void* GetContext(IgniteConfiguration cfg, UnmanagedCallbacks cbs)
+        internal static void CreateJvmContext(IgniteConfiguration cfg, UnmanagedCallbacks cbs)
         {
             lock (SyncRoot)
             {
@@ -106,8 +99,6 @@ namespace Apache.Ignite.Core.Impl
                     _jvmCfg = jvmCfg;
                     _mem = new PlatformMemoryManager(1024);
                 }
-
-                return ctx;
             }
         }
         
@@ -195,10 +186,10 @@ namespace Apache.Ignite.Core.Impl
 
             // JvmInitialMemoryMB / JvmMaxMemoryMB have lower priority than CMD_JVM_OPT
             if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmMinMemJava, StringComparison.OrdinalIgnoreCase)))
-                jvmOpts.Add(string.Format("{0}{1}m", CmdJvmMinMemJava, cfg.JvmInitialMemoryMb));
+                jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}{1}m", CmdJvmMinMemJava, cfg.JvmInitialMemoryMb));
 
             if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmMaxMemJava, StringComparison.OrdinalIgnoreCase)))
-                jvmOpts.Add(string.Format("{0}{1}m", CmdJvmMaxMemJava, cfg.JvmMaxMemoryMb));
+                jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}{1}m", CmdJvmMaxMemJava, cfg.JvmMaxMemoryMb));
 
             return jvmOpts;
         }
@@ -248,12 +239,14 @@ namespace Apache.Ignite.Core.Impl
             if (string.IsNullOrWhiteSpace(home))
                 home = Environment.GetEnvironmentVariable(EnvIgniteHome);
             else if (!IsIgniteHome(new DirectoryInfo(home)))
-                throw new IgniteException(string.Format("IgniteConfiguration.IgniteHome is not valid: '{0}'", home));
+                throw new IgniteException(string.Format(CultureInfo.InvariantCulture, 
+                    "IgniteConfiguration.IgniteHome is not valid: '{0}'", home));
 
             if (string.IsNullOrWhiteSpace(home))
                 home = ResolveIgniteHome();
             else if (!IsIgniteHome(new DirectoryInfo(home)))
-                throw new IgniteException(string.Format("{0} is not valid: '{1}'", EnvIgniteHome, home));
+                throw new IgniteException(string.Format(CultureInfo.InvariantCulture, 
+                    "{0} is not valid: '{1}'", EnvIgniteHome, home));
 
             return home;
         }
@@ -293,7 +286,10 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Value indicating whether specified dir looks like a Ignite home.</returns>
         private static bool IsIgniteHome(DirectoryInfo dir)
         {
-            return dir.Exists && dir.EnumerateDirectories().Count(x => x.Name == "examples" || x.Name == "bin") == 2;
+            return dir.Exists &&
+                dir.EnumerateDirectories().Count(x => x.Name == "examples" || x.Name == "bin") == 2 &&
+                (dir.EnumerateDirectories().Count(x => x.Name == "modules") == 1 ||
+                    dir.EnumerateDirectories().Count(x => x.Name == "platforms") == 1);
         }
 
         /// <summary>
@@ -327,7 +323,7 @@ namespace Apache.Ignite.Core.Impl
             {
                 cpStr.Append(cfg.JvmClasspath);
 
-                if (!cfg.JvmClasspath.EndsWith(";"))
+                if (!cfg.JvmClasspath.EndsWith(";", StringComparison.Ordinal))
                     cpStr.Append(';');
             }
 
@@ -361,7 +357,7 @@ namespace Apache.Ignite.Core.Impl
             {
                 foreach (string dir in Directory.EnumerateDirectories(ggLibs))
                 {
-                    if (!dir.EndsWith("optional"))
+                    if (!dir.EndsWith("optional", StringComparison.OrdinalIgnoreCase))
                         AppendJars(dir, cpStr);
                 }
             }

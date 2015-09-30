@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Transactions
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Transactions facade.
@@ -63,6 +64,8 @@ namespace Apache.Ignite.Core.Transactions
         /// <summary>
         /// Gets the metrics.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", 
+            Justification = "Expensive operation.")]
         ITransactionMetrics GetMetrics();
 
         /// <summary>

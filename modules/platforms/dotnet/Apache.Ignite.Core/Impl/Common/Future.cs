@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /** <inheritdoc/> */
         public IAsyncResult ToAsyncResult()
         {
-            return _done ? CompletedAsyncResult.Instance : new AsyncResult(this);
+            return _done ? (IAsyncResult) new CompletedAsyncResult() : new AsyncResult(this);
         }
 
         /** <inheritdoc/> */
@@ -193,6 +193,7 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public void OnResult(IPortableStream stream)
         {
             try

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -189,7 +190,7 @@ namespace Apache.Ignite.Core.Impl
                 if (errCode == 0)
                     return;
 
-                messages.Add(string.Format("[option={0}, path={1}, errorCode={2}]", 
+                messages.Add(string.Format(CultureInfo.InvariantCulture, "[option={0}, path={1}, errorCode={2}]", 
                     dllPath.Key, dllPath.Value, errCode));
 
                 if (dllPath.Value == configJvmDllPath)
@@ -197,13 +198,18 @@ namespace Apache.Ignite.Core.Impl
             }
 
             if (!messages.Any())  // not loaded and no messages - everything was null
-                messages.Add(string.Format("Please specify IgniteConfiguration.JvmDllPath or {0}.", EnvJavaHome));
+                messages.Add(string.Format(CultureInfo.InvariantCulture, 
+                    "Please specify IgniteConfiguration.JvmDllPath or {0}.", EnvJavaHome));
 
             if (messages.Count == 1)
-                throw new IgniteException(string.Format("Failed to load {0} ({1})", FileJvmDll, messages[0]));
+                throw new IgniteException(string.Format(CultureInfo.InvariantCulture, "Failed to load {0} ({1})", 
+                    FileJvmDll, messages[0]));
 
-            var combinedMessage = messages.Aggregate((x, y) => string.Format("{0}\n{1}", x, y));
-            throw new IgniteException(string.Format("Failed to load {0}:\n{1}", FileJvmDll, combinedMessage));
+            var combinedMessage =
+                messages.Aggregate((x, y) => string.Format(CultureInfo.InvariantCulture, "{0}\n{1}", x, y));
+
+            throw new IgniteException(string.Format(CultureInfo.InvariantCulture, "Failed to load {0}:\n{1}", 
+                FileJvmDll, combinedMessage));
         }
 
         /// <summary>

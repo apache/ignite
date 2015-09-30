@@ -19,11 +19,13 @@ namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Concurrent dictionary with CopyOnWrite mechanism inside. 
     /// Good for frequent reads / infrequent writes scenarios.
     /// </summary>
+    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
     public class CopyOnWriteConcurrentDictionary<TKey, TValue>
     {
         /** */

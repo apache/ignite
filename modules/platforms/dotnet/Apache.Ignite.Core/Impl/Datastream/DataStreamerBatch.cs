@@ -181,6 +181,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <summary>
         /// Await completion of current and all previous loads.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public void AwaitCompletion()
         {
             DataStreamerBatch<TK, TV> curBatch = this;

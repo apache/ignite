@@ -146,7 +146,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="that">Other dictionary.</param>
         public void Merge(PortableHandleDictionary<TK, TV> that)
         {
-            Debug.Assert(that != null, "that == null");
+            if (that == null)
+                return;
             
             AddIfAbsent(that._key1, that._val1);
             AddIfAbsent(that._key2, that._val2);

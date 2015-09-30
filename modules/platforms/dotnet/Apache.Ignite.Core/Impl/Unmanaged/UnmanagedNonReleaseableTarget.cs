@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Unmanaged target which does not require explicit release.
@@ -60,6 +61,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Usage", "CA1816:CallGCSuppressFinalizeCorrectly",
+            Justification = "There is no finalizer.")]
         public void Dispose()
         {
             // No-op.

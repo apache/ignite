@@ -1052,6 +1052,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         
         #region HELPERS
 
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void SafeCall(Action func, bool allowUnitialized = false)
         {
             if (!allowUnitialized)
@@ -1067,6 +1068,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private T SafeCall<T>(Func<T> func, bool allowUnitialized = false)
         {
             if (!allowUnitialized)

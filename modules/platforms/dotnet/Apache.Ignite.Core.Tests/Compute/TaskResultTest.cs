@@ -407,7 +407,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 _gridName = _grid.Name;
 
-                T res = Argument<T>(0);
+                T res = GetArgument<T>(0);
 
                 return res;
             }
@@ -428,7 +428,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 _gridName = _grid.Name;
 
-                PortableResult res = Argument<PortableResult>(0);
+                PortableResult res = GetArgument<PortableResult>(0);
 
                 return res;
             }

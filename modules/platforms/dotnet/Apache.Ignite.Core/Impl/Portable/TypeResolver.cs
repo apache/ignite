@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Linq;
     using System.Reflection;
     using System.Text.RegularExpressions;
@@ -118,7 +119,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 return null;
 
             var genericType = ResolveNonGenericType(assemblyName,
-                string.Format("{0}`{1}", match.Groups[1].Value, genericArgs.Length), assemblies);
+                string.Format(CultureInfo.InvariantCulture, "{0}`{1}", match.Groups[1].Value, genericArgs.Length),
+                assemblies);
 
             if (genericType == null)
                 return null;
@@ -131,7 +133,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private static string TrimBrackets(string s)
         {
-            return s.StartsWith("[") && s.EndsWith("]") ? s.Substring(1, s.Length - 2) : s;
+            return s.StartsWith("[", StringComparison.Ordinal) && s.EndsWith("]", StringComparison.Ordinal) 
+                ? s.Substring(1, s.Length - 2) 
+                : s;
         }
 
         /// <summary>

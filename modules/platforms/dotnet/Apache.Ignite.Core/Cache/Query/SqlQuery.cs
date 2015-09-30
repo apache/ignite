@@ -30,10 +30,10 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="typ">Type.</param>
+        /// <param name="queryType">Type.</param>
         /// <param name="sql">SQL.</param>
         /// <param name="args">Arguments.</param>
-        public SqlQuery(Type typ, string sql, params object[] args) : this(typ, sql, false, args)
+        public SqlQuery(Type queryType, string sql, params object[] args) : this(queryType, sql, false, args)
         {
             // No-op.
         }
@@ -41,11 +41,12 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="typ">Type.</param>
+        /// <param name="queryType">Type.</param>
         /// <param name="sql">SQL.</param>
-        /// <param name="loc">Whether query should be executed locally.</param>
+        /// <param name="local">Whether query should be executed locally.</param>
         /// <param name="args">Arguments.</param>
-        public SqlQuery(Type typ, string sql, bool loc, params object[] args) : this(typ.Name, sql, loc, args)
+        public SqlQuery(Type queryType, string sql, bool local, params object[] args) 
+            : this(queryType.Name, sql, local, args)
         {
             // No-op.
         }
@@ -53,10 +54,10 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="typ">Type.</param>
+        /// <param name="queryType">Type.</param>
         /// <param name="sql">SQL.</param>
         /// <param name="args">Arguments.</param>
-        public SqlQuery(string typ, string sql, params object[] args) : this(typ, sql, false, args)
+        public SqlQuery(string queryType, string sql, params object[] args) : this(queryType, sql, false, args)
         {
             // No-op.
         }
@@ -64,22 +65,22 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="typ">Type.</param>
+        /// <param name="queryType">Type.</param>
         /// <param name="sql">SQL.</param>
-        /// <param name="loc">Whether query should be executed locally.</param>
+        /// <param name="local">Whether query should be executed locally.</param>
         /// <param name="args">Arguments.</param>
-        public SqlQuery(string typ, string sql, bool loc, params object[] args)
+        public SqlQuery(string queryType, string sql, bool local, params object[] args)
         {
-            Type = typ;
+            QueryType = queryType;
             Sql = sql;
-            Local = loc;
+            Local = local;
             Arguments = args;
         }
 
         /// <summary>
         /// Type.
         /// </summary>
-        public string Type { get; set; }
+        public string QueryType { get; set; }
 
         /// <summary>
         /// SQL.
@@ -98,13 +99,13 @@ namespace Apache.Ignite.Core.Cache.Query
             if (string.IsNullOrEmpty(Sql))
                 throw new ArgumentException("Sql cannot be null or empty");
 
-            if (string.IsNullOrEmpty(Type))
-                throw new ArgumentException("Type cannot be null or empty");
+            if (string.IsNullOrEmpty(QueryType))
+                throw new ArgumentException("QueryType cannot be null or empty");
 
             // 2. Prepare.
             writer.WriteBoolean(Local);
             writer.WriteString(Sql);
-            writer.WriteString(Type);
+            writer.WriteString(QueryType);
             writer.WriteInt(PageSize);
 
             WriteQueryArgs(writer, Arguments);

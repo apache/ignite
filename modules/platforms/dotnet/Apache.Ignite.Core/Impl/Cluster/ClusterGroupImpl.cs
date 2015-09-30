@@ -103,7 +103,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private readonly Func<IClusterNode, bool> _pred;
 
         /** Topology version. */
-        [SuppressMessage("Microsoft.Performance", "CA1805:DoNotInitializeUnnecessarily")]
         private long _topVer = TopVerInit;
 
         /** Nodes for the given topology version. */
@@ -132,6 +131,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <param name="marsh">Marshaller.</param>
         /// <param name="ignite">Grid.</param>
         /// <param name="pred">Predicate.</param>
+        [SuppressMessage("Microsoft.Performance", "CA1805:DoNotInitializeUnnecessarily")]
         public ClusterGroupImpl(IUnmanagedTarget proc, IUnmanagedTarget target, PortableMarshaller marsh,
             Ignite ignite, Func<IClusterNode, bool> pred)
             : base(target, marsh)
