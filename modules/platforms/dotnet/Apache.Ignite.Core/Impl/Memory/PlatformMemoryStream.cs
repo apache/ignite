@@ -656,8 +656,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         protected virtual void Dispose(bool disposing)
         {
-            SynchronizeOutput();
-
             _mem.Release();
         }
 
