@@ -53,7 +53,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
     private static final String MOCK_TWEET_PATH = "/tweet/mock";
 
     /** sample tweet */
-    private static final String tweet = "{\"id\":647375831971590144,\"text\":\"sample tweet to test Twitter streamer\"}\n";
+    private static final String tweet = "{\"id\":647375831971590144,\"text\":\"sample tweet to test streamer\"}\n";
 
     /** Constructor. */
     public IgniteTwitterStreamerTest() {
@@ -100,7 +100,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
 
         streamer.start();
 
-        // all cache PUT events received in 10 seconds, wait 10 more seconds as Twitter API can take time
+        // every second check if any data is streamed to cache, for 10s max.
         CountDownLatch latch = listener.getLatch();
         for(int i = 0; i < 10 || latch.getCount() == CACHE_ENTRY_COUNT; i++){
             latch.await(1, TimeUnit.SECONDS);
@@ -160,7 +160,5 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
             latch.countDown();
             return true;
         }
-
     }
-
 }

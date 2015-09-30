@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.stream.StreamAdapter;
 import twitter4j.Status;
+import twitter4j.TwitterException;
 import twitter4j.TwitterObjectFactory;
 
 import java.util.Collections;
@@ -53,17 +54,19 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Streamer that consumes from a Twitter Streaming API and feeds transformed key-value pairs, by default <tweetId, text>,
- * into an {@link IgniteDataStreamer} instance.
+ * Streamer that consumes from a Twitter Streaming API and feeds transformed key-value pairs,
+ * by default <tweetId, text>, into an {@link IgniteDataStreamer} instance.
  * <p>
- * This streamer uses https://dev.twitter.com/streaming API and supports Public API, User Streams, Site Streams and Firehose.
+ * This streamer uses https://dev.twitter.com/streaming API and supports Public API, User Streams,
+ * Site Streams and Firehose.
  * <p>
  * You can also provide a {@link TweetTransformer} to convert the incoming message into cache entries to override
  * default transformer.
  * <p>
  * This Streamer features:
  * <ul>
- *     <li>Supports OAuth1 authentication scheme. <br/> BasicAuth not supported by Streaming API https://dev.twitter.com/streaming/overview/connecting</li>
+ *     <li>Supports OAuth1 authentication scheme.
+ *     <br/> BasicAuth not supported by Streaming API https://dev.twitter.com/streaming/overview/connecting</li>
  *     <li>Provide all params in apiParams map. https://dev.twitter.com/streaming/overview/request-parameters</li>
  * </ul>
  */
@@ -128,6 +131,7 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
         log = getIgnite().log();
 
         BlockingQueue<String> tweetQueue = new LinkedBlockingQueue<String>(bufferCapacity);
+
         client = getStreamingEndpoint(tweetQueue);
 
         client.connect();
@@ -143,11 +147,10 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
                     try{
                         String tweet = tweetQueue.take();
                         Map<K, V> value = transformer.apply(tweet);
-                        if (value != null){
+                        if (value != null)
                             getStreamer().addData(value);
-                        }
                     }catch (InterruptedException e){
-                        //No-op
+                        //suppressing interrupt. To stop streaming call stop method.
                     }
                 }
                 return running;
@@ -188,10 +191,10 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
 
     private Client getStreamingEndpoint(BlockingQueue<String> tweetQueue){
         StreamingEndpoint endpoint;
-        Authentication authentication = new OAuth1(this.oAuthSettings.getConsumerKey(), this.oAuthSettings.getConsumerSecret(),
-                this.oAuthSettings.getAccessToken(), this.oAuthSettings.getAccessTokenSecret());
+        Authentication authentication = new OAuth1(oAuthSettings.getConsumerKey(), oAuthSettings.getConsumerSecret(),
+                oAuthSettings.getAccessToken(), oAuthSettings.getAccessTokenSecret());
 
-        switch (this.endpointUrl.toLowerCase()){
+        switch (endpointUrl.toLowerCase()){
             case StatusesFilterEndpoint.PATH:
                 endpoint = new StatusesFilterEndpoint();
                 hosts = HttpHosts.STREAM_HOST;
@@ -218,16 +221,14 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
                 hosts = HttpHosts.SITESTREAM_HOST;
                 break;
             default:
-                endpoint = new DefaultStreamingEndpoint(this.endpointUrl, HttpConstants.HTTP_GET, false);
+                endpoint = new DefaultStreamingEndpoint(endpointUrl, HttpConstants.HTTP_GET, false);
                 if(hosts == null){
                     hosts = HttpHosts.STREAM_HOST;
                 }
         }
-
         for(Map.Entry<String, String> entry : apiParams.entrySet()){
             endpoint.addPostParameter(entry.getKey(), entry.getValue());
         }
-
         ClientBuilder builder = new ClientBuilder()
                 .name("Ignite-Twitter-Client")
                 .hosts(hosts)
@@ -249,8 +250,8 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
                 Map<String, String> value = Maps.newHashMap();
                 value.put(String.valueOf(status.getId()), status.getText());
                 return value;
-            }catch (Exception e){
-                //no op
+            }catch (TwitterException e){
+                //suppress exception. If failed to transform, will return empty map.
             }
             return Collections.EMPTY_MAP;
         }
