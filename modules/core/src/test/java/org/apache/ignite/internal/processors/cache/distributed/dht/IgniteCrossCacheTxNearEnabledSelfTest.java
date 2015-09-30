@@ -15,36 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.sql;
-
-import java.util.Collections;
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 /**
- * Placeholder.
+ *
  */
-public class GridSqlPlaceholder extends GridSqlElement {
-    /** */
-    public static final GridSqlPlaceholder EMPTY = new GridSqlPlaceholder("");
-
-    /** */
-    private final String sql;
-
-    /**
-     * @param sql SQL.
-     */
-    public GridSqlPlaceholder(String sql) {
-        super(Collections.<GridSqlElement>emptyList());
-
-        this.sql = sql;
-    }
-
+public class IgniteCrossCacheTxNearEnabledSelfTest extends IgniteCrossCacheTxSelfTest {
     /** {@inheritDoc} */
-    @Override public String getSQL() {
-        return sql;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridSqlElement resultType(GridSqlType type) {
-        throw new IllegalStateException();
+    @Override protected boolean nearEnabled() {
+        return true;
     }
 }

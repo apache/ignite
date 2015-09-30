@@ -25,7 +25,7 @@ import java.util.List;
  */
 public abstract class GridSqlElement implements Iterable<GridSqlElement> {
     /** */
-    protected List<GridSqlElement> children;
+    protected final List<GridSqlElement> children;
 
     /** */
     private GridSqlType resultType;

@@ -199,11 +199,25 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         Collection<DynamicCacheChangeRequest> valid = new ArrayList<>(batch.requests().size());
 
                         // Validate requests to check if event should trigger partition exchange.
-                        for (DynamicCacheChangeRequest req : batch.requests()) {
+                        for (final DynamicCacheChangeRequest req : batch.requests()) {
                             if (req.exchangeNeeded())
                                 valid.add(req);
-                            else
-                                cctx.cache().completeStartFuture(req);
+                            else {
+                                IgniteInternalFuture<?> fut = null;
+
+                                if (req.cacheFutureTopologyVersion() != null)
+                                    fut = affinityReadyFuture(req.cacheFutureTopologyVersion());
+
+                                if (fut == null || fut.isDone())
+                                    cctx.cache().completeStartFuture(req);
+                                else {
+                                    fut.listen(new CI1<IgniteInternalFuture<?>>() {
+                                        @Override public void apply(IgniteInternalFuture<?> fut) {
+                                            cctx.cache().completeStartFuture(req);
+                                        }
+                                    });
+                                }
+                            }
                         }
 
                         if (!F.isEmpty(valid)) {
