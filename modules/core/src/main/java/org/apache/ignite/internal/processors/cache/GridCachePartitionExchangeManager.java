@@ -627,8 +627,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * Schedules next full partitions update.
      */
     public void scheduleResendPartitions() {
-        log.info("scheduleResendPartitoins");
-
         ResendTimeoutObject timeout = pendingResend.get();
 
         if (timeout == null || timeout.started()) {
