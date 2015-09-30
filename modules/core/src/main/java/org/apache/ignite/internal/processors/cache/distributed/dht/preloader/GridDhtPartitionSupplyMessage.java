@@ -404,7 +404,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
     @Override public String toString() {
         return S.toString(GridDhtPartitionSupplyMessage.class, this,
             "size", size(),
-            "parts", infos.keySet(),
             "super", super.toString());
     }
 }
