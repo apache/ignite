@@ -19,6 +19,7 @@
 #define _IGNITE_CONFIGURATION
 
 #include <stdint.h>
+#include "ignite/impl/utils.h"
 
 namespace ignite
 {    
@@ -38,15 +39,41 @@ namespace ignite
             // No-op.    
         }
 
+		/**
+		* Copy constructor.
+		*/
+		IgniteJvmOption(const IgniteJvmOption& option) : opt()
+		{
+			this->opt = impl::utils::CopyChars(option.opt);
+		}
+
         /**
          * Constructor.
          *
          * @param opt Option.
          */
-        IgniteJvmOption(char* opt) : opt(opt)
+        IgniteJvmOption(const char* opt) : opt()
         {
-            // No-op.
+			this->opt = impl::utils::CopyChars(opt);
         }
+
+		/**
+		* Destructor.
+		*/
+		~IgniteJvmOption()
+		{
+			impl::utils::ReleaseChars(opt);
+		}
+
+		/**
+		* Copy operator.
+		*/
+		IgniteJvmOption& operator=(const IgniteJvmOption& option)
+		{
+			impl::utils::ReleaseChars(opt);
+			this->opt = impl::utils::CopyChars(option.opt);
+			return *this;
+		}
     };
 
     /**
