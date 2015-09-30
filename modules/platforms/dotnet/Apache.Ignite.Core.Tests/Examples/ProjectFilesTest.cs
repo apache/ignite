@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Examples
                 .Select(File.ReadAllText)
                 .SelectMany(src => Regex.Matches(src, @"platforms[^\s]+.xml").OfType<Match>())
                 .Where(match => match.Success)
-                .Select(match => Path.Combine(PathUtil.IgniteHome, PathUtil.SpringConfigUrlDevPrefix + match.Value))
+                .Select(match => PathUtil.GetFullConfigPath(match.Value))
                 .ToList();
 
             Assert.AreEqual(24, paths.Count);

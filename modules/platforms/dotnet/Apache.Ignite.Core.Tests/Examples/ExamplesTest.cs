@@ -76,8 +76,6 @@ namespace Apache.Ignite.Core.Tests.Examples
                 return;
             }
 
-            Assert.IsTrue(File.Exists(example.SpringConfigUrl));
-
             var gridConfig = new IgniteConfiguration {SpringConfigUrl = example.SpringConfigUrl};
 
             // Try with multiple standalone nodes

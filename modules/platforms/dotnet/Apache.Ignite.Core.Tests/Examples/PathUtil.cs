@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             if (string.IsNullOrEmpty(springConfigUrl))
                 return springConfigUrl;
 
-            return Path.GetFullPath(Path.Combine(IgniteHome, springConfigUrl));
+            return Path.GetFullPath(Path.Combine(IgniteHome, SpringConfigUrlDevPrefix + springConfigUrl));
         }
     }
 }

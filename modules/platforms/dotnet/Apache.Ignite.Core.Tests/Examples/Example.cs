@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Tests.Examples
                 yield return new Example
                 {
                     SourceFilePath = sourceFile,
-                    SpringConfigUrl = PathUtil.GetFullConfigPath(GetSpringConfigUrl(sourceCode)),
+                    SpringConfigUrl = GetSpringConfigUrl(sourceCode),
                     NeedsTestDll = sourceCode.Contains(examplesDllName),
                     _runAction = GetRunAction(type),
                     Name = type.Name
