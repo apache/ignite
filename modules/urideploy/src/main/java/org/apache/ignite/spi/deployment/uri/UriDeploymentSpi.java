@@ -145,6 +145,22 @@ import org.jetbrains.annotations.Nullable;
  * URI 'path' field will be automatically encoded. By default this flag is
  * set to {@code true}.
  * <p>
+ * <h1 class="header">Code Example</h1>
+ * The following example demonstrates how the deployment SPI can be used. It expects that you have a GAR file
+ * in 'home/username/ignite/work/my_deployment/file' folder which contains 'myproject.HelloWorldTask' class.
+ * <pre name="code" class="java">
+ * IgniteConfiguration cfg = new IgniteConfiguration();
+ *
+ * DeploymentSpi deploymentSpi = new UriDeploymentSpi();
+ *
+ * deploymentSpi.setUriList(Arrays.asList("file:///home/username/ignite/work/my_deployment/file"));
+ *
+ * cfg.setDeploymentSpi(deploymentSpi);
+ *
+ * try(Ignite ignite = Ignition.start(cfg)) {
+ *     ignite.compute().execute("myproject.HelloWorldTask", "my args");
+ * }
+ * </pre>
  * <h1 class="header">Configuration</h1>
  * {@code UriDeploymentSpi} has the following optional configuration
  * parameters (there are no mandatory parameters):
@@ -170,13 +186,17 @@ import org.jetbrains.annotations.Nullable;
  * </li>
  * </ul>
  * <h1 class="header">Protocols</h1>
- * Following protocols are supported in SPI by default (it's can be changed
- * by using {@link #setScanners(UriDeploymentScanner...)}):
+ * Following protocols are supported in SPI out of the box:
  * <ul>
  * <li><a href="#file">file://</a> - File protocol</li>
  * <li><a href="#http">http://</a> - HTTP protocol</li>
  * <li><a href="#http">https://</a> - Secure HTTP protocol</li>
  * </ul>
+ * <strong>Custom Protocols.</strong>
+ * <p>
+ * You can add support for additional protocols if needed. To do this implement UriDeploymentScanner interface and
+ * plug your implementation into the SPI via setScanners(UriDeploymentScanner... scanners) method.
+ * <p>
  * In addition to SPI configuration parameters, all necessary configuration
  * parameters for selected URI should be defined in URI. Different protocols
  * have different configuration parameters described below. Parameters are
@@ -187,7 +207,7 @@ import org.jetbrains.annotations.Nullable;
  * download any GAR files or directories that end with .gar from source
  * directory defined in URI. For file system URI must have scheme equal to {@code file}.
  * <p>
- * Following parameters are supported for FILE protocol:
+ * Following parameters are supported:
  * <table class="doctable">
  *  <tr>
  *      <th>Parameter</th>
@@ -197,22 +217,18 @@ import org.jetbrains.annotations.Nullable;
  *  </tr>
  *  <tr>
  *      <td>freq</td>
- *      <td>File directory scan frequency in milliseconds.</td>
+ *      <td>Scanning frequency in milliseconds.</td>
  *      <td>Yes</td>
  *      <td>{@code 5000} ms specified in {@link UriDeploymentFileScanner#DFLT_SCAN_FREQ}.</td>
  *  </tr>
  * </table>
  * <h2 class="header">File URI Example</h2>
  * The following example will scan {@code 'c:/Program files/ignite/deployment'}
- * folder on local box every {@code '5000'} milliseconds. Note that since path
+ * folder on local box every {@code '1000'} milliseconds. Note that since path
  * has spaces, {@link #setEncodeUri(boolean) setEncodeUri(boolean)} parameter must
  * be set to {@code true} (which is default behavior).
  * <blockquote class="snippet">
- * {@code file://freq=5000@localhost/c:/Program files/ignite/deployment}
- * </blockquote>
- * Or just
- * <blockquote class="snippet">
- * {@code file:///c:/Program files/ignite/deployment}
+ * {@code file://freq=2000@localhost/c:/Program files/ignite/deployment}
  * </blockquote>
  * <a name="classes"></a>
  * <h2 class="header">HTTP/HTTPS</h2>
@@ -220,7 +236,7 @@ import org.jetbrains.annotations.Nullable;
  * - this becomes the URL collection (to GAR files) to deploy. It's important that HTTP scanner
  * uses URLConnection.getLastModified() method to check if there were any changes since last iteration
  * for each GAR-file before redeploying.
- * Following parameters are supported for the protocol:
+ * Following parameters are supported:
  * <table class="doctable">
  *  <tr>
  *      <th>Parameter</th>
@@ -230,15 +246,15 @@ import org.jetbrains.annotations.Nullable;
  *  </tr>
  *  <tr>
  *      <td>freq</td>
- *      <td>Scan frequency in milliseconds.</td>
+ *      <td>Scanning frequency in milliseconds.</td>
  *      <td>Yes</td>
  *      <td>{@code 300000} ms specified in {@link UriDeploymentHttpScanner#DFLT_SCAN_FREQ}.</td>
  *  </tr>
  * </table>
  * <h2 class="header">HTTP URI Example</h2>
- * The following example will scan {@code 'ignite/deployment'} folder with
- * on site {@code 'www.mysite.com'} using authentication
- * {@code 'username:password'} every {@code '10000'} milliseconds.
+ * The following example will download the page `www.mysite.com/ignite/deployment`, parse it and download and deploy
+ * all GAR files specified by href attributes of &lt;a&gt; elements on the page using authentication
+ * {@code 'username:password'} every '10000' milliseconds (only new/updated GAR-s).
  * <blockquote class="snippet">
  * {@code http://username:password;freq=10000@www.mysite.com:110/ignite/deployment}
  * </blockquote>
