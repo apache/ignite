@@ -110,7 +110,8 @@ namespace Apache.Ignite.Core.Tests.Examples
         public void FixtureSetUp()
         {
             Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
-            Environment.SetEnvironmentVariable("IGNITE_SPRING_CONFIG_URL_PREFIX", PathUtil.SpringConfigUrlDevPrefix);
+            Environment.SetEnvironmentVariable(Ignition.EnvIgniteSpringConfigUrlPrefix, 
+                PathUtil.SpringConfigUrlDevPrefix);
 
             Directory.SetCurrentDirectory(PathUtil.IgniteHome);
         }
@@ -125,7 +126,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             IgniteProcess.KillAll();
             
             // do not interfere with other tests
-            Environment.SetEnvironmentVariable("IGNITE_SPRING_CONFIG_URL_PREFIX", null);  
+            Environment.SetEnvironmentVariable(Ignition.EnvIgniteSpringConfigUrlPrefix, null);
         }
 
         /// <summary>

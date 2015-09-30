@@ -73,10 +73,10 @@ namespace Apache.Ignite.Core
     public static class Ignition
     {
         /** */
-        private const string DefaultCfg = "config/default-config.xml";
+        internal const string EnvIgniteSpringConfigUrlPrefix = "IGNITE_SPRING_CONFIG_URL_PREFIX";
 
         /** */
-        private const string EnvIgniteSpringConfigUrlPrefix = "IGNITE_SPRING_CONFIG_URL_PREFIX";
+        private const string DefaultCfg = "config/default-config.xml";
 
         /** */
         private static readonly object SyncRoot = new object();
