@@ -53,7 +53,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsBlockLocation;
-import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsInvalidPathException;
 import org.apache.ignite.igfs.IgfsMetrics;
@@ -712,6 +711,9 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Deleting file [path=" + path + ", recursive=" + recursive + ']');
 
+                if (IgfsPath.SLASH.equals(path.toString()))
+                    return false;
+
                 IgfsMode mode = resolveMode(path);
 
                 Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
@@ -721,8 +723,11 @@ public final class IgfsImpl implements IgfsEx {
                 FileDescriptor desc = getFileDescriptor(path);
 
                 if (childrenModes.contains(PRIMARY)) {
-                    if (desc != null)
-                        res = delete0(desc, path.parent(), recursive);
+                    if (desc != null) {
+                        IgniteUuid deletedId = meta.softDelete(path, recursive);
+
+                        res = deletedId != null;
+                    }
                     else if (mode == PRIMARY)
                         checkConflictWithPrimary(path);
                 }
@@ -748,48 +753,6 @@ public final class IgfsImpl implements IgfsEx {
                 return res;
             }
         });
-    }
-
-    /**
-     * Internal procedure for (optionally) recursive file and directory deletion.
-     *
-     * @param desc File descriptor of file or directory to delete.
-     * @param parentPath Parent path. If specified, events will be fired for each deleted file
-     *      or directory. If not specified, events will not be fired.
-     * @param recursive Recursive deletion flag.
-     * @return {@code True} if file was successfully deleted. If directory is not empty and
-     *      {@code recursive} flag is false, will return {@code false}.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private boolean delete0(FileDescriptor desc, @Nullable IgfsPath parentPath, boolean recursive)
-        throws IgniteCheckedException {
-        IgfsPath curPath = parentPath == null ? new IgfsPath() : new IgfsPath(parentPath, desc.fileName);
-
-        if (desc.isFile) {
-            deleteFile(curPath, desc, true);
-
-            return true;
-        }
-        else {
-            if (recursive) {
-                meta.softDelete(desc.parentId, desc.fileName, desc.fileId);
-
-                return true;
-            }
-            else {
-                Map<String, IgfsListingEntry> infoMap = meta.directoryListing(desc.fileId);
-
-                if (F.isEmpty(infoMap)) {
-                    deleteFile(curPath, desc, true);
-
-                    return true;
-                }
-                else
-                    // Throw exception if not empty and not recursive.
-                    throw new IgfsDirectoryNotEmptyException("Failed to remove directory (directory is not empty " +
-                        "and recursive flag is not set)");
-            }
-        }
     }
 
     /** {@inheritDoc} */
@@ -1454,7 +1417,7 @@ public final class IgfsImpl implements IgfsEx {
      */
     IgniteInternalFuture<?> formatAsync() {
         try {
-            IgniteUuid id = meta.softDelete(null, null, ROOT_ID);
+            IgniteUuid id = meta.format();
 
             if (id == null)
                 return new GridFinishedFuture<Object>();
@@ -1526,6 +1489,8 @@ public final class IgfsImpl implements IgfsEx {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private FileDescriptor getFileDescriptor(IgfsPath path) throws IgniteCheckedException {
+        assert path != null;
+
         List<IgniteUuid> ids = meta.fileIds(path);
 
         IgfsFileInfo fileInfo = meta.info(ids.get(ids.size() - 1));
