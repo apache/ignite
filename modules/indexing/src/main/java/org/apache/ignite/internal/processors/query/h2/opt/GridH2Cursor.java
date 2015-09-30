@@ -28,23 +28,25 @@ import org.h2.result.SearchRow;
  */
 public class GridH2Cursor implements Cursor {
     /** */
-    private Iterator<GridH2Row> iter;
+    protected Iterator<? extends Row> iter;
 
     /** */
-    private Row row;
+    protected Row cur;
 
     /**
      * Constructor.
      *
      * @param iter Rows iterator.
      */
-    public GridH2Cursor(Iterator<GridH2Row> iter) {
+    public GridH2Cursor(Iterator<? extends Row> iter) {
+        assert iter != null;
+
         this.iter = iter;
     }
 
     /** {@inheritDoc} */
     @Override public Row get() {
-        return row;
+        return cur;
     }
 
     /** {@inheritDoc} */
@@ -54,12 +56,9 @@ public class GridH2Cursor implements Cursor {
 
     /** {@inheritDoc} */
     @Override public boolean next() {
-        row = null;
+        cur = iter.hasNext() ? iter.next() : null;
 
-        if (iter.hasNext())
-            row = iter.next();
-
-        return row != null;
+        return cur != null;
     }
 
     /** {@inheritDoc} */

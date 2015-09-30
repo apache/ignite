@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.h2.engine.Constants;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
@@ -287,51 +288,9 @@ public abstract class GridMergeIndex extends BaseIndex {
     }
 
     /**
-     * Cursor over iterator.
-     */
-    protected class IteratorCursor implements Cursor {
-        /** */
-        protected Iterator<Row> iter;
-
-        /** */
-        protected Row cur;
-
-        /**
-         * @param iter Iterator.
-         */
-        public IteratorCursor(Iterator<Row> iter) {
-            assert iter != null;
-
-            this.iter = iter;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Row get() {
-            return cur;
-        }
-
-        /** {@inheritDoc} */
-        @Override public SearchRow getSearchRow() {
-            return get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() {
-            cur = iter.hasNext() ? iter.next() : null;
-
-            return cur != null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean previous() {
-            throw DbException.getUnsupportedException("previous");
-        }
-    }
-
-    /**
      * Fetching cursor.
      */
-    protected class FetchingCursor extends IteratorCursor {
+    protected class FetchingCursor extends GridH2Cursor {
         /** */
         private Iterator<Row> stream;
 

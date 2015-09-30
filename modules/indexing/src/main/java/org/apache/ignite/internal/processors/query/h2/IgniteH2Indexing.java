@@ -266,6 +266,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private volatile GridKernalContext ctx;
 
     /**
+     * @return Kernal context.
+     */
+    public GridKernalContext kernalContext() {
+        return ctx;
+    }
+
+    /**
      * @param space Space.
      * @return Connection.
      */
@@ -459,10 +466,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return {@code true} If it is a portable object.
      */
     private boolean isPortable(CacheObject o) {
-        if (ctx == null)
-            return false;
-
-        return ctx.cacheObjects().isPortableObject(o);
+        return ctx != null && ctx.cacheObjects().isPortableObject(o);
     }
 
     /**
@@ -606,8 +610,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         finally {
             U.close(stmt, log);
         }
-
-        tbl.tbl.close();
 
         if (tbl.luceneIdx != null)
             U.closeQuiet(tbl.luceneIdx);
@@ -1409,8 +1411,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         for (Schema schema : schemas.values()) {
             for (TableDescriptor desc : schema.tbls.values()) {
-                desc.tbl.close();
-
                 if (desc.luceneIdx != null)
                     U.closeQuiet(desc.luceneIdx);
             }
@@ -1564,20 +1564,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @param tbl Table.
-     * @return Affinity index column.
-     */
-    private static IndexColumn affinityIndexColumn(GridH2Table tbl) {
-        Column affCol = tbl.getAffinityKeyColumn();
-
-        // Affinity column exists and it is not a primary key.
-        if (affCol != null && affCol.getColumnId() != KEY_COL)
-            return tbl.indexColumn(affCol.getColumnId(), SortOrder.ASCENDING);
-
-        return null;
-    }
-
-    /**
      * @param cols Columns list.
      * @param col Column to find.
      * @return {@code true} If found.
@@ -1585,7 +1571,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private static boolean containsColumn(List<IndexColumn> cols, IndexColumn col) {
         int colId = col.column.getColumnId();
 
-        for (IndexColumn c : cols) {
+        for (int i = cols.size() - 1; i >= 0; i--) {
+            IndexColumn c = cols.get(i);
+
             if (c.column.getColumnId() == colId)
                 return true;
         }
@@ -1879,7 +1867,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ArrayList<Index> idxs = new ArrayList<>();
 
             IndexColumn keyCol = tbl.indexColumn(KEY_COL, SortOrder.ASCENDING);
-            IndexColumn affCol = affinityIndexColumn(tbl);
+            IndexColumn affCol = tbl.getAffinityKeyColumn();
 
             // Add primary key index.
             idxs.add(new GridH2TreeIndex("_key_PK", tbl, true,

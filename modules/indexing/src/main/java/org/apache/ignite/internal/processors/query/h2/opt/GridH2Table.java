@@ -83,7 +83,7 @@ public class GridH2Table extends TableBase {
     private volatile Object[] actualSnapshot;
 
     /** */
-    private Column affKeyCol;
+    private IndexColumn affKeyCol;
 
     /**
      * Creates table.
@@ -107,8 +107,10 @@ public class GridH2Table extends TableBase {
         if (desc != null) {
             String affKey = desc.type().affinityKey();
 
-            affKeyCol = affKey == null ? getColumn(KEY_COL) :
-                getColumn(desc.context().config().isSqlEscapeAll() ? affKey : affKey.toUpperCase());
+            int affKeyColId = affKey == null ? KEY_COL : getColumn(desc.context().config().isSqlEscapeAll() ?
+                affKey : affKey.toUpperCase()).getColumnId();
+
+            affKeyCol = indexColumn(affKeyColId, SortOrder.ASCENDING);
 
             assert affKeyCol != null;
         }
@@ -126,7 +128,7 @@ public class GridH2Table extends TableBase {
     /**
      * @return Affinity key column or {@code null} if not available.
      */
-    public Column getAffinityKeyColumn() {
+    public IndexColumn getAffinityKeyColumn() {
         return affKeyCol;
     }
 
@@ -304,6 +306,18 @@ public class GridH2Table extends TableBase {
     /** {@inheritDoc} */
     @Override public void close(Session ses) {
         assert !sessions.contains(ses);
+
+        Lock l = lock.writeLock();
+
+        l.lock();
+
+        try {
+            for (int i = 1, len = idxs.size(); i < len; i++)
+                index(i).close(null);
+        }
+        finally {
+            l.unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -316,23 +330,6 @@ public class GridH2Table extends TableBase {
 
         for (int i = 1, len = idxs.size(); i < len; i++)  // Release snapshots on all except first which is scan.
             index(i).releaseSnapshot();
-    }
-
-    /**
-     * Closes table and releases resources.
-     */
-    public void close() {
-        Lock l = lock.writeLock();
-
-        l.lock();
-
-        try {
-            for (int i = 1, len = idxs.size(); i < len; i++)
-                index(i).close(null);
-        }
-        finally {
-            l.unlock();
-        }
     }
 
     /**
@@ -752,7 +749,7 @@ public class GridH2Table extends TableBase {
 
         /** {@inheritDoc} */
         @Override public void close(Session ses) {
-            delegate.close(ses);
+            // No-op.
         }
 
         /** {@inheritDoc} */

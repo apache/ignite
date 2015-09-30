@@ -18,18 +18,45 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.io.Closeable;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Queue;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.Future;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.util.GridEmptyIterator;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
@@ -43,6 +70,8 @@ import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor.QUERY_POOL;
+
 /**
  * Base class for snapshotable tree indexes.
  */
@@ -54,6 +83,15 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     /** */
     private final ThreadLocal<ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row>> snapshot =
         new ThreadLocal<>();
+
+    /** */
+    private final Object msgTopic;
+
+    /** */
+    private final GridMessageListener msgLsnr;
+
+    /** */
+    private final GridKernalContext ctx;
 
     /**
      * Constructor with index initialization.
@@ -108,14 +146,50 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                 return super.comparable(key);
             }
         };
+
+        if (desc != null) {
+            ctx = desc.context().kernalContext();
+
+            String schemaName = tbl.getSchema().getName();
+            String tblName = tbl.getName();
+            String idxName = getName();
+
+            msgTopic = new IgniteBiTuple<>(GridTopic.TOPIC_QUERY, schemaName + '.' + tblName + '.' + idxName);
+
+            msgLsnr = new GridMessageListener() {
+                @Override public void onMessage(UUID nodeId, Object msg) {
+                    ClusterNode node = ctx.discovery().node(nodeId);
+
+                    if (node == null)
+                        return;
+
+                    if (msg instanceof GridH2IndexRangeRequest)
+                        onIndexRangeRequest(node, (GridH2IndexRangeRequest)msg);
+                    else if (msg instanceof GridH2IndexRangeResponse)
+                        onIndexRangeResponse(node, (GridH2IndexRangeResponse)msg);
+                }
+            };
+
+            ctx.io().addMessageListener(msgTopic, msgLsnr);
+        }
+        else {
+            msgTopic = null;
+            msgLsnr = null;
+            ctx =  null;
+        }
     }
 
-    /**
-     * Closes index and releases resources.
-     */
-    public void close() {
-        if (tree instanceof Closeable)
-            U.closeQuiet((Closeable)tree);
+    private void onIndexRangeRequest(ClusterNode node, GridH2IndexRangeRequest msg) {
+
+    }
+
+    private void onIndexRangeResponse(ClusterNode node, GridH2IndexRangeResponse msg) {
+        // Ignore msg if rebuild happens.
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridH2Table getTable() {
+        return (GridH2Table)super.getTable();
     }
 
     /**
@@ -167,6 +241,9 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
         if (tree instanceof Closeable)
             U.closeQuiet((Closeable)tree);
+
+        if (msgLsnr != null)
+            ctx.io().removeMessageListener(msgTopic, msgLsnr);
     }
 
     /** {@inheritDoc} */
@@ -456,7 +533,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     @Override public GridH2TreeIndex rebuild() throws InterruptedException {
         IndexColumn[] cols = getIndexColumns();
 
-        GridH2TreeIndex idx = new GridH2TreeIndex(getName(), (GridH2Table)getTable(),
+        GridH2TreeIndex idx = new GridH2TreeIndex(getName(), getTable(),
             getIndexType().isUnique(), F.asList(cols));
 
         Thread thread = Thread.currentThread();
@@ -472,5 +549,171 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         }
 
         return idx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getPreferedLookupBatchSize() {
+        return 1000;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public List<Future<Cursor>> findBatched(TableFilter filter, List<SearchRow> firstLastPairs) {
+        GridH2Table tbl = getTable();
+
+        GridCacheContext<?,?> cctx = tbl.rowDescriptor().context();
+        IndexColumn affCol = tbl.getAffinityKeyColumn();
+
+        Map<ClusterNode, Map<Integer,IgnitePair<GridH2RowMessage>>> batches = new HashMap<>();
+
+        for (int i = 0; i < firstLastPairs.size(); i++) {
+            Value affKey = firstLastPairs.get(i).getValue(affCol.column.getColumnId());
+
+            Collection<ClusterNode> nodes;
+
+            // TODO Topology version + explicit partitions
+            AffinityTopologyVersion topVer = null;
+
+            if (affKey != null) {
+                ClusterNode node = cctx.affinity().primary(affKey.getObject(), topVer);
+
+                if (node == null)
+                    throw new CacheException();
+
+                nodes = Collections.singleton(node);
+            }
+            else {
+                nodes = CU.affinityNodes(cctx, topVer);
+
+                if (F.isEmpty(nodes))
+                    throw new CacheException();
+            }
+
+            GridH2RowMessage first = toRowMessage(firstLastPairs.get(i));
+            GridH2RowMessage last = toRowMessage(firstLastPairs.get(i + 1));
+
+            IgnitePair<GridH2RowMessage> bounds = new IgnitePair<>(first, last);
+
+            for (ClusterNode node : nodes) {
+                Map<Integer,IgnitePair<GridH2RowMessage>> batch = batches.get(node);
+
+                if (batch == null)
+                    batches.put(node, batch = new HashMap<>());
+
+                batch.put(i >>> 1, bounds);
+            }
+        }
+
+        Future<Cursor>[] res = new Future[firstLastPairs.size() >>> 1];
+
+        return Arrays.asList(res);
+    }
+
+    private IgniteInternalFuture<GridH2IndexRangeResponse> send(
+        ClusterNode node,
+        GridH2IndexRangeRequest req
+    ) {
+        try {
+            ctx.io().send(node, msgTopic, req, QUERY_POOL);
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param row Row.
+     * @return Row message.
+     */
+    private GridH2RowMessage toRowMessage(SearchRow row) {
+        List<GridH2ValueMessage> vals = new ArrayList<>();
+
+        for (IndexColumn idxCol : indexColumns) {
+            Value val = row.getValue(idxCol.column.getColumnId());
+
+            if (val == null)
+                break;
+
+            try {
+                vals.add(GridH2ValueMessageFactory.toMessage(val));
+            }
+            catch (IgniteCheckedException e) {
+                throw new CacheException(e);
+            }
+        }
+
+        GridH2RowMessage res = new GridH2RowMessage();
+
+        res.values(vals);
+
+        return res;
+    }
+
+    /**
+     * Streams rows for ranges from remote nodes.
+     */
+    private class RangeStream {
+        /** */
+        final Queue<Range> ranges;
+
+        private RangeStream(int rangesNum) {
+            ranges = new ArrayDeque<>(rangesNum);
+
+            for (int i = 0; i < rangesNum; i++)
+                ranges.add(new Range(i));
+        }
+    }
+
+
+    private class Range {
+        /** */
+        final int id;
+
+        /** */
+        List<Row> list = Collections.emptyList();
+
+        private Range(int id) {
+            this.id = id;
+        }
+
+        void merge(List<Row> other) {
+            if (F.isEmpty(other))
+                return;
+
+            if (list.isEmpty()) {
+                list = other;
+
+                return;
+            }
+
+            List<Row> res = new ArrayList<>(list.size() + other.size());
+
+            Cursor c1 = new GridH2Cursor(list.iterator());
+            Cursor c2 = new GridH2Cursor(other.iterator());
+
+            if (!c1.next() || !c2.next())
+                throw new IllegalStateException();
+
+            Cursor c;
+
+            do {
+                c = compareRows(c1.get(), c2.get()) < 0 ? c1 : c2;
+
+                res.add(c.get());
+            }
+            while (c.next());
+
+            // Switch to non-empty one.
+            c = c == c1 ? c2 : c1;
+
+            do {
+                res.add(c.get());
+            }
+            while (c.next());
+
+            list = res;
+        }
     }
 }
