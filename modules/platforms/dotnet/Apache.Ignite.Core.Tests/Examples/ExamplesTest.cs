@@ -76,7 +76,17 @@ namespace Apache.Ignite.Core.Tests.Examples
                 return;
             }
 
-            var gridConfig = new IgniteConfiguration {SpringConfigUrl = example.SpringConfigUrl};
+            // First node to start in current process defines JVM options.
+            var gridConfig = new IgniteConfiguration
+            {
+                SpringConfigUrl = example.SpringConfigUrl,
+                JvmOptions =
+                    new[]
+                    {
+                        "-Xms512m", "-Xmx1024m", "-Xdebug", "-Xnoagent", "-Djava.compiler=NONE",
+                        "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+                    }
+            };
 
             // Try with multiple standalone nodes
             for (var i = 0; i < 2; i++)
