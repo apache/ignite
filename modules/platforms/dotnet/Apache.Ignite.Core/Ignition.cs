@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core
     using System.Linq;
     using System.Reflection;
     using System.Runtime;
-    using System.Runtime.InteropServices;
     using System.Threading;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
@@ -75,6 +74,9 @@ namespace Apache.Ignite.Core
     {
         /** */
         private const string DefaultCfg = "config/default-config.xml";
+
+        /** */
+        private const string EnvIgniteSpringConfigUrlPrefix = "IGNITE_SPRING_CONFIG_URL_PREFIX";
 
         /** */
         private static readonly object SyncRoot = new object();
@@ -169,10 +171,10 @@ namespace Apache.Ignite.Core
 
                 IgniteManager.CreateJvmContext(cfg, cbs);
 
-                sbyte* cfgPath0 = IgniteUtils.StringToUtf8Unmanaged(cfg.SpringConfigUrl ?? DefaultCfg);
+                var gridName = cfgEx != null ? cfgEx.GridName : null;
 
-                string gridName = cfgEx != null ? cfgEx.GridName : null;
-                sbyte* gridName0 = IgniteUtils.StringToUtf8Unmanaged(gridName);
+                var cfgPath = Environment.GetEnvironmentVariable(EnvIgniteSpringConfigUrlPrefix) +
+                              (cfg.SpringConfigUrl ?? DefaultCfg);
 
                 // 3. Create startup object which will guide us through the rest of the process.
                 _startup = new Startup(cfg, cbs);
@@ -182,8 +184,7 @@ namespace Apache.Ignite.Core
                 try
                 {
                     // 4. Initiate Ignite start.
-                    UU.IgnitionStart(cbs.Context, cfg.SpringConfigUrl ?? DefaultCfg,
-                        cfgEx != null ? cfgEx.GridName : null, ClientMode);
+                    UU.IgnitionStart(cbs.Context, cfgPath, gridName, ClientMode);
 
                     // 5. At this point start routine is finished. We expect STARTUP object to have all necessary data.
                     var node = _startup.Ignite;
@@ -222,11 +223,6 @@ namespace Apache.Ignite.Core
                 finally
                 {
                     _startup = null;
-
-                    Marshal.FreeHGlobal((IntPtr)cfgPath0);
-
-                    if ((IntPtr)gridName0 != IntPtr.Zero)
-                        Marshal.FreeHGlobal((IntPtr)gridName0);
 
                     if (interopProc != null)
                         UU.ProcessorReleaseStart(interopProc);
