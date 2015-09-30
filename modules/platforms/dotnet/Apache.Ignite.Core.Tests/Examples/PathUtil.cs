@@ -25,17 +25,16 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// </summary>
     public static class PathUtil
     {
+        /** */
+        public const string SpringConfigUrlDevPrefix = "modules\\";
+
+        /** */
         public static readonly string IgniteHome = IgniteManager.GetIgniteHome(null);
 
         /// <summary>
         /// Examples source code path.
         /// </summary>
         public static readonly string ExamplesSourcePath = Path.Combine(IgniteHome, @"modules\platforms\dotnet\examples");
-
-        /// <summary>
-        /// Examples source code path.
-        /// </summary>
-        public static readonly string ExamplesDevSourcePath = Path.Combine(IgniteHome, @"examples");
 
         /// <summary>
         /// Gets the full configuration path.
