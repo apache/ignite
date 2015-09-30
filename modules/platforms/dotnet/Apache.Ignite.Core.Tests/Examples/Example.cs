@@ -31,9 +31,6 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// </summary>
     public class Example
     {
-        /** All examples */
-        private static readonly Example[] Examples = GetExamples().ToArray();
-
         /** Execute action */
         private Action _runAction;
 
@@ -70,15 +67,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// <summary>
         /// Gets all examples.
         /// </summary>
-        public static IEnumerable<Example> All
-        {
-            get { return Examples; }
-        }
-
-        /// <summary>
-        /// Gets all examples.
-        /// </summary>
-        private static IEnumerable<Example> GetExamples()
+        public static IEnumerable<Example> GetExamples()
         {
             var examplesAsm = typeof (ClosureExample).Assembly;
 

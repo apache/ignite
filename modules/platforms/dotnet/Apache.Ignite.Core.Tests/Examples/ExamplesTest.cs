@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// </summary>
         public IEnumerable<Example> TestCases
         {
-            get { return Example.All; }
+            get { return Example.GetExamples(); }
         }
     }
 }
