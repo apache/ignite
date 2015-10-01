@@ -230,14 +230,14 @@ namespace ignite
          *
          * @return Error code.
          */
-        int32_t GetCode();
+        int32_t GetCode() const;
 
         /**
          * Get error message.
          *
          * @return Error message.
          */
-        const char* GetText();
+        const char* GetText() const;
         
         /**
          * Set error.
