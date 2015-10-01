@@ -40,8 +40,10 @@ namespace ignite
         }
 
         /**
-        * Copy constructor.
-        */
+         * Copy constructor.
+         * 
+         * @param option Other instance.
+         */
         IgniteJvmOption(const IgniteJvmOption& option) : opt()
         {
             this->opt = impl::utils::CopyChars(option.opt);
@@ -58,20 +60,25 @@ namespace ignite
         }
 
         /**
-        * Destructor.
-        */
+         * Destructor.
+         */
         ~IgniteJvmOption()
         {
             impl::utils::ReleaseChars(opt);
         }
 
         /**
-        * Copy operator.
-        */
+         * Copy operator.
+         *
+         * @param option Other instance.
+         * @return This instance.
+         */
         IgniteJvmOption& operator=(const IgniteJvmOption& option)
         {
             impl::utils::ReleaseChars(opt);
+
             this->opt = impl::utils::CopyChars(option.opt);
+            
             return *this;
         }
     };
