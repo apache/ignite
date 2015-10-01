@@ -594,62 +594,62 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
-//        /// <summary>
-//        /// Write named date value.
-//        /// </summary>
-//        /// <param name="fieldName">Field name.</param>
-//        /// <param name="val">Date value.</param>
-//        public void WriteDate(string fieldName, DateTime val)
-//        {
-//            WriteFieldId(fieldName, PU.TypeDate);
-//
-//            _stream.WriteInt(PU.LengthTypeId + 12);
-//
-//            _stream.WriteByte(PortableUtils.TypeDate);
-//            PortableUtils.WriteDate(val, _stream);
-//        }
-//
-//        /// <summary>
-//        /// Write date value.
-//        /// </summary>
-//        /// <param name="val">Date value.</param>
-//        public void WriteDate(DateTime val)
-//        {
-//            _stream.WriteByte(PortableUtils.TypeDate);
-//            PortableUtils.WriteDate(val, _stream);
-//        }
-//
-//        /// <summary>
-//        /// Write named date array.
-//        /// </summary>
-//        /// <param name="fieldName">Field name.</param>
-//        /// <param name="val">Date array.</param>
-//        public void WriteDateArray(string fieldName, DateTime[] val)
-//        {
-//            WriteFieldId(fieldName, PU.TypeDate);
-//
-//            if (val == null)
-//                WriteNullField();
-//            else
-//            {
-//                int pos = SkipFieldLength();
-//
-//                _stream.WriteByte(PortableUtils.TypeArrayDate);
-//                PortableUtils.WriteDateArray(val, _stream);
-//
-//                WriteFieldLength(_stream, pos);
-//            }
-//        }
-//
-//        /// <summary>
-//        /// Write date array.
-//        /// </summary>
-//        /// <param name="val">Date array.</param>
-//        public void WriteDateArray(DateTime[] val)
-//        {
-//            _stream.WriteByte(PortableUtils.TypeArrayDate);
-//            PortableUtils.WriteDateArray(val, _stream);
-//        }
+        /// <summary>
+        /// Write named date value.
+        /// </summary>
+        /// <param name="fieldName">Field name.</param>
+        /// <param name="val">Date value.</param>
+        public void WriteDate(string fieldName, DateTime val)
+        {
+            WriteFieldId(fieldName, PU.TypeDate);
+
+            _stream.WriteInt(PU.LengthTypeId + 12);
+
+            _stream.WriteByte(PortableUtils.TypeDate);
+            PortableUtils.WriteDate(val, _stream);
+        }
+
+        /// <summary>
+        /// Write date value.
+        /// </summary>
+        /// <param name="val">Date value.</param>
+        public void WriteDate(DateTime val)
+        {
+            _stream.WriteByte(PortableUtils.TypeDate);
+            PortableUtils.WriteDate(val, _stream);
+        }
+
+        /// <summary>
+        /// Write named date array.
+        /// </summary>
+        /// <param name="fieldName">Field name.</param>
+        /// <param name="val">Date array.</param>
+        public void WriteDateArray(string fieldName, DateTime[] val)
+        {
+            WriteFieldId(fieldName, PU.TypeDate);
+
+            if (val == null)
+                WriteNullField();
+            else
+            {
+                int pos = SkipFieldLength();
+
+                _stream.WriteByte(PortableUtils.TypeArrayDate);
+                PortableUtils.WriteDateArray(val, _stream);
+
+                WriteFieldLength(_stream, pos);
+            }
+        }
+
+        /// <summary>
+        /// Write date array.
+        /// </summary>
+        /// <param name="val">Date array.</param>
+        public void WriteDateArray(DateTime[] val)
+        {
+            _stream.WriteByte(PortableUtils.TypeArrayDate);
+            PortableUtils.WriteDateArray(val, _stream);
+        }
 
         /// <summary>
         /// Write named date value.

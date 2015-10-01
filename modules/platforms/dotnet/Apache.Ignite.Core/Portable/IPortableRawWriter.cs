@@ -134,17 +134,17 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="val">Decimal array.</param>
         void WriteDecimalArray(decimal[] val);
 
-//        /// <summary>
-//        /// Write date value.
-//        /// </summary>
-//        /// <param name="val">Date value.</param>
-//        void WriteDate(DateTime val);
-//
-//        /// <summary>
-//        /// Write date array.
-//        /// </summary>
-//        /// <param name="val">Date array.</param>
-//        void WriteDateArray(DateTime[] val);
+        /// <summary>
+        /// Write date value.
+        /// </summary>
+        /// <param name="val">Date value.</param>
+        void WriteDate(DateTime val);
+
+        /// <summary>
+        /// Write date array.
+        /// </summary>
+        /// <param name="val">Date array.</param>
+        void WriteDateArray(DateTime[] val);
 
         /// <summary>
         /// Write date value.
