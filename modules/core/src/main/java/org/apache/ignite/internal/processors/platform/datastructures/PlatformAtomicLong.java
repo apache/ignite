@@ -47,7 +47,7 @@ public class PlatformAtomicLong extends PlatformAbstractTarget {
      *
      * @return Current atomic long value.
      */
-    public long read() {
+    public long get() {
         return atomicLong.get();
     }
 
@@ -56,8 +56,17 @@ public class PlatformAtomicLong extends PlatformAbstractTarget {
      *
      * @return Current atomic long value.
      */
-    public long increment() {
+    public long incrementAndGet() {
         return atomicLong.incrementAndGet();
+    }
+
+    /**
+     * Increments the value.
+     *
+     * @return Original atomic long value.
+     */
+    public long getAndIncrement() {
+        return atomicLong.getAndIncrement();
     }
 
     /**
@@ -65,8 +74,17 @@ public class PlatformAtomicLong extends PlatformAbstractTarget {
      *
      * @return Current atomic long value.
      */
-    public long add(long val) {
+    public long addAndGet(long val) {
         return atomicLong.addAndGet(val);
+    }
+
+    /**
+     * Adds a value.
+     *
+     * @return Original atomic long value.
+     */
+    public long getAndAdd(long val) {
+        return atomicLong.getAndAdd(val);
     }
 
     /**
@@ -74,16 +92,25 @@ public class PlatformAtomicLong extends PlatformAbstractTarget {
      *
      * @return Current atomic long value.
      */
-    public long decrement() {
+    public long decrementAndGet() {
         return atomicLong.decrementAndGet();
     }
 
     /**
-     * Reads the value.
+     * Decrements the value.
      *
-     * @return Current atomic long value.
+     * @return Original atomic long value.
      */
-    public long exchange(long val) {
+    public long getAndDecrement() {
+        return atomicLong.getAndDecrement();
+    }
+
+    /**
+     * Gets current value of atomic long and sets new value
+     *
+     * @return Original atomic long value.
+     */
+    public long getAndSet(long val) {
         return atomicLong.getAndSet(val);
     }
 
@@ -92,8 +119,17 @@ public class PlatformAtomicLong extends PlatformAbstractTarget {
      *
      * @return Original atomic long value.
      */
-    public long compareExchange(long val, long cmp) {
+    public long compareAndSetAndGet(long cmp, long val) {
         return atomicLong.compareAndSetAndGet(cmp, val);
+    }
+
+    /**
+     * Compares two values for equality and, if they are equal, replaces the first value.
+     *
+     * @return Original atomic long value.
+     */
+    public boolean compareAndSet(long cmp, long val) {
+        return atomicLong.compareAndSet(cmp, val);
     }
 
     /**
