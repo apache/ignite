@@ -23,6 +23,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -767,23 +768,19 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Make directories: " + path);
 
-                final Map<String, String> props0 = props == null ? DFLT_DIR_META : props;
+                final Map<String, String> props0 = props == null ? DFLT_DIR_META : new HashMap<>(props);
 
                 IgfsMode mode = resolveMode(path);
 
-                final boolean dirCreated; // For now the value is ignored.
-
-                if (mode != PRIMARY) {
+                if (mode == PRIMARY)
+                    meta.mkdirs(path, props0);
+                else {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
                     await(path);
 
-                    dirCreated = meta.mkdirsDual(secondaryFs, path, props0);
-
-                    return null;
+                    meta.mkdirsDual(secondaryFs, path, props0);
                 }
-
-                dirCreated = meta.mkdirs(path, props0);
 
                 return null;
             }

@@ -124,6 +124,16 @@ public final class IgfsFileInfo implements Externalizable {
     }
 
     /**
+     * Consturcts directory with random ID, provided listing and properties.
+     *
+     * @param listing Listing.
+     * @param props The properties to set for the new directory.
+     */
+    IgfsFileInfo(@Nullable Map<String, IgfsListingEntry> listing, @Nullable Map<String,String> props) {
+        this(true/*dir*/, null, 0, 0, null, listing, props, null, false, System.currentTimeMillis(), false);
+    }
+
+    /**
      * Constructs file info.
      *
      * @param blockSize Block size.
@@ -194,7 +204,7 @@ public final class IgfsFileInfo implements Externalizable {
      * @param evictExclude Evict exclude flag.
      */
     IgfsFileInfo(int blockSize, long len, boolean evictExclude, @Nullable Map<String, String> props) {
-        this(blockSize == 0, // NB The contract is: (blockSize == null) <=> isDirectory()
+        this(blockSize == 0, // NB The contract is: (blockSize == 0) <=> isDirectory()
             null, blockSize, len, null, null, props, null, true, System.currentTimeMillis(), evictExclude);
     }
 
@@ -236,7 +246,7 @@ public final class IgfsFileInfo implements Externalizable {
      * @param modificationTime Last modification time.
      * @param evictExclude Evict exclude flag.
      */
-    private IgfsFileInfo(boolean isDir, @Nullable IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey,
+    IgfsFileInfo(boolean isDir, @Nullable IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey,
         @Nullable Map<String, IgfsListingEntry> listing, @Nullable Map<String, String> props,
         @Nullable IgniteUuid lockId, boolean cpProps, long modificationTime, boolean evictExclude) {
         this(isDir, id, blockSize, len, affKey, listing, props, null, lockId, cpProps, modificationTime,
