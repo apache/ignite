@@ -1196,12 +1196,16 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     if (match) {
                         boolean allReceived;
 
+                        long start = U.currentTimeMillis();
+
                         synchronized (rcvdIds) {
                             if (rcvdIds.add(nodeId))
                                 updatePartitionSingleMap(msg);
 
                             allReceived = allReceived();
                         }
+
+                        long end = U.currentTimeMillis();
 
                         // If got all replies, and initialization finished, and reply has not been sent yet.
                         if (allReceived && ready.get() && replied.compareAndSet(false, true)) {
@@ -1212,7 +1216,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         else if (log.isDebugEnabled())
                             log.debug("Exchange future full map is not sent [allReceived=" + allReceived() +
                                 ", ready=" + ready + ", replied=" + replied.get() + ", init=" + init.get() +
-                                ", fut=" + this + ']');
+                                ", fut=" + GridDhtPartitionsExchangeFuture.this + ", updateDur=" + (end - start) + ']');
                     }
                 }
             });
