@@ -29,92 +29,92 @@ namespace ignite
             // No-op.
         }
 
-        void PortableRawWriter::WriteInt8(const int8_t val)
+        void PortableRawWriter::WriteInt8(int8_t val)
         {
             impl->WriteInt8(val);
         }
 
-        void PortableRawWriter::WriteInt8Array(const int8_t* val, const int32_t len)
+        void PortableRawWriter::WriteInt8Array(const int8_t* val, int32_t len)
         {
             impl->WriteInt8Array(val, len);
         }
 
-        void PortableRawWriter::WriteBool(const bool val)
+        void PortableRawWriter::WriteBool(bool val)
         {
             impl->WriteBool(val);
         }
 
-        void PortableRawWriter::WriteBoolArray(const bool* val, const int32_t len)
+        void PortableRawWriter::WriteBoolArray(const bool* val, int32_t len)
         {            
             impl->WriteBoolArray(val, len);
         }
 
-        void PortableRawWriter::WriteInt16(const int16_t val)
+        void PortableRawWriter::WriteInt16(int16_t val)
         {
             impl->WriteInt16(val);
         }
 
-        void PortableRawWriter::WriteInt16Array(const int16_t* val, const int32_t len)
+        void PortableRawWriter::WriteInt16Array(const int16_t* val, int32_t len)
         {
             impl->WriteInt16Array(val, len);
         }
 
-        void PortableRawWriter::WriteUInt16(const uint16_t val)
+        void PortableRawWriter::WriteUInt16(uint16_t val)
         {
             impl->WriteUInt16(val);
         }
 
-        void PortableRawWriter::WriteUInt16Array(const uint16_t* val, const int32_t len)
+        void PortableRawWriter::WriteUInt16Array(const uint16_t* val, int32_t len)
         {
             impl->WriteUInt16Array(val, len);
         }
 
-        void PortableRawWriter::WriteInt32(const int32_t val)
+        void PortableRawWriter::WriteInt32(int32_t val)
         {
             impl->WriteInt32(val);
         }
 
-        void PortableRawWriter::WriteInt32Array(const int32_t* val, const int32_t len)
+        void PortableRawWriter::WriteInt32Array(const int32_t* val, int32_t len)
         {
             impl->WriteInt32Array(val, len);
         }
 
-        void PortableRawWriter::WriteInt64(const int64_t val)
+        void PortableRawWriter::WriteInt64(int64_t val)
         {
             impl->WriteInt64(val);
         }
 
-        void PortableRawWriter::WriteInt64Array(const int64_t* val, const int32_t len)
+        void PortableRawWriter::WriteInt64Array(const int64_t* val, int32_t len)
         {
             impl->WriteInt64Array(val, len);
         }
 
-        void PortableRawWriter::WriteFloat(const float val)
+        void PortableRawWriter::WriteFloat(float val)
         {
             impl->WriteFloat(val);
         }
 
-        void PortableRawWriter::WriteFloatArray(const float* val, const int32_t len)
+        void PortableRawWriter::WriteFloatArray(const float* val, int32_t len)
         {
             impl->WriteFloatArray(val, len);
         }
 
-        void PortableRawWriter::WriteDouble(const double val)
+        void PortableRawWriter::WriteDouble(double val)
         {
             impl->WriteDouble(val);
         }
 
-        void PortableRawWriter::WriteDoubleArray(const double* val, const int32_t len)
+        void PortableRawWriter::WriteDoubleArray(const double* val, int32_t len)
         {
             impl->WriteDoubleArray(val, len);
         }
 
-        void PortableRawWriter::WriteGuid(const Guid val)
+        void PortableRawWriter::WriteGuid(const Guid& val)
         {
             impl->WriteGuid(val);
         }
 
-        void PortableRawWriter::WriteGuidArray(const Guid* val, const int32_t len)
+        void PortableRawWriter::WriteGuidArray(const Guid* val, int32_t len)
         {
             impl->WriteGuidArray(val, len);
         }
@@ -127,7 +127,7 @@ namespace ignite
                 WriteNull();
         }
 
-        void PortableRawWriter::WriteString(const char* val, const int32_t len)
+        void PortableRawWriter::WriteString(const char* val, int32_t len)
         {
             impl->WriteString(val, len);
         }

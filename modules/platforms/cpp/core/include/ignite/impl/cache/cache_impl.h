@@ -56,7 +56,7 @@ namespace ignite
                  *
                  * @return Cache name.
                  */
-                char* GetName();
+                const char* GetName() const;
 
                 /**
                  * Perform IsEmpty.

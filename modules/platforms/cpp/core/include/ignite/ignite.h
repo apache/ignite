@@ -45,7 +45,7 @@ namespace ignite
          *
          * @return Name.
          */
-        char* GetName();
+        const char* GetName() const;
 
         /**
          * Get cache.
@@ -145,6 +145,7 @@ namespace ignite
 
             return cache::Cache<K, V>(cacheImpl);
         }
+
     private:
         /** Implementation delegate. */
         ignite::common::concurrent::SharedPointer<impl::IgniteImpl> impl;
