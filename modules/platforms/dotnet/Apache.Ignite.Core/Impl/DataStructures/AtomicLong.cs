@@ -54,37 +54,37 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** <inheritDoc /> */
         public long Read()
         {
-            return UU.AtomicLongRead(Target);
+            return UU.AtomicLongGet(Target);
         }
 
         /** <inheritDoc /> */
         public long Increment()
         {
-            return UU.AtomicLongIncrement(Target);
+            return UU.AtomicLongIncrementAndGet(Target);
         }
 
         /** <inheritDoc /> */
         public long Add(long value)
         {
-            return UU.AtomicLongAdd(Target, value);
+            return UU.AtomicLongAddAndGet(Target, value);
         }
 
         /** <inheritDoc /> */
         public long Decrement()
         {
-            return UU.AtomicLongDecrement(Target);
+            return UU.AtomicLongDecrementAndGet(Target);
         }
 
         /** <inheritDoc /> */
         public long Exchange(long value)
         {
-            return UU.AtomicLongExchange(Target, value);
+            return UU.AtomicLongGetAndSet(Target, value);
         }
 
         /** <inheritDoc /> */
         public long CompareExchange(long value, long comparand)
         {
-            return UU.AtomicLongCompareExchange(Target, value, comparand);
+            return UU.AtomicLongCompareAndSetAndGet(Target, value, comparand);
         }
 
         /** <inheritDoc /> */

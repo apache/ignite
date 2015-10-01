@@ -152,12 +152,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcServicesCancelAll = "IgniteServicesCancelAll";
         private const string ProcServicesGetServiceProxy = "IgniteServicesGetServiceProxy";
 
-        private const string ProcAtomicLongRead = "IgniteAtomicLongRead";
-        private const string ProcAtomicLongIncrement = "IgniteAtomicLongIncrement";
-        private const string ProcAtomicLongAdd = "IgniteAtomicLongAdd";
-        private const string ProcAtomicLongDecrement = "IgniteAtomicLongDecrement";
-        private const string ProcAtomicLongExchange = "IgniteAtomicLongExchange";
-        private const string ProcAtomicLongCompareExchange = "IgniteAtomicLongCompareExchange";
+        private const string ProcAtomicLongGet = "IgniteAtomicLongGet";
+        private const string ProcAtomicLongIncrementAndGet = "IgniteAtomicLongIncrementAndGet";
+        private const string ProcAtomicLongAddAndGet = "IgniteAtomicLongAddAndGet";
+        private const string ProcAtomicLongDecrementAndGet = "IgniteAtomicLongDecrementAndGet";
+        private const string ProcAtomicLongGetAndSet = "IgniteAtomicLongGetAndSet";
+        private const string ProcAtomicLongCompareAndSetAndGet = "IgniteAtomicLongCompareAndSetAndGet";
         private const string ProcAtomicLongIsClosed = "IgniteAtomicLongIsClosed";
         private const string ProcAtomicLongClose = "IgniteAtomicLongClose";
 
@@ -283,12 +283,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate long ServicesCancelAllDelegate(void* ctx, void* target);
         private delegate void* ServicesGetServiceProxyDelegate(void* ctx, void* target, char* name, bool sticky);
 
-        private delegate long AtomicLongReadDelegate(void* ctx, void* target);
-        private delegate long AtomicLongIncrementDelegate(void* ctx, void* target);
-        private delegate long AtomicLongAddDelegate(void* ctx, void* target, long value);
-        private delegate long AtomicLongDecrementDelegate(void* ctx, void* target);
-        private delegate long AtomicLongExchangeDelegate(void* ctx, void* target, long value);
-        private delegate long AtomicLongCompareExchangeDelegate(void* ctx, void* target, long value, long comparand);
+        private delegate long AtomicLongGetDelegate(void* ctx, void* target);
+        private delegate long AtomicLongIncrementAndGetDelegate(void* ctx, void* target);
+        private delegate long AtomicLongAddAndGetDelegate(void* ctx, void* target, long value);
+        private delegate long AtomicLongDecrementAndGetDelegate(void* ctx, void* target);
+        private delegate long AtomicLongGetAndSetDelegate(void* ctx, void* target, long value);
+        private delegate long AtomicLongCompareAndSetAndGetDelegate(void* ctx, void* target, long value, long comparand);
         private delegate bool AtomicLongIsClosedDelegate(void* ctx, void* target);
         private delegate void AtomicLongCloseDelegate(void* ctx, void* target);
 
@@ -415,12 +415,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly ServicesCancelAllDelegate SERVICES_CANCEL_ALL;
         private static readonly ServicesGetServiceProxyDelegate SERVICES_GET_SERVICE_PROXY;
 
-        private static readonly AtomicLongReadDelegate ATOMIC_LONG_READ;
-        private static readonly AtomicLongIncrementDelegate ATOMIC_LONG_INCREMENT;
-        private static readonly AtomicLongAddDelegate ATOMIC_LONG_ADD;
-        private static readonly AtomicLongDecrementDelegate ATOMIC_LONG_DECREMENT;
-        private static readonly AtomicLongExchangeDelegate ATOMIC_LONG_EXCHANGE;
-        private static readonly AtomicLongCompareExchangeDelegate ATOMIC_LONG_COMPARE_EXCHANGE;
+        private static readonly AtomicLongGetDelegate ATOMIC_LONG_GET;
+        private static readonly AtomicLongIncrementAndGetDelegate ATOMIC_LONG_INCREMENT_AND_GET;
+        private static readonly AtomicLongAddAndGetDelegate ATOMIC_LONG_ADD_AND_GET;
+        private static readonly AtomicLongDecrementAndGetDelegate ATOMIC_LONG_DECREMENT_AND_GET;
+        private static readonly AtomicLongGetAndSetDelegate ATOMIC_LONG_GET_AND_SET;
+        private static readonly AtomicLongCompareAndSetAndGetDelegate ATOMIC_LONG_COMPARE_AND_SET_AND_GET;
         private static readonly AtomicLongIsClosedDelegate ATOMIC_LONG_IS_CLOSED;
         private static readonly AtomicLongCloseDelegate ATOMIC_LONG_CLOSE;
 
@@ -562,12 +562,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             SERVICES_CANCEL_ALL = CreateDelegate<ServicesCancelAllDelegate>(ProcServicesCancelAll);
             SERVICES_GET_SERVICE_PROXY = CreateDelegate<ServicesGetServiceProxyDelegate>(ProcServicesGetServiceProxy);
 
-            ATOMIC_LONG_READ = CreateDelegate<AtomicLongReadDelegate>(ProcAtomicLongRead);
-            ATOMIC_LONG_INCREMENT = CreateDelegate<AtomicLongIncrementDelegate>(ProcAtomicLongIncrement);
-            ATOMIC_LONG_ADD = CreateDelegate<AtomicLongAddDelegate>(ProcAtomicLongAdd);
-            ATOMIC_LONG_DECREMENT = CreateDelegate<AtomicLongDecrementDelegate>(ProcAtomicLongDecrement);
-            ATOMIC_LONG_EXCHANGE = CreateDelegate<AtomicLongExchangeDelegate>(ProcAtomicLongExchange);
-            ATOMIC_LONG_COMPARE_EXCHANGE = CreateDelegate<AtomicLongCompareExchangeDelegate>(ProcAtomicLongCompareExchange);
+            ATOMIC_LONG_GET = CreateDelegate<AtomicLongGetDelegate>(ProcAtomicLongGet);
+            ATOMIC_LONG_INCREMENT_AND_GET = CreateDelegate<AtomicLongIncrementAndGetDelegate>(ProcAtomicLongIncrementAndGet);
+            ATOMIC_LONG_ADD_AND_GET = CreateDelegate<AtomicLongAddAndGetDelegate>(ProcAtomicLongAddAndGet);
+            ATOMIC_LONG_DECREMENT_AND_GET = CreateDelegate<AtomicLongDecrementAndGetDelegate>(ProcAtomicLongDecrementAndGet);
+            ATOMIC_LONG_GET_AND_SET = CreateDelegate<AtomicLongGetAndSetDelegate>(ProcAtomicLongGetAndSet);
+            ATOMIC_LONG_COMPARE_AND_SET_AND_GET = CreateDelegate<AtomicLongCompareAndSetAndGetDelegate>(ProcAtomicLongCompareAndSetAndGet);
             ATOMIC_LONG_IS_CLOSED = CreateDelegate<AtomicLongIsClosedDelegate>(ProcAtomicLongIsClosed);
             ATOMIC_LONG_CLOSE = CreateDelegate<AtomicLongCloseDelegate>(ProcAtomicLongClose);
         }
@@ -1296,34 +1296,34 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region NATIVE METHODS: DATA STRUCTURES
 
-        internal static long AtomicLongRead(IUnmanagedTarget target)
+        internal static long AtomicLongGet(IUnmanagedTarget target)
         {
-            return ATOMIC_LONG_READ(target.Context, target.Target);
+            return ATOMIC_LONG_GET(target.Context, target.Target);
         }
 
-        internal static long AtomicLongIncrement(IUnmanagedTarget target)
+        internal static long AtomicLongIncrementAndGet(IUnmanagedTarget target)
         {
-            return ATOMIC_LONG_INCREMENT(target.Context, target.Target);
+            return ATOMIC_LONG_INCREMENT_AND_GET(target.Context, target.Target);
         }
 
-        internal static long AtomicLongAdd(IUnmanagedTarget target, long value)
+        internal static long AtomicLongAddAndGet(IUnmanagedTarget target, long value)
         {
-            return ATOMIC_LONG_ADD(target.Context, target.Target, value);
+            return ATOMIC_LONG_ADD_AND_GET(target.Context, target.Target, value);
         }
 
-        internal static long AtomicLongDecrement(IUnmanagedTarget target)
+        internal static long AtomicLongDecrementAndGet(IUnmanagedTarget target)
         {
-            return ATOMIC_LONG_DECREMENT(target.Context, target.Target);
+            return ATOMIC_LONG_DECREMENT_AND_GET(target.Context, target.Target);
         }
 
-        internal static long AtomicLongExchange(IUnmanagedTarget target, long value)
+        internal static long AtomicLongGetAndSet(IUnmanagedTarget target, long value)
         {
-            return ATOMIC_LONG_EXCHANGE(target.Context, target.Target, value);
+            return ATOMIC_LONG_GET_AND_SET(target.Context, target.Target, value);
         }
 
-        internal static long AtomicLongCompareExchange(IUnmanagedTarget target, long value, long comparand)
+        internal static long AtomicLongCompareAndSetAndGet(IUnmanagedTarget target, long comparand, long value)
         {
-            return ATOMIC_LONG_COMPARE_EXCHANGE(target.Context, target.Target, value, comparand);
+            return ATOMIC_LONG_COMPARE_AND_SET_AND_GET(target.Context, target.Target, comparand, value);
         }
 
         internal static bool AtomicLongIsClosed(IUnmanagedTarget target)
