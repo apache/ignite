@@ -71,7 +71,11 @@ namespace Apache.Ignite.Core.Impl.Memory
         public int Length
         {
             get { return _size; }
-            set { throw new NotSupportedException(); }
+            set
+            {
+                if (Length != value)
+                    throw new NotSupportedException();
+            }
         }
 
         /** <inheritdoc /> */
@@ -83,7 +87,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public void Release()
         {
-            throw new NotSupportedException();
+            // No-op.
         }
     }
 }
