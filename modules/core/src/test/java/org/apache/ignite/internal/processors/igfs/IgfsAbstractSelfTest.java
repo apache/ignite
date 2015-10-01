@@ -57,7 +57,6 @@ import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsOutputStream;
-import org.apache.ignite.igfs.IgfsParentNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
@@ -744,7 +743,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testMkdirs() throws Exception {
         Map<String, String> props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
 
-        //
         igfs.mkdirs(new IgfsPath("/x"), null);
         checkExist(igfs, igfsSecondary, new IgfsPath("/x"));
 
@@ -761,12 +759,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         checkExist(igfs, igfsSecondary, new IgfsPath("/a/b/c/d/e"));
 
         create(igfs, null, new IgfsPath[] { new IgfsPath("/d/f") }); // "f" is a file.
+        checkExist(igfs, igfsSecondary, new IgfsPath("/d/f"));
+
         try {
             igfs.mkdirs(new IgfsPath("/d/f"), null);
 
             fail("IgfsParentNotDirectoryException expected.");
         }
-        catch (IgfsParentNotDirectoryException e) {
+        catch (IgniteException e) {
             // okay
         }
 
@@ -775,7 +775,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
             fail("IgfsParentNotDirectoryException expected.");
         }
-        catch (IgfsParentNotDirectoryException e) {
+        catch (IgniteException e) {
             // okay
         }
 

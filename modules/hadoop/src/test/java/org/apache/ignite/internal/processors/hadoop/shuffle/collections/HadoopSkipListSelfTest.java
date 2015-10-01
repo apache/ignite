@@ -80,7 +80,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
             X.println("Level: " + level + " exp: " + exp + " act: " + levelsCnts[level] + " precision: " + precission +
                 " sigma: " + sigma);
 
-            assertTrue(abs(exp - levelsCnts[level]) <= sigma); // Sometimes fails.
+            assertTrue(abs(exp - levelsCnts[level]) <= sigma); // Flaky assertion, sometimes fails.
         }
     }
 
