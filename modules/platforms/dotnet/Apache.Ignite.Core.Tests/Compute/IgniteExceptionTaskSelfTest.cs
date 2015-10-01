@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -87,7 +88,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Mode = ErrorMode.MapJobNotMarshalable;
 
-            SerializationException e = ExecuteWithError() as SerializationException;
+            var e = ExecuteWithError() as PortableException;
 
             Assert.IsNotNull(e);
         }
