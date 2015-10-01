@@ -1942,11 +1942,11 @@ namespace ignite
                 return res;
             }
 
-            long long JniContext::AtomicLongCompareAndSetAndGet(jobject obj, long long value, long long comparand)
+            long long JniContext::AtomicLongCompareAndSetAndGet(jobject obj, long long expVal, long long newVal)
             {
                 JNIEnv* env = Attach();
 
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_compareAndSetAndGet, value, comparand);
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_compareAndSetAndGet, expVal, newVal);
 
                 ExceptionCheck(env);
 

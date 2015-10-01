@@ -435,8 +435,8 @@ extern "C" {
         return ctx->AtomicLongGetAndSet(static_cast<jobject>(obj), value);
     }
 
-    long long IGNITE_CALL IgniteAtomicLongCompareAndSetAndGet(gcj::JniContext* ctx, void* obj, long long value, long long comparand) {
-        return ctx->AtomicLongCompareAndSetAndGet(static_cast<jobject>(obj), value, comparand);
+    long long IGNITE_CALL IgniteAtomicLongCompareAndSetAndGet(gcj::JniContext* ctx, void* obj, long long expVal, long long newVal) {
+        return ctx->AtomicLongCompareAndSetAndGet(static_cast<jobject>(obj), expVal, newVal);
     }
 
     bool IGNITE_CALL IgniteAtomicLongIsClosed(gcj::JniContext* ctx, void* obj) {

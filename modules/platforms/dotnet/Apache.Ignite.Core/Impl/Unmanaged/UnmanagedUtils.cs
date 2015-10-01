@@ -288,7 +288,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate long AtomicLongAddAndGetDelegate(void* ctx, void* target, long value);
         private delegate long AtomicLongDecrementAndGetDelegate(void* ctx, void* target);
         private delegate long AtomicLongGetAndSetDelegate(void* ctx, void* target, long value);
-        private delegate long AtomicLongCompareAndSetAndGetDelegate(void* ctx, void* target, long value, long comparand);
+        private delegate long AtomicLongCompareAndSetAndGetDelegate(void* ctx, void* target, long expVal, long newVal);
         private delegate bool AtomicLongIsClosedDelegate(void* ctx, void* target);
         private delegate void AtomicLongCloseDelegate(void* ctx, void* target);
 
@@ -1321,9 +1321,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return ATOMIC_LONG_GET_AND_SET(target.Context, target.Target, value);
         }
 
-        internal static long AtomicLongCompareAndSetAndGet(IUnmanagedTarget target, long comparand, long value)
+        internal static long AtomicLongCompareAndSetAndGet(IUnmanagedTarget target, long expVal, long newVal)
         {
-            return ATOMIC_LONG_COMPARE_AND_SET_AND_GET(target.Context, target.Target, comparand, value);
+            return ATOMIC_LONG_COMPARE_AND_SET_AND_GET(target.Context, target.Target, expVal, newVal);
         }
 
         internal static bool AtomicLongIsClosed(IUnmanagedTarget target)
