@@ -6479,6 +6479,13 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @return Empty int array.
+     */
+    public static int[] emptyIntArray() {
+        return EMPTY_INTS;
+    }
+
+    /**
      * @param arr1 Array 1.
      * @param arr2 Array 2.
      */
