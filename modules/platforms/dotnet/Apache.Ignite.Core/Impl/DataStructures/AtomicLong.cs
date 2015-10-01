@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** <inheritDoc /> */
         public long CompareExchange(long value, long comparand)
         {
-            return UU.AtomicLongCompareAndSetAndGet(Target, value, comparand);
+            return UU.AtomicLongCompareAndSetAndGet(Target, comparand, value);
         }
 
         /** <inheritDoc /> */
