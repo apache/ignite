@@ -246,7 +246,7 @@ public final class IgfsFileInfo implements Externalizable {
      * @param modificationTime Last modification time.
      * @param evictExclude Evict exclude flag.
      */
-    IgfsFileInfo(boolean isDir, @Nullable IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey,
+    private IgfsFileInfo(boolean isDir, @Nullable IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey,
         @Nullable Map<String, IgfsListingEntry> listing, @Nullable Map<String, String> props,
         @Nullable IgniteUuid lockId, boolean cpProps, long modificationTime, boolean evictExclude) {
         this(isDir, id, blockSize, len, affKey, listing, props, null, lockId, cpProps, modificationTime,

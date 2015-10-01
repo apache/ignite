@@ -1019,7 +1019,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                 try {
                     is = igfs.open(FILE);
-                } finally {
+                }
+                finally {
                     U.closeQuiet(is);
                 }
 
@@ -1070,7 +1071,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 try {
                     os1 = igfs.create(FILE, true);
                     os2 = igfs.create(FILE, true);
-                } finally {
+                }
+                finally {
                     U.closeQuiet(os1);
                     U.closeQuiet(os2);
                 }
@@ -1177,7 +1179,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                         U.sleep(100);
 
                     os.close();
-                } finally {
+                }
+                finally {
                     U.closeQuiet(os);
                 }
 
@@ -1241,7 +1244,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     awaitFileClose(igfs.asSecondary(), path);
 
                     checkFileContent(igfs, path, chunk);
-                } catch (IOException | IgniteCheckedException e) {
+                }
+                catch (IOException | IgniteCheckedException e) {
                     err.compareAndSet(null, e); // Log the very first error.
                 }
             }
@@ -1367,7 +1371,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 try {
                     os1 = igfs.append(FILE, false);
                     os2 = igfs.append(FILE, false);
-                } finally {
+                }
+                finally {
                     U.closeQuiet(os1);
                     U.closeQuiet(os2);
                 }
@@ -1484,7 +1489,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                     os.write(chunk);
 
                     os.close();
-                } finally {
+                }
+                finally {
                     U.closeQuiet(os);
                 }
 
