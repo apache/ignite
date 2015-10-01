@@ -61,7 +61,7 @@ namespace ignite
                  * @param memPtr Memory pointer.
                  * @return Raw data pointer.
                  */
-                static int8_t* Data(int8_t* memPtr);
+                static int8_t* Data(const int8_t* memPtr);
 
                 /**
                  * Set raw data pointer.
@@ -77,7 +77,7 @@ namespace ignite
                  * @param memPtr Memory pointer.
                  * @return Capacity.
                  */
-                static int32_t Capacity(int8_t* memPtr);
+                static int32_t Capacity(const int8_t* memPtr);
 
                 /**
                  * Set capacity.
@@ -93,7 +93,7 @@ namespace ignite
                  * @param memPtr Memory pointer.
                  * @return Length.
                  */
-                static int32_t Length(int8_t* memPtr);
+                static int32_t Length(const int8_t* memPtr);
 
                 /**
                  * Set length.
@@ -109,7 +109,7 @@ namespace ignite
                  * @param memPtr Memory pointer.
                  * @return Flags.
                  */
-                static int32_t Flags(int8_t* memPtr);
+                static int32_t Flags(const int8_t* memPtr);
 
                 /**
                  * Set flags.
@@ -125,7 +125,7 @@ namespace ignite
                  * @param memPtr Memory pointer.
                  * @return Flag state.
                  */
-                static bool IsExternal(int8_t* memPtr);
+                static bool IsExternal(const int8_t* memPtr);
 
                 /**
                  * Get "external" flag state.
@@ -141,7 +141,7 @@ namespace ignite
                  * @param memPtr Memory pointer.
                  * @return Flag state.
                  */
-                static bool IsPooled(int8_t* memPtr);
+                static bool IsPooled(const int8_t* memPtr);
 
                 /**
                  * Get "pooled" flag state.
@@ -157,7 +157,7 @@ namespace ignite
                  * @param memPtr Memory pointer.
                  * @return Flag state.
                  */
-                static bool IsAcquired(int8_t* memPtr);
+                static bool IsAcquired(const int8_t* memPtr);
 
                 /**
                  * Get "acquired" flag state.
@@ -196,14 +196,14 @@ namespace ignite
                  *
                  * @return Capacity.
                  */
-                int32_t Capacity();
+                int32_t Capacity() const;
 
                 /**
                  * Get length.
                  *
                  * @return Length.
                  */
-                int32_t Length();
+                int32_t Length() const;
 
                 /**
                  * Set length.

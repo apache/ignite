@@ -171,14 +171,14 @@ namespace ignite
                  *
                  * @return Remaining bytes.
                  */
-                int32_t Remaining();
+                int32_t Remaining() const;
 
                 /**
                  * Get position.
                  *
                  * @return Position.
                  */
-                int32_t Position();
+                int32_t Position() const;
 
                 /**
                  * Set position.
@@ -209,7 +209,7 @@ namespace ignite
                  *
                  * @param cnt Amount of byte expected to be available.
                  */
-                void EnsureEnoughData(int32_t cnt);
+                void EnsureEnoughData(int32_t cnt) const;
 
                 /**
                  * Copy data from the stream shifting it along the way.

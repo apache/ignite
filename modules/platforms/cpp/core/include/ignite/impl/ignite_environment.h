@@ -71,7 +71,7 @@ namespace ignite
              *
              * @return Name.
              */
-            char* InstanceName();
+            const char* InstanceName() const;
 
             /**
              * Get JNI context.

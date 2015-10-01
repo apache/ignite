@@ -270,12 +270,12 @@ namespace ignite
              *
              * @return Size or -1 if array is NULL.
              */
-            int32_t GetSize();
+            int32_t GetSize() const;
 
             /**
              * Whether array is NULL.
              */
-            bool IsNull();
+            bool IsNull() const;
         private:
             /** Implementation delegate. */
             impl::portable::PortableReaderImpl* impl;  

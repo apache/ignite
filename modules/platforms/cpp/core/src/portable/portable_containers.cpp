@@ -63,12 +63,12 @@ namespace ignite
             return impl->ReadStringElement(id, res, len);
         }
 
-        int32_t PortableStringArrayReader::GetSize()
+        int32_t PortableStringArrayReader::GetSize() const
         {
             return size;
         }
 
-        bool PortableStringArrayReader::IsNull()
+        bool PortableStringArrayReader::IsNull() const
         {
             return size == -1;
         }

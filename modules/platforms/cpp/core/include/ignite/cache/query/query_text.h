@@ -51,7 +51,7 @@ namespace ignite
                  *
                  * @return Type name.
                  */
-                std::string GetType()
+                std::string GetType() const
                 {
                     return type;
                 }
@@ -71,7 +71,7 @@ namespace ignite
                  *
                  * @return text string.
                  */
-                std::string GetText()
+                std::string GetText() const
                 {
                     return text;
                 }
@@ -91,7 +91,7 @@ namespace ignite
                  *
                  * @return Page size.
                  */
-                int32_t GetPageSize()
+                int32_t GetPageSize() const
                 {
                     return pageSize;
                 }
@@ -111,7 +111,7 @@ namespace ignite
                  *
                  * @return Local flag.
                  */
-                bool IsLocal()
+                bool IsLocal() const
                 {
                     return loc;
                 }

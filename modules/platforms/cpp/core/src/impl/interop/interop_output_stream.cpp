@@ -168,7 +168,7 @@ namespace ignite
                     WriteDouble(*(val + i));
             }
 
-            int32_t InteropOutputStream::Position()
+            int32_t InteropOutputStream::Position() const
             {
                 return pos;
             }
