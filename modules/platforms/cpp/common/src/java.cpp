@@ -1914,6 +1914,17 @@ namespace ignite
                 return res;
             }
 
+            long long JniContext::AtomicLongGetAndIncrement(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_getAndIncrement);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
             long long JniContext::AtomicLongAddAndGet(jobject obj, long long value)
             {
                 JNIEnv* env = Attach();
@@ -1925,11 +1936,33 @@ namespace ignite
                 return res;
             }
 
+            long long JniContext::AtomicLongGetAndAdd(jobject obj, long long value)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_getAndAdd, value);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
             long long JniContext::AtomicLongDecrementAndGet(jobject obj)
             {
                 JNIEnv* env = Attach();
 
                 long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_decrementAndGet);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicLongGetAndDecrement(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_getAndDecrement);
 
                 ExceptionCheck(env);
 

@@ -579,8 +579,11 @@ namespace ignite
 
                 long long AtomicLongGet(jobject obj);
                 long long AtomicLongIncrementAndGet(jobject obj);
+                long long AtomicLongGetAndIncrement(jobject obj);
                 long long AtomicLongAddAndGet(jobject obj, long long value);
+                long long AtomicLongGetAndAdd(jobject obj, long long value);
                 long long AtomicLongDecrementAndGet(jobject obj);
+                long long AtomicLongGetAndDecrement(jobject obj);
                 long long AtomicLongGetAndSet(jobject obj, long long value);
                 long long AtomicLongCompareAndSetAndGet(jobject obj, long long expVal, long long newVal);
                 bool AtomicLongIsClosed(jobject obj);
