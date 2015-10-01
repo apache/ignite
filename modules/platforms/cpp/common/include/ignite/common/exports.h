@@ -144,8 +144,11 @@ extern "C" {
 
     long long IGNITE_CALL IgniteAtomicLongGet(gcj::JniContext* ctx, void* obj);
     long long IGNITE_CALL IgniteAtomicLongIncrementAndGet(gcj::JniContext* ctx, void* obj);
+    long long IGNITE_CALL IgniteAtomicLongGetAndIncrement(gcj::JniContext* ctx, void* obj);
     long long IGNITE_CALL IgniteAtomicLongAddAndGet(gcj::JniContext* ctx, void* obj, long long value);
+    long long IGNITE_CALL IgniteAtomicLongGetAndAdd(gcj::JniContext* ctx, void* obj, long long value);
     long long IGNITE_CALL IgniteAtomicLongDecrementAndGet(gcj::JniContext* ctx, void* obj);
+    long long IGNITE_CALL IgniteAtomicLongGetAndDecrement(gcj::JniContext* ctx, void* obj);
     long long IGNITE_CALL IgniteAtomicLongGetAndSet(gcj::JniContext* ctx, void* obj, long long value);
     long long IGNITE_CALL IgniteAtomicLongCompareAndSetAndGet(gcj::JniContext* ctx, void* obj, long long expVal, long long newVal);
     bool IGNITE_CALL IgniteAtomicLongIsClosed(gcj::JniContext* ctx, void* obj);

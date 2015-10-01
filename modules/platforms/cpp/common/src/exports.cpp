@@ -423,12 +423,24 @@ extern "C" {
         return ctx->AtomicLongIncrementAndGet(static_cast<jobject>(obj));
     }
 
+    long long IGNITE_CALL IgniteAtomicLongGetAndIncrement(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicLongGetAndIncrement(static_cast<jobject>(obj));
+    }
+
     long long IGNITE_CALL IgniteAtomicLongAddAndGet(gcj::JniContext* ctx, void* obj, long long value) {
         return ctx->AtomicLongAddAndGet(static_cast<jobject>(obj), value);
     }
 
+    long long IGNITE_CALL IgniteAtomicLongGetAndAdd(gcj::JniContext* ctx, void* obj, long long value) {
+        return ctx->AtomicLongGetAndAdd(static_cast<jobject>(obj), value);
+    }
+
     long long IGNITE_CALL IgniteAtomicLongDecrementAndGet(gcj::JniContext* ctx, void* obj) {
         return ctx->AtomicLongDecrementAndGet(static_cast<jobject>(obj));
+    }
+
+    long long IGNITE_CALL IgniteAtomicLongGetAndDecrement(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicLongGetAndDecrement(static_cast<jobject>(obj));
     }
 
     long long IGNITE_CALL IgniteAtomicLongGetAndSet(gcj::JniContext* ctx, void* obj, long long value) {
