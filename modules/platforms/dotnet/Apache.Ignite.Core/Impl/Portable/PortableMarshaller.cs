@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="val">Value.</param>
         /// <returns>Serialized data as byte array.</returns>
-        public byte[] Marshal(object val)
+        public byte[] Marshal<T>(T val)
         {
             PortableHeapStream stream = new PortableHeapStream(128);
 

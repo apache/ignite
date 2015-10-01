@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<bool>(_marsh.Marshal(true)), true);
 
             Assert.AreEqual(_marsh.Unmarshal<bool?>(_marsh.Marshal((bool?)false)), false);
-            Assert.AreEqual(_marsh.Unmarshal<bool?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<bool?>(_marsh.Marshal((bool?)null)), null);
         }
 
         /**
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<sbyte>(_marsh.Marshal(sbyte.MaxValue)), sbyte.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<sbyte?>(_marsh.Marshal((sbyte?)1)), (sbyte?)1);
-            Assert.AreEqual(_marsh.Unmarshal<sbyte?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<sbyte?>(_marsh.Marshal((sbyte?)null)), null);
         }
 
         /**
@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<byte>(_marsh.Marshal(byte.MaxValue)), byte.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<byte?>(_marsh.Marshal((byte?)1)), (byte?)1);
-            Assert.AreEqual(_marsh.Unmarshal<byte?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<byte?>(_marsh.Marshal((byte?)null)), null);
         }
 
         /**
@@ -136,7 +136,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<short>(_marsh.Marshal(short.MaxValue)), short.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<short?>(_marsh.Marshal((short?)1)), (short?)1);
-            Assert.AreEqual(_marsh.Unmarshal<short?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<short?>(_marsh.Marshal((short?)null)), null);
         }
 
         /**
@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<ushort>(_marsh.Marshal(ushort.MaxValue)), ushort.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<ushort?>(_marsh.Marshal((ushort?)1)), (ushort?)1);
-            Assert.AreEqual(_marsh.Unmarshal<ushort?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<ushort?>(_marsh.Marshal((ushort?)null)), null);
         }
 
         /**
@@ -188,7 +188,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<char>(_marsh.Marshal(char.MaxValue)), char.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<char?>(_marsh.Marshal((char?)1)), (char?)1);
-            Assert.AreEqual(_marsh.Unmarshal<char?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<char?>(_marsh.Marshal((char?)null)), null);
         }
 
         /**
@@ -214,7 +214,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<int>(_marsh.Marshal(int.MaxValue)), int.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<int?>(_marsh.Marshal((int?)1)), (int?)1);
-            Assert.AreEqual(_marsh.Unmarshal<int?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<int?>(_marsh.Marshal((int?)null)), null);
         }
 
         /**
@@ -240,7 +240,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<uint>(_marsh.Marshal(uint.MaxValue)), uint.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<uint?>(_marsh.Marshal((uint?)1)), (int?)1);
-            Assert.AreEqual(_marsh.Unmarshal<uint?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<uint?>(_marsh.Marshal((uint?)null)), null);
         }
 
         /**
@@ -266,7 +266,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<long>(_marsh.Marshal(long.MaxValue)), long.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<long?>(_marsh.Marshal((long?)1)), (long?)1);
-            Assert.AreEqual(_marsh.Unmarshal<long?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<long?>(_marsh.Marshal((long?)null)), null);
         }
 
         /**
@@ -292,7 +292,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<ulong>(_marsh.Marshal(ulong.MaxValue)), ulong.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<ulong?>(_marsh.Marshal((ulong?)1)), (ulong?)1);
-            Assert.AreEqual(_marsh.Unmarshal<ulong?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<ulong?>(_marsh.Marshal((ulong?)null)), null);
         }
 
         /**
@@ -318,7 +318,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<float>(_marsh.Marshal(float.MaxValue)), float.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<float?>(_marsh.Marshal((float?)1)), (float?)1);
-            Assert.AreEqual(_marsh.Unmarshal<float?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<float?>(_marsh.Marshal((float?)null)), null);
         }
 
         /**
@@ -344,7 +344,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<double>(_marsh.Marshal(double.MaxValue)), double.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<double?>(_marsh.Marshal((double?)1)), (double?)1);
-            Assert.AreEqual(_marsh.Unmarshal<double?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<double?>(_marsh.Marshal((double?)null)), null);
         }
 
         /**
@@ -404,7 +404,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<decimal>(_marsh.Marshal(val = decimal.Parse("-11,12"))), val);
 
             // Test null.
-            Assert.AreEqual(_marsh.Unmarshal<decimal?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<decimal?>(_marsh.Marshal((decimal?)null)), null);
         }
 
         /**
@@ -426,7 +426,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWriteString()
         {
             Assert.AreEqual(_marsh.Unmarshal<string>(_marsh.Marshal("str")), "str");
-            Assert.AreEqual(_marsh.Unmarshal<string>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<string>(_marsh.Marshal((string) null)), null);
         }
 
         /**
