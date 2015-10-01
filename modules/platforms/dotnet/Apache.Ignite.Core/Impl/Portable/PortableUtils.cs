@@ -1888,16 +1888,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Writes a serializable object.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="obj">Object.</param>
-        public static void WriteSerializable<T>(PortableWriterImpl writer, T obj)
-        {
-            new BinaryFormatter().Serialize(new PortableStreamAdapter(writer.Stream), obj);
-        }
-
-        /// <summary>
         /// Read object which is not necessary portable.
         /// </summary>
         /// <param name="reader">Reader.</param>
@@ -1905,16 +1895,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         public static T ReadPortableOrSerializable<T>(PortableReaderImpl reader)
         {
             return reader.ReadObject<T>();
-        }
-
-        /// <summary>
-        /// Reads a serializable object.
-        /// </summary>
-        /// <param name="reader">Reader.</param>
-        /// <returns>Object.</returns>
-        public static T ReadSerializable<T>(PortableReaderImpl reader)
-        {
-            return (T) new BinaryFormatter().Deserialize(new PortableStreamAdapter(reader.Stream), null);
         }
 
         /// <summary>
