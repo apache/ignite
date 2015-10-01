@@ -938,9 +938,17 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             return null;
         }
 
+        // TODO remove
+
+        long start = U.currentTimeMillis();
+
         lock.writeLock().lock();
 
         try {
+            long end = U.currentTimeMillis();
+
+            U.debug(log, "Acquired partition topology lock in " + (end - start) + "ms");
+
             if (stopping)
                 return null;
 
