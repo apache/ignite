@@ -71,6 +71,10 @@ namespace Apache.Ignite.Core.Tests.Portable
             bool[] vals = { true, false };
 
             Assert.AreEqual(_marsh.Unmarshal<bool[]>(_marsh.Marshal(vals)), vals);
+
+            bool?[] vals2 = { true, false };
+
+            Assert.AreEqual(_marsh.Unmarshal<bool?[]>(_marsh.Marshal(vals2)), vals2);
         }
 
         /**
