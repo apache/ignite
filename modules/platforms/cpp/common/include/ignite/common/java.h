@@ -337,8 +337,11 @@ namespace ignite
                 jclass c_PlatformAtomicLong;
                 jmethodID m_PlatformAtomicLong_get;
                 jmethodID m_PlatformAtomicLong_incrementAndGet;
+                jmethodID m_PlatformAtomicLong_getAndIncrement;
                 jmethodID m_PlatformAtomicLong_addAndGet;
+                jmethodID m_PlatformAtomicLong_getAndAdd;
                 jmethodID m_PlatformAtomicLong_decrementAndGet;
+                jmethodID m_PlatformAtomicLong_getAndDecrement;
                 jmethodID m_PlatformAtomicLong_getAndSet;
                 jmethodID m_PlatformAtomicLong_compareAndSetAndGet;
                 jmethodID m_PlatformAtomicLong_isClosed;
