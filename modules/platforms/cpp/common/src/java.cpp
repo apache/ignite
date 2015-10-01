@@ -352,12 +352,12 @@ namespace ignite
 			JniMethod M_PLATFORM_SERVICES_SERVICE_PROXY = JniMethod("dotNetServiceProxy", "(Ljava/lang/String;Z)Ljava/lang/Object;", false);
 
             const char* C_PLATFORM_ATOMIC_LONG = "org/apache/ignite/internal/processors/platform/datastructures/PlatformAtomicLong";
-            JniMethod M_PLATFORM_ATOMIC_LONG_READ = JniMethod("read", "()J", false);
-            JniMethod M_PLATFORM_ATOMIC_LONG_INCREMENT = JniMethod("increment", "()J", false);
-            JniMethod M_PLATFORM_ATOMIC_LONG_ADD = JniMethod("add", "(J)J", false);
-            JniMethod M_PLATFORM_ATOMIC_LONG_DECREMENT = JniMethod("decrement", "()J", false);
-            JniMethod M_PLATFORM_ATOMIC_LONG_EXCHANGE = JniMethod("exchange", "(J)J", false);
-            JniMethod M_PLATFORM_ATOMIC_LONG_COMPARE_EXCHANGE = JniMethod("compareExchange", "(JJ)J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_READ = JniMethod("get", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_INCREMENT = JniMethod("incrementAndGet", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_ADD = JniMethod("addAndGet", "(J)J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_DECREMENT = JniMethod("decrementAndGet", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_EXCHANGE = JniMethod("getAndSet", "(J)J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_COMPARE_EXCHANGE = JniMethod("compareAndSetAndGet", "(JJ)J", false);
             JniMethod M_PLATFORM_ATOMIC_LONG_IS_CLOSED = JniMethod("isClosed", "()Z", false);
             JniMethod M_PLATFORM_ATOMIC_LONG_CLOSE = JniMethod("close", "()V", false);
 
