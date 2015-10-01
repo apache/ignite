@@ -300,11 +300,16 @@
                                             <substitution expression="${project.version}" />
                                         </replaceregexp>
 
+                                        <replaceregexp file="${basedir}/target/release-package/examples/schema-import/pom.xml" byline="true">
+                                            <regexp pattern="to_be_replaced_by_ignite_version" />
+                                            <substitution expression="${project.version}" />
+                                        </replaceregexp>
+
                                         <chmod dir="${basedir}/target/release-package" perm="755" includes="**/*.sh" />
 
                                         <!-- hotfix according to https://issues.apache.org/jira/browse/IGNITE-1399. Remove at 1.5 -->
                                         <move todir="${basedir}/target/temp/release-package/libs/optional/ignite-platform" failonerror="false">
-                                            <fileset dir="${basedir}/target/release-package/libs/optional/ignite-platform"/>
+                                            <fileset dir="${basedir}/target/release-package/libs/optional/ignite-platform" />
                                         </move>
 
                                         <zip destfile="${basedir}/target/bin/${ignite.zip.pattern}.zip" encoding="UTF-8">
@@ -326,7 +331,7 @@
 
                                         <!-- hotfix according to https://issues.apache.org/jira/browse/IGNITE-1399. Remove at 1.5 -->
                                         <move todir="${basedir}/target/release-package/libs/optional/ignite-platform" failonerror="false">
-                                            <fileset dir="${basedir}/target/temp/release-package/libs/optional/ignite-platform"/>
+                                            <fileset dir="${basedir}/target/temp/release-package/libs/optional/ignite-platform" />
                                         </move>
                                     </target>
                                 </configuration>
