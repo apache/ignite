@@ -1884,18 +1884,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="obj">Object.</param>
         public static void WritePortableOrSerializable<T>(PortableWriterImpl writer, T obj)
         {
-            if (writer.IsPortable(obj))
-            {
-                writer.WriteBoolean(true);
-
-                writer.WriteObject(obj);
-            }
-            else
-            {
-                writer.WriteBoolean(false);
-
-                WriteSerializable(writer, obj);
-            }
+            writer.WriteObject(obj);
         }
 
         /// <summary>
@@ -1915,9 +1904,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Object.</returns>
         public static T ReadPortableOrSerializable<T>(PortableReaderImpl reader)
         {
-            return reader.ReadBoolean()
-                ? reader.ReadObject<T>()
-                : ReadSerializable<T>(reader);
+            return reader.ReadObject<T>();
         }
 
         /// <summary>
