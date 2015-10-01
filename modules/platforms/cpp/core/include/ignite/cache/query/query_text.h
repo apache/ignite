@@ -41,7 +41,7 @@ namespace ignite
                  * @param type Type name.
                  * @param text Text string.
                  */
-                TextQuery(std::string type, std::string text) : type(type), text(text), pageSize(1024), loc(false)
+                TextQuery(const std::string& type, const std::string& text) : type(type), text(text), pageSize(1024), loc(false)
                 {
                     // No-op.
                 }
@@ -51,7 +51,7 @@ namespace ignite
                  *
                  * @return Type name.
                  */
-                std::string GetType()
+                const std::string& GetType() const
                 {
                     return type;
                 }
@@ -61,7 +61,7 @@ namespace ignite
                  *
                  * @param sql Type name.
                  */
-                void SetType(std::string type)
+                void SetType(const std::string& type)
                 {
                     this->type = type;
                 }
@@ -71,7 +71,7 @@ namespace ignite
                  *
                  * @return text string.
                  */
-                std::string GetText()
+                const std::string& GetText() const
                 {
                     return text;
                 }
@@ -81,7 +81,7 @@ namespace ignite
                  *
                  * @param text Text string.
                  */
-                void SetText(std::string text)
+                void SetText(const std::string& text)
                 {
                     this->text = text;
                 }
@@ -91,7 +91,7 @@ namespace ignite
                  *
                  * @return Page size.
                  */
-                int32_t GetPageSize()
+                int32_t GetPageSize() const
                 {
                     return pageSize;
                 }
@@ -111,7 +111,7 @@ namespace ignite
                  *
                  * @return Local flag.
                  */
-                bool IsLocal()
+                bool IsLocal() const
                 {
                     return loc;
                 }

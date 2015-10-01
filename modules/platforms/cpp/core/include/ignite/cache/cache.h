@@ -55,7 +55,7 @@ namespace ignite
             /**
              * Name of this cache (null for default cache).
              */
-            char* GetName()
+            const char* GetName() const
             {
                 return impl.Get()->GetName();
             }

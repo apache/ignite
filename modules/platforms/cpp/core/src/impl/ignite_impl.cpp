@@ -34,7 +34,7 @@ namespace ignite
             JniContext::Release(javaRef);
         }
 
-        char* IgniteImpl::GetName()
+        const char* IgniteImpl::GetName() const
         {
             return env.Get()->InstanceName();
         }

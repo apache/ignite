@@ -58,6 +58,13 @@ namespace ignite
                 void* Pointer();
 
                 /**
+                * Get raw pointer.
+                *
+                * @return Raw pointer.
+                */
+                const void* Pointer() const;
+
+                /**
                  * Increment usage counter.
                  */
                 void Increment();
@@ -193,6 +200,16 @@ namespace ignite
                  * @return Raw pointer.
                  */
                 T* Get()
+                {
+                    return impl ? static_cast<T*>(impl->Pointer()) : NULL;
+                }
+
+                /**
+                * Get raw pointer.
+                *
+                * @return Raw pointer.
+                */
+                const T* Get() const
                 {
                     return impl ? static_cast<T*>(impl->Pointer()) : NULL;
                 }

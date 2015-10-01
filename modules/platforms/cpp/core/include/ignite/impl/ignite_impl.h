@@ -54,7 +54,7 @@ namespace ignite
              *
              * @param Name.
              */
-            char* GetName();
+            const char* GetName() const;
 
             /**
              * Get cache.

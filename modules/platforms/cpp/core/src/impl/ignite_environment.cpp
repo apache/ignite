@@ -92,7 +92,7 @@ namespace ignite
             latch->CountDown();
         }
         
-        char* IgniteEnvironment::InstanceName()
+        const char* IgniteEnvironment::InstanceName() const
         {
             return name;
         }
