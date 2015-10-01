@@ -1246,17 +1246,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             _stream = stream;
         }
 
-        public void Write(int obj)
-        {
-            
-        }
-        
-        public void WritePrimitive<T>(int val, Type t) 
-        {
-            _stream.WriteByte(PU.TypeInt);
-            _stream.WriteInt(val);
-        }
-        
         /// <summary>
         /// Write object.
         /// </summary>
@@ -1377,8 +1366,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="type">Type.</param>
         public unsafe void WritePrimitive<T>(T val, Type type)
         {
-            // TODO: This can be improved with dynamic dispatch
-
             // .Net defines 14 primitive types. We support 12 - excluding IntPtr and UIntPtr.
             // Types check sequence is designed to minimize comparisons for the most frequent types.
 
