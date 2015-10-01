@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public long Pointer
         {
-            get { throw new NotSupportedException(); }
+            get { return 0; }
         }
 
         /** <inheritdoc /> */
