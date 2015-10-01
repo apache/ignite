@@ -1,22 +1,20 @@
 package org.apache.ignite.examples.datastructures;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.examples.ExampleNodeStartup;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSemaphore;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.lang.IgniteRunnable;
 
 /**
- * This example demonstrates cache based semaphore.
- * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
- * <p>
- * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-ignite.xml} configuration.
- *
- * @author Vladisav Jelisavcic
+ * This example demonstrates cache based semaphore. <p> Remote nodes should always be started with special configuration
+ * file which enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}. <p> Alternatively
+ * you can run {@link ExampleNodeStartup} in another JVM which will start node with {@code
+ * examples/config/example-ignite.xml} configuration.
  */
 public class IgniteSemaphoreExample {
     /** Cache name. */
@@ -40,7 +38,7 @@ public class IgniteSemaphoreExample {
             System.out.println(">>> Cache atomic semaphore example started.");
 
             // Initialize semaphore.
-            IgniteSemaphore syncSemaphore = ignite.semaphore(syncName,0,false,true);
+            IgniteSemaphore syncSemaphore = ignite.semaphore(syncName, 0, false, true);
 
             // Make name of semaphore.
             final String semaphoreName = UUID.randomUUID().toString();
@@ -50,21 +48,25 @@ public class IgniteSemaphoreExample {
 
             // Make shared resource
             final String resourceName = UUID.randomUUID().toString();
+
+            // Get cache view where the resource will be held
             IgniteCache<String, Queue<String>> cache = ignite.getOrCreateCache(CACHE_NAME);
+
+            // Put the resource queue the cache
             cache.put(resourceName, new LinkedList<>());
 
             // Initialize semaphore.
             IgniteSemaphore semaphore = ignite.semaphore(semaphoreName, 0, false, true);
 
             // Initialize mutex.
-            IgniteSemaphore mutex = ignite.semaphore(mutexName,1,false,true);
+            IgniteSemaphore mutex = ignite.semaphore(mutexName, 1, false, true);
 
             // Start consumers on all cluster nodes.
             for (int i = 0; i < NUM_CONSUMERS; i++)
                 ignite.compute().withAsync().run(new Consumer(mutexName, semaphoreName, resourceName));
 
             // Start producers on all cluster nodes.
-            for(int i = 0; i < NUM_PRODUCERS; i++)
+            for (int i = 0; i < NUM_PRODUCERS; i++)
                 ignite.compute().withAsync().run(new Producer(mutexName, semaphoreName, resourceName));
 
             System.out.println("Master node is waiting for all other nodes to finish...");
@@ -121,23 +123,33 @@ public class IgniteSemaphoreExample {
         /** {@inheritDoc} */
         @Override public void run() {
             IgniteSemaphore semaphore = Ignition.ignite().semaphore(semaphoreName, 0, true, true);
-            IgniteSemaphore mutex = Ignition.ignite().semaphore(mutexName,0,true,true);
+            IgniteSemaphore mutex = Ignition.ignite().semaphore(mutexName, 0, true, true);
 
-            for(int i=0;i<ITEM_COUNT;i++) {
+            for (int i = 0; i < ITEM_COUNT; i++) {
+                // Mutex is used to access shared resource.
                 mutex.acquire();
 
-                Queue<String> queue = (Queue<String>) Ignition.ignite().cache(CACHE_NAME).get(resourceName);
+                Queue<String> queue = (Queue<String>)Ignition.ignite().cache(CACHE_NAME).get(resourceName);
+
                 queue.add(Ignition.ignite().cluster().localNode().id().toString());
+
                 Ignition.ignite().cache(CACHE_NAME).put(resourceName, queue);
+
                 System.out.println("Producer [nodeId=" + Ignition.ignite().cluster().localNode().id() + "] produced data. Available: " + semaphore.availablePermits());
 
+                // Mutex is released for others to access the resource.
                 mutex.release();
 
+                // Signals others that shared resource is available.
                 semaphore.release();
             }
 
             System.out.println("Producer [nodeId=" + Ignition.ignite().cluster().localNode().id() + "] finished. ");
-            IgniteSemaphore sync =  Ignition.ignite().semaphore(syncName, 0, true, true);
+
+            // Gets the syncing semaphore
+            IgniteSemaphore sync = Ignition.ignite().semaphore(syncName, 0, true, true);
+
+            // Signals the master thread
             sync.release();
         }
     }
@@ -159,23 +171,33 @@ public class IgniteSemaphoreExample {
         /** {@inheritDoc} */
         @Override public void run() {
             IgniteSemaphore semaphore = Ignition.ignite().semaphore(semaphoreName, 0, true, true);
-            IgniteSemaphore mutex = Ignition.ignite().semaphore(mutexName,0,true,true);
+            IgniteSemaphore mutex = Ignition.ignite().semaphore(mutexName, 0, true, true);
 
-            for(int i=0;i<ITEM_COUNT;i++) {
+            for (int i = 0; i < ITEM_COUNT; i++) {
+                // Block if queue is empty.
                 semaphore.acquire();
 
+                // Mutex is used to access shared resource.
                 mutex.acquire();
 
-                Queue<String> queue = (Queue<String>) Ignition.ignite().cache(CACHE_NAME).get(resourceName);
+                Queue<String> queue = (Queue<String>)Ignition.ignite().cache(CACHE_NAME).get(resourceName);
+
                 String data = queue.remove();
+
                 Ignition.ignite().cache(CACHE_NAME).put(resourceName, queue);
+
                 System.out.println("Consumer [nodeId=" + Ignition.ignite().cluster().localNode().id() + "] consumed data generated by producer [nodeId=" + data + "]");
 
+                // Signals others that shared resource is available.
                 mutex.release();
             }
 
             System.out.println("Consumer [nodeId=" + Ignition.ignite().cluster().localNode().id() + "] finished. ");
-            IgniteSemaphore sync =  Ignition.ignite().semaphore(syncName, 3, true, true);
+
+            // Gets the syncing semaphore
+            IgniteSemaphore sync = Ignition.ignite().semaphore(syncName, 3, true, true);
+
+            // Signals the master thread
             sync.release();
         }
     }

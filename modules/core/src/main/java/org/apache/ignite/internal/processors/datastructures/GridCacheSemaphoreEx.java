@@ -3,7 +3,7 @@ package org.apache.ignite.internal.processors.datastructures;
 import org.apache.ignite.IgniteSemaphore;
 
 /**
- * Created by vladisav on 20.9.15..
+ * Grid cache semaphore ({@code 'Ex'} stands for external).
  */
 public interface GridCacheSemaphoreEx extends IgniteSemaphore, GridCacheRemovable {
     /**
@@ -16,7 +16,7 @@ public interface GridCacheSemaphoreEx extends IgniteSemaphore, GridCacheRemovabl
     /**
      * Callback to notify semaphore on changes.
      *
-     * @param val Id of the caller and number of permissions to acquire (or release; can be negative).
+     * @param val State containing the number of available permissions.
      */
     public void onUpdate(GridCacheSemaphoreState val);
 }
