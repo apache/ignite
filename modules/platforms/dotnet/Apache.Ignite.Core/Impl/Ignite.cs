@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
@@ -301,6 +302,10 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Usage", "CA1816:CallGCSuppressFinalizeCorrectly",
+            Justification = "There is no finalizer.")]
+        [SuppressMessage("Microsoft.Usage", "CA2213:DisposableFieldsShouldBeDisposed", MessageId = "_proxy",
+            Justification = "Proxy does not need to be disposed.")]
         public void Dispose()
         {
             Ignition.Stop(Name, true);

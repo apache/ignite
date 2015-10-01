@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Compute
     /// </li>
     /// <li>
     ///      Ability to set and get job arguments via <see cref="ComputeJobAdapter{T}.SetArguments(object[])"/>
-    ///      and <see cref="ComputeJobAdapter{T}.Argument{T}(int)"/> methods.
+    ///      and <see cref="GetArgument{TArg}"/> methods.
     /// </li>
     /// </ul>
     /// </summary>
@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Compute
         private volatile bool _cancelled;
 
         /** Arguments. */
-        protected object[] Args;
+        private object[] _args;
 
         /// <summary>
         /// No-arg constructor.
@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="args">Optional job arguments.</param>
         protected ComputeJobAdapter(params object[] args)
         {
-            Args = args;
+            _args = args;
         }
 
         /// <summary>
@@ -78,19 +78,19 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="args">Optional job arguments to set.</param>
         public void SetArguments(params object[] args)
         {
-            Args = args;
+            _args = args;
         }
 
         /// <summary>
         /// Sets given arguments.
         /// </summary>
         /// <param name="idx">Index of the argument.</param>
-        public TArg Argument<TArg>(int idx)
+        public TArg GetArgument<TArg>(int idx)
         {
-            if (idx < 0 || idx >= Args.Length)
-                throw new ArgumentException("Invalid argument index: " + idx);
+            if (_args == null || idx < 0 || idx >= _args.Length)
+                throw new IndexOutOfRangeException("Invalid argument index: " + idx);
 
-            return (TArg)Args[idx];
+            return (TArg)_args[idx];
         }
 
         /// <summary>

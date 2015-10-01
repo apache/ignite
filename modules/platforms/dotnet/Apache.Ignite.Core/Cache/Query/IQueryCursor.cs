@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Cache.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Query result cursor. Can be processed either in iterative mode, or by taking
@@ -28,6 +29,7 @@ namespace Apache.Ignite.Core.Cache.Query
     /// cursor lifetime. Any further attempts to get enumerator or all entries will result 
     /// in exception.
     /// </summary>
+    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public interface IQueryCursor<T> : IEnumerable<T>, IDisposable
     {
         /// <summary>
@@ -35,6 +37,8 @@ namespace Apache.Ignite.Core.Cache.Query
         /// result is relatively small and will not cause memory utilization issues.
         /// </summary>
         /// <returns>List containing all query results.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", 
+            Justification = "Expensive operation.")]
         IList<T> GetAll();
     }
 }

@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Cache
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
@@ -51,6 +52,7 @@ namespace Apache.Ignite.Core.Cache
     /// </summary>
     /// <typeparam name="TK">Key type.</typeparam>
     /// <typeparam name="TV">Value type.</typeparam>
+    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public interface ICache<TK, TV> : IAsyncSupport<ICache<TK, TV>>, IEnumerable<ICacheEntry<TK, TV>>
     {
         /// <summary>
@@ -518,6 +520,8 @@ namespace Apache.Ignite.Core.Cache
         /// Gets snapshot metrics (statistics) for this cache.
         /// </summary>
         /// <returns>Cache metrics.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
+            Justification = "Expensive operation.")]
         ICacheMetrics GetMetrics();
 
         /// <summary>

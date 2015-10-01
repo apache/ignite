@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Events
 {
     using System;
+    using System.Globalization;
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
@@ -126,9 +127,10 @@ namespace Apache.Ignite.Core.Events
         /** <inheritDoc /> */
 	    public override string ToShortString()
 	    {
-	        return string.Format("{0}: QueryType={1}, CacheName={2}, ClassName={3}, Clause={4}, SubjectId={5}, " +
-	                             "TaskName={6}, Key={7}, Value={8}, OldValue={9}, Row={10}", Name, QueryType, 
-                                 CacheName, ClassName, Clause, SubjectId, TaskName, Key, Value, OldValue, Row);
+	        return string.Format(CultureInfo.InvariantCulture,
+	            "{0}: QueryType={1}, CacheName={2}, ClassName={3}, Clause={4}, SubjectId={5}, " +
+	            "TaskName={6}, Key={7}, Value={8}, OldValue={9}, Row={10}", Name, QueryType,
+	            CacheName, ClassName, Clause, SubjectId, TaskName, Key, Value, OldValue, Row);
 	    }
     }
 }

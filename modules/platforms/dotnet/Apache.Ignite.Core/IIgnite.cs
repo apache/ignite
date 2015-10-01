@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
@@ -56,6 +57,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets an instance of <see cref="ICluster" /> interface.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         ICluster GetCluster();
 
         /// <summary>
@@ -64,6 +66,7 @@ namespace Apache.Ignite.Core
         /// this projection.
         /// </summary>
         /// <returns>Compute instance over this grid projection.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         ICompute GetCompute();
 
         /// <summary>
@@ -111,6 +114,7 @@ namespace Apache.Ignite.Core
         /// Gets an instance of <see cref="IPortables"/> interface.
         /// </summary>
         /// <returns>Instance of <see cref="IPortables"/> interface</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IPortables GetPortables();
 
         /// <summary>
@@ -123,24 +127,28 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets Ignite transactions facade.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         ITransactions GetTransactions();
 
         /// <summary>
         /// Gets messaging facade over all cluster nodes.
         /// </summary>
         /// <returns>Messaging instance over all cluster nodes.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IMessaging GetMessaging();
 
         /// <summary>
         /// Gets events facade over all cluster nodes.
         /// </summary>
         /// <returns>Events facade over all cluster nodes.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IEvents GetEvents();
 
         /// <summary>
         /// Gets services facade over all cluster nodes.
         /// </summary>
         /// <returns>Services facade over all cluster nodes.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IServices GetServices();
 
         /// <summary>

@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
 
@@ -47,195 +48,15 @@ namespace Apache.Ignite.Core.Impl.Portable
     internal static class PortableSystemHandlers
     {
         /** Write handlers. */
-        private static readonly Dictionary<Type, PortableSystemWriteDelegate> WriteHandlers =
+        private static volatile Dictionary<Type, PortableSystemWriteDelegate> _writeHandlers =
             new Dictionary<Type, PortableSystemWriteDelegate>();
+
+        /** Mutex for write handlers update. */
+        private static readonly Object WriteHandlersMux = new Object();
 
         /** Read handlers. */
         private static readonly IPortableSystemReader[] ReadHandlers = new IPortableSystemReader[255];
-
-        /** Typed write handler: boolean. */
-        public static readonly PortableSystemTypedWriteDelegate<bool> WriteHndBoolTyped = WriteBoolTyped;
-
-        /** Typed write handler: byte. */
-        public static readonly PortableSystemTypedWriteDelegate<byte> WriteHndByteTyped = WriteByteTyped;
-
-        /** Typed write handler: short. */
-        public static readonly PortableSystemTypedWriteDelegate<short> WriteHndShortTyped = WriteShortTyped;
-
-        /** Typed write handler: char. */
-        public static readonly PortableSystemTypedWriteDelegate<char> WriteHndCharTyped = WriteCharTyped;
-
-        /** Typed write handler: int. */
-        public static readonly PortableSystemTypedWriteDelegate<int> WriteHndIntTyped = WriteIntTyped;
-
-        /** Typed write handler: long. */
-        public static readonly PortableSystemTypedWriteDelegate<long> WriteHndLongTyped = WriteLongTyped;
-
-        /** Typed write handler: float. */
-        public static readonly PortableSystemTypedWriteDelegate<float> WriteHndFloatTyped = WriteFloatTyped;
-
-        /** Typed write handler: double. */
-        public static readonly PortableSystemTypedWriteDelegate<double> WriteHndDoubleTyped = WriteDoubleTyped;
-
-        /** Typed write handler: decimal. */
-        public static readonly PortableSystemTypedWriteDelegate<decimal> WriteHndDecimalTyped = WriteDecimalTyped;
-
-        /** Typed write handler: Date. */
-        public static readonly PortableSystemTypedWriteDelegate<DateTime?> WriteHndDateTyped = WriteDateTyped;
-
-        /** Typed write handler: string. */
-        public static readonly PortableSystemTypedWriteDelegate<string> WriteHndStringTyped = WriteStringTyped;
-
-        /** Typed write handler: Guid. */
-        public static readonly PortableSystemTypedWriteDelegate<Guid?> WriteHndGuidTyped = WriteGuidTyped;
-
-        /** Typed write handler: Portable. */
-        public static readonly PortableSystemTypedWriteDelegate<PortableUserObject> WriteHndPortableTyped = WritePortableTyped;
-
-        /** Typed write handler: boolean array. */
-        public static readonly PortableSystemTypedWriteDelegate<bool[]> WriteHndBoolArrayTyped = WriteBoolArrayTyped;
-
-        /** Typed write handler: byte array. */
-        public static readonly PortableSystemTypedWriteDelegate<byte[]> WriteHndByteArrayTyped = WriteByteArrayTyped;
-
-        /** Typed write handler: short array. */
-        public static readonly PortableSystemTypedWriteDelegate<short[]> WriteHndShortArrayTyped = WriteShortArrayTyped;
-
-        /** Typed write handler: char array. */
-        public static readonly PortableSystemTypedWriteDelegate<char[]> WriteHndCharArrayTyped = WriteCharArrayTyped;
-
-        /** Typed write handler: int array. */
-        public static readonly PortableSystemTypedWriteDelegate<int[]> WriteHndIntArrayTyped = WriteIntArrayTyped;
-
-        /** Typed write handler: long array. */
-        public static readonly PortableSystemTypedWriteDelegate<long[]> WriteHndLongArrayTyped = WriteLongArrayTyped;
-
-        /** Typed write handler: float array. */
-        public static readonly PortableSystemTypedWriteDelegate<float[]> WriteHndFloatArrayTyped = WriteFloatArrayTyped;
-
-        /** Typed write handler: double array. */
-        public static readonly PortableSystemTypedWriteDelegate<double[]> WriteHndDoubleArrayTyped = WriteDoubleArrayTyped;
-
-        /** Typed write handler: decimal array. */
-        public static readonly PortableSystemTypedWriteDelegate<decimal[]> WriteHndDecimalArrayTyped = WriteDecimalArrayTyped;
-
-        /** Typed write handler: Date array. */
-        public static readonly PortableSystemTypedWriteDelegate<DateTime?[]> WriteHndDateArrayTyped = WriteDateArrayTyped;
-
-        /** Typed write handler: string array. */
-        public static readonly PortableSystemTypedWriteDelegate<string[]> WriteHndStringArrayTyped = WriteStringArrayTyped;
-
-        /** Typed write handler: Guid array. */
-        public static readonly PortableSystemTypedWriteDelegate<Guid?[]> WriteHndGuidArrayTyped = WriteGuidArrayTyped;
-
-        /** Write handler: boolean. */
-        public static readonly PortableSystemWriteDelegate WriteHndBool = WriteBool;
-
-        /** Write handler: sbyte. */
-        public static readonly PortableSystemWriteDelegate WriteHndSbyte = WriteSbyte;
-
-        /** Write handler: byte. */
-        public static readonly PortableSystemWriteDelegate WriteHndByte = WriteByte;
-
-        /** Write handler: short. */
-        public static readonly PortableSystemWriteDelegate WriteHndShort = WriteShort;
-
-        /** Write handler: ushort. */
-        public static readonly PortableSystemWriteDelegate WriteHndUshort = WriteUshort;
-
-        /** Write handler: char. */
-        public static readonly PortableSystemWriteDelegate WriteHndChar = WriteChar;
-
-        /** Write handler: int. */
-        public static readonly PortableSystemWriteDelegate WriteHndInt = WriteInt;
-
-        /** Write handler: uint. */
-        public static readonly PortableSystemWriteDelegate WriteHndUint = WriteUint;
-
-        /** Write handler: long. */
-        public static readonly PortableSystemWriteDelegate WriteHndLong = WriteLong;
-
-        /** Write handler: ulong. */
-        public static readonly PortableSystemWriteDelegate WriteHndUlong = WriteUlong;
-
-        /** Write handler: float. */
-        public static readonly PortableSystemWriteDelegate WriteHndFloat = WriteFloat;
-
-        /** Write handler: double. */
-        public static readonly PortableSystemWriteDelegate WriteHndDouble = WriteDouble;
-
-        /** Write handler: decimal. */
-        public static readonly PortableSystemWriteDelegate WriteHndDecimal = WriteDecimal;
-
-        /** Write handler: Date. */
-        public static readonly PortableSystemWriteDelegate WriteHndDate = WriteDate;
-
-        /** Write handler: string. */
-        public static readonly PortableSystemWriteDelegate WriteHndString = WriteString;
-
-        /** Write handler: Guid. */
-        public static readonly PortableSystemWriteDelegate WriteHndGuid = WriteGuid;
-
-        /** Write handler: Portable. */
-        public static readonly PortableSystemWriteDelegate WriteHndPortable = WritePortable;
-
-        /** Write handler: Enum. */
-        public static readonly PortableSystemWriteDelegate WriteHndEnum = WriteEnum;
-
-        /** Write handler: boolean array. */
-        public static readonly PortableSystemWriteDelegate WriteHndBoolArray = WriteBoolArray;
-
-        /** Write handler: sbyte array. */
-        public static readonly PortableSystemWriteDelegate WriteHndSbyteArray = WriteSbyteArray;
-
-        /** Write handler: byte array. */
-        public static readonly PortableSystemWriteDelegate WriteHndByteArray = WriteByteArray;
-
-        /** Write handler: short array. */
-        public static readonly PortableSystemWriteDelegate WriteHndShortArray = WriteShortArray;
-
-        /** Write handler: ushort array. */
-        public static readonly PortableSystemWriteDelegate WriteHndUshortArray = WriteUshortArray;
-
-        /** Write handler: char array. */
-        public static readonly PortableSystemWriteDelegate WriteHndCharArray = WriteCharArray;
-
-        /** Write handler: int array. */
-        public static readonly PortableSystemWriteDelegate WriteHndIntArray = WriteIntArray;
-
-        /** Write handler: uint array. */
-        public static readonly PortableSystemWriteDelegate WriteHndUintArray = WriteUintArray;
-
-        /** Write handler: long array. */
-        public static readonly PortableSystemWriteDelegate WriteHndLongArray = WriteLongArray;
-
-        /** Write handler: ulong array. */
-        public static readonly PortableSystemWriteDelegate WriteHndUlongArray = WriteUlongArray;
-
-        /** Write handler: float array. */
-        public static readonly PortableSystemWriteDelegate WriteHndFloatArray = WriteFloatArray;
-
-        /** Write handler: double array. */
-        public static readonly PortableSystemWriteDelegate WriteHndDoubleArray = WriteDoubleArray;
-
-        /** Write handler: decimal array. */
-        public static readonly PortableSystemWriteDelegate WriteHndDecimalArray = WriteDecimalArray;
-
-        /** Write handler: date array. */
-        public static readonly PortableSystemWriteDelegate WriteHndDateArray = WriteDateArray;
-
-        /** Write handler: string array. */
-        public static readonly PortableSystemWriteDelegate WriteHndStringArray = WriteStringArray;
-
-        /** Write handler: Guid array. */
-        public static readonly PortableSystemWriteDelegate WriteHndGuidArray = WriteGuidArray;
-
-        /** Write handler: Enum array. */
-        public static readonly PortableSystemWriteDelegate WriteHndEnumArray = WriteEnumArray;
-
-        /** Write handler: object array. */
-        public static readonly PortableSystemWriteDelegate WriteHndArray = WriteArray;
-
+        
         /** Write handler: collection. */
         public static readonly PortableSystemWriteDelegate WriteHndCollection = WriteCollection;
 
@@ -250,38 +71,26 @@ namespace Apache.Ignite.Core.Impl.Portable
         public static readonly PortableSystemWriteDelegate WriteHndGenericDictionary =
             WriteGenericDictionary;
 
-        /**
-         * <summary>Static initializer.</summary>
-         */
+        /// <summary>
+        /// Initializes the <see cref="PortableSystemHandlers"/> class.
+        /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline", 
+            Justification = "Readability.")]
         static PortableSystemHandlers()
         {
             // 1. Primitives.
-
             ReadHandlers[PortableUtils.TypeBool] = new PortableSystemReader<bool>(s => s.ReadBool());
-
-            WriteHandlers[typeof(sbyte)] = WriteHndSbyte;
             ReadHandlers[PortableUtils.TypeByte] = new PortableSystemReader<byte>(s => s.ReadByte());
-
-            WriteHandlers[typeof(ushort)] = WriteHndUshort;
             ReadHandlers[PortableUtils.TypeShort] = new PortableSystemReader<short>(s => s.ReadShort());
-
             ReadHandlers[PortableUtils.TypeChar] = new PortableSystemReader<char>(s => s.ReadChar());
-
-            WriteHandlers[typeof(uint)] = WriteHndUint;
             ReadHandlers[PortableUtils.TypeInt] = new PortableSystemReader<int>(s => s.ReadInt());
-
-            WriteHandlers[typeof(ulong)] = WriteHndUlong;
             ReadHandlers[PortableUtils.TypeLong] = new PortableSystemReader<long>(s => s.ReadLong());
-
             ReadHandlers[PortableUtils.TypeFloat] = new PortableSystemReader<float>(s => s.ReadFloat());
-
             ReadHandlers[PortableUtils.TypeDouble] = new PortableSystemReader<double>(s => s.ReadDouble());
-
             ReadHandlers[PortableUtils.TypeDecimal] = new PortableSystemReader<decimal>(PortableUtils.ReadDecimal);
 
             // 2. Date.
-            ReadHandlers[PortableUtils.TypeDate] =
-                new PortableSystemReader<DateTime?>(s => PortableUtils.ReadDate(s, false));
+            ReadHandlers[PortableUtils.TypeDate] = new PortableSystemReader<DateTime?>(s => PortableUtils.ReadDate(s, false));
 
             // 3. String.
             ReadHandlers[PortableUtils.TypeString] = new PortableSystemReader<string>(PortableUtils.ReadString);
@@ -292,11 +101,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             // 5. Primitive arrays.
             ReadHandlers[PortableUtils.TypeArrayBool] = new PortableSystemReader<bool[]>(PortableUtils.ReadBooleanArray);
 
-            WriteHandlers[typeof(sbyte[])] = WriteHndSbyteArray;
             ReadHandlers[PortableUtils.TypeArrayByte] =
                 new PortableSystemDualReader<byte[], sbyte[]>(PortableUtils.ReadByteArray, PortableUtils.ReadSbyteArray);
-
-            WriteHandlers[typeof(ushort[])] = WriteHndUshortArray;
+            
             ReadHandlers[PortableUtils.TypeArrayShort] =
                 new PortableSystemDualReader<short[], ushort[]>(PortableUtils.ReadShortArray,
                     PortableUtils.ReadUshortArray);
@@ -304,12 +111,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             ReadHandlers[PortableUtils.TypeArrayChar] = 
                 new PortableSystemReader<char[]>(PortableUtils.ReadCharArray);
 
-            WriteHandlers[typeof(uint[])] = WriteHndUintArray;
             ReadHandlers[PortableUtils.TypeArrayInt] =
                 new PortableSystemDualReader<int[], uint[]>(PortableUtils.ReadIntArray, PortableUtils.ReadUintArray);
-
-
-            WriteHandlers[typeof(ulong[])] = WriteHndUlongArray;
+            
             ReadHandlers[PortableUtils.TypeArrayLong] =
                 new PortableSystemDualReader<long[], ulong[]>(PortableUtils.ReadLongArray, 
                     PortableUtils.ReadUlongArray);
@@ -336,12 +140,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             // 9. Array.
             ReadHandlers[PortableUtils.TypeArray] = new PortableSystemReader(ReadArray);
 
-            // 10. Predefined collections.
-            WriteHandlers[typeof(ArrayList)] = WriteArrayList;
-
-            // 11. Predefined dictionaries.
-            WriteHandlers[typeof(Hashtable)] = WriteHashtable;
-
             // 12. Arbitrary collection.
             ReadHandlers[PortableUtils.TypeCollection] = new PortableSystemReader(ReadCollection);
 
@@ -349,49 +147,158 @@ namespace Apache.Ignite.Core.Impl.Portable
             ReadHandlers[PortableUtils.TypeDictionary] = new PortableSystemReader(ReadDictionary);
 
             // 14. Map entry.
-            WriteHandlers[typeof(DictionaryEntry)] = WriteMapEntry;
             ReadHandlers[PortableUtils.TypeMapEntry] = new PortableSystemReader(ReadMapEntry);
-
-            // 15. Portable.
-            WriteHandlers[typeof(PortableUserObject)] = WritePortable;
-
+            
             // 16. Enum.
             ReadHandlers[PortableUtils.TypeEnum] = new PortableSystemReader<int>(PortableUtils.ReadEnum<int>);
             ReadHandlers[PortableUtils.TypeArrayEnum] = new PortableSystemReader(ReadEnumArray);
         }
 
-        /**
-         * <summary>Get write handler for type.</summary>
-         * <param name="type">Type.</param>
-         * <returns>Handler or null if cannot be hanled in special way.</returns>
-         */
-        public static PortableSystemWriteDelegate WriteHandler(Type type)
+        /// <summary>
+        /// Try getting write handler for type.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static PortableSystemWriteDelegate GetWriteHandler(Type type)
         {
-            PortableSystemWriteDelegate handler;
+            PortableSystemWriteDelegate res;
 
-            if (WriteHandlers.TryGetValue(type, out handler))
-                return handler;
+            var writeHandlers0 = _writeHandlers;
 
-            // 1. Array?
-            if (type.IsArray)
+            // Have we ever met this type?
+            if (writeHandlers0 != null && writeHandlers0.TryGetValue(type, out res))
+                return res;
+            else
             {
-                if (type.GetElementType().IsEnum)
-                    return WriteEnumArray;
-                return WriteArray;
+                // Determine write handler for type and add it.
+                res = FindWriteHandler(type);
+
+                if (res != null)
+                    AddWriteHandler(type, res);
+
+                return res;
             }
 
-            // 2. Enum?
-            if (type.IsEnum)
+        }
+
+        /// <summary>
+        /// Find write handler for type.
+        /// </summary>
+        /// <param name="type">Type.</param>
+        /// <returns>Write handler or NULL.</returns>
+        private static PortableSystemWriteDelegate FindWriteHandler(Type type)
+        {
+            // 1. Well-known types.
+            if (type == typeof (string))
+                return WriteString;
+            else if (type == typeof(decimal))
+                return WriteDecimal;
+            else if (type == typeof(DateTime))
+                return WriteDate;
+            else if (type == typeof(Guid))
+                return WriteGuid;
+            else if (type == typeof (PortableUserObject))
+                return WritePortable;
+            else if (type == typeof (ArrayList))
+                return WriteArrayList;
+            else if (type == typeof(Hashtable))
+                return WriteHashtable;
+            else if (type == typeof(DictionaryEntry))
+                return WriteMapEntry;
+            else if (type.IsArray)
+            {
+                // We know how to write any array type.
+                Type elemType = type.GetElementType();
+                
+                // Primitives.
+                if (elemType == typeof (bool))
+                    return WriteBoolArray;
+                else if (elemType == typeof(byte))
+                    return WriteByteArray;
+                else if (elemType == typeof(short))
+                    return WriteShortArray;
+                else if (elemType == typeof(char))
+                    return WriteCharArray;
+                else if (elemType == typeof(int))
+                    return WriteIntArray;
+                else if (elemType == typeof(long))
+                    return WriteLongArray;
+                else if (elemType == typeof(float))
+                    return WriteFloatArray;
+                else if (elemType == typeof(double))
+                    return WriteDoubleArray;
+                // Non-CLS primitives.
+                else if (elemType == typeof(sbyte))
+                    return WriteSbyteArray;
+                else if (elemType == typeof(ushort))
+                    return WriteUshortArray;
+                else if (elemType == typeof(uint))
+                    return WriteUintArray;
+                else if (elemType == typeof(ulong))
+                    return WriteUlongArray;
+                // Special types.
+                else if (elemType == typeof (decimal))
+                    return WriteDecimalArray;
+                else if (elemType == typeof(string))
+                    return WriteStringArray;
+//                else if (elemType == typeof(DateTime))
+//                    return WriteDateArray;
+                else if (elemType == typeof(DateTime?))
+                    return WriteNullableDateArray;
+//                else if (elemType == typeof(Guid))
+//                    return WriteGuidArray;
+                else if (elemType == typeof(Guid?))
+                    return WriteNullableGuidArray;
+                // Enums.
+                if (elemType.IsEnum)
+                    return WriteEnumArray;
+                
+                // Regular array.
+                return WriteArray;
+            }
+            else if (type.IsEnum)
+                // We know how to write enums.
                 return WriteEnum;
+            else
+            {
+                // We know how to write collections.
+                PortableCollectionInfo info = PortableCollectionInfo.Info(type);
 
-            // 3. Collection?
-            PortableCollectionInfo info = PortableCollectionInfo.Info(type);
+                if (info.IsAny)
+                    return info.WriteHandler;
 
-            if (info.IsAny)
-                return info.WriteHandler;
+                return null;
+            }
+        }
 
-            // No special handler found.
-            return null;
+        /// <summary>
+        /// Add write handler for type.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="handler"></param>
+        private static void AddWriteHandler(Type type, PortableSystemWriteDelegate handler)
+        {
+            lock (WriteHandlersMux)
+            {
+                if (_writeHandlers == null)
+                {
+                    Dictionary<Type, PortableSystemWriteDelegate> writeHandlers0 = 
+                        new Dictionary<Type, PortableSystemWriteDelegate>();
+
+                    writeHandlers0[type] = handler;
+
+                    _writeHandlers = writeHandlers0;
+                }
+                else if (!_writeHandlers.ContainsKey(type))
+                {
+                    Dictionary<Type, PortableSystemWriteDelegate> writeHandlers0 =
+                        new Dictionary<Type, PortableSystemWriteDelegate>(_writeHandlers);
+
+                    writeHandlers0[type] = handler;
+
+                    _writeHandlers = writeHandlers0;
+                }
+            }
         }
 
         /// <summary>
@@ -405,302 +312,84 @@ namespace Apache.Ignite.Core.Impl.Portable
             
             return handler.Read<T>(ctx);
         }
-
-        /**
-         * <summary>Write boolean.</summary>
-         */
-        private static void WriteBool(PortableWriterImpl ctx, object obj)
-        {
-            WriteBoolTyped(ctx.Stream, (bool)obj);
-        }
-
-        /**
-         * <summary>Write boolean.</summary>
-         */
-        private static void WriteBoolTyped(IPortableStream stream, bool obj)
-        {
-            stream.WriteByte(PortableUtils.TypeBool);
-
-            stream.WriteBool(obj);
-        }
-
-        /**
-         * <summary>Write sbyte.</summary>
-         */
-        private static unsafe void WriteSbyte(PortableWriterImpl ctx, object obj)
-        {
-            sbyte val = (sbyte)obj;
-
-            ctx.Stream.WriteByte(PortableUtils.TypeByte);
-            ctx.Stream.WriteByte(*(byte*)&val);
-        }
-
-        /**
-         * <summary>Write byte.</summary>
-         */
-        private static void WriteByte(PortableWriterImpl ctx, object obj)
-        {
-            WriteByteTyped(ctx.Stream, (byte)obj);
-        }
-
-        /**
-         * <summary>Write byte.</summary>
-         */
-        private static void WriteByteTyped(IPortableStream stream, byte obj)
-        {
-            stream.WriteByte(PortableUtils.TypeByte);
-            stream.WriteByte(obj);
-        }
-
-        /**
-         * <summary>Write short.</summary>
-         */
-        private static void WriteShort(PortableWriterImpl ctx, object obj)
-        {
-            WriteShortTyped(ctx.Stream, (short)obj);
-        }
-
-        /**
-         * <summary>Write short.</summary>
-         */
-        private static void WriteShortTyped(IPortableStream stream, short obj)
-        {
-            stream.WriteByte(PortableUtils.TypeShort);
-
-            stream.WriteShort(obj);
-        }
-
-        /**
-         * <summary>Write ushort.</summary>
-         */
-        private static unsafe void WriteUshort(PortableWriterImpl ctx, object obj)
-        {
-            ushort val = (ushort)obj;
-
-            ctx.Stream.WriteByte(PortableUtils.TypeShort);
-
-            ctx.Stream.WriteShort(*(short*)&val);
-        }
-
-        /**
-         * <summary>Write char.</summary>
-         */
-        private static void WriteChar(PortableWriterImpl ctx, object obj)
-        {
-            WriteCharTyped(ctx.Stream, (char)obj);
-        }
-
-        /**
-         * <summary>Write char.</summary>
-         */
-        private static void WriteCharTyped(IPortableStream stream, char obj)
-        {
-            stream.WriteByte(PortableUtils.TypeChar);
-
-            stream.WriteChar(obj);
-        }
-
-        /**
-         * <summary>Write int.</summary>
-         */
-        private static void WriteInt(PortableWriterImpl ctx, object obj)
-        {
-            WriteIntTyped(ctx.Stream, (int)obj);
-        }
-
-        /**
-         * <summary>Write int.</summary>
-         */
-        private static void WriteIntTyped(IPortableStream stream, int obj)
-        {
-            stream.WriteByte(PortableUtils.TypeInt);
-            stream.WriteInt(obj);
-        }
-
-        /**
-         * <summary>Write uint.</summary>
-         */
-        private static unsafe void WriteUint(PortableWriterImpl ctx, object obj)
-        {
-            uint val = (uint)obj;
-
-            ctx.Stream.WriteByte(PortableUtils.TypeInt);
-            ctx.Stream.WriteInt(*(int*)&val);
-        }
-
-        /**
-         * <summary>Write long.</summary>
-         */
-        private static void WriteLong(PortableWriterImpl ctx, object obj)
-        {
-            WriteLongTyped(ctx.Stream, (long)obj);
-        }
-
-        /**
-         * <summary>Write long.</summary>
-         */
-        private static void WriteLongTyped(IPortableStream stream, long obj)
-        {
-            stream.WriteByte(PortableUtils.TypeLong);
-            stream.WriteLong(obj);
-        }
-
-        /**
-         * <summary>Write ulong.</summary>
-         */
-        private static unsafe void WriteUlong(PortableWriterImpl ctx, object obj)
-        {
-            ulong val = (ulong)obj;
-
-            ctx.Stream.WriteByte(PortableUtils.TypeLong);
-            ctx.Stream.WriteLong(*(long*)&val);
-        }
-
-        /**
-         * <summary>Write float.</summary>
-         */
-        private static void WriteFloat(PortableWriterImpl ctx, object obj)
-        {
-            WriteFloatTyped(ctx.Stream, (float)obj);
-        }
-
-        /**
-         * <summary>Write float.</summary>
-         */
-        private static void WriteFloatTyped(IPortableStream stream, float obj)
-        {
-            stream.WriteByte(PortableUtils.TypeFloat);
-            stream.WriteFloat(obj);
-        }
-
-        /**
-         * <summary>Write double.</summary>
-         */
-        private static void WriteDouble(PortableWriterImpl ctx, object obj)
-        {
-            WriteDoubleTyped(ctx.Stream, (double)obj);
-        }
-
-        /**
-         * <summary>Write double.</summary>
-         */
-        private static void WriteDoubleTyped(IPortableStream stream, double obj)
-        {
-            stream.WriteByte(PortableUtils.TypeDouble);
-            stream.WriteDouble(obj);
-        }
-
-        /**
-         * <summary>Write decimal.</summary>
-         */
+        
+        /// <summary>
+        /// Write decimal.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteDecimal(PortableWriterImpl ctx, object obj)
         {
-            WriteDecimalTyped(ctx.Stream, (decimal)obj);
+            ctx.Stream.WriteByte(PortableUtils.TypeDecimal);
+
+            PortableUtils.WriteDecimal((decimal)obj, ctx.Stream);
         }
-
-        /**
-         * <summary>Write double.</summary>
-         */
-        private static void WriteDecimalTyped(IPortableStream stream, decimal obj)
-        {
-            stream.WriteByte(PortableUtils.TypeDecimal);
-
-            PortableUtils.WriteDecimal(obj, stream);
-        }
-
-        /**
-         * <summary>Write date.</summary>
-         */
+        
+        /// <summary>
+        /// Write date.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteDate(PortableWriterImpl ctx, object obj)
         {
-            WriteDateTyped(ctx.Stream, (DateTime?)obj);
+            ctx.Stream.WriteByte(PortableUtils.TypeDate);
+
+            PortableUtils.WriteDate((DateTime)obj, ctx.Stream);
         }
-
-        /**
-         * <summary>Write double.</summary>
-         */
-        private static void WriteDateTyped(IPortableStream stream, DateTime? obj)
-        {
-            stream.WriteByte(PortableUtils.TypeDate);
-
-            PortableUtils.WriteDate(obj, stream);
-        }
-
-        /**
-         * <summary>Write string.</summary>
-         */
+        
+        /// <summary>
+        /// Write string.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Object.</param>
         private static void WriteString(PortableWriterImpl ctx, object obj)
         {
-            WriteStringTyped(ctx.Stream, (string)obj);
+            ctx.Stream.WriteByte(PortableUtils.TypeString);
+
+            PortableUtils.WriteString((string)obj, ctx.Stream);
         }
 
-        /**
-         * <summary>Write string.</summary>
-         */
-        private static void WriteStringTyped(IPortableStream stream, string obj)
-        {
-            stream.WriteByte(PortableUtils.TypeString);
-
-            PortableUtils.WriteString(obj, stream);
-        }
-
-        /**
-         * <summary>Write Guid.</summary>
-         */
+        /// <summary>
+        /// Write Guid.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteGuid(PortableWriterImpl ctx, object obj)
         {
-            WriteGuidTyped(ctx.Stream, (Guid?)obj);
+            ctx.Stream.WriteByte(PortableUtils.TypeGuid);
+
+            PortableUtils.WriteGuid((Guid)obj, ctx.Stream);
         }
 
-        /**
-         * <summary>Write Guid.</summary>
-         */
-        private static void WriteGuidTyped(IPortableStream stream, Guid? obj)
-        {
-            stream.WriteByte(PortableUtils.TypeGuid);
-
-            PortableUtils.WriteGuid(obj, stream);
-        }
-
-        /**
-         * <summary>Write bool array.</summary>
-         */
+        /// <summary>
+        /// Write boolaen array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteBoolArray(PortableWriterImpl ctx, object obj)
         {
-            WriteBoolArrayTyped(ctx.Stream, (bool[])obj);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayBool);
+
+            PortableUtils.WriteBooleanArray((bool[])obj, ctx.Stream);
         }
-
-        /**
-         * <summary>Write bool array.</summary>
-         */
-        private static void WriteBoolArrayTyped(IPortableStream stream, bool[] obj)
-        {
-            stream.WriteByte(PortableUtils.TypeArrayBool);
-
-            PortableUtils.WriteBooleanArray(obj, stream);
-        }
-
-        /**
-         * <summary>Write byte array.</summary>
-         */
+        
+        /// <summary>
+        /// Write byte array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteByteArray(PortableWriterImpl ctx, object obj)
         {
-            WriteByteArrayTyped(ctx.Stream, (byte[])obj);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayByte);
+
+            PortableUtils.WriteByteArray((byte[])obj, ctx.Stream);
         }
 
-        /**
-         * <summary>Write byte array.</summary>
-         */
-        private static void WriteByteArrayTyped(IPortableStream stream, byte[] obj)
-        {
-            stream.WriteByte(PortableUtils.TypeArrayByte);
-
-            PortableUtils.WriteByteArray(obj, stream);
-        }
-
-        /**
-         * <summary>Write sbyte array.</summary>
-         */
+        /// <summary>
+        /// Write sbyte array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteSbyteArray(PortableWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayByte);
@@ -708,27 +397,23 @@ namespace Apache.Ignite.Core.Impl.Portable
             PortableUtils.WriteByteArray((byte[])(Array)obj, ctx.Stream);
         }
 
-        /**
-         * <summary>Write short array.</summary>
-         */
+        /// <summary>
+        /// Write short array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteShortArray(PortableWriterImpl ctx, object obj)
         {
-            WriteShortArrayTyped(ctx.Stream, (short[])obj);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayShort);
+
+            PortableUtils.WriteShortArray((short[])obj, ctx.Stream);
         }
-
-        /**
-         * <summary>Write short array.</summary>
-         */
-        private static void WriteShortArrayTyped(IPortableStream stream, short[] obj)
-        {
-            stream.WriteByte(PortableUtils.TypeArrayShort);
-
-            PortableUtils.WriteShortArray(obj, stream);
-        }
-
-        /**
-         * <summary>Write ushort array.</summary>
-         */
+        
+        /// <summary>
+        /// Write ushort array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteUshortArray(PortableWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayShort);
@@ -736,45 +421,35 @@ namespace Apache.Ignite.Core.Impl.Portable
             PortableUtils.WriteShortArray((short[])(Array)obj, ctx.Stream);
         }
 
-        /**
-         * <summary>Write char array.</summary>
-         */
+        /// <summary>
+        /// Write char array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteCharArray(PortableWriterImpl ctx, object obj)
         {
-            WriteCharArrayTyped(ctx.Stream, (char[])obj);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayChar);
+
+            PortableUtils.WriteCharArray((char[])obj, ctx.Stream);
         }
 
-        /**
-         * <summary>Write char array.</summary>
-         */
-        private static void WriteCharArrayTyped(IPortableStream stream, char[] obj)
-        {
-            stream.WriteByte(PortableUtils.TypeArrayChar);
-
-            PortableUtils.WriteCharArray(obj, stream);
-        }
-
-        /**
-         * <summary>Write int array.</summary>
-         */
+        /// <summary>
+        /// Write int array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteIntArray(PortableWriterImpl ctx, object obj)
         {
-            WriteIntArrayTyped(ctx.Stream, (int[])obj);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayInt);
+
+            PortableUtils.WriteIntArray((int[])obj, ctx.Stream);
         }
 
-        /**
-         * <summary>Write int array.</summary>
-         */
-        private static void WriteIntArrayTyped(IPortableStream stream, int[] obj)
-        {
-            stream.WriteByte(PortableUtils.TypeArrayInt);
-
-            PortableUtils.WriteIntArray(obj, stream);
-        }
-
-        /**
-         * <summary>Write uint array.</summary>
-         */
+        /// <summary>
+        /// Write uint array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteUintArray(PortableWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayInt);
@@ -782,27 +457,23 @@ namespace Apache.Ignite.Core.Impl.Portable
             PortableUtils.WriteIntArray((int[])(Array)obj, ctx.Stream);
         }
 
-        /**
-         * <summary>Write long array.</summary>
-         */
+        /// <summary>
+        /// Write long array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteLongArray(PortableWriterImpl ctx, object obj)
         {
-            WriteLongArrayTyped(ctx.Stream, (long[])obj);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayLong);
+
+            PortableUtils.WriteLongArray((long[])obj, ctx.Stream);
         }
 
-        /**
-         * <summary>Write long array.</summary>
-         */
-        private static void WriteLongArrayTyped(IPortableStream stream, long[] obj)
-        {
-            stream.WriteByte(PortableUtils.TypeArrayLong);
-
-            PortableUtils.WriteLongArray(obj, stream);
-        }
-
-        /**
-         * <summary>Write ulong array.</summary>
-         */
+        /// <summary>
+        /// Write ulong array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteUlongArray(PortableWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayLong);
@@ -810,114 +481,102 @@ namespace Apache.Ignite.Core.Impl.Portable
             PortableUtils.WriteLongArray((long[])(Array)obj, ctx.Stream);
         }
 
-        /**
-         * <summary>Write float array.</summary>
-         */
+        /// <summary>
+        /// Write float array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteFloatArray(PortableWriterImpl ctx, object obj)
         {
-            WriteFloatArrayTyped(ctx.Stream, (float[])obj);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayFloat);
+
+            PortableUtils.WriteFloatArray((float[])obj, ctx.Stream);
         }
 
-        /**
-         * <summary>Write float array.</summary>
-         */
-        private static void WriteFloatArrayTyped(IPortableStream stream, float[] obj)
-        {
-            stream.WriteByte(PortableUtils.TypeArrayFloat);
-
-            PortableUtils.WriteFloatArray(obj, stream);
-        }
-
-        /**
-         * <summary>Write double array.</summary>
-         */
+        /// <summary>
+        /// Write double array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteDoubleArray(PortableWriterImpl ctx, object obj)
         {
-            WriteDoubleArrayTyped(ctx.Stream, (double[])obj);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayDouble);
+
+            PortableUtils.WriteDoubleArray((double[])obj, ctx.Stream);
         }
 
-        /**
-         * <summary>Write double array.</summary>
-         */
-        private static void WriteDoubleArrayTyped(IPortableStream stream, double[] obj)
-        {
-            stream.WriteByte(PortableUtils.TypeArrayDouble);
-
-            PortableUtils.WriteDoubleArray(obj, stream);
-        }
-
-        /**
-         * <summary>Write decimal array.</summary>
-         */
+        /// <summary>
+        /// Write decimal array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteDecimalArray(PortableWriterImpl ctx, object obj)
         {
-            WriteDecimalArrayTyped(ctx.Stream, (decimal[])obj);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayDecimal);
+
+            PortableUtils.WriteDecimalArray((decimal[])obj, ctx.Stream);
         }
 
-        /**
-         * <summary>Write double array.</summary>
-         */
-        private static void WriteDecimalArrayTyped(IPortableStream stream, decimal[] obj)
-        {
-            stream.WriteByte(PortableUtils.TypeArrayDecimal);
-
-            PortableUtils.WriteDecimalArray(obj, stream);
-        }
-
-        /**
-         * <summary>Write date array.</summary>
-         */
+        /// <summary>
+        /// Write date array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteDateArray(PortableWriterImpl ctx, object obj)
         {
-            WriteDateArrayTyped(ctx.Stream, (DateTime?[])obj);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayDate);
+
+            PortableUtils.WriteDateArray((DateTime[])obj, ctx.Stream);
         }
 
-        /**
-         * <summary>Write date array.</summary>
-         */
-        private static void WriteDateArrayTyped(IPortableStream stream, DateTime?[] obj)
+        /// <summary>
+        /// Write nullable date array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
+        private static void WriteNullableDateArray(PortableWriterImpl ctx, object obj)
         {
-            stream.WriteByte(PortableUtils.TypeArrayDate);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayDate);
 
-            PortableUtils.WriteDateArray(obj, stream);
+            PortableUtils.WriteDateArray((DateTime?[])obj, ctx.Stream);
         }
 
-        /**
-         * <summary>Write string array.</summary>
-         */
+        /// <summary>
+        /// Write string array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteStringArray(PortableWriterImpl ctx, object obj)
         {
-            WriteStringArrayTyped(ctx.Stream, (string[])obj);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayString);
+
+            PortableUtils.WriteStringArray((string[])obj, ctx.Stream);
         }
 
-        /**
-         * <summary>Write string array.</summary>
-         */
-        private static void WriteStringArrayTyped(IPortableStream stream, string[] obj)
-        {
-            stream.WriteByte(PortableUtils.TypeArrayString);
-
-            PortableUtils.WriteStringArray(obj, stream);
-        }
-
-        /**
-         * <summary>Write Guid array.</summary>
-         */
+        /// <summary>
+        /// Write GUID array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
         private static void WriteGuidArray(PortableWriterImpl ctx, object obj)
         {
-            WriteGuidArrayTyped(ctx.Stream, (Guid?[])obj);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayGuid);
+
+            PortableUtils.WriteGuidArray((Guid[])obj, ctx.Stream);
         }
 
-        /**
-         * <summary>Write Guid array.</summary>
-         */
-        private static void WriteGuidArrayTyped(IPortableStream stream, Guid?[] obj)
+        /// <summary>
+        /// Write nullable GUID array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
+        private static void WriteNullableGuidArray(PortableWriterImpl ctx, object obj)
         {
-            stream.WriteByte(PortableUtils.TypeArrayGuid);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayGuid);
 
-            PortableUtils.WriteGuidArray(obj, stream);
+            PortableUtils.WriteGuidArray((Guid?[])obj, ctx.Stream);
         }
-
+        
         /**
          * <summary>Write enum array.</summary>
          */
@@ -1025,17 +684,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             PortableUtils.WritePortable(ctx.Stream, (PortableUserObject)obj);
         }
-
-        /**
-         * <summary>Write portable object.</summary>
-         */
-        private static void WritePortableTyped(IPortableStream stream, PortableUserObject obj)
-        {
-            stream.WriteByte(PortableUtils.TypePortable);
-
-            PortableUtils.WritePortable(stream, obj);
-        }
-
+        
         /// <summary>
         /// Write enum.
         /// </summary>

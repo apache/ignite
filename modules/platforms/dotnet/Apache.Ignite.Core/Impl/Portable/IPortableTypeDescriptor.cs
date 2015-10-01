@@ -104,21 +104,5 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             get;
         }
-
-        /// <summary>
-        /// Typed handler.
-        /// </summary>
-        object TypedHandler
-        {
-            get;
-        }
-
-        /// <summary>
-        /// Untyped handler.
-        /// </summary>
-        PortableSystemWriteDelegate UntypedHandler
-        {
-            get;
-        }
     }
 }

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Cluster
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Interface representing a single cluster node. Use <see cref="GetAttribute{T}"/> or
@@ -64,6 +65,7 @@ namespace Apache.Ignite.Core.Cluster
         /// Note that attributes cannot be changed at runtime.
         /// </summary>
         /// <returns>All node attributes.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IDictionary<string, object> GetAttributes();
 
         /// <summary>
@@ -116,6 +118,7 @@ namespace Apache.Ignite.Core.Cluster
         /// update will happen every <code>2</code> seconds.
         /// </summary>
         /// <returns>Runtime metrics snapshot for this node.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IClusterMetrics GetMetrics();
     }
 }

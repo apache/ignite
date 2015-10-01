@@ -55,12 +55,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Affinity field key name. */
         private readonly string _affKeyFieldName;
 
-        /** Typed handler. */
-        private readonly object _typedHandler;
-
-        /** Untyped handler. */
-        private readonly PortableSystemWriteDelegate _untypedHandler;
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -74,8 +68,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="metaEnabled">Metadata enabled flag.</param>
         /// <param name="keepDeserialized">Whether to cache deserialized value in IPortableObject</param>
         /// <param name="affKeyFieldName">Affinity field key name.</param>
-        /// <param name="typedHandler">Typed handler.</param>
-        /// <param name="untypedHandler">Untyped handler.</param>
         public PortableFullTypeDescriptor(
             Type type, 
             int typeId, 
@@ -86,9 +78,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             IPortableSerializer serializer, 
             bool metaEnabled, 
             bool keepDeserialized, 
-            string affKeyFieldName, 
-            object typedHandler,
-            PortableSystemWriteDelegate untypedHandler)
+            string affKeyFieldName)
         {
             _type = type;
             _typeId = typeId;
@@ -100,8 +90,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             _metaEnabled = metaEnabled;
             _keepDeserialized = keepDeserialized;
             _affKeyFieldName = affKeyFieldName;
-            _typedHandler = typedHandler;
-            _untypedHandler = untypedHandler;
         }
 
         /// <summary>
@@ -182,22 +170,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         public string AffinityKeyFieldName
         {
             get { return _affKeyFieldName; }
-        }
-
-        /// <summary>
-        /// Typed handler.
-        /// </summary>
-        public object TypedHandler
-        {
-            get { return _typedHandler; }
-        }
-
-        /// <summary>
-        /// Untyped handler.
-        /// </summary>
-        public PortableSystemWriteDelegate UntypedHandler
-        {
-            get { return _untypedHandler; }
         }
     }
 }

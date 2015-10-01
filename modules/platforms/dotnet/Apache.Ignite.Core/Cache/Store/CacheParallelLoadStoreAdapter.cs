@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Cache.Store
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading.Tasks;
 
@@ -81,6 +82,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <summary>
         /// Gets the input data sequence to be used in LoadCache.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         protected abstract IEnumerable GetInputData();
 
         /// <summary>

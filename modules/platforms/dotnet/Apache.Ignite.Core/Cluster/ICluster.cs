@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Cluster
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Common;
 
     /// <summary>
@@ -38,6 +39,7 @@ namespace Apache.Ignite.Core.Cluster
         /// Gets local Ignite node.
         /// </summary>
         /// <returns>Local Ignite node.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IClusterNode GetLocalNode();
 
         /// <summary>
