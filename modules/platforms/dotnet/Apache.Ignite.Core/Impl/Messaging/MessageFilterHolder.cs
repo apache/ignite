@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             var writer0 = (PortableWriterImpl)writer.RawWriter();
 
-            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, Filter));
+            writer0.WithDetach(w => w.WriteObject(Filter));
         }
 
         /// <summary>
@@ -166,7 +166,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             var reader0 = (PortableReaderImpl)reader.RawReader();
 
-            _filter = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+            _filter = reader0.ReadObject<object>();
 
             _invoker = GetInvoker(_filter);
 

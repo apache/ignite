@@ -25,8 +25,8 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Reflection;
-    using System.Runtime.Serialization.Formatters.Binary;
     using System.Text;
+
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Portable;
@@ -1875,26 +1875,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 return true;
             }
             return false;
-        }
-
-        /// <summary>
-        /// Write object which is not necessary portable.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="obj">Object.</param>
-        public static void WritePortableOrSerializable<T>(PortableWriterImpl writer, T obj)
-        {
-            writer.WriteObject(obj);
-        }
-
-        /// <summary>
-        /// Read object which is not necessary portable.
-        /// </summary>
-        /// <param name="reader">Reader.</param>
-        /// <returns>Object.</returns>
-        public static T ReadPortableOrSerializable<T>(PortableReaderImpl reader)
-        {
-            return reader.ReadObject<T>();
         }
 
         /// <summary>

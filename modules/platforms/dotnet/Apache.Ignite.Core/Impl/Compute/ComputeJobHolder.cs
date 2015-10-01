@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             _ignite = reader0.Marshaller.Ignite;
 
-            _job = PortableUtils.ReadPortableOrSerializable<IComputeJob>(reader0);
+            _job = reader0.ReadObject<IComputeJob>();
         }
 
         /// <summary>
@@ -220,7 +220,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             PortableWriterImpl writer0 = (PortableWriterImpl) writer.RawWriter();
 
-            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _job));
+            writer0.WithDetach(w => w.WriteObject(_job));
         }
 
         /// <summary>

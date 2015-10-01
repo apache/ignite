@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             var writer0 = (PortableWriterImpl)writer.RawWriter();
 
-            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _func));
+            writer0.WithDetach(w => w.WriteObject(_func));
         }
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             var reader0 = (PortableReaderImpl)reader.RawReader();
 
-            _func = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+            _func = reader0.ReadObject<object>();
 
             _invoker = DelegateTypeDescriptor.GetComputeFunc(_func.GetType());
         }

@@ -105,8 +105,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             var writer0 = (PortableWriterImpl) writer.RawWriter();
 
-            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _proc));
-            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _arg));
+            writer0.WithDetach(w => w.WriteObject(_proc));
+            writer0.WithDetach(w => w.WriteObject(_arg));
         }
 
         /// <summary>
@@ -117,8 +117,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             var reader0 = (PortableReaderImpl) reader.RawReader();
 
-            _proc = PortableUtils.ReadPortableOrSerializable<object>(reader0);
-            _arg = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+            _proc = reader0.ReadObject<object>();
+            _arg = reader0.ReadObject<object>();
 
             _processFunc = GetProcessFunc(_proc);
 

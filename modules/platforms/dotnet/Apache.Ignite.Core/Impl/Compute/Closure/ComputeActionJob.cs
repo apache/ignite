@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         {
             var writer0 = (PortableWriterImpl)writer.RawWriter();
 
-            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _action));
+            writer0.WithDetach(w => w.WriteObject(_action));
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         {
             var reader0 = (PortableReaderImpl)reader.RawReader();
 
-            _action = PortableUtils.ReadPortableOrSerializable<IComputeAction>(reader0);
+            _action = reader0.ReadObject<IComputeAction>();
         }
     }
 }

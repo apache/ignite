@@ -94,9 +94,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         {
             PortableWriterImpl rawWriter = (PortableWriterImpl) writer.RawWriter();
 
-            PortableUtils.WritePortableOrSerializable(rawWriter, _keyTyp);
-            PortableUtils.WritePortableOrSerializable(rawWriter, _valTyp);
-            PortableUtils.WritePortableOrSerializable(rawWriter, _filter);
+            rawWriter.WriteObject(_keyTyp);
+            rawWriter.WriteObject(_valTyp);
+            rawWriter.WriteObject(_filter);
 
             rawWriter.WriteBoolean(_keepPortable);
         }
@@ -109,9 +109,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         {
             PortableReaderImpl rawReader = (PortableReaderImpl) reader.RawReader();
 
-            _keyTyp = PortableUtils.ReadPortableOrSerializable<Type>(rawReader);
-            _valTyp = PortableUtils.ReadPortableOrSerializable<Type>(rawReader);
-            _filter = PortableUtils.ReadPortableOrSerializable<object>(rawReader);
+            _keyTyp = rawReader.ReadObject<Type>();
+            _valTyp = rawReader.ReadObject<Type>();
+            _filter = rawReader.ReadObject<object>();
             _keepPortable = rawReader.ReadBoolean();
         }
     }
