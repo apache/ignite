@@ -193,7 +193,7 @@ namespace Apache.Ignite.Core.Tests.Memory
             for (int i = 0; i < data.Length; i++)
                 data[i] = (byte)rand.Next(0, 255);
 
-            PlatformMemoryStream stream = mem.Stream();
+            PlatformMemoryStream stream = mem.GetStream();
 
             stream.WriteByteArray(data);
 

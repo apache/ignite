@@ -475,7 +475,7 @@ namespace Apache.Ignite.Core.Tests
             var expectedGuid = Guid.Parse("00000000-0000-0001-0000-000000000002");
             var expectedGridGuid = new IgniteGuid(expectedGuid, 3);
 
-            using (var inStream = IgniteManager.Memory.Allocate().Stream())
+            using (var inStream = IgniteManager.Memory.Allocate().GetStream())
             {
                 var result = comp.ExecuteJavaTask<bool>("org.apache.ignite.platform.PlatformEventsWriteEventTask",
                     inStream.MemoryPointer);
