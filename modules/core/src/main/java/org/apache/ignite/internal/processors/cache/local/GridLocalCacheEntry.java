@@ -270,7 +270,7 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
                 if (!cand.used()) {
                     GridCacheContext cctx0 = cand.parent().context();
 
-                    GridLocalCacheEntry e = (GridLocalCacheEntry)cctx0.cache().peekEx(cand.key());
+                    GridLocalCacheEntry e = (GridLocalCacheEntry)cctx0.cache().peekEx(cand.parent().key());
 
                     // At this point candidate may have been removed and entry destroyed,
                     // so we check for null.

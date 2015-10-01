@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -172,14 +173,14 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     @Override public boolean isLocked(K key) {
         KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-        return ctx.mvcc().isLockedByThread(cacheKey, -1);
+        return ctx.mvcc().isLockedByThread(ctx.txKey(cacheKey), -1);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isLockedByThread(K key) {
         KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-        return ctx.mvcc().isLockedByThread(cacheKey, Thread.currentThread().getId());
+        return ctx.mvcc().isLockedByThread(ctx.txKey(cacheKey), Thread.currentThread().getId());
     }
 
     /** {@inheritDoc} */
@@ -450,11 +451,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
             for (K key : keys) {
                 KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
+                IgniteTxKey txKey = ctx.txKey(cacheKey);
 
                 GridDistributedCacheEntry entry = peekExx(cacheKey);
 
                 GridCacheMvccCandidate lock =
-                    ctx.mvcc().removeExplicitLock(Thread.currentThread().getId(), cacheKey, null);
+                    ctx.mvcc().removeExplicitLock(Thread.currentThread().getId(), txKey, null);
 
                 if (lock != null) {
                     final AffinityTopologyVersion topVer = lock.topologyVersion();
@@ -566,7 +568,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             Collection<KeyCacheObject> locKeys = new LinkedList<>();
 
             for (KeyCacheObject key : keys) {
-                GridCacheMvccCandidate lock = ctx.mvcc().removeExplicitLock(threadId, key, ver);
+                IgniteTxKey txKey = ctx.txKey(key);
+
+                GridCacheMvccCandidate lock = ctx.mvcc().removeExplicitLock(threadId, txKey, ver);
 
                 if (lock != null) {
                     AffinityTopologyVersion topVer = lock.topologyVersion();

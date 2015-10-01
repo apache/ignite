@@ -883,7 +883,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private String compatibleConfiguration(CollectionConfiguration cfg) throws IgniteCheckedException {
-        List<CacheCollectionInfo> caches = utilityDataCache.localPeek(DATA_STRUCTURES_CACHE_KEY, null, null);
+        List<CacheCollectionInfo> caches = utilityDataCache.context().affinityNode() ?
+            utilityDataCache.localPeek(DATA_STRUCTURES_CACHE_KEY, null, null) :
+            utilityDataCache.get(DATA_STRUCTURES_CACHE_KEY);
 
         String cacheName = findCompatibleConfiguration(cfg, caches);
 
@@ -896,6 +898,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         if (ctx.cache().cache(cacheName) == null)
             ctx.cache().dynamicStartCache(newCfg, cacheName, null, CacheType.INTERNAL, false, true).get();
+
+        assert ctx.cache().cache(cacheName) != null : cacheName;
 
         return cacheName;
     }

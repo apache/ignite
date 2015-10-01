@@ -26,6 +26,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -115,7 +116,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.internal.portable.api.PortableMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 
@@ -197,6 +197,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** */
     private Map<String, DynamicCacheDescriptor> cachesOnDisconnect;
+
+    /** */
+    private Map<UUID, DynamicCacheChangeBatch> clientReconnectReqs;
 
     /**
      * @param ctx Kernal context.
@@ -615,8 +618,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.discovery().setCustomEventListener(DynamicCacheChangeBatch.class,
             new CustomEventListener<DynamicCacheChangeBatch>() {
-                @Override public void onCustomEvent(ClusterNode snd, DynamicCacheChangeBatch msg) {
-                    onCacheChangeRequested(msg);
+                @Override public void onCustomEvent(ClusterNode snd,
+                    DynamicCacheChangeBatch msg,
+                    AffinityTopologyVersion topVer) {
+                    onCacheChangeRequested(msg, topVer);
                 }
             });
 
@@ -1047,6 +1052,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 reconnected.add(cache);
             }
+        }
+
+        if (clientReconnectReqs != null) {
+            for (Map.Entry<UUID, DynamicCacheChangeBatch> e : clientReconnectReqs.entrySet())
+                processClientReconnectData(e.getKey(), e.getValue());
+
+            clientReconnectReqs = null;
         }
 
         sharedCtx.onReconnected();
@@ -1880,28 +1892,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheChangeBatch batch = (DynamicCacheChangeBatch)data;
 
             if (batch.clientReconnect()) {
-                for (DynamicCacheChangeRequest req : batch.requests()) {
-                    assert !req.template() : req;
+                if (ctx.clientDisconnected()) {
+                    if (clientReconnectReqs == null)
+                        clientReconnectReqs = new LinkedHashMap<>();
 
-                    String name = req.cacheName();
+                    clientReconnectReqs.put(joiningNodeId, batch);
 
-                    boolean sysCache = CU.isMarshallerCache(name) || CU.isUtilityCache(name) || CU.isAtomicsCache(name);
-
-                    if (!sysCache) {
-                        DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
-
-                        if (desc != null && desc.deploymentId().equals(req.deploymentId())) {
-                            Map<UUID, Boolean> nodes = batch.clientNodes().get(name);
-
-                            assert nodes != null : req;
-                            assert nodes.containsKey(joiningNodeId) : nodes;
-
-                            ctx.discovery().addClientNode(req.cacheName(), joiningNodeId, nodes.get(joiningNodeId));
-                        }
-                    }
-                    else
-                        ctx.discovery().addClientNode(req.cacheName(), joiningNodeId, false);
+                    return;
                 }
+
+                processClientReconnectData(joiningNodeId, batch);
             }
             else {
                 for (DynamicCacheChangeRequest req : batch.requests()) {
@@ -1978,6 +1978,37 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * @param clientNodeId Client node ID.
+     * @param batch Cache change batch.
+     */
+    private void processClientReconnectData(UUID clientNodeId, DynamicCacheChangeBatch batch) {
+        assert batch.clientReconnect() : batch;
+
+        for (DynamicCacheChangeRequest req : batch.requests()) {
+            assert !req.template() : req;
+
+            String name = req.cacheName();
+
+            boolean sysCache = CU.isMarshallerCache(name) || CU.isUtilityCache(name) || CU.isAtomicsCache(name);
+
+            if (!sysCache) {
+                DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
+
+                if (desc != null && desc.deploymentId().equals(req.deploymentId())) {
+                    Map<UUID, Boolean> nodes = batch.clientNodes().get(name);
+
+                    assert nodes != null : req;
+                    assert nodes.containsKey(clientNodeId) : nodes;
+
+                    ctx.discovery().addClientNode(req.cacheName(), clientNodeId, nodes.get(clientNodeId));
+                }
+            }
+            else
+                ctx.discovery().addClientNode(req.cacheName(), clientNodeId, false);
         }
     }
 
@@ -2363,8 +2394,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * Callback invoked from discovery thread when cache deployment request is received.
      *
      * @param batch Change request batch.
+     * @param topVer Current topology version.
      */
-    private void onCacheChangeRequested(DynamicCacheChangeBatch batch) {
+    private void onCacheChangeRequested(DynamicCacheChangeBatch batch, AffinityTopologyVersion topVer) {
         for (DynamicCacheChangeRequest req : batch.requests()) {
             if (req.template()) {
                 CacheConfiguration ccfg = req.startCacheConfiguration();
@@ -2421,6 +2453,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         DynamicCacheDescriptor startDesc =
                             new DynamicCacheDescriptor(ctx, ccfg, req.cacheType(), false, req.deploymentId());
 
+                        startDesc.startTopologyVersion(topVer);
+
                         DynamicCacheDescriptor old = registeredCaches.put(maskNull(ccfg.getName()), startDesc);
 
                         assert old == null :
@@ -2469,6 +2503,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         }
                     }
                 }
+
+                if (!needExchange && desc != null)
+                    req.cacheFutureTopologyVersion(desc.startTopologyVersion());
             }
             else {
                 assert req.stop() ^ req.close() : req;

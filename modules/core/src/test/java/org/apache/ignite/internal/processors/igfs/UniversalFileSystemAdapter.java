@@ -28,7 +28,6 @@ import java.util.Map;
  * To be used solely in tests.
  */
 public interface UniversalFileSystemAdapter {
-
     /**
      * Gets name of the FS.
      * @return name of this file system.

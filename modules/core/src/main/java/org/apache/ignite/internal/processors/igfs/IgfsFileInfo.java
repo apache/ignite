@@ -216,7 +216,7 @@ public final class IgfsFileInfo implements Externalizable {
      * @param listing New directory listing.
      * @param old Old file info.
      */
-    IgfsFileInfo(Map<String, IgfsListingEntry> listing, IgfsFileInfo old) {
+    IgfsFileInfo(@Nullable Map<String, IgfsListingEntry> listing, IgfsFileInfo old) {
         this(old.isDirectory(), old.id, old.blockSize, old.len, old.affKey, listing, old.props, old.fileMap(),
             old.lockId, false, old.accessTime, old.modificationTime, old.evictExclude());
     }
