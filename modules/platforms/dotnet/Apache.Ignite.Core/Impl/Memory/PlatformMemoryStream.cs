@@ -656,6 +656,9 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         protected virtual void Dispose(bool disposing)
         {
+            // TODO: Investigate Dispose usage.. why do we need Sync there? 
+            // Do we need to call Release if it is a pooled memory chunk?
+            // Why does finalizer get called? This is a bug.
             if (disposing)
                 SynchronizeOutput();
 
