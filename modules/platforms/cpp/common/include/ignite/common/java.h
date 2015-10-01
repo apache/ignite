@@ -335,12 +335,12 @@ namespace ignite
                 jmethodID m_PlatformUtils_errData;
 
                 jclass c_PlatformAtomicLong;
-                jmethodID m_PlatformAtomicLong_read;
-                jmethodID m_PlatformAtomicLong_increment;
-                jmethodID m_PlatformAtomicLong_add;
-                jmethodID m_PlatformAtomicLong_decrement;
-                jmethodID m_PlatformAtomicLong_exchange;
-                jmethodID m_PlatformAtomicLong_compareExchange;
+                jmethodID m_PlatformAtomicLong_get;
+                jmethodID m_PlatformAtomicLong_incrementAndGet;
+                jmethodID m_PlatformAtomicLong_addAndGet;
+                jmethodID m_PlatformAtomicLong_decrementAndGet;
+                jmethodID m_PlatformAtomicLong_getAndSet;
+                jmethodID m_PlatformAtomicLong_compareAndSetAndGet;
                 jmethodID m_PlatformAtomicLong_isClosed;
                 jmethodID m_PlatformAtomicLong_close;
 
@@ -574,12 +574,12 @@ namespace ignite
 				void ServicesCancelAll(jobject obj);
 				void* ServicesGetServiceProxy(jobject obj, char* name, bool sticky);
 
-                long long AtomicLongRead(jobject obj);
-                long long AtomicLongIncrement(jobject obj);
-                long long AtomicLongAdd(jobject obj, long long value);
-                long long AtomicLongDecrement(jobject obj);
-                long long AtomicLongExchange(jobject obj, long long value);
-                long long AtomicLongCompareExchange(jobject obj, long long value, long long comparand);
+                long long AtomicLongGet(jobject obj);
+                long long AtomicLongIncrementAndGet(jobject obj);
+                long long AtomicLongAddAndGet(jobject obj, long long value);
+                long long AtomicLongDecrementAndGet(jobject obj);
+                long long AtomicLongGetAndSet(jobject obj, long long value);
+                long long AtomicLongCompareAndSetAndGet(jobject obj, long long value, long long comparand);
                 bool AtomicLongIsClosed(jobject obj);
                 void AtomicLongClose(jobject obj);
 

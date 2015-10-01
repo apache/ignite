@@ -98,11 +98,11 @@ IgniteServicesCancelAll @95
 IgniteServicesGetServiceProxy @96
 IgniteProcessorExtensions @97
 IgniteProcessorAtomicLong @98
-IgniteAtomicLongRead @99 
-IgniteAtomicLongIncrement @100 
-IgniteAtomicLongAdd @101 
-IgniteAtomicLongDecrement @102 
-IgniteAtomicLongExchange @103 
-IgniteAtomicLongCompareExchange @104 
+IgniteAtomicLongGet @99 
+IgniteAtomicLongIncrementAndGet @100 
+IgniteAtomicLongAddAndGet @101 
+IgniteAtomicLongDecrementAndGet @102 
+IgniteAtomicLongGetAndSet @103 
+IgniteAtomicLongCompareAndSetAndGet @104 
 IgniteAtomicLongIsClosed @105 
 IgniteAtomicLongClose @106

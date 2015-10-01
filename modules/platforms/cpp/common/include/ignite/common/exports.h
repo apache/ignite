@@ -142,12 +142,12 @@ extern "C" {
 	void IGNITE_CALL IgniteServicesCancelAll(gcj::JniContext* ctx, void* obj);
 	void* IGNITE_CALL IgniteServicesGetServiceProxy(gcj::JniContext* ctx, void* obj, char* name, bool sticky);
 
-    long long IGNITE_CALL IgniteAtomicLongRead(gcj::JniContext* ctx, void* obj);
-    long long IGNITE_CALL IgniteAtomicLongIncrement(gcj::JniContext* ctx, void* obj);
-    long long IGNITE_CALL IgniteAtomicLongAdd(gcj::JniContext* ctx, void* obj, long long value);
-    long long IGNITE_CALL IgniteAtomicLongDecrement(gcj::JniContext* ctx, void* obj);
-    long long IGNITE_CALL IgniteAtomicLongExchange(gcj::JniContext* ctx, void* obj, long long value);
-    long long IGNITE_CALL IgniteAtomicLongCompareExchange(gcj::JniContext* ctx, void* obj, long long value, long long comparand);
+    long long IGNITE_CALL IgniteAtomicLongGet(gcj::JniContext* ctx, void* obj);
+    long long IGNITE_CALL IgniteAtomicLongIncrementAndGet(gcj::JniContext* ctx, void* obj);
+    long long IGNITE_CALL IgniteAtomicLongAddAndGet(gcj::JniContext* ctx, void* obj, long long value);
+    long long IGNITE_CALL IgniteAtomicLongDecrementAndGet(gcj::JniContext* ctx, void* obj);
+    long long IGNITE_CALL IgniteAtomicLongGetAndSet(gcj::JniContext* ctx, void* obj, long long value);
+    long long IGNITE_CALL IgniteAtomicLongCompareAndSetAndGet(gcj::JniContext* ctx, void* obj, long long value, long long comparand);
     bool IGNITE_CALL IgniteAtomicLongIsClosed(gcj::JniContext* ctx, void* obj);
     void IGNITE_CALL IgniteAtomicLongClose(gcj::JniContext* ctx, void* obj);
 }

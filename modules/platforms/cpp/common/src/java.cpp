@@ -351,13 +351,14 @@ namespace ignite
 			JniMethod M_PLATFORM_SERVICES_CANCEL_ALL = JniMethod("cancelAll", "()V", false);
 			JniMethod M_PLATFORM_SERVICES_SERVICE_PROXY = JniMethod("dotNetServiceProxy", "(Ljava/lang/String;Z)Ljava/lang/Object;", false);
 
+            //  TODO: pair methods
             const char* C_PLATFORM_ATOMIC_LONG = "org/apache/ignite/internal/processors/platform/datastructures/PlatformAtomicLong";
-            JniMethod M_PLATFORM_ATOMIC_LONG_READ = JniMethod("get", "()J", false);
-            JniMethod M_PLATFORM_ATOMIC_LONG_INCREMENT = JniMethod("incrementAndGet", "()J", false);
-            JniMethod M_PLATFORM_ATOMIC_LONG_ADD = JniMethod("addAndGet", "(J)J", false);
-            JniMethod M_PLATFORM_ATOMIC_LONG_DECREMENT = JniMethod("decrementAndGet", "()J", false);
-            JniMethod M_PLATFORM_ATOMIC_LONG_EXCHANGE = JniMethod("getAndSet", "(J)J", false);
-            JniMethod M_PLATFORM_ATOMIC_LONG_COMPARE_EXCHANGE = JniMethod("compareAndSetAndGet", "(JJ)J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_GET = JniMethod("get", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_INCREMENT_AND_GET = JniMethod("incrementAndGet", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_ADD_AND_GET = JniMethod("addAndGet", "(J)J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_DECREMENT_AND_GET = JniMethod("decrementAndGet", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_GET_AND_SET = JniMethod("getAndSet", "(J)J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_COMPARE_AND_SET_AND_GET = JniMethod("compareAndSetAndGet", "(JJ)J", false);
             JniMethod M_PLATFORM_ATOMIC_LONG_IS_CLOSED = JniMethod("isClosed", "()Z", false);
             JniMethod M_PLATFORM_ATOMIC_LONG_CLOSE = JniMethod("close", "()V", false);
 
@@ -638,12 +639,12 @@ namespace ignite
                 m_PlatformUtils_errData = FindMethod(env, c_PlatformUtils, M_PLATFORM_UTILS_ERR_DATA);
 
                 jclass c_PlatformAtomicLong = FindClass(env, C_PLATFORM_ATOMIC_LONG);
-                m_PlatformAtomicLong_read = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_READ);
-                m_PlatformAtomicLong_increment = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_INCREMENT);
-                m_PlatformAtomicLong_add = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_ADD);
-                m_PlatformAtomicLong_decrement = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_DECREMENT);
-                m_PlatformAtomicLong_exchange = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_EXCHANGE);
-                m_PlatformAtomicLong_compareExchange = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_COMPARE_EXCHANGE);
+                m_PlatformAtomicLong_get = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_GET);
+                m_PlatformAtomicLong_incrementAndGet = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_INCREMENT_AND_GET);
+                m_PlatformAtomicLong_addAndGet = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_ADD_AND_GET);
+                m_PlatformAtomicLong_decrementAndGet = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_DECREMENT_AND_GET);
+                m_PlatformAtomicLong_getAndSet = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_GET_AND_SET);
+                m_PlatformAtomicLong_compareAndSetAndGet = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_COMPARE_AND_SET_AND_GET);
                 m_PlatformAtomicLong_isClosed = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_IS_CLOSED);
                 m_PlatformAtomicLong_close = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_CLOSE);
 
@@ -1886,66 +1887,66 @@ namespace ignite
 				return res;
 			}
 
-            long long JniContext::AtomicLongRead(jobject obj)
+            long long JniContext::AtomicLongGet(jobject obj)
             {
                 JNIEnv* env = Attach();
 
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_read);
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_get);
 
                 ExceptionCheck(env);
 
                 return res;
             }
 
-            long long JniContext::AtomicLongIncrement(jobject obj)
+            long long JniContext::AtomicLongIncrementAndGet(jobject obj)
             {
                 JNIEnv* env = Attach();
 
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_increment);
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_incrementAndGet);
 
                 ExceptionCheck(env);
 
                 return res;
             }
 
-            long long JniContext::AtomicLongAdd(jobject obj, long long value)
+            long long JniContext::AtomicLongAddAndGet(jobject obj, long long value)
             {
                 JNIEnv* env = Attach();
 
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_add, value);
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_addAndGet, value);
 
                 ExceptionCheck(env);
 
                 return res;
             }
 
-            long long JniContext::AtomicLongDecrement(jobject obj)
+            long long JniContext::AtomicLongDecrementAndGet(jobject obj)
             {
                 JNIEnv* env = Attach();
 
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_decrement);
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_decrementAndGet);
 
                 ExceptionCheck(env);
 
                 return res;
             }
 
-            long long JniContext::AtomicLongExchange(jobject obj, long long value)
+            long long JniContext::AtomicLongGetAndSet(jobject obj, long long value)
             {
                 JNIEnv* env = Attach();
 
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_exchange, value);
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_getAndSet, value);
 
                 ExceptionCheck(env);
 
                 return res;
             }
 
-            long long JniContext::AtomicLongCompareExchange(jobject obj, long long value, long long comparand)
+            long long JniContext::AtomicLongCompareAndSetAndGet(jobject obj, long long value, long long comparand)
             {
                 JNIEnv* env = Attach();
 
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_compareExchange, value, comparand);
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_compareAndSetAndGet, value, comparand);
 
                 ExceptionCheck(env);
 
