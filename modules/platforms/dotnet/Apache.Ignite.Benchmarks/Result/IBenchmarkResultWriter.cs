@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,42 +15,41 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Examples
+namespace Apache.Ignite.Benchmarks.Result
 {
-    using System.IO;
-    using Apache.Ignite.Core.Impl;
+    using System.Collections.Generic;
 
     /// <summary>
-    /// Grid path resolver.
+    /// Result writer interface.
     /// </summary>
-    public static class PathUtil
+    internal interface IBenchmarkResultWriter
     {
-        public static readonly string IgniteHome = Impl.Common.IgniteHome.Resolve(null);
+        /// <summary>
+        /// Initialize writer.
+        /// </summary>
+        /// <param name="benchmark">Benchmark.</param>
+        /// <param name="opNames">Operation names.</param>
+        void Initialize(BenchmarkBase benchmark, ICollection<string> opNames);
 
         /// <summary>
-        /// Full Apache.Ignite.exe path.
+        /// Write throughput results.
         /// </summary>
-        public static readonly string IgniteExePath = typeof(IgniteRunner).Assembly.Location;
+        /// <param name="opName">Operation name.</param>
+        /// <param name="duration">Duration.</param>
+        /// <param name="opCount">Operations count.</param>
+        void WriteThroughput(string opName, long duration, long opCount);
 
         /// <summary>
-        /// Examples source code path.
+        /// Write percentile results.
         /// </summary>
-        public static readonly string ExamplesSourcePath = Path.Combine(IgniteHome, @"platforms\dotnet\examples");
+        /// <param name="opName">Operation name.</param>
+        /// <param name="interval">Slot interval.</param>
+        /// <param name="slots">Slots.</param>
+        void WritePercentiles(string opName, long interval, long[] slots);
 
         /// <summary>
-        /// Examples source code path.
+        /// Commit all results releasing all associated resources.
         /// </summary>
-        public static readonly string ExamplesDevSourcePath = Path.Combine(IgniteHome, @"examples");
-
-        /// <summary>
-        /// Gets the full configuration path.
-        /// </summary>
-        public static string GetFullConfigPath(string springConfigUrl)
-        {
-            if (string.IsNullOrEmpty(springConfigUrl))
-                return springConfigUrl;
-
-            return Path.GetFullPath(Path.Combine(IgniteHome, springConfigUrl));
-        }
+        void Commit();
     }
 }

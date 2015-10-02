@@ -1,4 +1,4 @@
-﻿﻿/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,13 +15,11 @@
  * limitations under the License.
  */
 
-using System;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("Apache.Ignite.Core")]
-[assembly: AssemblyDescription("Apache Ignite .NET Core")]
+[assembly: AssemblyTitle("Apache.Ignite.Benchmarks")]
+[assembly: AssemblyDescription("Apache Ignite .NET Benchmarks")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Apache Software Foundation")]
 [assembly: AssemblyProduct("Apache Ignite")]
@@ -31,17 +29,7 @@ using System.Runtime.InteropServices;
 
 [assembly: ComVisible(false)]
 
-[assembly: Guid("97db45a8-f922-456a-a819-7b3c6e5e03ba")]
+[assembly: Guid("8fae8395-7e91-411a-a78f-44d6d3fed0fc")]
 
 [assembly: AssemblyVersion("1.5.0")]
 [assembly: AssemblyFileVersion("1.5.0")]
-
-[assembly: CLSCompliant(true)]
-
-#if !EXCLUDE_INTERNALS_VISIBLE_TO
-
-[assembly: InternalsVisibleTo("Apache.Ignite")]
-[assembly: InternalsVisibleTo("Apache.Ignite.Core.Tests")]
-[assembly: InternalsVisibleTo("Apache.Ignite.Benchmarks")]
-
-#endif

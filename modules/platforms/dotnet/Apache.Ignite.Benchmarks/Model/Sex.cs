@@ -15,38 +15,17 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests
+namespace Apache.Ignite.Benchmarks.Model
 {
-    using System;
-    using System.IO;
-    using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Common;
-    using NUnit.Framework;
-
     /// <summary>
-    /// Tests IgniteManager class.
+    /// Sex enumeration.
     /// </summary>
-    public class IgniteManagerTest
+    internal enum Sex
     {
-        /// <summary>
-        /// Tests home dir resolver.
-        /// </summary>
-        [Test]
-        public void TestIgniteHome()
-        {
-            var env = Environment.GetEnvironmentVariable(IgniteHome.EnvIgniteHome);
-
-            Environment.SetEnvironmentVariable(IgniteHome.EnvIgniteHome, null);
-
-            try
-            {
-                Assert.IsTrue(Directory.Exists(IgniteHome.Resolve(null)));
-            }
-            finally
-            {
-                // Restore
-                Environment.SetEnvironmentVariable(IgniteHome.EnvIgniteHome, env);
-            }
-        }
+        /** Male. */
+        Male, 
+        
+        /** Female. */
+        Female
     }
 }
