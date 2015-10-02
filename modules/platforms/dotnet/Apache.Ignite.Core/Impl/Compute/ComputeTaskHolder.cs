@@ -362,15 +362,9 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             try
             {
-                if (reader.ReadBoolean())
-                {
-                    PortableResultWrapper res = reader.ReadObject<PortableUserObject>()
-                        .Deserialize<PortableResultWrapper>();
-
-                    err = (Exception) res.Result;
-                }
-                else
-                    err = ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
+                err = reader.ReadBoolean()
+                    ? reader.ReadObject<PortableUserObject>().Deserialize<Exception>()
+                    : ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
             }
             catch (Exception e)
             {

@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 else
                 {
                     writer.WriteByte((byte) MutableCacheEntryState.ErrPortable);
-                    writer.Write(new PortableResultWrapper(Error));
+                    writer.Write(Error);
                 }
             }
             catch (Exception marshErr)

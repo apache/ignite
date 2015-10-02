@@ -150,9 +150,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Type: native job holder. */
         public const byte TypeNativeJobHolder = 77;
 
-        /** Type: native job result holder. */
-        public const byte TypePortableJobResHolder = 76;
-
         /** Type: .Net configuration. */
         public const byte TypeDotNetCfg = 202;
 
@@ -1898,7 +1895,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     writer.WriteBoolean(true); // Exception serialized sucessfully.
                 }
 
-                writer.Write(new PortableResultWrapper(res));
+                writer.Write(res);
             }
             catch (Exception marshErr)
             {
@@ -1975,12 +1972,11 @@ namespace Apache.Ignite.Core.Impl.Portable
             err = null;
 
             if (reader.ReadBoolean())
-                return reader.ReadObject<PortableResultWrapper>().Result;
+                return reader.ReadObject<object>();
 
-            if (reader.ReadBoolean())
-                err = (Exception) reader.ReadObject<PortableResultWrapper>().Result;
-            else
-                err = ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
+            err = reader.ReadBoolean() 
+                ? reader.ReadObject<Exception>() 
+                : ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
 
             return null;
         }

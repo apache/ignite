@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Impl.Events
             return DoOutInOp((int) Op.RemoteQuery,
                 writer =>
                 {
-                    writer.Write(new PortableOrSerializableObjectHolder(filter));
+                    writer.Write(filter);
 
                     writer.WriteLong((long) (timeout == null ? 0 : timeout.Value.TotalMilliseconds));
 
@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Impl.Events
                     writer.WriteBoolean(remoteFilter != null);
 
                     if (remoteFilter != null)
-                        writer.Write(new PortableOrSerializableObjectHolder(remoteFilter));
+                        writer.Write(remoteFilter);
 
                     WriteEventTypes(types, writer);
                 },
