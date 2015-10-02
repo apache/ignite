@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 foreach (IComputeJobResult<IPortableObject> res in results)
                 {
-                    IPortableObject jobRes = res.Data();
+                    IPortableObject jobRes = res.Data;
 
                     Assert.NotNull(jobRes);
 

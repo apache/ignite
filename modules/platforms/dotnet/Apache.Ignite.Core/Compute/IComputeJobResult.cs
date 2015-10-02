@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Compute
 
     /// <summary>
     /// Job execution result which gets passed to 
-    /// <see cref="IComputeTask{A,T,R}.Result(IComputeJobResult{T}, IList{IComputeJobResult{T}})"/>
+    /// <see cref="IComputeTask{TA,T,TR}.OnResult"/>
     /// method.
     /// </summary>
     public interface IComputeJobResult<out T>
@@ -33,41 +33,33 @@ namespace Apache.Ignite.Core.Compute
         /// <para />
         /// Note that if task is annotated with <see cref="ComputeTaskNoResultCacheAttribute"/> 
         /// attribute, then job results will not be cached and will be available only in
-        /// <see cref="IComputeTask{A,T,R}.Result(IComputeJobResult{T}, IList{IComputeJobResult{T}})"/>
+        /// <see cref="IComputeTask{TA,T,TR}.OnResult"/>
         /// method for every individual job, but not in 
-        /// <see cref="IComputeTask{A,T,R}.Reduce(IList{IComputeJobResult{T}})"/> method.
-        /// 
+        /// <see cref="IComputeTask{A,T,R}.Reduce(IList{IComputeJobResult{T}})"/> method. 
         /// </summary>
-        /// <returns>Data returned by job.</returns>
-        T Data();
+        /// <value>Data returned by job.</value>
+        T Data { get; }
 
         /// <summary>
         /// Gets local instance of remote job produced this result.
         /// </summary>
-        /// <returns></returns>
-        IComputeJob<T> Job();
+        IComputeJob<T> Job { get; }
 
         /// <summary>
         /// Gets exception produced by execution of remote job, or <c>null</c> if no
         /// exception was produced.
         /// </summary>
-        /// <returns>Exception or <c>null</c> in case of success.</returns>
-        Exception Exception();
+        /// <value>Exception or <c>null</c> in case of success.</value>
+        Exception Exception { get; }
 
         /// <summary>
         /// ID of the node where actual job execution occurred.
         /// </summary>
-        Guid NodeId
-        {
-            get;
-        }
+        Guid NodeId { get; }
 
         /// <summary>
         /// Whether the job was cancelled.
         /// </summary>
-        bool Cancelled
-        {
-            get;
-        }
+        bool Cancelled { get; }
     }
 }

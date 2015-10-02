@@ -161,7 +161,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 Assert.AreEqual(1, results.Count);
 
-                return results[0].Data();
+                return results[0].Data;
             }
         }
 

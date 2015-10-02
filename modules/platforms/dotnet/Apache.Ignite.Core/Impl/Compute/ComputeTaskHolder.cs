@@ -417,17 +417,17 @@ namespace Apache.Ignite.Core.Impl.Compute
                     ress0 = EmptyRes;
 
                 // 2. Invoke user code.
-                var policy = _task.Result(new ComputeJobResultGenericWrapper<T>(res), ress0);
+                var policy = _task.OnResult(new ComputeJobResultGenericWrapper<T>(res), ress0);
 
                 // 3. Add result to the list only in case of success.
                 if (_resCache)
                 {
-                    var job = res.Job().Unwrap();
+                    var job = res.Job.Unwrap();
 
                     if (!_resJobs.Add(job))
                     {
                         // Duplicate result => find and replace it with the new one.
-                        var oldRes = _ress.Single(item => item.Job() == job);
+                        var oldRes = _ress.Single(item => item.Job == job);
 
                         _ress.Remove(oldRes);
                     }

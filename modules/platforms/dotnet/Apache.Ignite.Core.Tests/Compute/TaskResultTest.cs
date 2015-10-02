@@ -332,7 +332,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 var res = results[0];
 
-                Assert.IsNull(res.Exception());
+                Assert.IsNull(res.Exception);
 
                 Assert.IsFalse(res.Cancelled);
 
@@ -340,11 +340,11 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.AreEqual(GridId(_gridName), res.NodeId);
 
-                var job = res.Job();
+                var job = res.Job;
 
                 Assert.IsNotNull(job);
 
-                return res.Data();
+                return res.Data;
             }
         }
 

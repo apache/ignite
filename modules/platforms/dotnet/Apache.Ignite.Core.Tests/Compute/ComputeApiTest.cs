@@ -1150,7 +1150,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /** <inheritDoc /> */
-        public ComputeJobResultPolicy Result(IComputeJobResult<NetSimpleJobResult> res,
+        public ComputeJobResultPolicy OnResult(IComputeJobResult<NetSimpleJobResult> res,
             IList<IComputeJobResult<NetSimpleJobResult>> rcvd)
         {
             return ComputeJobResultPolicy.Wait;
@@ -1159,7 +1159,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** <inheritDoc /> */
         public NetSimpleTaskResult Reduce(IList<IComputeJobResult<NetSimpleJobResult>> results)
         {
-            return new NetSimpleTaskResult(results.Sum(res => res.Data().Res));
+            return new NetSimpleTaskResult(results.Sum(res => res.Data.Res));
         }
     }
 
