@@ -228,7 +228,7 @@ namespace Apache.Ignite.Core.Portable
         /// Write generic collection.
         /// </summary>
         /// <param name="val">Collection.</param>
-        void WriteGenericCollection<T>(ICollection<T> val);
+        void WriteCollection<T>(ICollection<T> val);
 
         /// <summary>
         /// Write dictionary.
@@ -240,6 +240,6 @@ namespace Apache.Ignite.Core.Portable
         /// Write generic dictionary.
         /// </summary>
         /// <param name="val">Dictionary.</param>
-        void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val);
+        void WriteDictionary<TK, TV>(IDictionary<TK, TV> val);
     }
 }

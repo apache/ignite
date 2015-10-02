@@ -564,6 +564,14 @@ namespace Apache.Ignite.Core.Tests.Portable
             CollectionAssert.AreEquivalent(list, newList);
         }
 
+        /// <summary>
+        /// Tests marshal aware type with generic collections.
+        /// </summary>
+        public void TestGenericCollectionsType()
+        {
+            // TODO:
+        }
+
         /**
          * <summary>Check property read.</summary>
          */
@@ -1343,6 +1351,29 @@ namespace Apache.Ignite.Core.Tests.Portable
             {
                 return "CollectoinsType[col1=" + CollectionAsString(Col1) + 
                     ", col2=" + CollectionAsString(Col2) + ']'; 
+            }
+        }
+
+        public class GenericCollectionsType<TKey, TValue> : IPortableMarshalAware
+        {
+            public ICollection<TKey> Keys { get; set; }
+
+            public ICollection<TValue> Values { get; set; }
+
+            public IDictionary<TKey, TValue> Pairs { get; set; }
+
+            public void WritePortable(IPortableWriter writer)
+            {
+                writer.WriteCollection("Keys", Keys);
+                writer.WriteCollection("Values", Values);
+                writer.WriteCollection("Pairs", Pairs);
+            }
+
+            public void ReadPortable(IPortableReader reader)
+            {
+                Keys = reader.ReadCollection<TKey>("Keys");
+                Values = reader.ReadCollection<TValue>("Values");
+                Pairs = reader.ReadDictionary<TKey, TValue>("Pairs");
             }
         }
 

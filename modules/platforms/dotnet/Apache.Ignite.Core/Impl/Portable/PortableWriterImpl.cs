@@ -1104,7 +1104,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <typeparam name="T"></typeparam>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Collection.</param>
-        public void WriteGenericCollection<T>(string fieldName, ICollection<T> val)
+        public void WriteCollection<T>(string fieldName, ICollection<T> val)
         {
             WriteFieldId(fieldName, PU.TypeCollection);
 
@@ -1125,7 +1125,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="val">Collection.</param>
-        public void WriteGenericCollection<T>(ICollection<T> val)
+        public void WriteCollection<T>(ICollection<T> val)
         {
             Write(val);
         }
@@ -1165,7 +1165,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Dictionary.</param>
-        public void WriteGenericDictionary<TK, TV>(string fieldName, IDictionary<TK, TV> val)
+        public void WriteDictionary<TK, TV>(string fieldName, IDictionary<TK, TV> val)
         {
             WriteFieldId(fieldName, PU.TypeDictionary);
 
@@ -1185,7 +1185,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write generic dictionary.
         /// </summary>
         /// <param name="val">Dictionary.</param>
-        public void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val)
+        public void WriteDictionary<TK, TV>(IDictionary<TK, TV> val)
         {
             Write(val);
         }

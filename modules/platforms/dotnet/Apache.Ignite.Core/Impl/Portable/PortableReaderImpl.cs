@@ -502,9 +502,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public ICollection<T> ReadGenericCollection<T>(string fieldName)
+        public ICollection<T> ReadCollection<T>(string fieldName)
         {
-            return ReadGenericCollection<T>(fieldName, null);
+            return ReadCollection<T>(fieldName, null);
         }
 
         /** <inheritdoc /> */
@@ -514,7 +514,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public ICollection<T> ReadGenericCollection<T>(string fieldName,
+        public ICollection<T> ReadCollection<T>(string fieldName,
             PortableGenericCollectionFactory<T> factory)
         {
             return ReadField(fieldName, r => PortableUtils.ReadGenericCollection(r, factory));
@@ -551,9 +551,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(string fieldName)
+        public IDictionary<TK, TV> ReadDictionary<TK, TV>(string fieldName)
         {
-            return ReadGenericDictionary<TK, TV>(fieldName, null);
+            return ReadDictionary<TK, TV>(fieldName, null);
         }
 
         /** <inheritdoc /> */
@@ -563,7 +563,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(string fieldName,
+        public IDictionary<TK, TV> ReadDictionary<TK, TV>(string fieldName,
             PortableGenericDictionaryFactory<TK, TV> factory)
         {
             return ReadField(fieldName, r => PortableUtils.ReadGenericDictionary(r, factory));

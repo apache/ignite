@@ -291,7 +291,7 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Collection.</returns>
-        ICollection<T> ReadGenericCollection<T>(string fieldName);
+        ICollection<T> ReadCollection<T>(string fieldName);
 
         /// <summary>
         /// Read named generic collection.
@@ -299,7 +299,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Field name.</param>
         /// <param name="factory">Factory.</param>
         /// <returns>Collection.</returns>
-        ICollection<T> ReadGenericCollection<T>(string fieldName, PortableGenericCollectionFactory<T> factory);
+        ICollection<T> ReadCollection<T>(string fieldName, PortableGenericCollectionFactory<T> factory);
 
         /// <summary>
         /// Read named dictionary.
@@ -321,7 +321,7 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Dictionary.</returns>
-        IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(string fieldName);
+        IDictionary<TK, TV> ReadDictionary<TK, TV>(string fieldName);
 
         /// <summary>
         /// Read named generic dictionary.
@@ -329,7 +329,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Field name.</param>
         /// <param name="factory">Factory.</param>
         /// <returns>Dictionary.</returns>
-        IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(string fieldName, PortableGenericDictionaryFactory<TK, TV> factory);
+        IDictionary<TK, TV> ReadDictionary<TK, TV>(string fieldName, PortableGenericDictionaryFactory<TK, TV> factory);
 
         /// <summary>
         /// Get raw reader. 

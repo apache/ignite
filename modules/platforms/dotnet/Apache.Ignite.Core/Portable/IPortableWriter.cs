@@ -262,7 +262,7 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Collection.</param>
-        void WriteGenericCollection<T>(string fieldName, ICollection<T> val);
+        void WriteCollection<T>(string fieldName, ICollection<T> val);
 
         /// <summary>
         /// Write named dictionary.
@@ -276,7 +276,7 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Dictionary.</param>
-        void WriteGenericDictionary<TK, TV>(string fieldName, IDictionary<TK, TV> val);
+        void WriteDictionary<TK, TV>(string fieldName, IDictionary<TK, TV> val);
 
         /// <summary>
         /// Get raw writer. 
