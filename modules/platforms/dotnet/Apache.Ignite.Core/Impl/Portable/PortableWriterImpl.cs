@@ -599,31 +599,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Date value.</param>
-        public void WriteDate(string fieldName, DateTime val)
-        {
-            WriteFieldId(fieldName, PU.TypeDate);
-
-            _stream.WriteInt(PU.LengthTypeId + 12);
-
-            _stream.WriteByte(PortableUtils.TypeDate);
-            PortableUtils.WriteDate(val, _stream);
-        }
-
-        /// <summary>
-        /// Write date value.
-        /// </summary>
-        /// <param name="val">Date value.</param>
-        public void WriteDate(DateTime val)
-        {
-            _stream.WriteByte(PortableUtils.TypeDate);
-            PortableUtils.WriteDate(val, _stream);
-        }
-
-        /// <summary>
-        /// Write named date value.
-        /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <param name="val">Date value.</param>
         public void WriteDate(string fieldName, DateTime? val)
         {
             WriteFieldId(fieldName, PU.TypeDate);
@@ -763,31 +738,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 _stream.WriteByte(PU.TypeArrayString);
                 PU.WriteStringArray(val, _stream);
             }
-        }
-
-        /// <summary>
-        /// Write named GUID value.
-        /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <param name="val">GUID value.</param>
-        public void WriteGuid(string fieldName, Guid val)
-        {
-            WriteFieldId(fieldName, PU.TypeGuid);
-
-            _stream.WriteInt(PU.LengthTypeId + 16);
-
-            _stream.WriteByte(PU.TypeGuid);
-            PU.WriteGuid(val, _stream);
-        }
-
-        /// <summary>
-        /// Write GUID value.
-        /// </summary>
-        /// <param name="val">GUID value.</param>
-        public void WriteGuid(Guid val)
-        {
-            _stream.WriteByte(PU.TypeGuid);
-            PU.WriteGuid(val, _stream);
         }
 
         /// <summary>
