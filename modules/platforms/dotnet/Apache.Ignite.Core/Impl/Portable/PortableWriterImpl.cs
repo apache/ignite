@@ -1374,67 +1374,67 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (type == typeof(int))
             {
                 _stream.WriteByte(PU.TypeInt);
-                _stream.WriteInt((int)(object)val);
+                _stream.WriteInt(TypeCaster<int>.Cast(val));
             }
             else if (type == typeof(long))
             {
                 _stream.WriteByte(PU.TypeLong);
-                _stream.WriteLong((long)(object)val);
+                _stream.WriteLong(TypeCaster<long>.Cast(val));
             }
             else if (type == typeof(bool))
             {
                 _stream.WriteByte(PU.TypeBool);
-                _stream.WriteBool((bool)(object)val);
+                _stream.WriteBool(TypeCaster<bool>.Cast(val));
             }
             else if (type == typeof(byte))
             {
                 _stream.WriteByte(PU.TypeByte);
-                _stream.WriteByte((byte)(object)val);
+                _stream.WriteByte(TypeCaster<byte>.Cast(val));
             }
             else if (type == typeof(short))
             {
                 _stream.WriteByte(PU.TypeShort);
-                _stream.WriteShort((short)(object)val);
+                _stream.WriteShort(TypeCaster<short>.Cast(val));
             }
             else if (type == typeof (char))
             {
                 _stream.WriteByte(PU.TypeChar);
-                _stream.WriteChar((char)(object)val);
+                _stream.WriteChar(TypeCaster<char>.Cast(val));
             }
             else if (type == typeof(float))
             {
                 _stream.WriteByte(PU.TypeFloat);
-                _stream.WriteFloat((float)(object)val);
+                _stream.WriteFloat(TypeCaster<float>.Cast(val));
             }
             else if (type == typeof(double))
             {
                 _stream.WriteByte(PU.TypeDouble);
-                _stream.WriteDouble((double)(object)val);
+                _stream.WriteDouble(TypeCaster<double>.Cast(val));
             }
             else if (type == typeof(sbyte))
             {
-                sbyte val0 = (sbyte)(object)val;
+                sbyte val0 = TypeCaster<sbyte>.Cast(val);
 
                 _stream.WriteByte(PU.TypeByte);
                 _stream.WriteByte(*(byte*)&val0);
             }
             else if (type == typeof(ushort))
             {
-                ushort val0 = (ushort)(object)val;
+                ushort val0 = TypeCaster<ushort>.Cast(val);
 
                 _stream.WriteByte(PU.TypeShort);
                 _stream.WriteShort(*(short*)&val0);
             }
             else if (type == typeof(uint))
             {
-                uint val0 = (uint)(object)val;
+                uint val0 = TypeCaster<uint>.Cast(val);
 
                 _stream.WriteByte(PU.TypeInt);
                 _stream.WriteInt(*(int*)&val0);
             }
             else if (type == typeof(ulong))
             {
-                ulong val0 = (ulong)(object)val;
+                ulong val0 = TypeCaster<ulong>.Cast(val);
 
                 _stream.WriteByte(PU.TypeLong);
                 _stream.WriteLong(*(long*)&val0);
