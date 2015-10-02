@@ -368,6 +368,9 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         for (Integer key : keys)
             checkUnlocked(key);
+
+        for (int i = 0; i < gridCount(); i++)
+            assertEquals(0, ((IgniteKernal)ignite(0)).internalCache(null).context().tm().idMapSize());
     }
 
     /**

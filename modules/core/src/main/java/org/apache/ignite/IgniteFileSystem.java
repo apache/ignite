@@ -451,7 +451,7 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
      * @return File information for specified path or {@code null} if such path does not exist.
      * @throws IgniteException In case of error.
      */
-    public IgfsFile info(IgfsPath path) throws IgniteException;
+    @Nullable public IgfsFile info(IgfsPath path) throws IgniteException;
 
     /**
      * Gets used space in bytes.

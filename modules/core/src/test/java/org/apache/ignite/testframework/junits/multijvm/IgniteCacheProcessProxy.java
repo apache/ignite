@@ -43,6 +43,7 @@ import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
@@ -209,7 +210,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
                 Collection<Entry> res = new ArrayList<>();
 
                 for (Entry e : cache().localEntries(peekModes))
-                    res.add(e);
+                    res.add(new CacheEntryImpl(e.getKey(), e.getValue()));
 
                 return res;
             }

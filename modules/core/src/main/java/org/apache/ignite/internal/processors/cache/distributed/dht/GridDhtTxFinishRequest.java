@@ -159,11 +159,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         this.taskNameHash = taskNameHash;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean allowForStartup() {
-        return true;
-    }
-
     /**
      * @return Mini ID.
      */
