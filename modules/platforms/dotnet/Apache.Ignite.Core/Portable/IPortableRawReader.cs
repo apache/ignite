@@ -138,14 +138,27 @@ namespace Apache.Ignite.Core.Portable
         /// Read date value in UTC form. Shortcut for <c>ReadDate(false)</c>.
         /// </summary>
         /// <returns>Date value.</returns>
-        DateTime? ReadDate();
+        DateTime ReadDate();
 
         /// <summary>
         /// Read date value.
         /// </summary>
         /// <param name="local">Whether to read date in local (<c>true</c>) or UTC (<c>false</c>) form.</param>
         /// <returns></returns>
-        DateTime? ReadDate(bool local);
+        DateTime ReadDate(bool local);
+
+        /// <summary>
+        /// Read date value in UTC form. Shortcut for <c>ReadDate(false)</c>.
+        /// </summary>
+        /// <returns>Date value.</returns>
+        DateTime? ReadDateNullable();
+
+        /// <summary>
+        /// Read date value.
+        /// </summary>
+        /// <param name="local">Whether to read date in local (<c>true</c>) or UTC (<c>false</c>) form.</param>
+        /// <returns></returns>
+        DateTime? ReadDateNullable(bool local);
 
         /// <summary>
         /// Read date array in UTC form. Shortcut for <c>ReadDateArray(false)</c>.

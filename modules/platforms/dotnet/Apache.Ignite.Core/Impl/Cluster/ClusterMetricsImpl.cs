@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             LastUpdateTimeRaw = reader.ReadLong();
 
-            DateTime? lastUpdateTime0 = reader.ReadDate();
+            DateTime? lastUpdateTime0 = reader.ReadDateNullable();
 
             LastUpdateTime = lastUpdateTime0 ?? default(DateTime);
             MaximumActiveJobs = reader.ReadInt();
@@ -84,11 +84,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
             NonHeapMemoryTotal = reader.ReadLong();
             Uptime = reader.ReadLong();
 
-            DateTime? startTime0 = reader.ReadDate();
+            DateTime? startTime0 = reader.ReadDateNullable();
 
             StartTime = startTime0 ?? default(DateTime);
 
-            DateTime? nodeStartTime0 = reader.ReadDate();
+            DateTime? nodeStartTime0 = reader.ReadDateNullable();
 
             NodeStartTime = nodeStartTime0 ?? default(DateTime);
 

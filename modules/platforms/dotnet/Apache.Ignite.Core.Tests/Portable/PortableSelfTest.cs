@@ -2068,10 +2068,10 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 IPortableRawReader rawReader = reader.RawReader();
 
-                LocRaw = rawReader.ReadDate(true).Value;
-                UtcRaw = rawReader.ReadDate(false).Value;
-                LocNullRaw = rawReader.ReadDate(true).Value;
-                UtcNullRaw = rawReader.ReadDate(false).Value;
+                LocRaw = rawReader.ReadDateNullable(true).Value;
+                UtcRaw = rawReader.ReadDateNullable(false).Value;
+                LocNullRaw = rawReader.ReadDateNullable(true).Value;
+                UtcNullRaw = rawReader.ReadDateNullable(false).Value;
                 LocArrRaw = rawReader.ReadDateArray(true);
                 UtcArrRaw = rawReader.ReadDateArray(false);
             }

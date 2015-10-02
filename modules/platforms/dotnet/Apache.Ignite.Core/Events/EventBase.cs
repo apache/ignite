@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Events
             _message = r.ReadString();
             _type = r.ReadInt();
             _name = r.ReadString();
-            _timestamp = r.ReadDate() ?? DateTime.Now;
+            _timestamp = r.ReadDateNullable() ?? DateTime.Now;
         }
 
         /** <inheritDoc /> */

@@ -189,6 +189,21 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Date value.</returns>
+        DateTime ReadDate(string fieldName);
+
+        /// <summary>
+        /// Read named date value.
+        /// </summary>
+        /// <param name="fieldName">Field name.</param>
+        /// <param name="local">Whether to read date in local (<c>true</c>) or UTC (<c>false</c>) form.</param>
+        /// <returns>Date vaule.</returns>
+        DateTime ReadDate(string fieldName, bool local);
+
+        /// <summary>
+        /// Read named date value in UTC form. Shortcut for <c>ReadDate(fieldName, false)</c>.
+        /// </summary>
+        /// <param name="fieldName">Field name.</param>
+        /// <returns>Date value.</returns>
         DateTime? ReadDateNullable(string fieldName);
 
         /// <summary>
@@ -227,6 +242,13 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Field name.</param>
         /// <returns>String array.</returns>
         string[] ReadStringArray(string fieldName);
+
+        /// <summary>
+        /// Read named GUID value.
+        /// </summary>
+        /// <param name="fieldName">Field name.</param>
+        /// <returns>GUID value.</returns>
+        Guid ReadGuid(string fieldName);
 
         /// <summary>
         /// Read named GUID value.

@@ -336,13 +336,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public DateTime? ReadDate()
+        public DateTime? ReadDateNullable()
         {
-            return ReadDate(false);
+            return ReadDateNullable(false);
         }
 
         /** <inheritdoc /> */
-        public DateTime? ReadDate(bool local)
+        public DateTime? ReadDateNullable(bool local)
         {
             return Read(r => PortableUtils.ReadDate(r, local));
         }
