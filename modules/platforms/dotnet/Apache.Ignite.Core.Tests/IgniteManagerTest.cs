@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.IO;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
 

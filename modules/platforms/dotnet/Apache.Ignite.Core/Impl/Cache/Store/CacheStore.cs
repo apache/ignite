@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Cache.Store
 {
-    using System;
     using System.Collections;
     using System.Diagnostics;
     using Apache.Ignite.Core.Cache.Store;

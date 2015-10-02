@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
 
