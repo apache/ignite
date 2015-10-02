@@ -417,6 +417,8 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
 
     /**
      * Creates directories under specified path with the specified properties.
+     * Note that the properties are applied only to created directories, but never
+     * updated for existing ones.
      *
      * @param path Path of directories chain to create.
      * @param props Metadata properties to set on created directories.

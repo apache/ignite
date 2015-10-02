@@ -391,13 +391,14 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /**
      * @param futVer Future ID.
      * @param fut Future.
+     * @return {@code False} if future was forcibly completed with error.
      */
-    public void addAtomicFuture(GridCacheVersion futVer, GridCacheAtomicFuture<?> fut) {
+    public boolean addAtomicFuture(GridCacheVersion futVer, GridCacheAtomicFuture<?> fut) {
         IgniteInternalFuture<?> old = atomicFuts.put(futVer, fut);
 
         assert old == null : "Old future is not null [futVer=" + futVer + ", fut=" + fut + ", old=" + old + ']';
 
-        onFutureAdded(fut);
+        return onFutureAdded(fut);
     }
 
     /**
@@ -529,12 +530,21 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
     /**
      * @param fut Future.
+     * @return {@code False} if future was forcibly completed with error.
      */
-    private void onFutureAdded(IgniteInternalFuture<?> fut) {
-        if (stopping)
+    private boolean onFutureAdded(IgniteInternalFuture<?> fut) {
+        if (stopping) {
             ((GridFutureAdapter)fut).onDone(stopError());
-        else if (cctx.kernalContext().clientDisconnected())
+
+            return false;
+        }
+        else if (cctx.kernalContext().clientDisconnected()) {
             ((GridFutureAdapter)fut).onDone(disconnectedError(null));
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
