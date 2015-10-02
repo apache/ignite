@@ -18,6 +18,7 @@
 package org.apache.ignite.yardstick.cache.failover;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -70,9 +71,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                     Long cacheVal = cache.get(key);
                                     Long mapVal = map.get(key);
 
-                                    boolean isEquals = cacheVal == null ? mapVal == null : cacheVal.equals(mapVal);
-
-                                    if (!isEquals) {
+                                    if (!Objects.equals(cacheVal, mapVal)) {
                                         println(cfg, "Got different values [key='" + key + "', cacheVal=" + cacheVal
                                             + ", localMapVal=" + mapVal + "]");
 
