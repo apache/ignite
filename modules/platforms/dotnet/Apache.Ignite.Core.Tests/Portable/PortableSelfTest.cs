@@ -567,9 +567,35 @@ namespace Apache.Ignite.Core.Tests.Portable
         /// <summary>
         /// Tests marshal aware type with generic collections.
         /// </summary>
+        [Test]
         public void TestGenericCollectionsType()
         {
-            // TODO:
+            var marsh = new PortableMarshaller(new PortableConfiguration
+            {
+                TypeConfigurations = new List<PortableTypeConfiguration>
+                {
+                    new PortableTypeConfiguration(typeof (GenericCollectionsType<int, string>))
+                }
+            });
+
+            var obj = new GenericCollectionsType<int, string>
+            {
+                Keys = new[] {1, 2, 3},
+                Values = new List<string> {"i4", "v6", "w12"},
+                Pairs = new Dictionary<int, string>
+                {
+                    {1, "a1"},
+                    {2, "a2"}
+                }
+            };
+
+            var data = marsh.Marshal(obj);
+
+            var result = marsh.Unmarshal<GenericCollectionsType<int, string>>(data);
+
+            CollectionAssert.AreEquivalent(obj.Keys, result.Keys);
+            CollectionAssert.AreEquivalent(obj.Values, result.Values);
+            CollectionAssert.AreEquivalent(obj.Pairs, result.Pairs);
         }
 
         /**
@@ -855,15 +881,11 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestCollectionsReflective()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs =
-                new List<PortableTypeConfiguration>();
-
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(CollectionsType)));
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(InnerObjectType)));
-
-            PortableConfiguration cfg = new PortableConfiguration();
-
-            cfg.TypeConfigurations = typeCfgs;
+            var cfg = new PortableConfiguration {TypeConfigurations = new List<PortableTypeConfiguration>
+            {
+                new PortableTypeConfiguration(typeof (CollectionsType)),
+                new PortableTypeConfiguration(typeof (InnerObjectType))
+            }};
 
             PortableMarshaller marsh = new PortableMarshaller(cfg);
 
