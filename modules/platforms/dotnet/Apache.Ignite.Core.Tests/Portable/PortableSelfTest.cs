@@ -1387,14 +1387,14 @@ namespace Apache.Ignite.Core.Tests.Portable
             public void WritePortable(IPortableWriter writer)
             {
                 writer.WriteCollection("Keys", Keys);
-                writer.WriteCollection("Values", Values);
+                writer.WriteObject("Values", Values);
                 writer.WriteDictionary("Pairs", Pairs);
             }
 
             public void ReadPortable(IPortableReader reader)
             {
                 Keys = reader.ReadCollection<TKey>("Keys");
-                Values = reader.ReadCollection<TValue>("Values");
+                Values = reader.ReadCollection<TValue>("Values");  // written as object, read as collection
                 Pairs = reader.ReadDictionary<TKey, TValue>("Pairs");
             }
         }
