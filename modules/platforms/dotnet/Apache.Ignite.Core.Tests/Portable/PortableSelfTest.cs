@@ -1388,7 +1388,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             {
                 writer.WriteCollection("Keys", Keys);
                 writer.WriteCollection("Values", Values);
-                writer.WriteCollection("Pairs", Pairs);
+                writer.WriteDictionary("Pairs", Pairs);
             }
 
             public void ReadPortable(IPortableReader reader)

@@ -228,6 +228,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Collection: concurrent bag. */
         public const byte CollectionConcurrentBag = 6;
 
+        /** Collection: array. */
+        public const byte CollectionArray = 7;
+
         /** Map: custom. */
         public const byte MapCustom = 0;
 
@@ -1280,20 +1283,28 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static void WriteGenericCollection<T>(ICollection<T> val, PortableWriterImpl ctx)
         {
-            Type type = val.GetType().GetGenericTypeDefinition();
+            var valType = val.GetType();
 
             byte colType;
 
-            if (type == typeof(List<>))
-                colType = CollectionArrayList;
-            else if (type == typeof(LinkedList<>))
-                colType = CollectionLinkedList;
-            else if (type == typeof(HashSet<>))
-                colType = CollectionHashSet;
-            else if (type == typeof(SortedSet<>))
-                colType = CollectionSortedSet;
+            if (valType.IsArray)
+                colType = CollectionArray;
             else
-                colType = CollectionCustom;
+            {
+                var genericType = valType.GetGenericTypeDefinition();
+
+
+                if (genericType == typeof (List<>))
+                    colType = CollectionArrayList;
+                else if (genericType == typeof (LinkedList<>))
+                    colType = CollectionLinkedList;
+                else if (genericType == typeof (HashSet<>))
+                    colType = CollectionHashSet;
+                else if (genericType == typeof (SortedSet<>))
+                    colType = CollectionSortedSet;
+                else
+                    colType = CollectionCustom;
+            }
 
             WriteTypedGenericCollection(val, ctx, colType);
         }
@@ -1339,6 +1350,16 @@ namespace Apache.Ignite.Core.Impl.Portable
                         factory = PortableSystemHandlers.CreateHashSet<T>;
                     else if (colType == CollectionSortedSet)
                         factory = PortableSystemHandlers.CreateSortedSet<T>;
+                    else if (colType == CollectionArray)
+                    {
+                        // Special case for array since ICollection.Add won't work.
+                        var arr = new T[len];
+                        
+                        for (var i = 0; i < len; i++)
+                            arr[i] = ctx.Deserialize<T>();
+
+                        return arr;
+                    }
                     else
                         factory = PortableSystemHandlers.CreateList<T>;
                 }

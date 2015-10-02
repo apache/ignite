@@ -1083,7 +1083,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 int pos = SkipFieldLength();
 
-                Write(val);
+                WriteByte(PortableUtils.TypeCollection);
+                PortableUtils.WriteCollection(val, this);
 
                 WriteFieldLength(_stream, pos);
             }
@@ -1114,7 +1115,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 int pos = SkipFieldLength();
 
-                Write(val);
+                // TODO: Fix this in all Write methods.
+                WriteByte(PortableUtils.TypeCollection);
+                PortableUtils.WriteGenericCollection(val, this);
 
                 WriteFieldLength(_stream, pos);
             }
