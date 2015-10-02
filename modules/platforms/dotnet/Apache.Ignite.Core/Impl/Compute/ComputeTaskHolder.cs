@@ -32,6 +32,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Resource;
+    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Compute task holder interface used to avoid generics.
@@ -288,7 +289,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         public int JobResultRemote(ComputeJobHolder job, PlatformMemoryStream stream)
         {
             // 1. Unmarshal result.
-            PortableReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream, PortableMode.KeepPortable);
+            var mode = typeof (IPortableObject).IsAssignableFrom(typeof (TR))
+                ? PortableMode.KeepPortable
+                : PortableMode.Deserialize;
+
+            PortableReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream, mode);
 
             Guid nodeId = reader.ReadGuid().Value;
             bool cancelled = reader.ReadBoolean();
