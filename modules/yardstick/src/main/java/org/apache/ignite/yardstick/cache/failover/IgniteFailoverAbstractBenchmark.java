@@ -39,7 +39,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K,V> extends IgniteCacheAb
         super.setUp(cfg);
 
         if (cfg.memberId() == 0) {
-            Thread thread = new Thread(new Runnable() {
+            Thread restarterThread = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
                         println("[RESTARTER] Servers restarter started. Will start restarting servers after "
@@ -110,16 +110,44 @@ public abstract class IgniteFailoverAbstractBenchmark<K,V> extends IgniteCacheAb
                             }
                         }
                     }
-                    catch (Exception e) {
+                    catch (Throwable e) {
                         println("[RESTARTER] Got exception: " + e);
                         e.printStackTrace();
+
+                        println(RestartUtils.threadDump());
+
+                        if (e instanceof Error)
+                            throw (Error)e;
                     }
                 }
             }, "restarter");
 
-            thread.setDaemon(true);
+            Thread threadDumpPrinterThread = new Thread(new Runnable() {
+                @Override public void run() {
+                    try {
+                        while(!Thread.currentThread().isInterrupted()) {
+                            Thread.sleep(30*60*1000);
 
-            thread.start();
+                            println(RestartUtils.threadDump());
+                        }
+                    }
+                    catch (Throwable e) {
+                        println("[Thread dump printer] Got exception: " + e);
+                        e.printStackTrace();
+
+                        println(RestartUtils.threadDump());
+
+                        if (e instanceof Error)
+                            throw (Error)e;
+                    }
+                }
+            }, "thread-dump-printer");
+
+            restarterThread.setDaemon(true);
+            threadDumpPrinterThread.setDaemon(true);
+
+            restarterThread.start();
+            threadDumpPrinterThread.start();
         }
     }
 }
