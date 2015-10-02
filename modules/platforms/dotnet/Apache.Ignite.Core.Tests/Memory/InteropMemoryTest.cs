@@ -137,18 +137,11 @@ namespace Apache.Ignite.Core.Tests.Memory
         [Test]
         public void TestPooledStreamReallocate()
         {
-            IPlatformMemory mem = new PlatformMemoryManager(256).Allocate();
+            var mem = new PlatformMemoryManager(256).Allocate();
 
-            try
-            {
-                Assert.IsTrue(mem is PlatformPooledMemory);
+            Assert.IsTrue(mem is PlatformPooledMemory);
 
-                CheckStreamReallocate(mem);
-            }
-            finally
-            {
-                mem.Release();
-            }
+            CheckStreamReallocate(mem);
         }
 
         /// <summary>
@@ -162,18 +155,11 @@ namespace Apache.Ignite.Core.Tests.Memory
             for (int i = 0; i < 3; i++)
                 mgr.Allocate();
 
-            IPlatformMemory mem = mgr.Allocate();
+            var mem = mgr.Allocate();
 
-            try
-            {
-                Assert.IsTrue(mem is PlatformUnpooledMemory);
+            Assert.IsTrue(mem is PlatformUnpooledMemory);
 
-                CheckStreamReallocate(mem);
-            }
-            finally
-            {
-                mem.Release();
-            }
+            CheckStreamReallocate(mem);
         }
 
         /// <summary>
@@ -193,21 +179,22 @@ namespace Apache.Ignite.Core.Tests.Memory
             for (int i = 0; i < data.Length; i++)
                 data[i] = (byte)rand.Next(0, 255);
 
-            PlatformMemoryStream stream = mem.Stream();
+            using (var stream = mem.GetStream())
+            {
+                stream.WriteByteArray(data);
 
-            stream.WriteByteArray(data);
+                stream.SynchronizeOutput();
 
-            stream.SynchronizeOutput();
+                Assert.IsTrue(mem.Capacity >= dataLen);
 
-            Assert.IsTrue(mem.Capacity >= dataLen);
+                stream.Reset();
 
-            stream.Reset();
+                stream.SynchronizeInput();
 
-            stream.SynchronizeInput();
+                byte[] data0 = stream.ReadByteArray(dataLen);
 
-            byte[] data0 = stream.ReadByteArray(dataLen);
-
-            Assert.AreEqual(data, data0);
+                Assert.AreEqual(data, data0);
+            }
         }
     }
 }
