@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
@@ -1105,7 +1106,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             cfg.PortableConfiguration = portCfg;
 
-            cfg.JvmClasspath = IgniteManager.CreateClasspath(cfg, true);
+            cfg.JvmClasspath = Classpath.CreateClasspath(cfg, true);
 
             cfg.JvmOptions = TestUtils.TestJavaOptions();
 

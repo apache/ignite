@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.IO;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
 
     /// <summary>
@@ -33,18 +34,18 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestIgniteHome()
         {
-            var env = Environment.GetEnvironmentVariable(IgniteManager.EnvIgniteHome);
-            
-            Environment.SetEnvironmentVariable(IgniteManager.EnvIgniteHome, null);
+            var env = Environment.GetEnvironmentVariable(IgniteHome.EnvIgniteHome);
+
+            Environment.SetEnvironmentVariable(IgniteHome.EnvIgniteHome, null);
 
             try
             {
-                Assert.IsTrue(Directory.Exists(IgniteManager.GetIgniteHome(null)));
+                Assert.IsTrue(Directory.Exists(IgniteHome.Resolve(null)));
             }
             finally
             {
                 // Restore
-                Environment.SetEnvironmentVariable(IgniteManager.EnvIgniteHome, env);
+                Environment.SetEnvironmentVariable(IgniteHome.EnvIgniteHome, env);
             }
         }
     }

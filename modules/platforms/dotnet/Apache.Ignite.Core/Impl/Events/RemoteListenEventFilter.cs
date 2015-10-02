@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Impl.Events
         {
             Debug.Assert(grid != null);
 
-            using (var stream = IgniteManager.Memory.Get(memPtr).Stream())
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
                 var marsh = grid.Marshaller;
 

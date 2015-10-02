@@ -132,12 +132,11 @@ namespace Apache.Ignite.Core.Impl.Messaging
         public static MessageFilterHolder CreateRemote(Ignite grid, long memPtr)
         {
             Debug.Assert(grid != null);
-            
-            var stream = IgniteManager.Memory.Get(memPtr).Stream();
 
-            var holder = grid.Marshaller.Unmarshal<MessageFilterHolder>(stream);
-
-            return holder;
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                return grid.Marshaller.Unmarshal<MessageFilterHolder>(stream);
+            }
         }
 
         /// <summary>
