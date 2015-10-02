@@ -451,6 +451,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     private void doTestQueue(ConstantTopologyChangeWorker topWorker) throws Exception {
+        int queueMaxSize = 100;
+
         try (IgniteQueue<Integer> s = grid(0).queue(STRUCTURE_NAME, 0, config(false))) {
             s.put(1);
 
@@ -464,15 +466,32 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
             int val = s.peek();
 
-            int origVal = val;
+            while (!fut.isDone()) {
+                if (s.size() == queueMaxSize) {
+                    int last = 0;
 
-            while (!fut.isDone())
+                    for (int i = 0, size = s.size() - 1; i < size; i++) {
+                        int cur = s.poll();
+
+                        if (i == 0) {
+                            last = cur;
+
+                            continue;
+                        }
+
+                        assertEquals(last, cur - 1);
+
+                        last = cur;
+                    }
+                }
+
                 s.put(++val);
+            }
 
             fut.get();
 
             for (Ignite g : G.allGrids())
-                assertEquals(origVal, (int)g.<Integer>queue(STRUCTURE_NAME, 0, null).peek());
+                assertEquals(val, (int)g.<Integer>queue(STRUCTURE_NAME, 0, null).peek());
         }
     }
 

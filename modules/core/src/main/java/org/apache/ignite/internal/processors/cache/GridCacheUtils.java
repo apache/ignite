@@ -1774,19 +1774,16 @@ public class GridCacheUtils {
                         return c.call();
                     }
                     catch (IgniteCheckedException e) {
-                        if (X.hasCause(e, ClusterTopologyCheckedException.class) ||
-                            X.hasCause(e, IgniteTxRollbackCheckedException.class) ||
-                            X.hasCause(e, CachePartialUpdateCheckedException.class)) {
-                            if (i < retries - 1) {
-                                err = e;
-
-                                U.sleep(1);
-
-                                continue;
-                            }
-
+                        if (i == retries)
                             throw e;
+
+                        if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                            ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
+
+                            topErr.retryReadyFuture().get();
                         }
+                        else if (X.hasCause(e, IgniteTxRollbackCheckedException.class))
+                            U.sleep(1);
                         else
                             throw e;
                     }
