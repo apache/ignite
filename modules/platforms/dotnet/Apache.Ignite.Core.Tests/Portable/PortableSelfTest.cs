@@ -1608,7 +1608,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 PUlong = *(ulong*)&uLong;
 
                 PString = reader.ReadString("string");
-                PGuid = reader.ReadGuidNullable("guid").Value;
+                PGuid = reader.ReadGuid("guid");
                 PnGuid = reader.ReadGuidNullable("nguid");
             }
         }
@@ -1668,7 +1668,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 PUlong = *(ulong*)&uLong;
 
                 PString = rawReader.ReadString();
-                PGuid = rawReader.ReadGuidNullable().Value;
+                PGuid = rawReader.ReadGuid();
                 PnGuid = rawReader.ReadGuidNullable();
             }
         }
@@ -1728,7 +1728,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 obj0.PUlong = *(ulong*)&uLong;
 
                 obj0.PString = reader.ReadString("string");
-                obj0.PGuid = reader.ReadGuidNullable("guid").Value;
+                obj0.PGuid = reader.ReadGuid("guid");
                 obj0.PnGuid = reader.ReadGuidNullable("nguid");
             }
         }
@@ -1791,7 +1791,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 obj0.PUlong = *(ulong*)&uLong;
 
                 obj0.PString = rawReader.ReadString();
-                obj0.PGuid = rawReader.ReadGuidNullable().Value;
+                obj0.PGuid = rawReader.ReadGuid();
                 obj0.PnGuid = rawReader.ReadGuidNullable();
             }
         }
@@ -2059,19 +2059,19 @@ namespace Apache.Ignite.Core.Tests.Portable
             /** <inheritDoc /> */
             public void ReadPortable(IPortableReader reader)
             {
-                Loc = reader.ReadDateNullable("loc", true).Value;
-                Utc = reader.ReadDateNullable("utc", false).Value;
-                LocNull = reader.ReadDateNullable("loc", true).Value;
-                UtcNull = reader.ReadDateNullable("utc", false).Value;
+                Loc = reader.ReadDate("loc", true);
+                Utc = reader.ReadDate("utc", false);
+                LocNull = reader.ReadDateNullable("loc", true);
+                UtcNull = reader.ReadDateNullable("utc", false);
                 LocArr = reader.ReadDateArrayNullable("locArr", true);
                 UtcArr = reader.ReadDateArrayNullable("utcArr", false);
 
                 IPortableRawReader rawReader = reader.RawReader();
 
-                LocRaw = rawReader.ReadDateNullable(true).Value;
-                UtcRaw = rawReader.ReadDateNullable(false).Value;
-                LocNullRaw = rawReader.ReadDateNullable(true).Value;
-                UtcNullRaw = rawReader.ReadDateNullable(false).Value;
+                LocRaw = rawReader.ReadDate(true);
+                UtcRaw = rawReader.ReadDate(false);
+                LocNullRaw = rawReader.ReadDateNullable(true);
+                UtcNullRaw = rawReader.ReadDateNullable(false);
                 LocArrRaw = rawReader.ReadDateArray(true);
                 UtcArrRaw = rawReader.ReadDateArray(false);
             }

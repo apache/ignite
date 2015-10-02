@@ -189,6 +189,12 @@ namespace Apache.Ignite.Core.Portable
         /// Read GUID value. 
         /// </summary>
         /// <returns>GUID value.</returns>
+        Guid ReadGuid();
+
+        /// <summary>
+        /// Read GUID value. 
+        /// </summary>
+        /// <returns>GUID value.</returns>
         Guid? ReadGuidNullable();
 
         /// <summary>
