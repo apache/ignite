@@ -324,13 +324,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public DateTime? ReadDate(string fieldName)
+        public DateTime? ReadDateNullable(string fieldName)
         {
-            return ReadDate(fieldName, false);
+            return ReadDateNullable(fieldName, false);
         }
 
         /** <inheritdoc /> */
-        public DateTime? ReadDate(string fieldName, bool local)
+        public DateTime? ReadDateNullable(string fieldName, bool local)
         {
             return ReadField(fieldName, r => PortableUtils.ReadDate(r, local));
         }
@@ -348,13 +348,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public DateTime?[] ReadDateArray(string fieldName)
+        public DateTime?[] ReadDateArrayNullable(string fieldName)
         {
-            return ReadDateArray(fieldName, false);
+            return ReadDateArrayNullable(fieldName, false);
         }
 
         /** <inheritdoc /> */
-        public DateTime?[] ReadDateArray(string fieldName, bool local)
+        public DateTime?[] ReadDateArrayNullable(string fieldName, bool local)
         {
             return ReadField(fieldName, r => PortableUtils.ReadDateArray(r, local));
         }
@@ -396,7 +396,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public Guid? ReadGuid(string fieldName)
+        public Guid? ReadGuidNullable(string fieldName)
         {
             return ReadField(fieldName, PortableUtils.ReadGuid);
         }
@@ -408,7 +408,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public Guid?[] ReadGuidArray(string fieldName)
+        public Guid?[] ReadGuidArrayNullable(string fieldName)
         {
             return ReadField(fieldName, r => PortableUtils.ReadGenericArray<Guid?>(r, false));
         }

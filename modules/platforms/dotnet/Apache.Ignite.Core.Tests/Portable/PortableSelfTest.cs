@@ -1608,8 +1608,8 @@ namespace Apache.Ignite.Core.Tests.Portable
                 PUlong = *(ulong*)&uLong;
 
                 PString = reader.ReadString("string");
-                PGuid = reader.ReadGuid("guid").Value;
-                PnGuid = reader.ReadGuid("nguid");
+                PGuid = reader.ReadGuidNullable("guid").Value;
+                PnGuid = reader.ReadGuidNullable("nguid");
             }
         }
 
@@ -1728,8 +1728,8 @@ namespace Apache.Ignite.Core.Tests.Portable
                 obj0.PUlong = *(ulong*)&uLong;
 
                 obj0.PString = reader.ReadString("string");
-                obj0.PGuid = reader.ReadGuid("guid").Value;
-                obj0.PnGuid = reader.ReadGuid("nguid");
+                obj0.PGuid = reader.ReadGuidNullable("guid").Value;
+                obj0.PnGuid = reader.ReadGuidNullable("nguid");
             }
         }
 
@@ -2059,12 +2059,12 @@ namespace Apache.Ignite.Core.Tests.Portable
             /** <inheritDoc /> */
             public void ReadPortable(IPortableReader reader)
             {
-                Loc = reader.ReadDate("loc", true).Value;
-                Utc = reader.ReadDate("utc", false).Value;
-                LocNull = reader.ReadDate("loc", true).Value;
-                UtcNull = reader.ReadDate("utc", false).Value;
-                LocArr = reader.ReadDateArray("locArr", true);
-                UtcArr = reader.ReadDateArray("utcArr", false);
+                Loc = reader.ReadDateNullable("loc", true).Value;
+                Utc = reader.ReadDateNullable("utc", false).Value;
+                LocNull = reader.ReadDateNullable("loc", true).Value;
+                UtcNull = reader.ReadDateNullable("utc", false).Value;
+                LocArr = reader.ReadDateArrayNullable("locArr", true);
+                UtcArr = reader.ReadDateArrayNullable("utcArr", false);
 
                 IPortableRawReader rawReader = reader.RawReader();
 

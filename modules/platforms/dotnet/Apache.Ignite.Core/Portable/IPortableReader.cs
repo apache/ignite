@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Date value.</returns>
-        DateTime? ReadDate(string fieldName);
+        DateTime? ReadDateNullable(string fieldName);
 
         /// <summary>
         /// Read named date value.
@@ -197,14 +197,14 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Field name.</param>
         /// <param name="local">Whether to read date in local (<c>true</c>) or UTC (<c>false</c>) form.</param>
         /// <returns>Date vaule.</returns>
-        DateTime? ReadDate(string fieldName, bool local);
+        DateTime? ReadDateNullable(string fieldName, bool local);
 
         /// <summary>
         /// Read named date array in UTC form. Shortcut for <c>ReadDateArray(fieldName, false)</c>.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Date array.</returns>
-        DateTime?[] ReadDateArray(string fieldName);
+        DateTime?[] ReadDateArrayNullable(string fieldName);
 
         /// <summary>
         /// Read named date array.
@@ -212,7 +212,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Field name.</param>
         /// <param name="local">Whether to read date in local (<c>true</c>) or UTC (<c>false</c>) form.</param>
         /// <returns>Date array.</returns>
-        DateTime?[] ReadDateArray(string fieldName, bool local);
+        DateTime?[] ReadDateArrayNullable(string fieldName, bool local);
 
         /// <summary>
         /// Read named string value.
@@ -233,14 +233,14 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>GUID value.</returns>
-        Guid? ReadGuid(string fieldName);
+        Guid? ReadGuidNullable(string fieldName);
 
         /// <summary>
         /// Read named GUID array.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>GUID array.</returns>
-        Guid?[] ReadGuidArray(string fieldName);
+        Guid?[] ReadGuidArrayNullable(string fieldName);
         
         /// <summary>
         /// Read named enum value.

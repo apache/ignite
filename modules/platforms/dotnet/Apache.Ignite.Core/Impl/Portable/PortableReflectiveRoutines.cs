@@ -268,12 +268,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             else if (elemType == typeof(Guid?))
             {
                 writeAction = GetWriter<Guid?[]>(field, (f, w, o) => w.WriteGuidArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadGuidArray(f));
+                readAction = GetReader(field, (f, r) => r.ReadGuidArrayNullable(f));
             } 
             else if (elemType == typeof(DateTime?))
             {
                 writeAction = GetWriter<DateTime?[]>(field, (f, w, o) => w.WriteDateArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadDateArray(f));
+                readAction = GetReader(field, (f, r) => r.ReadDateArrayNullable(f));
             }
             else if (elemType.IsEnum)
             {
@@ -317,22 +317,22 @@ namespace Apache.Ignite.Core.Impl.Portable
             else if (type == typeof(Guid))
             {
                 writeAction = GetWriter<Guid>(field, (f, w, o) => w.WriteGuid(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadGuid(f) ?? default(Guid));
+                readAction = GetReader(field, (f, r) => r.ReadGuidNullable(f) ?? default(Guid));
             }
             else if (nullable && nullableType == typeof(Guid))
             {
                 writeAction = GetWriter<Guid?>(field, (f, w, o) => w.WriteGuid(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadGuid(f));
+                readAction = GetReader(field, (f, r) => r.ReadGuidNullable(f));
             } 
             else if (type == typeof(DateTime))
             {
                 writeAction = GetWriter<DateTime>(field, (f, w, o) => w.WriteDate(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadDate(f) ?? default(DateTime));
+                readAction = GetReader(field, (f, r) => r.ReadDateNullable(f) ?? default(DateTime));
             }
             else if (nullable && nullableType == typeof(DateTime))
             {
                 writeAction = GetWriter<DateTime?>(field, (f, w, o) => w.WriteDate(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadDate(f));
+                readAction = GetReader(field, (f, r) => r.ReadDateNullable(f));
             }
             else if (type.IsEnum)
             {
