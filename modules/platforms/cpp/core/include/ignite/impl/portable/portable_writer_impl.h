@@ -546,7 +546,7 @@ namespace ignite
                 /**
                  * Get raw position.
                  */
-                int32_t GetRawPosition();
+                int32_t GetRawPosition() const;
 
                 /**
                  * Write object.
@@ -751,14 +751,14 @@ namespace ignite
                  *
                  * @param expected Expected raw mode of the reader.
                  */
-                void CheckRawMode(bool expected);
+                void CheckRawMode(bool expected) const;
 
                 /**
                  * Check whether writer is currently operating in single mode.
                  *
                  * @param expected Expected value.
                  */
-                void CheckSingleMode(bool expected);
+                void CheckSingleMode(bool expected) const;
 
                 /**
                  * Start new container writer session.
@@ -772,7 +772,7 @@ namespace ignite
                  *
                  * @param ses Expected session ID.
                  */
-                void CheckSession(int32_t expSes);
+                void CheckSession(int32_t expSes) const;
 
                 /**
                  * Write field ID.

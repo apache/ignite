@@ -28,9 +28,9 @@ namespace ignite
     {
         namespace interop 
         {
-            int8_t* InteropMemory::Data(int8_t* memPtr)
+            int8_t* InteropMemory::Data(const int8_t* memPtr)
             {
-                return reinterpret_cast<int8_t*>(*reinterpret_cast<int64_t*>(memPtr));
+                return reinterpret_cast<int8_t*>(*reinterpret_cast<const int64_t*>(memPtr));
             }
 
             void InteropMemory::Data(int8_t* memPtr, void* ptr)
@@ -38,9 +38,9 @@ namespace ignite
                 *reinterpret_cast<int64_t*>(memPtr) = reinterpret_cast<int64_t>(ptr);
             }
 
-            int32_t InteropMemory::Capacity(int8_t* memPtr)
+            int32_t InteropMemory::Capacity(const int8_t* memPtr)
             {
-                return *reinterpret_cast<int32_t*>(memPtr + IGNITE_MEM_HDR_OFF_CAP);
+                return *reinterpret_cast<const int32_t*>(memPtr + IGNITE_MEM_HDR_OFF_CAP);
             }
 
             void InteropMemory::Capacity(int8_t* memPtr, int32_t val)
@@ -48,9 +48,9 @@ namespace ignite
                 *reinterpret_cast<int32_t*>(memPtr + IGNITE_MEM_HDR_OFF_CAP) = val;
             }
 
-            int32_t InteropMemory::Length(int8_t* memPtr)
+            int32_t InteropMemory::Length(const int8_t* memPtr)
             {
-                return *reinterpret_cast<int32_t*>(memPtr + IGNITE_MEM_HDR_OFF_LEN);
+                return *reinterpret_cast<const int32_t*>(memPtr + IGNITE_MEM_HDR_OFF_LEN);
             }
 
             void InteropMemory::Length(int8_t* memPtr, int32_t val)
@@ -58,9 +58,9 @@ namespace ignite
                 *reinterpret_cast<int32_t*>(memPtr + IGNITE_MEM_HDR_OFF_LEN) = val;
             }
 
-            int32_t InteropMemory::Flags(int8_t* memPtr)
+            int32_t InteropMemory::Flags(const int8_t* memPtr)
             {
-                return *reinterpret_cast<int32_t*>(memPtr + IGNITE_MEM_HDR_OFF_FLAGS);
+                return *reinterpret_cast<const int32_t*>(memPtr + IGNITE_MEM_HDR_OFF_FLAGS);
             }
 
             void InteropMemory::Flags(int8_t* memPtr, int32_t val)
@@ -68,7 +68,7 @@ namespace ignite
                 *reinterpret_cast<int32_t*>(memPtr + IGNITE_MEM_HDR_OFF_FLAGS) = val;
             }
 
-            bool InteropMemory::IsExternal(int8_t* memPtr)
+            bool InteropMemory::IsExternal(const int8_t* memPtr)
             {
                 return IsExternal(Flags(memPtr));
             }
@@ -78,7 +78,7 @@ namespace ignite
                 return (flags & IGNITE_MEM_FLAG_EXT) != IGNITE_MEM_FLAG_EXT;
             }
 
-            bool InteropMemory::IsPooled(int8_t* memPtr)
+            bool InteropMemory::IsPooled(const int8_t* memPtr)
             {
                 return IsPooled(Flags(memPtr));
             }
@@ -88,7 +88,7 @@ namespace ignite
                 return (flags & IGNITE_MEM_FLAG_POOLED) != 0;
             }
 
-            bool InteropMemory::IsAcquired(int8_t* memPtr)
+            bool InteropMemory::IsAcquired(const int8_t* memPtr)
             {
                 return IsAcquired(Flags(memPtr));
             }
@@ -113,12 +113,12 @@ namespace ignite
                 return Data(memPtr);
             }
 
-            int32_t InteropMemory::Capacity()
+            int32_t InteropMemory::Capacity() const
             {
                 return Capacity(memPtr);
             }
 
-            int32_t InteropMemory::Length()
+            int32_t InteropMemory::Length() const
             {
                 return Length(memPtr);
             }
