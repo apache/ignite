@@ -213,6 +213,16 @@ namespace ignite
                 {
                     return impl ? static_cast<T*>(impl->Pointer()) : NULL;
                 }
+
+                /*
+                 * Check whether underlying raw pointer is valid.
+                 *
+                 * @return True if valid.
+                 */
+                bool IsValid() const
+                {
+                    return impl != NULL;
+                }
             private:
                 /** Implementation. */
                 SharedPointerImpl* impl;
