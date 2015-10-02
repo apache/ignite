@@ -141,12 +141,6 @@ namespace Apache.Ignite.Core.Portable
         void WriteDate(DateTime val);
 
         /// <summary>
-        /// Write date array.
-        /// </summary>
-        /// <param name="val">Date array.</param>
-        void WriteDateArray(DateTime[] val);
-
-        /// <summary>
         /// Write date value.
         /// </summary>
         /// <param name="val">Date value.</param>
@@ -170,17 +164,11 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="val">String array.</param>
         void WriteStringArray(string[] val);
 
-//        /// <summary>
-//        /// Write GUID value.
-//        /// </summary>
-//        /// <param name="val">GUID value.</param>
-//        void WriteGuid(Guid val);
-//
-//        /// <summary>
-//        /// Write GUID array.
-//        /// </summary>
-//        /// <param name="val">GUID array.</param>
-//        void WriteGuidArray(Guid[] val);
+        /// <summary>
+        /// Write GUID value.
+        /// </summary>
+        /// <param name="val">GUID value.</param>
+        void WriteGuid(Guid val);
 
         /// <summary>
         /// Write GUID value.

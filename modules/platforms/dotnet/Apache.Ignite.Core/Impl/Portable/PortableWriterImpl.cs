@@ -620,38 +620,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Write named date array.
-        /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <param name="val">Date array.</param>
-        public void WriteDateArray(string fieldName, DateTime[] val)
-        {
-            WriteFieldId(fieldName, PU.TypeDate);
-
-            if (val == null)
-                WriteNullField();
-            else
-            {
-                int pos = SkipFieldLength();
-
-                _stream.WriteByte(PortableUtils.TypeArrayDate);
-                PortableUtils.WriteDateArray(val, _stream);
-
-                WriteFieldLength(_stream, pos);
-            }
-        }
-
-        /// <summary>
-        /// Write date array.
-        /// </summary>
-        /// <param name="val">Date array.</param>
-        public void WriteDateArray(DateTime[] val)
-        {
-            _stream.WriteByte(PortableUtils.TypeArrayDate);
-            PortableUtils.WriteDateArray(val, _stream);
-        }
-
-        /// <summary>
         /// Write named date value.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
@@ -797,67 +765,30 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
-//        /// <summary>
-//        /// Write named GUID value.
-//        /// </summary>
-//        /// <param name="fieldName">Field name.</param>
-//        /// <param name="val">GUID value.</param>
-//        public void WriteGuid(string fieldName, Guid val)
-//        {
-//            WriteFieldId(fieldName, PU.TypeGuid);
-//
-//            _stream.WriteInt(PU.LengthTypeId + 16);
-//
-//            _stream.WriteByte(PU.TypeGuid);
-//            PU.WriteGuid(val, _stream);
-//        }
-//
-//        /// <summary>
-//        /// Write GUID value.
-//        /// </summary>
-//        /// <param name="val">GUID value.</param>
-//        public void WriteGuid(Guid val)
-//        {
-//            _stream.WriteByte(PU.TypeGuid);
-//            PU.WriteGuid(val, _stream);
-//        }
-//
-//        /// <summary>
-//        /// Write named GUID array.
-//        /// </summary>
-//        /// <param name="fieldName">Field name.</param>
-//        /// <param name="val">GUID array.</param>
-//        public void WriteGuidArray(string fieldName, Guid[] val)
-//        {
-//            WriteFieldId(fieldName, PU.TypeArrayGuid);
-//
-//            if (val == null)
-//                WriteNullField();
-//            else
-//            {
-//                int pos = SkipFieldLength();
-//
-//                _stream.WriteByte(PU.TypeArrayGuid);
-//                PU.WriteGuidArray(val, _stream);
-//
-//                WriteFieldLength(_stream, pos);
-//            }
-//        }
-//
-//        /// <summary>
-//        /// Write GUID array.
-//        /// </summary>
-//        /// <param name="val">GUID array.</param>
-//        public void WriteGuidArray(Guid[] val)
-//        {
-//            if (val == null)
-//                WriteNullRawField();
-//            else
-//            {
-//                _stream.WriteByte(PU.TypeArrayGuid);
-//                PU.WriteGuidArray(val, _stream);
-//            }
-//        }
+        /// <summary>
+        /// Write named GUID value.
+        /// </summary>
+        /// <param name="fieldName">Field name.</param>
+        /// <param name="val">GUID value.</param>
+        public void WriteGuid(string fieldName, Guid val)
+        {
+            WriteFieldId(fieldName, PU.TypeGuid);
+
+            _stream.WriteInt(PU.LengthTypeId + 16);
+
+            _stream.WriteByte(PU.TypeGuid);
+            PU.WriteGuid(val, _stream);
+        }
+
+        /// <summary>
+        /// Write GUID value.
+        /// </summary>
+        /// <param name="val">GUID value.</param>
+        public void WriteGuid(Guid val)
+        {
+            _stream.WriteByte(PU.TypeGuid);
+            PU.WriteGuid(val, _stream);
+        }
 
         /// <summary>
         /// Write named GUID value.
