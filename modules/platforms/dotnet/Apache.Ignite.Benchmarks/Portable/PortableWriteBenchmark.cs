@@ -70,7 +70,7 @@ namespace Apache.Ignite.Benchmarks.Portable
 
             try
             {
-                var stream = mem.Stream();
+                var stream = mem.GetStream();
 
                 _marsh.StartMarshal(stream).Write(_address);
             }
