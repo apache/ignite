@@ -294,7 +294,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 if ((long) cb != 0)
                     cb0 = new UnmanagedNonReleaseableTarget(_ctx.NativeContext, cb);
 
-                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).Stream())
+                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
                     return t.Invoke(stream, cb0, _ignite);
                 }
@@ -322,7 +322,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 var t = _ignite.HandleRegistry.Get<CacheEntryFilterHolder>(objPtr);
 
-                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).Stream())
+                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
                     return t.Invoke(stream);
                 }
@@ -338,11 +338,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Get(inMemPtr).Stream())
+                using (PlatformMemoryStream inStream = IgniteManager.Memory.Get(inMemPtr).GetStream())
                 {
                     var result = ReadAndRunCacheEntryProcessor(inStream, _ignite);
 
-                    using (PlatformMemoryStream outStream = IgniteManager.Memory.Get(outMemPtr).Stream())
+                    using (PlatformMemoryStream outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
                     {
                         result.Write(outStream, _ignite.Marshaller);
 
@@ -382,9 +382,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Get(inMemPtr).Stream())
+                using (PlatformMemoryStream inStream = IgniteManager.Memory.Get(inMemPtr).GetStream())
                 {
-                    using (PlatformMemoryStream outStream = IgniteManager.Memory.Get(outMemPtr).Stream())
+                    using (PlatformMemoryStream outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
                     {
                         Task(taskPtr).Map(inStream, outStream);
                     }
@@ -403,7 +403,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     return task.JobResultLocal(Job(jobPtr));
                 }
                 
-                using (var stream = IgniteManager.Memory.Get(memPtr).Stream())
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
                     return task.JobResultRemote(Job(jobPtr), stream);
                 }
@@ -430,7 +430,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     task.Complete(taskPtr);
                 else
                 {
-                    using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).Stream())
+                    using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                     {
                         task.CompleteWithError(taskPtr, stream);
                     }
@@ -442,7 +442,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             return SafeCall(() =>
             {
-                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).Stream())
+                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
                     return Job(jobPtr).Serialize(stream) ? 1 : 0;
                 }
@@ -453,7 +453,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             return SafeCall(() =>
             {
-                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).Stream())
+                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
                     ComputeJobHolder job = ComputeJobHolder.CreateJob(_ignite, stream);
 
@@ -472,7 +472,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     job.ExecuteLocal(cancel == 1);
                 else
                 {
-                    using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).Stream())
+                    using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                     {
                         job.ExecuteRemote(stream, cancel == 1);
                     }
@@ -526,7 +526,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 var hnd = _handleRegistry.Get<IContinuousQueryHandleImpl>(lsnrPtr);
 
-                hnd.Apply(IgniteManager.Memory.Get(memPtr).Stream());
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    hnd.Apply(stream);
+                }
             });
         }
 
@@ -536,28 +539,29 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return SafeCall(() =>
             {
                 // 1. Unmarshal filter holder.
-                IPortableStream stream = IgniteManager.Memory.Get(memPtr).Stream();
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                var reader = _ignite.Marshaller.StartUnmarshal(stream);
+                    var filterHolder = reader.ReadObject<ContinuousQueryFilterHolder>();
 
-                ContinuousQueryFilterHolder filterHolder = reader.ReadObject<ContinuousQueryFilterHolder>();
+                    // 2. Create real filter from it's holder.
+                    Type filterWrapperTyp = typeof (ContinuousQueryFilter<,>)
+                        .MakeGenericType(filterHolder.KeyType, filterHolder.ValueType);
 
-                // 2. Create real filter from it's holder.
-                Type filterWrapperTyp = typeof(ContinuousQueryFilter<,>)
-                    .MakeGenericType(filterHolder.KeyType, filterHolder.ValueType);
+                    Type filterTyp = typeof (ICacheEntryEventFilter<,>)
+                        .MakeGenericType(filterHolder.KeyType, filterHolder.ValueType);
 
-                Type filterTyp = typeof(ICacheEntryEventFilter<,>)
-                    .MakeGenericType(filterHolder.KeyType, filterHolder.ValueType);
+                    var filter = (IContinuousQueryFilter) filterWrapperTyp
+                        .GetConstructor(new[] {filterTyp, typeof (bool)})
+                        .Invoke(new[] {filterHolder.Filter, filterHolder.KeepPortable});
 
-                var filter = (IContinuousQueryFilter)filterWrapperTyp
-                    .GetConstructor(new[] { filterTyp, typeof(bool) })
-                    .Invoke(new[] { filterHolder.Filter, filterHolder.KeepPortable });
+                    // 3. Inject grid.
+                    filter.Inject(_ignite);
 
-                // 3. Inject grid.
-                filter.Inject(_ignite);
-
-                // 4. Allocate GC handle.
-                return filter.Allocate();
+                    // 4. Allocate GC handle.
+                    return filter.Allocate();
+                }
             });
         }
 
@@ -567,7 +571,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 var holder = _handleRegistry.Get<IContinuousQueryFilter>(filterPtr);
 
-                return holder.Evaluate(IgniteManager.Memory.Get(memPtr).Stream()) ? 1 : 0;
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    return holder.Evaluate(stream) ? 1 : 0;
+                }
             });
         }
 
@@ -608,18 +615,19 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                var stream = IgniteManager.Memory.Get(memPtr).Stream();
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    var reader = _ignite.Marshaller.StartUnmarshal(stream, PortableMode.ForcePortable);
 
-                var reader = _ignite.Marshaller.StartUnmarshal(stream, PortableMode.ForcePortable);
+                    var portableReceiver = reader.ReadObject<PortableUserObject>();
 
-                var portableReceiver = reader.ReadObject<PortableUserObject>();
+                    var receiver = _handleRegistry.Get<StreamReceiverHolder>(rcvPtr) ??
+                                   portableReceiver.Deserialize<StreamReceiverHolder>();
 
-                var receiver = _handleRegistry.Get<StreamReceiverHolder>(rcvPtr) ??
-                    portableReceiver.Deserialize<StreamReceiverHolder>();
-
-                if (receiver != null)
-                    receiver.Receive(_ignite, new UnmanagedNonReleaseableTarget(_ctx.NativeContext, cache), stream,
-                        keepPortable != 0);
+                    if (receiver != null)
+                        receiver.Receive(_ignite, new UnmanagedNonReleaseableTarget(_ctx.NativeContext, cache), stream,
+                            keepPortable != 0);
+                }
             });
         }
 
@@ -697,9 +705,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 ProcessFuture(futPtr, fut =>
                 {
-                    IPortableStream stream = IgniteManager.Memory.Get(memPtr).Stream();
-
-                    fut.OnResult(stream);
+                    using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                    {
+                        fut.OnResult(stream);
+                    }
                 });
             });
         }
@@ -716,16 +725,17 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                IPortableStream stream = IgniteManager.Memory.Get(memPtr).Stream();
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                PortableReaderImpl reader = _ignite.Marshaller.StartUnmarshal(stream);
+                    string errCls = reader.ReadString();
+                    string errMsg = reader.ReadString();
 
-                string errCls = reader.ReadString();
-                string errMsg = reader.ReadString();
+                    Exception err = ExceptionUtils.GetException(errCls, errMsg, reader);
 
-                Exception err = ExceptionUtils.GetException(errCls, errMsg, reader);
-
-                ProcessFuture(futPtr, fut => { fut.OnError(err); });
+                    ProcessFuture(futPtr, fut => { fut.OnError(err); });
+                }
             });
         }
 
@@ -800,7 +810,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 if (holder == null)
                     return 0;
 
-                using (var stream = IgniteManager.Memory.Get(memPtr).Stream())
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
                     return holder.Invoke(stream);
                 }
@@ -831,15 +841,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 switch (op)
                 {
                     case OpPrepareDotNet:
-                        var inMem = IgniteManager.Memory.Get(arg1);
-                        var outMem = IgniteManager.Memory.Get(arg2);
+                        using (var inStream = IgniteManager.Memory.Get(arg1).GetStream())
+                        using (var outStream = IgniteManager.Memory.Get(arg2).GetStream())
+                        {
+                            Ignition.OnPrepare(inStream, outStream, _handleRegistry);
 
-                        PlatformMemoryStream inStream = inMem.Stream();
-                        PlatformMemoryStream outStream = outMem.Stream();
-
-                        Ignition.OnPrepare(inStream, outStream, _handleRegistry);
-
-                        return 0;
+                            return 0;
+                        }
 
                     default:
                         throw new InvalidOperationException("Unsupported operation type: " + op);
@@ -865,7 +873,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 if (holder == null)
                     return 0;
 
-                using (var stream = IgniteManager.Memory.Get(memPtr).Stream())
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
                     return holder.Invoke(stream);
                 }
@@ -888,7 +896,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             return SafeCall(() =>
             {
-                using (var stream = IgniteManager.Memory.Get(memPtr).Stream())
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
@@ -910,7 +918,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 var svc = _handleRegistry.Get<IService>(svcPtr, true);
 
-                using (var stream = IgniteManager.Memory.Get(memPtr).Stream())
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
@@ -930,7 +938,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 try
                 {
-                    using (var stream = IgniteManager.Memory.Get(memPtr).Stream())
+                    using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                     {
                         var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
@@ -950,8 +958,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                using (var inStream = IgniteManager.Memory.Get(inMemPtr).Stream())
-                using (var outStream = IgniteManager.Memory.Get(outMemPtr).Stream())
+                using (var inStream = IgniteManager.Memory.Get(inMemPtr).GetStream())
+                using (var outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
                 {
                     var svc = _handleRegistry.Get<IService>(svcPtr, true);
 
@@ -973,7 +981,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             return SafeCall(() =>
             {
-                using (var stream = IgniteManager.Memory.Get(memPtr).Stream())
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
@@ -1007,7 +1015,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 var proc0 = UnmanagedUtils.Acquire(_ctx, proc);
 
-                Ignition.OnStart(proc0, IgniteManager.Memory.Get(memPtr).Stream());
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    Ignition.OnStart(proc0, stream);
+                }
             }, true);
         }
 
@@ -1032,8 +1043,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 case ErrGeneric:
                     if (_ignite != null && errDataLen > 0)
-                        throw ExceptionUtils.GetException(errCls, errMsg,
-                            _ignite.Marshaller.StartUnmarshal(new PlatformRawMemory(errData, errDataLen).Stream()));
+                    {
+                        // Stream disposal intentionally omitted: IGNITE-1598
+                        var stream = new PlatformRawMemory(errData, errDataLen).GetStream();
+
+                        throw ExceptionUtils.GetException(errCls, errMsg, _ignite.Marshaller.StartUnmarshal(stream));
+                    }
 
                     throw ExceptionUtils.GetException(errCls, errMsg);
 

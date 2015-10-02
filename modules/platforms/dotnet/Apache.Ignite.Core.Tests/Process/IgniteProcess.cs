@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Process
     using System.Text;
     using System.Threading;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Defines forked Ignite node.
@@ -147,7 +148,7 @@ namespace Apache.Ignite.Core.Tests.Process
             // Add test dll path
             args = args.Concat(new[] {"-assembly=" + GetType().Assembly.Location}).ToArray();
 
-            _proc = Start(ExePath, IgniteManager.GetIgniteHome(null), outReader, args);
+            _proc = Start(ExePath, IgniteHome.Resolve(null), outReader, args);
         }
 
         /// <summary>
@@ -177,9 +178,9 @@ namespace Apache.Ignite.Core.Tests.Process
             };
 
             if (!string.IsNullOrEmpty(ggHome))
-                procStart.EnvironmentVariables[IgniteManager.EnvIgniteHome] = ggHome;
+                procStart.EnvironmentVariables[IgniteHome.EnvIgniteHome] = ggHome;
 
-            procStart.EnvironmentVariables[IgniteManager.EnvIgniteNativeTestClasspath] = "true";
+            procStart.EnvironmentVariables[Classpath.EnvIgniteNativeTestClasspath] = "true";
 
             procStart.CreateNoWindow = true;
             procStart.UseShellExecute = false;
