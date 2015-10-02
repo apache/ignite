@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System;
     using System.Collections;
     using System.Diagnostics;
+    using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
     using Apache.Ignite.Core.Common;
@@ -59,11 +60,11 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Method: read generic collection. */
         private static readonly MethodInfo MthdReadGenericCollection =
-            typeof(IPortableReader).GetMethod("ReadGenericCollection", new[] { typeof(string) });
+            GetGenericMethod(typeof (IPortableReader), "ReadCollection", typeof (string));
 
         /** Method: read generic dictionary. */
         private static readonly MethodInfo MthdReadGenericDictionary =
-            typeof(IPortableReader).GetMethod("ReadGenericDictionary", new[] { typeof(string) });
+            GetGenericMethod(typeof(IPortableReader), "ReadDictionary", typeof(string));
 
         /** Method: read object. */
         private static readonly MethodInfo MthdReadObj=
@@ -79,11 +80,11 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Method: write generic collection. */
         private static readonly MethodInfo MthdWriteGenericCollection =
-            typeof(IPortableWriter).GetMethod("WriteGenericCollection");
+            GetGenericMethod(typeof(IPortableWriter), "WriteCollection");
 
         /** Method: write generic dictionary. */
         private static readonly MethodInfo MthdWriteGenericDictionary =
-            typeof(IPortableWriter).GetMethod("WriteGenericDictionary");
+            GetGenericMethod(typeof(IPortableWriter), "WriteDictionary");
 
         /** Method: read object. */
         private static readonly MethodInfo MthdWriteObj =
@@ -478,6 +479,26 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             // Compile and return
             return Expression.Lambda<PortableReflectiveReadAction>(assignExpr, targetParam, readerParam).Compile();
+        }
+
+        /// <summary>
+        /// Gets generic method for a type by name and (optionally) parameter types.
+        /// Throws an exception if method can't be found or there are multiple candidates.
+        /// </summary>
+        /// <param name="type">The type to search in.</param>
+        /// <param name="methodName">Name of the method.</param>
+        /// <param name="paramTypes">Parameter types.</param>
+        /// <returns>Resulting method.</returns>
+        private static MethodInfo GetGenericMethod(Type type, string methodName, params Type[] paramTypes)
+        {
+            var methods = type.GetMethods().Where(
+                x => x.Name == methodName &&
+                     x.IsGenericMethod);
+
+            if (paramTypes.Any())
+                methods = methods.Where(x => x.GetParameters().Select(p => p.ParameterType).SequenceEqual(paramTypes));
+
+            return methods.Single();
         }
     }
 }
