@@ -18,23 +18,21 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
@@ -45,22 +43,14 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 8;
 
-    /** Grids. */
-    private static Ignite[] grids;
+    /** */
+    private AtomicReferenceArray<Ignite> nodes;
 
-    /** Ids. */
-    private static String[] ids;
-
-    /** Flags. */
-    private static AtomicBoolean[] flags;
-
-    /** Futs. */
-    private static Collection<IgniteInternalFuture> futs;
-
-    /** Alive grids. */
-    private static Set<Integer> aliveGrids;
+    /** */
+    private volatile boolean done;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -81,17 +71,27 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 5 * 60_000;
+    }
+
     /**
      * @throws Exception If failed.
      */
-    public void testFailover() throws Exception {
-        int cnt = 10;
+    public void testContainsKeyFailover() throws Exception {
+        int cnt = 3;
 
         for (int i = 0; i < cnt; i++) {
             try {
-                U.debug("*** Iteration " + (i + 1) + '/' + cnt);
-
-                init();
+                log.info("Iteration: " + (i + 1) + '/' + cnt);
 
                 doTestFailover();
             }
@@ -102,54 +102,34 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Initializes test.
-     */
-    private void init() {
-        grids = new Ignite[GRID_CNT + 1];
-
-        ids = new String[GRID_CNT + 1];
-
-        aliveGrids = new HashSet<>();
-
-        flags = new AtomicBoolean[GRID_CNT + 1];
-
-        futs = new ArrayList<>();
-    }
-
-    /**
      * Executes one test iteration.
+     * @throws Exception If failed.
      */
     private void doTestFailover() throws Exception {
         try {
+            done = false;
+
+            nodes = new AtomicReferenceArray<>(GRID_CNT);
+
+            startGridsMultiThreaded(GRID_CNT, false);
+
+            for (int i = 0; i < GRID_CNT ; i++)
+                assertTrue(nodes.compareAndSet(i, null, ignite(i)));
+
+            List<IgniteInternalFuture> futs = new ArrayList<>();
+
             for (int i = 0; i < GRID_CNT + 1; i++) {
-                final IgniteEx grid = startGrid(i);
-
-                grids[i] = grid;
-
-                ids[i] = grid.localNode().id().toString();
-
-                aliveGrids.add(i);
-
-                flags[i] = new AtomicBoolean();
-            }
-
-            for (int i = 0; i < GRID_CNT + 1; i++) {
-                final int gridIdx = i;
-
                 futs.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
-                        IgniteCache cache = grids[gridIdx].cache(null);
+                        T2<Ignite, Integer> ignite;
 
-                        while (!flags[gridIdx].get()) {
-                            int idx = ThreadLocalRandom.current().nextInt(GRID_CNT + 1);
+                        while ((ignite = randomNode()) != null) {
+                            IgniteCache<Object, Object> cache = ignite.get1().cache(null);
 
-                            String id = ids[idx];
+                            for (int i = 0; i < 100; i++)
+                                cache.containsKey(ThreadLocalRandom.current().nextInt(100_000));
 
-                            if (id != null /*&& grids[gridIdx] != null*/) {
-                                //U.debug("!!! Grid containsKey start " + gridIdx);
-                                cache.containsKey(id);
-                                //U.debug("!!! Grid containsKey finished " + gridIdx);
-                            }
+                            assertTrue(nodes.compareAndSet(ignite.get2(), null, ignite.get1()));
 
                             try {
                                 Thread.sleep(ThreadLocalRandom.current().nextLong(50));
@@ -163,18 +143,15 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
 
                 futs.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
-                        IgniteCache cache = grids[gridIdx].cache(null);
+                        T2<Ignite, Integer> ignite;
 
-                        while (!flags[gridIdx].get()) {
-                            int idx = ThreadLocalRandom.current().nextInt(GRID_CNT + 1);
+                        while ((ignite = randomNode()) != null) {
+                            IgniteCache<Object, Object> cache = ignite.get1().cache(null);
 
-                            String id = ids[idx];
+                            for (int i = 0; i < 100; i++)
+                                cache.put(ThreadLocalRandom.current().nextInt(100_000), UUID.randomUUID());
 
-                            if (id != null /*&& grids[gridIdx] != null*/) {
-                                //U.debug("!!! Grid put start " + gridIdx);
-                                cache.put(id, UUID.randomUUID());
-                                //U.debug("!!! Grid put finished " + gridIdx);
-                            }
+                            assertTrue(nodes.compareAndSet(ignite.get2(), null, ignite.get1()));
 
                             try {
                                 Thread.sleep(ThreadLocalRandom.current().nextLong(50));
@@ -187,35 +164,50 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                 }, 1, "put-thread-" + i));
             }
 
-            while (aliveGrids.size() > 1) {
-                final int gridToKill = ThreadLocalRandom.current().nextInt(GRID_CNT) + 1;
+            try {
+                int aliveGrids = GRID_CNT;
 
-                if (gridToKill > 0 && grids[gridToKill] != null) {
-                    U.debug("!!! Trying to kill grid " + gridToKill);
+                while (aliveGrids > 0) {
+                    T2<Ignite, Integer> ignite = randomNode();
 
-                    //synchronized (mons[gridToKill]) {
-                        U.debug("!!! Grid stop start " + gridToKill);
+                    assert ignite != null;
 
-                        grids[gridToKill].close();
+                    Ignite ignite0 = ignite.get1();
 
-                        aliveGrids.remove(gridToKill);
+                    log.info("Stop node: " + ignite0.name());
 
-                        grids[gridToKill] = null;
+                    ignite0.close();
 
-                        flags[gridToKill].set(true);
+                    log.info("Node stop finished: " + ignite0.name());
 
-                        U.debug("!!! Grid stop finished " + gridToKill);
-                    //}
+                    aliveGrids--;
                 }
             }
-
-            Thread.sleep(ThreadLocalRandom.current().nextLong(100));
-        }
-        finally {
-            flags[0].set(true);
+            finally {
+                done = true;
+            }
 
             for (IgniteInternalFuture fut : futs)
                 fut.get();
         }
+        finally {
+            done = true;
+        }
+    }
+
+    /**
+     * @return Random node and its index.
+     */
+    @Nullable private T2<Ignite, Integer> randomNode() {
+        while (!done) {
+            int idx = ThreadLocalRandom.current().nextInt(GRID_CNT);
+
+            Ignite ignite = nodes.get(idx);
+
+            if (ignite != null && nodes.compareAndSet(idx, ignite, null))
+                return new T2<>(ignite, idx);
+        }
+
+        return null;
     }
 }
