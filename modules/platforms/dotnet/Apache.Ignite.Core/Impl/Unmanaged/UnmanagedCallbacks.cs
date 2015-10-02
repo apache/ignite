@@ -1044,11 +1044,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 case ErrGeneric:
                     if (_ignite != null && errDataLen > 0)
                     {
-                        using (var stream = new PlatformRawMemory(errData, errDataLen).GetStream())
-                        {
-                            throw ExceptionUtils.GetException(errCls, errMsg, 
-                                _ignite.Marshaller.StartUnmarshal(stream));
-                        }
+                        // Stream disposal intentionally omitted: IGNITE-1598
+                        var stream = new PlatformRawMemory(errData, errDataLen).GetStream();
+
+                        throw ExceptionUtils.GetException(errCls, errMsg, _ignite.Marshaller.StartUnmarshal(stream));
                     }
 
                     throw ExceptionUtils.GetException(errCls, errMsg);
