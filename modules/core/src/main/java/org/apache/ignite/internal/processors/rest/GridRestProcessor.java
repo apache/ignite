@@ -345,7 +345,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             }
 
             if (!F.isEmpty(sesTok) && clientId == null) {
-                UUID sesId = U.bytesToUuid(sesTok, 0); // TODO optimize
+                UUID sesId = U.bytesToUuid(sesTok, 0);
 
                 Session ses = sesId2Ses.get(sesId);
 
@@ -374,7 +374,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                         "(maybe expired session): [sesTok=" + U.byteArray2HexString(sesTok) + "]");
 
                 if (!ses.touch())
-                    continue; // Lets try to reslove session again.
+                    continue; // Need to wait while timeout thread complete removing of timed out sessions.
 
                 return ses;
             }
