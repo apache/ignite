@@ -60,7 +60,6 @@ import org.apache.ignite.igfs.IgfsMetrics;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
 import org.apache.ignite.igfs.IgfsPathIsDirectoryException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.IgfsPathSummary;
@@ -78,6 +77,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -85,6 +85,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
@@ -1004,7 +1005,7 @@ public final class IgfsImpl implements IgfsEx {
                     log.debug("Open file for writing [path=" + path + ", bufSize=" + bufSize + ", overwrite=" +
                         overwrite + ", props=" + props + ']');
 
-                IgfsMode mode = resolveMode(path);
+                final IgfsMode mode = resolveMode(path);
 
                 IgfsFileWorkerBatch batch;
 
@@ -1027,63 +1028,26 @@ public final class IgfsImpl implements IgfsEx {
                     return os;
                 }
 
-                // Re-create parents when working in PRIMARY mode. In DUAL mode this is done by MetaManager.
-                IgfsPath parent = path.parent();
+                // TODO: use dirrefent properties for new dirs and the file.
+                final Map<String, String> props0 = props == null ? DFLT_DIR_META : new HashMap<>(props);
 
-                // Create missing parent directories if necessary.
-                if (parent != null)
-                    mkdirs(parent, props);
+                IgfsOutputStream os = meta.create(path, overwrite, props0, new IgniteOutClosureX<IgfsFileInfo>() {
+                    @Override public IgfsFileInfo applyx() throws IgniteCheckedException {
+                        IgfsFileInfo info = new IgfsFileInfo(cfg.getBlockSize(), affKey, evictExclude(path, true), props0);
 
-                List<IgniteUuid> ids = meta.fileIds(path);
+                        return meta.lockInfo(info);
+                    }
+                }, new IgniteBiClosure<IgfsFileInfo, IgniteUuid, IgfsOutputStream>() {
+                    @Override public IgfsOutputStream apply(IgfsFileInfo info, IgniteUuid parentId) {
+                        assert info.lockId() != null;
+                        assert parentId != null && parentId != TRASH_ID;
 
-                // Resolve parent ID for file.
-                IgniteUuid parentId = ids.size() >= 2 ? ids.get(ids.size() - 2) : null;
+                        return new IgfsEventAwareOutputStream(path, info, parentId,
+                            bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, null);
+                    }
+                });
 
-                if (parentId == null)
-                    throw new IgfsPathNotFoundException("Failed to resolve parent directory: " + parent);
-
-                String fileName = path.name();
-
-                // Constructs new file info.
-                IgfsFileInfo info = new IgfsFileInfo(cfg.getBlockSize(), affKey, evictExclude(path, true), props);
-
-                // Add new file into tree structure.
-                while (true) {
-                    IgniteUuid oldId = meta.putIfAbsent(parentId, fileName, info);
-
-                    if (oldId == null)
-                        break;
-
-                    if (!overwrite)
-                        throw new IgfsPathAlreadyExistsException("Failed to create file (file already exists): " +
-                            path);
-
-                    IgfsFileInfo oldInfo = meta.info(oldId);
-
-                    assert oldInfo != null;
-
-                    if (oldInfo.isDirectory())
-                        throw new IgfsPathAlreadyExistsException("Failed to create file (path points to a " +
-                            "directory): " + path);
-
-                    // Remove old file from the tree.
-                    // Only one file is deleted, so we use internal data streamer.
-                    deleteFile(path, new FileDescriptor(parentId, fileName, oldId, oldInfo.isFile()), false);
-
-                    if (evts.isRecordable(EVT_IGFS_FILE_DELETED))
-                        evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_DELETED));
-                }
-
-                if (evts.isRecordable(EVT_IGFS_FILE_CREATED))
-                    evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_CREATED));
-
-                info = meta.lock(info.id());
-
-                IgfsEventAwareOutputStream os = new IgfsEventAwareOutputStream(path, info, parentId,
-                    bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, null);
-
-                if (evts.isRecordable(EVT_IGFS_FILE_OPENED_WRITE))
-                    evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_OPENED_WRITE));
+                assert os != null;
 
                 return os;
             }

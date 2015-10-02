@@ -51,6 +51,7 @@ import org.apache.ignite.igfs.IgfsConcurrentModificationException;
 import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
+import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsParentNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
@@ -76,7 +77,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -1466,9 +1469,11 @@ public class IgfsMetaManager extends IgfsManager {
                 resId = null;
         }
         else {
-            // Ensure trash directory existence.
-            if (id2InfoPrj.get(TRASH_ID) == null)
-                id2InfoPrj.getAndPut(TRASH_ID, new IgfsFileInfo(TRASH_ID));
+            assert id2InfoPrj.get(TRASH_ID) != null; // TRASH existence is checked in #lockIds() methods.
+
+//            // Ensure trash directory existence.
+//            if (id2InfoPrj.get(TRASH_ID) == null)
+//                id2InfoPrj.getAndPut(TRASH_ID, new IgfsFileInfo(TRASH_ID));
 
             moveNonTx(id, name, parentId, id.toString(), TRASH_ID);
 
@@ -1934,11 +1939,11 @@ public class IgfsMetaManager extends IgfsManager {
                         // starting from taking the path ids.
                         if (verifyPathIntegrity(existingPath, idList, lockedInfos)) {
                             // Locked path okay, trying to proceed with the remainder creation.
-                            IgfsFileInfo parentInfo = lockedInfos.get(parentId);
+                            IgfsFileInfo lowermostExistingInfo = lockedInfos.get(parentId);
 
                             // Check only the lowermost directory in the existing directory chain
                             // because others are already checked in #verifyPathIntegrity() above.
-                            if (!parentInfo.isDirectory())
+                            if (!lowermostExistingInfo.isDirectory())
                                 throw new IgfsParentNotDirectoryException("Failed to create directory (parent " +
                                     "element is not a directory)");
 
@@ -1952,7 +1957,7 @@ public class IgfsMetaManager extends IgfsManager {
                                 return false;
                             }
 
-                            Map<String, IgfsListingEntry> parentListing = parentInfo.listing();
+                            Map<String, IgfsListingEntry> parentListing = lowermostExistingInfo.listing();
 
                             String shortName = components.get(idSet.size() - 1);
 
@@ -3548,5 +3553,308 @@ public class IgfsMetaManager extends IgfsManager {
         @Override public String toString() {
             return S.toString(UpdatePath.class, this);
         }
+    }
+
+    /**
+     * Create new file.
+     *
+     * @param path Path.
+     * @param bufSize Buffer size.
+     * @param overwrite Overwrite flag.
+     * @param affKey Affinity key.
+     * @param replication Replication factor.
+     * @param props Properties.
+     * @param simpleCreate Whether new file should be created in secondary FS using create(Path, boolean) method.
+     * @return Output stream.
+     */
+    IgfsOutputStream create(
+            final IgfsPath path,
+            final boolean overwrite,
+            @Nullable final Map<String, String> props,
+            IgniteOutClosure<IgfsFileInfo> newInfoCreationClosure,
+            IgniteBiClosure<IgfsFileInfo, IgniteUuid, IgfsOutputStream> streamCreationClosure
+    ) throws IgniteCheckedException {
+        assert props != null;
+        assert validTxState(false);
+
+        List<String> components;
+        SortedSet<IgniteUuid> idSet;
+        IgfsPath existingPath;
+
+        while (true) {
+            if (busyLock.enterBusy()) {
+                try {
+                    // Take the ids in *path* order out of transaction:
+                    final List<IgniteUuid> idList = fileIds(path);
+
+                    idSet = new TreeSet<IgniteUuid>(PATH_ID_SORTING_COMPARATOR);
+
+                    components = path.components();
+
+                    // Store all the non-null ids in the set & construct existing path in one loop:
+                    existingPath = path.root();
+
+                    assert idList.size() == components.size() + 1;
+
+                    // Find the lowermost existing id:
+                    IgniteUuid lowermostExistingId = null;
+
+                    int idIdx = 0;
+
+                    for (IgniteUuid id: idList) {
+                        if (id == null)
+                            break;
+
+                        lowermostExistingId = id;
+
+                        boolean added = idSet.add(id);
+
+                        assert added;
+
+                        if (idIdx >= 1) // skip root.
+                            existingPath = new IgfsPath(existingPath, components.get(idIdx - 1));
+
+                        idIdx++;
+                    }
+
+                    // Start Tx:
+                    IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+
+                    try {
+                        final int existingIdCnt = idSet.size();
+
+                        if (overwrite)
+                            // Lock also the TRASH directory because in case of overwrite we
+                            // may need to delete the old file:
+                            idSet.add(TRASH_ID);
+
+                        final Map<IgniteUuid, IgfsFileInfo> lockedInfos = lockIds(idSet);
+
+                        assert !overwrite || lockedInfos.get(TRASH_ID) != null; // TRASH must exist at this point.
+
+                        // If the path was changed, we close the current Tx and repeat the procedure again
+                        // starting from taking the path ids.
+                        if (verifyPathIntegrity(existingPath, idList, lockedInfos)) {
+                            // Locked path okay, trying to proceed with the remainder creation.
+                            final IgfsFileInfo lowermostExistingInfo = lockedInfos.get(lowermostExistingId);
+
+                            if (existingIdCnt == components.size() + 1) {
+                                // Full requestd path exists.
+
+                                assert existingPath.equals(path);
+                                assert lockedInfos.size() == (overwrite ? existingIdCnt + 1/*TRASH*/ : existingIdCnt);
+
+                                if (lowermostExistingInfo.isDirectory()) {
+                                    throw new IgfsPathAlreadyExistsException("Failed to create file (path points to a " +
+                                        "directory): " + path);
+                                }
+                                else {
+                                    assert lowermostExistingInfo.isFile();
+
+                                    final IgniteUuid parentId = idList.get(idList.size() - 2);
+
+                                    // This is a file.
+                                    if (overwrite) {
+                                        // Delete existing file, but fail if it is locked:
+                                        IgniteUuid lockId = lowermostExistingInfo.lockId();
+
+                                        if (lockId != null)
+                                            throw fsException("Failed to remove file (file is opened for writing) [fileName=" +
+                                                    path.name() + ", fileId=" + lowermostExistingInfo.id() + ", lockId=" + lockId + ']');
+
+//                                        // Move the existing file to trash:
+//                                        moveNonTx(lowermostExistingInfo.id(), path.name(), parentId,
+//                                                lowermostExistingInfo.id().toString(), TRASH_ID);
+
+                                        final IgfsListingEntry deletedEntry = lockedInfos.get(parentId).listing().get(path.name());
+
+                                        assert deletedEntry != null;
+
+                                        id2InfoPrj.invoke(parentId, new UpdateListing(path.name(), deletedEntry, true));
+
+                                        // Add listing entry into the destination parent listing.
+                                        id2InfoPrj.invoke(TRASH_ID, new UpdateListing(lowermostExistingInfo.id().toString(), deletedEntry, false));
+
+                                        // Update a file info of the removed file with a file path,
+                                        // which will be used by delete worker for event notifications.
+                                        id2InfoPrj.invoke(lowermostExistingInfo.id(), new UpdatePath(path));
+
+                                        // Make a new locked info:
+                                        final IgfsFileInfo newFileInfo = newInfoCreationClosure.apply();
+
+                                        assert newFileInfo.lockId() != null; // locked info should be created.
+                                        assert lowermostExistingInfo.lockId() == null;
+
+                                        boolean put = id2InfoPrj.putIfAbsent(newFileInfo.id(), newFileInfo);
+
+                                        assert put;
+
+                                        id2InfoPrj.invoke(parentId,
+                                                new UpdateListing(path.name(), new IgfsListingEntry(newFileInfo), false));
+
+                                        IgfsOutputStream os = createOutputStream(newFileInfo, streamCreationClosure,
+                                                parentId, path.name());
+
+                                        assert os != null;
+
+                                        tx.commit();
+
+                                        delWorker.signal();
+
+                                        return os;
+                                    }
+                                    else {
+                                        throw new IgfsPathAlreadyExistsException("Failed to create file (file already exists and overwrite flag is false): " +
+                                            path);
+                                    }
+                                }
+                            }
+
+                            // The full requested path does not exist.
+
+                            // Check only the lowermost directory in the existing directory chain
+                            // because others are already checked in #verifyPathIntegrity() above.
+                            if (!lowermostExistingInfo.isDirectory())
+                                throw new IgfsParentNotDirectoryException("Failed to create file (parent " +
+                                        "element is not a directory)");
+
+                            Map<String, IgfsListingEntry> parentListing = lowermostExistingInfo.listing();
+
+                            final String uppermostFileToBeCreatedName = components.get(existingIdCnt - 1);
+
+                            final IgfsListingEntry entry = parentListing.get(uppermostFileToBeCreatedName);
+
+                            if (entry == null) {
+                                IgfsFileInfo childInfo = null;
+
+                                String childName = null;
+
+                                IgfsFileInfo newFileInfo, createdFileInfo = null;
+                                IgniteUuid parentId = null;
+
+                                // This loop creates the missing directory chain from the bottom to the top:
+                                for (int i = components.size() - 1; i >= existingIdCnt - 1; i--) {
+                                    // Required entry does not exist.
+                                    // Create new directory info:
+                                    if (childName == null) {
+                                        assert childInfo == null;
+
+                                        createdFileInfo = newFileInfo = newInfoCreationClosure.apply();
+                                    } else {
+                                        assert childInfo != null;
+
+                                        newFileInfo = new IgfsFileInfo(
+                                                Collections.singletonMap(childName,
+                                                        new IgfsListingEntry(childInfo)), props);
+
+                                        if (parentId == null)
+                                            parentId = newFileInfo.id();
+                                    }
+
+                                    boolean put = id2InfoPrj.putIfAbsent(newFileInfo.id(), newFileInfo);
+
+                                    assert put; // Because we used a new id that should be unic.
+
+                                    childName = components.get(i);
+
+                                    childInfo = newFileInfo;
+                                }
+
+                                // Now link the newly created file chain to the lowermost existing parent:
+                                id2InfoPrj.invoke(lowermostExistingId,
+                                        new UpdateListing(childName, new IgfsListingEntry(childInfo), false));
+
+                                if (parentId == null)
+                                    parentId = lowermostExistingId;
+
+                                IgfsOutputStream os = createOutputStream(createdFileInfo,
+                                        streamCreationClosure, parentId, path.name());
+
+                                assert os != null;
+
+                                // We're close to finish:
+                                tx.commit();
+
+                                return os;
+                            }
+                            else {
+                                // Another thread concurrently created file or directory in th epath with
+                                // the name we need.
+
+                                if (existingIdCnt == components.size()) {
+                                    // All elements exist but the bottom one.
+
+                                    if (entry.isDirectory()) {
+                                        // Entry exists, and it is a directory:
+                                        throw new IgfsPathAlreadyExistsException("Failed to create file (path points to a " +
+                                                "directory): " + path);
+                                    }
+                                    else if (!overwrite) {
+                                        // This is a file, and we cannot overwrite it:
+                                        throw new IgfsPathAlreadyExistsException("Failed to create file (file already exists and overwrite flag is false): " +
+                                                path);
+                                    }
+
+                                    // Otherwise continue the 'while' loop, because
+                                    // we cannot lock the file at this point to overwrite it.
+                                }
+                                else {
+                                    // Existing chain breaks above the target file.
+
+                                    if (!entry.isDirectory()) {
+                                        // Entry exists, and it is not a directory:
+                                        throw new IgfsParentNotDirectoryException("Failed to create file (parent " +
+                                                "element is not a directory)");
+                                    }
+
+                                    // If this is an existing directory, continue the 'while' loop, because
+                                    // we cannot lock the directory at this point.
+                                }
+                            }
+                        }
+                    } finally {
+                        tx.close();
+                    }
+                } finally {
+                    busyLock.leaveBusy();
+                }
+            } else
+                throw new IllegalStateException("Failed to mkdir because Grid is stopping. [path=" + path + ']');
+        } // retry loop
+
+        // TODO: send all events there (3 kind: mkdir, created, deleted).
+
+//        if (result)
+//            // Send the mkdirs events in case we created some directories.
+//            // Do that out of transaction and busy lock.
+//            // Note that we send separate event for *each* created directory.
+//            sendMkdirEvents(idSet.size() - 1, existingPath, components);
+   }
+
+    /**
+     * Encapsulates new file creation.
+     *
+     * @param newInfoCreationClosure
+     * @param streamCreationClosure
+     * @param idToRemove
+     * @param infoToRemove
+     * @param parentId
+     * @param name
+     * @return
+     * @throws IgniteCheckedException
+     */
+    private IgfsOutputStream createOutputStream(IgfsFileInfo newFileInfo,
+                                                IgniteBiClosure<IgfsFileInfo/*new info*/, IgniteUuid/*parent id*/, IgfsOutputStream/*out*/> streamCreationClosure,
+                                                IgniteUuid parentId, String name) throws IgniteCheckedException {
+        assert newFileInfo.lockId() != null;
+        assert parentId != null;
+        IgfsFileInfo i = id2InfoPrj.get(newFileInfo.id());
+        assert  i != null ;
+        assert newFileInfo.equals(i);
+        IgfsListingEntry entry = id2InfoPrj.get(parentId).listing().get(name);
+        assert entry != null;
+        assert entry.fileId().equals(newFileInfo.id());
+
+        return streamCreationClosure.apply(newFileInfo, parentId);
     }
 }
