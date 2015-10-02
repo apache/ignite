@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Collections;
     using System.Collections.Generic;
     using System.IO;
-
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Portable.Metadata;
     using Apache.Ignite.Core.Portable;
@@ -943,8 +943,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             _stream.WriteInt(PU.LengthTypeId + 16);
 
-            _stream.WriteByte(PU.TypeEnum);
-            PortableUtils.WriteEnum(_stream, (Enum)(object)val);
+            WriteEnum(val);
         }
 
         /// <summary>
@@ -955,7 +954,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         public void WriteEnum<T>(T val)
         {
             _stream.WriteByte(PU.TypeEnum);
-            PortableUtils.WriteEnum(_stream, (Enum)(object)val);
+            PortableUtils.WriteEnum(_stream, TypeCaster<Enum>.Cast(val));
         }
 
         /// <summary>
@@ -974,8 +973,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 int pos = SkipFieldLength();
 
-                _stream.WriteByte(PU.TypeArrayEnum);
-                PortableUtils.WriteArray(val, this, true);
+                WriteEnumArray(val);
 
                 WriteFieldLength(_stream, pos);
             }
@@ -1083,8 +1081,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 int pos = SkipFieldLength();
 
-                WriteByte(PortableUtils.TypeCollection);
-                PortableUtils.WriteCollection(val, this);
+                WriteCollection(val);
 
                 WriteFieldLength(_stream, pos);
             }
@@ -1096,7 +1093,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Collection.</param>
         public void WriteCollection(ICollection val)
         {
-            Write(val);
+            WriteByte(PortableUtils.TypeCollection);
+            PortableUtils.WriteCollection(val, this);
         }
 
         /// <summary>
@@ -1115,9 +1113,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 int pos = SkipFieldLength();
 
-                // TODO: Fix this in all Write methods.
-                WriteByte(PortableUtils.TypeCollection);
-                PortableUtils.WriteGenericCollection(val, this);
+                WriteCollection(val);
 
                 WriteFieldLength(_stream, pos);
             }
@@ -1130,7 +1126,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Collection.</param>
         public void WriteCollection<T>(ICollection<T> val)
         {
-            Write(val);
+            WriteByte(PortableUtils.TypeCollection);
+            PortableUtils.WriteGenericCollection(val, this);
         }
 
         /// <summary>
@@ -1148,7 +1145,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 int pos = SkipFieldLength();
 
-                Write(val);
+                WriteDictionary(val);
 
                 WriteFieldLength(_stream, pos);
             }
@@ -1160,7 +1157,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Dictionary.</param>
         public void WriteDictionary(IDictionary val)
         {
-            Write(val);
+            WriteByte(PortableUtils.TypeDictionary);
+            PortableUtils.WriteDictionary(val, this);
         }
 
         /// <summary>
@@ -1178,7 +1176,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 int pos = SkipFieldLength();
 
-                Write(val);
+                WriteDictionary(val);
 
                 WriteFieldLength(_stream, pos);
             }
@@ -1190,13 +1188,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Dictionary.</param>
         public void WriteDictionary<TK, TV>(IDictionary<TK, TV> val)
         {
-            Write(val);
+            WriteByte(PortableUtils.TypeDictionary);
+            PortableUtils.WriteGenericDictionary(val, this);
         }
 
         /// <summary>
         /// Write NULL field.
         /// </summary>
-        public void WriteNullField()
+        private void WriteNullField()
         {
             _stream.WriteInt(1);
             _stream.WriteByte(PU.HdrNull);
@@ -1205,7 +1204,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write NULL raw field.
         /// </summary>
-        public void WriteNullRawField()
+        private void WriteNullRawField()
         {
             _stream.WriteByte(PU.HdrNull);
         }
@@ -1367,7 +1366,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="val">Object.</param>
         /// <param name="type">Type.</param>
-        public unsafe void WritePrimitive<T>(T val, Type type)
+        private unsafe void WritePrimitive<T>(T val, Type type)
         {
             // .Net defines 14 primitive types. We support 12 - excluding IntPtr and UIntPtr.
             // Types check sequence is designed to minimize comparisons for the most frequent types.
