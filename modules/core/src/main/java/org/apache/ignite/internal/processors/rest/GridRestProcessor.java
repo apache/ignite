@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -60,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
@@ -70,6 +70,7 @@ import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.thread.IgniteThread;
 import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
@@ -112,32 +113,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** SecurityContext map. */
     private final ConcurrentMap<UUID, Session> sesId2Ses = new ConcurrentHashMap<>();
 
-    /**  */
-    private final Thread sesTimeoutCheckerThread = new Thread(new Runnable() {
-        @Override public void run() {
-            try {
-                while(!Thread.currentThread().isInterrupted()) {
-                    Thread.sleep(SES_TIMEOUT_CHECK_DELAY);
-
-                    for (Iterator<Map.Entry<UUID, Session>> iter = sesId2Ses.entrySet().iterator();
-                        iter.hasNext();) {
-                        Map.Entry<UUID, Session> e = iter.next();
-
-                        Session ses = e.getValue();
-
-                        if (ses.checkTimeout(sesTtl)) {
-                            iter.remove();
-
-                            clientId2SesId.remove(ses.clientId, ses.sesId);
-                        }
-                    }
-                }
-            }
-            catch (InterruptedException ignore) {
-                // No-op.
-            }
-        }
-    }, "session-timeout-checker");
+    /** */
+    private final Thread sesTimeoutCheckerThread;
 
     /** Protocol handler. */
     private final GridRestProtocolHandler protoHnd = new GridRestProtocolHandler() {
@@ -150,7 +127,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         }
     };
 
-    /** Sesion timeout size */
+    /** Session time to live. */
     private final long sesTtl;
 
     /**
@@ -327,16 +304,17 @@ public class GridRestProcessor extends GridProcessorAdapter {
         final UUID clientId = req.clientId();
         final byte[] sesTok = req.sessionToken();
 
-        long startTime = U.currentTimeMillis();
-
-        while(U.currentTimeMillis() - startTime < 3_000) { /* Try resolve session not longer then 3 sec. */
+        while (true) {
             if (F.isEmpty(sesTok) && clientId == null) {
                 Session ses = Session.random();
 
-                if (clientId2SesId.putIfAbsent(ses.clientId, ses.sesId) != null)
-                    continue; /** New random clientId equals to existing clientId */
+                UUID oldSesId = clientId2SesId.put(ses.clientId, ses.sesId);
 
-                sesId2Ses.put(ses.sesId, ses);
+                assert oldSesId == null : "Request=" + req;
+
+                Session oldSes = sesId2Ses.put(ses.sesId, ses);
+
+                assert oldSes == null : "Request=" + req;
 
                 return ses;
             }
@@ -348,36 +326,35 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     Session ses = Session.fromClientId(clientId);
 
                     if (clientId2SesId.putIfAbsent(ses.clientId, ses.sesId) != null)
-                        continue; /** Another thread already register session with the clientId. */
+                        continue; // Another thread already register session with the clientId.
 
-                    sesId2Ses.put(ses.sesId, ses);
+                    Session prevSes = sesId2Ses.put(ses.sesId, ses);
+
+                    assert prevSes == null : "Request=" + req;
 
                     return ses;
                 }
                 else {
                     Session ses = sesId2Ses.get(sesId);
 
-                    if (ses == null)
-                        continue; /** Need to wait while timeout thread complete removing of timed out sessions. */
-
-                    if (ses.checkTimeoutAndTryUpdateLastTouchTime())
-                        continue; /** Need to wait while timeout thread complete removing of timed out sessions. */
+                    if (ses == null || !ses.touch())
+                        continue; // Need to wait while timeout thread complete removing of timed out sessions.
 
                     return ses;
                 }
             }
 
             if (!F.isEmpty(sesTok) && clientId == null) {
-                UUID sesId = U.bytesToUuid(sesTok, 0);
+                UUID sesId = U.bytesToUuid(sesTok, 0); // TODO optimize
 
                 Session ses = sesId2Ses.get(sesId);
 
                 if (ses == null)
-                    throw new IgniteCheckedException("Failed to handle request. Unknown session token " +
-                        "(maybe expired session). [sessionToken=" + U.byteArray2HexString(sesTok) + "]");
+                    throw new IgniteCheckedException("Failed to handle request, unknown session token " +
+                        "(maybe expired session): [sesTok=" + U.byteArray2HexString(sesTok) + "]");
 
-                if (ses.checkTimeoutAndTryUpdateLastTouchTime())
-                    continue; /** Need to wait while timeout thread complete removing of timed out sessions. */
+                if (!ses.touch())
+                    continue; // Need to wait while timeout thread complete removing of timed out sessions.
 
                 return ses;
             }
@@ -386,25 +363,24 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 UUID sesId = clientId2SesId.get(clientId);
 
                 if (sesId == null || !sesId.equals(U.bytesToUuid(sesTok, 0)))
-                    throw new IgniteCheckedException("Failed to handle request. " +
-                        "Unsupported case (misamatched clientId and session token)");
+                    throw new IgniteCheckedException("Failed to handle request - unsupported case (misamatched " +
+                        "clientId and session token): [clientId=" + clientId + ", sesTok=" +
+                        U.byteArray2HexString(sesTok) + "]");
 
                 Session ses = sesId2Ses.get(sesId);
 
                 if (ses == null)
-                    throw new IgniteCheckedException("Failed to handle request. Unknown session token " +
-                        "(maybe expired session). [sessionToken=" + U.byteArray2HexString(sesTok) + "]");
+                    throw new IgniteCheckedException("Failed to handle request - unknown session token " +
+                        "(maybe expired session): [sesTok=" + U.byteArray2HexString(sesTok) + "]");
 
-                if (ses.checkTimeoutAndTryUpdateLastTouchTime())
-                    continue; /** Lets try to reslove session again. */
+                if (!ses.touch())
+                    continue; // Lets try to reslove session again.
 
                 return ses;
             }
 
-            throw new IgniteCheckedException("Failed to handle request (Unreachable state).");
+            assert false : "Got an unreachable state.";
         }
-
-        throw new IgniteCheckedException("Failed to handle request (Could not resolve session).");
     }
 
     /**
@@ -425,12 +401,32 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 sesExpTime0 = DEFAULT_SES_TIMEOUT;
         }
         catch (NumberFormatException ignore) {
-            log.warning("Failed parsing IGNITE_REST_SESSION_TIMEOUT system variable [IGNITE_REST_SESSION_TIMEOUT="+sesExpTime+"]");
+            U.warn(log, "Failed parsing IGNITE_REST_SESSION_TIMEOUT system variable [IGNITE_REST_SESSION_TIMEOUT="
+                + sesExpTime + "]");
 
             sesExpTime0 = DEFAULT_SES_TIMEOUT;
         }
 
         sesTtl = sesExpTime0;
+
+        sesTimeoutCheckerThread = new IgniteThread(ctx.gridName(), "session-timeout-worker",
+            new GridWorker(ctx.gridName(), "session-timeout-worker", log) {
+                @Override protected void body() throws InterruptedException {
+                    while (!isCancelled()) {
+                        Thread.sleep(SES_TIMEOUT_CHECK_DELAY);
+
+                        for (Map.Entry<UUID, Session> e : sesId2Ses.entrySet()) {
+                            Session ses = e.getValue();
+
+                            if (ses.isTimedOut(sesTtl)) {
+                                sesId2Ses.remove(ses.sesId, ses);
+
+                                clientId2SesId.remove(ses.clientId, ses.sesId);
+                            }
+                        }
+                    }
+                }
+            });
     }
 
     /** {@inheritDoc} */
@@ -939,48 +935,42 @@ public class GridRestProcessor extends GridProcessorAdapter {
          *
          * @param sesTimeout Session timeout.
          * @return <code>True</code> if expired.
-         * @see #checkTimeoutAndTryUpdateLastTouchTime()
+         * @see #touch()
          */
-        boolean checkTimeout(long sesTimeout) {
+        boolean isTimedOut(long sesTimeout) {
             long time0 = lastTouchTime.get();
 
-            if (U.currentTimeMillis() - time0 > sesTimeout)
-                lastTouchTime.compareAndSet(time0, TIMEDOUT_FLAG);
+            if (time0 == TIMEDOUT_FLAG)
+                return true;
 
-            return isTimedOut();
+            return U.currentTimeMillis() - time0 > sesTimeout && lastTouchTime.compareAndSet(time0, TIMEDOUT_FLAG);
         }
 
         /**
          * Checks whether session at expired state (EPIRATION_FLAG) or not, if not then tries to update last touch time.
          *
-         * @return <code>True</code> if timed out.
-         * @see #checkTimeout(long)
+         * @return {@code False} if session timed out (not successfully touched).
+         * @see #isTimedOut(long)
          */
-        boolean checkTimeoutAndTryUpdateLastTouchTime() {
+        boolean touch() {
             while (true) {
                 long time0 = lastTouchTime.get();
 
                 if (time0 == TIMEDOUT_FLAG)
-                    return true;
+                    return false;
 
                 boolean success = lastTouchTime.compareAndSet(time0, U.currentTimeMillis());
 
                 if (success)
-                    return false;
+                    return true;
             }
-        }
-
-        /**
-         * @return <code>True</code> if session in expired state.
-         */
-        boolean isTimedOut() {
-            return lastTouchTime.get() == TIMEDOUT_FLAG;
         }
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
+
             if (!(o instanceof Session))
                 return false;
 
@@ -988,6 +978,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             if (clientId != null ? !clientId.equals(ses.clientId) : ses.clientId != null)
                 return false;
+
             if (sesId != null ? !sesId.equals(ses.sesId) : ses.sesId != null)
                 return false;
 
@@ -997,8 +988,15 @@ public class GridRestProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             int res = clientId != null ? clientId.hashCode() : 0;
+
             res = 31 * res + (sesId != null ? sesId.hashCode() : 0);
+
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Session.class, this);
         }
     }
 }
