@@ -288,7 +288,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         public int JobResultRemote(ComputeJobHolder job, PlatformMemoryStream stream)
         {
             // 1. Unmarshal result.
-            PortableReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream);
+            PortableReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream, PortableMode.KeepPortable);
 
             Guid nodeId = reader.ReadGuid().Value;
             bool cancelled = reader.ReadBoolean();
@@ -297,7 +297,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             {
                 object err;
 
-                var data = PortableUtils.ReadWrappedInvocationResult(reader, out err);
+                var data = PortableUtils.ReadInvocationResult(reader, out err);
 
                 // 2. Process the result.
                 return (int) JobResult0(new ComputeJobResultImpl(data, (Exception) err, job.Job, nodeId, cancelled));
