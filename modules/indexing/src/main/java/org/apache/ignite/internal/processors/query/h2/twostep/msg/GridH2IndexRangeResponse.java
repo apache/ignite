@@ -37,7 +37,7 @@ public class GridH2IndexRangeResponse implements Message {
     public static final byte STATUS_RETRY = 1;
 
     /** */
-    private long idxRngReqId;
+    private long id;
 
     /** Sizes for returned ranges. */
     private int[] sizes;
@@ -70,17 +70,17 @@ public class GridH2IndexRangeResponse implements Message {
     }
 
     /**
-     * @return Index range request ID.
+     * @param id ID.
      */
-    public long indexRangeRequestId() {
-        return idxRngReqId;
+    public void id(long id) {
+        this.id = id;
     }
 
     /**
-     * @param idxRngReqId Index range request ID.
+     * @return ID.
      */
-    public void indexRangeRequestId(long idxRngReqId) {
-        this.idxRngReqId = idxRngReqId;
+    public long id() {
+        return id;
     }
 
     /**

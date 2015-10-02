@@ -80,9 +80,9 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -645,7 +645,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public GridQueryFieldsResult queryFields(@Nullable final String spaceName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filters)
         throws IgniteCheckedException {
-        setFilters(filters);
+        GridH2QueryContext.create().filter(filters);
 
         try {
             Connection conn = connectionForThread(schema(spaceName));
@@ -666,7 +666,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return new GridQueryFieldsResultAdapter(meta, new FieldsIterator(rs));
         }
         finally {
-            setFilters(null);
+            GridH2QueryContext.destroy();
         }
     }
 
@@ -845,7 +845,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             throw new CacheException("Failed to find SQL table for type: " + type.name());
 
-        setFilters(filters);
+        GridH2QueryContext.create().filter(filters);
 
         try {
             ResultSet rs = executeQuery(spaceName, qry, params, tbl);
@@ -853,7 +853,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return new KeyValIterator(rs);
         }
         finally {
-            setFilters(null);
+            GridH2QueryContext.destroy();
         }
     }
 
@@ -977,17 +977,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         cursor.fieldsMeta(meta);
 
         return cursor;
-    }
-
-    /**
-     * Sets filters for current thread. Must be set to not null value
-     * before executeQuery and reset to null after in finally block since it signals
-     * to table that it should return content without expired values.
-     *
-     * @param filters Filters.
-     */
-    public void setFilters(@Nullable IndexingQueryFilter filters) {
-        GridH2IndexBase.setFiltersForThread(filters);
     }
 
     /**

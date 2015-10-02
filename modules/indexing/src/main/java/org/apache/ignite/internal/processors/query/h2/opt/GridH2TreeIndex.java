@@ -20,17 +20,16 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import java.io.Closeable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.Future;
 import javax.cache.CacheException;
@@ -48,11 +47,11 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessa
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.util.GridEmptyIterator;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -69,6 +68,7 @@ import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor.QUERY_POOL;
 
@@ -92,6 +92,10 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** */
     private final GridKernalContext ctx;
+
+    /** */
+    private final ConcurrentMap<Long,BlockingQueue<T2<ClusterNode,GridH2IndexRangeResponse>>> msgQueues =
+        new ConcurrentHashMap8<>();
 
     /**
      * Constructor with index initialization.
@@ -184,7 +188,10 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     }
 
     private void onIndexRangeResponse(ClusterNode node, GridH2IndexRangeResponse msg) {
-        // Ignore msg if rebuild happens.
+        BlockingQueue<T2<ClusterNode, GridH2IndexRangeResponse>> q = msgQueues.get(msg.id());
+
+        if (q != null)
+            q.add(new T2<>(node, msg));
     }
 
     /** {@inheritDoc} */
@@ -248,10 +255,10 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public long getRowCount(@Nullable Session ses) {
-        IndexingQueryFilter f = filters.get();
+        IndexingQueryFilter f = GridH2QueryContext.get().filter();
 
         // Fast path if we don't need to perform any filtering.
-        if (f == null || f.forSpace(((GridH2Table)getTable()).spaceName()) == null)
+        if (f == null || f.forSpace((getTable()).spaceName()) == null)
             return treeForRead().size();
 
         Iterator<GridH2Row> iter = doFind(null, false, null);
@@ -553,60 +560,75 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public int getPreferedLookupBatchSize() {
-        return 1000;
+        return 0;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public List<Future<Cursor>> findBatched(TableFilter filter, List<SearchRow> firstLastPairs) {
-        GridH2Table tbl = getTable();
+        List<Range> ranges = toRanges(firstLastPairs);
 
-        GridCacheContext<?,?> cctx = tbl.rowDescriptor().context();
-        IndexColumn affCol = tbl.getAffinityKeyColumn();
 
-        Map<ClusterNode, Map<Integer,IgnitePair<GridH2RowMessage>>> batches = new HashMap<>();
 
-        for (int i = 0; i < firstLastPairs.size(); i++) {
+        // TODO Topology version + explicit partitions
+
+        return null;
+    }
+
+    /**
+     * @param firstLastPairs First last pairs.
+     * @return Ranges list.
+     */
+    private List<Range> toRanges(List<SearchRow> firstLastPairs) {
+        if (F.isEmpty(firstLastPairs))
+            throw new IllegalStateException();
+
+        IndexColumn affCol = getTable().getAffinityKeyColumn();
+
+        List<Range> ranges = new ArrayList<>(firstLastPairs.size() >>> 1);
+
+        for (int i = 0; i < firstLastPairs.size(); i += 2) {
             Value affKey = firstLastPairs.get(i).getValue(affCol.column.getColumnId());
-
-            Collection<ClusterNode> nodes;
-
-            // TODO Topology version + explicit partitions
-            AffinityTopologyVersion topVer = null;
-
-            if (affKey != null) {
-                ClusterNode node = cctx.affinity().primary(affKey.getObject(), topVer);
-
-                if (node == null)
-                    throw new CacheException();
-
-                nodes = Collections.singleton(node);
-            }
-            else {
-                nodes = CU.affinityNodes(cctx, topVer);
-
-                if (F.isEmpty(nodes))
-                    throw new CacheException();
-            }
 
             GridH2RowMessage first = toRowMessage(firstLastPairs.get(i));
             GridH2RowMessage last = toRowMessage(firstLastPairs.get(i + 1));
 
-            IgnitePair<GridH2RowMessage> bounds = new IgnitePair<>(first, last);
-
-            for (ClusterNode node : nodes) {
-                Map<Integer,IgnitePair<GridH2RowMessage>> batch = batches.get(node);
-
-                if (batch == null)
-                    batches.put(node, batch = new HashMap<>());
-
-                batch.put(i >>> 1, bounds);
-            }
+            ranges.add(new Range(ranges.size(), affKey == null ? null : affKey.getObject(), first, last));
         }
 
-        Future<Cursor>[] res = new Future[firstLastPairs.size() >>> 1];
+        return ranges;
+    }
 
-        return Arrays.asList(res);
+    /**
+     * @param affKey Affinity key.
+     * @param topVer Topology version.
+     * @return Cluster nodes
+     */
+    private Collection<ClusterNode> rangeNodes(Value affKey, AffinityTopologyVersion topVer) {
+        GridCacheContext<?,?> cctx = getTable().rowDescriptor().context();
+
+        Collection<ClusterNode> nodes;
+
+        if (affKey != null) {
+            if (affKey.getType() == Value.NULL) {
+                // TODO
+            }
+
+            ClusterNode node = cctx.affinity().primary(affKey.getObject(), topVer);
+
+            if (node == null)
+                throw new CacheException();
+
+            nodes = Collections.singleton(node);
+        }
+        else {
+            nodes = CU.affinityNodes(cctx, topVer);
+
+            if (F.isEmpty(nodes))
+                throw new CacheException();
+        }
+
+        return nodes;
     }
 
     private IgniteInternalFuture<GridH2IndexRangeResponse> send(
@@ -656,41 +678,79 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      */
     private class RangeStream {
         /** */
-        final Queue<Range> ranges;
+        final Queue<RangeData> ranges;
 
         private RangeStream(int rangesNum) {
             ranges = new ArrayDeque<>(rangesNum);
 
             for (int i = 0; i < rangesNum; i++)
-                ranges.add(new Range(i));
+                ranges.add(new RangeData(i));
         }
     }
 
-
-    private class Range {
+    /**
+     *
+     */
+    private static class Range {
         /** */
         final int id;
 
         /** */
-        List<Row> list = Collections.emptyList();
+        final Object affKey;
 
-        private Range(int id) {
+        /** */
+        final GridH2RowMessage first;
+
+        /** */
+        final GridH2RowMessage last;
+
+        /**
+         * @param id Range ID.
+         * @param affKey Affinity key.
+         * @param first Lower bound.
+         * @param last Upper bound.
+         */
+        private Range(int id, Object affKey, GridH2RowMessage first, GridH2RowMessage last) {
+            this.id = id;
+            this.affKey = affKey;
+            this.first = first;
+            this.last = last;
+        }
+    }
+
+    /**
+     * Range data.
+     */
+    private class RangeData {
+        /** */
+        final int id;
+
+        /** */
+        List<Row> rows = Collections.emptyList();
+
+        /**
+         * @param id ID.
+         */
+        private RangeData(int id) {
             this.id = id;
         }
 
+        /**
+         * @param other Rows.
+         */
         void merge(List<Row> other) {
             if (F.isEmpty(other))
                 return;
 
-            if (list.isEmpty()) {
-                list = other;
+            if (rows.isEmpty()) {
+                rows = other;
 
                 return;
             }
 
-            List<Row> res = new ArrayList<>(list.size() + other.size());
+            List<Row> res = new ArrayList<>(rows.size() + other.size());
 
-            Cursor c1 = new GridH2Cursor(list.iterator());
+            Cursor c1 = new GridH2Cursor(rows.iterator());
             Cursor c2 = new GridH2Cursor(other.iterator());
 
             if (!c1.next() || !c2.next())
@@ -713,7 +773,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             }
             while (c.next());
 
-            list = res;
+            rows = res;
         }
     }
 }

@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservabl
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -443,7 +444,7 @@ public class GridMapQueryExecutor {
             if (nodeRess.put(req.requestId(), qr) != null)
                 throw new IllegalStateException();
 
-            h2.setFilters(h2.backupFilter(caches, topVer, req.partitions()));
+            GridH2QueryContext.create().filter(h2.backupFilter(caches, topVer, req.partitions()));
 
             // TODO Prepare snapshots for all the needed tables before the run.
 
@@ -501,7 +502,7 @@ public class GridMapQueryExecutor {
                 throw (Error)e;
         }
         finally {
-            h2.setFilters(null);
+            GridH2QueryContext.destroy();
 
             // Release reserved partitions.
             for (GridReservable r : reserved)

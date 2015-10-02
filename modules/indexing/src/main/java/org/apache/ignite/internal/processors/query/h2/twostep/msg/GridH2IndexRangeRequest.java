@@ -30,7 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridH2IndexRangeRequest implements Message {
     /** */
-    private long idxRngReqId;
+    private long id;
 
     /** */
     private UUID originNodeId;
@@ -47,20 +47,6 @@ public class GridH2IndexRangeRequest implements Message {
 
     /** */
     private long sourceId;
-
-    /**
-     * @return Index range request ID.
-     */
-    public long indexRangeRequestId() {
-        return idxRngReqId;
-    }
-
-    /**
-     * @param idxRngReqId Index range request ID.
-     */
-    public void indexRangeRequestId(long idxRngReqId) {
-        this.idxRngReqId = idxRngReqId;
-    }
 
     public List<GridH2RowMessage> searchRows() {
         return searchRows;

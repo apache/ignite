@@ -36,21 +36,6 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractK
  * Index base.
  */
 public abstract class GridH2IndexBase extends BaseIndex {
-    /** */
-    protected static final ThreadLocal<IndexingQueryFilter> filters = new ThreadLocal<>();
-
-    /**
-     * Sets key filters for current thread.
-     *
-     * @param fs Filters.
-     */
-    public static void setFiltersForThread(IndexingQueryFilter fs) {
-        if (fs == null)
-            filters.remove();
-        else
-            filters.set(fs);
-    }
-
     /**
      * If the index supports rebuilding it has to creates its own copy.
      *
@@ -103,7 +88,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
     protected Iterator<GridH2Row> filter(Iterator<GridH2Row> iter) {
         IgniteBiPredicate<Object, Object> p = null;
 
-        IndexingQueryFilter f = filters.get();
+        IndexingQueryFilter f = GridH2QueryContext.get().filter();
 
         if (f != null) {
             String spaceName = ((GridH2Table)getTable()).spaceName();
