@@ -508,9 +508,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public ICollection<T> ReadGenericCollection<T>()
+        public ICollection<T> ReadCollection<T>()
         {
-            return ReadGenericCollection((PortableGenericCollectionFactory<T>) null);
+            return ReadCollection((PortableGenericCollectionFactory<T>) null);
         }
 
         /** <inheritdoc /> */
@@ -521,7 +521,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public ICollection<T> ReadGenericCollection<T>(PortableGenericCollectionFactory<T> factory)
+        public ICollection<T> ReadCollection<T>(PortableGenericCollectionFactory<T> factory)
         {
             return Read(r => PortableUtils.ReadGenericCollection(r, factory));
         }
@@ -557,9 +557,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public IDictionary<TK, TV> ReadGenericDictionary<TK, TV>()
+        public IDictionary<TK, TV> ReadDictionary<TK, TV>()
         {
-            return ReadGenericDictionary((PortableGenericDictionaryFactory<TK, TV>) null);
+            return ReadDictionary((PortableGenericDictionaryFactory<TK, TV>) null);
         }
 
         /** <inheritdoc /> */
@@ -570,7 +570,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableGenericDictionaryFactory<TK, TV> factory)
+        public IDictionary<TK, TV> ReadDictionary<TK, TV>(PortableGenericDictionaryFactory<TK, TV> factory)
         {
             return Read(r => PortableUtils.ReadGenericDictionary(r, factory));
         }

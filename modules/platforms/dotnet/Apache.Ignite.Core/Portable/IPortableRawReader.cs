@@ -226,14 +226,14 @@ namespace Apache.Ignite.Core.Portable
         /// Read generic collection. 
         /// </summary>
         /// <returns>Collection.</returns>
-        ICollection<T> ReadGenericCollection<T>();
+        ICollection<T> ReadCollection<T>();
 
         /// <summary>
         /// Read generic collection.
         /// </summary>
         /// <param name="factory">Factory.</param>
         /// <returns>Collection.</returns>
-        ICollection<T> ReadGenericCollection<T>(PortableGenericCollectionFactory<T> factory);
+        ICollection<T> ReadCollection<T>(PortableGenericCollectionFactory<T> factory);
 
         /// <summary>
         /// Read dictionary. 
@@ -252,13 +252,13 @@ namespace Apache.Ignite.Core.Portable
         /// Read generic dictionary. 
         /// </summary>
         /// <returns>Dictionary.</returns>
-        IDictionary<TK, TV> ReadGenericDictionary<TK, TV>();
+        IDictionary<TK, TV> ReadDictionary<TK, TV>();
 
         /// <summary>
         /// Read generic dictionary.
         /// </summary>
         /// <param name="factory">Factory.</param>
         /// <returns>Dictionary.</returns>
-        IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableGenericDictionaryFactory<TK, TV> factory);
+        IDictionary<TK, TV> ReadDictionary<TK, TV>(PortableGenericDictionaryFactory<TK, TV> factory);
     }
 }

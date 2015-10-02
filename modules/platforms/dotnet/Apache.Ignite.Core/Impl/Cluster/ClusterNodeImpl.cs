@@ -64,9 +64,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             _id = reader.ReadGuid() ?? default(Guid);
 
-            _attrs = reader.ReadGenericDictionary<string, object>().AsReadOnly();
-            _addrs = reader.ReadGenericCollection<string>().AsReadOnly();
-            _hosts = reader.ReadGenericCollection<string>().AsReadOnly();
+            _attrs = reader.ReadDictionary<string, object>().AsReadOnly();
+            _addrs = reader.ReadCollection<string>().AsReadOnly();
+            _hosts = reader.ReadCollection<string>().AsReadOnly();
             _order = reader.ReadLong();
             _local = reader.ReadBoolean();
             _daemon = reader.ReadBoolean();

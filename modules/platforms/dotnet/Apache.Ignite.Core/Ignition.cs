@@ -344,7 +344,7 @@ namespace Apache.Ignite.Core
             object bean = IgniteUtils.CreateInstance(assemblyName, clsName);
 
             // 2. Set properties.
-            IDictionary<string, object> props = reader.ReadGenericDictionary<string, object>();
+            IDictionary<string, object> props = reader.ReadDictionary<string, object>();
 
             IgniteUtils.SetProperties(bean, props);
 
