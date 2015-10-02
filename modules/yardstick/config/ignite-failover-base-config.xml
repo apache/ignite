@@ -28,6 +28,6 @@
 
     <bean id="base-ignite-failover.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"
           parent="base-ignite.cfg" abstract="true">
-        <property name="failureDetectionTimeout" value="500"/>
+        <property name="failureDetectionTimeout" value="1000"/>
     </bean>
 </beans>
