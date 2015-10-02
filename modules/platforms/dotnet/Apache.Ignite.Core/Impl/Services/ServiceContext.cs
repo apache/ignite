@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Services
             Debug.Assert(reader != null);
 
             Name = reader.ReadString();
-            ExecutionId = reader.ReadGuid() ?? Guid.Empty;
+            ExecutionId = reader.ReadGuidNullable() ?? Guid.Empty;
             IsCancelled = reader.ReadBoolean();
             CacheName = reader.ReadString();
             AffinityKey = reader.ReadObject<object>();

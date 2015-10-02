@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Events
             _oldValue = r.ReadObject<object>();
             _hasOldValue = r.ReadBoolean();
             _hasNewValue = r.ReadBoolean();
-            _subjectId = r.ReadGuid() ?? Guid.Empty;
+            _subjectId = r.ReadGuidNullable() ?? Guid.Empty;
             _closureClassName = r.ReadString();
             _taskName = r.ReadString();
         }

@@ -164,7 +164,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
                 for (int i = 0; i < nodesCnt; i++)
                 {
-                    IClusterNode node = ignite.GetNode(reader.ReadGuid());
+                    IClusterNode node = ignite.GetNode(reader.ReadGuidNullable());
 
                     nodes.Add(node);
 
@@ -290,7 +290,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             // 1. Unmarshal result.
             PortableReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream);
 
-            Guid nodeId = reader.ReadGuid().Value;
+            Guid nodeId = reader.ReadGuidNullable().Value;
             bool cancelled = reader.ReadBoolean();
 
             try

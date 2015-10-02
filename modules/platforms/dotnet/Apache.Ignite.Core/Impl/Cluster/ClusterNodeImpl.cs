@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <param name="reader">The reader.</param>
         public ClusterNodeImpl(IPortableRawReader reader)
         {
-            _id = reader.ReadGuid() ?? default(Guid);
+            _id = reader.ReadGuidNullable() ?? default(Guid);
 
             _attrs = reader.ReadGenericDictionary<string, object>().AsReadOnly();
             _addrs = reader.ReadGenericCollection<string>().AsReadOnly();

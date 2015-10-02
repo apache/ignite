@@ -324,6 +324,30 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
+        public DateTime ReadDate(string fieldName)
+        {
+            return GetDateTimeFromNullable(ReadDateNullable(fieldName, false));
+        }
+
+        /** <inheritdoc /> */
+        public DateTime ReadDate(string fieldName, bool local)
+        {
+            return GetDateTimeFromNullable(ReadField(fieldName, r => PortableUtils.ReadDate(r, local)));
+        }
+
+        /** <inheritdoc /> */
+        public DateTime ReadDate()
+        {
+            return ReadDate(false);
+        }
+
+        /** <inheritdoc /> */
+        public DateTime ReadDate(bool local)
+        {
+            return GetDateTimeFromNullable(Read(r => PortableUtils.ReadDate(r, local)));
+        }
+
+        /** <inheritdoc /> */
         public DateTime? ReadDateNullable(string fieldName)
         {
             return ReadDateNullable(fieldName, false);
@@ -396,13 +420,25 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
+        public Guid ReadGuid(string fieldName)
+        {
+            return GetGuidFromNullable(ReadField(fieldName, PortableUtils.ReadGuid));
+        }
+
+        /** <inheritdoc /> */
+        public Guid ReadGuid()
+        {
+            return GetGuidFromNullable(Read(PortableUtils.ReadGuid));
+        }
+
+        /** <inheritdoc /> */
         public Guid? ReadGuidNullable(string fieldName)
         {
             return ReadField(fieldName, PortableUtils.ReadGuid);
         }
 
         /** <inheritdoc /> */
-        public Guid? ReadGuid()
+        public Guid? ReadGuidNullable()
         {
             return Read(PortableUtils.ReadGuid);
         }
@@ -414,7 +450,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public Guid?[] ReadGuidArray()
+        public Guid?[] ReadGuidArrayNullable()
         {
             return Read(r => PortableUtils.ReadGenericArray<Guid?>(r, false));
         }
@@ -600,6 +636,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             switch (hdr)
             {
                 case PortableUtils.HdrNull:
+                    // TODO: fix for value types
                     return default(T);
 
                 case PortableUtils.HdrHnd:
@@ -1008,6 +1045,30 @@ namespace Apache.Ignite.Core.Impl.Portable
             var hash = Stream.ReadInt();
 
             return new PortableUserObject(_marsh, bytes, offs, id, hash);
+        }
+
+        /// <summary>
+        /// Gets the DateTime from nullable DateTime.
+        /// Throws an exception for null value.
+        /// </summary>
+        private static DateTime GetDateTimeFromNullable(DateTime? dt)
+        {
+            if (!dt.HasValue)
+                throw new PortableException("Invalid data on deserialization. Expected: DateTime but was: null.");
+
+            return dt.Value;
+        }
+
+        /// <summary>
+        /// Gets the Guid from nullable Guid.
+        /// Throws an exception for null value.
+        /// </summary>
+        private static Guid GetGuidFromNullable(Guid? dt)
+        {
+            if (!dt.HasValue)
+                throw new PortableException("Invalid data on deserialization. Expected: Guid but was: null.");
+
+            return dt.Value;
         }
     }
 }

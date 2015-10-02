@@ -1668,8 +1668,8 @@ namespace Apache.Ignite.Core.Tests.Portable
                 PUlong = *(ulong*)&uLong;
 
                 PString = rawReader.ReadString();
-                PGuid = rawReader.ReadGuid().Value;
-                PnGuid = rawReader.ReadGuid();
+                PGuid = rawReader.ReadGuidNullable().Value;
+                PnGuid = rawReader.ReadGuidNullable();
             }
         }
 
@@ -1791,8 +1791,8 @@ namespace Apache.Ignite.Core.Tests.Portable
                 obj0.PUlong = *(ulong*)&uLong;
 
                 obj0.PString = rawReader.ReadString();
-                obj0.PGuid = rawReader.ReadGuid().Value;
-                obj0.PnGuid = rawReader.ReadGuid();
+                obj0.PGuid = rawReader.ReadGuidNullable().Value;
+                obj0.PnGuid = rawReader.ReadGuidNullable();
             }
         }
 
