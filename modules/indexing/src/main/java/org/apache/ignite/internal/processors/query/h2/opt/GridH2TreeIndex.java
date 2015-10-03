@@ -151,7 +151,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             }
         };
 
-        if (desc != null) {
+        if (desc != null && desc.context() != null) {
             ctx = desc.context().kernalContext();
 
             String schemaName = tbl.getSchema().getName();
@@ -255,7 +255,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public long getRowCount(@Nullable Session ses) {
-        IndexingQueryFilter f = GridH2QueryContext.get().filter();
+        IndexingQueryFilter f = filter();
 
         // Fast path if we don't need to perform any filtering.
         if (f == null || f.forSpace((getTable()).spaceName()) == null)
@@ -560,7 +560,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public int getPreferedLookupBatchSize() {
-        return 0;
+        return 0; // TODO
     }
 
     /** {@inheritDoc} */

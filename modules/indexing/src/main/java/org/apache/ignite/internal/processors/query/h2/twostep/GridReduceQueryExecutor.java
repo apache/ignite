@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.h2.GridH2ResultSetIterator;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
@@ -90,6 +91,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
 
 /**
  * Reduce query executor.
@@ -589,12 +591,21 @@ public class GridReduceQueryExecutor {
                 ResultSet res = null;
 
                 if (!retry) {
-                    if (qry.explain())
-                        return explainPlan(r.conn, space, qry);
+                    UUID locNodeId = ctx.localNodeId();
 
-                    GridCacheSqlQuery rdc = qry.reduceQuery();
+                    GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, 0, REDUCE));
 
-                    res = h2.executeSqlQueryWithTimer(space, r.conn, rdc.query(), F.asList(rdc.parameters()));
+                    try {
+                        if (qry.explain())
+                            return explainPlan(r.conn, space, qry);
+
+                        GridCacheSqlQuery rdc = qry.reduceQuery();
+
+                        res = h2.executeSqlQueryWithTimer(space, r.conn, rdc.query(), F.asList(rdc.parameters()));
+                    }
+                    finally {
+                        GridH2QueryContext.clear();
+                    }
                 }
 
                 for (GridMergeTable tbl : r.tbls) {

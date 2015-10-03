@@ -88,7 +88,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
     protected Iterator<GridH2Row> filter(Iterator<GridH2Row> iter) {
         IgniteBiPredicate<Object, Object> p = null;
 
-        IndexingQueryFilter f = GridH2QueryContext.get().filter();
+        IndexingQueryFilter f = filter();
 
         if (f != null) {
             String spaceName = ((GridH2Table)getTable()).spaceName();
@@ -97,6 +97,15 @@ public abstract class GridH2IndexBase extends BaseIndex {
         }
 
         return new FilteringIterator(iter, U.currentTimeMillis(), p);
+    }
+
+    /**
+     * @return Filter for currently running query or {@code null} if none.
+     */
+    protected IndexingQueryFilter filter() {
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        return qctx == null ? null : qctx.filter();
     }
 
     /** {@inheritDoc} */

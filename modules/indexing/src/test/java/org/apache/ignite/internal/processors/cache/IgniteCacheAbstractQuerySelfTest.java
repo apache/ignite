@@ -63,9 +63,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -748,22 +746,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testEmptyObject() throws Exception {
-        IgniteCache<EmptyObject, EmptyObject> cache = ignite.cache(null);
-
-        cache.put(new EmptyObject(1), new EmptyObject(2));
-
-        for (int i = 0; i < gridCount(); i++) {
-            GridCacheQueryManager<Object, Object> qryMgr =
-                ((IgniteKernal)grid(i)).internalCache().context().queries();
-
-            assert !hasIndexTable(EmptyObject.class, qryMgr);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testPrimitiveType() throws Exception {
         IgniteCache<Integer, Integer> cache = ignite.cache(null);
 
@@ -1281,17 +1263,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         q.getAll();
 
         assert execLatch.await(1000, MILLISECONDS);
-    }
-
-    /**
-     * @param cls Class to check index table for.
-     * @param qryMgr Query manager.
-     * @return {@code true} if index has a table for given class.
-     * @throws IgniteCheckedException If failed.
-     */
-    private boolean hasIndexTable(Class<?> cls, GridCacheQueryManager<Object, Object> qryMgr)
-        throws IgniteCheckedException {
-        return qryMgr.size(cls) != -1;
     }
 
     /**

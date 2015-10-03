@@ -76,6 +76,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor.QUERY_POOL;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
 
@@ -444,7 +445,8 @@ public class GridMapQueryExecutor {
             if (nodeRess.put(req.requestId(), qr) != null)
                 throw new IllegalStateException();
 
-            GridH2QueryContext.create().filter(h2.backupFilter(caches, topVer, req.partitions()));
+            GridH2QueryContext.set(new GridH2QueryContext(ctx.localNodeId(), node.id(), req.requestId(), 0, MAP)
+                .filter(h2.backupFilter(caches, topVer, req.partitions())));
 
             // TODO Prepare snapshots for all the needed tables before the run.
 
@@ -502,7 +504,7 @@ public class GridMapQueryExecutor {
                 throw (Error)e;
         }
         finally {
-            GridH2QueryContext.destroy();
+            GridH2QueryContext.clear();
 
             // Release reserved partitions.
             for (GridReservable r : reserved)

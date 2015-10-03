@@ -104,7 +104,7 @@ public class GridH2Table extends TableBase {
         this.desc = desc;
         this.spaceName = spaceName;
 
-        if (desc != null) {
+        if (desc != null && desc.context() != null) {
             String affKey = desc.type().affinityKey();
 
             int affKeyColId = affKey == null ? KEY_COL : getColumn(desc.context().config().isSqlEscapeAll() ?
