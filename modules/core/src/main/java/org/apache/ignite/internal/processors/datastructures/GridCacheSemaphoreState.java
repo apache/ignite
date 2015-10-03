@@ -87,16 +87,14 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
     /**
      * {@inheritDoc}
      */
-    @Override
-    public Object clone() throws CloneNotSupportedException {
+    @Override public Object clone() throws CloneNotSupportedException {
         return super.clone();
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(cnt);
         out.writeInt(waiters);
         out.writeBoolean(fair);
@@ -105,8 +103,7 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
     /**
      * {@inheritDoc}
      */
-    @Override
-    public void readExternal(ObjectInput in) throws IOException {
+    @Override public void readExternal(ObjectInput in) throws IOException {
         cnt = in.readInt();
         waiters = in.readInt();
         fair = in.readBoolean();
@@ -115,8 +112,7 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
     /**
      * {@inheritDoc}
      */
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return S.toString(GridCacheSemaphoreState.class, this);
     }
 }
