@@ -23,7 +23,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.LOCAL;
 
 /**
  * Thread local SQL query context which is intended to be accessible from everywhere.
@@ -56,18 +56,15 @@ public class GridH2QueryContext {
      * Sets current thread local context. This method must be called when all the non-volatile properties are
      * already set to ensure visibility for other threads.
      *
-     * @param qctx Query context.
+     * @param x Query context.
      */
-     public static void set(GridH2QueryContext qctx) {
-         assert GridH2QueryContext.qctx.get() == null;
+     public static void set(GridH2QueryContext x) {
+         assert qctx.get() == null;
 
-         if (qctx.key.type == MAP) {
-             // Currently only map queries are required to share their context.
-             if (qctxs.putIfAbsent(qctx.key, qctx) != null)
-                 throw new IllegalStateException("Query context is already set.");
-         }
+         if (x.key.type != LOCAL && qctxs.putIfAbsent(x.key, x) != null)
+             throw new IllegalStateException("Query context is already set.");
 
-         GridH2QueryContext.qctx.set(qctx);
+         qctx.set(x);
     }
 
     /**
@@ -76,7 +73,7 @@ public class GridH2QueryContext {
     public static void clear() {
         GridH2QueryContext x = qctx.get();
 
-        if (!qctxs.remove(x.key, x))
+        if (x.key.type != LOCAL && !qctxs.remove(x.key, x))
             throw new IllegalStateException();
 
         qctx.remove();

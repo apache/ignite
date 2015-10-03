@@ -449,44 +449,48 @@ public class GridMapQueryExecutor {
                 .filter(h2.backupFilter(caches, topVer, req.partitions())));
 
             // TODO Prepare snapshots for all the needed tables before the run.
+            try {
+                // Run queries.
+                int i = 0;
 
-            // Run queries.
-            int i = 0;
+                for (GridCacheSqlQuery qry : qrys) {
+                    ResultSet rs = h2.executeSqlQueryWithTimer(req.space(), h2.connectionForSpace(req.space()), qry.query(),
+                        F.asList(qry.parameters()));
 
-            for (GridCacheSqlQuery qry : qrys) {
-                ResultSet rs = h2.executeSqlQueryWithTimer(req.space(), h2.connectionForSpace(req.space()), qry.query(),
-                    F.asList(qry.parameters()));
+                    if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                        ctx.event().record(new CacheQueryExecutedEvent<>(
+                            node,
+                            "SQL query executed.",
+                            EVT_CACHE_QUERY_EXECUTED,
+                            CacheQueryType.SQL.name(),
+                            mainCctx.namex(),
+                            null,
+                            qry.query(),
+                            null,
+                            null,
+                            qry.parameters(),
+                            node.id(),
+                            null));
+                    }
 
-                if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                    ctx.event().record(new CacheQueryExecutedEvent<>(
-                        node,
-                        "SQL query executed.",
-                        EVT_CACHE_QUERY_EXECUTED,
-                        CacheQueryType.SQL.name(),
-                        mainCctx.namex(),
-                        null,
-                        qry.query(),
-                        null,
-                        null,
-                        qry.parameters(),
-                        node.id(),
-                        null));
+                    assert rs instanceof JdbcResultSet : rs.getClass();
+
+                    qr.addResult(i, qry, node.id(), rs);
+
+                    if (qr.canceled) {
+                        qr.result(i).close();
+
+                        return;
+                    }
+
+                    // Send the first page.
+                    sendNextPage(nodeRess, node, qr, i, req.pageSize());
+
+                    i++;
                 }
-
-                assert rs instanceof JdbcResultSet : rs.getClass();
-
-                qr.addResult(i, qry, node.id(), rs);
-
-                if (qr.canceled) {
-                    qr.result(i).close();
-
-                    return;
-                }
-
-                // Send the first page.
-                sendNextPage(nodeRess, node, qr, i, req.pageSize());
-
-                i++;
+            }
+            finally {
+                GridH2QueryContext.clear();
             }
         }
         catch (Throwable e) {
@@ -504,8 +508,6 @@ public class GridMapQueryExecutor {
                 throw (Error)e;
         }
         finally {
-            GridH2QueryContext.clear();
-
             // Release reserved partitions.
             for (GridReservable r : reserved)
                 r.release();
