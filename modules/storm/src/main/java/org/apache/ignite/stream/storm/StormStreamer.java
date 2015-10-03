@@ -23,25 +23,25 @@ import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
-import org.apache.ignite.*;
-import org.apache.ignite.stream.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.stream.StreamAdapter;
 
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Server for managing stream Apache Storm. This is a Bolt storm the interact with  Apache Ignite.
- * For a description of the design and the way of use, see the page of the form.
- * How to use streamer inside
- * <a href="https://cwiki.apache.org/confluence/display/IGNITE/Streamers+Implementation+Guidelines">
- *     Streamer Implementations Guidelines</a>
- * For this stream we have the particular conditions of execution that may not reflect
- * the ordinary use of the stream in ignite.
- * Documentation is provided at:
- * <a href="https://cwiki.apache.org/confluence/display/IGNITE/Storm+Integration+Guidelines">Storm Stream in Ignite </a>
- * @author Gianfranco Murador
+ * Server for managing stream Apache Storm. This is a Bolt storm the interact with  Apache Ignite. For a description of
+ * the design and the way of use, see the page of the form. How to use streamer inside <a
+ * href="https://cwiki.apache.org/confluence/display/IGNITE/Streamers+Implementation+Guidelines"> Streamer
+ * Implementations Guidelines</a> For this stream we have the particular conditions of execution that may not reflect
+ * the ordinary use of the stream in ignite. Documentation is provided at: <a href="https://cwiki.apache.org/confluence/display/IGNITE/Storm+Integration+Guidelines">Storm
+ * Stream in Ignite </a>
  */
 public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IRichBolt {
 
@@ -52,7 +52,7 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
     private ExecutorService executor;
 
     /** Number of threads to process Storm streams. */
-    private int threads  = 1;
+    private int threads = 1;
 
     /** Stopped. */
     private volatile boolean stopped = true;
@@ -60,48 +60,67 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
     /** the storm output collector */
     private OutputCollector collector;
 
-
-    /** define a configuration file  */
+    /** define a configuration file */
     private String configurationfile = "config/default-config.xml";
 
-    /** define the cache name  */
+    /** define the cache name */
     private String cacheName = "igniteCache";
 
+    /**
+     * Gets the cache name.
+     * @return cache name.
+     */
     public String getCacheName() {
         return cacheName;
     }
 
+    /**
+     * Sets the cache name.
+     *
+     * @param cacheName cache name.
+     */
     public void setCacheName(String cacheName) {
         this.cacheName = cacheName;
     }
 
-
-    /** */
+    /**
+     * Get the configuration file.
+     * @return configuration file.
+     */
     public String getConfigurationFile() {
         return configurationfile;
     }
 
-    /** */
+    /**
+     * Sets the configuration file
+     * @param configurationfile
+     */
     public void setConfigurationFile(String configurationfile) {
         this.configurationfile = configurationfile;
     }
 
-    /** */
+    /**
+     * get the number of threds.
+     * @return number of threads.
+     */
     public int getThreads() {
         return threads;
     }
 
-    /** */
+    /**
+     * get the number of threds.
+     * @return number of threads.
+     */
     public void setThreads(int threads) {
         this.threads = threads;
     }
 
-
     /**
-     * Starts streamer
+     * Starts streamer.
+     *
      * @throws IgniteException If failed.
      */
-    public void start()  throws IgniteException{
+    public void start() throws IgniteException {
         if (!stopped)
             throw new IgniteException("Attempted to start an already started Storm  Streamer");
         A.notNull(getStreamer(), "streamer");
@@ -116,21 +135,23 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
     /**
      * Stops streamer.
      */
-    public void stop()  throws IgniteException  {
+    public void stop() throws IgniteException {
         if (stopped)
             throw new IgniteException("Attempted to stop an already stopped Storm Streamer");
         stopped = true;
         executor.shutdown();
     }
+
     /**
-     * In this point we declare the output collector of the bolt
-     * @param map the map derived from topology
-     * @param topologyContext the context topology in storm
-     * @param collector the output of the collector
+     * In this point we declare the output collector of the bolt.
+     *
+     * @param map the map derived from topology.
+     * @param topologyContext the context topology in storm.
+     * @param collector the output of the collector.
      */
     @Override public void prepare(Map map, TopologyContext topologyContext, OutputCollector collector) {
         if (stopped) {
-            try (Ignite ignite = Ignition.start(getConfigurationFile()) ) {
+            try (Ignite ignite = Ignition.start(getConfigurationFile())) {
                 setIgnite(ignite);
                 // Use getOrCreateCache
                 ignite.getOrCreateCache(getCacheName());
@@ -144,23 +165,25 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
     }
 
     /**
-     * This method generates and map and do a put operations
+     * This method generates and map and do a put operations.
+     *
      * @param tuple
      */
     @Override public void execute(Tuple tuple) {
-        Map<K,V> igniteGrid = (Map) tuple.getValueByField("IgniteGrid");
-        if ( log.isDebugEnabled() ) {
+        Map<K, V> igniteGrid = (Map)tuple.getValueByField("IgniteGrid");
+        if (log.isDebugEnabled()) {
             log.debug("received Tuple from Storm " + tuple.getMessageId());
         }
-        executor.submit(()-> {
-            for (K k:igniteGrid.keySet()){
+        executor.submit(() -> {
+            for (K k : igniteGrid.keySet()) {
                 try {
-                    if ( log.isDebugEnabled() ) {
+                    if (log.isDebugEnabled()) {
                         log.info("get tuple from storm  " + k + ", " + igniteGrid.get(k));
                     }
                     getStreamer().addData(k, igniteGrid.get(k));
-                }catch (Exception e){
-                    if ( log.isDebugEnabled())
+                }
+                catch (Exception e) {
+                    if (log.isDebugEnabled())
                         log.debug(e.toString());
                 }
             }
@@ -169,14 +192,16 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
     }
 
     /**
-     * Clean-up the streamer when the bolt is going to shut-down
+     * Clean-up the streamer when the bolt is going to shut-down.
      */
     @Override public void cleanup() {
         stop();
         getIgnite().close();
     }
+
     /**
-     * This may not be necessary, as this is the last node topology before Apache Ignite
+     * This may not be necessary, as this is the last node topology before Apache Ignite.
+     *
      * @param declarer
      */
     @Override public void declareOutputFields(OutputFieldsDeclarer declarer) {
@@ -185,7 +210,10 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
 
     /**
      * Not used in this case
+     *
      * @return
      */
-    @Override public Map<String, Object> getComponentConfiguration() {return null;}
+    @Override public Map<String, Object> getComponentConfiguration() {
+        return null;
+    }
 }

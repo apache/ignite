@@ -17,19 +17,22 @@
 
 package org.apache.ignite.stream.storm;
 
-import junit.framework.TestSuite;
+import backtype.storm.tuple.Tuple;
+
+import java.util.Map;
 
 /**
- * Apache Storm streamer tests. Tests {@link StormStreamer}.
+ * Exampple of implementation of Ignite Bolt.
  */
-public class IgniteStormStreamerSelfTestSuite extends TestSuite {
+public class IgniteBoltImpl extends IgniteBolt {
     /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
+     * This method should be overridden by providing a way to translate a tuple in a map.
+     *
+     * @param tuple
+     * @return The format accepted by Ignite
+     * @throws Exception
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Apache Storm streamer Test Suite");
-        suite.addTest(new TestSuite(StormIgniteStreamerSelfTest.class));
-        return suite;
+    @Override public Map<?, ?> process(Tuple tuple) throws Exception {
+        return null;
     }
 }

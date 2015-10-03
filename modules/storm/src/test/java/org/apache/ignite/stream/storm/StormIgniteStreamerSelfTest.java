@@ -29,7 +29,7 @@ import backtype.storm.LocalCluster;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.io.IOException;
 import java.util.Map;
@@ -37,11 +37,10 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * Tests {@link StormStreamer}.
- * @author  Gianfranco Murador
- * @author  chandresh pancholi
  */
 public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
+    /** Storm stream object initialization. */
     StormStreamer<String, String, String> stormStreamer = null;
 
     /** Count. */
@@ -49,18 +48,9 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
     public StormIgniteStreamerSelfTest(){super(true);}
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected void beforeTest() throws Exception {
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-    }
-
     /**
-     * Test with the bolt Ignite started in bolt
-     * NOTE: the only working solutions for now
+     * Test with the bolt Ignite started in bolt.
+     * NOTE: the only working solutions for now.
      * @throws TimeoutException
      * @throws InterruptedException
      */
@@ -76,7 +66,7 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
 
     /**
-     * Not usable in Test regression phase
+     * Not usable in Test regression phase.
      * @param stormStreamer
      */
     @Deprecated
@@ -109,7 +99,6 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
      * Note to run this on TC: the time out has to be setted in according
      * to power of the server. In a simple dual core it takes 6 sec.
      * look setMessageTimeoutSecs parameter.
-     * @author Gianfranco Murador
      * @param stormStreamer the storm streamer in Ignite
      */
     public void startSimulatedTopology ( StormStreamer stormStreamer) {
@@ -123,14 +112,18 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
         Testing.withSimulatedTimeLocalCluster(mkClusterParam, new TestJob() {
                     @Override
                     public void run(ILocalCluster cluster) throws IOException {
+                        /* Storm topology builder. */
                         TopologyBuilder builder = new TopologyBuilder();
-
                         StormSpout stormSpout = new StormSpout();
+
+                        /*Set storm spout in topology builder. */
                         builder.setSpout("spout", stormSpout);
 
+                        /*Set bolt spout in topology builder. */
                         builder.setBolt("bolt", stormStreamer)
                                 .shuffleGrouping("spout");
 
+                        /* Create storm topology. */
                         StormTopology topology = builder.createTopology();
 
                         MockedSources mockedSources = new MockedSources();
@@ -150,6 +143,8 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
                         completeTopologyParam.setStormConf(conf);
 
                         Map result = Testing.completeTopology(cluster, topology, completeTopologyParam);
+
+
                     }
                 }
         );
