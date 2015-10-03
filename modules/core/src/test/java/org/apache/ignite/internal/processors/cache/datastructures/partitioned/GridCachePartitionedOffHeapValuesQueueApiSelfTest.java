@@ -28,4 +28,8 @@ public class GridCachePartitionedOffHeapValuesQueueApiSelfTest extends GridCache
     @Override protected CacheMemoryMode collectionMemoryMode() {
         return OFFHEAP_VALUES;
     }
+
+    @Override public void testQueueRemoveMultithreadBounded(){
+        fail("https://issues.apache.org/jira/browse/IGNITE-1592");
+    }
 }

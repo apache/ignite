@@ -148,11 +148,11 @@ public class IgniteCrossCacheTxSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < TX_CNT; i++) {
             int grid = ThreadLocalRandom8.current().nextInt(nodeCount());
 
+            IgniteCache<Integer, String> first = grid(grid).cache(FIRST_CACHE);
+            IgniteCache<Integer, String> second = grid(grid).cache(SECOND_CACHE);
+
             try (Transaction tx = grid(grid).transactions().txStart(concurrency, isolation)) {
                 try {
-                    IgniteCache<Integer, String> first = grid(grid).cache(FIRST_CACHE);
-                    IgniteCache<Integer, String> second = grid(grid).cache(SECOND_CACHE);
-
                     int size = ThreadLocalRandom8.current().nextInt(24) + 1;
 
                     for (int k = 0; k < size; k++) {

@@ -40,14 +40,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
  * Cache event manager.
  */
 public class GridCacheEventManager extends GridCacheManagerAdapter {
-    /** Local node ID. */
-    private UUID locNodeId;
-
-    /** {@inheritDoc} */
-    @Override public void start0() {
-        locNodeId = cctx.localNodeId();
-    }
-
     /**
      * Adds local event listener.
      *
@@ -96,7 +88,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
     {
         addEvent(part,
             key,
-            locNodeId,
+            cctx.localNodeId(),
             tx,
             owner,
             type,
@@ -116,7 +108,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         addEvent(
             0,
             null,
-            locNodeId,
+            cctx.localNodeId(),
             (IgniteUuid)null,
             null,
             type,

@@ -825,8 +825,13 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
                 futVer = cctx.versions().next(topVer);
 
-                if (storeFuture())
-                    cctx.mvcc().addAtomicFuture(futVer, GridNearAtomicUpdateFuture.this);
+                if (storeFuture()) {
+                    if (!cctx.mvcc().addAtomicFuture(futVer, GridNearAtomicUpdateFuture.this)) {
+                        assert isDone() : GridNearAtomicUpdateFuture.this;
+
+                        return;
+                    }
+                }
 
                 // Assign version on near node in CLOCK ordering mode even if fastMap is false.
                 if (updVer == null)
