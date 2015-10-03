@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                            http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+                            http://www.springframework.org/schema/context
+                            http://www.springframework.org/schema/context/spring-context-3.0.xsd"
+       xmlns:context="http://www.springframework.org/schema/context">
+
+    <!--<context:property-placeholder/>-->
+
+    <!--<bean id="hostIpDetector" class="ru.sberbank.oti.ignite.IpFinder">-->
+    <!--</bean>-->
+    <!-- -->
+    <!--<bean id="affinitySettings-proto" abstract="true" class="ru.sberbank.oti.ignite.impl.AffinitySettings" >-->
+        <!--<property name="zonePartSize" value="1000"/>-->
+        <!--<property name="zoneCount" value="${topology.zone.count:1}"/>-->
+        <!--<property name="seed" value="1234"/>-->
+    <!--</bean>    -->
+
+    <bean id="base.grid.cfg" abstract="true" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="metricsLogFrequency" value="0"/>
+        <!--<property name="localHost" value="#{hostIpDetector.getIp('lo')}"/>-->
+        <property name="failureDetectionTimeout" value="10000"/>
+
+        <property name="transactionConfiguration" >
+            <bean class="org.apache.ignite.configuration.TransactionConfiguration">
+                <property name="defaultTxTimeout" value="987654" />
+                <property name="defaultTxConcurrency" value="PESSIMISTIC"/>
+            </bean>
+        </property>
+
+        <property name="atomicConfiguration">
+            <bean class="org.apache.ignite.configuration.AtomicConfiguration">
+                <!--property name="backups" value="2"/-->
+                <property name="cacheMode" value="REPLICATED"/>
+                <property name="atomicSequenceReserveSize" value="5000000"/>
+            </bean>
+        </property>
+        <property name="peerClassLoadingEnabled" value="false"/>
+
+        <property name="marshaller">
+            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
+                <property name="requireSerializable" value="false"/>
+            </bean>
+        </property>
+
+    </bean>
+
+    <bean id="prb-cache-template-base" abstract="true" class="org.apache.ignite.configuration.CacheConfiguration">
+
+        <property name="atomicityMode" value="TRANSACTIONAL"/>
+        <!--property name="writeSynchronizationMode" value="PRIMARY_SYNC"/-->
+        <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+        <property name="rebalanceMode" value="SYNC"/>
+        <property name="maxConcurrentAsyncOperations" value="4500"/>
+        <property name="startSize" value="0"/>
+
+
+    </bean>
+
+
+    <!--PRB_REPL, PRB_PART_IDX, PRB_PART_NO_IDX-->
+
+    <bean id="prb-repl-cache-template" abstract="true" parent="prb-cache-template-base" class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="name" value="PRB_REPL"/>
+
+        <property name="cacheMode" value="REPLICATED"/>
+        <property name="memoryMode" value="OFFHEAP_TIERED" />
+        <property name="offHeapMaxMemory" value="0" />
+
+        <!--<property name="indexedTypes">-->
+            <!--<list>-->
+                <!--<value>ru.sberbank.oti.ignite.impl.dao.keys.SimpleZoneCompositeKey</value>-->
+                <!--<value>ru.sberbank.oti.prb.entity.internal.FSFMOperationListGG</value>-->
+                <!--<value>ru.sberbank.oti.ignite.impl.dao.keys.SimpleZoneCompositeKey</value>-->
+                <!--<value>ru.sberbank.oti.prb.entity.internal.FSFMRuleGG</value>-->
+                <!--<value>ru.sberbank.oti.ignite.impl.dao.keys.SimpleZoneCompositeKey</value>-->
+                <!--<value>ru.sberbank.oti.prb.entity.internal.PCRoutingRuleGG</value>-->
+                <!--<value>ru.sberbank.oti.ignite.impl.dao.keys.SimpleZoneCompositeKey</value>-->
+                <!--<value>ru.sberbank.oti.prb.entity.internal.PCPaymentListGG</value>-->
+            <!--</list>-->
+        <!--</property>-->
+    </bean>
+
+    <bean id="prb-no-idx-cache-template" abstract="true" parent="prb-cache-template-base" class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="name" value="PRB_PART_NO_IDX"/>
+        <property name="cacheMode" value="PARTITIONED"/>
+        <property name="backups" value="2"/>
+
+        <!--property name="affinity">
+            <bean class="ru.sberbank.oti.ignite.impl.AffinityFunction">
+                <property name="settings" ref="affinitySettings"/>
+            </bean>
+        </property-->
+
+        <!--property name="affinity">
+            <bean class="ru.sberbank.oti.ignite.impl.DefaultAffinityWrapper">
+                <property name="settings" ref="affinitySettings"/>
+            </bean>
+        </property-->
+
+        <property name="affinity">
+            <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+                <property name="partitions" value="6600"/>
+            </bean>
+        </property>
+
+        <property name="offHeapMaxMemory" value="0" />
+        <property name="memoryMode" value="OFFHEAP_TIERED" />
+
+        <!--property name="rebalanceDelay" value="60000"/>
+        <property name="rebalanceThreadPoolSize" value="4"/>
+        <property name="rebalanceTimeout" value="30000"/-->
+
+    </bean>
+
+    <bean id="prb-act-balance-template" abstract="true" parent="prb-no-idx-cache-template" class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="name" value="PRB_ACT_BALANCE"/>
+    </bean>
+
+    <!--<bean id="prb-idx-cache-template" abstract="true" parent="prb-no-idx-cache-template" class="org.apache.ignite.configuration.CacheConfiguration">-->
+        <!--<property name="name" value="PRB_PART_IDX"/>-->
+
+        <!--<property name="indexedTypes">-->
+            <!--<list>-->
+                <!--<value>ru.sberbank.oti.ignite.impl.dao.keys.SimpleZoneCompositeKey</value>-->
+                <!--<value>ru.sberbank.oti.prb.entity.internal.IndProductConditionGG</value>-->
+                <!--<value>ru.sberbank.oti.ignite.impl.dao.keys.SimpleZoneCompositeKey</value>-->
+                <!--<value>ru.sberbank.oti.prb.entity.internal.ClientGG</value>-->
+                <!--<value>ru.sberbank.oti.ignite.impl.dao.keys.SimpleZoneCompositeKey</value>-->
+                <!--<value>ru.sberbank.oti.prb.entity.internal.ConditionGG</value>-->
+                <!--<value>ru.sberbank.oti.ignite.impl.dao.keys.SimpleZoneCompositeKey</value>-->
+                <!--<value>ru.sberbank.oti.prb.entity.internal.ProductConditionGG</value>-->
+                <!--<value>ru.sberbank.oti.ignite.impl.dao.keys.SimpleZoneCompositeKey</value>-->
+                <!--<value>ru.sberbank.oti.prb.entity.internal.ProductGG</value>-->
+                <!--<value>ru.sberbank.oti.ignite.impl.dao.keys.SimpleZoneCompositeKey</value>-->
+                <!--<value>ru.sberbank.oti.prb.entity.internal.AgreementIndexGG</value>-->
+            <!--</list>-->
+        <!--</property>-->
+
+    <!--</bean>-->
+
+</beans>

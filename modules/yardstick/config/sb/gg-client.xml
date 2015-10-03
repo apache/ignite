@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                            http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+                            http://www.springframework.org/schema/context
+                            http://www.springframework.org/schema/context/spring-context-3.0.xsd"
+       xmlns:context="http://www.springframework.org/schema/context">
+
+    <import resource="gg-base.xml" />
+    
+    <bean id="affinitySettings" parent="affinitySettings-proto" class="ru.sberbank.oti.ignite.impl.AffinitySettings" >
+        <property name="zonePartSize" value="300"/>
+    </bean>    
+
+    <bean id="gridGainClientConf" class="org.apache.ignite.configuration.IgniteConfiguration" parent="base.grid.cfg">
+        
+        <property name="localHost" value="#{hostIpDetector.getIp('^p\dp1$')}"/>
+        
+        <property name="userAttributes">
+            <map>
+                <entry key="NODE_FILTER_MARKER" value="PRB_REPL"/>
+            </map>
+        </property>
+        
+        <property name="pluginConfigurations">
+            <bean class="org.gridgain.grid.configuration.GridGainConfiguration">
+                <property name="dataCenterId" value="4"/>
+            </bean>
+        </property>
+        
+        <!--property name="publicThreadPoolSize" value="96"/>
+        <property name="systemThreadPoolSize" value="96"/-->
+
+        <property name="communicationSpi">
+            <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
+                <!--property name="socketWriteTimeout" value="5000"/-->
+                <!--property name="selectorsCount" value="8"/-->
+                <!-- property name="socketReceiveBuffer" value="999424"/-->
+                <!-- property name="socketSendBuffer" value="999424"/-->
+                <property name="localPort" value="47330"/>
+                <!--property name="sharedMemoryPort" value="-1"/-->
+                <!--property name="selectorsCount" value="12"/-->
+            </bean>
+        </property>
+        
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <!--property name="ackTimeout" value="5000" />
+                <property name="networkTimeout" value="60000" />
+                <property name="socketTimeout" value="5000" /-->
+                
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <property name="addresses" value="#{hostIpDetector.getIpWithPortRangeList('^p\dp1$', 47500, 47505)}">
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>        
+        
+        <property name="cacheConfiguration">
+            <list>
+                <bean parent="prb-repl-cache-template" class="org.apache.ignite.configuration.CacheConfiguration">
+                </bean>
+                <bean parent="prb-no-idx-cache-template" class="org.apache.ignite.configuration.CacheConfiguration">
+                </bean>
+                <bean parent="prb-act-balance-template" class="org.apache.ignite.configuration.CacheConfiguration">
+                </bean>
+                <bean parent="prb-idx-cache-template" class="org.apache.ignite.configuration.CacheConfiguration">
+                </bean>
+            </list>
+        </property>
+        
+        <property name="clientMode" value="true" />
+    </bean>
+    
+    <bean id="gridGainSpring" class="org.apache.ignite.IgniteSpringBean">
+        <property name="configuration">
+            <ref bean="gridGainClientConf"/>
+        </property>
+    </bean>    
+    
+    
+    <bean id="gridGain" class="ru.sberbank.oti.ignite.GridClientService">
+        <property name="ignite">
+            <ref bean="gridGainSpring"/>
+        </property>
+    </bean>
+
+</beans>

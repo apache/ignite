@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                            http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+                            http://www.springframework.org/schema/context
+                            http://www.springframework.org/schema/context/spring-context-3.0.xsd"
+       xmlns:context="http://www.springframework.org/schema/context">
+
+    <import resource="gg-base.xml" />
+
+    <!--<bean id="affinitySettings" parent="affinitySettings-proto" class="ru.sberbank.oti.ignite.impl.AffinitySettings" >-->
+        <!--<property name="zonePartSize" value="300"/>-->
+    <!--</bean>    -->
+
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration" parent="base.grid.cfg">
+
+        <!--<property name="gridLogger">-->
+            <!--<bean class="org.apache.ignite.logger.log4j.Log4JLogger">-->
+                <!--<constructor-arg type="java.lang.String" value="config/ignite-log4j.xml"/>-->
+            <!--</bean>-->
+        <!--</property>-->
+
+        <!--<property name="localHost" value="#{hostIpDetector.getIp('^p\dp1$')}" />-->
+
+        <!--property name="publicThreadPoolSize" value="96"/>
+        <property name="systemThreadPoolSize" value="96"/-->
+
+        <property name="communicationSpi">
+            <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
+                <!-- property name="socketReceiveBuffer" value="999424"/-->
+                <!-- property name="socketSendBuffer" value="999424"/-->
+                <!--property name="socketWriteTimeout" value="5000"/-->
+                <!--property name="sharedMemoryPort" value="-1"/-->
+                <!--property name="selectorsCount" value="12"/-->
+            </bean>
+        </property>
+
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <!--property name="ackTimeout" value="5000" />
+                <property name="networkTimeout" value="60000" />
+                <property name="socketTimeout" value="5000" /-->
+
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+
+                        <!--<property name="addresses">-->
+                            <!--<list>-->
+                                <!--&lt;!&ndash;value>127.0.0.1:47500..47505</value&ndash;&gt;-->
+                                <!--&lt;!&ndash;value>10.117.0.21:47500..47505</value&ndash;&gt;-->
+                                <!--<value>172.16.32.5:47500..47599</value>-->
+                                <!--<value>172.16.32.6:47500..47599</value>-->
+                                <!--<value>172.16.32.7:47500..47599</value>-->
+                                <!--<value>172.16.32.8:47500..47599</value>-->
+                                <!--<value>172.16.32.9:47500..47599</value>-->
+                                <!--<value>172.16.32.10:47500..47599</value>-->
+                                <!--<value>172.16.32.11:47500..47599</value>-->
+                                <!--<value>172.16.32.12:47500..47599</value>-->
+                                <!--<value>172.16.32.13:47500..47599</value>-->
+                                <!--<value>172.16.32.14:47500..47599</value>-->
+                            <!--</list>-->
+                            <!--&lt;!&ndash;<list>-->
+                                <!--<value>10.117.0.16:47500..47505</value>-->
+                                <!--<value>10.117.0.17:47500..47505</value>-->
+                                <!--<value>10.117.0.18:47500..47505</value>-->
+                                <!--<value>10.117.0.19:47500..47505</value>-->
+
+                                <!--&lt;!&ndash;<value>10.68.208.2:47500..47505</value>-->
+                                <!--<value>10.68.208.4:47500..47505</value>-->
+                                <!--<value>10.68.208.6:47500..47505</value>-->
+                                <!--<value>10.68.208.11:47500..47505</value>-->
+                                <!--<value>10.68.208.12:47500..47505</value>&ndash;&gt;-->
+                            <!--</list>&ndash;&gt;-->
+                        <!--</property>-->
+                    </bean>
+                </property>
+            </bean>
+        </property>
+
+        <!-- Sender hub configuration-->
+        <!--<property name="pluginConfigurations">-->
+            <!--<bean class="org.gridgain.grid.configuration.GridGainConfiguration">-->
+                <!--<property name="dataCenterId" value="4"/>-->
+            <!--</bean>-->
+        <!--</property>-->
+        <!-- <property name="pluginConfigurations" >
+            <bean class="org.gridgain.grid.configuration.GridGainConfiguration">
+                <property name="dataCenterId" value="1" />
+                <property name="drSenderConfiguration">
+                    <bean class="org.gridgain.grid.configuration.DrSenderConfiguration">
+                        <property name="store">
+                            <bean class="org.gridgain.grid.dr.store.fs.DrSenderFsStore">
+                                <property name="directoryPath" value="/disk3/sender/data/repl/" />
+                                <property name="maxFilesCount" value="30" />
+                                <property name="maxFileSize" value="314572800" />
+                            </bean>
+                        </property>
+                        <property name="maxQueueSize" value="250" />
+                        <property name="cacheNames" >
+                            <list>
+                                <value>prb</value>
+                                <value>prb_repl</value>
+                            </list>
+                        </property>
+                        <property name="connectionConfiguration">
+                            <bean class="org.gridgain.grid.dr.DrSenderConnectionConfiguration">
+                                <property name="dataCenterId" value="2" />
+                                <property name="receiverAddresses">
+                                    <list>
+                                        <value>10.117.0.16:49000</value>
+                                        <value>10.117.0.17:49000</value>
+                                        <value>10.117.0.18:49000</value>
+                                        <value>10.117.0.19:49000</value>
+                                    </list>
+                                </property>
+                            </bean>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>-->
+        <!-- Receiver hub configuration -->
+        <!-- property name="pluginConfigurations" >
+            <bean class="org.gridgain.grid.configuration.GridGainConfiguration">
+                <property name="dataCenterId" value="2" />
+                <property name="drReceiverConfiguration" >
+                    <bean class="org.gridgain.grid.configuration.DrReceiverConfiguration">
+                        <property name="selectorCount" value="32" />
+                        <property name="perNodeBufferSize" value="4096" />
+                        <property name="perNodeParallelLoadOperations" value="32" />
+                        <property name="messageQueueLimit" value="4096" />
+                        <property name="flushFrequency" value="1000" />
+                    </bean>
+                </property>
+            </bean>
+        </property -->
+
+        <!--<property name="userAttributes">-->
+            <!--<map>-->
+                <!--<entry key="sber_zone">-->
+                    <!--<bean class="java.lang.Integer">-->
+                        <!--<constructor-arg value="${zoneId:0}" type="int" />-->
+                    <!--</bean>-->
+                <!--</entry>-->
+                <!--<entry key="sber_rack">-->
+                    <!--<bean class="java.lang.Integer">-->
+                        <!--<constructor-arg value="${rack:0}" type="int" />-->
+                    <!--</bean>-->
+                <!--</entry>-->
+                <!--<entry key="NODE_FILTER_MARKER" value="*"/>-->
+            <!--</map>-->
+        <!--</property>-->
+
+        <property name="cacheConfiguration">
+            <list>
+                <!--<bean parent="prb-repl-cache-template" class="org.apache.ignite.configuration.CacheConfiguration">-->
+                    <!-- Sender cache config -->
+                    <!--<property name="pluginConfigurations">
+                        <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration">
+                            <property name="drSenderConfiguration">
+                                <bean class="org.gridgain.grid.cache.dr.CacheDrSenderConfiguration">
+                                    <property name="batchSendSize" value="8192" />
+                                    <property name="batchSendFrequency" value="1000" />
+                                    <property name="maxBatches" value="64"/>
+                                    <property name="stateTransferThreadsCount" value="8" />
+                                </bean>
+                            </property>
+                        </bean>
+                    </property>-->
+
+                    <!-- Receiver cache config -->
+                    <!--<property name="pluginConfigurations">
+                        <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration">
+                            <property name="drReceiverEnabled" value="true" />
+                        </bean>
+                    </property>-->
+
+                    <!--SYNC, ASYNC_BUFFERED, SYNC_BUFFERED-->
+                    <!---->
+                    <!--property name="loadPreviousValue" value="true" /-->
+                    <!--property name="readThrough" value="true" />
+                    <property name="writeThrough" value="true"/>
+                    <property name="cacheStoreFactory">
+                        <bean class="ru.sberbank.oti.ignite.impl.PersistentStoreFactory">
+                            <property name="writeMode" value="SYNC" />
+                            <property name="rootPath" value="/disk3/server/data/prb-repl/" />
+                            <property name="fsyncDelay" value="500" />
+                            <property name="sparsityCheckFreq" value="3600" />
+                        </bean>
+                    </property-->
+                <!--</bean>-->
+                <!--<bean parent="prb-act-balance-template" class="org.apache.ignite.configuration.CacheConfiguration">-->
+                <!--</bean>-->
+                <bean parent="prb-no-idx-cache-template" class="org.apache.ignite.configuration.CacheConfiguration">
+                    <!-- Sender cache config -->
+                    <!--<property name="pluginConfigurations">
+                        <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration">
+                            <property name="drSenderConfiguration">
+                                <bean class="org.gridgain.grid.cache.dr.CacheDrSenderConfiguration">
+                                    <property name="batchSendSize" value="8192" />
+                                    <property name="batchSendFrequency" value="1000" />
+                                    <property name="maxBatches" value="64"/>
+                                    <property name="stateTransferThreadsCount" value="8" />
+                                </bean>
+                            </property>
+                        </bean>
+                    </property>-->
+
+                    <!-- Receiver cache config -->
+                    <!--<property name="pluginConfigurations">
+                        <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration">
+                            <property name="drReceiverEnabled" value="true" />
+                        </bean>
+                    </property>-->
+
+                    <!--property name="loadPreviousValue" value="true" /-->
+                    <!--property name="readThrough" value="true" />
+                    <property name="writeThrough" value="true"/>
+                    <property name="cacheStoreFactory">
+                        <bean class="ru.sberbank.oti.ignite.impl.PersistentStoreFactory">
+                            <property name="writeMode" value="SYNC" />
+                            <property name="rootPath" value="/disk3/server/data/prb/" />
+                            <property name="fsyncDelay" value="500" />
+                            <property name="sparsityCheckFreq" value="3600" />
+                            <property name="mapCap" value="#{ 256 * 1024 }" />
+                            <property name="mapSegments" value="512" />
+                        </bean>
+                    </property-->
+
+
+                </bean>
+                <!--<bean parent="prb-idx-cache-template" class="org.apache.ignite.configuration.CacheConfiguration">-->
+                    <!-- Sender cache config -->
+                    <!--<property name="pluginConfigurations">
+                        <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration">
+                            <property name="drSenderConfiguration">
+                                <bean class="org.gridgain.grid.cache.dr.CacheDrSenderConfiguration">
+                                    <property name="batchSendSize" value="8192" />
+                                    <property name="batchSendFrequency" value="1000" />
+                                    <property name="maxBatches" value="64"/>
+                                    <property name="stateTransferThreadsCount" value="8" />
+                                </bean>
+                            </property>
+                        </bean>
+                    </property>-->
+
+                    <!-- Receiver cache config -->
+                    <!--<property name="pluginConfigurations">
+                        <bean class="org.gridgain.grid.configuration.GridGainCacheConfiguration">
+                            <property name="drReceiverEnabled" value="true" />
+                        </bean>
+                    </property>-->
+
+                    <!--property name="loadPreviousValue" value="true" /-->
+                    <!--property name="readThrough" value="true" />
+                    <property name="writeThrough" value="true"/>
+                    <property name="cacheStoreFactory">
+                        <bean class="ru.sberbank.oti.ignite.impl.PersistentStoreFactory">
+                            <property name="writeMode" value="SYNC" />
+                            <property name="rootPath" value="/disk3/server/data/prbIdx/" />
+                            <property name="fsyncDelay" value="500" />
+                            <property name="sparsityCheckFreq" value="3600" />
+                            <property name="mapCap" value="#{ 256 * 1024 }" />
+                            <property name="mapSegments" value="512" />
+                        </bean>
+                    </property-->
+
+
+                <!--</bean>-->
+            </list>
+        </property>
+
+    </bean>
+
+</beans>
