@@ -45,11 +45,10 @@ public class GridH2QueryContext {
      * @param locNodeId Local node ID.
      * @param nodeId The node who initiated the query.
      * @param qryId The query ID.
-     * @param subQryId Subquery ID in case when query was splitted into multiple subqueries.
      * @param type Query type.
      */
-    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, int subQryId, GridH2QueryType type) {
-        key = new Key(locNodeId, nodeId, qryId, subQryId, type);
+    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
+        key = new Key(locNodeId, nodeId, qryId, type);
     }
 
     /**
@@ -94,7 +93,6 @@ public class GridH2QueryContext {
      * @param locNodeId Local node ID.
      * @param nodeId The node who initiated the query.
      * @param qryId The query ID.
-     * @param subQryId Subquery ID in case when query was splitted into multiple subqueries.
      * @param type Query type.
      * @return Query context.
      */
@@ -102,10 +100,9 @@ public class GridH2QueryContext {
         UUID locNodeId,
         UUID nodeId,
         long qryId,
-        int subQryId,
         GridH2QueryType type
     ) {
-        return qctxs.get(new Key(locNodeId, nodeId, qryId, subQryId, type));
+        return qctxs.get(new Key(locNodeId, nodeId, qryId, type));
     }
 
     /**
@@ -139,19 +136,15 @@ public class GridH2QueryContext {
         final long qryId;
 
         /** */
-        final int subQryId;
-
-        /** */
         final GridH2QueryType type;
 
         /**
          * @param locNodeId Local node ID.
          * @param nodeId The node who initiated the query.
          * @param qryId The query ID.
-         * @param subQryId Subquery ID in case when query was splitted into multiple subqueries.
          * @param type Query type.
          */
-        private Key(UUID locNodeId, UUID nodeId, long qryId, int subQryId, GridH2QueryType type) {
+        private Key(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
             assert locNodeId != null;
             assert nodeId != null;
             assert type != null;
@@ -159,7 +152,6 @@ public class GridH2QueryContext {
             this.locNodeId = locNodeId;
             this.nodeId = nodeId;
             this.qryId = qryId;
-            this.subQryId = subQryId;
             this.type = type;
         }
 
@@ -173,8 +165,8 @@ public class GridH2QueryContext {
 
             Key key = (Key)o;
 
-            return qryId == key.qryId && subQryId == key.subQryId && nodeId.equals(key.nodeId) &&
-               locNodeId.equals(key.locNodeId) && type == key.type;
+            return qryId == key.qryId && nodeId.equals(key.nodeId) && type == key.type &&
+               locNodeId.equals(key.locNodeId) ;
         }
 
         /** {@inheritDoc} */
@@ -183,7 +175,6 @@ public class GridH2QueryContext {
 
             result = 31 * result + nodeId.hashCode();
             result = 31 * result + (int)(qryId ^ (qryId >>> 32));
-            result = 31 * result + subQryId;
             result = 31 * result + type.hashCode();
 
             return result;

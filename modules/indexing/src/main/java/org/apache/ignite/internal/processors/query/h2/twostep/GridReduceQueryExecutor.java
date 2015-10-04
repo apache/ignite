@@ -593,7 +593,7 @@ public class GridReduceQueryExecutor {
                 if (!retry) {
                     UUID locNodeId = ctx.localNodeId();
 
-                    GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, 0, REDUCE));
+                    GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE));
 
                     try {
                         if (qry.explain())

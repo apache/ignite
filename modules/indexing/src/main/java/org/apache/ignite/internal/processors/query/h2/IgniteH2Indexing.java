@@ -828,7 +828,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param filter Filter.
      */
     private void initLocalQueryContext(IndexingQueryFilter filter) {
-        GridH2QueryContext.set(new GridH2QueryContext(nodeId, nodeId, 0, 0, LOCAL).filter(filter));
+        GridH2QueryContext.set(new GridH2QueryContext(nodeId, nodeId, 0, LOCAL).filter(filter));
     }
 
     /** {@inheritDoc} */

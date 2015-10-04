@@ -445,7 +445,7 @@ public class GridMapQueryExecutor {
             if (nodeRess.put(req.requestId(), qr) != null)
                 throw new IllegalStateException();
 
-            GridH2QueryContext.set(new GridH2QueryContext(ctx.localNodeId(), node.id(), req.requestId(), 0, MAP)
+            GridH2QueryContext.set(new GridH2QueryContext(ctx.localNodeId(), node.id(), req.requestId(), MAP)
                 .filter(h2.backupFilter(caches, topVer, req.partitions())));
 
             // TODO Prepare snapshots for all the needed tables before the run.
