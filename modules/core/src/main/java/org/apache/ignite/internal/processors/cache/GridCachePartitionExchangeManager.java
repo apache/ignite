@@ -23,10 +23,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -133,11 +131,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private GridFutureAdapter<?> reconnectExchangeFut;
 
     /**
-     * Partition map futures.
-     * This set also contains already completed exchange futures to address race conditions when coordinator
-     * leaves grid and new coordinator sends full partition message to a node which has not yet received
-     * discovery event. In case if remote node will retry partition exchange, completed future will indicate
-     * that full partition map should be sent to requesting node right away.
+     * Partition map futures. This set also contains already completed exchange futures to address race conditions when
+     * coordinator leaves grid and new coordinator sends full partition message to a node which has not yet received
+     * discovery event. In case if remote node will retry partition exchange, completed future will indicate that full
+     * partition map should be sent to requesting node right away.
      */
     private ExchangeFutureSet exchFuts = new ExchangeFutureSet();
 
@@ -449,8 +446,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * Gets topology version of last partition exchange, it is possible that last partition exchange
-     * is not completed yet.
+     * Gets topology version of last partition exchange, it is possible that last partition exchange is not completed
+     * yet.
      *
      * @return Topology version.
      */
@@ -1066,8 +1063,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * Exchange future thread. All exchanges happen only by one thread and next
-     * exchange will not start until previous one completes.
+     * Exchange future thread. All exchanges happen only by one thread and next exchange will not start until previous
+     * one completes.
      */
     private class ExchangeWorker extends GridWorker {
         /** Future queue. */
@@ -1273,26 +1270,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             return createTime + partResendTimeout;
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}  From what I could see, the refresh partition in case of timeout is redundant, since each node
+         * has a refresh partition which runs at regular intervals in the method body() of
+         * GridCachePartitionExchangeManager retrieved from the background process ExchangeWorker. Thus eliminating the
+         * refreshPartition in ResendTimeoutObject class should not have any impact on the operation, but an increase in
+         * performance when we avoid sending redundant message. 
+         */
         @Override public void onTimeout() {
-            cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-                @Override public void run() {
-                    if (!busyLock.readLock().tryLock())
-                        return;
-
-                    try {
-                        if (started.compareAndSet(false, true))
-                            refreshPartitions();
-                    }
-                    finally {
-                        busyLock.readLock().unlock();
-
-                        cctx.time().removeTimeoutObject(ResendTimeoutObject.this);
-
-                        pendingResend.compareAndSet(ResendTimeoutObject.this, null);
-                    }
-                }
-            });
         }
 
         /**
@@ -1387,7 +1372,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (log.isDebugEnabled())
                 log.debug("Received message from node [node=" + nodeId + ", msg=" + msg + ']');
 
-            onMessage(node , msg);
+            onMessage(node, msg);
         }
 
         /**
