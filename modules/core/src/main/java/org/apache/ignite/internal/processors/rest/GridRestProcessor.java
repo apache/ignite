@@ -107,10 +107,10 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** Workers count. */
     private final LongAdder8 workersCnt = new LongAdder8();
 
-    /** SecurityContext map. */
+    /** ClientId-SessionId map. */
     private final ConcurrentMap<UUID, UUID> clientId2SesId = new ConcurrentHashMap<>();
 
-    /** SecurityContext map. */
+    /** SessionId-Session map. */
     private final ConcurrentMap<UUID, Session> sesId2Ses = new ConcurrentHashMap<>();
 
     /** */
@@ -232,7 +232,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             if (log.isDebugEnabled())
                 log.debug("Next clientId and sessionToken were extracted according to request: " +
-                    "[clientId="+req.clientId()+", sessionToken="+Arrays.toString(req.sessionToken())+"]");
+                    "[clientId="+req.clientId()+", sesTok="+Arrays.toString(req.sessionToken())+"]");
 
             try {
                 if (ses.secCtx == null)
@@ -310,11 +310,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 UUID oldSesId = clientId2SesId.put(ses.clientId, ses.sesId);
 
-                assert oldSesId == null : "Request=" + req;
+                assert oldSesId == null : "Got an illegal state for request: " + req;
 
                 Session oldSes = sesId2Ses.put(ses.sesId, ses);
 
-                assert oldSes == null : "Request=" + req;
+                assert oldSes == null : "Got an illegal state for request: " + req;
 
                 return ses;
             }
@@ -330,7 +330,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                     Session prevSes = sesId2Ses.put(ses.sesId, ses);
 
-                    assert prevSes == null : "Request=" + req;
+                    assert prevSes == null : "Got an illegal state for request: " + req;
 
                     return ses;
                 }
@@ -350,7 +350,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 Session ses = sesId2Ses.get(sesId);
 
                 if (ses == null)
-                    throw new IgniteCheckedException("Failed to handle request, unknown session token " +
+                    throw new IgniteCheckedException("Failed to handle request - unknown session token " +
                         "(maybe expired session): [sesTok=" + U.byteArray2HexString(sesTok) + "]");
 
                 if (!ses.touch())
