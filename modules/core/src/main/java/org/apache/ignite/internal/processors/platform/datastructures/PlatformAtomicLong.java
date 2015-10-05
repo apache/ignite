@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.datastructures;
 
-import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongImpl;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
