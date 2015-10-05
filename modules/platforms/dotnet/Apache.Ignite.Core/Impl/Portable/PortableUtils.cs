@@ -1293,7 +1293,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 var genericType = valType.GetGenericTypeDefinition();
 
-
                 if (genericType == typeof (List<>))
                     colType = CollectionArrayList;
                 else if (genericType == typeof (LinkedList<>))
