@@ -332,7 +332,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
         checkRemoved();
 
         try {
-            return CU.outTx(internalCompareAndSet(expVal, newVal), ctx);
+            return CU.outTx(internalCompareAndSetAndGet(expVal, newVal) , ctx) == expVal;
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -513,44 +513,6 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
                 }
                 catch (Error | Exception e) {
                     U.error(log, "Failed to get and set: " + this, e);
-
-                    throw e;
-                }
-            }
-        };
-    }
-
-    /**
-     * Method returns callable for execution {@link #compareAndSet(long, long)}
-     * operation in async and sync mode.
-     *
-     * @param expVal Expected atomic long value.
-     * @param newVal New atomic long value.
-     * @return Callable for execution in async and sync mode.
-     */
-    private Callable<Boolean> internalCompareAndSet(final long expVal, final long newVal) {
-        return new Callable<Boolean>() {
-            @Override public Boolean call() throws Exception {
-                try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
-                    GridCacheAtomicLongValue val = atomicView.get(key);
-
-                    if (val == null)
-                        throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
-
-                    boolean retVal = val.get() == expVal;
-
-                    if (retVal) {
-                        val.set(newVal);
-
-                        atomicView.getAndPut(key, val);
-
-                        tx.commit();
-                    }
-
-                    return retVal;
-                }
-                catch (Error | Exception e) {
-                    U.error(log, "Failed to compare and set: " + this, e);
 
                     throw e;
                 }
