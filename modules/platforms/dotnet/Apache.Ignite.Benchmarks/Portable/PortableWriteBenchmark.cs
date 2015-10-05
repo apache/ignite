@@ -36,6 +36,9 @@ namespace Apache.Ignite.Benchmarks.Portable
         /** Memory manager. */
         private readonly PlatformMemoryManager _memMgr = new PlatformMemoryManager(1024);
 
+        /** Pre-allocated address. */
+        private readonly Address _address = BenchmarkUtils.GetRandomAddress();
+
         /** Pre-allocated model. */
         private readonly TestModel _model = new TestModel
         {
@@ -74,6 +77,7 @@ namespace Apache.Ignite.Benchmarks.Portable
             {
                 TypeConfigurations = new List<PortableTypeConfiguration>
                 {
+                    new PortableTypeConfiguration(typeof (Address)) {MetadataEnabled = false},
                     new PortableTypeConfiguration(typeof (TestModel)) {MetadataEnabled = false}
                 }
             });
@@ -85,7 +89,8 @@ namespace Apache.Ignite.Benchmarks.Portable
         /// <param name="descs">Descriptors.</param>
         protected override void GetDescriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
-            descs.Add(BenchmarkOperationDescriptor.Create("WriteTestModel", WriteAddress, 1));
+            descs.Add(BenchmarkOperationDescriptor.Create("WriteAddress", WriteAddress, 1));
+            descs.Add(BenchmarkOperationDescriptor.Create("WriteTestModel", WriteTestModel, 1));
         }
 
         /// <summary>
@@ -93,6 +98,25 @@ namespace Apache.Ignite.Benchmarks.Portable
         /// </summary>
         /// <param name="state">State.</param>
         private void WriteAddress(BenchmarkState state)
+        {
+            var mem = _memMgr.Allocate();
+
+            try
+            {
+                var stream = mem.GetStream();
+
+                _marsh.StartMarshal(stream).Write(_address);
+            }
+            finally
+            {
+                mem.Release();
+            }
+        }
+        /// <summary>
+        /// Write address.
+        /// </summary>
+        /// <param name="state">State.</param>
+        private void WriteTestModel(BenchmarkState state)
         {
             var mem = _memMgr.Allocate();
 
