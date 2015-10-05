@@ -572,7 +572,7 @@ void CheckCollection(CollectionType* colType)
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
 }
 
-void CheckInterval(CollectionType* colType)
+void CheckCollectionIterators(CollectionType* colType)
 {
     typedef std::vector<PortableInner> PortableInnerVector;
     PortableInnerVector writeValues;
@@ -1755,16 +1755,16 @@ BOOST_AUTO_TEST_CASE(TestCollectionTyped)
     CheckCollection(&typ);
 }
 
-BOOST_AUTO_TEST_CASE(TestInterval)
+BOOST_AUTO_TEST_CASE(TestCollectionIterators)
 {
-    CheckInterval(NULL);
+    CheckCollectionIterators(NULL);
 }
 
-BOOST_AUTO_TEST_CASE(TestIntervalTyped)
+BOOST_AUTO_TEST_CASE(TestCollectionIteratorsTyped)
 {
     CollectionType typ = IGNITE_COLLECTION_CONCURRENT_SKIP_LIST_SET;
 
-    CheckInterval(&typ);
+    CheckCollectionIterators(&typ);
 }
 
 BOOST_AUTO_TEST_CASE(TestMapNull)
