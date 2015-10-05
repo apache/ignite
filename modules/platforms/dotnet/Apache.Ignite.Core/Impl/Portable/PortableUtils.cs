@@ -2171,9 +2171,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         [StructLayout(LayoutKind.Sequential)]
         private struct GuidAccessor
         {
-            public readonly int A;
-            public readonly short B;
-            public readonly short C;
+            public readonly ulong ABC;
             public readonly ulong DEGHIJK;
 
             /// <summary>
@@ -2182,9 +2180,10 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// <param name="val">The value.</param>
             public GuidAccessor(JavaGuid val)
             {
-                A = val.A;
-                B = val.B;
-                C = val.C;
+                var l = val.CBA;
+
+                ABC = ((l >> 32) & 0x00000000FFFFFFFF) | ((l << 48) & 0xFFFF000000000000) |
+                      ((l << 16) & 0x0000FFFF00000000);
 
                 DEGHIJK = ReverseByteOrder(val.KJIHGED);
             }
@@ -2196,9 +2195,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         [StructLayout(LayoutKind.Sequential)]
         private struct JavaGuid
         {
-            public readonly short C;
-            public readonly short B;
-            public readonly int A;
+            public readonly ulong CBA;
             public readonly ulong KJIHGED;
 
             /// <summary>
@@ -2212,9 +2209,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _e, _d.
                 var accessor = *((GuidAccessor*)&val);
 
-                A = accessor.A;
-                B = accessor.B;
-                C = accessor.C;
+                var l = accessor.ABC;
+
+                CBA = ((l << 32) & 0xFFFFFFFF00000000) | ((l >> 48) & 0x000000000000FFFF) |
+                      ((l >> 16) & 0x00000000FFFF0000);
 
                 KJIHGED = ReverseByteOrder(accessor.DEGHIJK);
             }
