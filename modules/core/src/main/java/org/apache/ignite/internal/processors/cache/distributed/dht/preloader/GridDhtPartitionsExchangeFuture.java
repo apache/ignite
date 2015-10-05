@@ -475,6 +475,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         busyLock.readLock().unlock();
     }
 
+    // TODO remove
+    long inited;
+
     /**
      * Starts activity.
      *
@@ -487,6 +490,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (init.compareAndSet(false, true)) {
             if (isDone())
                 return;
+
+            inited = U.currentTimeMillis();
 
             try {
                 // Wait for event to occur to make sure that discovery
@@ -800,7 +805,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                             for (Map.Entry<IgniteTxKey, Collection<GridCacheMvccCandidate>> e : locks.entrySet())
                                 U.warn(log, "Awaited locked entry [key=" + e.getKey() + ", mvcc=" + e.getValue() + ']');
-                            
+
                             dumpedObjects++;
                         }
                     }
@@ -1059,7 +1064,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (super.onDone(res, err) && !dummy && !forcePreload) {
             if (log.isDebugEnabled())
-                log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this + ']');
+                log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
+                    "duration=" + duration() + ", durationFromInit=" + (U.currentTimeMillis() - inited) + ']');
 
             initFut.onDone(err == null);
 
@@ -1190,12 +1196,16 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     if (match) {
                         boolean allReceived;
 
+                        long start = U.currentTimeMillis();
+
                         synchronized (rcvdIds) {
                             if (rcvdIds.add(nodeId))
                                 updatePartitionSingleMap(msg);
 
                             allReceived = allReceived();
                         }
+
+                        long end = U.currentTimeMillis();
 
                         // If got all replies, and initialization finished, and reply has not been sent yet.
                         if (allReceived && ready.get() && replied.compareAndSet(false, true)) {
@@ -1206,7 +1216,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         else if (log.isDebugEnabled())
                             log.debug("Exchange future full map is not sent [allReceived=" + allReceived() +
                                 ", ready=" + ready + ", replied=" + replied.get() + ", init=" + init.get() +
-                                ", fut=" + this + ']');
+                                ", fut=" + GridDhtPartitionsExchangeFuture.this + ", updateDur=" + (end - start) + ']');
                     }
                 }
             });

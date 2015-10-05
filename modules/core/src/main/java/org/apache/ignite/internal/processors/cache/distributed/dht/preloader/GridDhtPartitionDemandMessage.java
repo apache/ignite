@@ -45,7 +45,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     private long updateSeq;
 
     /** Partition. */
-    @GridToStringInclude
     @GridDirectCollection(int.class)
     private Collection<Integer> parts;
 

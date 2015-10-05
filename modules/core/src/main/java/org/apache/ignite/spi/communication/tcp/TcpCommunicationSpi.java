@@ -2050,11 +2050,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (locNode == null)
             throw new IgniteCheckedException("Failed to create NIO client (local node is stopping)");
 
+        if (log.isDebugEnabled())
+            log.debug("Creating NIO client to node: " + node);
+
         // If remote node has shared memory server enabled and has the same set of MACs
         // then we are likely to run on the same host and shared memory communication could be tried.
         if (shmemPort != null && U.sameMacs(locNode, node)) {
             try {
-                return createShmemClient(node, shmemPort);
+                GridCommunicationClient client = createShmemClient(
+                    node,
+                    shmemPort);
+
+                if (log.isDebugEnabled())
+                    log.debug("Shmem client created: " + client);
+
+                return client;
             }
             catch (IgniteCheckedException e) {
                 if (e.hasCause(IpcOutOfSystemResourcesException.class))
@@ -2071,7 +2081,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         connectGate.enter();
 
         try {
-            return createTcpClient(node);
+            GridCommunicationClient client = createTcpClient(node);
+
+            if (log.isDebugEnabled())
+                log.debug("TCP client created: " + client);
+
+            return client;
         }
         finally {
             connectGate.leave();
@@ -2452,9 +2467,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             throw errs;
         }
-
-        if (log.isDebugEnabled())
-            log.debug("Created client: " + client);
 
         return client;
     }
