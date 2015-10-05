@@ -994,7 +994,8 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static unsafe void WriteGuid(Guid val, IPortableStream stream)
         {
-            // TODO: Use some kind of fucked up struct to improve this?
+            //WriteGuid2(val, stream); /*
+            
 
             byte[] bytes = val.ToByteArray();
 
@@ -1017,22 +1018,28 @@ namespace Apache.Ignite.Core.Impl.Portable
             stream.WriteByte(bytes[10]); // _f
             stream.WriteByte(bytes[9]);  // _e
             stream.WriteByte(bytes[8]);  // _d
+              
+             //*/
         }
 
         public static unsafe void WriteGuid2(Guid val, IPortableStream stream)
         {
             var javaGuid = new JavaGuid(val);
 
-            fixed (JavaGuid* ptr = &javaGuid)
-            {
-                stream.Write((byte*) ptr, 16);
-            }
+            var ptr = &javaGuid;
+
+            stream.Write((byte*) ptr, 16);
         }
 
 
         [StructLayout(LayoutKind.Sequential)]
         private struct JavaGuid
         {
+            private readonly short _c;
+            private readonly short _b;
+            private readonly int _a;
+            private readonly long _kjihged;
+
             [StructLayout(LayoutKind.Sequential)]
             private struct GuidAccessor
             {
@@ -1044,24 +1051,16 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             public unsafe JavaGuid(Guid val)
             {
-                fixed (Guid* p = &val)
-                {
-                    var pp = *((GuidAccessor*) p);
+                var accessor = *((GuidAccessor*) &val);
 
-                    A = pp.A;
-                    B = pp.B;
-                    C = pp.C;
+                _a = accessor.A;
+                _b = accessor.B;
+                _c = accessor.C;
 
-                    // Nice hack to reverse byte order. Uses bitshifts.
-                    // Fastest way would be to use bswap processor instruction.
-                    KJIHGED = IPAddress.HostToNetworkOrder(pp.DEGHIJK);  
-                }
+                // Nice hack to reverse byte order. Uses bitshifts.
+                // Fastest way would be to use bswap processor instruction.
+                _kjihged = IPAddress.HostToNetworkOrder(accessor.DEGHIJK);
             }
-
-            public readonly short C;
-            public readonly short B;
-            public readonly int A;
-            public readonly long KJIHGED;
         }
 
         /**
