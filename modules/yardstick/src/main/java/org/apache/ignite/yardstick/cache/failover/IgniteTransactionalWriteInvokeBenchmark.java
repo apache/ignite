@@ -19,7 +19,6 @@ package org.apache.ignite.yardstick.cache.failover;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -70,16 +69,17 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
 
                         if (values.size() != 1) {
                             // Print all usefull information and finish.
-                            println(cfg, "Got different values for keys [map=" + map + "]");
+                            println(cfg, "[Exception] Got different values for keys [map=" + map + "]");
 
-                            final Set<String> allKeys = new LinkedHashSet<>();
+                            println(cfg, "Cache content:");
 
                             for (int k = 0; k < KEY_RANGE; k++) {
-                                for (int i = 0; i < args.keysCount(); k++)
-                                    allKeys.add("key-" + k + "-" + i);
-                            }
+                                for (int i = 0; i < args.keysCount(); k++) {
+                                    String key = "key-" + k + "-" + i;
 
-                            println(cfg, "Cache content: " + cache.getAll(allKeys));
+                                    println(cfg, "Entry [key=" + key + ", val=" + cache.get(key));
+                                }
+                            }
 
                             println(cfg, Utils.threadDump());
 
