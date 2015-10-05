@@ -453,14 +453,7 @@ namespace ignite
                 {
                     StartContainerSession(true);
 
-                    stream->WriteInt8(IGNITE_TYPE_COLLECTION);
-                    stream->Position(stream->Position() + 4);
-                    stream->WriteInt8(typ);
-
-                    for (InputIterator i = first; i != last; ++i)
-                        WriteElement(elemId, *i);
-
-                    CommitContainer(elemId);
+                    WriteCollectionWithinSession(first, last, typ);
                 }
 
                 /**
@@ -478,14 +471,7 @@ namespace ignite
 
                     WriteFieldIdSkipLength(fieldName, IGNITE_TYPE_COLLECTION);
 
-                    stream->WriteInt8(IGNITE_TYPE_COLLECTION);
-                    stream->Position(stream->Position() + 4);
-                    stream->WriteInt8(typ);
-
-                    for (InputIterator i = first; i != last; ++i)
-                        WriteElement(elemId, *i);
-
-                    CommitContainer(elemId);
+                    WriteCollectionWithinSession(first, last, typ);
                 }
                 
                 /**
@@ -791,6 +777,28 @@ namespace ignite
                         stream->WriteInt32(1);
                         stream->WriteInt8(IGNITE_HDR_NULL);
                     }
+                }
+
+
+
+                /**
+                * Write values in interval [first, last).
+                * New session should be started prior to call to this method.
+                * @param first Iterator pointing to the beginning of the interval.
+                * @param last Iterator pointing to the end of the interval.
+                * @param typ Collection type.
+                */
+                template<typename InputIterator>
+                void WriteCollectionWithinSession(InputIterator first, InputIterator last, ignite::portable::CollectionType typ)
+                {
+                    stream->WriteInt8(IGNITE_TYPE_COLLECTION);
+                    stream->Position(stream->Position() + 4);
+                    stream->WriteInt8(typ);
+
+                    for (InputIterator i = first; i != last; ++i)
+                        WriteElement(elemId, *i);
+
+                    CommitContainer(elemId);
                 }
 
                 /**

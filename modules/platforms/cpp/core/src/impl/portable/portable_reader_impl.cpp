@@ -521,7 +521,7 @@ namespace ignite
                 int32_t fieldLen = SeekField(fieldId);
 
                 if (fieldLen <= 0)
-                    return IGNITE_COLLECTION_UNDEFINED;
+                    return -1;
 
                 int8_t hdr = stream->ReadInt8();
 
@@ -530,7 +530,7 @@ namespace ignite
                     if (hdr != IGNITE_HDR_NULL)
                         ThrowOnInvalidHeader(IGNITE_TYPE_COLLECTION, hdr);
 
-                    return IGNITE_COLLECTION_UNDEFINED;
+                    return -1;
                 }
 
                 int32_t size = stream->ReadInt32();
