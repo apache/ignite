@@ -24,7 +24,9 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
+    using System.Net;
     using System.Reflection;
+    using System.Runtime.InteropServices;
     using System.Runtime.Serialization.Formatters.Binary;
     using System.Text;
     using Apache.Ignite.Core.Impl.Common;
@@ -1015,6 +1017,51 @@ namespace Apache.Ignite.Core.Impl.Portable
             stream.WriteByte(bytes[10]); // _f
             stream.WriteByte(bytes[9]);  // _e
             stream.WriteByte(bytes[8]);  // _d
+        }
+
+        public static unsafe void WriteGuid2(Guid val, IPortableStream stream)
+        {
+            var javaGuid = new JavaGuid(val);
+
+            fixed (JavaGuid* ptr = &javaGuid)
+            {
+                stream.Write((byte*) ptr, 16);
+            }
+        }
+
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JavaGuid
+        {
+            [StructLayout(LayoutKind.Sequential)]
+            private struct GuidAccessor
+            {
+                public readonly int A;
+                public readonly short B;
+                public readonly short C;
+                public readonly long DEGHIJK;
+            }
+
+            public unsafe JavaGuid(Guid val)
+            {
+                fixed (Guid* p = &val)
+                {
+                    var pp = *((GuidAccessor*) p);
+
+                    A = pp.A;
+                    B = pp.B;
+                    C = pp.C;
+
+                    // Nice hack to reverse byte order. Uses bitshifts.
+                    // Fastest way would be to use bswap processor instruction.
+                    KJIHGED = IPAddress.HostToNetworkOrder(pp.DEGHIJK);  
+                }
+            }
+
+            public readonly short C;
+            public readonly short B;
+            public readonly int A;
+            public readonly long KJIHGED;
         }
 
         /**
