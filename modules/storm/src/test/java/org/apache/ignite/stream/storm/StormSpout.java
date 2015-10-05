@@ -23,7 +23,6 @@ import backtype.storm.topology.IRichSpout;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -34,6 +33,7 @@ import java.util.Collections;
  * Defines a testing spout mandatory for Storm
  */
 public class StormSpout implements IRichSpout {
+
     /** Count */
     private static final int CNT = 10;
 
@@ -58,6 +58,7 @@ public class StormSpout implements IRichSpout {
     @Override
     public void nextTuple() {
         HashMap<String, String> keyValMap = getKeyValMap();
+
         collector.emit(new Values(keyValMap));
     }
 
@@ -72,7 +73,6 @@ public class StormSpout implements IRichSpout {
         HashMap<String, String> keyValMap = new HashMap<>();
 
         for (int evt = 0; evt < CNT; evt++) {
-
             String ip = Integer.toString(numbers.get(evt));
 
             String msg = VALUE + ip;
@@ -83,24 +83,19 @@ public class StormSpout implements IRichSpout {
     }
 
     @Override
-    public void ack(Object o) {
-    }
+    public void ack(Object o) { }
 
     @Override
-    public void fail(Object o) {
-    }
+    public void fail(Object o) { }
 
     @Override
-    public void close() {
-    }
+    public void close() { }
 
     @Override
-    public void activate() {
-    }
+    public void activate() { }
 
     @Override
-    public void deactivate() {
-    }
+    public void deactivate() { }
 
     @Override
     public Map<String, Object> getComponentConfiguration() {

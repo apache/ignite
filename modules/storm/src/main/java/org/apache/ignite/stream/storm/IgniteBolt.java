@@ -39,9 +39,9 @@ public abstract class IgniteBolt extends BaseRichBolt {
     /**
      * In this point we declare the output collector of the bolt
      *
-     * @param map the map derived from topology
-     * @param topologyContext the context topology in storm
-     * @param collector the output of the collector
+     * @param map the map derived from topology.
+     * @param topologyContext the context topology in storm.
+     * @param collector the output of the collector.
      */
     @Override
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector collector) {
@@ -49,7 +49,7 @@ public abstract class IgniteBolt extends BaseRichBolt {
     }
 
     /**
-     * This method generates and map and do a put operation
+     * This method generates and map and do a put operation.
      *
      * @param tuple
      */
@@ -57,6 +57,7 @@ public abstract class IgniteBolt extends BaseRichBolt {
     public void execute(Tuple tuple) {
         try {
             Map<?, ?> res = process(tuple);
+
             collector.emit(new Values(res));
         }
         catch (Exception e) {
@@ -68,7 +69,7 @@ public abstract class IgniteBolt extends BaseRichBolt {
     }
 
     /**
-     * This may not be necessary
+     * This may not be necessary.
      *
      * @param declarer
      */
@@ -78,9 +79,9 @@ public abstract class IgniteBolt extends BaseRichBolt {
     }
 
     /**
-     * This method should be overridden by providing a way to translate a tuple in a map
+     * This method should be overridden by providing a way to translate a tuple in a map.
      *
-     * @return The format accepted by Ignite
+     * @return The format accepted by Ignite.
      * @throws Exception
      */
     public abstract Map<?, ?> process(Tuple tuple) throws Exception;

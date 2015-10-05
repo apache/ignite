@@ -102,11 +102,12 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
      * @param stormStreamer the storm streamer in Ignite
      */
     public void startSimulatedTopology ( StormStreamer stormStreamer) {
-
         MkClusterParam mkClusterParam = new MkClusterParam();
         mkClusterParam.setSupervisors(4);
+
         Config daemonConf = new Config();
         daemonConf.put(Config.STORM_LOCAL_MODE_ZMQ, false);
+
         mkClusterParam.setDaemonConf(daemonConf);
 
         Testing.withSimulatedTimeLocalCluster(mkClusterParam, new TestJob() {
@@ -114,6 +115,7 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
                     public void run(ILocalCluster cluster) throws IOException {
                         /* Storm topology builder. */
                         TopologyBuilder builder = new TopologyBuilder();
+
                         StormSpout stormSpout = new StormSpout();
 
                         /*Set storm spout in topology builder. */

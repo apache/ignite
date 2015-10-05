@@ -23,6 +23,7 @@ import junit.framework.TestSuite;
  * Apache Storm streamer tests. Tests {@link StormStreamer}.
  */
 public class IgniteStormStreamerSelfTestSuite extends TestSuite {
+
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
