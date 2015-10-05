@@ -27,11 +27,13 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Datastream;
+    using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Datastream;
+    using Apache.Ignite.Core.Impl.DataStructures;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Transactions;
@@ -428,6 +430,19 @@ namespace Apache.Ignite.Core.Impl
         public IServices GetServices()
         {
             return _prj.GetServices();
+        }
+
+        /** <inheritdoc /> */
+        public IAtomicLong GetAtomicLong(string name, long initialValue, bool create)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            var nativeLong = UU.ProcessorAtomicLong(_proc, name, initialValue, create);
+
+            if (nativeLong == null)
+                return null;
+
+            return new AtomicLong(nativeLong, Marshaller, name);
         }
 
         /// <summary>
