@@ -586,7 +586,8 @@ namespace Apache.Ignite.Core.Tests.Portable
                 {
                     {1, "a1"},
                     {2, "a2"}
-                }
+                },
+                Objects = new object[] {1, 2, "3", 4.4}
             };
 
             var data = marsh.Marshal(obj);
@@ -596,6 +597,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             CollectionAssert.AreEquivalent(obj.Keys, result.Keys);
             CollectionAssert.AreEquivalent(obj.Values, result.Values);
             CollectionAssert.AreEquivalent(obj.Pairs, result.Pairs);
+            CollectionAssert.AreEquivalent(obj.Objects, result.Objects);
         }
 
         /**
@@ -1384,11 +1386,14 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             public IDictionary<TKey, TValue> Pairs { get; set; }
 
+            public ICollection<object> Objects { get; set; }
+
             public void WritePortable(IPortableWriter writer)
             {
                 writer.WriteCollection("Keys", Keys);
                 writer.WriteObject("Values", Values);
                 writer.WriteDictionary("Pairs", Pairs);
+                writer.WriteObject("Objects", Objects);
             }
 
             public void ReadPortable(IPortableReader reader)
@@ -1396,6 +1401,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 Keys = reader.ReadCollection<TKey>("Keys");
                 Values = reader.ReadCollection<TValue>("Values");  // written as object, read as collection
                 Pairs = reader.ReadDictionary<TKey, TValue>("Pairs");
+                Objects = reader.ReadCollection<object>("Objects");
             }
         }
 
