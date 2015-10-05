@@ -992,6 +992,8 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static unsafe void WriteGuid(Guid val, IPortableStream stream)
         {
+            // TODO: Use some kind of fucked up struct to improve this?
+
             byte[] bytes = val.ToByteArray();
 
             // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _g, _h, _i, _j, _k.
@@ -1000,7 +1002,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             fixed (byte* bytes0 = bytes)
             {
                 stream.Write(bytes0 + 6, 2); // _c
-                stream.Write(bytes0 + 4, 2); // _a
+                stream.Write(bytes0 + 4, 2); // _b
                 stream.Write(bytes0, 4);     // _a
             }
 
