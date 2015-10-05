@@ -17,23 +17,27 @@
 
 package org.apache.ignite.yardstick.cache.failover;
 
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.yardstick.Utils;
 import org.yardstickframework.BenchmarkConfiguration;
 
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Atomic retries failover benchmark. Client generates continuous load to the cluster
- * (random get, put, invoke, remove operations)
+ * Atomic retries failover benchmark. Client generates continuous load to the cluster (random get, put, invoke, remove
+ * operations)
  */
 public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstractBenchmark<String, Long> {
     /** */
@@ -43,7 +47,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
     public static final int CNT_KEYS_IN_LINE = 5;
 
     /** */
-    private final ConcurrentMap<String, Long> map = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, AtomicLong> map = new ConcurrentHashMap<>();
 
     /** */
     private final ReadWriteLock rwl = new ReentrantReadWriteLock(true);
@@ -58,27 +62,43 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
         Thread thread = new Thread(new Runnable() {
             @Override public void run() {
                 try {
+                    // Prepare keys.
+                    final Set<String> keys = new LinkedHashSet<>();
+
+                    final int memberId = cfg.memberId();
+
+                    for (int k = 0; k < KEY_RANGE; k++) {
+                        for (int i = 0; i < CNT_KEYS_IN_LINE; k++) {
+                            String key = "key-" + k + "-" + memberId + "-" + i;
+
+                            keys.add(key);
+                        }
+                    }
+
+                    // Main logic.
                     while (!Thread.currentThread().isInterrupted()) {
                         Thread.sleep(args.cacheConsistencyCheckingPeriod() * 1000);
 
                         rwl.writeLock().lock();
 
                         try {
-                            for (int k = 0; k < KEY_RANGE; k++) {
-                                for (int i = 0; i < CNT_KEYS_IN_LINE; k++) {
-                                    String key = "key-" + k + "-" + cfg.memberId() + "-" + i;
+                            for (String key : keys) {
+                                Long cacheVal = cache.get(key);
+                                Long mapVal = map.get(key).get();
 
-                                    Long cacheVal = cache.get(key);
-                                    Long mapVal = map.get(key);
+                                if (!Objects.equals(cacheVal, mapVal)) {
+                                    println(cfg, "Got different values [key='" + key + "', cacheVal=" + cacheVal
+                                        + ", localMapVal=" + mapVal + "]");
 
-                                    if (!Objects.equals(cacheVal, mapVal)) {
-                                        println(cfg, "Got different values [key='" + key + "', cacheVal=" + cacheVal
-                                            + ", localMapVal=" + mapVal + "]");
+                                    isValidCacheState = false;
 
-                                        isValidCacheState = false;
+                                    // Print all usefull information and finish.
+                                    println(cfg, "Local driver map contant: " + map);
+                                    println(cfg, "Cache content: " + cache.getAll(keys));
 
-                                        return;
-                                    }
+                                    println(cfg, Utils.threadDump());
+
+                                    return;
                                 }
                             }
                         }
@@ -117,9 +137,11 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                 if (!isValidCacheState)
                     return isValidCacheState;
 
-                Long newVal = cache.invoke(key, new IncrementCacheEntryProcessor());
+                cache.invoke(key, new IncrementCacheEntryProcessor());
 
-                map.put(key, newVal);
+                AtomicLong oldVal = map.get(key);
+
+                oldVal.incrementAndGet();
             }
             finally {
                 rwl.readLock().unlock();
@@ -141,7 +163,8 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
         private static final long serialVersionUID = 0;
 
         /** {@inheritDoc} */
-        @Override public Long process(MutableEntry<String, Long> entry, Object... arguments) throws EntryProcessorException {
+        @Override public Long process(MutableEntry<String, Long> entry,
+            Object... arguments) throws EntryProcessorException {
             long newVal = entry.getValue() == null ? 0 : entry.getValue() + 1;
 
             entry.setValue(newVal);

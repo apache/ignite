@@ -19,35 +19,34 @@ package org.apache.ignite.yardstick.cache.failover;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import javax.cache.CacheException;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cluster.ClusterTopologyException;
-import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.yardstick.Utils;
 
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.yardstick.Utils.doInTransaction;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Atomic retries failover benchmark. Client generates continuous load to the cluster
- * (random get, put, invoke, remove operations)
+ * Atomic retries failover benchmark. Client generates continuous load to the cluster (random get, put, invoke, remove
+ * operations)
  */
 public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstractBenchmark<String, Long> {
+    /** */
+    public static final int KEY_RANGE = 100_000;
+
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        final int k = nextRandom(100_000);
+        final int k = nextRandom(KEY_RANGE);
+
+        assert args.keysCount() > 0 : "Count of keys = " + args.keysCount();
 
         final String[] keys = new String[args.keysCount()];
 
-        assert keys.length > 0 : "Count of keys = " + keys.length;
-
         for (int i = 0; i < keys.length; i++)
-            keys[i] = "key-"+k+"-"+i;
+            keys[i] = "key-" + k + "-" + i;
 
         return doInTransaction(ignite(), new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
@@ -59,7 +58,19 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
                 Set<Long> values = new HashSet<>(map.values());
 
                 if (values.size() != 1) {
-                    println(cfg, "Got different values for keys [map="+map+"]");
+                    // Print all usefull information and finish.
+                    println(cfg, "Got different values for keys [map=" + map + "]");
+
+                    Set<String> allKeys = new LinkedHashSet<>();
+
+                    for (int k = 0; k < KEY_RANGE; k++) {
+                        for (int i = 0; i < args.keysCount(); k++)
+                            allKeys.add("key-" + k + "-" + i);
+                    }
+
+                    println(cfg, "Cache content: " + cache.getAll(allKeys));
+
+                    println(cfg, Utils.threadDump());
 
                     return false;
                 }
@@ -74,39 +85,6 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
                 return true;
             }
         });
-    }
-
-    /**
-     * @param ignite Ignite instance.
-     * @param clo Closure.
-     * @return Result of closure execution.
-     * @throws Exception
-     */
-    private static <T> T doInTransaction(Ignite ignite, Callable<T> clo) throws Exception {
-        while (true) {
-            try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                T res = clo.call();
-
-                tx.commit();
-
-                return res;
-            }
-            catch (CacheException e) {
-                if (e.getCause() instanceof ClusterTopologyException) {
-                    ClusterTopologyException topEx = (ClusterTopologyException)e.getCause();
-
-                    topEx.retryReadyFuture().get();
-                }
-                else
-                    throw e;
-            }
-            catch (ClusterTopologyException e) {
-                e.retryReadyFuture().get();
-            }
-            catch (TransactionRollbackException ignore) {
-                // Safe to retry right away.
-            }
-        }
     }
 
     /** {@inheritDoc} */

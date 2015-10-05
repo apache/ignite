@@ -25,6 +25,7 @@ import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.yardstick.Utils;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 
@@ -33,7 +34,7 @@ import static org.yardstickframework.BenchmarkUtils.println;
 /**
  * Ignite benchmark that performs long running failover tasks.
  */
-public abstract class IgniteFailoverAbstractBenchmark<K,V> extends IgniteCacheAbstractBenchmark<K,V> {
+public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheAbstractBenchmark<K, V> {
     /** {@inheritDoc} */
     @Override public void setUp(final BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
@@ -59,9 +60,6 @@ public abstract class IgniteFailoverAbstractBenchmark<K,V> extends IgniteCacheAb
 
                             srvsCfgs.put(e.getKey(), e.getValue());
                         }
-
-                        // Destroy cache as redundant.
-                        srvsCfgsCache.destroy();
 
                         assert ignite().cluster().forServers().nodes().size() == srvsCfgs.size();
 
@@ -90,7 +88,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K,V> extends IgniteCacheAb
 
                                 BenchmarkConfiguration bc = srvsCfgs.get(id);
 
-                                RestartUtils.Result res = RestartUtils.kill9Server(bc, isDebug);
+                                Utils.ProcessExecutionResult res = Utils.kill9Server(bc, isDebug);
 
                                 println("[RESTARTER] Server with id " + id + " has been killed."
                                     + (isDebug ? " Result:\n" + res : ""));
@@ -103,7 +101,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K,V> extends IgniteCacheAb
 
                                 BenchmarkConfiguration bc = srvsCfgs.get(id);
 
-                                RestartUtils.Result res = RestartUtils.startServer(bc, isDebug);
+                                Utils.ProcessExecutionResult res = Utils.startServer(bc, isDebug);
 
                                 println("[RESTARTER] Server with id " + id + " has been started."
                                     + (isDebug ? " Result:\n" + res : ""));
@@ -114,7 +112,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K,V> extends IgniteCacheAb
                         println("[RESTARTER] Got exception: " + e);
                         e.printStackTrace();
 
-                        println(RestartUtils.threadDump());
+                        println(Utils.threadDump());
 
                         if (e instanceof Error)
                             throw (Error)e;
@@ -125,17 +123,17 @@ public abstract class IgniteFailoverAbstractBenchmark<K,V> extends IgniteCacheAb
             Thread threadDumpPrinterThread = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
-                        while(!Thread.currentThread().isInterrupted()) {
-                            Thread.sleep(30*60*1000);
+                        while (!Thread.currentThread().isInterrupted()) {
+                            Thread.sleep(30 * 60 * 1000);
 
-                            println(RestartUtils.threadDump());
+                            println(Utils.threadDump());
                         }
                     }
                     catch (Throwable e) {
                         println("[Thread dump printer] Got exception: " + e);
                         e.printStackTrace();
 
-                        println(RestartUtils.threadDump());
+                        println(Utils.threadDump());
 
                         if (e instanceof Error)
                             throw (Error)e;

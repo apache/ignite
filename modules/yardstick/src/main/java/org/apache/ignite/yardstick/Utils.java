@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache.failover;
+package org.apache.ignite.yardstick;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -30,21 +30,30 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.concurrent.Callable;
+import javax.cache.CacheException;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.yardstickframework.BenchmarkConfiguration;
+
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Restart Utils.
  */
-public final class RestartUtils {
+public final class Utils {
     /** Time formatter. */
     public static final SimpleDateFormat TIME_FORMATTER = new SimpleDateFormat("HHmmss");
 
     /**
      * Private default constructor.
      */
-    private RestartUtils() {
+    private Utils() {
         // No-op.
     }
 
@@ -56,7 +65,7 @@ public final class RestartUtils {
      * But it will affect a performance.
      * @return Result of execution.
      */
-    public static Result kill9Server(BenchmarkConfiguration cfg, boolean isDebug) {
+    public static ProcessExecutionResult kill9Server(BenchmarkConfiguration cfg, boolean isDebug) {
         return executeUnderSshConnect(cfg.remoteUser(), cfg.remoteHostName(), isDebug,
             Collections.singletonList("pkill -9 -f 'Dyardstick.server" + cfg.memberId() + "'"));
     }
@@ -70,7 +79,7 @@ public final class RestartUtils {
      * @param cmds Commands.
      * @return Result.
      */
-    private static Result executeUnderSshConnect(String remoteUser, String hostName,
+    private static ProcessExecutionResult executeUnderSshConnect(String remoteUser, String hostName,
         boolean isDebug, Iterable<String> cmds) {
         if (U.isWindows())
             throw new UnsupportedOperationException("Unsupported operation for windows.");
@@ -100,11 +109,11 @@ public final class RestartUtils {
                 p.waitFor();
             }
 
-            return new Result(p.exitValue(), log.toString(),  t1 == null ? "" : t1.val2.toString(),
+            return new ProcessExecutionResult(p.exitValue(), log.toString(),  t1 == null ? "" : t1.val2.toString(),
                 t2 == null ? "" : t2.val2.toString());
         }
         catch (Exception err) {
-            return new Result(err);
+            return new ProcessExecutionResult(err);
         }
         finally {
             if (isDebug) {
@@ -156,7 +165,7 @@ public final class RestartUtils {
      * But it will affect a performance.
      * @return Result of execution.
      */
-    public static Result startServer(BenchmarkConfiguration cfg,
+    public static ProcessExecutionResult startServer(BenchmarkConfiguration cfg,
         boolean isDebug) {
         String descriptrion = F.isEmpty(cfg.descriptions()) ? "" : "_" + cfg.descriptions().get(0);
         String now = TIME_FORMATTER.format(new Date());
@@ -218,9 +227,42 @@ public final class RestartUtils {
     }
 
     /**
+     * @param ignite Ignite instance.
+     * @param clo Closure.
+     * @return Result of closure execution.
+     * @throws Exception
+     */
+    public static <T> T doInTransaction(Ignite ignite, Callable<T> clo) throws Exception {
+        while (true) {
+            try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                T res = clo.call();
+
+                tx.commit();
+
+                return res;
+            }
+            catch (CacheException e) {
+                if (e.getCause() instanceof ClusterTopologyException) {
+                    ClusterTopologyException topEx = (ClusterTopologyException)e.getCause();
+
+                    topEx.retryReadyFuture().get();
+                }
+                else
+                    throw e;
+            }
+            catch (ClusterTopologyException e) {
+                e.retryReadyFuture().get();
+            }
+            catch (TransactionRollbackException ignore) {
+                // Safe to retry right away.
+            }
+        }
+    }
+
+    /**
      * Result of executed command.
      */
-    public static class Result {
+    public static class ProcessExecutionResult {
         /** */
         private final int exitCode;
 
@@ -241,7 +283,7 @@ public final class RestartUtils {
          * @param out Out.
          * @param err Err.
          */
-        public Result(int exitCode, String log, String out, String err) {
+        public ProcessExecutionResult(int exitCode, String log, String out, String err) {
             this.exitCode = exitCode;
             this.log = log;
             this.out = out;
@@ -253,7 +295,7 @@ public final class RestartUtils {
         /**
          * @param e Exception.
          */
-        public Result(Exception e) {
+        public ProcessExecutionResult(Exception e) {
             exitCode = -1;
             out = null;
             err = null;
