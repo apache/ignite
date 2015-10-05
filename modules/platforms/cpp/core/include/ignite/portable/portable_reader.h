@@ -328,20 +328,6 @@ namespace ignite
             }
 
             /**
-             * Read values and insert them to specified position.
-             *
-             * @param fieldName Field name.
-             * @param out Output iterator to the initial position in the destination sequence.
-             * @param typ Collection type.
-             * @return Number of elements that have been read.
-             */
-            template<typename T, typename OutputIterator>
-            int32_t ReadInterval(const char* fieldName, OutputIterator out, CollectionType& typ)
-            {
-                return impl->ReadInterval<T>(fieldName, out, typ);
-            }
-
-            /**
              * Read object.
              *
              * @param fieldName Field name.

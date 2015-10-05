@@ -459,53 +459,6 @@ namespace ignite
                 int32_t WriteMap(const char* fieldName, ignite::portable::MapType typ);
 
                 /**
-                 * Write values in interval [first, last).
-                 *
-                 * @param first Iterator pointing to the beginning of the interval.
-                 * @param last Iterator pointing to the end of the interval.
-                 * @param typ Collection type.
-                 */
-                template<typename InputIterator>
-                void WriteInterval(InputIterator first, InputIterator last, ignite::portable::CollectionType typ)
-                {
-                    StartContainerSession(true);
-
-                    stream->WriteInt8(IGNITE_TYPE_COLLECTION);
-                    stream->Position(stream->Position() + 4);
-                    stream->WriteInt8(typ);
-
-                    for (InputIterator i = first; i != last; ++i)
-                        WriteElement(elemId, *i);
-
-                    CommitContainer(elemId);
-                }
-
-                /**
-                 * Write values in interval [first, last).
-                 *
-                 * @param fieldName Field name.
-                 * @param first Iterator pointing to the beginning of the interval.
-                 * @param last Iterator pointing to the end of the interval.
-                 * @param typ Collection type.
-                 */
-                template<typename InputIterator>
-                void WriteInterval(const char* fieldName, InputIterator first, InputIterator last, ignite::portable::CollectionType typ)
-                {
-                    StartContainerSession(false);
-
-                    WriteFieldIdSkipLength(fieldName, IGNITE_TYPE_COLLECTION);
-
-                    stream->WriteInt8(IGNITE_TYPE_COLLECTION);
-                    stream->Position(stream->Position() + 4);
-                    stream->WriteInt8(typ);
-
-                    for (InputIterator i = first; i != last; ++i)
-                        WriteElement(elemId, *i);
-
-                    CommitContainer(elemId);
-                }
-
-                /**
                  * Write collection element.
                  *
                  * @param id Session ID.

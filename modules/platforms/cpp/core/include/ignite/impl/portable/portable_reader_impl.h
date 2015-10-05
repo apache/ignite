@@ -397,7 +397,7 @@ namespace ignite
                  * Read array of Guids. Maps to "UUID[]" type in Java.
                  *
                  * @param res Array to store data to.
-                 * @param len Expected length of array.
+                 * @param len Expected length of array.                 
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -535,47 +535,6 @@ namespace ignite
                  * @return Read session ID.
                  */
                 int32_t ReadMap(const char* fieldName, ignite::portable::MapType* typ, int32_t* size);
-
-                /**
-                * Read values and insert them to specified position.
-                *
-                * @param fieldName Field name.
-                * @param out Output iterator to the initial position in the destination sequence.
-                * @param typ Collection type.
-                * @return Actual amount of elements read.
-                */
-                template<typename T, typename OutputIterator>
-                int32_t ReadInterval(const char* fieldName, OutputIterator out, ignite::portable::CollectionType& typ)
-                {
-                    CheckRawMode(false);
-                    CheckSingleMode(true);
-
-                    int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
-                    int32_t fieldLen = SeekField(fieldId);
-
-                    if (fieldLen <= 0)
-                    {
-                        typ = ignite::portable::IGNITE_COLLECTION_UNDEFINED;
-
-                        return -1;
-                    }
-
-                    int32_t size;
-                    int32_t id = StartContainerSession(false, IGNITE_TYPE_COLLECTION, &size);
-
-                    if (size == -1)
-                        typ = ignite::portable::IGNITE_COLLECTION_UNDEFINED;
-                    else
-                        typ = static_cast<ignite::portable::CollectionType>(stream->ReadInt8());
-
-                    while (HasNextElement(id))
-                    {
-                        *out = ReadElement<T>(id);
-                        ++out;
-                    }
-
-                    return size;
-                }
 
                 /**
                  * Check whether next value exists.

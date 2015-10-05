@@ -572,64 +572,6 @@ void CheckCollection(CollectionType* colType)
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
 }
 
-void CheckInterval(CollectionType* colType)
-{
-    typedef std::vector<PortableInner> PortableInnerVector;
-    PortableInnerVector writeValues;
-
-    writeValues.push_back(1);
-    writeValues.push_back(0);
-    writeValues.push_back(2);
-
-    TemplatedPortableIdResolver<PortableDummy> idRslvr;
-
-    InteropUnpooledMemory mem(1024);
-
-    InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
-    PortableWriter writer(&writerImpl);
-
-    out.Position(18);
-
-    if (colType)
-    {
-        writer.WriteInterval("field1", writeValues.begin(), writeValues.end(), *colType);
-    }
-    else
-    {
-        writer.WriteInterval("field1", writeValues.begin(), writeValues.end());
-    }
-    
-    writer.WriteInt8("field2", 1);
-
-    out.Synchronize();
-
-    InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
-    PortableReader reader(&readerImpl);
-
-    in.Position(18);
-
-    PortableInnerVector readValues;
-    std::back_insert_iterator<PortableInnerVector> readInsertIterator(readValues);
-    CollectionType readCollectionType = IGNITE_COLLECTION_UNDEFINED;
-
-    reader.ReadInterval<PortableInner>("field1", readInsertIterator, readCollectionType);
-
-    if (colType)
-        BOOST_REQUIRE(readCollectionType == *colType);
-    else
-        BOOST_REQUIRE(readCollectionType == IGNITE_COLLECTION_UNDEFINED);
-
-    BOOST_REQUIRE(readValues.size() == 3);
-
-    BOOST_REQUIRE(readValues[0].GetValue() == writeValues[0].GetValue());
-    BOOST_REQUIRE(readValues[1].GetValue() == writeValues[1].GetValue());
-    BOOST_REQUIRE(readValues[2].GetValue() == writeValues[2].GetValue());
-    
-    BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
-}
-
 void CheckMapEmpty(MapType* mapType)
 {
     TemplatedPortableIdResolver<PortableDummy> idRslvr;
@@ -1749,23 +1691,11 @@ BOOST_AUTO_TEST_CASE(TestCollection)
     CheckCollection(NULL);
 }
 
-BOOST_AUTO_TEST_CASE(TestCollectionTyped)
+BOOST_AUTO_TEST_CASE(testCollectionTyped)
 {
     CollectionType typ = IGNITE_COLLECTION_CONCURRENT_SKIP_LIST_SET;
 
     CheckCollection(&typ);
-}
-
-BOOST_AUTO_TEST_CASE(TestInterval)
-{
-    CheckInterval(NULL);
-}
-
-BOOST_AUTO_TEST_CASE(TestIntervalTyped)
-{
-    CollectionType typ = IGNITE_COLLECTION_CONCURRENT_SKIP_LIST_SET;
-
-    CheckInterval(&typ);
 }
 
 BOOST_AUTO_TEST_CASE(TestMapNull)

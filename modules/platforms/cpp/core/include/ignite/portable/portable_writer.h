@@ -272,7 +272,7 @@ namespace ignite
              * @return Collection writer.
              */
             template<typename T>
-            PortableCollectionWriter<T> WriteCollection(const char* fieldName, CollectionType typ)
+            PortableCollectionWriter<T> WriteCollection(const char* fieldName, ignite::portable::CollectionType typ)
             {
                 int32_t id = impl->WriteCollection(fieldName, typ);
 
@@ -300,37 +300,11 @@ namespace ignite
              * @return Map writer.
              */
             template<typename K, typename V>
-            PortableMapWriter<K, V> WriteMap(const char* fieldName, MapType typ)
+            PortableMapWriter<K, V> WriteMap(const char* fieldName, ignite::portable::MapType typ)
             {
                 int32_t id = impl->WriteMap(fieldName, typ);
 
                 return PortableMapWriter<K, V>(impl, id);
-            }
-            /**
-             * Write values in interval [first, last).
-             *
-             * @param fieldName Field name.
-             * @param first Iterator pointing to the beginning of the interval.
-             * @param last Iterator pointing to the end of the interval.
-             */
-            template<typename InputIterator>
-            void WriteInterval(const char* fieldName, InputIterator first, InputIterator last)
-            {
-                WriteInterval(fieldName, first, last, IGNITE_COLLECTION_UNDEFINED);
-            }
-
-            /**
-             * Write values in interval [first, last).
-             *
-             * @param fieldName Field name.
-             * @param first Iterator pointing to the beginning of the interval.
-             * @param last Iterator pointing to the end of the interval.
-             * @param typ Collection type.
-             */
-            template<typename InputIterator>
-            void WriteInterval(const char* fieldName, InputIterator first, InputIterator last, CollectionType typ)
-            {
-                impl->WriteInterval(fieldName, first, last, typ);
             }
 
             /**
