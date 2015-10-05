@@ -213,17 +213,6 @@ namespace ignite
             void WriteString(const char* fieldName, const char* val, const int32_t len);
 
             /**
-             * Write string.
-             *
-             * @param fieldName Field name.
-             * @param val String.
-             */
-            void WriteString(const char* fieldName, const std::string& val)
-            {
-                WriteString(fieldName, val.c_str());
-            }
-
-            /**
              * Start string array write.
              *
              * @param fieldName Field name.

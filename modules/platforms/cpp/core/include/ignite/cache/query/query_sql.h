@@ -26,11 +26,11 @@
 #include "ignite/portable/portable_raw_writer.h"
 
 namespace ignite
-{    
+{
     namespace cache
     {
         namespace query
-        {         
+        {
             /**
              * Sql query.
              */
@@ -43,7 +43,7 @@ namespace ignite
                  * @param type Type name.
                  * @param sql SQL string.
                  */
-                SqlQuery(std::string type, std::string sql) : type(type), sql(sql), pageSize(1024), 
+                SqlQuery(const char* type, const char* sql) : type(type), sql(sql), pageSize(1024), 
                     loc(false), args(NULL)
                 {
                     // No-op.
@@ -118,9 +118,9 @@ namespace ignite
                  *
                  * @return Type name.
                  */
-                std::string GetType()
+                const char* GetType()
                 {
-                    return type;
+                    return type.c_str();
                 }
 
                 /**
@@ -128,7 +128,7 @@ namespace ignite
                  *
                  * @param sql Type name.
                  */
-                void SetType(std::string type)
+                void SetType(const char* type)
                 {
                     this->type = type;
                 }
@@ -138,9 +138,9 @@ namespace ignite
                  *
                  * @return SQL string.
                  */
-                std::string GetSql()
+                const char* GetSql()
                 {
-                    return sql;
+                    return sql.c_str();
                 }
 
                 /**
@@ -148,7 +148,7 @@ namespace ignite
                  *
                  * @param sql SQL string.
                  */
-                void SetSql(std::string sql)
+                void SetSql(const char* sql)
                 {
                     this->sql = sql;
                 }
@@ -215,8 +215,8 @@ namespace ignite
                 void Write(portable::PortableRawWriter& writer) const
                 {
                     writer.WriteBool(loc);
-                    writer.WriteString(sql);
-                    writer.WriteString(type);
+                    writer.WriteString(sql.c_str());
+                    writer.WriteString(type.c_str());
                     writer.WriteInt32(pageSize);
 
                     if (args)
@@ -247,7 +247,7 @@ namespace ignite
                 std::vector<QueryArgumentBase*>* args;
             };
         }
-    }    
+    }
 }
 
 #endif

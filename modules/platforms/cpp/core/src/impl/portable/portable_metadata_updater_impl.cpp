@@ -60,7 +60,7 @@ namespace ignite
                 rawWriter.WriteInt32(1);
 
                 rawWriter.WriteInt32(snap->GetTypeId());
-                rawWriter.WriteString(snap->GetTypeName());
+                rawWriter.WriteString(snap->GetTypeName().c_str());
                 rawWriter.WriteString(NULL); // Affinity key is not supported for now.
                 
                 if (snap->HasFields())
@@ -71,7 +71,7 @@ namespace ignite
 
                     for (std::map<std::string, int32_t>::iterator it = fields->begin(); it != fields->end(); ++it)
                     {
-                        rawWriter.WriteString(it->first);
+                        rawWriter.WriteString(it->first.c_str());
                         rawWriter.WriteInt32(it->second);
                     }
                 }

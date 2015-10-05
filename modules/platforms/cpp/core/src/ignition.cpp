@@ -147,9 +147,9 @@ namespace ignite
             bool jvmLibFound;
             std::string jvmLib;
 
-            if (cfg.jvmLibPath)
+            if (!cfg.jvmLibPath.empty())
             {
-                std::string jvmLibPath = std::string(cfg.jvmLibPath);
+                std::string jvmLibPath = cfg.jvmLibPath;
 
                 jvmLib = FindJvmLibrary(&jvmLibPath, &jvmLibFound);
             }
@@ -182,9 +182,9 @@ namespace ignite
             bool homeFound;
             std::string home;
 
-            if (cfg.igniteHome)
+            if (!cfg.igniteHome.empty())
             {
-                std::string homePath = std::string(cfg.igniteHome);
+                std::string homePath = cfg.igniteHome;
 
                 home = ResolveIgniteHome(&homePath, &homeFound);
             }
@@ -194,7 +194,7 @@ namespace ignite
             // 3. Create classpath.
             std::string cp;
 
-            if (cfg.jvmClassPath)
+            if (!cfg.jvmClassPath.empty())
             {
                 std::string usrCp = cfg.jvmClassPath;
 
@@ -233,10 +233,11 @@ namespace ignite
                 // 5. Start Ignite.
                 if (!failed)
                 {
-                    char* springCfgPath0 = CopyChars(cfg.springCfgPath);
-
-                    if (!springCfgPath0)
+                    char* springCfgPath0 = NULL;
+                    if (cfg.springCfgPath.empty())
                         springCfgPath0 = CopyChars(DFLT_CFG);
+                    else 
+                        springCfgPath0 = CopyChars(cfg.springCfgPath.c_str());
 
                     char* name0 = CopyChars(name);
 

@@ -59,16 +59,6 @@ namespace ignite
             void Write(const char* val, const int32_t len);
 
             /**
-             * Write string.
-             *
-             * @param val String.
-             */
-            void Write(const std::string& val)
-            {
-                Write(val.c_str());
-            }
-
-            /**
              * Close the writer.
              */
             void Close();

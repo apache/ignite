@@ -942,7 +942,7 @@ BOOST_AUTO_TEST_CASE(TestString) {
 
     try
     {
-        writer.WriteString(NULL, writeVal3);
+        writer.WriteString(NULL, writeVal3.c_str());
 
         BOOST_FAIL("Not restricted.");
     }
@@ -953,7 +953,7 @@ BOOST_AUTO_TEST_CASE(TestString) {
 
     writer.WriteString("field1", writeVal1);
     writer.WriteString("field2", writeVal1, 4);
-    writer.WriteString("field3", writeVal3);
+    writer.WriteString("field3", writeVal3.c_str());
     writer.WriteString("field4", NULL);
     writer.WriteString("field5", NULL, 4);
 
@@ -1120,7 +1120,7 @@ BOOST_AUTO_TEST_CASE(TestStringArrayEmpty)
     {
         std::string val = "test";
 
-        arrWriter.Write(val);
+        arrWriter.Write(val.c_str());
 
         BOOST_FAIL("Error expected.");
     }
@@ -1203,7 +1203,7 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
     arrWriter.Write(writeVal1, 4);
     arrWriter.Write(NULL); // NULL value.
     arrWriter.Write(NULL, 100); // NULL value again.
-    arrWriter.Write(writeVal3);
+    arrWriter.Write(writeVal3.c_str());
 
     CheckWritesRestricted(writer);
 
@@ -1241,7 +1241,7 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
     {
         std::string val = "test";
 
-        arrWriter.Write(val);
+        arrWriter.Write(val.c_str());
 
         BOOST_FAIL("Error expected.");
     }

@@ -19,6 +19,7 @@
 #define _IGNITE_CONFIGURATION
 
 #include <stdint.h>
+#include <string>
 
 namespace ignite
 {    
@@ -52,19 +53,20 @@ namespace ignite
     /**
      * Ignite configuration.
      */
-    struct IgniteConfiguration
+    class IgniteConfiguration
     {
+    public:
         /** Path to Ignite home. */
-        char* igniteHome;
+        std::string igniteHome;
 
         /** Path to Spring configuration file. */
-        char* springCfgPath;
+        std::string springCfgPath;
 
         /** Path ot JVM libbrary. */
-        char* jvmLibPath;
+        std::string jvmLibPath;
 
         /** JVM classpath. */
-        char* jvmClassPath;
+        std::string jvmClassPath;
 
         /** Initial amount of JVM memory. */
         int32_t jvmInitMem;
@@ -81,7 +83,7 @@ namespace ignite
         /**
          * Constructor.
          */
-        IgniteConfiguration() : igniteHome(NULL), springCfgPath(NULL), jvmLibPath(NULL), jvmClassPath(NULL),
+        IgniteConfiguration() : igniteHome(), springCfgPath(), jvmLibPath(), jvmClassPath(),
             jvmInitMem(512), jvmMaxMem(1024), jvmOpts(NULL), jvmOptsLen(0)
         {
             // No-op.
