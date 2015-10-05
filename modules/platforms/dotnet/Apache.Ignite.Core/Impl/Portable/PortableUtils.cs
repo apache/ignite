@@ -1018,40 +1018,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             return *(Guid*) (&dotnetGuid);
         }
 
-        /**
-         * <summary>Read GUID.</summary>
-         * <param name="data">Data array.</param>
-         * <param name="pos">Position.</param>
-         * <returns>GUID</returns>
-         */
-        public static Guid ReadGuid(byte[] data, int pos) {
-            byte[] bytes = new byte[16];
-
-            // Perform conversion opposite to what write does.
-            bytes[6] = data[pos];  // _c
-            bytes[7] = data[pos + 1];
-
-            bytes[4] = data[pos + 2];  // _b
-            bytes[5] = data[pos + 3];
-
-            bytes[0] = data[pos + 4];  // _a
-            bytes[1] = data[pos + 5];
-            bytes[2] = data[pos + 6];
-            bytes[3] = data[pos + 7];
-
-            bytes[15] = data[pos + 8];  // _k
-            bytes[14] = data[pos + 9];  // _j
-            bytes[13] = data[pos + 10];  // _i
-            bytes[12] = data[pos + 11];  // _h
-
-            bytes[11] = data[pos + 12];  // _g
-            bytes[10] = data[pos + 13];  // _f
-            bytes[9] = data[pos + 14];   // _e
-            bytes[8] = data[pos + 15];   // _d
-
-            return new Guid(bytes);
-        }
-
         /// <summary>
         /// Write GUID array.
         /// </summary>
