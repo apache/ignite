@@ -993,11 +993,11 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static unsafe void WriteGuid(Guid val, IPortableStream stream)
         {
-            var javaGuid = new JavaGuid(val);
+            var jguid = new JavaGuid(val);
 
-            var ptr = &javaGuid;
+            var ptr = &jguid;
 
-            stream.Write((byte*)ptr, 16);
+            stream.Write((byte*) ptr, 16);
         }
         
         /**
