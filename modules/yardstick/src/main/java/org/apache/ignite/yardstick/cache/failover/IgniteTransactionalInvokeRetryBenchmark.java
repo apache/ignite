@@ -139,9 +139,10 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
 
                 cache.invoke(key, new IncrementCacheEntryProcessor());
 
-                AtomicLong oldVal = map.get(key);
+                AtomicLong prevValue = map.putIfAbsent(key, new AtomicLong(0));
 
-                oldVal.incrementAndGet();
+                if (prevValue != null)
+                    prevValue.incrementAndGet();
             }
             finally {
                 rwl.readLock().unlock();
