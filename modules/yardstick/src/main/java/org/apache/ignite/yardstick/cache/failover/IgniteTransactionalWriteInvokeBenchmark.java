@@ -74,7 +74,7 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
                             println(cfg, "Cache content:");
 
                             for (int k = 0; k < KEY_RANGE; k++) {
-                                for (int i = 0; i < args.keysCount(); k++) {
+                                for (int i = 0; i < args.keysCount(); i++) {
                                     String key = "key-" + k + "-" + i;
 
                                     Long val = cache.get(key);

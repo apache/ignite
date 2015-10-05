@@ -65,9 +65,14 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
 
                         rwl.writeLock().lock();
 
+                        println("[CACHE-VALIDATOR] Start cache validation.");
+
                         try {
                             for (int k = 0; k < KEY_RANGE; k++) {
-                                for (int i = 0; i < CNT_KEYS_IN_LINE; k++) {
+                                if (k % 1000 == 0)
+                                    println("[CACHE-VALIDATOR] Start validation for keys like 'key-" + k + "-*'");
+
+                                for (int i = 0; i < CNT_KEYS_IN_LINE; i++) {
                                     String key = "key-" + k + "-" + cfg.memberId() + "-" + i;
 
                                     Long cacheVal = cache.get(key);
@@ -77,15 +82,15 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                         isValidCacheState = false;
 
                                         // Print all usefull information and finish.
-                                        println(cfg, "[Exception] Got different values [key='" + key + "', cacheVal=" + cacheVal
+                                        println(cfg, "[CACHE-VALIDATOR][Exception] Got different values [key='" + key + "', cacheVal=" + cacheVal
                                             + ", localMapVal=" + mapVal + "]");
 
                                         println(cfg, "Local driver map contant: " + map);
 
                                         println(cfg, "Cache content.");
 
-                                        for (int k2 = 0; k < KEY_RANGE; k++) {
-                                            for (int i2 = 0; i < CNT_KEYS_IN_LINE; k++) {
+                                        for (int k2 = 0; k2 < KEY_RANGE; k2++) {
+                                            for (int i2 = 0; i2 < CNT_KEYS_IN_LINE; i2++) {
                                                 String key2 = "key-" + k2 + "-" + cfg.memberId() + "-" + i2;
 
                                                 Long val = cache.get(key2);
