@@ -1590,7 +1590,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="val">Value.</param>
          * <returns>Hash code.</returns>
          */
-        public static int StringHashCode(string val)
+        public static int GetStringHashCode(string val)
         {
             if (val == null)
                 return 0;
@@ -1761,7 +1761,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             if (id == 0)
-                id = StringHashCode(typeName);
+                id = GetStringHashCode(typeName);
 
             return id;
         }
@@ -1797,7 +1797,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             if (id == 0)
-                id = StringHashCode(fieldName);
+                id = GetStringHashCode(fieldName);
 
             return id;
         }
