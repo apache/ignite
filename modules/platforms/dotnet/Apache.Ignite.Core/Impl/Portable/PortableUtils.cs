@@ -1010,7 +1010,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             private readonly short _c;
             private readonly short _b;
             private readonly int _a;
-            private readonly long _kjihged;
+            private readonly ulong _kjihged;
 
             [StructLayout(LayoutKind.Sequential)]
             private struct GuidAccessor
@@ -1018,7 +1018,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 public readonly int A;
                 public readonly short B;
                 public readonly short C;
-                public readonly long DEGHIJK;
+                public readonly ulong DEGHIJK;
             }
 
             public unsafe JavaGuid(Guid val)
@@ -1034,7 +1034,12 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 // Nice hack to reverse byte order. Uses bitshifts.
                 // Fastest way would be to use bswap processor instruction.
-                _kjihged = IPAddress.HostToNetworkOrder(accessor.DEGHIJK);
+                //_kjihged = IPAddress.HostToNetworkOrder(accessor.DEGHIJK);
+                ulong l = accessor.DEGHIJK;
+
+                //((word>>24)&0x000000FF) | ((word>>8)&0x0000FF00) | ((word<<8)&0x00FF0000) | ((word<<24)&0xFF000000)
+                _kjihged = ((l >> 56) & 0x00000000000000FF) | ((l >> 40) & 0x000000000000FF00) | ((l >> 24) & 0x0000000000FF0000)  | ((l >> 8) & 0x00000000FF000000)
+                     | ((l << 8) & 0x000000FF00000000) | ((l << 24) & 0x0000FF0000000000) | ((l << 40) & 0x00FF000000000000) | ((l << 56) & 0xFF00000000000000);
             }
         }
 
