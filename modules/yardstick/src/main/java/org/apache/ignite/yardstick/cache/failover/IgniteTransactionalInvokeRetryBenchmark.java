@@ -17,10 +17,8 @@
 
 package org.apache.ignite.yardstick.cache.failover;
 
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -62,43 +60,42 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
         Thread thread = new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    // Prepare keys.
-                    final Set<String> keys = new LinkedHashSet<>();
-
-                    final int memberId = cfg.memberId();
-
-                    for (int k = 0; k < KEY_RANGE; k++) {
-                        for (int i = 0; i < CNT_KEYS_IN_LINE; k++) {
-                            String key = "key-" + k + "-" + memberId + "-" + i;
-
-                            keys.add(key);
-                        }
-                    }
-
-                    // Main logic.
                     while (!Thread.currentThread().isInterrupted()) {
                         Thread.sleep(args.cacheConsistencyCheckingPeriod() * 1000);
 
                         rwl.writeLock().lock();
 
                         try {
-                            for (String key : keys) {
-                                Long cacheVal = cache.get(key);
-                                Long mapVal = map.get(key).get();
+                            for (int k = 0; k < KEY_RANGE; k++) {
+                                for (int i = 0; i < CNT_KEYS_IN_LINE; k++) {
+                                    String key = "key-" + k + "-" + cfg.memberId() + "-" + i;
 
-                                if (!Objects.equals(cacheVal, mapVal)) {
-                                    println(cfg, "Got different values [key='" + key + "', cacheVal=" + cacheVal
-                                        + ", localMapVal=" + mapVal + "]");
+                                    Long cacheVal = cache.get(key);
+                                    Long mapVal = map.get(key).get();
 
-                                    isValidCacheState = false;
+                                    if (!Objects.equals(cacheVal, mapVal)) {
+                                        isValidCacheState = false;
+                                        
+                                        // Print all usefull information and finish.
+                                        println(cfg, "[Exception] Got different values [key='" + key + "', cacheVal=" + cacheVal
+                                            + ", localMapVal=" + mapVal + "]");
+                                        
+                                        println(cfg, "Local driver map contant: " + map);
 
-                                    // Print all usefull information and finish.
-                                    println(cfg, "Local driver map contant: " + map);
-                                    println(cfg, "Cache content: " + cache.getAll(keys));
+                                        println(cfg, "Cache content.");
+                                        
+                                        for (int k2 = 0; k < KEY_RANGE; k++) {
+                                            for (int i2 = 0; i < CNT_KEYS_IN_LINE; k++) {
+                                                String key2 = "key-" + k2 + "-" + cfg.memberId() + "-" + i2;
 
-                                    println(cfg, Utils.threadDump());
+                                                println(cfg, "Entry [key=" + key2 + ", val=" + cache.get(key2));
+                                            }
+                                        }
 
-                                    return;
+                                        println(cfg, Utils.threadDump());
+
+                                        return;
+                                    }
                                 }
                             }
                         }
