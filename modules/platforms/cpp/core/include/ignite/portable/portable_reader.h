@@ -336,9 +336,9 @@ namespace ignite
              * @return Number of elements that have been read.
              */
             template<typename T, typename OutputIterator>
-            int32_t ReadInterval(const char* fieldName, OutputIterator out, CollectionType& typ)
+            int32_t ReadInterval(const char* fieldName, OutputIterator out)
             {
-                return impl->ReadInterval<T>(fieldName, out, typ);
+                return impl->ReadInterval<T>(fieldName, out);
             }
 
             /**

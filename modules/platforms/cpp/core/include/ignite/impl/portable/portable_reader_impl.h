@@ -545,7 +545,7 @@ namespace ignite
                 * @return Actual amount of elements read.
                 */
                 template<typename T, typename OutputIterator>
-                int32_t ReadInterval(const char* fieldName, OutputIterator out, ignite::portable::CollectionType& typ)
+                int32_t ReadInterval(const char* fieldName, OutputIterator out)
                 {
                     CheckRawMode(false);
                     CheckSingleMode(true);
@@ -554,18 +554,14 @@ namespace ignite
                     int32_t fieldLen = SeekField(fieldId);
 
                     if (fieldLen <= 0)
-                    {
-                        typ = ignite::portable::IGNITE_COLLECTION_UNDEFINED;
-
                         return -1;
-                    }
 
                     int32_t size;
                     int32_t id = StartContainerSession(false, IGNITE_TYPE_COLLECTION, &size);
 
-                    if (size == -1)
-                        typ = ignite::portable::IGNITE_COLLECTION_UNDEFINED;
-                    else
+                    // Reading collection type. We don't need here it but it should be read.
+                    ignite::portable::CollectionType typ;
+                    if (size != -1)
                         typ = static_cast<ignite::portable::CollectionType>(stream->ReadInt8());
 
                     while (HasNextElement(id))
