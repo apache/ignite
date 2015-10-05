@@ -280,6 +280,33 @@ namespace ignite
             }
 
             /**
+             * Write values in interval [first, last).
+             *
+             * @param fieldName Field name.
+             * @param first Iterator pointing to the beginning of the interval.
+             * @param last Iterator pointing to the end of the interval.
+             */
+            template<typename InputIterator>
+            void WriteCollection(const char* fieldName, InputIterator first, InputIterator last)
+            {
+                WriteCollection(fieldName, first, last, IGNITE_COLLECTION_UNDEFINED);
+            }
+
+            /**
+             * Write values in interval [first, last).
+             *
+             * @param fieldName Field name.
+             * @param first Iterator pointing to the beginning of the interval.
+             * @param last Iterator pointing to the end of the interval.
+             * @param typ Collection type.
+             */
+            template<typename InputIterator>
+            void WriteCollection(const char* fieldName, InputIterator first, InputIterator last, CollectionType typ)
+            {
+                impl->WriteCollection(fieldName, first, last, typ);
+            }
+
+            /**
              * Start map write.
              *
              * @param fieldName Field name.
@@ -305,32 +332,6 @@ namespace ignite
                 int32_t id = impl->WriteMap(fieldName, typ);
 
                 return PortableMapWriter<K, V>(impl, id);
-            }
-            /**
-             * Write values in interval [first, last).
-             *
-             * @param fieldName Field name.
-             * @param first Iterator pointing to the beginning of the interval.
-             * @param last Iterator pointing to the end of the interval.
-             */
-            template<typename InputIterator>
-            void WriteInterval(const char* fieldName, InputIterator first, InputIterator last)
-            {
-                WriteInterval(fieldName, first, last, IGNITE_COLLECTION_UNDEFINED);
-            }
-
-            /**
-             * Write values in interval [first, last).
-             *
-             * @param fieldName Field name.
-             * @param first Iterator pointing to the beginning of the interval.
-             * @param last Iterator pointing to the end of the interval.
-             * @param typ Collection type.
-             */
-            template<typename InputIterator>
-            void WriteInterval(const char* fieldName, InputIterator first, InputIterator last, CollectionType typ)
-            {
-                impl->WriteInterval(fieldName, first, last, typ);
             }
 
             /**

@@ -593,11 +593,11 @@ void CheckInterval(CollectionType* colType)
 
     if (colType)
     {
-        writer.WriteInterval("field1", writeValues.begin(), writeValues.end(), *colType);
+        writer.WriteCollection("field1", writeValues.begin(), writeValues.end(), *colType);
     }
     else
     {
-        writer.WriteInterval("field1", writeValues.begin(), writeValues.end());
+        writer.WriteCollection("field1", writeValues.begin(), writeValues.end());
     }
     
     writer.WriteInt8("field2", 1);
@@ -618,7 +618,7 @@ void CheckInterval(CollectionType* colType)
     PortableInnerVector readValues;
     std::back_insert_iterator<PortableInnerVector> readInsertIterator(readValues);
 
-    reader.ReadInterval<PortableInner>("field1", readInsertIterator);
+    reader.ReadCollection<PortableInner>("field1", readInsertIterator);
     
     BOOST_REQUIRE(readValues.size() == 3);
 

@@ -440,23 +440,6 @@ namespace ignite
                  * @return Session ID.
                  */
                 int32_t WriteCollection(const char* fieldName, ignite::portable::CollectionType typ);
-                
-                /**
-                 * Start map write.
-                 *
-                 * @param typ Map type.
-                 * @return Session ID.
-                 */
-                int32_t WriteMap(ignite::portable::MapType typ);
-
-                /**
-                 * Start map write.
-                 *
-                 * @param fieldName Field name.
-                 * @param typ Map type.
-                 * @return Session ID.
-                 */
-                int32_t WriteMap(const char* fieldName, ignite::portable::MapType typ);
 
                 /**
                  * Write values in interval [first, last).
@@ -466,7 +449,7 @@ namespace ignite
                  * @param typ Collection type.
                  */
                 template<typename InputIterator>
-                void WriteInterval(InputIterator first, InputIterator last, ignite::portable::CollectionType typ)
+                void WriteCollection(InputIterator first, InputIterator last, ignite::portable::CollectionType typ)
                 {
                     StartContainerSession(true);
 
@@ -489,7 +472,7 @@ namespace ignite
                  * @param typ Collection type.
                  */
                 template<typename InputIterator>
-                void WriteInterval(const char* fieldName, InputIterator first, InputIterator last, ignite::portable::CollectionType typ)
+                void WriteCollection(const char* fieldName, InputIterator first, InputIterator last, ignite::portable::CollectionType typ)
                 {
                     StartContainerSession(false);
 
@@ -504,6 +487,23 @@ namespace ignite
 
                     CommitContainer(elemId);
                 }
+                
+                /**
+                 * Start map write.
+                 *
+                 * @param typ Map type.
+                 * @return Session ID.
+                 */
+                int32_t WriteMap(ignite::portable::MapType typ);
+
+                /**
+                 * Start map write.
+                 *
+                 * @param fieldName Field name.
+                 * @param typ Map type.
+                 * @return Session ID.
+                 */
+                int32_t WriteMap(const char* fieldName, ignite::portable::MapType typ);
 
                 /**
                  * Write collection element.

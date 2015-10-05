@@ -518,33 +518,14 @@ namespace ignite
                 int32_t ReadCollection(const char* fieldName, ignite::portable::CollectionType* typ, int32_t* size);
 
                 /**
-                 * Start map read.
-                 *
-                 * @param typ Map type.
-                 * @param size Map size.
-                 * @return Read session ID.
-                 */
-                int32_t ReadMap(ignite::portable::MapType* typ, int32_t* size);
-
-                /**
-                 * Start map read.
+                 * Read values and insert them to specified position.
                  *
                  * @param fieldName Field name.
-                 * @param typ Map type.
-                 * @param size Map size.
-                 * @return Read session ID.
+                 * @param out Output iterator to the initial position in the destination sequence.
+                 * @return Actual amount of elements read.
                  */
-                int32_t ReadMap(const char* fieldName, ignite::portable::MapType* typ, int32_t* size);
-
-                /**
-                * Read values and insert them to specified position.
-                *
-                * @param fieldName Field name.
-                * @param out Output iterator to the initial position in the destination sequence.
-                * @return Actual amount of elements read.
-                */
                 template<typename T, typename OutputIterator>
-                int32_t ReadInterval(const char* fieldName, OutputIterator out)
+                int32_t ReadCollection(const char* fieldName, OutputIterator out)
                 {
                     CheckRawMode(false);
                     CheckSingleMode(true);
@@ -571,6 +552,25 @@ namespace ignite
 
                     return size;
                 }
+
+                /**
+                 * Start map read.
+                 *
+                 * @param typ Map type.
+                 * @param size Map size.
+                 * @return Read session ID.
+                 */
+                int32_t ReadMap(ignite::portable::MapType* typ, int32_t* size);
+
+                /**
+                 * Start map read.
+                 *
+                 * @param fieldName Field name.
+                 * @param typ Map type.
+                 * @param size Map size.
+                 * @return Read session ID.
+                 */
+                int32_t ReadMap(const char* fieldName, ignite::portable::MapType* typ, int32_t* size);
 
                 /**
                  * Read type of the collection.
