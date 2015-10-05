@@ -21,8 +21,10 @@ namespace Apache.Ignite.Core
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Datastream;
+    using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Portable;
@@ -148,5 +150,19 @@ namespace Apache.Ignite.Core
         /// <returns>Services facade over all cluster nodes.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IServices GetServices();
+
+        /// <summary>
+        /// Gets an atomic long with specified name from cache.
+        /// Creates new atomic long in cache if it does not exist and <see cref="create"/> is true.
+        /// </summary>
+        /// <param name="name">Name of the atomic long.</param>
+        /// <param name="initialValue">
+        /// Initial value for the atomic long. Ignored if <see cref="create"/> is false.
+        /// </param>
+        /// <param name="create">Flag indicating whether atomic long should be created if it does not exist.</param>
+        /// <returns>Atomic long instance with specified name, 
+        /// or null if it does not exist and <see cref="create"/> flag is not set.</returns>
+        /// <exception cref="IgniteException">If atomic long could not be fetched or created.</exception>
+        IAtomicLong GetAtomicLong(string name, long initialValue, bool create);
     }
 }
