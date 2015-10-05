@@ -17,7 +17,9 @@
 
 namespace Apache.Ignite.Benchmarks.Portable
 {
+    using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Benchmarks.Model;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Portable;
@@ -34,8 +36,34 @@ namespace Apache.Ignite.Benchmarks.Portable
         /** Memory manager. */
         private readonly PlatformMemoryManager _memMgr = new PlatformMemoryManager(1024);
 
-        /** Pre-allocated addess. */
-        private readonly Address _address = BenchmarkUtils.GetRandomAddress();
+        /** Pre-allocated model. */
+        private readonly TestModel _model = new TestModel
+        {
+            Byte = 5,
+            Boolean = true,
+            BooleanArray = new[] {true, false, false, false, true, true},
+            ByteArray = new byte[] {128, 1, 2, 3, 5, 6, 8, 9, 14},
+            Char = 'h',
+            CharArray = new[] {'b', 'n', 'm', 'q', 'w', 'e', 'r', 't', 'y'},
+            Date = DateTime.Now,
+            DateArray = Enumerable.Range(1, 15).Select(x => (DateTime?) DateTime.Now.AddDays(x)).ToArray(),
+            Decimal = decimal.MinValue,
+            DecimalArray = new[] {1.1M, decimal.MinValue, decimal.MaxValue, decimal.MinusOne, decimal.One},
+            Double = double.MaxValue/2,
+            DoubleArray = new[] {double.MaxValue, double.MinValue, double.Epsilon, double.NegativeInfinity},
+            Float = 98,
+            FloatArray = new[] {float.MinValue, float.MaxValue, 10F, 36F},
+            Guid = Guid.NewGuid(),
+            GuidArray = Enumerable.Range(1, 9).Select(x => (Guid?) Guid.NewGuid()).ToArray(),
+            Int = -90,
+            IntArray = new[] {128, 1, 2, 3, 5, 6, 8, 9, 14},
+            Long = long.MinValue,
+            LongArray = Enumerable.Range(1, 12).Select(x => (long) x).ToArray(),
+            Short = 67,
+            ShortArray = Enumerable.Range(100, 12).Select(x => (short) x).ToArray(),
+            String = "String value test 123",
+            StringArray = Enumerable.Range(1, 13).Select(x => Guid.NewGuid().ToString()).ToArray()
+        };
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PortableWriteBenchmark"/> class.
@@ -46,7 +74,7 @@ namespace Apache.Ignite.Benchmarks.Portable
             {
                 TypeConfigurations = new List<PortableTypeConfiguration>
                 {
-                    new PortableTypeConfiguration(typeof (Address)) {MetadataEnabled = false}
+                    new PortableTypeConfiguration(typeof (TestModel)) {MetadataEnabled = false}
                 }
             });
         }
@@ -57,7 +85,7 @@ namespace Apache.Ignite.Benchmarks.Portable
         /// <param name="descs">Descriptors.</param>
         protected override void GetDescriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
-            descs.Add(BenchmarkOperationDescriptor.Create("WriteAddress", WriteAddress, 1));
+            descs.Add(BenchmarkOperationDescriptor.Create("WriteTestModel", WriteAddress, 1));
         }
 
         /// <summary>
@@ -72,7 +100,7 @@ namespace Apache.Ignite.Benchmarks.Portable
             {
                 var stream = mem.GetStream();
 
-                _marsh.StartMarshal(stream).Write(_address);
+                _marsh.StartMarshal(stream).Write(_model);
             }
             finally
             {
