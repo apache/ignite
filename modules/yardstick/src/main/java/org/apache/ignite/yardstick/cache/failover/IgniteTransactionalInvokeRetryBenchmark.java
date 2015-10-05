@@ -75,20 +75,23 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
 
                                     if (!Objects.equals(cacheVal, mapVal)) {
                                         isValidCacheState = false;
-                                        
+
                                         // Print all usefull information and finish.
                                         println(cfg, "[Exception] Got different values [key='" + key + "', cacheVal=" + cacheVal
                                             + ", localMapVal=" + mapVal + "]");
-                                        
+
                                         println(cfg, "Local driver map contant: " + map);
 
                                         println(cfg, "Cache content.");
-                                        
+
                                         for (int k2 = 0; k < KEY_RANGE; k++) {
                                             for (int i2 = 0; i < CNT_KEYS_IN_LINE; k++) {
                                                 String key2 = "key-" + k2 + "-" + cfg.memberId() + "-" + i2;
 
-                                                println(cfg, "Entry [key=" + key2 + ", val=" + cache.get(key2));
+                                                Long val = cache.get(key2);
+
+                                                if (val != null)
+                                                    println(cfg, "Entry [key=" + key2 + ", val=" + val);
                                             }
                                         }
 
