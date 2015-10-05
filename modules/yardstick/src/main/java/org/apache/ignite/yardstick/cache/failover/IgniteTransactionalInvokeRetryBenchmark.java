@@ -76,7 +76,9 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                     String key = "key-" + k + "-" + cfg.memberId() + "-" + i;
 
                                     Long cacheVal = cache.get(key);
-                                    Long mapVal = map.get(key).get();
+                                    
+                                    AtomicLong aVal = map.get(key);
+                                    Long mapVal = aVal != null ? aVal.get() : null;
 
                                     if (!Objects.equals(cacheVal, mapVal)) {
                                         isValidCacheState = false;
