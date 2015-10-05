@@ -994,44 +994,16 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static unsafe void WriteGuid(Guid val, IPortableStream stream)
         {
-            //WriteGuid2(val, stream); /*
-            
-
-            byte[] bytes = val.ToByteArray();
-
-            // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _g, _h, _i, _j, _k.
-            // And _a, _b and _c are always in little endian format irrespective of system configuration.
-            // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _e, _d.
-            fixed (byte* bytes0 = bytes)
-            {
-                stream.Write(bytes0 + 6, 2); // _c
-                stream.Write(bytes0 + 4, 2); // _b
-                stream.Write(bytes0, 4);     // _a
-            }
-
-            stream.WriteByte(bytes[15]); // _k
-            stream.WriteByte(bytes[14]); // _j
-            stream.WriteByte(bytes[13]); // _i
-            stream.WriteByte(bytes[12]); // _h
-
-            stream.WriteByte(bytes[11]); // _g
-            stream.WriteByte(bytes[10]); // _f
-            stream.WriteByte(bytes[9]);  // _e
-            stream.WriteByte(bytes[8]);  // _d
-              
-             //*/
-        }
-
-        public static unsafe void WriteGuid2(Guid val, IPortableStream stream)
-        {
             var javaGuid = new JavaGuid(val);
 
             var ptr = &javaGuid;
 
-            stream.Write((byte*) ptr, 16);
+            stream.Write((byte*)ptr, 16);
         }
 
-
+        /// <summary>
+        /// Struct with Java-style Guid memory layout.
+        /// </summary>
         [StructLayout(LayoutKind.Sequential)]
         private struct JavaGuid
         {
@@ -1051,7 +1023,10 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             public unsafe JavaGuid(Guid val)
             {
-                var accessor = *((GuidAccessor*) &val);
+                // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _g, _h, _i, _j, _k.
+                // And _a, _b and _c are always in little endian format irrespective of system configuration.
+                // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _e, _d.
+                var accessor = *((GuidAccessor*)&val);
 
                 _a = accessor.A;
                 _b = accessor.B;
