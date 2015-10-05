@@ -160,7 +160,8 @@ namespace Apache.Ignite.Core
         /// Initial value for the atomic long. Ignored if <see cref="create"/> is false.
         /// </param>
         /// <param name="create">Flag indicating whether atomic long should be created if it does not exist.</param>
-        /// <returns>Atomic long instance.</returns>
+        /// <returns>Atomic long instance with specified name, 
+        /// or null if it does not exist and <see cref="create"/> flag is not set.</returns>
         /// <exception cref="IgniteException">If atomic long could not be fetched or created.</exception>
         IAtomicLong GetAtomicLong(string name, long initialValue, bool create);
     }
