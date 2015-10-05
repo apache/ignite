@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
-    using System.Net;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Runtime.Serialization.Formatters.Binary;
@@ -1000,48 +999,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             stream.Write((byte*)ptr, 16);
         }
-
-        /// <summary>
-        /// Struct with Java-style Guid memory layout.
-        /// </summary>
-        [StructLayout(LayoutKind.Sequential)]
-        private struct JavaGuid
-        {
-            private readonly short _c;
-            private readonly short _b;
-            private readonly int _a;
-            private readonly ulong _kjihged;
-
-            [StructLayout(LayoutKind.Sequential)]
-            private struct GuidAccessor
-            {
-                public readonly int A;
-                public readonly short B;
-                public readonly short C;
-                public readonly ulong DEGHIJK;
-            }
-
-            public unsafe JavaGuid(Guid val)
-            {
-                // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _g, _h, _i, _j, _k.
-                // And _a, _b and _c are always in little endian format irrespective of system configuration.
-                // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _e, _d.
-                var accessor = *((GuidAccessor*)&val);
-
-                _a = accessor.A;
-                _b = accessor.B;
-                _c = accessor.C;
-
-                // Reverse byte order. Fastest way would be to use bswap processor instruction.
-                var l = accessor.DEGHIJK;
-
-                _kjihged = ((l >> 56) & 0x00000000000000FF) | ((l >> 40) & 0x000000000000FF00) |
-                           ((l >> 24) & 0x0000000000FF0000) | ((l >> 8) & 0x00000000FF000000) |
-                           ((l << 8) & 0x000000FF00000000) | ((l << 24) & 0x0000FF0000000000) |
-                           ((l << 40) & 0x00FF000000000000) | ((l << 56) & 0xFF00000000000000);
-            }
-        }
-
+        
         /**
          * <summary>Read GUID.</summary>
          * <param name="stream">Stream.</param>
@@ -1049,27 +1007,15 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static unsafe Guid? ReadGuid(IPortableStream stream)
         {
-            byte[] bytes = new byte[16];
+            JavaGuid jguid;
 
-            // Perform conversion opposite to what write does.
-            fixed (byte* bytes0 = bytes)
-            {
-                stream.Read(bytes0 + 6, 2);      // _c
-                stream.Read(bytes0 + 4, 2);      // _b
-                stream.Read(bytes0, 4);          // _a
-            }
+            var ptr = (byte*) &jguid;
 
-            bytes[15] = stream.ReadByte();  // _k
-            bytes[14] = stream.ReadByte();  // _j
-            bytes[13] = stream.ReadByte();  // _i
-            bytes[12] = stream.ReadByte();  // _h
+            stream.Read(ptr, 16);
 
-            bytes[11] = stream.ReadByte();  // _g
-            bytes[10] = stream.ReadByte();  // _f
-            bytes[9] = stream.ReadByte();   // _e
-            bytes[8] = stream.ReadByte();   // _d
+            var dotnetGuid = new GuidAccessor(jguid);
 
-            return new Guid(bytes);
+            return *(Guid*) (&dotnetGuid);
         }
 
         /**
@@ -2205,6 +2151,73 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             throw new PortableException("Failed to find class: " + typeName);
+        }
+
+        /// <summary>
+        /// Reverses the byte order of an unsigned long.
+        /// </summary>
+        private static ulong ReverseByteOrder(ulong l)
+        {
+            // Fastest way would be to use bswap processor instruction.
+            return ((l >> 56) & 0x00000000000000FF) | ((l >> 40) & 0x000000000000FF00) |
+                   ((l >> 24) & 0x0000000000FF0000) | ((l >> 8) & 0x00000000FF000000) |
+                   ((l << 8) & 0x000000FF00000000) | ((l << 24) & 0x0000FF0000000000) |
+                   ((l << 40) & 0x00FF000000000000) | ((l << 56) & 0xFF00000000000000);
+        }
+
+        /// <summary>
+        /// Struct with .Net-style Guid memory layout.
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
+        private struct GuidAccessor
+        {
+            public readonly int A;
+            public readonly short B;
+            public readonly short C;
+            public readonly ulong DEGHIJK;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="GuidAccessor"/> struct.
+            /// </summary>
+            /// <param name="val">The value.</param>
+            public GuidAccessor(JavaGuid val)
+            {
+                A = val.A;
+                B = val.B;
+                C = val.C;
+
+                DEGHIJK = ReverseByteOrder(val.KJIHGED);
+            }
+        }
+
+        /// <summary>
+        /// Struct with Java-style Guid memory layout.
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JavaGuid
+        {
+            public readonly short C;
+            public readonly short B;
+            public readonly int A;
+            public readonly ulong KJIHGED;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="JavaGuid"/> struct.
+            /// </summary>
+            /// <param name="val">The value.</param>
+            public unsafe JavaGuid(Guid val)
+            {
+                // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _g, _h, _i, _j, _k.
+                // And _a, _b and _c are always in little endian format irrespective of system configuration.
+                // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _e, _d.
+                var accessor = *((GuidAccessor*)&val);
+
+                A = accessor.A;
+                B = accessor.B;
+                C = accessor.C;
+
+                KJIHGED = ReverseByteOrder(accessor.DEGHIJK);
+            }
         }
     }
 }
