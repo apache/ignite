@@ -213,6 +213,9 @@
     <ClInclude Include="..\..\include\ignite\cache\query\query_scan.h">
       <Filter>Code\cache\query</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_stream_position_guard.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">

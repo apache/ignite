@@ -22,6 +22,7 @@
 #include "ignite/impl/portable/portable_utils.h"
 #include "ignite/portable/portable_type.h"
 #include "ignite/ignite_error.h"
+#include "ignite/impl/interop/interop_stream_position_guard.h"
 
 using namespace ignite::impl::interop;
 using namespace ignite::impl::portable;
@@ -475,6 +476,66 @@ namespace ignite
 
                     return ++elemIdGen;
                 }
+            }
+
+            CollectionType PortableReaderImpl::ReadCollectionType(const char* fieldName)
+            {
+                CheckRawMode(false);
+                CheckSingleMode(true);
+
+                InteropStreamPositionGuard<InteropInputStream> positionGuard(*stream);
+
+                int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
+                int32_t fieldLen = SeekField(fieldId);
+
+                if (fieldLen <= 0)
+                    return IGNITE_COLLECTION_UNDEFINED;
+
+                int8_t hdr = stream->ReadInt8();
+
+                if (hdr != IGNITE_TYPE_COLLECTION)
+                {
+                    if (hdr != IGNITE_HDR_NULL)
+                        ThrowOnInvalidHeader(IGNITE_TYPE_COLLECTION, hdr);
+
+                    return IGNITE_COLLECTION_UNDEFINED;
+                }
+
+                int32_t size = stream->ReadInt32();
+
+                CollectionType typ = IGNITE_COLLECTION_UNDEFINED;
+                if (size != -1)
+                    typ = static_cast<CollectionType>(stream->ReadInt8());
+
+                return typ;
+            }
+
+            int32_t PortableReaderImpl::ReadCollectionSize(const char* fieldName)
+            {
+                CheckRawMode(false);
+                CheckSingleMode(true);
+
+                InteropStreamPositionGuard<InteropInputStream> positionGuard(*stream);
+
+                int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
+                int32_t fieldLen = SeekField(fieldId);
+
+                if (fieldLen <= 0)
+                    return IGNITE_COLLECTION_UNDEFINED;
+
+                int8_t hdr = stream->ReadInt8();
+
+                if (hdr != IGNITE_TYPE_COLLECTION)
+                {
+                    if (hdr != IGNITE_HDR_NULL)
+                        ThrowOnInvalidHeader(IGNITE_TYPE_COLLECTION, hdr);
+
+                    return IGNITE_COLLECTION_UNDEFINED;
+                }
+
+                int32_t size = stream->ReadInt32();
+
+                return size;
             }
 
             bool PortableReaderImpl::HasNextElement(int32_t id)

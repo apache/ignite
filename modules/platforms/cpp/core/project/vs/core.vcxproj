@@ -211,6 +211,7 @@
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_input_stream.h" />
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_memory.h" />
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_output_stream.h" />
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_stream_position_guard.h" />
     <ClInclude Include="..\..\include\ignite\impl\operations.h" />
     <ClInclude Include="..\..\include\ignite\impl\portable\portable_common.h" />
     <ClInclude Include="..\..\include\ignite\impl\portable\portable_id_resolver.h" />

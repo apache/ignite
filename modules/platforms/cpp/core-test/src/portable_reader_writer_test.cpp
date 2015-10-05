@@ -610,6 +610,11 @@ void CheckInterval(CollectionType* colType)
 
     in.Position(18);
 
+    BOOST_REQUIRE(reader.ReadCollectionSize("field1") == writeValues.size());
+
+    CollectionType expectedCollectionType = colType ? *colType : IGNITE_COLLECTION_UNDEFINED;
+    BOOST_REQUIRE(reader.ReadCollectionType("field1") == expectedCollectionType);
+
     PortableInnerVector readValues;
     std::back_insert_iterator<PortableInnerVector> readInsertIterator(readValues);
 

@@ -541,7 +541,6 @@ namespace ignite
                 *
                 * @param fieldName Field name.
                 * @param out Output iterator to the initial position in the destination sequence.
-                * @param typ Collection type.
                 * @return Actual amount of elements read.
                 */
                 template<typename T, typename OutputIterator>
@@ -572,6 +571,23 @@ namespace ignite
 
                     return size;
                 }
+
+                /**
+                 * Read type of the collection.
+                 *
+                 * @param fieldName Field name.
+                 * @return Collection type.
+                 */
+                ignite::portable::CollectionType ReadCollectionType(const char* fieldName);
+
+
+                /**
+                 * Read type of the collection.
+                 *
+                 * @param fieldName Field name.
+                 * @return Collection size.
+                 */
+                int32_t ReadCollectionSize(const char* fieldName);
 
                 /**
                  * Check whether next value exists.
