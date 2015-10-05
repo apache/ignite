@@ -499,7 +499,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="memPtr">Stream ptr.</param>
         public void UpdateNodeInfo(long memPtr)
         {
-            var stream = IgniteManager.Memory.Get(memPtr).Stream();
+            var stream = IgniteManager.Memory.Get(memPtr).GetStream();
 
             IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
 

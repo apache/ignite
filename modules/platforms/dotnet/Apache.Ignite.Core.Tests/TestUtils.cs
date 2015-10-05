@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
@@ -109,7 +110,7 @@ namespace Apache.Ignite.Core.Tests
         /// <returns></returns>
         public static string CreateTestClasspath()
         {
-            return IgniteManager.CreateClasspath(forceTestClasspath: true);
+            return Classpath.CreateClasspath(forceTestClasspath: true);
         }
 
         /// <summary>

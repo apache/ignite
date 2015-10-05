@@ -259,7 +259,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns></returns>
         protected long DoOutOp(int type, Action<IPortableStream> action)
         {
-            using (var stream = IgniteManager.Memory.Allocate().Stream())
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
                 action(stream);
 
@@ -275,7 +275,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns></returns>
         protected long DoOutOp(int type, Action<PortableWriterImpl> action)
         {
-            using (var stream = IgniteManager.Memory.Allocate().Stream())
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
                 var writer = _marsh.StartMarshal(stream);
 
@@ -346,7 +346,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="action">Action.</param>
         protected void DoInOp(int type, Action<IPortableStream> action)
         {
-            using (var stream = IgniteManager.Memory.Allocate().Stream())
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
                 UU.TargetOutStream(_target, type, stream.MemoryPointer);
                 
@@ -364,7 +364,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected T DoInOp<T>(int type, Func<IPortableStream, T> action)
         {
-            using (var stream = IgniteManager.Memory.Allocate().Stream())
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
                 UU.TargetOutStream(_target, type, stream.MemoryPointer);
 
@@ -381,7 +381,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected T DoInOp<T>(int type)
         {
-            using (var stream = IgniteManager.Memory.Allocate().Stream())
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
                 UU.TargetOutStream(_target, type, stream.MemoryPointer);
 
@@ -403,9 +403,9 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="inAction">In action.</param>
         protected void DoOutInOp(int type, Action<PortableWriterImpl> outAction, Action<IPortableStream> inAction)
         {
-            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().Stream())
+            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
             {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().Stream())
+                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
                 {
                     PortableWriterImpl writer = _marsh.StartMarshal(outStream);
 
@@ -431,9 +431,9 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected TR DoOutInOp<TR>(int type, Action<PortableWriterImpl> outAction, Func<IPortableStream, TR> inAction)
         {
-            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().Stream())
+            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
             {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().Stream())
+                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
                 {
                     PortableWriterImpl writer = _marsh.StartMarshal(outStream);
 
@@ -460,9 +460,9 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected unsafe TR DoOutInOp<TR>(int type, Action<PortableWriterImpl> outAction, Func<IPortableStream, TR> inAction, void* arg)
         {
-            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().Stream())
+            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
             {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().Stream())
+                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
                 {
                     PortableWriterImpl writer = _marsh.StartMarshal(outStream);
 
@@ -487,9 +487,9 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected TR DoOutInOp<TR>(int type, Action<PortableWriterImpl> outAction)
         {
-            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().Stream())
+            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
             {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().Stream())
+                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
                 {
                     PortableWriterImpl writer = _marsh.StartMarshal(outStream);
 
@@ -514,9 +514,9 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected TR DoOutInOp<T1, TR>(int type, T1 val)
         {
-            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().Stream())
+            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
             {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().Stream())
+                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
                 {
                     PortableWriterImpl writer = _marsh.StartMarshal(outStream);
 
@@ -542,9 +542,9 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected TR DoOutInOp<T1, T2, TR>(int type, T1 val1, T2 val2)
         {
-            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().Stream())
+            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
             {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().Stream())
+                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
                 {
                     PortableWriterImpl writer = _marsh.StartMarshal(outStream);
 

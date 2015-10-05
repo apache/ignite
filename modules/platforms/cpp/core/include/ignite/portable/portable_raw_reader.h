@@ -62,7 +62,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadInt8Array(int8_t* res, const int32_t len);
+            int32_t ReadInt8Array(int8_t* res, int32_t len);
 
             /**
              * Read bool. Maps to "boolean" type in Java.
@@ -81,7 +81,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadBoolArray(bool* res, const int32_t len);
+            int32_t ReadBoolArray(bool* res, int32_t len);
             
             /**
              * Read 16-byte signed integer. Maps to "short" type in Java.
@@ -100,7 +100,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadInt16Array(int16_t* res, const int32_t len);
+            int32_t ReadInt16Array(int16_t* res, int32_t len);
 
             /**
              * Read 16-byte unsigned integer. Maps to "char" type in Java.
@@ -119,7 +119,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadUInt16Array(uint16_t* res, const int32_t len);
+            int32_t ReadUInt16Array(uint16_t* res, int32_t len);
 
             /**
              * Read 32-byte signed integer. Maps to "int" type in Java.
@@ -138,7 +138,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadInt32Array(int32_t* res, const int32_t len);
+            int32_t ReadInt32Array(int32_t* res, int32_t len);
 
             /**
              * Read 64-byte signed integer. Maps to "long" type in Java.
@@ -157,7 +157,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadInt64Array(int64_t* res, const int32_t len);
+            int32_t ReadInt64Array(int64_t* res, int32_t len);
 
             /**
              * Read float. Maps to "float" type in Java.
@@ -176,7 +176,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadFloatArray(float* res, const int32_t len);
+            int32_t ReadFloatArray(float* res, int32_t len);
 
             /**
              * Read double. Maps to "double" type in Java.
@@ -195,7 +195,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadDoubleArray(double* res, const int32_t len);
+            int32_t ReadDoubleArray(double* res, int32_t len);
             
             /**
              * Read Guid. Maps to "UUID" type in Java.
@@ -214,7 +214,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadGuidArray(Guid* res, const int32_t len);
+            int32_t ReadGuidArray(Guid* res, int32_t len);
 
             /**
              * Read string.
@@ -227,7 +227,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadString(char* res, const int32_t len);
+            int32_t ReadString(char* res, int32_t len);
 
             /**
              * Read string from the stream.
