@@ -310,6 +310,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         private static readonly CopyOnWriteConcurrentDictionary<Type, Func<PortableReaderImpl, bool, object>>
             ArrayReaders = new CopyOnWriteConcurrentDictionary<Type, Func<PortableReaderImpl, bool, object>>();
 
+        /** StringHashCode(assemblyQualifiedName) -> Type map. */
+        private static readonly ConcurrentDictionary<int, Type> TypeNameMap = new ConcurrentDictionary<int, Type>();
+
         /// <summary>
         /// Default marshaller.
         /// </summary>
@@ -1153,48 +1156,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Write generic array (with element type information).
-        /// </summary>
-        /// <param name="val">Array.</param>
-        /// <param name="ctx">Write context.</param>
-        public static void WriteGenericArray(Array val, PortableWriterImpl ctx)
-        {
-            var stream = ctx.Stream;
-
-            var elementType = val.GetType().GetElementType();
-
-            WriteType(elementType, ctx);
-
-            stream.WriteInt(val.Length);
-
-            for (int i = 0; i < val.Length; i++)
-                ctx.Write(val.GetValue(i));
-        }
-
-        public static void WriteType(Type type, PortableWriterImpl writer)
-        {
-            Debug.Assert(type != null);
-            Debug.Assert(writer != null);
-
-            var desc = writer.Marshaller.GetDescriptor(type);
-
-            if (desc != null)
-            {
-                writer.WriteBoolean(true);  // known type
-                writer.WriteInt(desc.TypeId);
-            }
-            else
-            {
-                writer.WriteBoolean(false);  // unknown type
-
-                var typeName = type.AssemblyQualifiedName;
-
-                writer.WriteInt(StringHashCode(typeName));
-                writer.WriteString(typeName);
-            }
-        }
-
-        /// <summary>
         /// Read array.
         /// </summary>
         /// <param name="ctx">Read context.</param>
@@ -1234,6 +1195,87 @@ namespace Apache.Ignite.Core.Impl.Portable
                 vals[i] = ctx.Deserialize<T>();
 
             return vals;
+        }
+
+        /// <summary>
+        /// Write generic array (with element type information).
+        /// </summary>
+        /// <param name="val">Array.</param>
+        /// <param name="ctx">Write context.</param>
+        public static void WriteTypedArray(Array val, PortableWriterImpl ctx)
+        {
+            Debug.Assert(val != null);
+            Debug.Assert(ctx != null);
+
+            var stream = ctx.Stream;
+
+            var elementType = val.GetType().GetElementType();
+
+            WriteType(elementType, ctx);
+
+            stream.WriteInt(val.Length);
+
+            for (int i = 0; i < val.Length; i++)
+                ctx.Write(val.GetValue(i));
+        }
+
+        public static object ReadTypedArray(PortableReaderImpl reader)
+        {
+            var elementType = ReadType(reader);
+
+            // TODO
+            return ReadArray(reader, elementType);
+        }
+
+        public static void WriteType(Type type, PortableWriterImpl writer)
+        {
+            Debug.Assert(type != null);
+            Debug.Assert(writer != null);
+
+            var desc = writer.Marshaller.GetDescriptor(type);
+
+            if (desc != null)
+            {
+                writer.WriteBoolean(true);  // known type
+                
+                writer.WriteBoolean(desc.UserType);
+                writer.WriteInt(desc.TypeId);
+            }
+            else
+            {
+                writer.WriteBoolean(false);  // unknown type
+
+                var typeName = type.AssemblyQualifiedName;
+
+                writer.WriteInt(StringHashCode(typeName));
+                writer.WriteString(typeName);
+            }
+        }
+
+        public static Type ReadType(PortableReaderImpl reader)
+        {
+            Debug.Assert(reader != null);
+
+            var hasDesc = reader.ReadBoolean();
+
+            if (hasDesc)
+            {
+                var userType = reader.ReadBoolean();
+                var typeId = reader.ReadInt();
+
+                var desc = reader.Marshaller.GetDescriptor(userType, typeId);
+
+                return desc.Type;
+            }
+
+            var typeNameHash = reader.ReadInt();
+
+            return TypeNameMap.GetOrAdd(typeNameHash, x =>
+            {
+                var typeName = reader.ReadString();
+
+                return Type.GetType(typeName, true);
+            });
         }
 
         /**
@@ -1693,6 +1735,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 case TypeArrayDate:
                 case TypeArrayEnum:
                 case TypeArray:
+                case TypeGenericArray:
                 case TypeCollection:
                 case TypeDictionary:
                 case TypeMapEntry:

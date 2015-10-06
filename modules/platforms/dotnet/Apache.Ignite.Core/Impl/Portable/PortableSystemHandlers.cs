@@ -140,6 +140,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             // 9. Array.
             ReadHandlers[PortableUtils.TypeArray] = new PortableSystemReader(ReadArray);
 
+            ReadHandlers[PortableUtils.TypeGenericArray] = new PortableSystemReader(ReadGenericArray);
+
             // 12. Arbitrary collection.
             ReadHandlers[PortableUtils.TypeCollection] = new PortableSystemReader(ReadCollection);
 
@@ -602,7 +604,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             ctx.Stream.WriteByte(PortableUtils.TypeGenericArray);
 
-            PortableUtils.WriteGenericArray((Array)obj, ctx);
+            PortableUtils.WriteTypedArray((Array)obj, ctx);
         }
 
         /**
@@ -719,6 +721,14 @@ namespace Apache.Ignite.Core.Impl.Portable
             var elemType = type.IsArray ? type.GetElementType() : typeof(object);
 
             return PortableUtils.ReadArray(ctx, elemType);
+        }
+
+        /// <summary>
+        /// Reads generic array.
+        /// </summary>
+        private static object ReadGenericArray(PortableReaderImpl ctx, Type type)
+        {
+            return PortableUtils.ReadTypedArray(ctx);
         }
 
         /**
