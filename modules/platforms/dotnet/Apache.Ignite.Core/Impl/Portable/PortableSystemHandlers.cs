@@ -140,10 +140,14 @@ namespace Apache.Ignite.Core.Impl.Portable
             // 9. Array.
             ReadHandlers[PortableUtils.TypeArray] = new PortableSystemReader(ReadArray);
 
+            // 10. Generic Array.
             ReadHandlers[PortableUtils.TypeGenericArray] = new PortableSystemReader(ReadGenericArray);
 
-            // 12. Arbitrary collection.
+            // 11. Arbitrary collection.
             ReadHandlers[PortableUtils.TypeCollection] = new PortableSystemReader(ReadCollection);
+
+            // 12. Generic collection.
+            ReadHandlers[PortableUtils.TypeGenericCollection] = new PortableSystemReader(ReadGenericCollection);
 
             // 13. Arbitrary dictionary.
             ReadHandlers[PortableUtils.TypeDictionary] = new PortableSystemReader(ReadDictionary);
@@ -626,7 +630,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             Debug.Assert(info.IsGenericCollection, "Not generic collection: " + obj.GetType().FullName);
 
-            ctx.Stream.WriteByte(PortableUtils.TypeCollection);
+            ctx.Stream.WriteByte(PortableUtils.TypeGenericCollection);  // TODO: different type?
 
             info.WriteGeneric(ctx, obj);
         }
@@ -736,11 +740,17 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static object ReadCollection(PortableReaderImpl ctx, Type type)
         {
-            PortableCollectionInfo info = PortableCollectionInfo.GetInstance(type);
+            return PortableUtils.ReadCollection(ctx, null, null);
+        }
 
-            return info.IsGenericCollection 
-                ? info.ReadGeneric(ctx)
-                : PortableUtils.ReadCollection(ctx, null, null);
+        /// <summary>
+        /// Reads generic collection.
+        /// </summary>
+        /// <param name="reader">Reader.</param>
+        /// <param name="type">Type.</param>
+        private static object ReadGenericCollection(PortableReaderImpl reader, Type type)
+        {
+            return PortableUtils.ReadTypedCollection(reader);
         }
 
         /**

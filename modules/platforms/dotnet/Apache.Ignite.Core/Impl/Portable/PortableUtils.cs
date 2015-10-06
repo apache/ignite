@@ -135,6 +135,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Type: collection. */
         public const byte TypeCollection = 24;
 
+        /** Type: collection (with element type information). */
+        public const byte TypeGenericCollection = 96;
+
         /** Type: map. */
         public const byte TypeDictionary = 25;
 
@@ -1378,32 +1381,60 @@ namespace Apache.Ignite.Core.Impl.Portable
             Debug.Assert(val != null);
             Debug.Assert(ctx != null);
 
-            ctx.Stream.WriteInt(val.Count);
-
             WriteType(val.GetType(), ctx);
+
+            ctx.Stream.WriteInt(val.Count);
 
             foreach (T elem in val)
                 ctx.Write(elem);
         }
 
-        /**
-         * <summary>Read generic collection.</summary>
-         * <param name="ctx">Context.</param>
-         * <param name="factory">Factory delegate.</param>
-         * <returns>Collection.</returns>
-         */
+        /// <summary>
+        /// Reads generic collection in untyped context.
+        /// </summary>
+        public static object ReadTypedCollection(PortableReaderImpl reader)
+        {
+            var collectionType = ReadType(reader);
+            
+            var elementType = collectionType.GetElementType();
+
+            var factoryType = typeof (PortableGenericCollectionFactory<>).MakeGenericType(elementType);
+
+            var factory = DelegateConverter.CompileCtor<Func<int, object>>(collectionType, new[] {typeof (int)});
+
+            var readMethod = MtdhReadGenericCollection.MakeGenericMethod(elementType);
+
+            var readerFunc =
+                DelegateConverter.CompileFunc<Func<PortableReaderImpl, object, object>>(typeof (PortableUtils),
+                    readMethod, new[] {typeof (PortableReaderImpl), factoryType}, new[] {false, true, true});
+
+            return readerFunc(reader, factory);
+        }
+
+        /// <summary>
+        /// Reads generic collection in typed context.
+        /// </summary>
         public static ICollection<T> ReadGenericCollection<T>(PortableReaderImpl ctx,
             PortableGenericCollectionFactory<T> factory)
         {
-            int len = ctx.Stream.ReadInt();
-
-            if (len < 0) return null;
-
             var collectionType = ReadType(ctx);
 
-            var res = factory != null
-                ? factory.Invoke(len)
-                : (ICollection<T>) Activator.CreateInstance(collectionType);  // TODO: compile ctor
+            // TODO: Check factory for null
+            return ReadGenericCollection0(ctx, factory);
+        }
+
+        /// <summary>
+        /// Reads generic collection without type information.
+        /// </summary>
+        private static ICollection<T> ReadGenericCollection0<T>(PortableReaderImpl ctx, 
+            PortableGenericCollectionFactory<T> factory)
+        {
+            Debug.Assert(ctx != null);
+            Debug.Assert(factory != null);
+
+            int len = ctx.Stream.ReadInt();
+
+            var res = factory.Invoke(len);
 
             for (int i = 0; i < len; i++)
                 res.Add(ctx.Deserialize<T>());
@@ -1714,6 +1745,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 case TypeArray:
                 case TypeGenericArray:
                 case TypeCollection:
+                case TypeGenericCollection:
                 case TypeDictionary:
                 case TypeMapEntry:
                 case TypePortable:
