@@ -1232,12 +1232,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Reads typed array.
         /// </summary>
-        public static object ReadTypedArray(PortableReaderImpl reader, Type arrayType)
+        public static object ReadTypedArray(PortableReaderImpl reader, Type requestedArrayType)
         {
             var elementType = ReadType(reader);
 
-            if (arrayType.IsArray)
-                elementType = arrayType.GetElementType();
+            //if (requestedArrayType.IsArray)
+            //    elementType = requestedArrayType.GetElementType();
 
             return ReadArray(reader, false, elementType);
         }
@@ -1424,12 +1424,12 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var elementType = collectionType.GetGenericArguments().Single();
 
-            if (requestedCollectionType.IsGenericType)
-            {
-                elementType = requestedCollectionType.GetGenericArguments().Single();
+            //if (requestedCollectionType.IsGenericType)
+            //{
+            //    elementType = requestedCollectionType.GetGenericArguments().Single();
 
-                collectionType = collectionType.GetGenericTypeDefinition().MakeGenericType(elementType);
-            }
+            //    collectionType = collectionType.GetGenericTypeDefinition().MakeGenericType(elementType);
+            //}
 
             var factoryType = typeof (PortableGenericCollectionFactory<>).MakeGenericType(elementType);
 
@@ -1471,12 +1471,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             else
             {
-                var elementType = collectionType.GetGenericArguments().Single();
-
                 // ICollection is not generically variant
                 // Try to provide requested collection type
-                if (elementType != typeof (T))
-                    collectionType = collectionType.GetGenericTypeDefinition().MakeGenericType(typeof (T));
+                //var elementType = collectionType.GetGenericArguments().Single();
+
+                //if (elementType != typeof (T))
+                //    collectionType = collectionType.GetGenericTypeDefinition().MakeGenericType(typeof (T));
 
                 // TODO: cache
                 var ctor = DelegateConverter.CompileCtor<Func<object, ICollection<T>>>(collectionType,
