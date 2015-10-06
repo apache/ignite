@@ -787,7 +787,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(1, res1.Length);
             Assert.AreEqual(1, res1[0]);
 
-            IList<int> res2 = _grid1.GetCompute().ExecuteJavaTask<IList<int>>(EchoTask, EchoTypeCollection);
+            var res2 = _grid1.GetCompute().ExecuteJavaTask<IList>(EchoTask, EchoTypeCollection);
 
             Assert.AreEqual(1, res2.Count);
             Assert.AreEqual(1, res2[0]);
@@ -932,8 +932,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void TestBroadcastTaskAsync()
         {
             var gridCompute = _grid1.GetCompute().WithAsync();
-            Assert.IsNull(gridCompute.ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null));
-            ICollection<Guid> res = gridCompute.GetFuture<ICollection<Guid>>().Get();
+            Assert.IsNull(gridCompute.ExecuteJavaTask<ICollection>(BroadcastTask, null));
+            var res = gridCompute.GetFuture<ICollection>().Get().OfType<Guid>().ToList();
 
             Assert.AreEqual(3, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
@@ -945,8 +945,8 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(2, prj.GetNodes().Count);
 
             var compute = prj.GetCompute().WithAsync();
-            Assert.IsNull(compute.ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null));
-            ICollection<Guid> filteredRes = compute.GetFuture<ICollection<Guid>>().Get();
+            Assert.IsNull(compute.ExecuteJavaTask<IList>(BroadcastTask, null));
+            var filteredRes = compute.GetFuture<IList>().Get();
 
             Assert.AreEqual(2, filteredRes.Count);
             Assert.IsTrue(filteredRes.Contains(res.ElementAt(0)));
@@ -1052,7 +1052,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestWithNoFailover()
         {
-            ICollection<Guid> res = _grid1.GetCompute().WithNoFailover().ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null);
+            var res = _grid1.GetCompute().WithNoFailover().ExecuteJavaTask<ICollection>(BroadcastTask, null)
+                .OfType<Guid>().ToList();
 
             Assert.AreEqual(3, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
@@ -1066,7 +1067,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestWithTimeout()
         {
-            ICollection<Guid> res = _grid1.GetCompute().WithTimeout(1000).ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null);
+            var res = _grid1.GetCompute().WithTimeout(1000).ExecuteJavaTask<ICollection>(BroadcastTask, null)
+                .OfType<Guid>().ToList();
 
             Assert.AreEqual(3, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
