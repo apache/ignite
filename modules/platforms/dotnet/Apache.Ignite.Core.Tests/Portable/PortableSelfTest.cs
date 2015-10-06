@@ -1403,8 +1403,8 @@ namespace Apache.Ignite.Core.Tests.Portable
             public void ReadPortable(IPortableReader reader)
             {
                 Keys = reader.ReadObject<ICollection<TKey>>("Keys");
-                Values = reader.ReadObject<ICollection<TValue>>("Values");
-                Pairs = reader.ReadObject<IDictionary<TKey, TValue>>("Pairs");
+                Values = (ICollection<TValue>) reader.ReadObject<object>("Values");
+                Pairs = (IDictionary<TKey, TValue>) reader.ReadObject<object>("Pairs");
                 Objects = (ICollection<object>) reader.ReadObject<object>("Objects");
             }
         }
