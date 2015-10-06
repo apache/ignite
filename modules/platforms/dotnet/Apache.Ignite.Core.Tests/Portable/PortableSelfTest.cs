@@ -564,6 +564,42 @@ namespace Apache.Ignite.Core.Tests.Portable
             CollectionAssert.AreEquivalent(list, newList);
         }
 
+        /// <summary>
+        /// Tests marshal aware type with generic collections.
+        /// </summary>
+        [Test]
+        public void TestGenericCollectionsType()
+        {
+            var marsh = new PortableMarshaller(new PortableConfiguration
+            {
+                TypeConfigurations = new List<PortableTypeConfiguration>
+                {
+                    new PortableTypeConfiguration(typeof (GenericCollectionsType<int, string>))
+                }
+            });
+
+            var obj = new GenericCollectionsType<int, string>
+            {
+                Keys = new[] { 1, 2, 3 },
+                Values = new List<string> { "i4", "v6", "w12" },
+                Pairs = new Dictionary<int, string>
+                {
+                    {1, "a1"},
+                    {2, "a2"}
+                },
+                Objects = new object[] { 1, 2, "3", 4.4 }
+            };
+
+            var data = marsh.Marshal(obj);
+
+            var result = marsh.Unmarshal<GenericCollectionsType<int, string>>(data);
+
+            CollectionAssert.AreEquivalent(obj.Keys, result.Keys);
+            CollectionAssert.AreEquivalent(obj.Values, result.Values);
+            CollectionAssert.AreEquivalent(obj.Pairs, result.Pairs);
+            CollectionAssert.AreEquivalent(obj.Objects, result.Objects);
+        }
+        
         /**
          * <summary>Check property read.</summary>
          */
@@ -1343,6 +1379,33 @@ namespace Apache.Ignite.Core.Tests.Portable
             {
                 return "CollectoinsType[col1=" + CollectionAsString(Col1) + 
                     ", col2=" + CollectionAsString(Col2) + ']'; 
+            }
+        }
+
+        public class GenericCollectionsType<TKey, TValue> : IPortableMarshalAware
+        {
+            public ICollection<TKey> Keys { get; set; }
+
+            public ICollection<TValue> Values { get; set; }
+
+            public IDictionary<TKey, TValue> Pairs { get; set; }
+
+            public ICollection<object> Objects { get; set; }
+
+            public void WritePortable(IPortableWriter writer)
+            {
+                writer.WriteObject("Keys", Keys);
+                writer.WriteObject("Values", Values);
+                writer.WriteObject("Pairs", Pairs);
+                writer.WriteObject("Objects", Objects);
+            }
+
+            public void ReadPortable(IPortableReader reader)
+            {
+                Keys = reader.ReadObject<ICollection<TKey>>("Keys");
+                Values = reader.ReadObject<ICollection<TValue>>("Values");
+                Pairs = reader.ReadObject<IDictionary<TKey, TValue>>("Pairs");
+                Objects = (ICollection<object>) reader.ReadObject<object>("Objects");
             }
         }
 
