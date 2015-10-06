@@ -574,25 +574,26 @@ namespace Apache.Ignite.Core.Tests.Portable
             {
                 TypeConfigurations = new List<PortableTypeConfiguration>
                 {
-                    new PortableTypeConfiguration(typeof (GenericCollectionsType<int, string>))
+                    new PortableTypeConfiguration(typeof (PrimitiveFieldType)),
+                    new PortableTypeConfiguration(typeof (GenericCollectionsType<PrimitiveFieldType, string>))
                 }
             });
 
-            var obj = new GenericCollectionsType<int, string>
+            var obj = new GenericCollectionsType<PrimitiveFieldType, string>
             {
-                Keys = new[] { 1, 2, 3 },
-                Values = new List<string> { "i4", "v6", "w12" },
-                Pairs = new Dictionary<int, string>
+                Keys = new[] {new PrimitiveFieldType(), new PrimitiveFieldType()},
+                Values = new List<string> {"i4", "v6", "w12"},
+                Pairs = new Dictionary<PrimitiveFieldType, string>
                 {
-                    {1, "a1"},
-                    {2, "a2"}
+                    {new PrimitiveFieldType(), "a1"},
+                    {new PrimitiveFieldType {PByte = 10}, "a2"}
                 },
-                Objects = new object[] { 1, 2, "3", 4.4 }
+                Objects = new object[] {1, 2, "3", 4.4}
             };
 
             var data = marsh.Marshal(obj);
 
-            var result = marsh.Unmarshal<GenericCollectionsType<int, string>>(data);
+            var result = marsh.Unmarshal<GenericCollectionsType<PrimitiveFieldType, string>>(data);
 
             CollectionAssert.AreEquivalent(obj.Keys, result.Keys);
             CollectionAssert.AreEquivalent(obj.Values, result.Values);
