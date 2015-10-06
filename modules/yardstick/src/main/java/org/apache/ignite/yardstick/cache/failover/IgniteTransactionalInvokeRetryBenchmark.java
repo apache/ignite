@@ -123,6 +123,10 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                     }
                 }
                 catch (Throwable e) {
+                    isValidCacheState = false;
+
+                    IgniteTransactionalInvokeRetryBenchmark.this.e.compareAndSet(null, e);
+
                     println("[CACHE-VALIDATOR] Got exception: " + e);
 
                     e.printStackTrace();
