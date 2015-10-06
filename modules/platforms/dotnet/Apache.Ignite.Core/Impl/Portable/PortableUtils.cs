@@ -1397,6 +1397,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="val">Value.</param>
          * <param name="ctx">Write context.</param>
          */
+        // ReSharper disable once UnusedMember.Global (Used by reflection)
         public static void WriteGenericCollection<T>(ICollection<T> val, PortableWriterImpl ctx)
         {
             Debug.Assert(val != null);
