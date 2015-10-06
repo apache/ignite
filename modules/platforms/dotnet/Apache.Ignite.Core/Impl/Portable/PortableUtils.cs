@@ -311,7 +311,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             ArrayReaders = new CopyOnWriteConcurrentDictionary<Type, Func<PortableReaderImpl, bool, object>>();
 
         /** StringHashCode(assemblyQualifiedName) -> Type map. */
-        private static readonly ConcurrentDictionary<int, Type> TypeNameMap = new ConcurrentDictionary<int, Type>();
+        private static readonly CopyOnWriteConcurrentDictionary<int, Type> TypeNameMap =
+            new CopyOnWriteConcurrentDictionary<int, Type>();
 
         /// <summary>
         /// Default marshaller.
@@ -1374,36 +1375,12 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static void WriteGenericCollection<T>(ICollection<T> val, PortableWriterImpl ctx)
         {
-            Type type = val.GetType().GetGenericTypeDefinition();
+            Debug.Assert(val != null);
+            Debug.Assert(ctx != null);
 
-            byte colType;
-
-            if (type == typeof(List<>))
-                colType = CollectionArrayList;
-            else if (type == typeof(LinkedList<>))
-                colType = CollectionLinkedList;
-            else if (type == typeof(HashSet<>))
-                colType = CollectionHashSet;
-            else if (type == typeof(SortedSet<>))
-                colType = CollectionSortedSet;
-            else
-                colType = CollectionCustom;
-
-            WriteTypedGenericCollection(val, ctx, colType);
-        }
-
-        /**
-         * <summary>Write generic non-null collection with known type.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         * <param name="colType">Collection type.</param>
-         */
-        public static void WriteTypedGenericCollection<T>(ICollection<T> val, PortableWriterImpl ctx,
-            byte colType)
-        {
             ctx.Stream.WriteInt(val.Count);
 
-            ctx.Stream.WriteByte(colType);
+            WriteType(val.GetType(), ctx);
 
             foreach (T elem in val)
                 ctx.Write(elem);
@@ -1420,31 +1397,18 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             int len = ctx.Stream.ReadInt();
 
-            if (len >= 0)
-            {
-                byte colType = ctx.Stream.ReadByte();
+            if (len < 0) return null;
 
-                if (factory == null)
-                {
-                    // Need to detect factory automatically.
-                    if (colType == CollectionLinkedList)
-                        factory = PortableSystemHandlers.CreateLinkedList<T>;
-                    else if (colType == CollectionHashSet)
-                        factory = PortableSystemHandlers.CreateHashSet<T>;
-                    else if (colType == CollectionSortedSet)
-                        factory = PortableSystemHandlers.CreateSortedSet<T>;
-                    else
-                        factory = PortableSystemHandlers.CreateList<T>;
-                }
+            var collectionType = ReadType(ctx);
 
-                ICollection<T> res = factory.Invoke(len);
+            var res = factory != null
+                ? factory.Invoke(len)
+                : (ICollection<T>) Activator.CreateInstance(collectionType);  // TODO: compile ctor
 
-                for (int i = 0; i < len; i++)
-                    res.Add(ctx.Deserialize<T>());
+            for (int i = 0; i < len; i++)
+                res.Add(ctx.Deserialize<T>());
 
-                return res;
-            }
-            return null;
+            return res;
         }
 
         /**

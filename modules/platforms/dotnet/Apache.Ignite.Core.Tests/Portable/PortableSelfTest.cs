@@ -546,13 +546,13 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestGenericCollections()
         {
-            ICollection<string> list = new List<string>();
+            var list = new List<string>();
 
             list.Add("1");
 
             byte[] data = _marsh.Marshal(list);
 
-            ICollection<object> newObjList = _marsh.Unmarshal<List<object>>(data);
+            var newObjList = _marsh.Unmarshal<IList<string>>(data);
 
             Assert.NotNull(newObjList);
 
