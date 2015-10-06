@@ -598,7 +598,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             
             var data = marsh.Marshal(obj);
 
-            var result = marsh.Unmarshal<GenericCollectionsType<PrimitiveFieldType, string>>(data);
+            var result = marsh.Unmarshal<GenericCollectionsType<PrimitiveFieldType, SerializableObject>>(data);
 
             CollectionAssert.AreEquivalent(obj.Keys, result.Keys);
             CollectionAssert.AreEquivalent(obj.Values, result.Values);
