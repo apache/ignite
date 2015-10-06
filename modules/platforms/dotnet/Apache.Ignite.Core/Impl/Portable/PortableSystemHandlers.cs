@@ -710,7 +710,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static object ReadEnumArray(PortableReaderImpl ctx, Type type)
         {
-            return PortableUtils.ReadArray(ctx, type.GetElementType());
+            return PortableUtils.ReadArray(ctx, true, type.GetElementType());
         }
 
         /**
@@ -720,7 +720,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             var elemType = type.IsArray ? type.GetElementType() : typeof(object);
 
-            return PortableUtils.ReadArray(ctx, elemType);
+            return PortableUtils.ReadArray(ctx, true, elemType);
         }
 
         /// <summary>

@@ -1159,9 +1159,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Read array.
         /// </summary>
         /// <param name="ctx">Read context.</param>
+        /// <param name="typed">Typed flag.</param>
         /// <param name="elementType">Type of the element.</param>
         /// <returns>Array.</returns>
-        public static object ReadArray(PortableReaderImpl ctx, Type elementType)
+        public static object ReadArray(PortableReaderImpl ctx, bool typed, Type elementType)
         {
             Func<PortableReaderImpl, bool, object> result;
 
@@ -1171,7 +1172,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         MtdhReadGenericArray.MakeGenericMethod(t),
                         new[] {typeof (PortableReaderImpl), typeof (bool)}, new[] {false, false, true}));
 
-            return result(ctx, true);
+            return result(ctx, typed);
         }
 
         /// <summary>
@@ -1219,15 +1220,22 @@ namespace Apache.Ignite.Core.Impl.Portable
                 ctx.Write(val.GetValue(i));
         }
 
+        /// <summary>
+        /// Reads typed array.
+        /// </summary>
         public static object ReadTypedArray(PortableReaderImpl reader)
         {
             var elementType = ReadType(reader);
 
-            // TODO
-            return ReadArray(reader, elementType);
+            return ReadArray(reader, false, elementType);
         }
 
-        public static void WriteType(Type type, PortableWriterImpl writer)
+        /// <summary>
+        /// Writes a Type to the writer.
+        /// </summary>
+        /// <param name="type">Type.</param>
+        /// <param name="writer">Writer.</param>
+        private static void WriteType(Type type, PortableWriterImpl writer)
         {
             Debug.Assert(type != null);
             Debug.Assert(writer != null);
@@ -1252,7 +1260,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
-        public static Type ReadType(PortableReaderImpl reader)
+        /// <summary>
+        /// Reads a Type from a reader.
+        /// </summary>
+        /// <param name="reader">Reader.</param>
+        /// <returns>Type.</returns>
+        private static Type ReadType(PortableReaderImpl reader)
         {
             Debug.Assert(reader != null);
 
