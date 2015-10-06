@@ -575,22 +575,27 @@ namespace Apache.Ignite.Core.Tests.Portable
                 TypeConfigurations = new List<PortableTypeConfiguration>
                 {
                     new PortableTypeConfiguration(typeof (PrimitiveFieldType)),
-                    new PortableTypeConfiguration(typeof (GenericCollectionsType<PrimitiveFieldType, string>))
+                    new PortableTypeConfiguration(typeof (GenericCollectionsType<PrimitiveFieldType, SerializableObject>))
                 }
             });
 
-            var obj = new GenericCollectionsType<PrimitiveFieldType, string>
+            var obj = new GenericCollectionsType<PrimitiveFieldType, SerializableObject>
             {
                 Keys = new[] {new PrimitiveFieldType(), new PrimitiveFieldType()},
-                Values = new List<string> {"i4", "v6", "w12"},
-                Pairs = new Dictionary<PrimitiveFieldType, string>
+                Values =
+                    new List<SerializableObject>
+                    {
+                        new SerializableObject {Foo = 1},
+                        new SerializableObject {Foo = 5}
+                    },
+                Pairs = new Dictionary<PrimitiveFieldType, SerializableObject>
                 {
-                    {new PrimitiveFieldType(), "a1"},
-                    {new PrimitiveFieldType {PByte = 10}, "a2"}
+                    {new PrimitiveFieldType(), new SerializableObject {Foo = 10}},
+                    {new PrimitiveFieldType {PByte = 10}, new SerializableObject {Foo = 20}}
                 },
                 Objects = new object[] {1, 2, "3", 4.4}
             };
-
+            
             var data = marsh.Marshal(obj);
 
             var result = marsh.Unmarshal<GenericCollectionsType<PrimitiveFieldType, string>>(data);
@@ -600,7 +605,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             CollectionAssert.AreEquivalent(obj.Pairs, result.Pairs);
             CollectionAssert.AreEquivalent(obj.Objects, result.Objects);
         }
-        
+
         /**
          * <summary>Check property read.</summary>
          */
@@ -2134,6 +2139,31 @@ namespace Apache.Ignite.Core.Tests.Portable
                 UtcNullRaw = rawReader.ReadDate(false).Value;
                 LocArrRaw = rawReader.ReadDateArray(true);
                 UtcArrRaw = rawReader.ReadDateArray(false);
+            }
+        }
+
+        [Serializable]
+        private class SerializableObject
+        {
+            public int Foo { get; set; }
+
+            private bool Equals(SerializableObject other)
+            {
+                return Foo == other.Foo;
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != GetType()) return false;
+
+                return Equals((SerializableObject) obj);
+            }
+
+            public override int GetHashCode()
+            {
+                return Foo;
             }
         }
     }
