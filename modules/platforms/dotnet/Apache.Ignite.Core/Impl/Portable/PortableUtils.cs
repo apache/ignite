@@ -1436,16 +1436,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         public static ICollection<T> ReadGenericCollection<T>(PortableReaderImpl reader,
             PortableGenericCollectionFactory<T> factory)
         {
-            if (factory != null)
-            {
-                // Ignore type information because we have factory and do not need it
-                var collectionType = ReadType(reader);  
+            var collectionType = ReadType(reader);
 
-                return ReadGenericCollection0(reader, factory, collectionType);
-            }
-            
-            // Supplied T is not necessary original element type, so we have to change generic context
-            return (ICollection<T>) ReadTypedCollection(reader);
+            return ReadGenericCollection0(reader, factory, collectionType);
         }
 
         /// <summary>
@@ -1466,6 +1459,13 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             else
             {
+                var elementType = collectionType.GetGenericArguments().Single();
+
+                // ICollection is not generically variant
+                // Try to provide requested collection type
+                if (elementType != typeof (T))
+                    collectionType = collectionType.GetGenericTypeDefinition().MakeGenericType(typeof (T));
+
                 // TODO: cache
                 var ctor = DelegateConverter.CompileCtor<Func<object, ICollection<T>>>(collectionType,
                     new[] {typeof (int)}, false);
