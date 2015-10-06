@@ -757,7 +757,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 return PortableUtils.TypeEnum;
             if (type.IsArray)
                 return type.GetElementType().IsEnum ? PortableUtils.TypeArrayEnum : PortableUtils.TypeArray;
-            PortableCollectionInfo colInfo = PortableCollectionInfo.Info(type);
+            PortableCollectionInfo colInfo = PortableCollectionInfo.GetInstance(type);
 
             return colInfo.IsAny ? colInfo.IsCollection || colInfo.IsGenericCollection ?
                 PortableUtils.TypeCollection : PortableUtils.TypeDictionary : PortableUtils.TypeObject;

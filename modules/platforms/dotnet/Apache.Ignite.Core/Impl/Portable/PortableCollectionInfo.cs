@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Collections.Concurrent;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Reflection;
     using Apache.Ignite.Core.Impl.Common;
@@ -57,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             new PortableCollectionInfo(FlagCollection, PortableSystemHandlers.WriteHndCollection, null, null);
 
         /** Cached infos. */
-        private static readonly IDictionary<Type, PortableCollectionInfo> Infos =
+        private static readonly ConcurrentDictionary<Type, PortableCollectionInfo> Infos =
             new ConcurrentDictionary<Type, PortableCollectionInfo>(64, 32);
 
         /**
@@ -65,18 +64,9 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="type">Type.</param>
          * <returns>Collection info.</returns>
          */
-        public static PortableCollectionInfo Info(Type type)
+        public static PortableCollectionInfo GetInstance(Type type)
         {
-            PortableCollectionInfo info;
-
-            if (!Infos.TryGetValue(type, out info))
-            {
-                info = Info0(type);
-
-                Infos[type] = info;
-            }
-
-            return info;
+            return Infos.GetOrAdd(type, CreateInstance);
         }
 
         /**
@@ -84,7 +74,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="type">Type.</param>
          * <returns>Collection info.</returns>
          */
-        private static PortableCollectionInfo Info0(Type type)
+        private static PortableCollectionInfo CreateInstance(Type type)
         {
             if (type.IsGenericType)
             {
