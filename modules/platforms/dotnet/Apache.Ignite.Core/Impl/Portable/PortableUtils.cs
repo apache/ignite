@@ -1249,6 +1249,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             Debug.Assert(type != null);
             Debug.Assert(writer != null);
 
+            type = ReplaceTypesRecursive(type, typeof (IPortableBuilder), type = typeof (IPortableObject));
+
             var desc = writer.Marshaller.GetDescriptor(type);
 
             if (desc != null)
@@ -1267,6 +1269,24 @@ namespace Apache.Ignite.Core.Impl.Portable
                 writer.WriteInt(StringHashCode(typeName));
                 writer.WriteString(typeName);
             }
+        }
+
+        /// <summary>
+        /// Replaces type with another type in a generic of any depth.
+        /// </summary>
+        private static Type ReplaceTypesRecursive(Type type, Type target, Type replacement)
+        {
+            if (type == target)
+                return replacement;
+
+            if (!type.IsGenericType)
+                return type;
+
+            var def = type.GetGenericTypeDefinition();
+
+            var args = type.GetGenericArguments().Select(x => ReplaceTypesRecursive(x, target, replacement)).ToArray();
+
+            return def.MakeGenericType(args);
         }
 
         /// <summary>
