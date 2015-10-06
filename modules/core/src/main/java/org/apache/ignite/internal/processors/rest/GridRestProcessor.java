@@ -234,14 +234,16 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 log.debug("Next clientId and sessionToken were extracted according to request: " +
                     "[clientId="+req.clientId()+", sesTok="+Arrays.toString(req.sessionToken())+"]");
 
-            try {
-                if (ses.secCtx == null)
-                    ses.secCtx = authenticate(req);
+            SecurityContext secCtx0 = ses.secCtx;
 
-                authorize(req, ses.secCtx);
+            try {
+                if (secCtx0 == null)
+                    ses.secCtx = secCtx0 = authenticate(req);
+
+                authorize(req, secCtx0);
             }
             catch (SecurityException e) {
-                assert ses.secCtx != null;
+                assert secCtx0 != null;
 
                 GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
 
@@ -351,7 +353,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 if (ses == null)
                     throw new IgniteCheckedException("Failed to handle request - unknown session token " +
-                        "(maybe expired session): [sesTok=" + U.byteArray2HexString(sesTok) + "]");
+                        "(maybe expired session) [sesTok=" + U.byteArray2HexString(sesTok) + "]");
 
                 if (!ses.touch())
                     continue; // Need to wait while timeout thread complete removing of timed out sessions.
@@ -364,14 +366,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 if (sesId == null || !sesId.equals(U.bytesToUuid(sesTok, 0)))
                     throw new IgniteCheckedException("Failed to handle request - unsupported case (misamatched " +
-                        "clientId and session token): [clientId=" + clientId + ", sesTok=" +
+                        "clientId and session token) [clientId=" + clientId + ", sesTok=" +
                         U.byteArray2HexString(sesTok) + "]");
 
                 Session ses = sesId2Ses.get(sesId);
 
                 if (ses == null)
                     throw new IgniteCheckedException("Failed to handle request - unknown session token " +
-                        "(maybe expired session): [sesTok=" + U.byteArray2HexString(sesTok) + "]");
+                        "(maybe expired session) [sesTok=" + U.byteArray2HexString(sesTok) + "]");
 
                 if (!ses.touch())
                     continue; // Need to wait while timeout thread complete removing of timed out sessions.
