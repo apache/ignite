@@ -732,7 +732,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private static object ReadGenericArray(PortableReaderImpl ctx, Type type)
         {
-            return PortableUtils.ReadTypedArray(ctx);
+            return PortableUtils.ReadTypedArray(ctx, type);
         }
 
         /**
@@ -750,7 +750,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="type">Type.</param>
         private static object ReadGenericCollection(PortableReaderImpl reader, Type type)
         {
-            return PortableUtils.ReadTypedCollection(reader);
+            return PortableUtils.ReadTypedCollection(reader, type);
         }
 
         /**

@@ -1232,9 +1232,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Reads typed array.
         /// </summary>
-        public static object ReadTypedArray(PortableReaderImpl reader)
+        public static object ReadTypedArray(PortableReaderImpl reader, Type arrayType)
         {
             var elementType = ReadType(reader);
+
+            if (arrayType.IsArray)
+                elementType = arrayType.GetElementType();
 
             return ReadArray(reader, false, elementType);
         }
@@ -1250,6 +1253,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             Debug.Assert(writer != null);
 
             type = ReplaceTypesRecursive(type, typeof (IPortableBuilder), typeof (IPortableObject));
+            type = ReplaceTypesRecursive(type, typeof (PortableUserObject), typeof (object));
 
             var desc = writer.Marshaller.GetDescriptor(type);
 
@@ -1414,11 +1418,18 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Reads generic collection in untyped context.
         /// </summary>
-        public static object ReadTypedCollection(PortableReaderImpl reader)
+        public static object ReadTypedCollection(PortableReaderImpl reader, Type requestedCollectionType)
         {
             var collectionType = ReadType(reader);
 
             var elementType = collectionType.GetGenericArguments().Single();
+
+            if (requestedCollectionType.IsGenericType)
+            {
+                elementType = requestedCollectionType.GetGenericArguments().Single();
+
+                collectionType = collectionType.GetGenericTypeDefinition().MakeGenericType(elementType);
+            }
 
             var factoryType = typeof (PortableGenericCollectionFactory<>).MakeGenericType(elementType);
 
