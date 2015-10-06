@@ -247,11 +247,37 @@ namespace ignite
              * @return Collection writer.
              */
             template<typename T>
-            PortableCollectionWriter<T> WriteCollection(ignite::portable::CollectionType typ)
+            PortableCollectionWriter<T> WriteCollection(CollectionType typ)
             {
                 int32_t id = impl->WriteCollection(typ);
 
                 return PortableCollectionWriter<T>(impl, id);
+            }
+
+            /**
+             * Write values in interval [first, last).
+             *
+             * @param first Iterator pointing to the beginning of the interval.
+             * @param last Iterator pointing to the end of the interval.
+             * @param typ Collection type.
+             */
+            template<typename InputIterator>
+            void WriteCollection(InputIterator first, InputIterator last)
+            {
+                impl->WriteCollection(first, last, IGNITE_COLLECTION_UNDEFINED);
+            }
+
+            /**
+             * Write values in interval [first, last).
+             *
+             * @param first Iterator pointing to the beginning of the interval.
+             * @param last Iterator pointing to the end of the interval.
+             * @param typ Collection type.
+             */
+            template<typename InputIterator>
+            void WriteCollection(InputIterator first, InputIterator last, CollectionType typ)
+            {
+                impl->WriteCollection(first, last, typ);
             }
 
             /**
@@ -273,7 +299,7 @@ namespace ignite
              * @return Map writer.
              */
             template<typename K, typename V>
-            PortableMapWriter<K, V> WriteMap(ignite::portable::MapType typ)
+            PortableMapWriter<K, V> WriteMap(MapType typ)
             {
                 int32_t id = impl->WriteMap(typ);
 

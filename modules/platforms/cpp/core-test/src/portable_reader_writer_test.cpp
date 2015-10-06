@@ -592,13 +592,9 @@ void CheckCollectionIterators(CollectionType* colType)
     out.Position(18);
 
     if (colType)
-    {
         writer.WriteCollection("field1", writeValues.begin(), writeValues.end(), *colType);
-    }
     else
-    {
         writer.WriteCollection("field1", writeValues.begin(), writeValues.end());
-    }
     
     writer.WriteInt8("field2", 1);
 

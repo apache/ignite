@@ -289,6 +289,18 @@ namespace ignite
             }
 
             /**
+             * Read values and insert them to specified position.
+             *
+             * @param out Output iterator to the initial position in the destination sequence.
+             * @return Number of elements that have been read.
+             */
+            template<typename T, typename OutputIterator>
+            int32_t ReadCollection(OutputIterator out)
+            {
+                return impl->ReadCollection<T>(out);
+            }
+
+            /**
              * Start map read.
              *
              * @return Map reader.
@@ -303,6 +315,20 @@ namespace ignite
 
                 return PortableMapReader<K, V>(impl, id, typ, size);
             }
+
+            /**
+             * Read type of the collection.
+             *
+             * @return Collection type.
+             */
+            CollectionType ReadCollectionType();
+
+            /**
+             * Read type of the collection.
+             *
+             * @return Collection size.
+             */
+            int32_t ReadCollectionSize();
 
             /**
              * Read object.

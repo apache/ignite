@@ -478,6 +478,24 @@ namespace ignite
                 }
             }
 
+            CollectionType PortableReaderImpl::ReadCollectionTypeUnprotected()
+            {
+                int32_t size = ReadCollectionSizeUnprotected();
+                if (size == -1)
+                    return IGNITE_COLLECTION_UNDEFINED;
+
+                CollectionType typ = static_cast<CollectionType>(stream->ReadInt8());
+
+                return typ;
+            }
+
+            CollectionType PortableReaderImpl::ReadCollectionType()
+            {
+                InteropStreamPositionGuard<InteropInputStream> positionGuard(*stream);
+                
+                return ReadCollectionTypeUnprotected();
+            }
+
             CollectionType PortableReaderImpl::ReadCollectionType(const char* fieldName)
             {
                 CheckRawMode(false);
@@ -491,6 +509,11 @@ namespace ignite
                 if (fieldLen <= 0)
                     return IGNITE_COLLECTION_UNDEFINED;
 
+                return ReadCollectionTypeUnprotected();
+            }
+
+            int32_t PortableReaderImpl::ReadCollectionSizeUnprotected()
+            {
                 int8_t hdr = stream->ReadInt8();
 
                 if (hdr != IGNITE_TYPE_COLLECTION)
@@ -498,16 +521,19 @@ namespace ignite
                     if (hdr != IGNITE_HDR_NULL)
                         ThrowOnInvalidHeader(IGNITE_TYPE_COLLECTION, hdr);
 
-                    return IGNITE_COLLECTION_UNDEFINED;
+                    return -1;
                 }
 
                 int32_t size = stream->ReadInt32();
 
-                CollectionType typ = IGNITE_COLLECTION_UNDEFINED;
-                if (size != -1)
-                    typ = static_cast<CollectionType>(stream->ReadInt8());
+                return size;
+            }
 
-                return typ;
+            int32_t PortableReaderImpl::ReadCollectionSize()
+            {
+                InteropStreamPositionGuard<InteropInputStream> positionGuard(*stream);
+
+                return ReadCollectionSizeUnprotected();
             }
 
             int32_t PortableReaderImpl::ReadCollectionSize(const char* fieldName)
@@ -523,19 +549,7 @@ namespace ignite
                 if (fieldLen <= 0)
                     return -1;
 
-                int8_t hdr = stream->ReadInt8();
-
-                if (hdr != IGNITE_TYPE_COLLECTION)
-                {
-                    if (hdr != IGNITE_HDR_NULL)
-                        ThrowOnInvalidHeader(IGNITE_TYPE_COLLECTION, hdr);
-
-                    return -1;
-                }
-
-                int32_t size = stream->ReadInt32();
-
-                return size;
+                return ReadCollectionSizeUnprotected();
             }
 
             bool PortableReaderImpl::HasNextElement(int32_t id)
