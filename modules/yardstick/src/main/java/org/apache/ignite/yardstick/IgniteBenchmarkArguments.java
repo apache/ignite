@@ -125,7 +125,7 @@ public class IgniteBenchmarkArguments {
     private int cacheConsistencyCheckingPeriod = 2 * 60;
 
     /** */
-    @Parameter(names = {"-keysCnt", "--keysCount"}, description = "Count of keys")
+    @Parameter(names = {"-kc", "--keysCount"}, description = "Count of keys")
     private int keysCnt = 5;
 
     /** */

@@ -43,9 +43,6 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
     public static final int KEY_RANGE = 100_000;
 
     /** */
-    public static final int CNT_KEYS_IN_LINE = 5;
-
-    /** */
     private final ConcurrentMap<String, AtomicLong> map = new ConcurrentHashMap<>();
 
     /** */
@@ -62,6 +59,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
             @Override public void run() {
                 try {
                     final int timeout = args.cacheOperationTimeoutMillis();
+                    final int keysCnt = args.keysCount();
 
                     while (!Thread.currentThread().isInterrupted()) {
                         Thread.sleep(args.cacheConsistencyCheckingPeriod() * 1000);
@@ -74,10 +72,10 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                             long startTime = U.currentTimeMillis();
 
                             for (int k = 0; k < KEY_RANGE; k++) {
-                                if (k % 1000 == 0)
+                                if (k % 10_000 == 0)
                                     println("[CACHE-VALIDATOR] Start validation for keys like 'key-" + k + "-*'");
 
-                                for (int i = 0; i < CNT_KEYS_IN_LINE; i++) {
+                                for (int i = 0; i < keysCnt; i++) {
                                     String key = "key-" + k + "-" + cfg.memberId() + "-" + i;
 
                                     asyncCache.get(key);
@@ -90,15 +88,15 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                         isValidCacheState = false;
 
                                         // Print all usefull information and finish.
-                                        println(cfg, "[CACHE-VALIDATOR][Exception] Got different values [key='" + key + "', cacheVal=" + cacheVal
-                                            + ", localMapVal=" + mapVal + "]");
+                                        println(cfg, "[CACHE-VALIDATOR][Exception] Got different values [key='" + key
+                                            + "', cacheVal=" + cacheVal + ", localMapVal=" + mapVal + "]");
 
                                         println(cfg, "Local driver map contant: " + map);
 
                                         println(cfg, "Cache content.");
 
                                         for (int k2 = 0; k2 < KEY_RANGE; k2++) {
-                                            for (int i2 = 0; i2 < CNT_KEYS_IN_LINE; i2++) {
+                                            for (int i2 = 0; i2 < keysCnt; i2++) {
                                                 String key2 = "key-" + k2 + "-" + cfg.memberId() + "-" + i2;
 
                                                 asyncCache.get(key2);
@@ -116,7 +114,8 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                 }
                             }
 
-                            println("[CACHE-VALIDATOR] Cache validation successfully finished in "+ (U.currentTimeMillis() - startTime)/1000 +" sec.");
+                            println("[CACHE-VALIDATOR] Cache validation successfully finished in "
+                                + (U.currentTimeMillis() - startTime) / 1000 + " sec.");
                         }
                         finally {
                             rwl.writeLock().unlock();
@@ -143,36 +142,43 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        final int k = nextRandom(KEY_RANGE);
+        try {
+            final int k = nextRandom(KEY_RANGE);
 
-        final String[] keys = new String[CNT_KEYS_IN_LINE]; // TODO impl number.
+            final String[] keys = new String[args.keysCount()];
 
-        assert keys.length > 0 : "Count of keys = " + keys.length;
+            assert keys.length > 0 : "Count of keys = " + keys.length;
 
-        for (int i = 0; i < keys.length; i++)
-            keys[i] = "key-" + k + "-" + cfg.memberId() + "-" + i;
+            for (int i = 0; i < keys.length; i++)
+                keys[i] = "key-" + k + "-" + cfg.memberId() + "-" + i;
 
-        for (String key : keys) {
-            rwl.readLock().lock();
+            for (String key : keys) {
+                rwl.readLock().lock();
 
-            try {
-                if (!isValidCacheState)
-                    return isValidCacheState;
+                try {
+                    if (!isValidCacheState)
+                        return isValidCacheState;
 
-                asyncCache.invoke(key, new IncrementCacheEntryProcessor());
-                asyncCache.future().get(args.cacheOperationTimeoutMillis());
+                    asyncCache.invoke(key, new IncrementCacheEntryProcessor());
+                    asyncCache.future().get(args.cacheOperationTimeoutMillis());
 
-                AtomicLong prevValue = map.putIfAbsent(key, new AtomicLong(0));
+                    AtomicLong prevVal = map.putIfAbsent(key, new AtomicLong(0));
 
-                if (prevValue != null)
-                    prevValue.incrementAndGet();
+                    if (prevVal != null)
+                        prevVal.incrementAndGet();
+                }
+                finally {
+                    rwl.readLock().unlock();
+                }
             }
-            finally {
-                rwl.readLock().unlock();
-            }
+
+            return isValidCacheState;
         }
+        catch (Throwable e) {
+            this.e.compareAndSet(null, e);
 
-        return isValidCacheState;
+            throw e;
+        }
     }
 
     /** {@inheritDoc} */

@@ -22,9 +22,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.yardstick.Utils;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -37,6 +42,9 @@ import static org.yardstickframework.BenchmarkUtils.println;
 public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheAbstractBenchmark<K, V> {
     /** Async Cache. */
     protected IgniteCache<K, V> asyncCache;
+
+    /** The first exception in {@link #test(Map)} method. */
+    protected final AtomicReference<Throwable> e = new AtomicReference<>();
 
     /** {@inheritDoc} */
     @Override public void setUp(final BenchmarkConfiguration cfg) throws Exception {
@@ -151,6 +159,49 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
             restarterThread.start();
             threadDumpPrinterThread.start();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void tearDown() throws Exception {
+        Throwable e = this.e.get();
+
+        if (e != null) {
+            final Ignite ignite = ignite();
+
+            ClusterGroup srvs = ignite.cluster().forServers();
+
+            ignite.compute(srvs).broadcast(new ThreadDumpPrinterTask(ignite.cluster().localNode().id(), e));
+        }
+
+        super.tearDown();
+    }
+
+    /**
+     */
+    private static class ThreadDumpPrinterTask implements IgniteRunnable {
+        /** */
+        private static final long serialVersionUID = 0;
+
+        /** */
+        private final UUID id;
+
+        /** */
+        private final Throwable e;
+
+        /**
+         * @param id Benchmark node id.
+         * @param e Exception.
+         */
+        ThreadDumpPrinterTask(UUID id, Throwable e) {
+            this.id = id;
+            this.e = e;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            println("Driver finished with exception [driverNodeId=" + id + ", e=" +  e
+                + "]\nFull thread dump of the current server node:\n" + Utils.threadDump());
         }
     }
 }

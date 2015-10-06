@@ -30,34 +30,41 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 public class IgniteAtomicRetriesFailoverBenchmark extends IgniteFailoverAbstractBenchmark<Integer, String> {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        final int key = nextRandom(args.range());
+        try {
+            final int key = nextRandom(args.range());
 
-        int opNum = nextRandom(4);
+            int opNum = nextRandom(4);
 
-        final int timeout = args.cacheOperationTimeoutMillis();
+            final int timeout = args.cacheOperationTimeoutMillis();
 
-        switch (opNum) {
-            case 0:
-                asyncCache.get(key);
-                asyncCache.future().get(timeout);
-                break;
-            case 1:
-                asyncCache.put(key, String.valueOf(key));
-                asyncCache.future().get(timeout);
-                break;
-            case 2:
-                asyncCache.invoke(key, new TestCacheEntryProcessor());
-                asyncCache.future().get(timeout);
-                break;
-            case 3:
-                asyncCache.remove(key);
-                asyncCache.future().get(timeout);
-                break;
-            default:
-                throw new IllegalStateException("Got opNum = " + opNum);
+            switch (opNum) {
+                case 0:
+                    asyncCache.get(key);
+                    asyncCache.future().get(timeout);
+                    break;
+                case 1:
+                    asyncCache.put(key, String.valueOf(key));
+                    asyncCache.future().get(timeout);
+                    break;
+                case 2:
+                    asyncCache.invoke(key, new TestCacheEntryProcessor());
+                    asyncCache.future().get(timeout);
+                    break;
+                case 3:
+                    asyncCache.remove(key);
+                    asyncCache.future().get(timeout);
+                    break;
+                default:
+                    throw new IllegalStateException("Got opNum = " + opNum);
+            }
+
+            return true;
         }
+        catch (Throwable e) {
+            this.e.compareAndSet(null, e);
 
-        return true;
+            throw e;
+        }
     }
 
     /** {@inheritDoc} */
