@@ -19,13 +19,13 @@
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Resource;
@@ -907,7 +907,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastTask()
         {
-            ICollection<Guid> res = _grid1.GetCompute().ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null);
+            var res = _grid1.GetCompute().ExecuteJavaTask<ICollection>(BroadcastTask, null).OfType<Guid>().ToList();
 
             Assert.AreEqual(3, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
@@ -918,7 +918,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(2, prj.GetNodes().Count);
 
-            ICollection<Guid> filteredRes = prj.GetCompute().ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null);
+            var filteredRes = prj.GetCompute().ExecuteJavaTask<ICollection>(BroadcastTask, null).OfType<Guid>().ToList();
 
             Assert.AreEqual(2, filteredRes.Count);
             Assert.IsTrue(filteredRes.Contains(res.ElementAt(0)));
