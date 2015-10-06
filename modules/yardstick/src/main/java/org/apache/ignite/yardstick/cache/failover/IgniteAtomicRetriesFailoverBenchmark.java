@@ -27,25 +27,31 @@ import org.apache.ignite.cache.CacheEntryProcessor;
  * Atomic retries failover benchmark. Client generates continuous load to the cluster (random get, put, invoke, remove
  * operations)
  */
-public class IgniteAtomicRetriesFailoverBenchmark extends IgniteFailoverAbstractBenchmark {
+public class IgniteAtomicRetriesFailoverBenchmark extends IgniteFailoverAbstractBenchmark<Integer, String> {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         final int key = nextRandom(args.range());
 
         int opNum = nextRandom(4);
 
+        final int timeout = args.cacheOperationTimeoutMillis();
+
         switch (opNum) {
             case 0:
-                cache.get(key);
+                asyncCache.get(key);
+                asyncCache.future().get(timeout);
                 break;
             case 1:
-                cache.put(key, String.valueOf(key));
+                asyncCache.put(key, String.valueOf(key));
+                asyncCache.future().get(timeout);
                 break;
             case 2:
-                cache.invoke(key, new TestCacheEntryProcessor());
+                asyncCache.invoke(key, new TestCacheEntryProcessor());
+                asyncCache.future().get(timeout);
                 break;
             case 3:
-                cache.remove(key);
+                asyncCache.remove(key);
+                asyncCache.future().get(timeout);
                 break;
             default:
                 throw new IllegalStateException("Got opNum = " + opNum);
@@ -55,18 +61,18 @@ public class IgniteAtomicRetriesFailoverBenchmark extends IgniteFailoverAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCache<Integer, Object> cache() {
+    @Override protected IgniteCache<Integer, String> cache() {
         return ignite().cache("atomic");
     }
 
     /**
      */
-    private static class TestCacheEntryProcessor implements CacheEntryProcessor<Integer, Object, Object> {
+    private static class TestCacheEntryProcessor implements CacheEntryProcessor<Integer, String, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0;
 
         /** {@inheritDoc} */
-        @Override public Object process(MutableEntry<Integer, Object> entry,
+        @Override public String process(MutableEntry<Integer, String> entry,
             Object... arguments) throws EntryProcessorException {
             return "key";
         }

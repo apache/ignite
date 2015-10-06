@@ -35,9 +35,14 @@ import static org.yardstickframework.BenchmarkUtils.println;
  * Ignite benchmark that performs long running failover tasks.
  */
 public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheAbstractBenchmark<K, V> {
+    /** Async Cache. */
+    protected IgniteCache<K, V> asyncCache;
+
     /** {@inheritDoc} */
     @Override public void setUp(final BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
+
+        asyncCache = cache.withAsync();
 
         if (cfg.memberId() == 0) {
             Thread restarterThread = new Thread(new Runnable() {

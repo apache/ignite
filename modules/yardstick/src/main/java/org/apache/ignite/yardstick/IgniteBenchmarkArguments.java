@@ -128,6 +128,10 @@ public class IgniteBenchmarkArguments {
     @Parameter(names = {"-keysCnt", "--keysCount"}, description = "Count of keys")
     private int keysCnt = 5;
 
+    /** */
+    @Parameter(names = {"-cot", "--cacheOperationTimeout"}, description = "Max timeout for cache operations in seconds")
+    private int cacheOpTimeout = 30;
+
     /**
      * @return JDBC url.
      */
@@ -311,11 +315,18 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
+     * @return Cache operation timeout in milliseconds.
+     */
+    public int cacheOperationTimeoutMillis() {
+        return cacheOpTimeout * 1000;
+    }
+
+    /**
      * @return Description.
      */
     public String description() {
         return "-nn=" + nodes + "-b=" + backups + "-sm=" + syncMode + "-cl=" + clientOnly + "-nc=" + nearCacheFlag +
-            (orderMode == null ? "" : "-wom=" + orderMode) + "-txc=" + txConcurrency + "-rd=" + restartDelay + 
+            (orderMode == null ? "" : "-wom=" + orderMode) + "-txc=" + txConcurrency + "-rd=" + restartDelay +
             "-rs=" + restartSleep;
     }
 

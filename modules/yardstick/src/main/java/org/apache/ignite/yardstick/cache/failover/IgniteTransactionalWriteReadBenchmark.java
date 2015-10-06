@@ -51,8 +51,14 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
             @Override public Boolean call() throws Exception {
                 Map<String, Long> map = new HashMap<>();
 
-                for (String key : keys)
-                    map.put(key, cache.get(key));
+                final int timeout = args.cacheOperationTimeoutMillis();
+
+                for (String key : keys) {
+                    asyncCache.get(key);
+                    Long val = asyncCache.<Long>future().get(timeout);
+
+                    map.put(key, val);
+                }
 
                 Set<Long> values = new HashSet<>(map.values());
 
@@ -66,7 +72,8 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
                         for (int i = 0; i < args.keysCount(); i++) {
                             String key = "key-" + k + "-" + i;
 
-                            Long val = cache.get(key);
+                            asyncCache.get(key);
+                            Long val = asyncCache.<Long>future().get(timeout);
 
                             if (val != null)
                                 println(cfg, "Entry [key=" + key + ", val=" + val);
@@ -82,8 +89,10 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
 
                 final Long newVal = oldVal == null ? 0 : oldVal + 1;
 
-                for (String key : keys)
-                    cache.put(key, newVal);
+                for (String key : keys) {
+                    asyncCache.put(key, newVal);
+                    asyncCache.future().get(timeout);
+                }
 
                 return true;
             }

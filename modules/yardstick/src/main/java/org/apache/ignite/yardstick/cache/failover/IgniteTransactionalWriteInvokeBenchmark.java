@@ -56,14 +56,23 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
 
         return doInTransaction(ignite(), new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
+                final int timeout = args.cacheOperationTimeoutMillis();
+
                 switch (scenario) {
                     case 0: // Read scenario.
                         Map<String, Long> map = new HashMap<>();
 
-                        map.put(masterKey, cache.get(masterKey));
+                        asyncCache.get(masterKey);
+                        Long cacheVal = asyncCache.<Long>future().get(timeout);
 
-                        for (String key : keys)
-                            map.put(key, cache.get(key));
+                        map.put(masterKey, cacheVal);
+
+                        for (String key : keys) {
+                            asyncCache.get(key);
+                            cacheVal = asyncCache.<Long>future().get(timeout);
+
+                            map.put(key, cacheVal);
+                        }
 
                         Set<Long> values = new HashSet<>(map.values());
 
@@ -77,7 +86,8 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
                                 for (int i = 0; i < args.keysCount(); i++) {
                                     String key = "key-" + k + "-" + i;
 
-                                    Long val = cache.get(key);
+                                    asyncCache.get(key);
+                                    Long val = asyncCache.<Long>future().get(timeout);
 
                                     if (val != null)
                                         println(cfg, "Entry [key=" + key + ", val=" + val);
@@ -91,12 +101,16 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
 
                         break;
                     case 1: // Invoke scenario.
-                        Long val = cache.get(masterKey);
+                        asyncCache.get(masterKey);
+                        Long val = asyncCache.<Long>future().get(timeout);
 
-                        cache.put(masterKey, val == null ? 0 : val + 1);
+                        asyncCache.put(masterKey, val == null ? 0 : val + 1);
+                        asyncCache.future().get(timeout);
 
-                        for (String key : keys)
-                            cache.invoke(key, new IncrementCacheEntryProcessor());
+                        for (String key : keys) {
+                            asyncCache.invoke(key, new IncrementCacheEntryProcessor());
+                            asyncCache.future().get(timeout);
+                        }
 
                         break;
                 }

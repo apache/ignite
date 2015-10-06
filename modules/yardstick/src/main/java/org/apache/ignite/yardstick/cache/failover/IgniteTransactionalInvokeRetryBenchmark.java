@@ -61,6 +61,8 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
         Thread thread = new Thread(new Runnable() {
             @Override public void run() {
                 try {
+                    final int timeout = args.cacheOperationTimeoutMillis();
+
                     while (!Thread.currentThread().isInterrupted()) {
                         Thread.sleep(args.cacheConsistencyCheckingPeriod() * 1000);
 
@@ -78,7 +80,8 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                 for (int i = 0; i < CNT_KEYS_IN_LINE; i++) {
                                     String key = "key-" + k + "-" + cfg.memberId() + "-" + i;
 
-                                    Long cacheVal = cache.get(key);
+                                    asyncCache.get(key);
+                                    Long cacheVal = asyncCache.<Long>future().get(timeout);
 
                                     AtomicLong aVal = map.get(key);
                                     Long mapVal = aVal != null ? aVal.get() : null;
@@ -98,7 +101,8 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                             for (int i2 = 0; i2 < CNT_KEYS_IN_LINE; i2++) {
                                                 String key2 = "key-" + k2 + "-" + cfg.memberId() + "-" + i2;
 
-                                                Long val = cache.get(key2);
+                                                asyncCache.get(key2);
+                                                Long val = asyncCache.<Long>future().get(timeout);
 
                                                 if (val != null)
                                                     println(cfg, "Entry [key=" + key2 + ", val=" + val);
@@ -119,9 +123,15 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                         }
                     }
                 }
-                catch (InterruptedException e) {
+                catch (Throwable e) {
                     println("[CACHE-VALIDATOR] Got exception: " + e);
+
                     e.printStackTrace();
+
+                    println(Utils.threadDump());
+
+                    if (e instanceof Error)
+                        throw (Error)e;
                 }
             }
         }, "cache-validator");
@@ -149,7 +159,8 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                 if (!isValidCacheState)
                     return isValidCacheState;
 
-                cache.invoke(key, new IncrementCacheEntryProcessor());
+                asyncCache.invoke(key, new IncrementCacheEntryProcessor());
+                asyncCache.future().get(args.cacheOperationTimeoutMillis());
 
                 AtomicLong prevValue = map.putIfAbsent(key, new AtomicLong(0));
 
