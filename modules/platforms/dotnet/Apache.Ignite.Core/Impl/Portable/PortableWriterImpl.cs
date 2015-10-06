@@ -975,7 +975,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 int pos = SkipFieldLength();
 
                 _stream.WriteByte(PU.TypeArrayEnum);
-                PortableUtils.WriteArray(val, this, true);
+                PortableUtils.WriteArray(val, this);
 
                 WriteFieldLength(_stream, pos);
             }
@@ -993,7 +993,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             else
             {
                 _stream.WriteByte(PU.TypeArrayEnum);
-                PortableUtils.WriteArray(val, this, true);
+                PortableUtils.WriteArray(val, this);
             }
         }
 
@@ -1046,7 +1046,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 int pos = SkipFieldLength();
 
                 _stream.WriteByte(PU.TypeArray);
-                PortableUtils.WriteArray(val, this, true);
+                PortableUtils.WriteArray(val, this);
 
                 WriteFieldLength(_stream, pos);
             }
@@ -1064,7 +1064,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             else
             {
                 _stream.WriteByte(PU.TypeArray);
-                PortableUtils.WriteArray(val, this, true);
+                PortableUtils.WriteArray(val, this);
             }
         }
 

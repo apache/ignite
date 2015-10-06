@@ -1134,19 +1134,17 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             return vals;
         }
-        
+
         /// <summary>
         /// Write array.
         /// </summary>
         /// <param name="val">Array.</param>
         /// <param name="ctx">Write context.</param>
-        /// <param name="typed">Typed flag.</param>
-        public static void WriteArray(Array val, PortableWriterImpl ctx, bool typed)
+        public static void WriteArray(Array val, PortableWriterImpl ctx)
         {
             IPortableStream stream = ctx.Stream;
 
-            if (typed)
-                stream.WriteInt(ObjTypeId);
+            stream.WriteInt(ObjTypeId);
 
             stream.WriteInt(val.Length);
 
@@ -1158,10 +1156,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Read array.
         /// </summary>
         /// <param name="ctx">Read context.</param>
-        /// <param name="typed">Typed flag.</param>
         /// <param name="elementType">Type of the element.</param>
         /// <returns>Array.</returns>
-        public static object ReadArray(PortableReaderImpl ctx, bool typed, Type elementType)
+        public static object ReadArray(PortableReaderImpl ctx, Type elementType)
         {
             Func<PortableReaderImpl, bool, object> result;
 
@@ -1171,7 +1168,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         MtdhReadGenericArray.MakeGenericMethod(t),
                         new[] {typeof (PortableReaderImpl), typeof (bool)}, new[] {false, false, true}));
 
-            return result(ctx, typed);
+            return result(ctx, true);
         }
 
         /// <summary>

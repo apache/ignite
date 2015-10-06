@@ -584,7 +584,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayEnum);
 
-            PortableUtils.WriteArray((Array)obj, ctx, true);
+            PortableUtils.WriteArray((Array)obj, ctx);
         }
 
         /**
@@ -594,7 +594,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArray);
 
-            PortableUtils.WriteArray((Array)obj, ctx, true);
+            PortableUtils.WriteArray((Array)obj, ctx);
         }
 
         /**
@@ -700,7 +700,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static object ReadEnumArray(PortableReaderImpl ctx, Type type)
         {
-            return PortableUtils.ReadArray(ctx, true, type.GetElementType());
+            return PortableUtils.ReadArray(ctx, type.GetElementType());
         }
 
         /**
@@ -710,7 +710,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             var elemType = type.IsArray ? type.GetElementType() : typeof(object);
 
-            return PortableUtils.ReadArray(ctx, true, elemType);
+            return PortableUtils.ReadArray(ctx, elemType);
         }
 
         /**
