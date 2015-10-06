@@ -129,6 +129,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Type: object array. */
         public const byte TypeArray = 23;
 
+        /** Type: generic array (with element type information). */
+        public const byte TypeGenericArray = 95;
+
         /** Type: collection. */
         public const byte TypeCollection = 24;
 
@@ -195,9 +198,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Type: entry predicate holder. */
         public const byte TypeCacheEntryPredicateHolder = 90;
         
-        /** Type: product license. */
-        public const byte TypeProductLicense = 78;
-
         /** Type: message filter holder. */
         public const byte TypeMessageFilterHolder = 92;
 
@@ -1150,6 +1150,48 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             for (int i = 0; i < val.Length; i++)
                 ctx.Write(val.GetValue(i));
+        }
+
+        /// <summary>
+        /// Write generic array (with element type information).
+        /// </summary>
+        /// <param name="val">Array.</param>
+        /// <param name="ctx">Write context.</param>
+        public static void WriteGenericArray(Array val, PortableWriterImpl ctx)
+        {
+            var stream = ctx.Stream;
+
+            var elementType = val.GetType().GetElementType();
+
+            WriteType(elementType, ctx);
+
+            stream.WriteInt(val.Length);
+
+            for (int i = 0; i < val.Length; i++)
+                ctx.Write(val.GetValue(i));
+        }
+
+        public static void WriteType(Type type, PortableWriterImpl writer)
+        {
+            Debug.Assert(type != null);
+            Debug.Assert(writer != null);
+
+            var desc = writer.Marshaller.GetDescriptor(type);
+
+            if (desc != null)
+            {
+                writer.WriteBoolean(true);  // known type
+                writer.WriteInt(desc.TypeId);
+            }
+            else
+            {
+                writer.WriteBoolean(false);  // unknown type
+
+                var typeName = type.AssemblyQualifiedName;
+
+                writer.WriteInt(StringHashCode(typeName));
+                writer.WriteString(typeName);
+            }
         }
 
         /// <summary>

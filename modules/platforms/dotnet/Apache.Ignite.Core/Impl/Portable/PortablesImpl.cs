@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             IgniteArgumentCheck.NotNull(type, "type");
 
-            IPortableTypeDescriptor desc = _marsh.Descriptor(type);
+            IPortableTypeDescriptor desc = _marsh.GetDescriptor(type);
 
             if (desc == null)
                 throw new IgniteException("Type is not portable (add it to PortableConfiguration): " + 
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
-            IPortableTypeDescriptor desc = _marsh.Descriptor(typeName);
+            IPortableTypeDescriptor desc = _marsh.GetDescriptor(typeName);
             
             return Builder0(null, PortableFromDescriptor(desc), desc);
         }
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (obj0 == null)
                 throw new ArgumentException("Unsupported object type: " + obj.GetType());
 
-            IPortableTypeDescriptor desc = _marsh.Descriptor(true, obj0.TypeId);
+            IPortableTypeDescriptor desc = _marsh.GetDescriptor(true, obj0.TypeId);
             
             return Builder0(null, obj0, desc);
         }
@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
-            return Marshaller.Descriptor(typeName).TypeId;
+            return Marshaller.GetDescriptor(typeName).TypeId;
         }
 
         /** <inheritDoc /> */
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             IgniteArgumentCheck.NotNull(type, "type");
 
-            var desc = Marshaller.Descriptor(type);
+            var desc = Marshaller.GetDescriptor(type);
 
             return desc == null ? null : Marshaller.Metadata(desc.TypeId);
         }

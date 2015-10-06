@@ -210,7 +210,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Child builder.</returns>
         public PortableBuilderImpl Child(PortableUserObject obj)
         {
-            var desc = _portables.Marshaller.Descriptor(true, obj.TypeId);
+            var desc = _portables.Marshaller.GetDescriptor(true, obj.TypeId);
 
             return new PortableBuilderImpl(_portables, null, obj, desc);
         }

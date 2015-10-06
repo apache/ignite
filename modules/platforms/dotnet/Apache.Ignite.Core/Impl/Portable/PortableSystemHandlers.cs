@@ -168,17 +168,13 @@ namespace Apache.Ignite.Core.Impl.Portable
             // Have we ever met this type?
             if (writeHandlers0 != null && writeHandlers0.TryGetValue(type, out res))
                 return res;
-            else
-            {
-                // Determine write handler for type and add it.
-                res = FindWriteHandler(type);
+            // Determine write handler for type and add it.
+            res = FindWriteHandler(type);
 
-                if (res != null)
-                    AddWriteHandler(type, res);
+            if (res != null)
+                AddWriteHandler(type, res);
 
-                return res;
-            }
-
+            return res;
         }
 
         /// <summary>
@@ -191,21 +187,21 @@ namespace Apache.Ignite.Core.Impl.Portable
             // 1. Well-known types.
             if (type == typeof (string))
                 return WriteString;
-            else if (type == typeof(decimal))
+            if (type == typeof(decimal))
                 return WriteDecimal;
-            else if (type == typeof(DateTime))
+            if (type == typeof(DateTime))
                 return WriteDate;
-            else if (type == typeof(Guid))
+            if (type == typeof(Guid))
                 return WriteGuid;
-            else if (type == typeof (PortableUserObject))
+            if (type == typeof (PortableUserObject))
                 return WritePortable;
-            else if (type == typeof (ArrayList))
+            if (type == typeof (ArrayList))
                 return WriteArrayList;
-            else if (type == typeof(Hashtable))
+            if (type == typeof(Hashtable))
                 return WriteHashtable;
-            else if (type == typeof(DictionaryEntry))
+            if (type == typeof(DictionaryEntry))
                 return WriteMapEntry;
-            else if (type.IsArray)
+            if (type.IsArray)
             {
                 // We know how to write any array type.
                 Type elemType = type.GetElementType();
@@ -213,62 +209,64 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Primitives.
                 if (elemType == typeof (bool))
                     return WriteBoolArray;
-                else if (elemType == typeof(byte))
+                if (elemType == typeof(byte))
                     return WriteByteArray;
-                else if (elemType == typeof(short))
+                if (elemType == typeof(short))
                     return WriteShortArray;
-                else if (elemType == typeof(char))
+                if (elemType == typeof(char))
                     return WriteCharArray;
-                else if (elemType == typeof(int))
+                if (elemType == typeof(int))
                     return WriteIntArray;
-                else if (elemType == typeof(long))
+                if (elemType == typeof(long))
                     return WriteLongArray;
-                else if (elemType == typeof(float))
+                if (elemType == typeof(float))
                     return WriteFloatArray;
-                else if (elemType == typeof(double))
+                if (elemType == typeof(double))
                     return WriteDoubleArray;
                 // Non-CLS primitives.
-                else if (elemType == typeof(sbyte))
+                if (elemType == typeof(sbyte))
                     return WriteSbyteArray;
-                else if (elemType == typeof(ushort))
+                if (elemType == typeof(ushort))
                     return WriteUshortArray;
-                else if (elemType == typeof(uint))
+                if (elemType == typeof(uint))
                     return WriteUintArray;
-                else if (elemType == typeof(ulong))
+                if (elemType == typeof(ulong))
                     return WriteUlongArray;
                 // Special types.
-                else if (elemType == typeof (decimal))
+                if (elemType == typeof (decimal))
                     return WriteDecimalArray;
-                else if (elemType == typeof(string))
+                if (elemType == typeof(string))
                     return WriteStringArray;
 //                else if (elemType == typeof(DateTime))
 //                    return WriteDateArray;
-                else if (elemType == typeof(DateTime?))
+                if (elemType == typeof(DateTime?))
                     return WriteNullableDateArray;
 //                else if (elemType == typeof(Guid))
 //                    return WriteGuidArray;
-                else if (elemType == typeof(Guid?))
+                if (elemType == typeof(Guid?))
                     return WriteNullableGuidArray;
                 // Enums.
                 if (elemType.IsEnum)
                     return WriteEnumArray;
                 
-                // Regular array.
-                return WriteArray;
+                // Object array.
+                if (elemType == typeof (object))
+                    return WriteArray;
+                
+                // Generic array.
+                return WriteGenericArray;
             }
-            else if (type.IsEnum)
+            if (type.IsEnum)
                 // We know how to write enums.
                 return WriteEnum;
-            else
-            {
-                // We know how to write collections.
-                PortableCollectionInfo info = PortableCollectionInfo.Info(type);
+            
+            // We know how to write collections.
+            PortableCollectionInfo info = PortableCollectionInfo.Info(type);
 
-                if (info.IsAny)
-                    return info.WriteHandler;
+            if (info.IsAny)
+                return info.WriteHandler;
 
-                return null;
-            }
+            return null;
         }
 
         /// <summary>
@@ -595,6 +593,16 @@ namespace Apache.Ignite.Core.Impl.Portable
             ctx.Stream.WriteByte(PortableUtils.TypeArray);
 
             PortableUtils.WriteArray((Array)obj, ctx);
+        }
+
+        /// <summary>
+        /// Writes generic array (not compatible with Java).
+        /// </summary>
+        private static void WriteGenericArray(PortableWriterImpl ctx, object obj)
+        {
+            ctx.Stream.WriteByte(PortableUtils.TypeGenericArray);
+
+            PortableUtils.WriteGenericArray((Array)obj, ctx);
         }
 
         /**

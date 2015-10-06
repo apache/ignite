@@ -1277,7 +1277,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 return;
 
             // Suppose that we faced normal object and perform descriptor lookup.
-            IPortableTypeDescriptor desc = _marsh.Descriptor(type);
+            IPortableTypeDescriptor desc = _marsh.GetDescriptor(type);
 
             if (desc != null)
             {
@@ -1579,7 +1579,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Collections, Enums and non-primitive arrays do not have descriptors
                 // and this is fine here because we cannot know whether their members
                 // are portable.
-                return _marsh.Descriptor(type) != null || PortableSystemHandlers.GetWriteHandler(type) != null;
+                return _marsh.GetDescriptor(type) != null || PortableSystemHandlers.GetWriteHandler(type) != null;
             }
 
             return true;
