@@ -66,10 +66,11 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
 
                         rwl.writeLock().lock();
 
-                        println("[CACHE-VALIDATOR] Start cache validation.");
-                        long startTime = U.currentTimeMillis();
-
                         try {
+                            println("[CACHE-VALIDATOR] Start cache validation.");
+
+                            long startTime = U.currentTimeMillis();
+
                             for (int k = 0; k < KEY_RANGE; k++) {
                                 if (k % 1000 == 0)
                                     println("[CACHE-VALIDATOR] Start validation for keys like 'key-" + k + "-*'");
@@ -110,12 +111,12 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                     }
                                 }
                             }
+
+                            println("[CACHE-VALIDATOR] Cache validation successfully finished in "+ (U.currentTimeMillis() - startTime)/1000 +" sec.");
                         }
                         finally {
                             rwl.writeLock().unlock();
                         }
-
-                        println("[CACHE-VALIDATOR] Cache validation successfully finished in "+ (U.currentTimeMillis() - startTime)/1000 +" sec.");
                     }
                 }
                 catch (InterruptedException e) {
