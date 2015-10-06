@@ -546,22 +546,13 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestGenericCollections()
         {
-            var list = new List<string>();
+            var list = new List<string> {"1"};
 
-            list.Add("1");
-
-            byte[] data = _marsh.Marshal(list);
+            var data = _marsh.Marshal(list);
 
             var newObjList = _marsh.Unmarshal<IList<string>>(data);
 
-            Assert.NotNull(newObjList);
-
-            ICollection<string> newList = new List<string>();
-
-            foreach (object obj in newObjList)
-                newList.Add((string)obj);
-
-            CollectionAssert.AreEquivalent(list, newList);
+            CollectionAssert.AreEquivalent(list, newObjList);
         }
 
         /// <summary>
