@@ -28,6 +28,7 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.yardstick.Utils;
 import org.yardstickframework.BenchmarkConfiguration;
 
@@ -66,6 +67,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                         rwl.writeLock().lock();
 
                         println("[CACHE-VALIDATOR] Start cache validation.");
+                        long startTime = U.currentTimeMillis();
 
                         try {
                             for (int k = 0; k < KEY_RANGE; k++) {
@@ -76,7 +78,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                     String key = "key-" + k + "-" + cfg.memberId() + "-" + i;
 
                                     Long cacheVal = cache.get(key);
-                                    
+
                                     AtomicLong aVal = map.get(key);
                                     Long mapVal = aVal != null ? aVal.get() : null;
 
@@ -112,6 +114,8 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                         finally {
                             rwl.writeLock().unlock();
                         }
+
+                        println("[CACHE-VALIDATOR] Cache validation successfully finished in "+ (U.currentTimeMillis() - startTime)/1000 +" sec.");
                     }
                 }
                 catch (InterruptedException e) {
