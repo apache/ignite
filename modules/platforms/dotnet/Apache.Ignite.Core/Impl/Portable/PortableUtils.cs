@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
+    using System.Linq;
     using System.Reflection;
     using System.Runtime.Serialization.Formatters.Binary;
     using System.Text;
@@ -293,6 +294,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Method: ReadGenericCollection. */
         public static readonly MethodInfo MtdhReadGenericCollection =
             typeof(PortableUtils).GetMethod("ReadGenericCollection", _bindFlagsStatic);
+
+        /** Method: ReadGenericCollection0. */
+        public static readonly MethodInfo MtdhReadGenericCollection0 =
+            typeof(PortableUtils).GetMethod("ReadGenericCollection0", _bindFlagsStatic);
 
         /** Method: WriteGenericDictionary. */
         public static readonly MethodInfo MtdhWriteGenericDictionary =
@@ -1286,13 +1291,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             var typeNameHash = reader.ReadInt();
+            var typeName = reader.ReadString();
 
-            return TypeNameMap.GetOrAdd(typeNameHash, x =>
-            {
-                var typeName = reader.ReadString();
-
-                return Type.GetType(typeName, true);
-            });
+            return TypeNameMap.GetOrAdd(typeNameHash, x => Type.GetType(typeName, true));
         }
 
         /**
@@ -1395,46 +1396,62 @@ namespace Apache.Ignite.Core.Impl.Portable
         public static object ReadTypedCollection(PortableReaderImpl reader)
         {
             var collectionType = ReadType(reader);
-            
-            var elementType = collectionType.GetElementType();
+
+            var elementType = collectionType.GetGenericArguments().Single();
 
             var factoryType = typeof (PortableGenericCollectionFactory<>).MakeGenericType(elementType);
 
-            var factory = DelegateConverter.CompileCtor<Func<int, object>>(collectionType, new[] {typeof (int)});
-
-            var readMethod = MtdhReadGenericCollection.MakeGenericMethod(elementType);
+            var readMethod = MtdhReadGenericCollection0.MakeGenericMethod(elementType);
 
             var readerFunc =
-                DelegateConverter.CompileFunc<Func<PortableReaderImpl, object, object>>(typeof (PortableUtils),
-                    readMethod, new[] {typeof (PortableReaderImpl), factoryType}, new[] {false, true, true});
+                DelegateConverter.CompileFunc<Func<PortableReaderImpl, object, Type, object>>(typeof (PortableUtils),
+                    readMethod, new[] {typeof (PortableReaderImpl), factoryType, typeof(Type)}, new[] {false, true, false, true});
 
-            return readerFunc(reader, factory);
+            return readerFunc(reader, null, collectionType);
         }
 
         /// <summary>
         /// Reads generic collection in typed context.
         /// </summary>
-        public static ICollection<T> ReadGenericCollection<T>(PortableReaderImpl ctx,
+        public static ICollection<T> ReadGenericCollection<T>(PortableReaderImpl reader,
             PortableGenericCollectionFactory<T> factory)
         {
-            var collectionType = ReadType(ctx);
+            if (factory != null)
+            {
+                // Ignore type information because we have factory and do not need it
+                var collectionType = ReadType(reader);  
 
-            // TODO: Check factory for null
-            return ReadGenericCollection0(ctx, factory);
+                return ReadGenericCollection0(reader, factory, collectionType);
+            }
+            
+            // Supplied T is not necessary original element type, so we have to change generic context
+            return (ICollection<T>) ReadTypedCollection(reader);
         }
 
         /// <summary>
         /// Reads generic collection without type information.
         /// </summary>
         private static ICollection<T> ReadGenericCollection0<T>(PortableReaderImpl ctx, 
-            PortableGenericCollectionFactory<T> factory)
+            PortableGenericCollectionFactory<T> factory, Type collectionType)
         {
             Debug.Assert(ctx != null);
-            Debug.Assert(factory != null);
 
             int len = ctx.Stream.ReadInt();
 
-            var res = factory.Invoke(len);
+            ICollection<T> res;
+
+            if (factory != null)
+            {
+                res = factory.Invoke(len);
+            }
+            else
+            {
+                // TODO: cache
+                var ctor = DelegateConverter.CompileCtor<Func<object, ICollection<T>>>(collectionType,
+                    new[] {typeof (int)}, false);
+
+                res = ctor(len);
+            }
 
             for (int i = 0; i < len; i++)
                 res.Add(ctx.Deserialize<T>());
