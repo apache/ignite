@@ -1571,17 +1571,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * @param c1 First column.
+     * @param c2 Second column.
+     * @return {@code true} If they are the same.
+     */
+    private static boolean equal(IndexColumn c1, IndexColumn c2) {
+        return c1.column.getColumnId() == c2.column.getColumnId();
+    }
+
+    /**
      * @param cols Columns list.
      * @param col Column to find.
      * @return {@code true} If found.
      */
     private static boolean containsColumn(List<IndexColumn> cols, IndexColumn col) {
-        int colId = col.column.getColumnId();
-
         for (int i = cols.size() - 1; i >= 0; i--) {
-            IndexColumn c = cols.get(i);
-
-            if (c.column.getColumnId() == colId)
+            if (equal(cols.get(i), col))
                 return true;
         }
 
@@ -1876,6 +1881,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             IndexColumn keyCol = tbl.indexColumn(KEY_COL, SortOrder.ASCENDING);
             IndexColumn affCol = tbl.getAffinityKeyColumn();
 
+            if (affCol != null && equal(affCol, keyCol))
+                affCol = null;
+
             // Add primary key index.
             idxs.add(new GridH2TreeIndex("_key_PK", tbl, true,
                 treeIndexColumns(new ArrayList<IndexColumn>(2), keyCol, affCol)));
@@ -1888,6 +1896,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     throw new IgniteException(e1);
                 }
             }
+
+            boolean affIdxFound = false;
 
             for (Map.Entry<String, GridQueryIndexDescriptor> e : type.indexes().entrySet()) {
                 String name = e.getKey();
@@ -1916,6 +1926,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
 
                     if (idx.type() == SORTED) {
+                        // We don't care about number of fields in affinity index, just affinity key must be the first.
+                        affIdxFound |= affCol != null && equal(cols.get(0), affCol);
+
                         cols = treeIndexColumns(cols, keyCol, affCol);
 
                         idxs.add(new GridH2TreeIndex(name, tbl, false, cols));
@@ -1925,6 +1938,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     else
                         throw new IllegalStateException("Index type: " + idx.type());
                 }
+            }
+
+            // Add explicit affinity key index if nothing alike was found.
+            if (affCol != null && !affIdxFound) {
+                idxs.add(new GridH2TreeIndex("AFFINITY_KEY", tbl, true,
+                    treeIndexColumns(new ArrayList<IndexColumn>(2), affCol, keyCol)));
             }
 
             return idxs;
