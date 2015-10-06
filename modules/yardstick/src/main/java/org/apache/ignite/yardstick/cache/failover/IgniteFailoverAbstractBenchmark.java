@@ -155,9 +155,9 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
             }, "thread-dump-printer");
 
             restarterThread.setDaemon(true);
-            threadDumpPrinterThread.setDaemon(true);
-
             restarterThread.start();
+
+            threadDumpPrinterThread.setDaemon(true);
             threadDumpPrinterThread.start();
         }
     }
