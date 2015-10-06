@@ -1249,7 +1249,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             Debug.Assert(type != null);
             Debug.Assert(writer != null);
 
-            type = ReplaceTypesRecursive(type, typeof (IPortableBuilder), type = typeof (IPortableObject));
+            type = ReplaceTypesRecursive(type, typeof (IPortableBuilder), typeof (IPortableObject));
 
             var desc = writer.Marshaller.GetDescriptor(type);
 
