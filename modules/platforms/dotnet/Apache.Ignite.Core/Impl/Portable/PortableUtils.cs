@@ -1425,6 +1425,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             var collectionType = ReadType(reader);
 
+            var colInfo = PortableCollectionInfo.GetInstance(collectionType);
+
             var elementType = collectionType.GetGenericArguments().Single();
 
             // TODO: Cache
@@ -1433,10 +1435,10 @@ namespace Apache.Ignite.Core.Impl.Portable
             var readMethod = MtdhReadGenericCollection0.MakeGenericMethod(elementType);
 
             var readerFunc =
-                DelegateConverter.CompileFunc<Func<PortableReaderImpl, object, Type, object>>(typeof (PortableUtils),
-                    readMethod, new[] {typeof (PortableReaderImpl), factoryType, typeof(Type)}, new[] {false, true, false, true});
+                DelegateConverter.CompileFunc<Func<PortableReaderImpl, object, PortableCollectionInfo, object>>(typeof(PortableUtils),
+                    readMethod, new[] { typeof(PortableReaderImpl), factoryType, typeof(PortableCollectionInfo) }, new[] { false, true, false, true });
 
-            return readerFunc(reader, null, collectionType);
+            return readerFunc(reader, null, colInfo);
         }
 
         /// <summary>
