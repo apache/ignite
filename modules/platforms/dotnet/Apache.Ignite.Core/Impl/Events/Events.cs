@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Impl.Events
         public IClusterGroup ClusterGroup { get; private set; }
 
         /** <inheritDoc /> */
-        public virtual List<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, params int[] types)
+        public virtual ICollection<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, params int[] types)
             where T : IEvent
         {
             IgniteArgumentCheck.NotNull(filter, "filter");
@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
-        public List<IEvent> LocalQuery(params int[] types)
+        public ICollection<IEvent> LocalQuery(params int[] types)
         {
             return DoOutInOp((int) Op.LocalQuery,
                 writer => WriteEventTypes(types, writer),
@@ -254,7 +254,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
-        public int[] GetEnabledEvents()
+        public ICollection<int> GetEnabledEvents()
         {
             return DoInOp((int)Op.GetEnabledEvents, reader => ReadEventTypes(reader));
         }
