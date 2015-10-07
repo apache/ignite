@@ -107,23 +107,29 @@ namespace Apache.Ignite.Core.Impl.Portable
             return None;
         }
 
+        /// <summary>
+        /// Gets the generic collection information.
+        /// </summary>
+        /// <param name="type">Original type.</param>
+        /// <param name="genTyp">Generic collection type.</param>
         private static PortableCollectionInfo GetGenericCollectionInfo(Type type, Type genTyp)
         {
-            MethodInfo writeMthd =
-                PortableUtils.MtdhWriteGenericCollection.MakeGenericMethod(genTyp.GetGenericArguments());
-            MethodInfo readMthd =
-                PortableUtils.MtdhReadGenericCollection.MakeGenericMethod(genTyp.GetGenericArguments());
+            var writeMthd = PortableUtils.MtdhWriteGenericCollection.MakeGenericMethod(genTyp.GetGenericArguments());
+            var readMthd = PortableUtils.MtdhReadGenericCollection.MakeGenericMethod(genTyp.GetGenericArguments());
 
             return new PortableCollectionInfo(type, FlagGenericCollection,
                 PortableSystemHandlers.WriteHndGenericCollection, writeMthd, readMthd);
         }
 
+        /// <summary>
+        /// Gets the generic dictionary information.
+        /// </summary>
+        /// <param name="type">Original type.</param>
+        /// <param name="genTyp">Generic collection type.</param>
         private static PortableCollectionInfo GetGenericDictionaryInfo(Type type, Type genTyp)
         {
-            MethodInfo writeMthd =
-                PortableUtils.MtdhWriteGenericDictionary.MakeGenericMethod(genTyp.GetGenericArguments());
-            MethodInfo readMthd =
-                PortableUtils.MtdhReadGenericDictionary.MakeGenericMethod(genTyp.GetGenericArguments());
+            var writeMthd = PortableUtils.MtdhWriteGenericDictionary.MakeGenericMethod(genTyp.GetGenericArguments());
+            var readMthd = PortableUtils.MtdhReadGenericDictionary.MakeGenericMethod(genTyp.GetGenericArguments());
 
             return new PortableCollectionInfo(type, FlagGenericDictionary,
                 PortableSystemHandlers.WriteHndGenericDictionary, writeMthd, readMthd);
