@@ -156,6 +156,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public IPortableBuilder SetField<T>(string name, T val)
         {
+            ThrowIfGenericCollection(val, typeof (T));
+
             return SetField0(name, new PortableBuilderField(typeof(T), val));
         }
 
@@ -304,8 +306,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     foreach (KeyValuePair<string, PortableBuilderField> valEntry in vals)
                     {
-                        ThrowIfGenericCollection(valEntry.Value);
-
                         int fieldId = PortableUtils.FieldId(desc.TypeId, valEntry.Key, desc.NameConverter, desc.Mapper);
 
                         if (vals0.ContainsKey(fieldId))
@@ -797,9 +797,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Throws an error if builder field value is a generic collection.
         /// </summary>
-        private static void ThrowIfGenericCollection(PortableBuilderField value)
+        private static void ThrowIfGenericCollection(object value, Type type)
         {
-            var type = value.Value == null ? value.Type : value.Value.GetType();
+            type = value == null ? type : value.GetType();
 
             if (TypeIds.ContainsKey(type))
                 return;  // Skip primitives and arrays of primitives

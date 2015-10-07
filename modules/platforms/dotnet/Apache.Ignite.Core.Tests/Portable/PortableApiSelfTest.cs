@@ -919,7 +919,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestCompositeArray()
         {
             // 1. Test simple array.
-            CompositeInner[] inArr = { new CompositeInner(1) };
+            object[] inArr = { new CompositeInner(1) };
 
             IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(CompositeArray)).SetHashCode(100)
                 .SetField("inArr", inArr).Build();
@@ -941,13 +941,11 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.IsNull(arr.OutArr);
             Assert.AreEqual(1, arr.InArr.Length);
-            Assert.AreEqual(1, arr.InArr[0].Val);
+            Assert.AreEqual(1, ((CompositeInner) arr.InArr[0]).Val);
 
             // 2. Test addition to array.
-            portInArr = new[] { portInArr[0], null };
-
             portObj = _grid.GetPortables().GetBuilder(portObj).SetHashCode(200)
-                .SetField("inArr", portInArr).Build();
+                .SetField("inArr", new object[] { portInArr[0], null }).Build();
 
             Assert.AreEqual(200, portObj.GetHashCode());
 
@@ -961,13 +959,13 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.IsNull(arr.OutArr);
             Assert.AreEqual(2, arr.InArr.Length);
-            Assert.AreEqual(1, arr.InArr[0].Val);
+            Assert.AreEqual(1, ((CompositeInner) arr.InArr[0]).Val);
             Assert.IsNull(arr.InArr[1]);
 
             portInArr[1] = _grid.GetPortables().GetBuilder(typeof(CompositeInner)).SetField("val", 2).Build();
 
             portObj = _grid.GetPortables().GetBuilder(portObj).SetHashCode(300)
-                .SetField("inArr", portInArr).Build();
+                .SetField("inArr", portInArr.OfType<object>().ToArray()).Build();
 
             Assert.AreEqual(300, portObj.GetHashCode());
 
@@ -981,13 +979,13 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.IsNull(arr.OutArr);
             Assert.AreEqual(2, arr.InArr.Length);
-            Assert.AreEqual(1, arr.InArr[0].Val);
-            Assert.AreEqual(2, arr.InArr[1].Val);
+            Assert.AreEqual(1, ((CompositeInner)arr.InArr[0]).Val);
+            Assert.AreEqual(2, ((CompositeInner)arr.InArr[1]).Val);
 
             // 3. Test top-level handle inversion.
             CompositeInner inner = new CompositeInner(1);
 
-            inArr = new[] { inner, inner };
+            inArr = new object[] { inner, inner };
 
             portObj = _grid.GetPortables().GetBuilder(typeof(CompositeArray)).SetHashCode(100)
                 .SetField("inArr", inArr).Build();
@@ -1004,13 +1002,13 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.IsNull(arr.OutArr);
             Assert.AreEqual(2, arr.InArr.Length);
-            Assert.AreEqual(1, arr.InArr[0].Val);
-            Assert.AreEqual(1, arr.InArr[1].Val);
+            Assert.AreEqual(1, ((CompositeInner)arr.InArr[0]).Val);
+            Assert.AreEqual(1, ((CompositeInner)arr.InArr[1]).Val);
 
             portInArr[0] = _grid.GetPortables().GetBuilder(typeof(CompositeInner)).SetField("val", 2).Build();
 
             portObj = _grid.GetPortables().GetBuilder(portObj).SetHashCode(200)
-                .SetField("inArr", portInArr).Build();
+                .SetField("inArr", portInArr.ToArray<object>()).Build();
 
             Assert.AreEqual(200, portObj.GetHashCode());
 
@@ -1024,14 +1022,14 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.IsNull(arr.OutArr);
             Assert.AreEqual(2, arr.InArr.Length);
-            Assert.AreEqual(2, arr.InArr[0].Val);
-            Assert.AreEqual(1, arr.InArr[1].Val);
+            Assert.AreEqual(2, ((CompositeInner)arr.InArr[0]).Val);
+            Assert.AreEqual(1, ((CompositeInner)arr.InArr[1]).Val);
 
             // 4. Test nested object handle inversion.
             CompositeOuter[] outArr = { new CompositeOuter(inner), new CompositeOuter(inner) };
 
             portObj = _grid.GetPortables().GetBuilder(typeof(CompositeArray)).SetHashCode(100)
-                .SetField("outArr", outArr).Build();
+                .SetField("outArr", outArr.ToArray<object>()).Build();
 
             meta = portObj.GetMetadata();
 
@@ -1052,14 +1050,14 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.IsNull(arr.InArr);
             Assert.AreEqual(2, arr.OutArr.Length);
-            Assert.AreEqual(1, arr.OutArr[0].Inner.Val);
-            Assert.AreEqual(1, arr.OutArr[1].Inner.Val);
+            Assert.AreEqual(1, ((CompositeOuter) arr.OutArr[0]).Inner.Val);
+            Assert.AreEqual(1, ((CompositeOuter) arr.OutArr[0]).Inner.Val);
 
             portOutArr[0] = _grid.GetPortables().GetBuilder(typeof(CompositeOuter))
                 .SetField("inner", new CompositeInner(2)).Build();
 
             portObj = _grid.GetPortables().GetBuilder(portObj).SetHashCode(200)
-                .SetField("outArr", portOutArr).Build();
+                .SetField("outArr", portOutArr.ToArray<object>()).Build();
 
             Assert.AreEqual(200, portObj.GetHashCode());
 
@@ -1073,8 +1071,8 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.IsNull(arr.InArr);
             Assert.AreEqual(2, arr.OutArr.Length);
-            Assert.AreEqual(2, arr.OutArr[0].Inner.Val);
-            Assert.AreEqual(1, arr.OutArr[1].Inner.Val);
+            Assert.AreEqual(2, ((CompositeOuter)arr.OutArr[0]).Inner.Val);
+            Assert.AreEqual(1, ((CompositeOuter)arr.OutArr[0]).Inner.Val);
         }
 
         /// <summary>
@@ -1588,8 +1586,8 @@ namespace Apache.Ignite.Core.Tests.Portable
     /// </summary>
     public class CompositeArray
     {
-        public CompositeInner[] InArr;
-        public CompositeOuter[] OutArr;
+        public object[] InArr;
+        public object[] OutArr;
     }
 
     /// <summary>
