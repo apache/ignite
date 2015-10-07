@@ -35,7 +35,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -148,6 +147,9 @@ public class IgfsDeleteWorker extends IgfsThread {
         }
     }
 
+    /**
+     * Cancels the worker.
+     */
     void cancel() {
         cancelled = true;
 
@@ -234,8 +236,6 @@ public class IgfsDeleteWorker extends IgfsThread {
                         lockedInfo = meta.lock(id, true); // Lock the file to prevent concurrent writing
                     }
                     catch (IgniteCheckedException ice) {
-                        X.println("Delete: failed to lock file for deletion.");
-
                         return false;
                     }
 

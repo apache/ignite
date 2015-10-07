@@ -124,7 +124,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static final int CREATE_CNT = OPS_CNT;
 
     /** Time to wait until the caches get empty after format. */
-    protected static final long CACHE_EMPTY_TIMEOUT = 30_000L;
+    private static final long CACHE_EMPTY_TIMEOUT = 30_000L;
 
     /** Seed to generate random numbers. */
     protected static final long SEED = System.currentTimeMillis();
@@ -3060,18 +3060,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         dumpCache("DataCache" , getDataCache(igfs));
 
         fail("Caches are not empty.");
-
-//        if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
-//            @Override public boolean apply() {
-//                return isEmpty(igfs0);
-//            }
-//        }, CACHE_EMPTY_TIMEOUT)) {
-//            dumpCache("MetaCache" , getMetaCache(igfs));
-//
-//            dumpCache("DataCache" , getDataCache(igfs));
-//
-//            assert false;
-//        }
     }
 
     /**

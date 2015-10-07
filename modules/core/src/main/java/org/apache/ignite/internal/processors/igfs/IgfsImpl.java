@@ -1418,30 +1418,6 @@ public final class IgfsImpl implements IgfsEx {
         return new FileDescriptor(parentId, path.name(), fileInfo.id(), fileInfo.isFile());
     }
 
-//    /**
-//     * Remove file from the file system (structure and data).
-//     *
-//     * @param path Path of the deleted file.
-//     * @param desc Detailed file descriptor to remove.
-//     * @param rmvLocked Whether to remove this entry in case it is has explicit lock.
-//     * @throws IgniteCheckedException If failed.
-//     */
-//    private void deleteFile(IgfsPath path, FileDescriptor desc, boolean rmvLocked) throws IgniteCheckedException {
-//        IgniteUuid parentId = desc.parentId;
-//        IgniteUuid fileId = desc.fileId;
-//
-//        if (parentId == null || ROOT_ID.equals(fileId)) {
-//            assert parentId == null && ROOT_ID.equals(fileId) : "Invalid file descriptor: " + desc;
-//
-//            return; // Never remove the root directory!
-//        }
-//
-//        if (TRASH_ID.equals(fileId))
-//            return; // Never remove trash directory.
-//
-//        meta.removeIfEmpty(parentId, desc.fileName, fileId, path, rmvLocked);
-//    }
-
     /**
      * Check whether IGFS with the same name exists among provided attributes.
      *

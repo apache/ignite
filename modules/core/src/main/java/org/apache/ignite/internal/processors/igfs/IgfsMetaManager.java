@@ -75,7 +75,6 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -530,7 +529,6 @@ public class IgfsMetaManager extends IgfsManager {
                 if (info.lockId() != null)
                     throw new IgniteCheckedException("Failed to lock file (file is being concurrently written) [fileId=" +
                         info.id() + ", lockId=" + info.lockId() + ']');
-
 
                 return new IgfsFileInfo(info,
                         isDeleteLock ? DELETE_LOCK_ID : IgniteUuid.randomUuid(), info.modificationTime());
@@ -1479,10 +1477,6 @@ public class IgfsMetaManager extends IgfsManager {
         else {
             assert id2InfoPrj.get(TRASH_ID) != null; // TRASH existence is checked in #lockIds() methods.
 
-//            // Ensure trash directory existence.
-//            if (id2InfoPrj.get(TRASH_ID) == null)
-//                id2InfoPrj.getAndPut(TRASH_ID, new IgfsFileInfo(TRASH_ID));
-
             moveNonTx(id, name, parentId, id.toString(), TRASH_ID);
 
             resId = id;
@@ -2347,8 +2341,6 @@ public class IgfsMetaManager extends IgfsManager {
 
                         @Override public IgfsSecondaryOutputStreamDescriptor onFailure(@Nullable Exception err)
                             throws IgniteCheckedException {
-                            err.printStackTrace();
-
                             U.closeQuiet(out);
 
                             U.error(log, "File append in DUAL mode failed [path=" + path + ", bufferSize=" + bufSize +
@@ -2823,8 +2815,6 @@ public class IgfsMetaManager extends IgfsManager {
 
                 try {
                     status = fs.info(curPath);
-
-                    X.println("Status: " + status);
                 }
                 catch (IgniteException e) {
                     throw new IgniteCheckedException("Failed to get path information: " + e, e);
@@ -3086,8 +3076,6 @@ public class IgfsMetaManager extends IgfsManager {
                 tx.commit();
             }
             catch (IgniteCheckedException e) {
-                e.printStackTrace();
-
                 if (!finished) {
                     finished = true;
 
