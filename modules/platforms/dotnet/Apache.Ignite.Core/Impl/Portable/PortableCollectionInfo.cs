@@ -102,7 +102,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                         PortableSystemHandlers.WriteHndGenericDictionary, writeMthd, readMthd);
                 }
 
-                // TODO: remove these?
                 if (type.GetGenericTypeDefinition() == PortableUtils.TypGenericCollection)
                 {
                     MethodInfo writeMthd =

@@ -1559,6 +1559,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="val">Value.</param>
          * <param name="ctx">Write context.</param>
          */
+        // ReSharper disable once UnusedMember.Global (used by reflection)
         public static void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val, PortableWriterImpl ctx)
         {
             Type type = val.GetType().GetGenericTypeDefinition();

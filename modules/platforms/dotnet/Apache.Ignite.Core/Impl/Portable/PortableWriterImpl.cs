@@ -1083,6 +1083,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 int pos = SkipFieldLength();
 
+                // TODO: direct call?
                 Write(val);
 
                 WriteFieldLength(_stream, pos);
@@ -1095,6 +1096,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Collection.</param>
         public void WriteCollection(ICollection val)
         {
+            // TODO: direct call?
             Write(val);
         }
 
@@ -1145,6 +1147,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 int pos = SkipFieldLength();
 
+                // TODO: direct call?
                 Write(val);
 
                 WriteFieldLength(_stream, pos);
@@ -1157,6 +1160,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Dictionary.</param>
         public void WriteDictionary(IDictionary val)
         {
+            // TODO: direct call?
             Write(val);
         }
 
