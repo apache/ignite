@@ -897,7 +897,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
 
         os.close();
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
+        GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return fs.create(new Path(fsHome, dir), EnumSet.of(CreateFlag.APPEND),
                     Options.CreateOpts.perms(FsPermission.getDefault()));

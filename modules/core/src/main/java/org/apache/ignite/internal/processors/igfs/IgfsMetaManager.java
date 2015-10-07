@@ -1600,6 +1600,10 @@ public class IgfsMetaManager extends IgfsManager {
 
                     IgfsFileInfo victim = infos.get(id);
 
+                    if (victim == null) {
+                        return res;
+                    }
+
                     assert victim.isDirectory() || DELETE_LOCK_ID.equals(victim.lockId()) :
                             " isDir: " + victim.isDirectory() + ", lockId: " + victim.lockId();
 

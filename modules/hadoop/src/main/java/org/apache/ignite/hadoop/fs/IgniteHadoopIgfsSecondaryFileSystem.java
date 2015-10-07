@@ -369,6 +369,8 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
             return fileSysForUser().create(convert(path), overwrite);
         }
         catch (IOException e) {
+            e.printStackTrace();
+
             throw handleSecondaryFsError(e, "Failed to create file [path=" + path + ", overwrite=" + overwrite + "]");
         }
     }

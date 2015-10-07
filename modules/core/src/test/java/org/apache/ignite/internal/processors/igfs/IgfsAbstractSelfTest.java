@@ -1436,7 +1436,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                         createCtr.incrementAndGet();
                     }
                     catch (IgniteException e) {
-                        if (!e.getMessage().startsWith("Failed to remove file (file is opened for writing)")) {
+                        Throwable[] chain = X.getThrowables(e);
+
+                        Throwable cause = chain[chain.length - 1];
+
+                        if (!e.getMessage().startsWith("Failed to remove file (file is opened for writing)")
+                                && (cause == null
+                                    || !cause.getMessage().startsWith("Failed to remove file (file is opened for writing)"))) {
                             err.compareAndSet(null, e);
 
                             break;
@@ -1465,8 +1471,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         awaitFileClose(igfs.asSecondary(), FILE);
 
-        if (err.get() != null)
+        if (err.get() != null) {
+            X.println("Test failed: Rethrowing accumulated error:");
+
             throw err.get();
+        }
 
         checkFileContent(igfs, FILE, chunk);
     }
