@@ -332,7 +332,7 @@ namespace Apache.Ignite.Core.Events
         /// All events indicating an error or failure condition. It is convenient to use when fetching all events 
         /// indicating error or failure.
         /// </summary>
-        private static readonly int[] EvtsError0 =
+        private static readonly ICollection<int> EvtsError0 = new[]
         {
             EvtJobTimedout,
             EvtJobFailed,
@@ -343,7 +343,7 @@ namespace Apache.Ignite.Core.Events
             EvtTaskFailed,
             EvtCacheRebalanceStarted,
             EvtCacheRebalanceStopped
-        };
+        }.AsReadOnly();
 
         /// <summary>
         /// All discovery events except for <see cref="EvtNodeMetricsUpdated" />. Subscription to <see 
@@ -351,7 +351,7 @@ namespace Apache.Ignite.Core.Events
         /// necessary. If this event is indeed required you can subscribe to it individually or use <see 
         /// cref="EvtsDiscoveryAll0" /> array.
         /// </summary>
-        private static readonly int[] EvtsDiscovery0 =
+        private static readonly ICollection<int> EvtsDiscovery0 = new[]
         {
             EvtNodeJoined,
             EvtNodeLeft,
@@ -359,12 +359,12 @@ namespace Apache.Ignite.Core.Events
             EvtNodeSegmented,
             EvtClientNodeDisconnected,
             EvtClientNodeReconnected
-        };
+        }.AsReadOnly();
 
         /// <summary>
         /// All discovery events.
         /// </summary>
-        private static readonly int[] EvtsDiscoveryAll0 =
+        private static readonly ICollection<int> EvtsDiscoveryAll0 = new[]
         {
             EvtNodeJoined,
             EvtNodeLeft,
@@ -373,12 +373,12 @@ namespace Apache.Ignite.Core.Events
             EvtNodeMetricsUpdated,
             EvtClientNodeDisconnected,
             EvtClientNodeReconnected
-        };
+        }.AsReadOnly();
 
         /// <summary>
         /// All Ignite job execution events.
         /// </summary>
-        private static readonly int[] EvtsJobExecution0 =
+        private static readonly ICollection<int> EvtsJobExecution0 = new[]
         {
             EvtJobMapped,
             EvtJobResulted,
@@ -390,12 +390,12 @@ namespace Apache.Ignite.Core.Events
             EvtJobFailed,
             EvtJobQueued,
             EvtJobCancelled
-        };
+        }.AsReadOnly();
 
         /// <summary>
         /// All Ignite task execution events.
         /// </summary>
-        private static readonly int[] EvtsTaskExecution0 =
+        private static readonly ICollection<int> EvtsTaskExecution0 = new[]
         {
             EvtTaskStarted,
             EvtTaskFinished,
@@ -403,12 +403,12 @@ namespace Apache.Ignite.Core.Events
             EvtTaskTimedout,
             EvtTaskSessionAttrSet,
             EvtTaskReduced
-        };
+        }.AsReadOnly();
 
         /// <summary>
         /// All cache events.
         /// </summary>
-        private static readonly int[] EvtsCache0 =
+        private static readonly ICollection<int> EvtsCache0 = new[]
         {
             EvtCacheEntryCreated,
             EvtCacheEntryDestroyed,
@@ -420,12 +420,12 @@ namespace Apache.Ignite.Core.Events
             EvtCacheObjectSwapped,
             EvtCacheObjectUnswapped,
             EvtCacheObjectExpired
-        };
+        }.AsReadOnly();
 
         /// <summary>
         /// All cache rebalance events.
         /// </summary>
-        private static readonly int[] EvtsCacheRebalance0 =
+        private static readonly ICollection<int> EvtsCacheRebalance0 = new[]
         {
             EvtCacheRebalanceStarted,
             EvtCacheRebalanceStopped,
@@ -434,43 +434,43 @@ namespace Apache.Ignite.Core.Events
             EvtCacheRebalanceObjectLoaded,
             EvtCacheRebalanceObjectUnloaded,
             EvtCacheRebalancePartDataLost
-        };
+        }.AsReadOnly();
 
         /// <summary>
         /// All cache lifecycle events.
         /// </summary>
-        private static readonly int[] EvtsCacheLifecycle0 =
+        private static readonly ICollection<int> EvtsCacheLifecycle0 = new[]
         {
             EvtCacheStarted,
             EvtCacheStopped,
             EvtCacheNodesLeft
-        };
+        }.AsReadOnly();
 
         /// <summary>
         /// All cache query events.
         /// </summary>
-        private static readonly int[] EvtsCacheQuery0 =
+        private static readonly ICollection<int> EvtsCacheQuery0 = new[]
         {
             EvtCacheQueryExecuted,
             EvtCacheQueryObjectRead
-        };
+        }.AsReadOnly();
 
         /// <summary>
         /// All swap space events.
         /// </summary>
-        private static readonly int[] EvtsSwapspace0 =
+        private static readonly ICollection<int> EvtsSwapspace0 = new[]
         {
             EvtSwapSpaceCleared,
             EvtSwapSpaceDataRemoved,
             EvtSwapSpaceDataRead,
             EvtSwapSpaceDataStored,
             EvtSwapSpaceDataEvicted
-        };
+        }.AsReadOnly();
 
         /// <summary>
         /// All Ignite events.
         /// </summary>
-        private static readonly int[] EvtsAll0 = GetAllEvents();
+        private static readonly ICollection<int> EvtsAll0 = GetAllEvents().AsReadOnly();
 
         /// <summary>
         /// All Ignite events (<b>excluding</b> metric update event).
