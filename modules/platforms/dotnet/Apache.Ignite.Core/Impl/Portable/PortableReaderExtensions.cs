@@ -36,5 +36,17 @@ namespace Apache.Ignite.Core.Impl.Portable
             return ((List<T>) reader.ReadCollection(size => new List<T>(size),
                 (col, elem) => ((List<T>) col).Add((T) elem)));
         }
+
+        /// <summary>
+        /// Reads untyped dictionary as generic dictionary.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="reader">The reader.</param>
+        /// <returns>Resulting dictionary.</returns>
+        public static Dictionary<TKey, TValue> ReadDictionaryAsGeneric<TKey, TValue>(this IPortableRawReader reader)
+        {
+            return (Dictionary<TKey, TValue>) reader.ReadDictionary(size => new Dictionary<TKey, TValue>(size));
+        }
     }
 }
