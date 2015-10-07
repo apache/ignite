@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System;
     using System.Globalization;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Events;
@@ -182,9 +183,9 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Precompiled invocator delegate.</returns>
-        public static Func<object, object> GetContinuousQueryFilterCtor(Type type)
+        public static Func<object, object, object> GetContinuousQueryFilterCtor(Type type)
         {
-            return Get(type)._streamTransformerCtor;
+            return Get(type)._continuousQueryFilterCtor;
         }
 
         /// <summary>
@@ -262,10 +263,6 @@ namespace Apache.Ignite.Core.Impl.Common
 
                     // Resulting func constructs CacheEntry and passes it to user implementation
                     _cacheEntryFilter = (obj, k, v) => invokeFunc(obj, ctor(k, v));
-
-                    _continuousQueryFilterCtor =
-                        DelegateConverter.CompileCtor<Func<object, object, object>>(
-                            typeof (ContinuousQueryFilter<,>).MakeGenericType(args), new[] {iface, typeof (bool)});
                 }
                 else if (genericTypeDefinition == typeof (ICacheEntryProcessor<,,,>))
                 {
@@ -325,6 +322,16 @@ namespace Apache.Ignite.Core.Impl.Common
                                 typeof (bool)
                             },
                             new[] {true, false, false, false, false, false});
+                }
+                else if (genericTypeDefinition == typeof (ICacheEntryEventFilter<,>))
+                {
+                    ThrowIfMultipleInterfaces(_streamReceiver, type, typeof(ICacheEntryEventFilter<,>));
+
+                    var args = iface.GetGenericArguments();
+
+                    _continuousQueryFilterCtor =
+                        DelegateConverter.CompileCtor<Func<object, object, object>>(
+                            typeof(ContinuousQueryFilter<,>).MakeGenericType(args), new[] { iface, typeof(bool) });
                 }
             }
         }
