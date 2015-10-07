@@ -162,15 +162,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Type: native job result holder. */
         public const byte TypePortableJobResHolder = 76;
 
-        /** Type: .Net configuration. */
-        public const byte TypeDotNetCfg = 202;
-
-        /** Type: .Net portable configuration. */
-        public const byte TypeDotNetPortableCfg = 203;
-
-        /** Type: .Net portable type configuration. */
-        public const byte TypeDotNetPortableTypCfg = 204;
-
         /** Type: Ignite proxy. */
         public const byte TypeIgniteProxy = 74;
 
@@ -219,35 +210,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Collection: array list. */
         public const byte CollectionArrayList = 1;
 
-        /** Collection: linked list. */
-        public const byte CollectionLinkedList = 2;
-
-        /** Collection: hash set. */
-        public const byte CollectionHashSet = 3;
-
-        /** Collection: hash set. */
-        public const byte CollectionLinkedHashSet = 4;
-
-        /** Collection: sorted set. */
-        public const byte CollectionSortedSet = 5;
-
-        /** Collection: concurrent bag. */
-        public const byte CollectionConcurrentBag = 6;
-
         /** Map: custom. */
         public const byte MapCustom = 0;
 
         /** Map: hash map. */
         public const byte MapHashMap = 1;
-
-        /** Map: linked hash map. */
-        public const byte MapLinkedHashMap = 2;
-
-        /** Map: sorted map. */
-        public const byte MapSortedMap = 3;
-
-        /** Map: concurrent hash map. */
-        public const byte MapConcurrentHashMap = 4;
 
         /** Byte "0". */
         public const byte ByteZero = 0;
