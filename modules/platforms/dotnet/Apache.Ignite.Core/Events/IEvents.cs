@@ -49,6 +49,19 @@ namespace Apache.Ignite.Core.Events
             where T : IEvent;
 
         /// <summary>
+        /// Queries nodes in this cluster group for events using passed in predicate filter for event selection.
+        /// </summary>
+        /// <typeparam name="T">Type of events.</typeparam>
+        /// <param name="filter">Predicate filter used to query events on remote nodes.</param>
+        /// <param name="timeout">Maximum time to wait for result, null or 0 to wait forever.</param>
+        /// <param name="types">Event types to be queried.</param>
+        /// <returns>Collection of Ignite events returned from specified nodes.</returns>
+        [AsyncSupported]
+        [SuppressMessage("Microsoft.Design", "CA1002:DoNotExposeGenericLists")]
+        List<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, IEnumerable<int> types = null) 
+            where T : IEvent;
+
+        /// <summary>
         /// Adds event listener for specified events to all nodes in the cluster group (possibly including local node 
         /// if it belongs to the cluster group as well). This means that all events occurring on any node within this 
         /// cluster group that pass remote filter will be sent to local node for local listener notifications.

@@ -444,7 +444,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="writer">Writer.</param>
         private static void WriteEventTypes(int[] types, IPortableRawWriter writer)
         {
-            if (types.Length == 0)
+            if (types != null && types.Length == 0)
                 types = null;  // empty array means no type filtering
 
             writer.WriteIntArray(types);
@@ -460,11 +460,12 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /// <summary>
-        /// Converts types enumerable to array with arg check.
+        /// Converts types enumerable to array.
         /// </summary>
-        private int[] TypesToArray(IEnumerable<int> types)
+        private static int[] TypesToArray(IEnumerable<int> types)
         {
-            IgniteArgumentCheck.NotNull(types, "types");
+            if (types == null)
+                return null;
 
             return types as int[] ?? types.ToArray();
         }
