@@ -1431,26 +1431,21 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                         os.write(chunk);
 
-                        U.sleep(50);
-
                         os.close();
 
                         createCtr.incrementAndGet();
                     }
-                    catch (IgniteInterruptedCheckedException | IgniteException ignore) {
-                        ignore.printStackTrace();
+                    catch (IgniteException e) {
+                        if (!e.getMessage().startsWith("Failed to remove file (file is opened for writing)")) {
+                            err.compareAndSet(null, e);
 
-                        try {
-                            U.sleep(10);
-                        }
-                        catch (IgniteInterruptedCheckedException ignored) {
-                            // nO-op.
+                            break;
                         }
                     }
                     catch (IOException e) {
-                        // We can ignore concurrent deletion exception since we override the file.
-                        if (!e.getMessage().startsWith("File was concurrently deleted"))
-                            err.compareAndSet(null, e);
+                        err.compareAndSet(null, e);
+
+                        break;
                     }
                     finally {
                         U.closeQuiet(os);
