@@ -304,6 +304,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     foreach (KeyValuePair<string, PortableBuilderField> valEntry in vals)
                     {
+                        ThrowIfGenericCollection(valEntry.Value);
+
                         int fieldId = PortableUtils.FieldId(desc.TypeId, valEntry.Key, desc.NameConverter, desc.Mapper);
 
                         if (vals0.ContainsKey(fieldId))
@@ -315,7 +317,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         // Write metadata if: 1) it is enabled for type; 2) type is not null (i.e. it is neither 
                         // remove marker, nor a field read through "GetField" method.
                         if (metaHnd != null && valEntry.Value.Type != null)
-                            metaHnd.OnFieldWrite(fieldId, valEntry.Key, TypeId(valEntry.Value.Type));
+                            metaHnd.OnFieldWrite(fieldId, valEntry.Key, GetTypeId(valEntry.Value.Type));
                     }
                 }
 
@@ -747,7 +749,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Type ID.</returns>
-        private static int TypeId(Type type)
+        private static int GetTypeId(Type type)
         {
             int typeId;
 
@@ -790,6 +792,34 @@ namespace Apache.Ignite.Core.Impl.Portable
             outStream.WriteInt(len);
 
             TransferBytes(inStream, outStream, elemSize * len);
+        }
+
+        /// <summary>
+        /// Throws an error if builder field value is a generic collection.
+        /// </summary>
+        private static void ThrowIfGenericCollection(PortableBuilderField value)
+        {
+            var type = value.Value == null ? value.Type : value.Value.GetType();
+
+            if (TypeIds.ContainsKey(type))
+                return;  // Skip primitives and arrays of primitives
+
+            if (type.IsArray)
+            {
+                var elementType = type.GetElementType();
+
+                if (elementType != typeof (object) && !elementType.IsEnum)
+                    throw new NotSupportedException(
+                        string.Format("PortableBuilder does not support arrays of '{0}'. Please use object array.",
+                            elementType));
+            }
+
+            var colInfo = PortableCollectionInfo.GetInstance(type);
+
+            if (colInfo.IsGenericCollection || colInfo.IsGenericDictionary)
+                throw new NotSupportedException(
+                    string.Format("PortableBuilder does not support generic collections: '{0}'. " +
+                                  "Please use non-generic counterpart.", type));
         }
 
         /// <summary>
