@@ -117,7 +117,7 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
                         Config conf = new Config();
                         conf.setNumWorkers(2);
                         // this parameter is necessary
-                        conf.setMessageTimeoutSecs(10000);
+                        conf.setMessageTimeoutSecs(6000);
 
                         CompleteTopologyParam completeTopologyParam = new CompleteTopologyParam();
                         completeTopologyParam.setMockedSources(mockedSources);
