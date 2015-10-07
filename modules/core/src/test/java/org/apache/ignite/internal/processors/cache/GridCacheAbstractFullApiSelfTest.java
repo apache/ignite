@@ -3541,7 +3541,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++)
             grid(i).events().localListen(
-                new LocalListener(swapEvts, unswapEvts), EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
+                new SwapEvtsLocalListener(swapEvts, unswapEvts), EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
 
         cache.localEvict(F.asList(k2, k3));
 
@@ -3859,7 +3859,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 map.put(entry.getKey(), entry.getValue());
         }
 
-        assert map != null;
         assert map.size() == 2;
         assert map.get("key1") == 1;
         assert map.get("key2") == 2;
@@ -5261,7 +5260,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      *
      */
-    private static class LocalListener implements IgnitePredicate<Event> {
+    private static class SwapEvtsLocalListener implements IgnitePredicate<Event> {
         @LoggerResource
         private IgniteLogger log;
 
@@ -5275,7 +5274,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
          * @param swapEvts Swap events.
          * @param unswapEvts Unswap events.
          */
-        public LocalListener(AtomicInteger swapEvts, AtomicInteger unswapEvts) {
+        public SwapEvtsLocalListener(AtomicInteger swapEvts, AtomicInteger unswapEvts) {
             this.swapEvts = swapEvts;
             this.unswapEvts = unswapEvts;
         }

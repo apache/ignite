@@ -347,7 +347,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public ClusterNode localNode() {
-        return remoteCompute().call(new LocalNodeTask());
+        return remoteCompute().call(new NodeTask());
     }
 
     /** {@inheritDoc} */
@@ -635,7 +635,7 @@ public class IgniteProcessProxy implements IgniteEx {
     /**
      *
      */
-    private static class LocalNodeTask implements IgniteCallable<ClusterNode> {
+    private static class NodeTask implements IgniteCallable<ClusterNode> {
         /** Ignite. */
         @IgniteInstanceResource
         private Ignite ignite;

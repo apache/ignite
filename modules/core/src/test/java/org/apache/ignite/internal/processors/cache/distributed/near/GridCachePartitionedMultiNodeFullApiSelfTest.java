@@ -191,7 +191,8 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         final IgniteAtomicLong unswapEvts = grid(0).atomicLong("unswapEvts", 0, true);
 
         for (int i = 0; i < gridCount(); i++)
-            grid(i).events().localListen(new LocalListener(), EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
+            grid(i).events().localListen(
+                    new SwapUnswapLocalListener(), EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
 
         jcache().put("key", 1);
 
@@ -446,7 +447,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     /**
      *
      */
-    private static class LocalListener implements IgnitePredicate<Event> {
+    private static class SwapUnswapLocalListener implements IgnitePredicate<Event> {
         /** Logger. */
         @LoggerResource
         private IgniteLogger log;
