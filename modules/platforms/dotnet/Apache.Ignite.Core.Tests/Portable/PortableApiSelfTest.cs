@@ -1096,7 +1096,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(typeof(CompositeContainer).Name, meta.TypeName);
 
-            Assert.AreEqual(4, meta.Fields.Count);
+            Assert.AreEqual(2, meta.Fields.Count);
             Assert.AreEqual(PortableTypeNames.TypeNameCollection, meta.GetFieldTypeName("col"));
             Assert.AreEqual(PortableTypeNames.TypeNameMap, meta.GetFieldTypeName("dict"));
 
