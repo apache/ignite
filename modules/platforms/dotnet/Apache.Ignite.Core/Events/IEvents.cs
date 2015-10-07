@@ -173,11 +173,29 @@ namespace Apache.Ignite.Core.Events
         T WaitForLocal<T>(IEventFilter<T> filter, params int[] types) where T : IEvent;
 
         /// <summary>
+        /// Waits for the specified events.
+        /// </summary>
+        /// <typeparam name="T">Type of events.</typeparam>
+        /// <param name="filter">Optional filtering predicate. Event wait will end as soon as it returns false.</param>
+        /// <param name="types">Types of the events to wait for. 
+        /// If not provided, all events will be passed to the filter.</param>
+        /// <returns>Ignite event.</returns>
+        [AsyncSupported]
+        T WaitForLocal<T>(IEventFilter<T> filter, IEnumerable<int> types) where T : IEvent;
+
+        /// <summary>
         /// Queries local node for events using of specified types.
         /// </summary>
         /// <param name="types">Event types to be queried. Optional.</param>
         /// <returns>Collection of Ignite events found on local node.</returns>
         ICollection<IEvent> LocalQuery(params int[] types);
+
+        /// <summary>
+        /// Queries local node for events using of specified types.
+        /// </summary>
+        /// <param name="types">Event types to be queried. Optional.</param>
+        /// <returns>Collection of Ignite events found on local node.</returns>
+        ICollection<IEvent> LocalQuery(IEnumerable<int> types);
 
         /// <summary>
         /// Records customer user generated event. All registered local listeners will be notified.
@@ -201,6 +219,16 @@ namespace Apache.Ignite.Core.Events
         void LocalListen<T>(IEventFilter<T> listener, params int[] types) where T : IEvent;
 
         /// <summary>
+        /// Adds an event listener for local events. Note that listener will be added regardless of whether 
+        /// local node is in this cluster group or not.
+        /// </summary>
+        /// <typeparam name="T">Type of events.</typeparam>
+        /// <param name="listener">Predicate that is called on each received event. If predicate returns false,
+        /// it will be unregistered and will stop receiving events.</param>
+        /// <param name="types">Event types for which this listener will be notified, should not be empty.</param>
+        void LocalListen<T>(IEventFilter<T> listener, IEnumerable<int> types) where T : IEvent;
+
+        /// <summary>
         /// Removes local event listener.
         /// </summary>
         /// <typeparam name="T">Type of events.</typeparam>
@@ -209,6 +237,16 @@ namespace Apache.Ignite.Core.Events
         /// will be removed for all types it was registered for.</param>
         /// <returns>True if listener was removed, false otherwise.</returns>
         bool StopLocalListen<T>(IEventFilter<T> listener, params int[] types) where T : IEvent;
+
+        /// <summary>
+        /// Removes local event listener.
+        /// </summary>
+        /// <typeparam name="T">Type of events.</typeparam>
+        /// <param name="listener">Local event listener to remove.</param>
+        /// <param name="types">Types of events for which to remove listener. If not specified, then listener
+        /// will be removed for all types it was registered for.</param>
+        /// <returns>True if listener was removed, false otherwise.</returns>
+        bool StopLocalListen<T>(IEventFilter<T> listener, IEnumerable<int> types) where T : IEvent;
 
         /// <summary>
         /// Enables provided events. Allows to start recording events that were disabled before. 
@@ -230,6 +268,13 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         /// <param name="types">Events to disable.</param>
         void DisableLocal(params int[] types);
+
+        /// <summary>
+        /// Disables provided events. Allows to stop recording events that were enabled before. Note that specified 
+        /// events will be disabled regardless of whether local node is in this cluster group or not.
+        /// </summary>
+        /// <param name="types">Events to disable.</param>
+        void DisableLocal(IEnumerable<int> types);
 
         /// <summary>
         /// Gets types of enabled events.
