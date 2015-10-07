@@ -1501,7 +1501,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             byte dictType = val.GetType() == typeof(Hashtable) ? MapHashMap : MapCustom;
 
-            WriteTypedDictionary(val, ctx, dictType);
+            WriteDictionary(val, ctx, dictType);
         }
 
         /**
@@ -1510,7 +1510,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="ctx">Write context.</param>
          * <param name="dictType">Dictionary type.</param>
          */
-        public static void WriteTypedDictionary(IDictionary val, PortableWriterImpl ctx, byte dictType)
+        public static void WriteDictionary(IDictionary val, PortableWriterImpl ctx, byte dictType)
         {
             ctx.Stream.WriteInt(val.Count);
 

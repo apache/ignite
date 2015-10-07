@@ -676,7 +676,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             ctx.Stream.WriteByte(PortableUtils.TypeDictionary);
 
-            PortableUtils.WriteTypedDictionary((IDictionary)obj, ctx, PortableUtils.MapHashMap);
+            PortableUtils.WriteDictionary((IDictionary)obj, ctx, PortableUtils.MapHashMap);
         }
 
         /**
