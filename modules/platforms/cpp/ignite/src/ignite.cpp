@@ -211,11 +211,17 @@ int main(int argc, const char* argv[])
 
         ignite::Ignition::Start(cfg);
     }
+    catch (ignite::IgniteError& e)
+    {
+        std::cout << "ERROR: " << e.GetText() << std::endl;
+
+        return -1;
+    }
     catch (std::exception& e)
     {
         std::cout << "ERROR: " << e.what() << std::endl;
 
-        return -1;
+        return -2;
     }
     return 0;
 }
