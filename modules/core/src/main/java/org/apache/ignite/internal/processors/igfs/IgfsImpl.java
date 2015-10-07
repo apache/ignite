@@ -1243,21 +1243,21 @@ public final class IgfsImpl implements IgfsEx {
                 }
 
                 return new IgfsMetricsAdapter(
-                        igfsCtx.data().spaceSize(),
-                        igfsCtx.data().maxSpaceSize(),
-                        secondarySpaceSize,
-                        sum.directoriesCount(),
-                        sum.filesCount(),
-                        metrics.filesOpenedForRead(),
-                        metrics.filesOpenedForWrite(),
-                        metrics.readBlocks(),
-                        metrics.readBlocksSecondary(),
-                        metrics.writeBlocks(),
-                        metrics.writeBlocksSecondary(),
-                        metrics.readBytes(),
-                        metrics.readBytesTime(),
-                        metrics.writeBytes(),
-                        metrics.writeBytesTime());
+                    igfsCtx.data().spaceSize(),
+                    igfsCtx.data().maxSpaceSize(),
+                    secondarySpaceSize,
+                    sum.directoriesCount(),
+                    sum.filesCount(),
+                    metrics.filesOpenedForRead(),
+                    metrics.filesOpenedForWrite(),
+                    metrics.readBlocks(),
+                    metrics.readBlocksSecondary(),
+                    metrics.writeBlocks(),
+                    metrics.writeBlocksSecondary(),
+                    metrics.readBytes(),
+                    metrics.readBytesTime(),
+                    metrics.writeBytes(),
+                    metrics.writeBytesTime());
             }
         });
     }

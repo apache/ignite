@@ -96,16 +96,16 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** IGFS block size. */
-    protected static final int IGFS_BLOCK_SIZE =  512 * 1024; // 31 !!!!! ; //* 1024; TODO: block size changed.
+    protected static final int IGFS_BLOCK_SIZE = 512 * 1024;
 
     /** Default block size (32Mb). */
     protected static final long BLOCK_SIZE = 32 * 1024 * 1024;
 
     /** Default repeat count. */
-    protected static final int REPEAT_CNT = 50; // 500 -- deadlock // Diagnostic: up to 500; Regression: 5
+    protected static final int REPEAT_CNT = 5; // Diagnostic: up to 500; Regression: 5
 
     /** Concurrent operations count.
-     * !! Not more than ~150, see https://issues.apache.org/jira/browse/IGNITE-1581. */
+     * ! Not more than ~150, see https://issues.apache.org/jira/browse/IGNITE-1581. */
     protected static final int OPS_CNT = 100; // Diagnostic: 100; Regression: 16
 
     /** Renames count. */
@@ -729,8 +729,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         create(igfs, paths(DIR, DIR_NEW), null);
 
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 igfs.rename(SUBDIR, SUBDIR_NEW);
 
                 return null;
@@ -1027,8 +1026,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         igfsSecondary.delete(FILE.toString(), false);
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 IgfsInputStream is = null;
 
                 try {
@@ -1047,7 +1045,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
+    @SuppressWarnings({"ConstantConditions", "EmptyTryBlock", "UnusedDeclaration"})
     public void testCreate() throws Exception {
         create(igfs, paths(DIR, SUBDIR), null);
 
@@ -1331,6 +1329,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         }
     }
 
+    /**
+     * Checks simple write.
+     *
+     * @throws Exception On error.
+     */
     public void testSimpleWrite() throws Exception {
         IgfsPath path = new IgfsPath("/file1");
 
@@ -1489,13 +1492,16 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         checkFile(igfs, igfsSecondary, FILE, chunk, chunk);
 
+        assert igfs.exists(SUBDIR);
+
         // Test create via append:
-        IgfsPath path2 = new IgfsPath(SUBDIR, "file2");
+        IgfsPath path2 = FILE2;
 
         IgfsOutputStream os = null;
 
         try {
-            os = igfs.append(path2, true); // **** !!!!!!!!!
+            // TODO: fails in DUAL modes, see https://issues.apache.org/jira/browse/IGNITE-1631
+            os = igfs.append(path2, true/*create*/);
 
             writeFileChunks(os, chunk);
         }
@@ -1506,7 +1512,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         }
 
         try {
-            os = igfs.append(path2, false);
+            os = igfs.append(path2, false/*create*/);
 
             writeFileChunks(os, chunk);
         }
@@ -2758,7 +2764,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected void checkNotExist(IgfsImpl igfs, UniversalFileSystemAdapter igfsSecondary, IgfsPath... paths)
-        throws Exception {
+            throws Exception {
         checkNotExist(igfs, paths);
 
         if (dual)
@@ -3093,40 +3099,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Answers if the given IGFS is empty.
-     *
-     * @param igfs IGFS to operate on.
-     * @return True if IGFS is empty.
-     */
-    private static boolean isEmpty(IgniteFileSystem igfs) {
-        GridCacheAdapter dataCache = getDataCache(igfs);
-
-        assert dataCache != null;
-
-        int size1 = dataCache.size();
-
-        if (size1 > 0) {
-            X.println("Data cache size = " + size1);
-
-            return false;
-        }
-
-        GridCacheAdapter metaCache = getMetaCache(igfs);
-
-        assert metaCache != null;
-
-        int size2 = metaCache.size();
-
-        if (size2 > 2) {
-            X.println("Meta cache size = " + size2);
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
      * Clear particular {@link UniversalFileSystemAdapter}.
      *
      * @param uni IGFS.
@@ -3146,11 +3118,5 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         clear(igfs, igfsSecondary);
-    }
-
-    @Override
-    // TODO: remove later
-    protected long getTestTimeout() {
-        return 15 * 60 * 1000L;
     }
 }
