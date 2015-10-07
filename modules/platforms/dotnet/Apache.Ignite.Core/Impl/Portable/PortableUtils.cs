@@ -1574,7 +1574,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             else
                 dictType = MapCustom;
 
-            WriteTypedGenericDictionary(val, ctx, dictType);
+            WriteGenericDictionary(val, ctx, dictType);
         }
 
         /**
@@ -1583,7 +1583,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="ctx">Write context.</param>
          * <param name="dictType">Dictionary type.</param>
          */
-        public static void WriteTypedGenericDictionary<TK, TV>(IDictionary<TK, TV> val,
+        public static void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val,
             PortableWriterImpl ctx, byte dictType)
         {
             ctx.Stream.WriteInt(val.Count);
