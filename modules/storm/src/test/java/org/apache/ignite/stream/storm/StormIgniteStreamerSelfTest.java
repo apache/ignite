@@ -16,6 +16,7 @@
  */
 
 package org.apache.ignite.stream.storm;
+
 import backtype.storm.ILocalCluster;
 import backtype.storm.Testing;
 import backtype.storm.generated.StormTopology;
@@ -25,13 +26,12 @@ import backtype.storm.testing.MockedSources;
 import backtype.storm.testing.TestJob;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.Config;
-import backtype.storm.LocalCluster;
 import backtype.storm.tuple.Values;
-import backtype.storm.utils.Utils;
-
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
@@ -46,7 +46,21 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
     /** Count. */
     private static final int CNT = 100;
 
+    /** Cache Name */
+    private static final String cacheName = "igniteCache";
+
     public StormIgniteStreamerSelfTest(){super(true);}
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override protected void beforeTest() throws Exception {
+        grid().<Integer, String>getOrCreateCache(cacheName);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        grid().cache(cacheName).clear();
+    }
 
     /**
      * Test with the bolt Ignite started in bolt.
@@ -103,17 +117,29 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
                         Config conf = new Config();
                         conf.setNumWorkers(2);
                         // this parameter is necessary
-                        conf.setMessageTimeoutSecs(6000);
+                        conf.setMessageTimeoutSecs(10000);
 
                         CompleteTopologyParam completeTopologyParam = new CompleteTopologyParam();
                         completeTopologyParam.setMockedSources(mockedSources);
                         completeTopologyParam.setStormConf(conf);
 
                         Map result = Testing.completeTopology(cluster, topology, completeTopologyParam);
+                        compareStreamCacheData(stormSpout.getKeyValMap());
                     }
                 }
         );
 
+    }
+
+    public void compareStreamCacheData(HashMap<String, String> keyValMap){
+        Ignite ignite = grid();
+        System.out.println(" -=------------------------- ");
+        // Get the cache.
+        IgniteCache<String, String> cache = ignite.cache(cacheName);
+        for (Map.Entry<String, String> entry : keyValMap.entrySet()) {
+            System.out.println(" Key === " +entry.getKey() +  " Value ====  " +  cache.get(entry.getKey()));
+            assertEquals(entry.getValue(), cache.get(entry.getKey()));
+        }
     }
 
 }
