@@ -792,7 +792,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(1, res2.Count);
             Assert.AreEqual(1, res2[0]);
 
-            IDictionary<int, int> res3 = _grid1.GetCompute().ExecuteJavaTask<IDictionary<int, int>>(EchoTask, EchoTypeMap);
+            var res3 = _grid1.GetCompute().ExecuteJavaTask<IDictionary>(EchoTask, EchoTypeMap);
 
             Assert.AreEqual(1, res3.Count);
             Assert.AreEqual(1, res3[1]);
