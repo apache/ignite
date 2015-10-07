@@ -1574,18 +1574,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             else
                 dictType = MapCustom;
 
-            WriteGenericDictionary(val, ctx, dictType);
-        }
-
-        /**
-         * <summary>Write generic non-null dictionary with known type.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         * <param name="dictType">Dictionary type.</param>
-         */
-        public static void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val,
-            PortableWriterImpl ctx, byte dictType)
-        {
             ctx.Stream.WriteInt(val.Count);
 
             ctx.Stream.WriteByte(dictType);
