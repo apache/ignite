@@ -1242,9 +1242,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             var elementType = ReadType(reader);
 
-            //if (requestedArrayType.IsArray)
-            //    elementType = requestedArrayType.GetElementType();
-
             return ReadArray(reader, false, elementType);
         }
 
@@ -1430,13 +1427,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var elementType = collectionType.GetGenericArguments().Single();
 
-            //if (requestedCollectionType.IsGenericType)
-            //{
-            //    elementType = requestedCollectionType.GetGenericArguments().Single();
-
-            //    collectionType = collectionType.GetGenericTypeDefinition().MakeGenericType(elementType);
-            //}
-
             // TODO: Cache
             var factoryType = typeof (PortableGenericCollectionFactory<>).MakeGenericType(elementType);
 
@@ -1478,13 +1468,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             else
             {
-                // ICollection is not generically variant
-                // Try to provide requested collection type
-                //var elementType = collectionType.GetGenericArguments().Single();
-
-                //if (elementType != typeof (T))
-                //    collectionType = collectionType.GetGenericTypeDefinition().MakeGenericType(typeof (T));
-
                 // TODO: cache
                 var ctor = DelegateConverter.CompileCtor<Func<object, ICollection<T>>>(collectionType,
                     new[] {typeof (int)}, false);
