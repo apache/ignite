@@ -1116,7 +1116,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="val">Array.</param>
         /// <param name="ctx">Write context.</param>
-        public static void WriteTypedArray(Array val, PortableWriterImpl ctx)
+        public static void WriteGenericArray(Array val, PortableWriterImpl ctx)
         {
             Debug.Assert(val != null);
             Debug.Assert(ctx != null);
@@ -1171,7 +1171,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 var typeName = type.AssemblyQualifiedName;
 
-                writer.WriteInt(StringHashCode(typeName));
+                writer.WriteInt(GetStringHashCode(typeName));
                 writer.WriteString(typeName);
             }
         }

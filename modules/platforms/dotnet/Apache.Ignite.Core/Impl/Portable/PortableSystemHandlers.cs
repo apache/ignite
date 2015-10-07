@@ -612,7 +612,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             ctx.Stream.WriteByte(PortableUtils.TypeGenericArray);
 
-            PortableUtils.WriteTypedArray((Array)obj, ctx);
+            PortableUtils.WriteGenericArray((Array)obj, ctx);
         }
 
         /**
