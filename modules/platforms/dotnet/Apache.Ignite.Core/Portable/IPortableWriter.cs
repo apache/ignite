@@ -245,6 +245,7 @@ namespace Apache.Ignite.Core.Portable
 
         /// <summary>
         /// Write named object array.
+        /// Only "object[]" arrays can be used for interop with other platforms.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Object array.</param>
@@ -252,6 +253,7 @@ namespace Apache.Ignite.Core.Portable
 
         /// <summary>
         /// Write named collection.
+        /// Only non-generic collections can be used for interop with other platforms.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Collection.</param>
