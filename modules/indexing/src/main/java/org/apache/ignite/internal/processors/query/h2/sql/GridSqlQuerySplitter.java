@@ -32,6 +32,8 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.h2.jdbc.JdbcPreparedStatement;
+import org.h2.table.Column;
+import org.h2.table.IndexColumn;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
@@ -165,6 +167,67 @@ public class GridSqlQuerySplitter {
         res.reduceQuery(rdc);
 
         return res;
+    }
+
+    /**
+     * @param el Either {@link GridSqlSelect#from()} or {@link GridSqlSelect#where()} elements.
+     */
+    private static void findAffinityColumnConditions(GridSqlElement el) {
+        if (el == null)
+            return;
+
+        el = GridSqlAlias.unwrap(el);
+
+        if (el instanceof GridSqlJoin) {
+            GridSqlJoin join = (GridSqlJoin)el;
+
+            findAffinityColumnConditions(join.leftTable());
+            findAffinityColumnConditions(join.rightTable());
+            findAffinityColumnConditions(join.on());
+        }
+        else if (el instanceof GridSqlOperation) {
+            GridSqlOperationType type = ((GridSqlOperation)el).operationType();
+
+            switch(type) {
+                case AND:
+                    findAffinityColumnConditions(el.child(0));
+                    findAffinityColumnConditions(el.child(1));
+
+                    break;
+
+                case EQUAL:
+                    findAffinityColumn(el.child(0));
+                    findAffinityColumn(el.child(1));
+            }
+        }
+    }
+
+    /**
+     * @param exp Possible affinity column expression.
+     */
+    private static void findAffinityColumn(GridSqlElement exp) {
+        if (exp instanceof GridSqlColumn) {
+            GridSqlColumn col = (GridSqlColumn)exp;
+
+            GridSqlElement from = col.expressionInFrom();
+
+            if (from instanceof GridSqlTable) {
+                GridSqlTable fromTbl = (GridSqlTable)from;
+
+                GridH2Table tbl = fromTbl.dataTable();
+
+                if (tbl != null) {
+                    IndexColumn affKeyCol = tbl.getAffinityKeyColumn();
+                    Column expCol = col.column();
+
+                    if (affKeyCol != null && expCol != null &&
+                        affKeyCol.column.getColumnId() == expCol.getColumnId()) {
+                        // Mark that table lookup will use affinity key.
+                        fromTbl.affinityKeyCondition(true);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -453,8 +516,10 @@ public class GridSqlQuerySplitter {
      * @param spaces Space names.
      */
     private static void collectAllSpacesInSubqueries(GridSqlElement el, Set<String> spaces) {
-        if (el instanceof GridSqlAlias)
-            el = el.child();
+        if (el == null)
+            return;
+
+        el = GridSqlAlias.unwrap(el);
 
         if (el instanceof GridSqlOperation || el instanceof GridSqlFunction) {
             for (GridSqlElement child : el)

@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
@@ -54,7 +53,6 @@ import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.FunctionTable;
-import org.h2.table.IndexColumn;
 import org.h2.table.RangeTable;
 import org.h2.table.Table;
 import org.h2.table.TableBase;
@@ -429,40 +427,6 @@ public class GridSqlQueryParser {
     }
 
     /**
-     * @param exp Column expression.
-     */
-    private void checkAffinityKeyConditionFound(Expression exp) {
-        if (!(exp instanceof ExpressionColumn))
-            return;
-
-        ExpressionColumn expCol = (ExpressionColumn)exp;
-
-        GridSqlElement fromTbl = parseTable(expCol.getTableFilter());
-
-        if (fromTbl == null)
-            return;
-
-        if (fromTbl instanceof GridSqlAlias)
-            fromTbl = fromTbl.child();
-
-        if (!(fromTbl instanceof GridSqlTable))
-            return;
-
-        GridH2Table dataTbl = ((GridSqlTable)fromTbl).dataTable();
-
-        if (dataTbl == null)
-            return;
-
-        IndexColumn affKeyCol = dataTbl.getAffinityKeyColumn();
-
-        if (affKeyCol == null)
-            return;
-
-        if (expCol.getColumn().getColumnId() == affKeyCol.column.getColumnId())
-            ((GridSqlTable)fromTbl).affinityKeyCondition(true);
-    }
-
-    /**
      * @param expression Expression.
      * @param calcTypes Calculate types for all the expressions.
      * @return Parsed expression.
@@ -514,11 +478,6 @@ public class GridSqlQueryParser {
 
             Expression rightExp = COMPARISON_RIGHT.get(cmp);
             GridSqlElement right = parseExpression(rightExp, calcTypes);
-
-            if (opType == EQUAL) {
-                checkAffinityKeyConditionFound(leftExp);
-                checkAffinityKeyConditionFound(rightExp);
-            }
 
             return new GridSqlOperation(opType, left, right);
         }
