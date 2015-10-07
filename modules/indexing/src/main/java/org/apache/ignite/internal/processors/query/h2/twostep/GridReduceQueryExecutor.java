@@ -529,7 +529,7 @@ public class GridReduceQueryExecutor {
 
                 r.tbls.add(tbl);
 
-                fakeTable(r.conn, tblIdx++).setInnerTable(tbl);
+                fakeTable(r.conn, tblIdx++).innerTable(tbl);
             }
 
             r.latch = new CountDownLatch(r.tbls.size() * nodes.size());
@@ -645,7 +645,7 @@ public class GridReduceQueryExecutor {
                     U.warn(log, "Query run was already removed: " + qryReqId);
 
                 for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++)
-                    fakeTable(null, i).setInnerTable(null); // Drop all merge tables.
+                    fakeTable(null, i).innerTable(null); // Drop all merge tables.
             }
         }
     }
@@ -962,7 +962,7 @@ public class GridReduceQueryExecutor {
         for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
             GridMergeTable tbl = createMergeTable(c, mapQry, false);
 
-            fakeTable(c, tblIdx++).setInnerTable(tbl);
+            fakeTable(c, tblIdx++).innerTable(tbl);
         }
 
         GridCacheSqlQuery rdc = qry.reduceQuery();
