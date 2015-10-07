@@ -29,6 +29,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.yardstick.Utils;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
@@ -125,7 +126,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
                         println("[RESTARTER] Got exception: " + e);
                         e.printStackTrace();
 
-                        println(Utils.threadDump());
+                        U.dumpThreads(null);
 
                         if (e instanceof Error)
                             throw (Error)e;
@@ -139,14 +140,14 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
                         while (!Thread.currentThread().isInterrupted()) {
                             Thread.sleep(30 * 60 * 1000);
 
-                            println(Utils.threadDump());
+                            U.dumpThreads(null);
                         }
                     }
                     catch (Throwable e) {
                         println("[Thread dump printer] Got exception: " + e);
                         e.printStackTrace();
 
-                        println(Utils.threadDump());
+                        U.dumpThreads(null);
 
                         if (e instanceof Error)
                             throw (Error)e;
@@ -201,7 +202,9 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
         /** {@inheritDoc} */
         @Override public void run() {
             println("Driver finished with exception [driverNodeId=" + id + ", e=" +  e
-                + "]\nFull thread dump of the current server node:\n" + Utils.threadDump());
+                + "]\nFull thread dump of the current server node:");
+            
+            U.dumpThreads(null);
         }
     }
 }

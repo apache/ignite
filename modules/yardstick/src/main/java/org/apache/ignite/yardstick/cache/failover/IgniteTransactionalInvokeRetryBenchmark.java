@@ -29,7 +29,6 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.yardstick.Utils;
 import org.yardstickframework.BenchmarkConfiguration;
 
 import static org.yardstickframework.BenchmarkUtils.println;
@@ -107,7 +106,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                             }
                                         }
 
-                                        println(cfg, Utils.threadDump());
+                                        U.dumpThreads(null);
 
                                         return;
                                     }
@@ -131,7 +130,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
 
                     e.printStackTrace();
 
-                    println(Utils.threadDump());
+                    U.dumpThreads(null);
 
                     if (e instanceof Error)
                         throw (Error)e;

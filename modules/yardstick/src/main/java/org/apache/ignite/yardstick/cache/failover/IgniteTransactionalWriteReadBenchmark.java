@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.yardstick.Utils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.yardstick.Utils.doInTransaction;
 import static org.yardstickframework.BenchmarkUtils.println;
@@ -81,7 +81,7 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
                             }
                         }
 
-                        println(cfg, Utils.threadDump());
+                        U.dumpThreads(null);
 
                         return false;
                     }

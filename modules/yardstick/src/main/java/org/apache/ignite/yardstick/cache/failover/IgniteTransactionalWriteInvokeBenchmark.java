@@ -26,7 +26,7 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
-import org.apache.ignite.yardstick.Utils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.yardstick.Utils.doInTransaction;
 import static org.yardstickframework.BenchmarkUtils.println;
@@ -95,7 +95,7 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
                                     }
                                 }
 
-                                println(cfg, Utils.threadDump());
+                                U.dumpThreads(null);
 
                                 return false;
                             }
