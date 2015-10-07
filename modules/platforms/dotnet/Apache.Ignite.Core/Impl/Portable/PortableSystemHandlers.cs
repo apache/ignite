@@ -152,10 +152,10 @@ namespace Apache.Ignite.Core.Impl.Portable
             // 13. Arbitrary dictionary.
             ReadHandlers[PortableUtils.TypeDictionary] = new PortableSystemReader(ReadDictionary);
 
-            // 13. Generic dictionary.
+            // 14. Generic dictionary.
             ReadHandlers[PortableUtils.TypeGenericDictionary] = new PortableSystemReader(ReadGenericDictionary);
 
-            // 14. Map entry.
+            // 15. Map entry.
             ReadHandlers[PortableUtils.TypeMapEntry] = new PortableSystemReader(ReadMapEntry);
             
             // 16. Enum.
@@ -177,6 +177,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             // Have we ever met this type?
             if (writeHandlers0 != null && writeHandlers0.TryGetValue(type, out res))
                 return res;
+
             // Determine write handler for type and add it.
             res = FindWriteHandler(type);
 
