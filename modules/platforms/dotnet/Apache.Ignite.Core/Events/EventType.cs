@@ -17,10 +17,11 @@
 
 namespace Apache.Ignite.Core.Events
 {
-    using System;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
+    using Apache.Ignite.Core.Impl.Collections;
 
     /// <summary>
     /// Contains event type constants. The decision to use class and not enumeration is dictated 
@@ -474,98 +475,98 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite events (<b>excluding</b> metric update event).
         /// </summary>
-        private static readonly int[] EvtsAllMinusMetricUpdate0 =
-            EvtsAll0.Where(x => x != EvtNodeMetricsUpdated).ToArray();
+        private static readonly ICollection<int> EvtsAllMinusMetricUpdate0 =
+            EvtsAll0.Where(x => x != EvtNodeMetricsUpdated).ToArray().AsReadOnly();
 
         /// <summary>
         /// All events indicating an error or failure condition. It is convenient to use when fetching all events 
         /// indicating error or failure.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public static int[] EvtsError
+        public static ICollection<int> EvtsError
         {
-            get { return CloneArray(EvtsError0); }
+            get { return EvtsError0; }
         }
 
         /// <summary>
         /// All Ignite events (<b>excluding</b> metric update event).
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public static int[] EvtsAllMinusMetricUpdate
+        public static ICollection<int> EvtsAllMinusMetricUpdate
         {
-            get { return CloneArray(EvtsAllMinusMetricUpdate0); }
+            get { return EvtsAllMinusMetricUpdate0; }
         }
 
         /// <summary>
         /// All swap space events.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public static int[] EvtsSwapspace
+        public static ICollection<int> EvtsSwapspace
         {
-            get { return CloneArray(EvtsSwapspace0); }
+            get { return EvtsSwapspace0; }
         }
 
         /// <summary>
         /// All cache query events.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public static int[] EvtsCacheQuery
+        public static ICollection<int> EvtsCacheQuery
         {
-            get { return CloneArray(EvtsCacheQuery0); }
+            get { return EvtsCacheQuery0; }
         }
 
         /// <summary>
         /// All cache lifecycle events.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public static int[] EvtsCacheLifecycle
+        public static ICollection<int> EvtsCacheLifecycle
         {
-            get { return CloneArray(EvtsCacheLifecycle0); }
+            get { return EvtsCacheLifecycle0; }
         }
 
         /// <summary>
         /// All cache rebalance events.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public static int[] EvtsCacheRebalance
+        public static ICollection<int> EvtsCacheRebalance
         {
-            get { return CloneArray(EvtsCacheRebalance0); }
+            get { return EvtsCacheRebalance0; }
         }
 
         /// <summary>
         /// All cache events.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public static int[] EvtsCache
+        public static ICollection<int> EvtsCache
         {
-            get { return CloneArray(EvtsCache0); }
+            get { return EvtsCache0; }
         }
 
         /// <summary>
         /// All Ignite task execution events.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public static int[] EvtsTaskExecution
+        public static ICollection<int> EvtsTaskExecution
         {
-            get { return CloneArray(EvtsTaskExecution0); }
+            get { return EvtsTaskExecution0; }
         }
 
         /// <summary>
         /// All Ignite job execution events.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public static int[] EvtsJobExecution
+        public static ICollection<int> EvtsJobExecution
         {
-            get { return CloneArray(EvtsJobExecution0); }
+            get { return EvtsJobExecution0; }
         }
 
         /// <summary>
         /// All discovery events.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public static int[] EvtsDiscoveryAll
+        public static ICollection<int> EvtsDiscoveryAll
         {
-            get { return CloneArray(EvtsDiscoveryAll0); }
+            get { return EvtsDiscoveryAll0; }
         }
 
         /// <summary>
@@ -575,18 +576,18 @@ namespace Apache.Ignite.Core.Events
         /// cref="EvtsDiscoveryAll0" /> array.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public static int[] EvtsDiscovery
+        public static ICollection<int> EvtsDiscovery
         {
-            get { return CloneArray(EvtsDiscovery0); }
+            get { return EvtsDiscovery0; }
         }
 
         /// <summary>
         /// All Ignite events.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public static int[] EvtsAll
+        public static ICollection<int> EvtsAll
         {
-            get { return CloneArray(EvtsAll0); }
+            get { return EvtsAll0; }
         }
 
         /// <summary>
@@ -598,20 +599,6 @@ namespace Apache.Ignite.Core.Events
             return typeof (EventType).GetFields(BindingFlags.Public | BindingFlags.Static)
                 .Where(x => x.FieldType == typeof (int))
                 .Select(x => (int) x.GetValue(null)).ToArray();
-        }
-
-        /// <summary>
-        /// Clones an array to return to the user.
-        /// </summary>
-        /// <param name="array">The array.</param>
-        /// <returns>Shallow copy of the array.</returns>
-        private static int[] CloneArray(int[] array)
-        {
-            var res = new int[array.Length];
-
-            Array.Copy(array, res, array.Length);
-
-            return res;
         }
     }
 }
