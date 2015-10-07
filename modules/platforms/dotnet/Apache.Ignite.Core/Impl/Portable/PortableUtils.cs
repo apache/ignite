@@ -1427,18 +1427,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var colInfo = PortableCollectionInfo.GetInstance(collectionType);
 
-            var elementType = collectionType.GetGenericArguments().Single();
-
-            // TODO: Cache
-            var factoryType = typeof (PortableGenericCollectionFactory<>).MakeGenericType(elementType);
-
-            var readMethod = MtdhReadGenericCollection0.MakeGenericMethod(elementType);
-
-            var readerFunc =
-                DelegateConverter.CompileFunc<Func<PortableReaderImpl, object, PortableCollectionInfo, object>>(typeof(PortableUtils),
-                    readMethod, new[] { typeof(PortableReaderImpl), factoryType, typeof(PortableCollectionInfo) }, new[] { false, true, false, true });
-
-            return readerFunc(reader, null, colInfo);
+            return colInfo.ReadGeneric(reader);
         }
 
         /// <summary>
@@ -1455,19 +1444,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Reads generic collection without type information.
         /// </summary>
-        private static ICollection<T> ReadGenericCollection0<T>(PortableReaderImpl ctx, 
+        private static ICollection<T> ReadGenericCollection0<T>(PortableReaderImpl reader, 
             PortableGenericCollectionFactory<T> factory, PortableCollectionInfo info)
         {
-            Debug.Assert(ctx != null);
+            Debug.Assert(reader != null);
 
-            int len = ctx.Stream.ReadInt();
+            int len = reader.Stream.ReadInt();
 
             var res = factory != null 
                 ? factory.Invoke(len) 
                 : (ICollection<T>) info.Constructor(len);
 
             for (int i = 0; i < len; i++)
-                res.Add(ctx.Deserialize<T>());
+                res.Add(reader.Deserialize<T>());
 
             return res;
         }
@@ -1557,56 +1546,39 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Reads generic dictionary with type information.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        /// <returns></returns>
         public static object ReadTypedDictionary(PortableReaderImpl reader)
         {
-            var collectionType = ReadType(reader);
+            var colType = ReadType(reader);
 
-            var elementTypes = collectionType.GetGenericArguments();
+            var colInfo = PortableCollectionInfo.GetInstance(colType);
 
-            // TODO: Cache
-            var factoryType = typeof(PortableGenericDictionaryFactory<,>).MakeGenericType(elementTypes);
-
-            var readMethod = MtdhReadGenericDictionary0.MakeGenericMethod(elementTypes);
-
-            var readerFunc =
-                DelegateConverter.CompileFunc<Func<PortableReaderImpl, object, Type, object>>(typeof(PortableUtils),
-                    readMethod, new[] { typeof(PortableReaderImpl), factoryType, typeof(Type) }, new[] { false, true, false, true });
-
-            return readerFunc(reader, null, collectionType);
-            
+            return colInfo.ReadGeneric(reader);
         }
 
+        /// <summary>
+        /// Reads generic dictionary with type information.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <param name="factory">The factory.</param>
         public static IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableReaderImpl reader,
             PortableGenericDictionaryFactory<TK, TV> factory)
         {
             var collectionType = ReadType(reader);
 
-            return ReadGenericDictionary0(reader, factory, collectionType);
+            return ReadGenericDictionary0(reader, factory, PortableCollectionInfo.GetInstance(collectionType));
         }
 
         /// <summary>
         /// Reads the generic dictionary.
         /// </summary>
         private static IDictionary<TK, TV> ReadGenericDictionary0<TK, TV>(PortableReaderImpl reader,
-            PortableGenericDictionaryFactory<TK, TV> factory, Type collectionType)
+            PortableGenericDictionaryFactory<TK, TV> factory, PortableCollectionInfo collectionInfo)
         {
             var len = reader.Stream.ReadInt();
 
-            IDictionary<TK, TV> res;
-
-            if (factory != null)
-            {
-                res = factory.Invoke(len);
-            }
-            else
-            {
-                // TODO: cache
-                var ctor = DelegateConverter.CompileCtor<Func<object, IDictionary<TK, TV>>>(collectionType,
-                    new[] { typeof(int) }, false);
-
-                res = ctor(len);
-            }
+            var res = factory != null 
+                ? factory.Invoke(len) 
+                : (IDictionary<TK, TV>) collectionInfo.Constructor(len);
 
             for (int i = 0; i < len; i++)
             {

@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private static PortableCollectionInfo GetGenericCollectionInfo(Type type, Type genTyp)
         {
             var writeMthd = PortableUtils.MtdhWriteGenericCollection.MakeGenericMethod(genTyp.GetGenericArguments());
-            var readMthd = PortableUtils.MtdhReadGenericCollection.MakeGenericMethod(genTyp.GetGenericArguments());
+            var readMthd = PortableUtils.MtdhReadGenericCollection0.MakeGenericMethod(genTyp.GetGenericArguments());
 
             return new PortableCollectionInfo(type, FlagGenericCollection,
                 PortableSystemHandlers.WriteHndGenericCollection, writeMthd, readMthd);
@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private static PortableCollectionInfo GetGenericDictionaryInfo(Type type, Type genTyp)
         {
             var writeMthd = PortableUtils.MtdhWriteGenericDictionary.MakeGenericMethod(genTyp.GetGenericArguments());
-            var readMthd = PortableUtils.MtdhReadGenericDictionary.MakeGenericMethod(genTyp.GetGenericArguments());
+            var readMthd = PortableUtils.MtdhReadGenericDictionary0.MakeGenericMethod(genTyp.GetGenericArguments());
 
             return new PortableCollectionInfo(type, FlagGenericDictionary,
                 PortableSystemHandlers.WriteHndGenericDictionary, writeMthd, readMthd);
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private readonly Action<object, PortableWriterImpl> _writeFunc;
 
         /** Generic read func. */
-        private readonly Func<PortableReaderImpl, object, object> _readFunc;
+        private readonly Func<PortableReaderImpl, object, PortableCollectionInfo, object> _readFunc;
         
         /** Type. */
         private readonly Type _type;
@@ -174,8 +174,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     new[] {true, false, false});
 
             if (readMthd0 != null)
-                _readFunc = DelegateConverter.CompileFunc<Func<PortableReaderImpl, object, object>>(null, readMthd0, 
-                    null, new[] {false, true, false});
+                _readFunc = DelegateConverter.CompileFunc<Func<PortableReaderImpl, object, PortableCollectionInfo, object>>(null, readMthd0, 
+                    null, new[] {false, true, false, false});
 
             var ctorInfo = type.GetConstructor(new[] {typeof (int)});
 
@@ -255,7 +255,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             Debug.Assert(reader != null);
             Debug.Assert(_readFunc != null);
 
-            return _readFunc(reader, null);
+            return _readFunc(reader, null, this);
         }
 
         /// <summary>
