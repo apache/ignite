@@ -96,6 +96,9 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_JETTY_LOG_NO_OVERRIDE = "IGNITE_JETTY_LOG_NO_OVERRIDE";
 
+    /** This property allow rewriting default ({@code 30}) rest session expire time (in seconds). */
+    public static final String IGNITE_REST_SESSION_TIMEOUT = "IGNITE_REST_SESSION_TIMEOUT";
+
     /**
      * This property allows to override maximum count of task results stored on one node
      * in REST processor.
