@@ -1360,7 +1360,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(IdMapper.TestTypeId, _grid.GetPortables().GetTypeId(IdMapper.TestTypeName));
             
-            Assert.AreEqual(PortableUtils.StringHashCode("someTypeName"), _grid.GetPortables().GetTypeId("someTypeName"));
+            Assert.AreEqual(PortableUtils.GetStringHashCode("someTypeName"), _grid.GetPortables().GetTypeId("someTypeName"));
         }
 
         /// <summary>

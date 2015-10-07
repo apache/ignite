@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Runtime.InteropServices;
     using System.Runtime.Serialization.Formatters.Binary;
     using System.Text;
     using Apache.Ignite.Core.Impl.Common;
@@ -969,29 +970,13 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static unsafe void WriteGuid(Guid val, IPortableStream stream)
         {
-            byte[] bytes = val.ToByteArray();
+            var jguid = new JavaGuid(val);
 
-            // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _g, _h, _i, _j, _k.
-            // And _a, _b and _c are always in little endian format irrespective of system configuration.
-            // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _e, _d.
-            fixed (byte* bytes0 = bytes)
-            {
-                stream.Write(bytes0 + 6, 2); // _c
-                stream.Write(bytes0 + 4, 2); // _a
-                stream.Write(bytes0, 4);     // _a
-            }
+            var ptr = &jguid;
 
-            stream.WriteByte(bytes[15]); // _k
-            stream.WriteByte(bytes[14]); // _j
-            stream.WriteByte(bytes[13]); // _i
-            stream.WriteByte(bytes[12]); // _h
-
-            stream.WriteByte(bytes[11]); // _g
-            stream.WriteByte(bytes[10]); // _f
-            stream.WriteByte(bytes[9]);  // _e
-            stream.WriteByte(bytes[8]);  // _d
+            stream.Write((byte*) ptr, 16);
         }
-
+        
         /**
          * <summary>Read GUID.</summary>
          * <param name="stream">Stream.</param>
@@ -999,61 +984,15 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static unsafe Guid? ReadGuid(IPortableStream stream)
         {
-            byte[] bytes = new byte[16];
+            JavaGuid jguid;
 
-            // Perform conversion opposite to what write does.
-            fixed (byte* bytes0 = bytes)
-            {
-                stream.Read(bytes0 + 6, 2);      // _c
-                stream.Read(bytes0 + 4, 2);      // _b
-                stream.Read(bytes0, 4);          // _a
-            }
+            var ptr = (byte*) &jguid;
 
-            bytes[15] = stream.ReadByte();  // _k
-            bytes[14] = stream.ReadByte();  // _j
-            bytes[13] = stream.ReadByte();  // _i
-            bytes[12] = stream.ReadByte();  // _h
+            stream.Read(ptr, 16);
 
-            bytes[11] = stream.ReadByte();  // _g
-            bytes[10] = stream.ReadByte();  // _f
-            bytes[9] = stream.ReadByte();   // _e
-            bytes[8] = stream.ReadByte();   // _d
+            var dotnetGuid = new GuidAccessor(jguid);
 
-            return new Guid(bytes);
-        }
-
-        /**
-         * <summary>Read GUID.</summary>
-         * <param name="data">Data array.</param>
-         * <param name="pos">Position.</param>
-         * <returns>GUID</returns>
-         */
-        public static Guid ReadGuid(byte[] data, int pos) {
-            byte[] bytes = new byte[16];
-
-            // Perform conversion opposite to what write does.
-            bytes[6] = data[pos];  // _c
-            bytes[7] = data[pos + 1];
-
-            bytes[4] = data[pos + 2];  // _b
-            bytes[5] = data[pos + 3];
-
-            bytes[0] = data[pos + 4];  // _a
-            bytes[1] = data[pos + 5];
-            bytes[2] = data[pos + 6];
-            bytes[3] = data[pos + 7];
-
-            bytes[15] = data[pos + 8];  // _k
-            bytes[14] = data[pos + 9];  // _j
-            bytes[13] = data[pos + 10];  // _i
-            bytes[12] = data[pos + 11];  // _h
-
-            bytes[11] = data[pos + 12];  // _g
-            bytes[10] = data[pos + 13];  // _f
-            bytes[9] = data[pos + 14];   // _e
-            bytes[8] = data[pos + 15];   // _d
-
-            return new Guid(bytes);
+            return *(Guid*) (&dotnetGuid);
         }
 
         /// <summary>
@@ -1642,7 +1581,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="val">Value.</param>
          * <returns>Hash code.</returns>
          */
-        public static int StringHashCode(string val)
+        public static int GetStringHashCode(string val)
         {
             if (val == null)
                 return 0;
@@ -1816,7 +1755,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             if (id == 0)
-                id = StringHashCode(typeName);
+                id = GetStringHashCode(typeName);
 
             return id;
         }
@@ -1852,7 +1791,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             if (id == 0)
-                id = StringHashCode(fieldName);
+                id = GetStringHashCode(fieldName);
 
             if (id == 0)
                 throw new PortableException("Field ID is zero (please provide ID mapper or change field name) " + 
@@ -2237,6 +2176,71 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             throw new PortableException("Failed to find class: " + typeName);
+        }
+
+        /// <summary>
+        /// Reverses the byte order of an unsigned long.
+        /// </summary>
+        private static ulong ReverseByteOrder(ulong l)
+        {
+            // Fastest way would be to use bswap processor instruction.
+            return ((l >> 56) & 0x00000000000000FF) | ((l >> 40) & 0x000000000000FF00) |
+                   ((l >> 24) & 0x0000000000FF0000) | ((l >> 8) & 0x00000000FF000000) |
+                   ((l << 8) & 0x000000FF00000000) | ((l << 24) & 0x0000FF0000000000) |
+                   ((l << 40) & 0x00FF000000000000) | ((l << 56) & 0xFF00000000000000);
+        }
+
+        /// <summary>
+        /// Struct with .Net-style Guid memory layout.
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
+        private struct GuidAccessor
+        {
+            public readonly ulong ABC;
+            public readonly ulong DEGHIJK;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="GuidAccessor"/> struct.
+            /// </summary>
+            /// <param name="val">The value.</param>
+            public GuidAccessor(JavaGuid val)
+            {
+                var l = val.CBA;
+
+                ABC = ((l >> 32) & 0x00000000FFFFFFFF) | ((l << 48) & 0xFFFF000000000000) |
+                      ((l << 16) & 0x0000FFFF00000000);
+
+                DEGHIJK = ReverseByteOrder(val.KJIHGED);
+            }
+        }
+
+        /// <summary>
+        /// Struct with Java-style Guid memory layout.
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JavaGuid
+        {
+            public readonly ulong CBA;
+            public readonly ulong KJIHGED;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="JavaGuid"/> struct.
+            /// </summary>
+            /// <param name="val">The value.</param>
+            public unsafe JavaGuid(Guid val)
+            {
+                // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _g, _h, _i, _j, _k.
+                // And _a, _b and _c are always in little endian format irrespective of system configuration.
+                // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _e, _d.
+                var accessor = *((GuidAccessor*)&val);
+
+                var l = accessor.ABC;
+
+                CBA = ((l << 32) & 0xFFFFFFFF00000000) | ((l >> 48) & 0x000000000000FFFF) |
+                      ((l >> 16) & 0x00000000FFFF0000);
+
+                KJIHGED = ReverseByteOrder(accessor.DEGHIJK);
+            }
         }
     }
 }
