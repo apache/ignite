@@ -41,90 +41,83 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        try {
-            final int k = nextRandom(KEY_RANGE);
+        final int k = nextRandom(KEY_RANGE);
 
-            assert args.keysCount() > 0 : "Count of keys = " + args.keysCount();
+        assert args.keysCount() > 0 : "Count of keys = " + args.keysCount();
 
-            final String[] keys = new String[args.keysCount()];
+        final String[] keys = new String[args.keysCount()];
 
-            final String masterKey = "key-" + k + "-master";
+        final String masterKey = "key-" + k + "-master";
 
-            for (int i = 0; i < keys.length; i++)
-                keys[i] = "key-" + k + "-" + i;
+        for (int i = 0; i < keys.length; i++)
+            keys[i] = "key-" + k + "-" + i;
 
-            final int scenario = nextRandom(2);
+        final int scenario = nextRandom(2);
 
-            return doInTransaction(ignite(), new Callable<Boolean>() {
-                @Override public Boolean call() throws Exception {
-                    final int timeout = args.cacheOperationTimeoutMillis();
+        return doInTransaction(ignite(), new Callable<Boolean>() {
+            @Override public Boolean call() throws Exception {
+                final int timeout = args.cacheOperationTimeoutMillis();
 
-                    switch (scenario) {
-                        case 0: // Read scenario.
-                            Map<String, Long> map = new HashMap<>();
+                switch (scenario) {
+                    case 0: // Read scenario.
+                        Map<String, Long> map = new HashMap<>();
 
-                            asyncCache.get(masterKey);
-                            Long cacheVal = asyncCache.<Long>future().get(timeout);
+                        asyncCache.get(masterKey);
+                        Long cacheVal = asyncCache.<Long>future().get(timeout);
 
-                            map.put(masterKey, cacheVal);
+                        map.put(masterKey, cacheVal);
 
-                            for (String key : keys) {
-                                asyncCache.get(key);
-                                cacheVal = asyncCache.<Long>future().get(timeout);
+                        for (String key : keys) {
+                            asyncCache.get(key);
+                            cacheVal = asyncCache.<Long>future().get(timeout);
 
-                                map.put(key, cacheVal);
-                            }
+                            map.put(key, cacheVal);
+                        }
 
-                            Set<Long> values = new HashSet<>(map.values());
+                        Set<Long> values = new HashSet<>(map.values());
 
-                            if (values.size() != 1) {
-                                // Print all usefull information and finish.
-                                println(cfg, "[Exception] Got different values for keys [map=" + map + "]");
+                        if (values.size() != 1) {
+                            // Print all usefull information and finish.
+                            println(cfg, "[Exception] Got different values for keys [map=" + map + "]");
 
-                                println(cfg, "Cache content:");
+                            println(cfg, "Cache content:");
 
-                                for (int k = 0; k < KEY_RANGE; k++) {
-                                    for (int i = 0; i < args.keysCount(); i++) {
-                                        String key = "key-" + k + "-" + i;
+                            for (int k = 0; k < KEY_RANGE; k++) {
+                                for (int i = 0; i < args.keysCount(); i++) {
+                                    String key = "key-" + k + "-" + i;
 
-                                        asyncCache.get(key);
-                                        Long val = asyncCache.<Long>future().get(timeout);
+                                    asyncCache.get(key);
+                                    Long val = asyncCache.<Long>future().get(timeout);
 
-                                        if (val != null)
-                                            println(cfg, "Entry [key=" + key + ", val=" + val);
-                                    }
+                                    if (val != null)
+                                        println(cfg, "Entry [key=" + key + ", val=" + val);
                                 }
-
-                                U.dumpThreads(null);
-
-                                return false;
                             }
 
-                            break;
-                        case 1: // Invoke scenario.
-                            asyncCache.get(masterKey);
-                            Long val = asyncCache.<Long>future().get(timeout);
+                            U.dumpThreads(null);
 
-                            asyncCache.put(masterKey, val == null ? 0 : val + 1);
+                            return false;
+                        }
+
+                        break;
+                    case 1: // Invoke scenario.
+                        asyncCache.get(masterKey);
+                        Long val = asyncCache.<Long>future().get(timeout);
+
+                        asyncCache.put(masterKey, val == null ? 0 : val + 1);
+                        asyncCache.future().get(timeout);
+
+                        for (String key : keys) {
+                            asyncCache.invoke(key, new IncrementCacheEntryProcessor());
                             asyncCache.future().get(timeout);
+                        }
 
-                            for (String key : keys) {
-                                asyncCache.invoke(key, new IncrementCacheEntryProcessor());
-                                asyncCache.future().get(timeout);
-                            }
-
-                            break;
-                    }
-
-                    return true;
+                        break;
                 }
-            });
-        }
-        catch (Throwable e) {
-            this.e.compareAndSet(null, e);
 
-            throw e;
-        }
+                return true;
+            }
+        });
     }
 
     /** {@inheritDoc} */

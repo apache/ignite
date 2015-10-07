@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -44,8 +44,8 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
     /** Async Cache. */
     protected IgniteCache<K, V> asyncCache;
 
-    /** The first exception in {@link #test(Map)} method. */
-    protected final AtomicReference<Throwable> e = new AtomicReference<>();
+    /** */
+    private final AtomicBoolean firtsExProcessed = new AtomicBoolean();
 
     /** {@inheritDoc} */
     @Override public void setUp(final BenchmarkConfiguration cfg) throws Exception {
@@ -164,18 +164,15 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
     }
 
     /** {@inheritDoc} */
-    @Override public void tearDown() throws Exception {
-        Throwable e = this.e.get();
-
-        if (e != null) {
-            final Ignite ignite = ignite();
+    @Override public void onException(Throwable e) {
+        // Proceess only first exception to prevent a multiple printing of a full thread dump.
+        if (firtsExProcessed.compareAndSet(false, true)) {
+            Ignite ignite = ignite();
 
             ClusterGroup srvs = ignite.cluster().forServers();
 
             ignite.compute(srvs).broadcast(new ThreadDumpPrinterTask(ignite.cluster().localNode().id(), e));
         }
-
-        super.tearDown();
     }
 
     /**
@@ -203,7 +200,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
         @Override public void run() {
             println("Driver finished with exception [driverNodeId=" + id + ", e=" +  e
                 + "]\nFull thread dump of the current server node:");
-            
+
             U.dumpThreads(null);
         }
     }

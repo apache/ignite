@@ -38,72 +38,65 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        try {
-            final int k = nextRandom(KEY_RANGE);
+        final int k = nextRandom(KEY_RANGE);
 
-            assert args.keysCount() > 0 : "Count of keys = " + args.keysCount();
+        assert args.keysCount() > 0 : "Count of keys = " + args.keysCount();
 
-            final String[] keys = new String[args.keysCount()];
+        final String[] keys = new String[args.keysCount()];
 
-            for (int i = 0; i < keys.length; i++)
-                keys[i] = "key-" + k + "-" + i;
+        for (int i = 0; i < keys.length; i++)
+            keys[i] = "key-" + k + "-" + i;
 
-            return doInTransaction(ignite(), new Callable<Boolean>() {
-                @Override public Boolean call() throws Exception {
-                    Map<String, Long> map = new HashMap<>();
+        return doInTransaction(ignite(), new Callable<Boolean>() {
+            @Override public Boolean call() throws Exception {
+                Map<String, Long> map = new HashMap<>();
 
-                    final int timeout = args.cacheOperationTimeoutMillis();
+                final int timeout = args.cacheOperationTimeoutMillis();
 
-                    for (String key : keys) {
-                        asyncCache.get(key);
-                        Long val = asyncCache.<Long>future().get(timeout);
+                for (String key : keys) {
+                    asyncCache.get(key);
+                    Long val = asyncCache.<Long>future().get(timeout);
 
-                        map.put(key, val);
-                    }
-
-                    Set<Long> values = new HashSet<>(map.values());
-
-                    if (values.size() != 1) {
-                        // Print all usefull information and finish.
-                        println(cfg, "[Exception] Got different values for keys [map=" + map + "]");
-
-                        println(cfg, "Cache content:");
-
-                        for (int k = 0; k < KEY_RANGE; k++) {
-                            for (int i = 0; i < args.keysCount(); i++) {
-                                String key = "key-" + k + "-" + i;
-
-                                asyncCache.get(key);
-                                Long val = asyncCache.<Long>future().get(timeout);
-
-                                if (val != null)
-                                    println(cfg, "Entry [key=" + key + ", val=" + val);
-                            }
-                        }
-
-                        U.dumpThreads(null);
-
-                        return false;
-                    }
-
-                    final Long oldVal = map.get(keys[0]);
-
-                    final Long newVal = oldVal == null ? 0 : oldVal + 1;
-
-                    for (String key : keys) {
-                        asyncCache.put(key, newVal);
-                        asyncCache.future().get(timeout);
-                    }
-
-                    return true;
+                    map.put(key, val);
                 }
-            });
-        }
-        catch (Throwable e) {
-            this.e.compareAndSet(null, e);
 
-            throw e;
-        }
+                Set<Long> values = new HashSet<>(map.values());
+
+                if (values.size() != 1) {
+                    // Print all usefull information and finish.
+                    println(cfg, "[Exception] Got different values for keys [map=" + map + "]");
+
+                    println(cfg, "Cache content:");
+
+                    for (int k = 0; k < KEY_RANGE; k++) {
+                        for (int i = 0; i < args.keysCount(); i++) {
+                            String key = "key-" + k + "-" + i;
+
+                            asyncCache.get(key);
+                            Long val = asyncCache.<Long>future().get(timeout);
+
+                            if (val != null)
+                                println(cfg, "Entry [key=" + key + ", val=" + val);
+                        }
+                    }
+
+                    U.dumpThreads(null);
+
+                    return false;
+                }
+
+                final Long oldVal = map.get(keys[0]);
+
+                final Long newVal = oldVal == null ? 0 : oldVal + 1;
+
+                for (String key : keys) {
+                    asyncCache.put(key, newVal);
+                    asyncCache.future().get(timeout);
+                }
+
+                return true;
+            }
+        });
     }
 
     /** {@inheritDoc} */
