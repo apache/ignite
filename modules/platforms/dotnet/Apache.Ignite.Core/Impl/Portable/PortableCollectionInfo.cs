@@ -82,59 +82,51 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (type.IsGenericType)
             {
                 if (type.GetGenericTypeDefinition() == PortableUtils.TypGenericDictionary)
-                {
-                    MethodInfo writeMthd =
-                        PortableUtils.MtdhWriteGenericDictionary.MakeGenericMethod(type.GetGenericArguments());
-                    MethodInfo readMthd =
-                        PortableUtils.MtdhReadGenericDictionary.MakeGenericMethod(type.GetGenericArguments());
+                    return GetGenericDictionaryInfo(type, type);
 
-                    return new PortableCollectionInfo(type, FlagGenericDictionary,
-                        PortableSystemHandlers.WriteHndGenericDictionary, writeMthd, readMthd);
-                }
-
-                Type genTyp = type.GetInterface(PortableUtils.TypGenericDictionary.FullName);
+                var genTyp = type.GetInterface(PortableUtils.TypGenericDictionary.FullName);
 
                 if (genTyp != null)
-                {
-                    MethodInfo writeMthd =
-                        PortableUtils.MtdhWriteGenericDictionary.MakeGenericMethod(genTyp.GetGenericArguments());
-                    MethodInfo readMthd =
-                        PortableUtils.MtdhReadGenericDictionary.MakeGenericMethod(genTyp.GetGenericArguments());
-
-                    return new PortableCollectionInfo(type, FlagGenericDictionary,
-                        PortableSystemHandlers.WriteHndGenericDictionary, writeMthd, readMthd);
-                }
+                    return GetGenericDictionaryInfo(type, genTyp);
 
                 if (type.GetGenericTypeDefinition() == PortableUtils.TypGenericCollection)
-                {
-                    MethodInfo writeMthd =
-                        PortableUtils.MtdhWriteGenericCollection.MakeGenericMethod(type.GetGenericArguments());
-                    MethodInfo readMthd =
-                        PortableUtils.MtdhReadGenericCollection.MakeGenericMethod(type.GetGenericArguments());
-
-                    return new PortableCollectionInfo(type, FlagGenericCollection,
-                        PortableSystemHandlers.WriteHndGenericCollection, writeMthd, readMthd);
-                }
+                    return GetGenericCollectionInfo(type, type);
 
                 genTyp = type.GetInterface(PortableUtils.TypGenericCollection.FullName);
 
                 if (genTyp != null)
-                {
-                    MethodInfo writeMthd =
-                        PortableUtils.MtdhWriteGenericCollection.MakeGenericMethod(genTyp.GetGenericArguments());
-                    MethodInfo readMthd =
-                        PortableUtils.MtdhReadGenericCollection.MakeGenericMethod(genTyp.GetGenericArguments());
-
-                    return new PortableCollectionInfo(type, FlagGenericCollection,
-                        PortableSystemHandlers.WriteHndGenericCollection, writeMthd, readMthd);
-                }
+                    return GetGenericCollectionInfo(type, genTyp);
             }
 
             if (type == PortableUtils.TypDictionary || type.GetInterface(PortableUtils.TypDictionary.FullName) != null)
                 return Dictionary;
+
             if (type == PortableUtils.TypCollection || type.GetInterface(PortableUtils.TypCollection.FullName) != null)
                 return Collection;
+
             return None;
+        }
+
+        private static PortableCollectionInfo GetGenericCollectionInfo(Type type, Type genTyp)
+        {
+            MethodInfo writeMthd =
+                PortableUtils.MtdhWriteGenericCollection.MakeGenericMethod(genTyp.GetGenericArguments());
+            MethodInfo readMthd =
+                PortableUtils.MtdhReadGenericCollection.MakeGenericMethod(genTyp.GetGenericArguments());
+
+            return new PortableCollectionInfo(type, FlagGenericCollection,
+                PortableSystemHandlers.WriteHndGenericCollection, writeMthd, readMthd);
+        }
+
+        private static PortableCollectionInfo GetGenericDictionaryInfo(Type type, Type genTyp)
+        {
+            MethodInfo writeMthd =
+                PortableUtils.MtdhWriteGenericDictionary.MakeGenericMethod(genTyp.GetGenericArguments());
+            MethodInfo readMthd =
+                PortableUtils.MtdhReadGenericDictionary.MakeGenericMethod(genTyp.GetGenericArguments());
+
+            return new PortableCollectionInfo(type, FlagGenericDictionary,
+                PortableSystemHandlers.WriteHndGenericDictionary, writeMthd, readMthd);
         }
 
         /** Flag. */
