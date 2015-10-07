@@ -120,6 +120,7 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
     public void start() throws IgniteException {
         if (!stopped)
             throw new IgniteException("Attempted to start an already started Storm  Streamer");
+
         A.notNull(getStreamer(), "streamer");
         A.notNull(getIgnite(), "ignite");
         A.ensure(threads > 0, "threads > 0");
@@ -156,7 +157,7 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
 
                 ignite.getOrCreateCache(getCacheName());
 
-                setStreamer(ignite.dataStreamer(getCacheName()));
+                setStreamer(ignite.<K,V>dataStreamer(getCacheName()));
             }
 
             start();
@@ -172,24 +173,30 @@ public class StormStreamer<T, K, V> extends StreamAdapter<T, K, V> implements IR
      */
     @Override
     public void execute(Tuple tuple) {
-        Map<K, V> igniteGrid = (Map)tuple.getValueByField("IgniteGrid");
+        final Map<K, V> igniteGrid = (Map)tuple.getValueByField("IgniteGrid");
+
         if (log.isDebugEnabled()) {
             log.debug("received Tuple from Storm " + tuple.getMessageId());
         }
-        executor.submit(() -> {
-            for (K k : igniteGrid.keySet()) {
-                try {
-                    if (log.isDebugEnabled()) {
-                        log.info("get tuple from storm  " + k + ", " + igniteGrid.get(k));
+
+        executor.submit(new Runnable() {
+            @Override public void run() {
+                for (K k : igniteGrid.keySet()) {
+                    try {
+                        if (log.isDebugEnabled()) {
+                            log.info("get tuple from storm  " + k + ", " + igniteGrid.get(k));
+                        }
+
+                        getStreamer().addData(k, igniteGrid.get(k));
                     }
-                    getStreamer().addData(k, igniteGrid.get(k));
-                }
-                catch (Exception e) {
-                    if (log.isDebugEnabled())
-                        log.debug(e.toString());
+                    catch (Exception e) {
+                        if (log.isDebugEnabled())
+                            log.debug(e.toString());
+                    }
                 }
             }
         });
+
         collector.ack(tuple);
     }
 

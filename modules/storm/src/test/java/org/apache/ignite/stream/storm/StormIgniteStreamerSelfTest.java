@@ -55,45 +55,11 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
      * @throws InterruptedException
      */
     public void testStormStreamerIgniteBolt() throws TimeoutException, InterruptedException {
-
         stormStreamer = new StormStreamer<>();
         stormStreamer.setThreads(5);
+
         startSimulatedTopology(stormStreamer);
-
-        // startTopology(stormStreamer);
-
     }
-
-
-    /**
-     * Not usable in Test regression phase.
-     * @param stormStreamer
-     */
-    @Deprecated
-    public void startTopology(StormStreamer stormStreamer){
-        /* Storm topology builder */
-        TopologyBuilder builder = new TopologyBuilder();
-
-
-        /*Set storm spout in topology builder */
-        builder.setSpout("spout", new StormSpout());
-
-        /* Set storm bolt in topology builder */
-        builder.setBolt("bolt", stormStreamer).shuffleGrouping("spout");
-
-        /*Storm config for local cluster */
-        Config config = new Config();
-
-        /* Storm local cluster */
-        LocalCluster localCluster = new LocalCluster();
-
-        /* Submit storm topology to local cluster */
-        localCluster.submitTopology("test", config, builder.createTopology());
-
-        /* Topology will run for 10sec */
-        Utils.sleep(20000);
-    }
-
 
     /**
      * Note to run this on TC: the time out has to be setted in according
@@ -101,7 +67,7 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
      * look setMessageTimeoutSecs parameter.
      * @param stormStreamer the storm streamer in Ignite
      */
-    public void startSimulatedTopology ( StormStreamer stormStreamer) {
+    public void startSimulatedTopology (final StormStreamer stormStreamer) {
         MkClusterParam mkClusterParam = new MkClusterParam();
         mkClusterParam.setSupervisors(4);
 
@@ -133,7 +99,6 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
                         //Our spout will be processing this values.
                         mockedSources.addMockData("spout", new Values(stormSpout.getKeyValMap()));
 
-
                         // prepare the config
                         Config conf = new Config();
                         conf.setNumWorkers(2);
@@ -145,8 +110,6 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
                         completeTopologyParam.setStormConf(conf);
 
                         Map result = Testing.completeTopology(cluster, topology, completeTopologyParam);
-
-
                     }
                 }
         );

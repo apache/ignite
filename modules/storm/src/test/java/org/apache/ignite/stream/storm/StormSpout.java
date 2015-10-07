@@ -45,16 +45,30 @@ public class StormSpout implements IRichSpout {
 
     private HashMap<String, String> keyValMap = new HashMap<>();
 
+    /**
+     * Declares the output field for the component.
+     * @param outputFieldsDeclarer
+     */
     @Override
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
         outputFieldsDeclarer.declare(new Fields("IgniteGrid"));
     }
 
+    /**
+     * Called when a task for this component is initialized within a worker on the cluster.
+     * It provides the spout with the environment in which the spout executes.
+     * @param map
+     * @param topologyContext
+     * @param spoutOutputCollector
+     */
     @Override
     public void open(Map map, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
         this.collector = spoutOutputCollector;
     }
 
+    /**
+     * When this method is called, Storm is requesting that the Spout emit tuples to the output collector.
+     */
     @Override
     public void nextTuple() {
         HashMap<String, String> keyValMap = getKeyValMap();
@@ -62,6 +76,10 @@ public class StormSpout implements IRichSpout {
         collector.emit(new Values(keyValMap));
     }
 
+    /**
+     * It generate key,value pair to emit to bolt({@link StormStreamer}).
+     * @return Key,value pair
+     */
     public HashMap<String, String> getKeyValMap() {
         List<Integer> numbers = new ArrayList<>();
 
@@ -79,24 +97,51 @@ public class StormSpout implements IRichSpout {
 
             keyValMap.put(ip, msg);
         }
+
         return keyValMap;
     }
 
+    /**
+     * Storm has determined that the tuple emitted by this spout with the msgId identifier has been fully processed.
+     * @param msgId
+     */
     @Override
-    public void ack(Object o) { }
+    public void ack(Object msgId) { }
 
+    /**
+     * The tuple emitted by this spout with the msgId identifier has failed to be fully processed.
+     * Typically, an implementation of this method will put that message back on the queue to be
+     * replayed at a later time.
+     * @param msgId
+     */
     @Override
-    public void fail(Object o) { }
+    public void fail(Object msgId) { }
 
+    /**
+     * Called when an ISpout is going to be shutdown.
+     */
     @Override
     public void close() { }
 
+    /**
+     * Called when a spout has been activated out of a deactivated mode.
+     * nextTuple will be called on this spout soon
+     */
     @Override
     public void activate() { }
 
+    /**
+     * Called when a spout has been deactivated.
+     * nextTuple will not be called while a spout is deactivated.
+     */
     @Override
     public void deactivate() { }
 
+    /**
+     * Declare configuration specific to this component.
+     * Only a subset of the "topology.*" configs can be overridden
+     * @return Map of String and Object.
+     */
     @Override
     public Map<String, Object> getComponentConfiguration() {
         return null;
