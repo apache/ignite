@@ -1072,7 +1072,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.IsNull(arr.InArr);
             Assert.AreEqual(2, arr.OutArr.Length);
             Assert.AreEqual(2, ((CompositeOuter)arr.OutArr[0]).Inner.Val);
-            Assert.AreEqual(1, ((CompositeOuter)arr.OutArr[0]).Inner.Val);
+            Assert.AreEqual(1, ((CompositeOuter)arr.OutArr[1]).Inner.Val);
         }
 
         /// <summary>
@@ -1082,20 +1082,14 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestCompositeContainer()
         {
             ArrayList col = new ArrayList();
-            ICollection<CompositeInner> gCol = new List<CompositeInner>();
             IDictionary dict = new Hashtable();
-            IDictionary<int, CompositeInner> gDict = new Dictionary<int, CompositeInner>();
 
             col.Add(new CompositeInner(1));
-            gCol.Add(new CompositeInner(2));
             dict[3] = new CompositeInner(3);
-            gDict[4] = new CompositeInner(4);
 
             IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(CompositeContainer)).SetHashCode(100)
                 .SetField<ICollection>("col", col)
-                .SetField("gCol", gCol)
-                .SetField("dict", dict)
-                .SetField("gDict", gDict).Build();
+                .SetField("dict", dict).Build();
 
             // 1. Check meta.
             IPortableMetadata meta = portObj.GetMetadata();
@@ -1104,23 +1098,15 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(4, meta.Fields.Count);
             Assert.AreEqual(PortableTypeNames.TypeNameCollection, meta.GetFieldTypeName("col"));
-            Assert.AreEqual(PortableTypeNames.TypeNameCollection, meta.GetFieldTypeName("gCol"));
             Assert.AreEqual(PortableTypeNames.TypeNameMap, meta.GetFieldTypeName("dict"));
-            Assert.AreEqual(PortableTypeNames.TypeNameMap, meta.GetFieldTypeName("gDict"));
 
             // 2. Check in portable form.
             Assert.AreEqual(1, portObj.GetField<ICollection>("col").Count);
             Assert.AreEqual(1, portObj.GetField<ICollection>("col").OfType<IPortableObject>().First()
                 .GetField<int>("val"));
 
-            Assert.AreEqual(1, portObj.GetField<ICollection<IPortableObject>>("gCol").Count);
-            Assert.AreEqual(2, portObj.GetField<ICollection<IPortableObject>>("gCol").First().GetField<int>("val"));
-
             Assert.AreEqual(1, portObj.GetField<IDictionary>("dict").Count);
             Assert.AreEqual(3, ((IPortableObject) portObj.GetField<IDictionary>("dict")[3]).GetField<int>("val"));
-
-            Assert.AreEqual(1, portObj.GetField<IDictionary<int, IPortableObject>>("gDict").Count);
-            Assert.AreEqual(4, portObj.GetField<IDictionary<int, IPortableObject>>("gDict")[4].GetField<int>("val"));
 
             // 3. Check in deserialized form.
             CompositeContainer obj = portObj.Deserialize<CompositeContainer>();
@@ -1128,14 +1114,8 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(1, obj.Col.Count);
             Assert.AreEqual(1, obj.Col.OfType<CompositeInner>().First().Val);
 
-            Assert.AreEqual(1, obj.GCol.Count);
-            Assert.AreEqual(2, obj.GCol.First().Val);
-
             Assert.AreEqual(1, obj.Dict.Count);
             Assert.AreEqual(3, ((CompositeInner) obj.Dict[3]).Val);
-
-            Assert.AreEqual(1, obj.GDict.Count);
-            Assert.AreEqual(4, obj.GDict[4].Val);
         }
 
         /// <summary>
@@ -1596,10 +1576,7 @@ namespace Apache.Ignite.Core.Tests.Portable
     public class CompositeContainer
     {
         public ICollection Col;
-        public ICollection<CompositeInner> GCol;
-
         public IDictionary Dict;
-        public IDictionary<int, CompositeInner> GDict;
     }
 
     /// <summary>
