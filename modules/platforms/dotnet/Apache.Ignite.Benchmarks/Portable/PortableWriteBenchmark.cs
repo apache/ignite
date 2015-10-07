@@ -46,7 +46,7 @@ namespace Apache.Ignite.Benchmarks.Portable
             {
                 TypeConfigurations = new List<PortableTypeConfiguration>
                 {
-                    new PortableTypeConfiguration(typeof (Address)) {MetadataEnabled = false}
+                    new PortableTypeConfiguration(typeof (Address)) {MetadataEnabled = true}
                 }
             });
         }

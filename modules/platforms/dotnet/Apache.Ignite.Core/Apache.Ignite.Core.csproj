@@ -275,6 +275,10 @@
     <Compile Include="Impl\Portable\PortableUtils.cs" />
     <Compile Include="Impl\Portable\PortableWriterImpl.cs" />
     <Compile Include="Impl\Portable\SerializableObjectHolder.cs" />
+    <Compile Include="Impl\Portable\Structure\PortableStructure.cs" />
+    <Compile Include="Impl\Portable\Structure\PortableStructureEntry.cs" />
+    <Compile Include="Impl\Portable\Structure\PortableStructureJumpTable.cs" />
+    <Compile Include="Impl\Portable\Structure\PortableStructureUpdate.cs" />
     <Compile Include="Impl\Portable\TypeResolver.cs" />
     <Compile Include="Impl\Resource\IResourceInjector.cs" />
     <Compile Include="Impl\Resource\ResourceFieldInjector.cs" />

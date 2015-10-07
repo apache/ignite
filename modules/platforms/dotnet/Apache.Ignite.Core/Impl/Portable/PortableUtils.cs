@@ -1799,6 +1799,10 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (id == 0)
                 id = StringHashCode(fieldName);
 
+            if (id == 0)
+                throw new PortableException("Field ID is zero (please provide ID mapper or change field name) " + 
+                    "[typeId=" + typeId + ", fieldName=" + fieldName + ", idMapper=" + idMapper + ']');
+
             return id;
         }
 
