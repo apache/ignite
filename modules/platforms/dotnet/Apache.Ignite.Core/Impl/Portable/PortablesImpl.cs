@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public IPortableMetadata GetMetadata(int typeId)
         {
-            return Marshaller.Metadata(typeId);
+            return Marshaller.GetMetadata(typeId);
         }
 
         /** <inheritDoc /> */
@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var desc = Marshaller.GetDescriptor(type);
 
-            return desc == null ? null : Marshaller.Metadata(desc.TypeId);
+            return desc == null ? null : Marshaller.GetMetadata(desc.TypeId);
         }
 
         /// <summary>

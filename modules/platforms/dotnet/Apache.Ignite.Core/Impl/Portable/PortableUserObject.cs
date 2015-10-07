@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public IPortableMetadata GetMetadata()
         {
-            return _marsh.Metadata(_typeId);
+            return _marsh.GetMetadata(_typeId);
         }
 
         /// <summary>
@@ -301,7 +301,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             try
             {
-                meta = _marsh.Metadata(_typeId);
+                meta = _marsh.GetMetadata(_typeId);
             }
             catch (IgniteException)
             {

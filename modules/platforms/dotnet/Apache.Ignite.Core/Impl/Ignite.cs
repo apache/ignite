@@ -480,9 +480,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritDoc /> */
-        public IPortableMetadata Metadata(int typeId)
+        public IPortableMetadata GetMetadata(int typeId)
         {
-            return _prj.Metadata(typeId);
+            return _prj.GetMetadata(typeId);
         }
 
         /// <summary>

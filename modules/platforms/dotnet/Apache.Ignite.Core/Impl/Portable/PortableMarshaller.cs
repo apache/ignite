@@ -260,11 +260,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="typeId">Type ID.</param>
         /// <returns>Metadata or null.</returns>
-        public IPortableMetadata Metadata(int typeId)
+        public IPortableMetadata GetMetadata(int typeId)
         {
             if (Ignite != null)
             {
-                IPortableMetadata meta = Ignite.Metadata(typeId);
+                IPortableMetadata meta = Ignite.GetMetadata(typeId);
 
                 if (meta != null)
                     return meta;
@@ -278,7 +278,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="desc">Type descriptor.</param>
         /// <returns>Metadata handler.</returns>
-        public IPortableMetadataHandler MetadataHandler(IPortableTypeDescriptor desc)
+        public IPortableMetadataHandler GetMetadataHandler(IPortableTypeDescriptor desc)
         {
             PortableMetadataHolder holder;
 

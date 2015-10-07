@@ -292,7 +292,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             try
             {
                 // Prepare fields.
-                IPortableMetadataHandler metaHnd = _portables.Marshaller.MetadataHandler(desc);
+                IPortableMetadataHandler metaHnd = _portables.Marshaller.GetMetadataHandler(desc);
 
                 IDictionary<int, object> vals0;
 

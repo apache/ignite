@@ -1312,7 +1312,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 _curTypeId = desc.TypeId;
                 _curConverter = desc.NameConverter;
                 _curMapper = desc.Mapper;
-                _curMetaHnd = desc.MetadataEnabled ? _marsh.MetadataHandler(desc) : null;
+                _curMetaHnd = desc.MetadataEnabled ? _marsh.GetMetadataHandler(desc) : null;
                 _curRawPos = 0;
 
                 // Write object fields.
