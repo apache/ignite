@@ -180,7 +180,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             IgniteArgumentCheck.NotNull(keys, "keys");
 
             return DoOutInOp(OpMapKeysToNodes, w => WriteEnumerable(w, keys),
-                reader => ReadDictionary(reader, ReadNode, r => r.ReadObject<IList<TK>>()));
+                reader => ReadDictionary(reader, ReadNode, r => (IList<TK>) r.ReadCollectionAsList<TK>()));
         }
 
         /** <inheritDoc /> */
