@@ -335,7 +335,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Lifecycle bean.</returns>
-        internal static ILifecycleBean CreateLifecycleBean(PortableReaderImpl reader)
+        private static ILifecycleBean CreateLifecycleBean(PortableReaderImpl reader)
         {
             // 1. Instantiate.
             string assemblyName = reader.ReadString();
