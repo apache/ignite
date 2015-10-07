@@ -44,7 +44,7 @@ class OptimizedMarshallerUtils {
 
     /** Use default {@code serialVersionUid} for {@link Serializable} classes. */
     private static final boolean USE_DFLT_SUID =
-        Boolean.valueOf(System.getProperty("ignite.marsh.optimized.useDefaultSUID", Boolean.FALSE.toString()));
+        Boolean.valueOf(System.getProperty("ignite.marsh.optimized.useDefaultSUID", Boolean.TRUE.toString()));
 
     /** */
     static final long HASH_SET_MAP_OFF;
