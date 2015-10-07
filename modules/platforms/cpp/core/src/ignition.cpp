@@ -75,7 +75,7 @@ namespace ignite
      */
     char** CreateJvmOptions(const IgniteConfiguration& cfg, const std::string* home, const std::string& cp, int* optsLen)
     {
-        *optsLen = 3 + (home ? 1 : 0) + cfg.jvmOptsLen;
+        *optsLen = 3 + (home ? 1 : 0) + cfg.jvmOpts.size();
         char** opts = new char*[*optsLen];
 
         int idx = 0;
@@ -100,8 +100,8 @@ namespace ignite
         *(opts + idx++) = CopyChars(xmxStr.c_str());
 
         // 4. Set the rest options.
-        for (int i = 0; i < cfg.jvmOptsLen; i++) {
-            char* optCopy = CopyChars(cfg.jvmOpts[i].opt);
+        for (IgniteConfiguration::OptionList::const_iterator i = cfg.jvmOpts.begin(); i != cfg.jvmOpts.end(); ++i) {
+            char* optCopy = CopyChars(i->c_str());
 
             opts[idx++] = optCopy;
         }
@@ -147,7 +147,7 @@ namespace ignite
             bool jvmLibFound;
             std::string jvmLib;
 
-            if (cfg.jvmLibPath)
+            if (!cfg.jvmLibPath.empty())
             {
                 std::string jvmLibPath = std::string(cfg.jvmLibPath);
 
@@ -182,7 +182,7 @@ namespace ignite
             bool homeFound;
             std::string home;
 
-            if (cfg.igniteHome)
+            if (!cfg.igniteHome.empty())
             {
                 std::string homePath = std::string(cfg.igniteHome);
 
@@ -194,7 +194,7 @@ namespace ignite
             // 3. Create classpath.
             std::string cp;
 
-            if (cfg.jvmClassPath)
+            if (!cfg.jvmClassPath.empty())
             {
                 std::string usrCp = cfg.jvmClassPath;
 
@@ -233,9 +233,11 @@ namespace ignite
                 // 5. Start Ignite.
                 if (!failed)
                 {
-                    char* springCfgPath0 = CopyChars(cfg.springCfgPath);
+                    char* springCfgPath0 = NULL;
 
-                    if (!springCfgPath0)
+                    if (!cfg.springCfgPath.empty())
+                        springCfgPath0 = CopyChars(cfg.springCfgPath.c_str());
+                    else
                         springCfgPath0 = CopyChars(DFLT_CFG);
 
                     char* name0 = CopyChars(name);

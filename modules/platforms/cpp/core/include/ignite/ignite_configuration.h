@@ -19,52 +19,29 @@
 #define _IGNITE_CONFIGURATION
 
 #include <stdint.h>
+#include <string>
+#include <list>
 
 namespace ignite
-{    
-    /**
-     * Single JVM option.
-     */
-    struct IgniteJvmOption
-    {
-        /** Option. */
-        char* opt;
-
-        /**
-         * Default constructor.
-         */
-        IgniteJvmOption() : opt(NULL)
-        {
-            // No-op.    
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param opt Option.
-         */
-        IgniteJvmOption(char* opt) : opt(opt)
-        {
-            // No-op.
-        }
-    };
-
+{   
     /**
      * Ignite configuration.
      */
     struct IgniteConfiguration
     {
+        typedef std::list<std::string> OptionList;
+
         /** Path to Ignite home. */
-        char* igniteHome;
+        std::string igniteHome;
 
         /** Path to Spring configuration file. */
-        char* springCfgPath;
+        std::string springCfgPath;
 
         /** Path ot JVM libbrary. */
-        char* jvmLibPath;
+        std::string jvmLibPath;
 
         /** JVM classpath. */
-        char* jvmClassPath;
+        std::string jvmClassPath;
 
         /** Initial amount of JVM memory. */
         int32_t jvmInitMem;
@@ -73,16 +50,13 @@ namespace ignite
         int32_t jvmMaxMem;
 
         /** Additional JVM options. */
-        IgniteJvmOption* jvmOpts;
-
-        /** Additional JVM options count. */
-        int32_t jvmOptsLen;
+        OptionList jvmOpts;
 
         /**
          * Constructor.
          */
-        IgniteConfiguration() : igniteHome(NULL), springCfgPath(NULL), jvmLibPath(NULL), jvmClassPath(NULL),
-            jvmInitMem(512), jvmMaxMem(1024), jvmOpts(NULL), jvmOptsLen(0)
+        IgniteConfiguration() : igniteHome(), springCfgPath(), jvmLibPath(), jvmClassPath(),
+            jvmInitMem(512), jvmMaxMem(1024), jvmOpts()
         {
             // No-op.
         }
