@@ -309,6 +309,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 return new PortableHashsetMetadataHandler(ids, newType);
             }
+
             return null;
         }
 
