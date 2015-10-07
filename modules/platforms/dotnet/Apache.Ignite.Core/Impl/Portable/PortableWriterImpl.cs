@@ -1349,7 +1349,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 {
                     desc.UpdateStructure(_curStruct, _curStructPath, _curStructUpdates);
 
-                    IPortableMetadataHandler metaHnd = _marsh.MetadataHandler(desc);
+                    IPortableMetadataHandler metaHnd = _marsh.GetMetadataHandler(desc);
 
                     if (metaHnd != null)
                     {
