@@ -299,8 +299,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         return accessTtl;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
