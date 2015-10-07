@@ -96,17 +96,17 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** IGFS block size. */
-    protected static final int IGFS_BLOCK_SIZE = 31 ; //* 1024; TODO: blcok size changed.
+    protected static final int IGFS_BLOCK_SIZE =  512 * 1024; // 31 !!!!! ; //* 1024; TODO: block size changed.
 
     /** Default block size (32Mb). */
     protected static final long BLOCK_SIZE = 32 * 1024 * 1024;
 
     /** Default repeat count. */
-    protected static final int REPEAT_CNT = 500; // 500 -- deadlock // Diagnostic: ~100, up to 250; Regression: 5
+    protected static final int REPEAT_CNT = 50; // 500 -- deadlock // Diagnostic: up to 500; Regression: 5
 
     /** Concurrent operations count.
-     * Not more than ~150, see https://issues.apache.org/jira/browse/IGNITE-1581. */
-    protected static final int OPS_CNT = 100; // 150 -- deadlcok // Diagnostic: ~160, up to 400; Regression: 16
+     * !! Not more than ~150, see https://issues.apache.org/jira/browse/IGNITE-1581. */
+    protected static final int OPS_CNT = 100; // Diagnostic: 100; Regression: 16
 
     /** Renames count. */
     protected static final int RENAME_CNT = OPS_CNT;
@@ -1483,6 +1483,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         createFile(igfs, FILE, true, BLOCK_SIZE, chunk);
 
+        checkFile(igfs, igfsSecondary, FILE, chunk);
+
         appendFile(igfs, FILE, chunk);
 
         checkFile(igfs, igfsSecondary, FILE, chunk, chunk);
@@ -1493,7 +1495,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         IgfsOutputStream os = null;
 
         try {
-            os = igfs.append(path2, true);
+            os = igfs.append(path2, true); // **** !!!!!!!!!
 
             writeFileChunks(os, chunk);
         }
@@ -2880,7 +2882,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                     read = is.read(buf);
 
-                    assert read == chunk.length : "Chunk #" + chunkIdx + " was not read fully.";
+                    assert read == chunk.length : "Chunk #" + chunkIdx + " was not read fully: read=" + read + ", expected=" + chunk.length;
                     assert Arrays.equals(chunk, buf) : "Bad chunk [igfs=" + uni.name() + ", chunkIdx=" + chunkIdx +
                         ", expected=" + Arrays.toString(chunk) + ", actual=" + Arrays.toString(buf) + ']';
 

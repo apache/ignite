@@ -583,7 +583,7 @@ public class IgfsDataManager extends IgfsManager {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
         // File should be locked for writing with specific lock Id:
-        assert fileInfo.lockId() == IgfsMetaManager.DELETE_LOCK_ID;
+        //assert fileInfo.lockId() == IgfsMetaManager.DELETE_LOCK_ID;
 
         if (!fileInfo.isFile()) {
             if (log.isDebugEnabled())

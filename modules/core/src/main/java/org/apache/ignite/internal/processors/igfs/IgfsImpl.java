@@ -920,7 +920,7 @@ public final class IgfsImpl implements IgfsEx {
                     IgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize0);
 
                     IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, desc.info(),
-                            cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
+                        cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
 
                     meta.sendEvents(path, EVT_IGFS_FILE_OPENED_READ);
 
@@ -940,7 +940,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 // Input stream to read data from grid cache with separate blocks.
                 IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, info,
-                        cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
+                    cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
 
                 meta.sendEvents(path, EVT_IGFS_FILE_OPENED_READ);
 
@@ -994,7 +994,7 @@ public final class IgfsImpl implements IgfsEx {
             @Override public IgfsOutputStream call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Open file for writing [path=" + path + ", bufSize=" + bufSize + ", overwrite=" +
-                            overwrite + ", props=" + props + ']');
+                        overwrite + ", props=" + props + ']');
 
                 final IgfsMode mode = resolveMode(path);
 
@@ -1006,12 +1006,12 @@ public final class IgfsImpl implements IgfsEx {
                     await(path);
 
                     IgfsSecondaryOutputStreamDescriptor desc = meta.createDual(secondaryFs, path, simpleCreate,
-                            props, overwrite, bufSize, (short) replication, groupBlockSize(), affKey);
+                        props, overwrite, bufSize, (short) replication, groupBlockSize(), affKey);
 
                     batch = newBatch(path, desc.out());
 
                     IgfsEventAwareOutputStream os = new IgfsEventAwareOutputStream(path, desc.info(), desc.parentId(),
-                            bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
+                        bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
 
                     meta.sendEvents(path, EVT_IGFS_FILE_OPENED_WRITE);
 

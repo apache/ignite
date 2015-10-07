@@ -716,6 +716,9 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
         assertEquals(evtsCnt, evtList.size());
 
+        for (Event e: evtList)
+            System.out.println(e);
+
         final IgfsPath file1 = new IgfsPath("/file1");
 
         IgfsEvent evt = (IgfsEvent)evtList.get(0);
@@ -732,7 +735,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         assertEquals(0, evt.dataSize());
 
         assertOneToOne(
-            evtList.subList(3, 8),
+            evtList.subList(3, evtsCnt),
             new P1<Event>() {
                 @Override public boolean apply(Event e) {
                     IgfsEvent e0 = (IgfsEvent)e;

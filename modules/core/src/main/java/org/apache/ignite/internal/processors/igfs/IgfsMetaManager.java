@@ -75,6 +75,7 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -521,7 +522,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return New file info with lock set.
      * @throws IgniteCheckedException In case lock is already set on that file.
      */
-    public IgfsFileInfo lockInfo(IgfsFileInfo info, boolean isDeleteLock) throws IgniteCheckedException {
+    IgfsFileInfo lockInfo(IgfsFileInfo info, boolean isDeleteLock) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert info != null;
@@ -2346,6 +2347,8 @@ public class IgfsMetaManager extends IgfsManager {
 
                         @Override public IgfsSecondaryOutputStreamDescriptor onFailure(@Nullable Exception err)
                             throws IgniteCheckedException {
+                            err.printStackTrace();
+
                             U.closeQuiet(out);
 
                             U.error(log, "File append in DUAL mode failed [path=" + path + ", bufferSize=" + bufSize +
@@ -2820,6 +2823,8 @@ public class IgfsMetaManager extends IgfsManager {
 
                 try {
                     status = fs.info(curPath);
+
+                    X.println("Status: " + status);
                 }
                 catch (IgniteException e) {
                     throw new IgniteCheckedException("Failed to get path information: " + e, e);
@@ -3081,6 +3086,8 @@ public class IgfsMetaManager extends IgfsManager {
                 tx.commit();
             }
             catch (IgniteCheckedException e) {
+                e.printStackTrace();
+
                 if (!finished) {
                     finished = true;
 
@@ -3666,8 +3673,9 @@ public class IgfsMetaManager extends IgfsManager {
                                 assert lockedInfos.size() == (overwrite ? existingIdCnt + 1/*TRASH*/ : existingIdCnt);
 
                                 if (lowermostExistingInfo.isDirectory()) {
-                                    throw new IgfsPathAlreadyExistsException("Failed to create file (path points to a " +
-                                        "directory): " + path);
+                                    throw new IgfsPathAlreadyExistsException("Failed to "
+                                            + (append ? "open" : "create") + " file (path points to an " +
+                                        "existing directory): " + path);
                                 }
                                 else {
                                     // This is a file.
@@ -3679,7 +3687,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                                     if (append) {
                                         if (lockId != null)
-                                            throw fsException("Failed to append file (file is opened for writing) [fileName=" +
+                                            throw fsException("Failed to open file (file is opened for writing) [fileName=" +
                                                     name + ", fileId=" + lowermostExistingInfo.id() + ", lockId=" + lockId + ']');
 
                                         IgfsFileInfo lockedInfo = lockInfo(lowermostExistingInfo, false);
@@ -3741,8 +3749,8 @@ public class IgfsMetaManager extends IgfsManager {
 
                                         delWorker.signal();
 
-                                        // TODO: Shall we send remove & create events also?
-                                        sendEvents(path, EventType.EVT_IGFS_FILE_OPENED_WRITE);
+                                        sendEvents(path, EVT_IGFS_FILE_DELETED,
+                                            EVT_IGFS_FILE_CREATED, EVT_IGFS_FILE_OPENED_WRITE);
 
                                         return os;
                                     }
@@ -3758,7 +3766,7 @@ public class IgfsMetaManager extends IgfsManager {
                             // Check only the lowermost directory in the existing directory chain
                             // because others are already checked in #verifyPathIntegrity() above.
                             if (!lowermostExistingInfo.isDirectory())
-                                throw new IgfsParentNotDirectoryException("Failed to create file (parent " +
+                                throw new IgfsParentNotDirectoryException("Failed to " + (append ? "open" : "create" ) + " file (parent " +
                                         "element is not a directory)");
 
                             Map<String, IgfsListingEntry> parentListing = lowermostExistingInfo.listing();
@@ -3821,7 +3829,7 @@ public class IgfsMetaManager extends IgfsManager {
                                 if (evts.isRecordable(EVT_IGFS_DIR_CREATED)) {
                                     IgfsPath createdPath = existingPath;
 
-                                    for (int i = idSet.size() - 1; i < components.size(); i++) {
+                                    for (int i = existingPath.components().size(); i < components.size() - 1; i++) {
                                         createdPath = new IgfsPath(createdPath, components.get(i));
 
                                         sendEvents(createdPath, EVT_IGFS_DIR_CREATED);
@@ -3841,8 +3849,9 @@ public class IgfsMetaManager extends IgfsManager {
 
                                     if (entry.isDirectory()) {
                                         // Entry exists, and it is a directory:
-                                        throw new IgfsPathAlreadyExistsException("Failed to create file (path points to a " +
-                                                "directory): " + path);
+                                        throw new IgfsPathAlreadyExistsException("Failed to "
+                                            + (append ? "open" : "create" ) + " file (path points to an " +
+                                            "existing directory): " + path);
                                     }
                                     else if (!overwrite) {
                                         // This is a file, and we cannot overwrite it:
@@ -3858,7 +3867,8 @@ public class IgfsMetaManager extends IgfsManager {
 
                                     if (!entry.isDirectory()) {
                                         // Entry exists, and it is not a directory:
-                                        throw new IgfsParentNotDirectoryException("Failed to create file (parent " +
+                                        throw new IgfsParentNotDirectoryException("Failed to "
+                                            + (append ? "open" : "create") + " file (parent " +
                                                 "element is not a directory)");
                                     }
 
