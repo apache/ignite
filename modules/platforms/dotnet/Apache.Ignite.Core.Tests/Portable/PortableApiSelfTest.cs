@@ -448,7 +448,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             IPortableBuilder builderItem =
                 _grid.GetPortables().GetBuilder(typeof(BuilderCollectionItem)).SetField("val", 1);
 
-            builderCol.SetField<ICollection>("col", new List<IPortableBuilder> { builderItem });
+            builderCol.SetField<ICollection>("col", new ArrayList { builderItem });
 
             IPortableObject portCol = builderCol.Build();
 
@@ -459,11 +459,11 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual("col", meta.Fields.First());
             Assert.AreEqual(PortableTypeNames.TypeNameCollection, meta.GetFieldTypeName("col"));
 
-            ICollection<IPortableObject> portColItems = portCol.GetField<ICollection<IPortableObject>>("col");
+            var portColItems = portCol.GetField<ArrayList>("col");
 
             Assert.AreEqual(1, portColItems.Count);
 
-            IPortableObject portItem = portColItems.First();
+            var portItem = (IPortableObject) portColItems[0];
 
             meta = portItem.GetMetadata();
 
@@ -476,7 +476,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.IsNotNull(col.Col);
             Assert.AreEqual(1, col.Col.Count);
-            Assert.AreEqual(1, col.Col.First().Val);
+            Assert.AreEqual(1, ((BuilderCollectionItem) col.Col[0]).Val);
 
             // Add more portable objects to collection.
             builderCol = _grid.GetPortables().GetBuilder(portCol);
@@ -499,10 +499,10 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(4, col.Col.Count);
 
-            BuilderCollectionItem item0 = col.Col.ElementAt(0);
-            BuilderCollectionItem item1 = col.Col.ElementAt(1);
-            BuilderCollectionItem item2 = col.Col.ElementAt(2);
-            BuilderCollectionItem item3 = col.Col.ElementAt(3);
+            var item0 = (BuilderCollectionItem) col.Col[0];
+            var item1 = (BuilderCollectionItem) col.Col[1];
+            var item2 = (BuilderCollectionItem) col.Col[2];
+            var item3 = (BuilderCollectionItem) col.Col[3];
 
             Assert.AreEqual(2, item0.Val);
 
@@ -526,8 +526,8 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             col = portCol.Deserialize<BuilderCollection>();
 
-            item0 = col.Col.ElementAt(0);
-            item1 = col.Col.ElementAt(1);
+            item0 = (BuilderCollectionItem) col.Col[0];
+            item1 = (BuilderCollectionItem) col.Col[1];
 
             Assert.AreEqual(3, item0.Val);
             Assert.AreSame(item0, item1);
@@ -1720,13 +1720,13 @@ namespace Apache.Ignite.Core.Tests.Portable
     public class BuilderCollection
     {
         /** */
-        public ICollection<BuilderCollectionItem> Col;
+        public readonly ArrayList Col;
 
         /// <summary>
         ///
         /// </summary>
         /// <param name="col"></param>
-        public BuilderCollection(ICollection<BuilderCollectionItem> col)
+        public BuilderCollection(ArrayList col)
         {
             Col = col;
         }
