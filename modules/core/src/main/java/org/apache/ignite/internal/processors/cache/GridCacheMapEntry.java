@@ -3270,7 +3270,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized Collection<GridCacheMvccCandidate> localCandidates(GridCacheVersion... exclude)
+    @Override public synchronized Collection<GridCacheMvccCandidate>
+    localCandidates(GridCacheVersion... exclude)
         throws GridCacheEntryRemovedException {
         checkObsolete();
 

@@ -96,16 +96,17 @@ import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** IGFS block size. */
-    protected static final int IGFS_BLOCK_SIZE = 512 * 1024;
+    protected static final int IGFS_BLOCK_SIZE = 31 ; //* 1024; TODO: blcok size changed.
 
     /** Default block size (32Mb). */
     protected static final long BLOCK_SIZE = 32 * 1024 * 1024;
 
     /** Default repeat count. */
-    protected static final int REPEAT_CNT = 400; // Diagnostic: ~100, up to 250; Regression: 5
+    protected static final int REPEAT_CNT = 500; // 500 -- deadlock // Diagnostic: ~100, up to 250; Regression: 5
 
-    /** Concurrent operations count. */
-    protected static final int OPS_CNT = 50; // Diagnostic: ~160, up to 400; Regression: 16
+    /** Concurrent operations count.
+     * Not more than ~150, see https://issues.apache.org/jira/browse/IGNITE-1581. */
+    protected static final int OPS_CNT = 100; // 150 -- deadlcok // Diagnostic: ~160, up to 400; Regression: 16
 
     /** Renames count. */
     protected static final int RENAME_CNT = OPS_CNT;
@@ -121,6 +122,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
     /** Create count. */
     protected static final int CREATE_CNT = OPS_CNT;
+
+    /** Time to wait until the caches get empty after format. */
+    protected static final long CACHE_EMPTY_TIMEOUT = 30_000L;
 
     /** Seed to generate random numbers. */
     protected static final long SEED = System.currentTimeMillis();
@@ -1051,16 +1055,18 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         checkFile(igfs, igfsSecondary, FILE, chunk);
 
-        igfs.create(new IgfsPath("/r"), false);
-        checkExist(igfs, igfsSecondary, new IgfsPath("/r"));
-        assert igfs.info(new IgfsPath("/r")).isFile();
+        try (IgfsOutputStream os = igfs.create(new IgfsPath("/r"), false)) {
+            checkExist(igfs, igfsSecondary, new IgfsPath("/r"));
+            assert igfs.info(new IgfsPath("/r")).isFile();
+        }
 
-        igfs.create(new IgfsPath("/k/l"), false);
-        checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
-        assert igfs.info(new IgfsPath("/k/l")).isFile();
+        try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l"), false)) {
+            checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
+            assert igfs.info(new IgfsPath("/k/l")).isFile();
+        }
 
         try {
-            igfs.create(new IgfsPath("/k/l"), false);
+            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l"), false)) {}
 
             fail("Exception expected");
         } catch (IgniteException e) {
@@ -1070,7 +1076,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         assert igfs.info(new IgfsPath("/k/l")).isFile();
 
         try {
-            igfs.create(new IgfsPath("/k/l/m"), true);
+            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l/m"), true)) {}
 
             fail("Exception expected");
         } catch (IgniteException e) {
@@ -1081,7 +1087,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         assert igfs.info(new IgfsPath("/k/l")).isFile();
 
         try {
-            igfs.create(new IgfsPath("/k/l/m/n/o/p"), true);
+            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l/m/n/o/p"), true)) {}
 
             fail("Exception expected");
         } catch (IgniteException e) {
@@ -1093,7 +1099,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         igfs.mkdirs(new IgfsPath("/x/y"), null);
         try {
-            igfs.create(new IgfsPath("/x/y"), true);
+            try (IgfsOutputStream os = igfs.create(new IgfsPath("/x/y"), true)) {}
 
             fail("Exception expected");
         } catch (IgniteException e) {
@@ -1103,17 +1109,21 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         checkExist(igfs, igfsSecondary, new IgfsPath("/x/y"));
         assert igfs.info(new IgfsPath("/x/y")).isDirectory();
 
-        igfs.create(new IgfsPath("/x/y/f"), false);
-        assert igfs.info(new IgfsPath("/x/y/f")).isFile();
+        try (IgfsOutputStream os = igfs.create(new IgfsPath("/x/y/f"), false)) {
+            assert igfs.info(new IgfsPath("/x/y/f")).isFile();
+        }
 
-        igfs.create(new IgfsPath("/x/y/z/f"), false);
-        assert igfs.info(new IgfsPath("/x/y/z/f")).isFile();
+        try (IgfsOutputStream os = igfs.create(new IgfsPath("/x/y/z/f"), false)) {
+            assert igfs.info(new IgfsPath("/x/y/z/f")).isFile();
+        }
 
-        igfs.create(new IgfsPath("/x/y/z/t/f"), false);
-        assert igfs.info(new IgfsPath("/x/y/z/t/f")).isFile();
+        try (IgfsOutputStream os = igfs.create(new IgfsPath("/x/y/z/t/f"), false)) {
+            assert igfs.info(new IgfsPath("/x/y/z/t/f")).isFile();
+        }
 
-        igfs.create(new IgfsPath("/x/y/z/t/t2/t3/t4/t5/f"), false);
-        assert igfs.info(new IgfsPath("/x/y/z/t/t2/t3/t4/t5/f")).isFile();
+        try (IgfsOutputStream os = igfs.create(new IgfsPath("/x/y/z/t/t2/t3/t4/t5/f"), false)) {
+            assert igfs.info(new IgfsPath("/x/y/z/t/t2/t3/t4/t5/f")).isFile();
+        }
     }
 
     /**
@@ -1207,26 +1217,45 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testCreateDeleteNoClose() throws Exception {
         create(igfs, paths(DIR, SUBDIR), null);
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgfsOutputStream os = null;
+        IgfsOutputStream os = null;
 
+        IgniteUuid id = null;
+
+        try {
+            os = igfs.create(FILE, false);
+
+            id = igfs.context().meta().fileId(FILE);
+
+            assert id != null;
+
+            boolean del = igfs.delete(FILE, false);
+
+            assertTrue(del);
+            assertFalse(igfs.exists(FILE));
+            // The id still exists in meta cache since
+            // it is locked for writing and just moved to TRASH.
+            // Delete worker cannot delete it for that reason:
+            assertTrue(igfs.context().meta().exists(id));
+
+            os.write(chunk);
+
+            os.close();
+        } finally {
+            U.closeQuiet(os);
+        }
+
+        final IgniteUuid id0 = id;
+
+        // Delete worker should delete the file once its output stream is finally closed:
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
                 try {
-                    os = igfs.create(FILE, true);
-
-                    igfs.format();
-
-                    os.write(chunk);
-
-                    os.close();
+                    return !igfs.context().meta().exists(id0);
+                } catch (IgniteCheckedException ice) {
+                    throw new IgniteException(ice);
                 }
-                finally {
-                    U.closeQuiet(os);
-                }
-
-                return null;
             }
-        }, IOException.class, "File was concurrently deleted: " + FILE);
+        }, 5_000L);
     }
 
     /**
@@ -1237,29 +1266,45 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     public void testCreateDeleteParentNoClose() throws Exception {
         create(igfs, paths(DIR, SUBDIR), null);
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgfsOutputStream os = null;
+        IgfsOutputStream os = null;
 
+        IgniteUuid id = null;
+
+        try {
+            os = igfs.create(FILE, false);
+
+            id = igfs.context().meta().fileId(FILE);
+
+            assert id != null;
+
+            boolean del = igfs.delete(SUBDIR, true);
+
+            assertTrue(del);
+            assertFalse(igfs.exists(FILE));
+            // The id still exists in meta cache since
+            // it is locked for writing and just moved to TRASH.
+            // Delete worker cannot delete it for that reason:
+            assertTrue(igfs.context().meta().exists(id));
+
+            os.write(chunk);
+
+            os.close();
+        } finally {
+            U.closeQuiet(os);
+        }
+
+        final IgniteUuid id0 = id;
+
+        // Delete worker should delete the file once its output stream is finally closed:
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
                 try {
-                    os = igfs.create(FILE, true);
-
-                    IgniteUuid id = igfs.context().meta().fileId(FILE);
-
-                    igfs.delete(SUBDIR, true); // Since GG-4911 we allow deletes in this case.
-
-                    while (igfs.context().meta().exists(id))
-                        U.sleep(100);
-
-                    os.close();
+                    return !igfs.context().meta().exists(id0);
+                } catch (IgniteCheckedException ice) {
+                    throw new IgniteException(ice);
                 }
-                finally {
-                    U.closeQuiet(os);
-                }
-
-                return null;
             }
-        }, IOException.class, "File was concurrently deleted: " + FILE);
+        }, 5_000L);
     }
 
     /**
@@ -1333,8 +1378,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                 final IgfsPath path = new IgfsPath("/file" + idx);
 
-                //X.println(" path :" + path);
-
                 try {
                     for (int i = 0; i < REPEAT_CNT; i++) {
                         IgfsOutputStream os = igfs.create(path, 128, true/*overwrite*/, null, 0, 256, null);
@@ -1344,8 +1387,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                         os.close();
 
                         assert igfs.exists(path);
-
-                        //X.println(" - :" + i);
                     }
 
                     awaitFileClose(igfs.asSecondary(), path);
@@ -1445,6 +1486,35 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         appendFile(igfs, FILE, chunk);
 
         checkFile(igfs, igfsSecondary, FILE, chunk, chunk);
+
+        // Test create via append:
+        IgfsPath path2 = new IgfsPath(SUBDIR, "file2");
+
+        IgfsOutputStream os = null;
+
+        try {
+            os = igfs.append(path2, true);
+
+            writeFileChunks(os, chunk);
+        }
+        finally {
+            U.closeQuiet(os);
+
+            awaitFileClose(igfs.asSecondary(), path2);
+        }
+
+        try {
+            os = igfs.append(path2, false);
+
+            writeFileChunks(os, chunk);
+        }
+        finally {
+            U.closeQuiet(os);
+
+            awaitFileClose(igfs.asSecondary(), path2);
+        }
+
+        checkFile(igfs, igfsSecondary, path2, chunk, chunk);
     }
 
     /**
@@ -1473,8 +1543,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         createFile(igfs.asSecondary(), FILE, false);
 
         GridTestUtils.assertThrowsInherited(log(), new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 IgfsOutputStream os1 = null;
                 IgfsOutputStream os2 = null;
 
@@ -1489,6 +1558,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 return null;
             }
         }, IgniteException.class, null);
+
+        X.println("finoished.");
     }
 
     /**
@@ -1549,26 +1620,43 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         createFile(igfs.asSecondary(), FILE, false);
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgfsOutputStream os = null;
+        IgfsOutputStream os = null;
+        IgniteUuid id = null;
 
+        try {
+            id = igfs.context().meta().fileId(FILE);
+
+            os = igfs.append(FILE, false);
+
+            boolean del = igfs.delete(FILE, false);
+
+            assertTrue(del);
+            assertFalse(igfs.exists(FILE));
+            assertTrue(igfs.context().meta().exists(id)); // id still exists in meta cache since
+            // it is locked for writing and just moved to TRASH.
+            // Delete worker cannot delete it for that reason.
+
+            os.write(chunk);
+
+            os.close();
+        } finally {
+            U.closeQuiet(os);
+        }
+
+        assert id != null;
+
+        final IgniteUuid id0 = id;
+
+        // Delete worker should delete the file once its output stream is finally closed:
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
                 try {
-                    os = igfs.append(FILE, false);
-
-                    igfs.format();
-
-                    os.write(chunk);
-
-                    os.close();
+                    return !igfs.context().meta().exists(id0);
+                } catch (IgniteCheckedException ice) {
+                    throw new IgniteException(ice);
                 }
-                finally {
-                    U.closeQuiet(os);
-                }
-
-                return null;
             }
-        }, IOException.class, "File was concurrently deleted: " + FILE);
+        }, 5_000L);
     }
 
     /**
@@ -1581,31 +1669,43 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         createFile(igfs.asSecondary(), FILE, false);
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgfsOutputStream os = null;
+        IgfsOutputStream os = null;
+        IgniteUuid id = null;
 
+        try {
+            id = igfs.context().meta().fileId(FILE);
+
+            os = igfs.append(FILE, false);
+
+            boolean del = igfs.delete(SUBDIR, true); // Since GG-4911 we allow deletes in this case.
+
+            assertTrue(del);
+            assertFalse(igfs.exists(FILE));
+            assertTrue(igfs.context().meta().exists(id)); // id still exists in meta cache since
+            // it is locked for writing and just moved to TRASH.
+            // Delete worker cannot delete it for that reason.
+
+            os.write(chunk);
+
+            os.close();
+        } finally {
+            U.closeQuiet(os);
+        }
+
+        assert id != null;
+
+        final IgniteUuid id0 = id;
+
+        // Delete worker should delete the file once its output stream is finally closed:
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
                 try {
-                    IgniteUuid id = igfs.context().meta().fileId(FILE);
-
-                    os = igfs.append(FILE, false);
-
-                    igfs.delete(SUBDIR, true); // Since GG-4911 we allow deletes in this case.
-
-                    for (int i = 0; i < 100 && igfs.context().meta().exists(id); i++)
-                        U.sleep(100);
-
-                    os.write(chunk);
-
-                    os.close();
+                    return !igfs.context().meta().exists(id0);
+                } catch (IgniteCheckedException ice) {
+                    throw new IgniteException(ice);
                 }
-                finally {
-                    U.closeQuiet(os);
-                }
-
-                return null;
             }
-        }, IOException.class, "File was concurrently deleted: " + FILE);
+        }, 5_000L);
     }
 
     /**
@@ -2901,19 +3001,69 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         // Clear igfs.
         igfs.format();
 
-        final IgniteFileSystem igfs0 = igfs;
+        int prevDifferentSize = Integer.MAX_VALUE; // Previous different size.
+        int size;
+        int constCnt = 0, totalCnt = 0;
+        final int constThreshold = 20;
+        final long sleepPeriod = 500L;
+        final long totalThreshold = CACHE_EMPTY_TIMEOUT / sleepPeriod;
 
-        if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return isEmpty(igfs0);
+        while (true) {
+            size = sumCacheSize(igfs);
+
+            if (size <= 2)
+                return; // Caches are cleared, we're done. (2 because ROOT & TRASH always exist).
+
+            X.println("Sum size: " + size);
+
+            if (size > prevDifferentSize) {
+                X.println("Summary cache size has grown unexpectedly: size=" + size + ", prevSize=" + prevDifferentSize);
+
+                break;
             }
-        }, 10_000L)) {
-            dumpCache("MetaCache" , getMetaCache(igfs));
 
-            dumpCache("DataCache" , getDataCache(igfs));
+            if (totalCnt > totalThreshold) {
+                X.println("Timeout exceeded.");
 
-            assert false;
+                break;
+            }
+
+            if (size == prevDifferentSize) {
+                constCnt++;
+
+                if (constCnt == constThreshold) {
+                    X.println("Summary cache size stays unchanged for too long: size=" + size);
+
+                    break;
+                }
+            } else {
+                constCnt = 0;
+
+                prevDifferentSize = size; // renew;
+            }
+
+            Thread.sleep(sleepPeriod);
+
+            totalCnt++;
         }
+
+        dumpCache("MetaCache" , getMetaCache(igfs));
+
+        dumpCache("DataCache" , getDataCache(igfs));
+
+        fail("Caches are not empty.");
+
+//        if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
+//            @Override public boolean apply() {
+//                return isEmpty(igfs0);
+//            }
+//        }, CACHE_EMPTY_TIMEOUT)) {
+//            dumpCache("MetaCache" , getMetaCache(igfs));
+//
+//            dumpCache("DataCache" , getDataCache(igfs));
+//
+//            assert false;
+//        }
     }
 
     /**
@@ -2929,6 +3079,15 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         for (GridCacheEntryEx e: set)
             X.println("Lost " + cacheName + " entry = " + e);
+    }
+
+    /**
+     * Gets summary IGFS cache size.
+     * @param igfs The IGFS to measure.
+     * @return data cache size + meta cache size.
+     */
+    private static int sumCacheSize(IgniteFileSystem igfs) {
+        return getMetaCache(igfs).size() + getDataCache(igfs).size();
     }
 
     /**
@@ -2985,5 +3144,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         clear(igfs, igfsSecondary);
+    }
+
+    @Override
+    // TODO: remove later
+    protected long getTestTimeout() {
+        return 15 * 60 * 1000L;
     }
 }

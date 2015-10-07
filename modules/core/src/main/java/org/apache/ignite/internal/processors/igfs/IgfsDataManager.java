@@ -582,6 +582,9 @@ public class IgfsDataManager extends IgfsManager {
     public IgniteInternalFuture<Object> delete(IgfsFileInfo fileInfo) {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
+        // File should be locked for writing with specific lock Id:
+        assert fileInfo.lockId() == IgfsMetaManager.DELETE_LOCK_ID;
+
         if (!fileInfo.isFile()) {
             if (log.isDebugEnabled())
                 log.debug("Cannot delete content of not-data file: " + fileInfo);
