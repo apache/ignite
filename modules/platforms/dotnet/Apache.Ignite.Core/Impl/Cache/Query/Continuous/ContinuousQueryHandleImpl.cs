@@ -111,8 +111,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
             writer.WriteBoolean(qry.Local);
             writer.WriteBoolean(_filter != null);
 
-            ContinuousQueryFilterHolder filterHolder = _filter == null || qry.Local ? null : 
-                new ContinuousQueryFilterHolder(typeof (TK), typeof (TV), _filter, _keepPortable);
+            var filterHolder = _filter == null || qry.Local 
+                ? null 
+                : new ContinuousQueryFilterHolder(_filter, _keepPortable);
 
             writer.WriteObject(filterHolder);
 

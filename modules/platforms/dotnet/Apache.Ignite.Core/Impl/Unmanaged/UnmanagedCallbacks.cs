@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using System.Threading;
-    using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Cache;
@@ -546,15 +545,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     var filterHolder = reader.ReadObject<ContinuousQueryFilterHolder>();
 
                     // 2. Create real filter from it's holder.
-                    Type filterWrapperTyp = typeof (ContinuousQueryFilter<,>)
-                        .MakeGenericType(filterHolder.KeyType, filterHolder.ValueType);
-
-                    Type filterTyp = typeof (ICacheEntryEventFilter<,>)
-                        .MakeGenericType(filterHolder.KeyType, filterHolder.ValueType);
-
-                    var filter = (IContinuousQueryFilter) filterWrapperTyp
-                        .GetConstructor(new[] {filterTyp, typeof (bool)})
-                        .Invoke(new[] {filterHolder.Filter, filterHolder.KeepPortable});
+                    var filter = (IContinuousQueryFilter) DelegateTypeDescriptor.GetContinuousQueryFilterCtor(
+                        filterHolder.Filter.GetType())(filterHolder.KeepPortable);
 
                     // 3. Inject grid.
                     filter.Inject(_ignite);

@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
@@ -68,6 +69,9 @@ namespace Apache.Ignite.Core.Impl.Common
 
         /** */
         private readonly Func<object, object> _streamTransformerCtor;
+
+        /** */
+        private readonly Func<object, object, object> _continuousQueryFilterCtor;
 
         /// <summary>
         /// Gets the <see cref="IComputeFunc{T}" /> invocator.
@@ -174,6 +178,16 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
+        /// Gets the <see cref="ContinuousQueryFilter{TK,TV}"/>> ctor invocator.
+        /// </summary>
+        /// <param name="type">Type.</param>
+        /// <returns>Precompiled invocator delegate.</returns>
+        public static Func<object, object> GetContinuousQueryFilterCtor(Type type)
+        {
+            return Get(type)._streamTransformerCtor;
+        }
+
+        /// <summary>
         /// Gets the <see cref="DelegateTypeDescriptor" /> by type.
         /// </summary>
         private static DelegateTypeDescriptor Get(Type type)
@@ -248,6 +262,10 @@ namespace Apache.Ignite.Core.Impl.Common
 
                     // Resulting func constructs CacheEntry and passes it to user implementation
                     _cacheEntryFilter = (obj, k, v) => invokeFunc(obj, ctor(k, v));
+
+                    _continuousQueryFilterCtor =
+                        DelegateConverter.CompileCtor<Func<object, object, object>>(
+                            typeof (ContinuousQueryFilter<,>).MakeGenericType(args), new[] {iface, typeof (bool)});
                 }
                 else if (genericTypeDefinition == typeof (ICacheEntryProcessor<,,,>))
                 {
