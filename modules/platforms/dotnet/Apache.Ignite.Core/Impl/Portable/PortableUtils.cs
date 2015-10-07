@@ -1238,7 +1238,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Reads typed array.
         /// </summary>
-        public static object ReadTypedArray(PortableReaderImpl reader, Type requestedArrayType)
+        public static object ReadTypedArray(PortableReaderImpl reader)
         {
             var elementType = ReadType(reader);
 
@@ -1421,7 +1421,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Reads generic collection in untyped context.
         /// </summary>
-        public static object ReadTypedCollection(PortableReaderImpl reader, Type requestedCollectionType)
+        public static object ReadTypedCollection(PortableReaderImpl reader)
         {
             var collectionType = ReadType(reader);
 
