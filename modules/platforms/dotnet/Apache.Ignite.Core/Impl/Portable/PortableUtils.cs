@@ -293,10 +293,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         public static readonly MethodInfo MtdhWriteGenericCollection =
             typeof(PortableUtils).GetMethod("WriteGenericCollection", _bindFlagsStatic);
 
-        /** Method: ReadGenericCollection. */
-        public static readonly MethodInfo MtdhReadGenericCollection =
-            typeof(PortableUtils).GetMethod("ReadGenericCollection", _bindFlagsStatic);
-
         /** Method: ReadGenericCollection0. */
         public static readonly MethodInfo MtdhReadGenericCollection0 =
             typeof(PortableUtils).GetMethod("ReadGenericCollection0", _bindFlagsStatic);
@@ -304,10 +300,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Method: WriteGenericDictionary. */
         public static readonly MethodInfo MtdhWriteGenericDictionary =
             typeof(PortableUtils).GetMethod("WriteGenericDictionary", _bindFlagsStatic);
-
-        /** Method: ReadGenericDictionary. */
-        public static readonly MethodInfo MtdhReadGenericDictionary =
-            typeof(PortableUtils).GetMethod("ReadGenericDictionary", _bindFlagsStatic);
 
         /** Method: ReadGenericDictionary. */
         public static readonly MethodInfo MtdhReadGenericDictionary0 =
@@ -1421,11 +1413,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Reads generic collection in untyped context.
         /// </summary>
-        public static object ReadTypedCollection(PortableReaderImpl reader)
+        public static object ReadGenericCollection(PortableReaderImpl reader)
         {
-            var collectionType = ReadType(reader);
+            var colType = ReadType(reader);
 
-            var colInfo = PortableCollectionInfo.GetInstance(collectionType);
+            var colInfo = PortableCollectionInfo.GetInstance(colType);
 
             return colInfo.ReadGeneric(reader);
         }
@@ -1445,7 +1437,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Reads generic collection without type information.
         /// </summary>
         private static ICollection<T> ReadGenericCollection0<T>(PortableReaderImpl reader, 
-            PortableGenericCollectionFactory<T> factory, PortableCollectionInfo info)
+            PortableGenericCollectionFactory<T> factory, PortableCollectionInfo colInfo)
         {
             Debug.Assert(reader != null);
 
@@ -1453,7 +1445,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var res = factory != null 
                 ? factory.Invoke(len) 
-                : (ICollection<T>) info.Constructor(len);
+                : (ICollection<T>) colInfo.Constructor(len);
 
             for (int i = 0; i < len; i++)
                 res.Add(reader.Deserialize<T>());
@@ -1546,7 +1538,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Reads generic dictionary with type information.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public static object ReadTypedDictionary(PortableReaderImpl reader)
+        public static object ReadGenericDictionary(PortableReaderImpl reader)
         {
             var colType = ReadType(reader);
 
@@ -1563,22 +1555,22 @@ namespace Apache.Ignite.Core.Impl.Portable
         public static IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableReaderImpl reader,
             PortableGenericDictionaryFactory<TK, TV> factory)
         {
-            var collectionType = ReadType(reader);
+            var colType = ReadType(reader);
 
-            return ReadGenericDictionary0(reader, factory, PortableCollectionInfo.GetInstance(collectionType));
+            return ReadGenericDictionary0(reader, factory, PortableCollectionInfo.GetInstance(colType));
         }
 
         /// <summary>
         /// Reads the generic dictionary.
         /// </summary>
         private static IDictionary<TK, TV> ReadGenericDictionary0<TK, TV>(PortableReaderImpl reader,
-            PortableGenericDictionaryFactory<TK, TV> factory, PortableCollectionInfo collectionInfo)
+            PortableGenericDictionaryFactory<TK, TV> factory, PortableCollectionInfo colInfo)
         {
             var len = reader.Stream.ReadInt();
 
             var res = factory != null 
                 ? factory.Invoke(len) 
-                : (IDictionary<TK, TV>) collectionInfo.Constructor(len);
+                : (IDictionary<TK, TV>) colInfo.Constructor(len);
 
             for (int i = 0; i < len; i++)
             {

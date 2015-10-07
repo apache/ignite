@@ -753,7 +753,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="type">Type.</param>
         private static object ReadGenericCollection(PortableReaderImpl reader, Type type)
         {
-            return PortableUtils.ReadTypedCollection(reader);
+            return PortableUtils.ReadGenericCollection(reader);
         }
 
         /**
@@ -769,7 +769,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private static object ReadGenericDictionary(PortableReaderImpl ctx, Type type)
         {
-            return PortableUtils.ReadTypedDictionary(ctx);
+            return PortableUtils.ReadGenericDictionary(ctx);
         }
 
         /**
