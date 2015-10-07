@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             PortableWriterImpl writer = _portables.Marshaller.StartMarshal(outStream);
 
-            writer.Builder(this);
+            writer.SetBuilder(this);
 
             // All related builders will work in this context with this writer.
             _parent._ctx = new Context(writer);
@@ -285,7 +285,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             IDictionary<string, PortableBuilderField> vals)
         {
             // Set correct builder to writer frame.
-            PortableBuilderImpl oldBuilder = _parent._ctx.Writer.Builder(_parent);
+            PortableBuilderImpl oldBuilder = _parent._ctx.Writer.SetBuilder(_parent);
 
             int streamPos = inStream.Position;
             
@@ -334,7 +334,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             finally
             {
                 // Restore builder frame.
-                _parent._ctx.Writer.Builder(oldBuilder);
+                _parent._ctx.Writer.SetBuilder(oldBuilder);
 
                 inStream.Seek(streamPos, SeekOrigin.Begin);
             }

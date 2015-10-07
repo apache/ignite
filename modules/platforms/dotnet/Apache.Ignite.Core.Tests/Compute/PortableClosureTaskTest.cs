@@ -178,7 +178,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /** <inheritDoc /> */
             public void WritePortable(IPortableWriter writer)
             {
-                writer.RawWriter().WriteString(Msg);
+                writer.GetRawWriter().WriteString(Msg);
             }
 
             /** <inheritDoc /> */

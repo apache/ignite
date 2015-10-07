@@ -224,7 +224,7 @@ namespace Apache.Ignite.Core.Tests
             public void WritePortable(IPortableWriter writer)
             {
                 writer.WriteInt("a", A);
-                writer.RawWriter().WriteString(B);
+                writer.GetRawWriter().WriteString(B);
             }
 
             /** <inheritDoc /> */

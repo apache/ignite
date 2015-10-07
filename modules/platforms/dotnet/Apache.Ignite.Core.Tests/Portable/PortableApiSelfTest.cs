@@ -1514,7 +1514,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void WritePortable(IPortableWriter writer)
         {
             writer.WriteInt("a", A);
-            writer.RawWriter().WriteInt(B);
+            writer.GetRawWriter().WriteInt(B);
         }
 
         /** <inheritDoc /> */

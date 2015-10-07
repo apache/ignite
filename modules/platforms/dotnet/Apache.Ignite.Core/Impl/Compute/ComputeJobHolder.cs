@@ -218,7 +218,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public void WritePortable(IPortableWriter writer)
         {
-            PortableWriterImpl writer0 = (PortableWriterImpl) writer.RawWriter();
+            PortableWriterImpl writer0 = (PortableWriterImpl) writer.GetRawWriter();
 
             writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _job));
         }

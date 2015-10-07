@@ -912,7 +912,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /** <inheritdoc /> */
         public void WritePortable(IPortableWriter writer)
         {
-            var w = writer.RawWriter();
+            var w = writer.GetRawWriter();
 
             w.WriteBoolean(ThrowErr);
         }

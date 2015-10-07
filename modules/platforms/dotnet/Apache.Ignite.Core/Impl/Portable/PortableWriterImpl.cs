@@ -1217,7 +1217,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>
         /// Raw writer.
         /// </returns>
-        public IPortableRawWriter RawWriter()
+        public IPortableRawWriter GetRawWriter()
         {
             if (_curRawPos == 0)
                 _curRawPos = _stream.Position;
@@ -1230,7 +1230,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="builder">Builder.</param>
         /// <returns>Previous builder.</returns>
-        internal PortableBuilderImpl Builder(PortableBuilderImpl builder)
+        internal PortableBuilderImpl SetBuilder(PortableBuilderImpl builder)
         {
             PortableBuilderImpl ret = _builder;
 

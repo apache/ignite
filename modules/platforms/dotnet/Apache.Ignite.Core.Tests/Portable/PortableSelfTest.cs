@@ -1673,7 +1673,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             public unsafe void WritePortable(IPortableWriter writer)
             {
-                IPortableRawWriter rawWriter = writer.RawWriter();
+                IPortableRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteBoolean(PBool);
                 rawWriter.WriteByte(PByte);
@@ -1795,7 +1795,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             {
                 PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
-                IPortableRawWriter rawWriter = writer.RawWriter();
+                IPortableRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteBoolean(obj0.PBool);
                 rawWriter.WriteByte(obj0.PByte);
@@ -1879,7 +1879,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteObject("inner", Inner);
                 writer.WriteString("after", After);
 
-                IPortableRawWriter rawWriter = writer.RawWriter();
+                IPortableRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteString(RawBefore);
                 rawWriter.WriteObject(RawInner);
@@ -1918,7 +1918,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteObject("outer", Outer);
                 writer.WriteString("after", After);
 
-                IPortableRawWriter rawWriter = writer.RawWriter();
+                IPortableRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteString(RawBefore);
                 rawWriter.WriteObject(RawOuter);
@@ -1954,7 +1954,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 
                 writer.WriteString("after", After);
 
-                IPortableRawWriter rawWriter = writer.RawWriter();
+                IPortableRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteString(RawBefore);
 
@@ -2025,7 +2025,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteDecimal("val", Val);
                 writer.WriteDecimalArray("valArr", ValArr);
 
-                IPortableRawWriter rawWriter = writer.RawWriter();
+                IPortableRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteDecimal(RawVal);
                 rawWriter.WriteDecimalArray(RawValArr);
@@ -2102,7 +2102,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteDateArray("locArr", LocArr);
                 writer.WriteDateArray("utcArr", UtcArr);
 
-                IPortableRawWriter rawWriter = writer.RawWriter();
+                IPortableRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteDate(LocRaw);
                 rawWriter.WriteDate(UtcRaw);
