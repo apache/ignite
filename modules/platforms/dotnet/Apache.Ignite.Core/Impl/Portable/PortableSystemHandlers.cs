@@ -152,6 +152,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             // 13. Arbitrary dictionary.
             ReadHandlers[PortableUtils.TypeDictionary] = new PortableSystemReader(ReadDictionary);
 
+            // 13. Generic dictionary.
+            ReadHandlers[PortableUtils.TypeGenericDictionary] = new PortableSystemReader(ReadGenericDictionary);
+
             // 14. Map entry.
             ReadHandlers[PortableUtils.TypeMapEntry] = new PortableSystemReader(ReadMapEntry);
             
@@ -630,7 +633,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             Debug.Assert(info.IsGenericCollection, "Not generic collection: " + obj.GetType().FullName);
 
-            ctx.Stream.WriteByte(PortableUtils.TypeGenericCollection);  // TODO: different type?
+            ctx.Stream.WriteByte(PortableUtils.TypeGenericCollection);
 
             info.WriteGeneric(ctx, obj);
         }
@@ -654,7 +657,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             Debug.Assert(info.IsGenericDictionary, "Not generic dictionary: " + obj.GetType().FullName);
 
-            ctx.Stream.WriteByte(PortableUtils.TypeDictionary);
+            ctx.Stream.WriteByte(PortableUtils.TypeGenericDictionary);
 
             info.WriteGeneric(ctx, obj);
         }
@@ -666,7 +669,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             ctx.Stream.WriteByte(PortableUtils.TypeCollection);
 
-            PortableUtils.WriteTypedCollection((ICollection)obj, ctx, PortableUtils.CollectionArrayList);
+            PortableUtils.WriteCollection((ICollection)obj, ctx, PortableUtils.CollectionArrayList);
         }
 
         /**
@@ -758,11 +761,15 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static object ReadDictionary(PortableReaderImpl ctx, Type type)
         {
-            PortableCollectionInfo info = PortableCollectionInfo.GetInstance(type);
+            return PortableUtils.ReadDictionary(ctx, null);
+        }
 
-            return info.IsGenericDictionary
-                ? info.ReadGeneric(ctx)
-                : PortableUtils.ReadDictionary(ctx, null);
+        /// <summary>
+        /// Reads the generic dictionary.
+        /// </summary>
+        private static object ReadGenericDictionary(PortableReaderImpl ctx, Type type)
+        {
+            return PortableUtils.ReadTypedDictionary(ctx);
         }
 
         /**

@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Collections;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -141,6 +140,9 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Type: map. */
         public const byte TypeDictionary = 25;
+
+        /** Type: generic map (with element type information). */
+        public const byte TypeGenericDictionary = 97;
 
         /** Type: map entry. */
         public const byte TypeMapEntry = 26;
@@ -306,6 +308,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Method: ReadGenericDictionary. */
         public static readonly MethodInfo MtdhReadGenericDictionary =
             typeof(PortableUtils).GetMethod("ReadGenericDictionary", _bindFlagsStatic);
+
+        /** Method: ReadGenericDictionary. */
+        public static readonly MethodInfo MtdhReadGenericDictionary0 =
+            typeof(PortableUtils).GetMethod("ReadGenericDictionary0", _bindFlagsStatic);
 
         /** Method: ReadGenericArray. */
         public static readonly MethodInfo MtdhReadGenericArray =
@@ -1347,7 +1353,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             byte colType = val.GetType() == typeof(ArrayList) ? CollectionArrayList : CollectionCustom;
 
-            WriteTypedCollection(val, ctx, colType);
+            WriteCollection(val, ctx, colType);
         }
 
         /**
@@ -1356,7 +1362,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="ctx">Write context.</param>
          * <param name="colType">Collection type.</param>
          */
-        public static void WriteTypedCollection(ICollection val, PortableWriterImpl ctx, byte colType)
+        public static void WriteCollection(ICollection val, PortableWriterImpl ctx, byte colType)
         {
             ctx.Stream.WriteInt(val.Count);
 
@@ -1562,68 +1568,81 @@ namespace Apache.Ignite.Core.Impl.Portable
         // ReSharper disable once UnusedMember.Global (used by reflection)
         public static void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val, PortableWriterImpl ctx)
         {
-            Type type = val.GetType().GetGenericTypeDefinition();
-
-            byte dictType;
-
-            if (type == typeof(Dictionary<,>))
-                dictType = MapHashMap;
-            else if (type == typeof(SortedDictionary<,>))
-                dictType = MapSortedMap;
-            else if (type == typeof(ConcurrentDictionary<,>))
-                dictType = MapConcurrentHashMap;
-            else
-                dictType = MapCustom;
+            WriteType(val.GetType(), ctx);
 
             ctx.Stream.WriteInt(val.Count);
 
-            ctx.Stream.WriteByte(dictType);
-
-            foreach (KeyValuePair<TK, TV> entry in val)
+            foreach (var entry in val)
             {
                 ctx.Write(entry.Key);
                 ctx.Write(entry.Value);
             }
         }
 
-        /**
-         * <summary>Read generic dictionary.</summary>
-         * <param name="ctx">Context.</param>
-         * <param name="factory">Factory delegate.</param>
-         * <returns>Collection.</returns>
-         */
-        public static IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableReaderImpl ctx,
+        /// <summary>
+        /// Reads generic dictionary with type information.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <returns></returns>
+        public static object ReadTypedDictionary(PortableReaderImpl reader)
+        {
+            var collectionType = ReadType(reader);
+
+            var elementTypes = collectionType.GetGenericArguments();
+
+            // TODO: Cache
+            var factoryType = typeof(PortableGenericDictionaryFactory<,>).MakeGenericType(elementTypes);
+
+            var readMethod = MtdhReadGenericDictionary0.MakeGenericMethod(elementTypes);
+
+            var readerFunc =
+                DelegateConverter.CompileFunc<Func<PortableReaderImpl, object, Type, object>>(typeof(PortableUtils),
+                    readMethod, new[] { typeof(PortableReaderImpl), factoryType, typeof(Type) }, new[] { false, true, false, true });
+
+            return readerFunc(reader, null, collectionType);
+            
+        }
+
+        public static IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableReaderImpl reader,
             PortableGenericDictionaryFactory<TK, TV> factory)
         {
-            int len = ctx.Stream.ReadInt();
+            var collectionType = ReadType(reader);
 
-            if (len >= 0)
+            return ReadGenericDictionary0(reader, factory, collectionType);
+        }
+
+        /// <summary>
+        /// Reads the generic dictionary.
+        /// </summary>
+        private static IDictionary<TK, TV> ReadGenericDictionary0<TK, TV>(PortableReaderImpl reader,
+            PortableGenericDictionaryFactory<TK, TV> factory, Type collectionType)
+        {
+            var len = reader.Stream.ReadInt();
+
+            IDictionary<TK, TV> res;
+
+            if (factory != null)
             {
-                byte colType = ctx.Stream.ReadByte();
-
-                if (factory == null)
-                {
-                    if (colType == MapSortedMap)
-                        factory = PortableSystemHandlers.CreateSortedDictionary<TK, TV>;
-                    else if (colType == MapConcurrentHashMap)
-                        factory = PortableSystemHandlers.CreateConcurrentDictionary<TK, TV>;
-                    else
-                        factory = PortableSystemHandlers.CreateDictionary<TK, TV>;
-                }
-
-                IDictionary<TK, TV> res = factory.Invoke(len);
-
-                for (int i = 0; i < len; i++)
-                {
-                    TK key = ctx.Deserialize<TK>();
-                    TV val = ctx.Deserialize<TV>();
-
-                    res[key] = val;
-                }
-
-                return res;
+                res = factory.Invoke(len);
             }
-            return null;
+            else
+            {
+                // TODO: cache
+                var ctor = DelegateConverter.CompileCtor<Func<object, IDictionary<TK, TV>>>(collectionType,
+                    new[] { typeof(int) }, false);
+
+                res = ctor(len);
+            }
+
+            for (int i = 0; i < len; i++)
+            {
+                var key = reader.Deserialize<TK>();
+                var val = reader.Deserialize<TV>();
+
+                res[key] = val;
+            }
+
+            return res;
         }
 
         /**
@@ -1786,6 +1805,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 case TypeCollection:
                 case TypeGenericCollection:
                 case TypeDictionary:
+                case TypeGenericDictionary:
                 case TypeMapEntry:
                 case TypePortable:
                     return true;
