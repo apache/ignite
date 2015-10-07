@@ -1431,6 +1431,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             //    collectionType = collectionType.GetGenericTypeDefinition().MakeGenericType(elementType);
             //}
 
+            // TODO: Cache
             var factoryType = typeof (PortableGenericCollectionFactory<>).MakeGenericType(elementType);
 
             var readMethod = MtdhReadGenericCollection0.MakeGenericMethod(elementType);
