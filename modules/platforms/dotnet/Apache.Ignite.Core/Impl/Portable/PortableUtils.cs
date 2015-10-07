@@ -1447,33 +1447,22 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             var collectionType = ReadType(reader);
 
-            return ReadGenericCollection0(reader, factory, collectionType);
+            return ReadGenericCollection0(reader, factory, PortableCollectionInfo.GetInstance(collectionType));
         }
 
         /// <summary>
         /// Reads generic collection without type information.
         /// </summary>
         private static ICollection<T> ReadGenericCollection0<T>(PortableReaderImpl ctx, 
-            PortableGenericCollectionFactory<T> factory, Type collectionType)
+            PortableGenericCollectionFactory<T> factory, PortableCollectionInfo info)
         {
             Debug.Assert(ctx != null);
 
             int len = ctx.Stream.ReadInt();
 
-            ICollection<T> res;
-
-            if (factory != null)
-            {
-                res = factory.Invoke(len);
-            }
-            else
-            {
-                // TODO: cache
-                var ctor = DelegateConverter.CompileCtor<Func<object, ICollection<T>>>(collectionType,
-                    new[] {typeof (int)}, false);
-
-                res = ctor(len);
-            }
+            var res = factory != null 
+                ? factory.Invoke(len) 
+                : (ICollection<T>) info.Constructor(len);
 
             for (int i = 0; i < len; i++)
                 res.Add(ctx.Deserialize<T>());

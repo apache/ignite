@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
+    using System.Collections;
     using System.Collections.Concurrent;
     using System.Diagnostics;
     using System.Reflection;
@@ -45,15 +46,17 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Cache "none" value. */
         private static readonly PortableCollectionInfo None =
-            new PortableCollectionInfo(FlagNone, null, null, null);
+            new PortableCollectionInfo(typeof(object), FlagNone, null, null, null);
 
         /** Cache "dictionary" value. */
         private static readonly PortableCollectionInfo Dictionary =
-            new PortableCollectionInfo(FlagDictionary, PortableSystemHandlers.WriteHndDictionary, null, null);
+            new PortableCollectionInfo(typeof (IDictionary), FlagDictionary, PortableSystemHandlers.WriteHndDictionary,
+                null, null);
 
         /** Cache "collection" value. */
         private static readonly PortableCollectionInfo Collection =
-            new PortableCollectionInfo(FlagCollection, PortableSystemHandlers.WriteHndCollection, null, null);
+            new PortableCollectionInfo(typeof (ICollection), FlagCollection, PortableSystemHandlers.WriteHndCollection,
+                null, null);
 
         /** Cached infos. */
         private static readonly ConcurrentDictionary<Type, PortableCollectionInfo> Infos =
@@ -85,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     MethodInfo readMthd =
                         PortableUtils.MtdhReadGenericDictionary.MakeGenericMethod(type.GetGenericArguments());
 
-                    return new PortableCollectionInfo(FlagGenericDictionary,
+                    return new PortableCollectionInfo(type, FlagGenericDictionary,
                         PortableSystemHandlers.WriteHndGenericDictionary, writeMthd, readMthd);
                 }
 
@@ -98,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     MethodInfo readMthd =
                         PortableUtils.MtdhReadGenericDictionary.MakeGenericMethod(genTyp.GetGenericArguments());
 
-                    return new PortableCollectionInfo(FlagGenericDictionary,
+                    return new PortableCollectionInfo(type, FlagGenericDictionary,
                         PortableSystemHandlers.WriteHndGenericDictionary, writeMthd, readMthd);
                 }
 
@@ -109,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     MethodInfo readMthd =
                         PortableUtils.MtdhReadGenericCollection.MakeGenericMethod(type.GetGenericArguments());
 
-                    return new PortableCollectionInfo(FlagGenericCollection,
+                    return new PortableCollectionInfo(type, FlagGenericCollection,
                         PortableSystemHandlers.WriteHndGenericCollection, writeMthd, readMthd);
                 }
 
@@ -122,7 +125,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     MethodInfo readMthd =
                         PortableUtils.MtdhReadGenericCollection.MakeGenericMethod(genTyp.GetGenericArguments());
 
-                    return new PortableCollectionInfo(FlagGenericCollection,
+                    return new PortableCollectionInfo(type, FlagGenericCollection,
                         PortableSystemHandlers.WriteHndGenericCollection, writeMthd, readMthd);
                 }
             }
@@ -145,6 +148,12 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Generic read func. */
         private readonly Func<PortableReaderImpl, object, object> _readFunc;
+        
+        /** Type. */
+        private readonly Type _type;
+        
+        /** Constructor func. */
+        private readonly Func<object, object> _ctor;
 
         /**
          * <summary>Constructor.</summary>
@@ -153,9 +162,12 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="writeMthd0">Generic write method.</param>
          * <param name="readMthd0">Generic read method.</param>
          */
-        private PortableCollectionInfo(byte flag0, PortableSystemWriteDelegate writeHnd0,
+        private PortableCollectionInfo(Type type, byte flag0, PortableSystemWriteDelegate writeHnd0,
             MethodInfo writeMthd0, MethodInfo readMthd0)
         {
+            Debug.Assert(type != null);
+
+            _type = type;
             _flag = flag0;
             _writeHnd = writeHnd0;
 
@@ -166,6 +178,11 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (readMthd0 != null)
                 _readFunc = DelegateConverter.CompileFunc<Func<PortableReaderImpl, object, object>>(null, readMthd0, 
                     null, new[] {false, true, false});
+
+            var ctorInfo = type.GetConstructor(new[] {typeof (int)});
+
+            if (ctorInfo != null)
+                _ctor = DelegateConverter.CompileCtor<Func<object, object>>(ctorInfo, new[] {typeof (int)});
         }
 
         /**
@@ -214,6 +231,22 @@ namespace Apache.Ignite.Core.Impl.Portable
         public PortableSystemWriteDelegate WriteHandler
         {
             get { return _writeHnd; }
+        }
+
+        /// <summary>
+        /// Gets the collection type.
+        /// </summary>
+        public Type Type
+        {
+            get { return _type; }
+        }
+
+        /// <summary>
+        /// Gets the constructor func.
+        /// </summary>
+        public Func<object, object> Constructor
+        {
+            get { return _ctor; }
         }
 
         /// <summary>
