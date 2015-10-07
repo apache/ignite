@@ -123,6 +123,13 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
+        public ICollection<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, 
+            IEnumerable<int> types = null) where T : IEvent
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
         public virtual Guid RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
             IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, params int[] types)
             where T : IEvent
@@ -156,6 +163,14 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
+        public Guid RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
+            IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, IEnumerable<int> types = null) 
+            where T : IEvent
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
         public virtual void StopRemoteListen(Guid opId)
         {
             DoOutOp((int) Op.StopRemoteListen, writer =>
@@ -168,6 +183,12 @@ namespace Apache.Ignite.Core.Impl.Events
         public IEvent WaitForLocal(params int[] types)
         {
             return WaitForLocal<IEvent>(null, types);
+        }
+
+        /** <inheritDoc /> */
+        public IEvent WaitForLocal(IEnumerable<int> types)
+        {
+            throw new NotImplementedException();
         }
 
         /** <inheritDoc /> */
@@ -187,11 +208,23 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
+        public T WaitForLocal<T>(IEventFilter<T> filter, IEnumerable<int> types) where T : IEvent
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
         public ICollection<IEvent> LocalQuery(params int[] types)
         {
             return DoOutInOp((int) Op.LocalQuery,
                 writer => WriteEventTypes(types, writer),
                 reader => ReadEvents<IEvent>(reader));
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<IEvent> LocalQuery(IEnumerable<int> types)
+        {
+            throw new NotImplementedException();
         }
 
         /** <inheritDoc /> */
@@ -208,6 +241,12 @@ namespace Apache.Ignite.Core.Impl.Events
 
             foreach (var type in types)
                 LocalListen(listener, type);
+        }
+
+        /** <inheritDoc /> */
+        public void LocalListen<T>(IEventFilter<T> listener, IEnumerable<int> types) where T : IEvent
+        {
+            throw new NotImplementedException();
         }
 
         /** <inheritDoc /> */
@@ -230,7 +269,12 @@ namespace Apache.Ignite.Core.Impl.Events
                 return success;
             }
         }
-        
+
+        public bool StopLocalListen<T>(IEventFilter<T> listener, IEnumerable<int> types) where T : IEvent
+        {
+            throw new NotImplementedException();
+        }
+
         /** <inheritDoc /> */
         public void EnableLocal(IEnumerable<int> types)
         {
@@ -251,6 +295,11 @@ namespace Apache.Ignite.Core.Impl.Events
             IgniteArgumentCheck.NotNullOrEmpty(types, "types");
 
             DoOutOp((int)Op.DisableLocal, writer => WriteEventTypes(types, writer));
+        }
+
+        public void DisableLocal(IEnumerable<int> types)
+        {
+            throw new NotImplementedException();
         }
 
         /** <inheritDoc /> */

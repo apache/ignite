@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var events = _grid1.GetEvents();
 
-            Assert.AreEqual(0, events.GetEnabledEvents().Length);
+            Assert.AreEqual(0, events.GetEnabledEvents().Count);
 
             Assert.IsFalse(EventType.EvtsCache.Any(events.IsEnabled));
 
@@ -767,7 +767,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Verifies received events against events events.
         /// </summary>
-        public static void VerifyReceive(int count, Type eventObjectType, params int[] eventTypes)
+        public static void VerifyReceive(int count, Type eventObjectType, ICollection<int> eventTypes)
         {
             // check if expected event count has been received; Wait returns false if there were none.
             Assert.IsTrue(ReceivedEvent.Wait(Timeout), 
@@ -930,7 +930,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets or sets the type of the event.
         /// </summary>
-        public int[] EventType { get; set; }
+        public ICollection<int> EventType { get; set; }
 
         /// <summary>
         /// Gets or sets the type of the event object.
