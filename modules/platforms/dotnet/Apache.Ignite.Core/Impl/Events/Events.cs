@@ -230,6 +230,12 @@ namespace Apache.Ignite.Core.Impl.Events
                 return success;
             }
         }
+        
+        /** <inheritDoc /> */
+        public void EnableLocal(IEnumerable<int> types)
+        {
+            EnableLocal(TypesToArray(types));
+        }
 
         /** <inheritDoc /> */
         public void EnableLocal(params int[] types)
@@ -451,6 +457,16 @@ namespace Apache.Ignite.Core.Impl.Events
         private int[] ReadEventTypes(IPortableStream reader)
         {
             return Marshaller.StartUnmarshal(reader).ReadIntArray();
+        }
+
+        /// <summary>
+        /// Converts types enumerable to array with arg check.
+        /// </summary>
+        private int[] TypesToArray(IEnumerable<int> types)
+        {
+            IgniteArgumentCheck.NotNull(types, "types");
+
+            return types as int[] ?? types.ToArray();
         }
 
         /// <summary>

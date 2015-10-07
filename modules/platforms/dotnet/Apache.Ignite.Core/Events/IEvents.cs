@@ -160,6 +160,13 @@ namespace Apache.Ignite.Core.Events
         void EnableLocal(params int[] types);
 
         /// <summary>
+        /// Enables provided events. Allows to start recording events that were disabled before. 
+        /// Note that provided events will be enabled regardless of whether local node is in this cluster group or not.
+        /// </summary>
+        /// <param name="types">Events to enable.</param>
+        void EnableLocal(IEnumerable<int> types);
+
+        /// <summary>
         /// Disables provided events. Allows to stop recording events that were enabled before. Note that specified 
         /// events will be disabled regardless of whether local node is in this cluster group or not.
         /// </summary>
