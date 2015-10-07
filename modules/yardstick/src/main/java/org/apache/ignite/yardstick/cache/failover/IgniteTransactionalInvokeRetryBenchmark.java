@@ -103,7 +103,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                                 Long val = asyncCache.<Long>future().get(timeout);
 
                                                 if (val != null)
-                                                    println(cfg, "Entry [key=" + key2 + ", val=" + val);
+                                                    println(cfg, "Entry [key=" + key2 + ", val=" + val + "]");
                                             }
                                         }
 
