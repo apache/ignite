@@ -256,7 +256,8 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(1, portObj.Deserialize<ToPortableNoMeta>().Val);
 
             // 5. Object array.
-            IPortableObject[] portObjArr = api.ToPortable<IPortableObject[]>(new[] { new ToPortable(1) });
+            var portObjArr = api.ToPortable<object[]>(new object[] {new ToPortable(1)})
+                .OfType<IPortableObject>().ToArray();
 
             Assert.AreEqual(1, portObjArr.Length);
             Assert.AreEqual(1, portObjArr[0].GetField<int>("Val"));
