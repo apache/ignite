@@ -175,6 +175,13 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Decimal value.</returns>
+        decimal ReadDecimal(string fieldName);
+
+        /// <summary>
+        /// Read named decimal value.
+        /// </summary>
+        /// <param name="fieldName">Field name.</param>
+        /// <returns>Decimal value.</returns>
         decimal? ReadDecimalNullable(string fieldName);
 
         /// <summary>

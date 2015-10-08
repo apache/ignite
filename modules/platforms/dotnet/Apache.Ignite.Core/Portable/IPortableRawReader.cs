@@ -126,6 +126,12 @@ namespace Apache.Ignite.Core.Portable
         /// Read decimal value. 
         /// </summary>
         /// <returns>Decimal value.</returns>
+        decimal ReadDecimal();
+
+        /// <summary>
+        /// Read decimal value. 
+        /// </summary>
+        /// <returns>Decimal value.</returns>
         decimal? ReadDecimalNullable();
 
         /// <summary>
