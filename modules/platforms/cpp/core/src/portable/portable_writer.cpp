@@ -29,52 +29,52 @@ namespace ignite
             // No-op.
         }
 
-        void PortableWriter::WriteInt8(const char* fieldName, const int8_t val)
+        void PortableWriter::WriteInt8(const char* fieldName, int8_t val)
         {
             impl->WriteInt8(fieldName, val);
         }
 
-        void PortableWriter::WriteInt8Array(const char* fieldName, const int8_t* val, const int32_t len)
+        void PortableWriter::WriteInt8Array(const char* fieldName, const int8_t* val, int32_t len)
         {
             impl->WriteInt8Array(fieldName, val, len);
         }
 
-        void PortableWriter::WriteBool(const char* fieldName, const bool val)
+        void PortableWriter::WriteBool(const char* fieldName, bool val)
         {
             impl->WriteBool(fieldName, val);
         }
 
-        void PortableWriter::WriteBoolArray(const char* fieldName, const bool* val, const int32_t len)
+        void PortableWriter::WriteBoolArray(const char* fieldName, const bool* val, int32_t len)
         {
             impl->WriteBoolArray(fieldName, val, len);
         }
 
-        void PortableWriter::WriteInt16(const char* fieldName, const int16_t val)
+        void PortableWriter::WriteInt16(const char* fieldName, int16_t val)
         {
             impl->WriteInt16(fieldName, val);
         }
 
-        void PortableWriter::WriteInt16Array(const char* fieldName, const int16_t* val, const int32_t len)
+        void PortableWriter::WriteInt16Array(const char* fieldName, const int16_t* val, int32_t len)
         {
             impl->WriteInt16Array(fieldName, val, len);
         }
 
-        void PortableWriter::WriteUInt16(const char* fieldName, const uint16_t val)
+        void PortableWriter::WriteUInt16(const char* fieldName, uint16_t val)
         {
             impl->WriteUInt16(fieldName, val);
         }
 
-        void PortableWriter::WriteUInt16Array(const char* fieldName, const uint16_t* val, const int32_t len)
+        void PortableWriter::WriteUInt16Array(const char* fieldName, const uint16_t* val, int32_t len)
         {
             impl->WriteUInt16Array(fieldName, val, len);
         }
 
-        void PortableWriter::WriteInt32(const char* fieldName, const int32_t val)
+        void PortableWriter::WriteInt32(const char* fieldName, int32_t val)
         {
             impl->WriteInt32(fieldName, val);
         }
 
-        void PortableWriter::WriteInt32Array(const char* fieldName, const int32_t* val, const int32_t len)
+        void PortableWriter::WriteInt32Array(const char* fieldName, const int32_t* val, int32_t len)
         {
             impl->WriteInt32Array(fieldName, val, len);
         }
@@ -84,32 +84,32 @@ namespace ignite
             impl->WriteInt64(fieldName, val);
         }
 
-        void PortableWriter::WriteInt64Array(const char* fieldName, const int64_t* val, const int32_t len)
+        void PortableWriter::WriteInt64Array(const char* fieldName, const int64_t* val, int32_t len)
         {
             impl->WriteInt64Array(fieldName, val, len);
         }
 
-        void PortableWriter::WriteFloat(const char* fieldName, const float val)
+        void PortableWriter::WriteFloat(const char* fieldName, float val)
         {
             impl->WriteFloat(fieldName, val);
         }
 
-        void PortableWriter::WriteFloatArray(const char* fieldName, const float* val, const int32_t len)
+        void PortableWriter::WriteFloatArray(const char* fieldName, const float* val, int32_t len)
         {
             impl->WriteFloatArray(fieldName, val, len);
         }
 
-        void PortableWriter::WriteDouble(const char* fieldName, const double val)
+        void PortableWriter::WriteDouble(const char* fieldName, double val)
         {
             impl->WriteDouble(fieldName, val);
         }
 
-        void PortableWriter::WriteDoubleArray(const char* fieldName, const double* val, const int32_t len)
+        void PortableWriter::WriteDoubleArray(const char* fieldName, const double* val, int32_t len)
         {
             impl->WriteDoubleArray(fieldName, val, len);
         }
 
-        void PortableWriter::WriteGuid(const char* fieldName, const Guid val)
+        void PortableWriter::WriteGuid(const char* fieldName, const Guid& val)
         {
             impl->WriteGuid(fieldName, val);
         }
@@ -127,7 +127,7 @@ namespace ignite
                 WriteNull(fieldName);
         }
 
-        void PortableWriter::WriteString(const char* fieldName, const char* val, const int32_t len)
+        void PortableWriter::WriteString(const char* fieldName, const char* val, int32_t len)
         {
             impl->WriteString(fieldName, val, len);
         }

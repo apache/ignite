@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 import org.jetbrains.annotations.Nullable;
@@ -169,4 +170,14 @@ public interface PlatformProcessor extends GridProcessor {
      * @throws IgniteCheckedException If failed.
      */
     public void registerStore(PlatformCacheStore store, boolean convertPortable) throws IgniteCheckedException;
+
+    /**
+     * Get or create AtomicLong.
+     * @param name Name.
+     * @param initVal Initial value.
+     * @param create Create flag.
+     * @return Platform atomic long.
+     * @throws IgniteException
+     */
+    public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException;
 }

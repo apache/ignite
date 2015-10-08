@@ -35,10 +35,10 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritdoc /> */
-        public override PlatformMemoryStream Stream()
+        public override PlatformMemoryStream GetStream()
         {
             if (_stream == null)
-                _stream = base.Stream();
+                _stream = base.GetStream();
             else
                 _stream.Reuse();
 

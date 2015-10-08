@@ -55,7 +55,7 @@ namespace ignite
             /**
              * Name of this cache (null for default cache).
              */
-            char* GetName()
+            const char* GetName() const
             {
                 return impl.Get()->GetName();
             }
@@ -1141,6 +1141,16 @@ namespace ignite
                 impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QueryScan(qry, &err);
 
                 return query::QueryCursor<K, V>(cursorImpl);
+            }
+
+            /**
+             * Check if the instance is valid.
+             *
+             * @return True if the instance is valid and can be used.
+             */
+            bool IsValid()
+            {
+                return impl.IsValid();
             }
 
         private:

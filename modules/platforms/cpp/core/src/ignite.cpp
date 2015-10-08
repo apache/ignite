@@ -35,7 +35,7 @@ namespace ignite
         // No-op.
     }
 
-    char* Ignite::GetName()
+    const char* Ignite::GetName() const
     {
         return impl.Get()->GetName();
     }

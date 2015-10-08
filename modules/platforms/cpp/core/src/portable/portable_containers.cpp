@@ -23,7 +23,7 @@ namespace ignite
 {
     namespace portable
     {
-        PortableStringArrayWriter::PortableStringArrayWriter(PortableWriterImpl* impl, const int32_t id) : 
+        PortableStringArrayWriter::PortableStringArrayWriter(PortableWriterImpl* impl, int32_t id) : 
             impl(impl), id(id)
         {
             // No-op.
@@ -37,7 +37,7 @@ namespace ignite
                 Write(NULL, -1);
         }
 
-        void PortableStringArrayWriter::Write(const char* val, const int32_t len)
+        void PortableStringArrayWriter::Write(const char* val, int32_t len)
         {
             impl->WriteStringElement(id, val, len);
         }
@@ -58,17 +58,17 @@ namespace ignite
             return impl->HasNextElement(id);
         }
 
-        int32_t PortableStringArrayReader::GetNext(char* res, const int32_t len)
+        int32_t PortableStringArrayReader::GetNext(char* res, int32_t len)
         {
             return impl->ReadStringElement(id, res, len);
         }
 
-        int32_t PortableStringArrayReader::GetSize()
+        int32_t PortableStringArrayReader::GetSize() const
         {
             return size;
         }
 
-        bool PortableStringArrayReader::IsNull()
+        bool PortableStringArrayReader::IsNull() const
         {
             return size == -1;
         }

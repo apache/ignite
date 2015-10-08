@@ -45,7 +45,7 @@ namespace ignite
                  *
                  * @return Copy.
                  */
-                virtual QueryArgumentBase* Copy() = 0;
+                virtual QueryArgumentBase* Copy() const = 0;
 
                 /**
                  * Write argument.
@@ -99,17 +99,17 @@ namespace ignite
                     return *this;
                 }
 
-                ~QueryArgument()
+                virtual ~QueryArgument()
                 {
                     // No-op.
                 }
 
-                QueryArgumentBase* Copy()
+                virtual QueryArgumentBase* Copy() const
                 {
                     return new QueryArgument(val);
                 }
 
-                void Write(ignite::portable::PortableRawWriter& writer)
+                virtual void Write(ignite::portable::PortableRawWriter& writer)
                 {
                     writer.WriteObject<T>(val);
                 }

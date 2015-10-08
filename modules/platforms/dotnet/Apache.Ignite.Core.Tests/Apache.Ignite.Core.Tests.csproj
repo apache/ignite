@@ -95,6 +95,7 @@
     <Compile Include="Compute\TaskAdapterTest.cs" />
     <Compile Include="Compute\TaskResultTest.cs" />
     <Compile Include="Dataload\DataStreamerTest.cs" />
+    <Compile Include="DataStructures\AtomicLongTest.cs" />
     <Compile Include="EventsTest.cs" />
     <Compile Include="Examples\Example.cs" />
     <Compile Include="Examples\ExamplesTest.cs" />
@@ -103,12 +104,14 @@
     <Compile Include="ExceptionsTest.cs" />
     <Compile Include="ExecutableTest.cs" />
     <Compile Include="FutureTest.cs" />
+    <Compile Include="IgniteTestBase.cs" />
     <Compile Include="LifecycleTest.cs" />
     <Compile Include="LoadDllTest.cs" />
     <Compile Include="IgniteManagerTest.cs" />
     <Compile Include="MarshallerTest.cs" />
     <Compile Include="MessagingTest.cs" />
     <Compile Include="PortableConfigurationTest.cs" />
+    <Compile Include="Portable\PortableStructureTest.cs" />
     <Compile Include="SerializationTest.cs" />
     <Compile Include="IgniteStartStopTest.cs" />
     <Compile Include="TestUtils.cs" />

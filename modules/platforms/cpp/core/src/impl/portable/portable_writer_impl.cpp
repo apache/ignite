@@ -469,12 +469,12 @@ namespace ignite
                 rawPos = stream->Position();
             }
 
-            int32_t PortableWriterImpl::GetRawPosition()
+            int32_t PortableWriterImpl::GetRawPosition() const
             {
                 return rawPos == -1 ? stream->Position() : rawPos;
             }
 
-            void PortableWriterImpl::CheckRawMode(bool expected)
+            void PortableWriterImpl::CheckRawMode(bool expected) const
             {
                 bool rawMode = rawPos != -1;
 
@@ -486,7 +486,7 @@ namespace ignite
                 }
             }
 
-            void PortableWriterImpl::CheckSingleMode(bool expected)
+            void PortableWriterImpl::CheckSingleMode(bool expected) const
             {
                 if (expected && elemId != 0) {
                     IGNITE_ERROR_1(IgniteError::IGNITE_ERR_PORTABLE, "Operation cannot be performed when container is being written.");
@@ -505,7 +505,7 @@ namespace ignite
                 elemPos = stream->Position();
             }
 
-            void PortableWriterImpl::CheckSession(int32_t expSes)
+            void PortableWriterImpl::CheckSession(int32_t expSes) const
             {
                 if (elemId != expSes) 
                 {

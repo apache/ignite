@@ -25,22 +25,17 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// </summary>
     public static class PathUtil
     {
-        public static readonly string IgniteHome = IgniteManager.GetIgniteHome(null);
+        /** */
+        public const string SpringConfigUrlDevPrefix = "modules\\";
 
-        /// <summary>
-        /// Full Apache.Ignite.exe path.
-        /// </summary>
-        public static readonly string IgniteExePath = typeof(IgniteRunner).Assembly.Location;
-
-        /// <summary>
-        /// Examples source code path.
-        /// </summary>
-        public static readonly string ExamplesSourcePath = Path.Combine(IgniteHome, @"platforms\dotnet\examples");
+        /** */
+        public static readonly string IgniteHome = Impl.Common.IgniteHome.Resolve(null);
 
         /// <summary>
         /// Examples source code path.
         /// </summary>
-        public static readonly string ExamplesDevSourcePath = Path.Combine(IgniteHome, @"examples");
+        public static readonly string ExamplesSourcePath =
+            Path.Combine(IgniteHome, @"modules\platforms\dotnet\examples");
 
         /// <summary>
         /// Gets the full configuration path.
@@ -50,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             if (string.IsNullOrEmpty(springConfigUrl))
                 return springConfigUrl;
 
-            return Path.GetFullPath(Path.Combine(IgniteHome, springConfigUrl));
+            return Path.GetFullPath(Path.Combine(IgniteHome, SpringConfigUrlDevPrefix + springConfigUrl));
         }
     }
 }
