@@ -126,13 +126,13 @@ namespace Apache.Ignite.Core.Portable
         /// Write decimal value.
         /// </summary>
         /// <param name="val">Decimal value.</param>
-        void WriteDecimal(decimal val);
+        void WriteDecimal(decimal? val);
 
         /// <summary>
         /// Write decimal array.
         /// </summary>
         /// <param name="val">Decimal array.</param>
-        void WriteDecimalArray(decimal[] val);
+        void WriteDecimalArray(decimal?[] val);
 
         /// <summary>
         /// Write date value.

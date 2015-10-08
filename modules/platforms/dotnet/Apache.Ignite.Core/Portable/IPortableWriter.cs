@@ -143,14 +143,14 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Decimal value.</param>
-        void WriteDecimal(string fieldName, decimal val);
+        void WriteDecimal(string fieldName, decimal? val);
 
         /// <summary>
         /// Write named decimal array.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Decimal array.</param>
-        void WriteDecimalArray(string fieldName, decimal[] val);
+        void WriteDecimalArray(string fieldName, decimal?[] val);
 
         /// <summary>
         /// Write named date value.

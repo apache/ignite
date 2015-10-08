@@ -545,26 +545,36 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Decimal value.</param>
-        public void WriteDecimal(string fieldName, decimal val)
+        public void WriteDecimal(string fieldName, decimal? val)
         {
             WriteFieldId(fieldName, PU.TypeDecimal);
 
-            int pos = SkipFieldLength();
+            if (val == null)
+                WriteNullField();
+            else
+            {
+                int pos = SkipFieldLength();
 
-            _stream.WriteByte(PU.TypeDecimal);
-            PortableUtils.WriteDecimal(val, _stream);
+                _stream.WriteByte(PU.TypeDecimal);
+                PortableUtils.WriteDecimal(val.Value, _stream);
 
-            WriteFieldLength(_stream, pos);
+                WriteFieldLength(_stream, pos);
+            }
         }
 
         /// <summary>
         /// Write decimal value.
         /// </summary>
         /// <param name="val">Decimal value.</param>
-        public void WriteDecimal(decimal val)
+        public void WriteDecimal(decimal? val)
         {
-            _stream.WriteByte(PU.TypeDecimal);
-            PortableUtils.WriteDecimal(val, _stream);
+            if (val == null)
+                WriteNullRawField();
+            else
+            {
+                _stream.WriteByte(PU.TypeDecimal);
+                PortableUtils.WriteDecimal(val.Value, _stream);
+            }
         }
 
         /// <summary>
@@ -572,7 +582,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Decimal array.</param>
-        public void WriteDecimalArray(string fieldName, decimal[] val)
+        public void WriteDecimalArray(string fieldName, decimal?[] val)
         {
             WriteFieldId(fieldName, PU.TypeArrayDecimal);
 
@@ -593,7 +603,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write decimal array.
         /// </summary>
         /// <param name="val">Decimal array.</param>
-        public void WriteDecimalArray(decimal[] val)
+        public void WriteDecimalArray(decimal?[] val)
         {
             if (val == null)
                 WriteNullRawField();
