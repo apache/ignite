@@ -25,7 +25,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 
 /**
  * Atomic retries failover benchmark. Client generates continuous load to the cluster (random get, put, invoke, remove
- * operations)
+ * operations).
  */
 public class IgniteAtomicRetriesFailoverBenchmark extends IgniteFailoverAbstractBenchmark<Integer, String> {
     /** {@inheritDoc} */
@@ -40,21 +40,29 @@ public class IgniteAtomicRetriesFailoverBenchmark extends IgniteFailoverAbstract
             case 0:
                 asyncCache.get(key);
                 asyncCache.future().get(timeout);
+
                 break;
+
             case 1:
                 asyncCache.put(key, String.valueOf(key));
                 asyncCache.future().get(timeout);
+
                 break;
+
             case 2:
                 asyncCache.invoke(key, new TestCacheEntryProcessor());
                 asyncCache.future().get(timeout);
+
                 break;
+
             case 3:
                 asyncCache.remove(key);
                 asyncCache.future().get(timeout);
+
                 break;
+
             default:
-                throw new IllegalStateException("Got opNum = " + opNum);
+                throw new IllegalStateException("Got invalid operation number: " + opNum);
         }
 
         return true;

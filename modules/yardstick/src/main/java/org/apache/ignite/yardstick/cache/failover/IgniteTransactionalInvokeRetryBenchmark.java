@@ -35,13 +35,12 @@ import org.yardstickframework.BenchmarkConfiguration;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Atomic retries failover benchmark. Client generates continuous load to the cluster (random get, put, invoke, remove
- * operations)
+ * Invoke retry failover benchmark. Each client maintains a local map that it updates together with cache.
+ * Client invokes an increment closure for all generated keys and atomically increments value for corresponding
+ * keys in the local map. To validate cache contents, all writes from the client are stopped, values in
+ * the local map are compared to the values in the cache.
  */
 public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstractBenchmark<String, Long> {
-    /** */
-    public static final int KEY_RANGE = 100_000;
-
     /** */
     private final ConcurrentMap<String, AtomicLong> map = new ConcurrentHashMap<>();
 
@@ -67,16 +66,16 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                         rwl.writeLock().lock();
 
                         try {
-                            println("[CACHE-VALIDATOR] Start cache validation.");
+                            println("Start cache validation.");
 
                             long startTime = U.currentTimeMillis();
 
                             Map<String, Long> notEqualsCacheVals = new HashMap<>();
                             Map<String, Long> notEqualsLocMapVals = new HashMap<>();
 
-                            for (int k = 0; k < KEY_RANGE; k++) {
+                            for (int k = 0; k < args.range(); k++) {
                                 if (k % 10_000 == 0)
-                                    println("[CACHE-VALIDATOR] Start validation for keys like 'key-" + k + "-*'");
+                                    println("Start validation for keys like 'key-" + k + "-*'");
 
                                 for (int i = 0; i < keysCnt; i++) {
                                     String key = "key-" + k + "-" + cfg.memberId() + "-" + i;
@@ -94,8 +93,8 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                 }
                             }
 
-                            assert notEqualsCacheVals.size() == notEqualsLocMapVals.size(): "Cache map = "
-                                + notEqualsCacheVals + ", map vals = " + notEqualsLocMapVals;
+                            assert notEqualsCacheVals.size() == notEqualsLocMapVals.size(): "Invalid state " +
+                                "[cacheMapVals=" + notEqualsCacheVals + ", mapVals=" + notEqualsLocMapVals + "]";
 
                             if (!notEqualsCacheVals.isEmpty()) {
                                 // Print all usefull information and finish.
@@ -104,7 +103,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                     Long mapVal = eLocMap.getValue();
                                     Long cacheVal = notEqualsCacheVals.get(key);
 
-                                    println(cfg, "[CACHE-VALIDATOR] Got different values [key='" + key
+                                    println(cfg, "Got different values [key='" + key
                                         + "', cacheVal=" + cacheVal + ", localMapVal=" + mapVal + "]");
                                 }
 
@@ -112,7 +111,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
 
                                 println(cfg, "Cache content:");
 
-                                for (int k2 = 0; k2 < KEY_RANGE; k2++) {
+                                for (int k2 = 0; k2 < args.range(); k2++) {
                                     for (int i2 = 0; i2 < keysCnt; i2++) {
                                         String key2 = "key-" + k2 + "-" + cfg.memberId() + "-" + i2;
 
@@ -129,7 +128,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                 throw new IllegalStateException("Cache and local map are in inconsistent state.");
                             }
 
-                            println("[CACHE-VALIDATOR] Cache validation successfully finished in "
+                            println("Cache validation successfully finished in "
                                 + (U.currentTimeMillis() - startTime) / 1000 + " sec.");
                         }
                         finally {
@@ -140,7 +139,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                 catch (Throwable e) {
                     ex = new Exception(e);
 
-                    println("[CACHE-VALIDATOR] Got exception: " + e);
+                    println("Got exception: " + e);
 
                     e.printStackTrace();
 
@@ -159,11 +158,11 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        final int k = nextRandom(KEY_RANGE);
+        final int k = nextRandom(args.range());
 
         final String[] keys = new String[args.keysCount()];
 
-        assert keys.length > 0 : "Count of keys = " + keys.length;
+        assert keys.length > 0 : "Count of keys: " + keys.length;
 
         for (int i = 0; i < keys.length; i++)
             keys[i] = "key-" + k + "-" + cfg.memberId() + "-" + i;

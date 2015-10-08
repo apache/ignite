@@ -35,7 +35,7 @@ public class IgniteFailoverNode extends IgniteNode {
     @Override public void start(BenchmarkConfiguration cfg) throws Exception {
         super.start(cfg);
 
-        // Put server configuration at tmp cache.
+        // Put server configuration at special cache.
         RuntimeMXBean mxBean = ManagementFactory.getRuntimeMXBean();
 
         List<String> jvmOpts = mxBean.getInputArguments();
@@ -55,6 +55,6 @@ public class IgniteFailoverNode extends IgniteNode {
 
         srvsCfgsCache.put(cfg.memberId(), cfg);
 
-        println("Put at cache " + cfg.memberId() + "=" + cfg);
+        println("Put at cache [" + cfg.memberId() + "=" + cfg + "]");
     }
 }

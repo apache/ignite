@@ -58,7 +58,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
             Thread restarterThread = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
-                        println("[RESTARTER] Servers restarter started. Will start restarting servers after "
+                        println("Servers restarter started. Will start restarting servers after "
                             + cfg.warmup() + " sec. warmup.");
 
                         Thread.sleep(cfg.warmup() * 1000);
@@ -71,7 +71,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
                         final Map<Integer, BenchmarkConfiguration> srvsCfgs = new HashMap<>();
 
                         for (Cache.Entry<Integer, BenchmarkConfiguration> e : srvsCfgsCache) {
-                            println("[RESTARTER] Read entry from 'serversConfigs' cache = " + e);
+                            println("Read entry from 'serversConfigs' cache : " + e);
 
                             srvsCfgs.put(e.getKey(), e.getValue());
                         }
@@ -80,7 +80,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
                         final int backupsCnt = args.backups();
 
-                        assert backupsCnt >= 1 : "Backups=" + backupsCnt;
+                        assert backupsCnt >= 1 : "Backups: " + backupsCnt;
 
                         final boolean isDebug = ignite().log().isDebugEnabled();
 
@@ -96,7 +96,8 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
                             Collections.shuffle(ids);
 
-                            println("[RESTARTER] Number nodes to restart = " + numNodesToRestart + ", shuffled ids = " + ids);
+                            println("Start servers restarting [numNodesToRestart=" + numNodesToRestart
+                                + ", shuffledIds = " + ids + "]");
 
                             for (int i = 0; i < numNodesToRestart; i++) {
                                 Integer id = ids.get(i);
@@ -105,8 +106,8 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
                                 ProcessExecutionResult res = BenchmarkUtils.kill9Server(bc, isDebug);
 
-                                println("[RESTARTER] Server with id " + id + " has been killed."
-                                    + (isDebug ? " Result:\n" + res : ""));
+                                println("Server with id " + id + " has been killed."
+                                    + (isDebug ? " Process execution result:\n" + res : ""));
                             }
 
                             Thread.sleep(args.restartSleep() * 1000);
@@ -118,13 +119,13 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
                                 ProcessExecutionResult res = BenchmarkUtils.startServer(bc, isDebug);
 
-                                println("[RESTARTER] Server with id " + id + " has been started."
-                                    + (isDebug ? " Result:\n" + res : ""));
+                                println("Server with id " + id + " has been started."
+                                    + (isDebug ? " Process execution result:\n" + res : ""));
                             }
                         }
                     }
                     catch (Throwable e) {
-                        println("[RESTARTER] Got exception: " + e);
+                        println("Got exception: " + e);
                         e.printStackTrace();
 
                         U.dumpThreads(null);
@@ -133,7 +134,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
                             throw (Error)e;
                     }
                 }
-            }, "restarter");
+            }, "servers-restarter");
 
             Thread threadDumpPrinterThread = new Thread(new Runnable() {
                 @Override public void run() {
@@ -145,7 +146,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
                         }
                     }
                     catch (Throwable e) {
-                        println("[Thread dump printer] Got exception: " + e);
+                        println("Got exception: " + e);
                         e.printStackTrace();
 
                         U.dumpThreads(null);
@@ -166,13 +167,13 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
     /** {@inheritDoc} */
     @Override public void onException(Throwable e) {
-        // Proceess only first exception to prevent a multiple printing of a full thread dump.
+        // Proceess only the first exception to prevent a multiple printing of a full thread dump.
         if (firtsExProcessed.compareAndSet(false, true)) {
             Ignite ignite = ignite();
 
             ClusterGroup srvs = ignite.cluster().forServers();
 
-            ignite.compute(srvs).broadcast(new ThreadDumpPrinterTask(ignite.cluster().localNode().id(), e));
+            ignite.compute(srvs).withAsync().broadcast(new ThreadDumpPrinterTask(ignite.cluster().localNode().id(), e));
         }
     }
 
@@ -199,8 +200,8 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
         /** {@inheritDoc} */
         @Override public void run() {
-            println("Driver finished with exception [driverNodeId=" + id + ", e=" +  e
-                + "]\nFull thread dump of the current server node:");
+            println("Driver finished with exception [driverNodeId=" + id + ", e=" +  e + "]");
+            println("Full thread dump of the current server node below.");
 
             U.dumpThreads(null);
         }
