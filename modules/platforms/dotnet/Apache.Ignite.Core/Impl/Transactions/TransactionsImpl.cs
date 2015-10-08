@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
             DoInOp(OpCacheConfigParameters, stream =>
             {
-                var reader = marsh.StartUnmarshal(stream).RawReader();
+                var reader = marsh.StartUnmarshal(stream).GetRawReader();
 
                 concurrency = reader.ReadEnum<TransactionConcurrency>();
                 isolation = reader.ReadEnum<TransactionIsolation>();

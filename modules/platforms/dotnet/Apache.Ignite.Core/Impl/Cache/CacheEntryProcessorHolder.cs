@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="reader">The reader.</param>
         public CacheEntryProcessorHolder(IPortableReader reader)
         {
-            var reader0 = (PortableReaderImpl) reader.RawReader();
+            var reader0 = (PortableReaderImpl) reader.GetRawReader();
 
             _proc = PortableUtils.ReadPortableOrSerializable<object>(reader0);
             _arg = PortableUtils.ReadPortableOrSerializable<object>(reader0);

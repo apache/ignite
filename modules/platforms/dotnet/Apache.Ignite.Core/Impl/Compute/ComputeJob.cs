@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="reader">The reader.</param>
         public ComputeJobWrapper(IPortableReader reader)
         {
-            var reader0 = (PortableReaderImpl)reader.RawReader();
+            var reader0 = (PortableReaderImpl)reader.GetRawReader();
 
             _job = PortableUtils.ReadPortableOrSerializable<object>(reader0);
 

@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
 
         public ComputeOutFuncJob(IPortableReader reader)
         {
-            var reader0 = (PortableReaderImpl) reader.RawReader();
+            var reader0 = (PortableReaderImpl) reader.GetRawReader();
 
             _clo = PortableUtils.ReadPortableOrSerializable<IComputeOutFunc>(reader0);
         }

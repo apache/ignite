@@ -1701,7 +1701,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             public unsafe void ReadPortable(IPortableReader reader)
             {
-                IPortableRawReader rawReader = reader.RawReader();
+                IPortableRawReader rawReader = reader.GetRawReader();
 
                 PBool = rawReader.ReadBoolean();
                 PByte = rawReader.ReadByte();
@@ -1825,7 +1825,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             {
                 PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
-                IPortableRawReader rawReader = reader.RawReader();
+                IPortableRawReader rawReader = reader.GetRawReader();
 
                 obj0.PBool = rawReader.ReadBoolean();
                 obj0.PByte = rawReader.ReadByte();
@@ -1893,7 +1893,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 Inner = reader.ReadObject<HandleInner>("inner");
                 After = reader.ReadString("after");
 
-                IPortableRawReader rawReader = reader.RawReader();
+                IPortableRawReader rawReader = reader.GetRawReader();
 
                 RawBefore = rawReader.ReadString();
                 RawInner = rawReader.ReadObject<HandleInner>();
@@ -1932,7 +1932,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 Outer = reader.ReadObject<HandleOuter>("outer");
                 After = reader.ReadString("after");
 
-                IPortableRawReader rawReader = reader.RawReader();
+                IPortableRawReader rawReader = reader.GetRawReader();
 
                 RawBefore = rawReader.ReadString();
                 RawOuter = rawReader.ReadObject<HandleOuter>();
@@ -1975,7 +1975,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 After = reader0.ReadString("after");
 
-                var rawReader = (PortableReaderImpl) reader.RawReader();
+                var rawReader = (PortableReaderImpl) reader.GetRawReader();
 
                 RawBefore = rawReader.ReadString();
 
@@ -2037,7 +2037,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 Val = reader.ReadDecimal("val");
                 ValArr = reader.ReadDecimalArray("valArr");
 
-                IPortableRawReader rawReader = reader.RawReader();
+                IPortableRawReader rawReader = reader.GetRawReader();
 
                 RawVal = rawReader.ReadDecimal();
                 RawValArr = rawReader.ReadDecimalArray();
@@ -2122,7 +2122,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 LocArr = reader.ReadDateArray("locArr", true);
                 UtcArr = reader.ReadDateArray("utcArr", false);
 
-                IPortableRawReader rawReader = reader.RawReader();
+                IPortableRawReader rawReader = reader.GetRawReader();
 
                 LocRaw = rawReader.ReadDate(true).Value;
                 UtcRaw = rawReader.ReadDate(false).Value;

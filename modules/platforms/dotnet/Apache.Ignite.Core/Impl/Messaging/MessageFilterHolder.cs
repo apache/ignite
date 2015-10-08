@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// <returns></returns>
         public int Invoke(IPortableStream input)
         {
-            var rawReader = _ignite.Marshaller.StartUnmarshal(input).RawReader();
+            var rawReader = _ignite.Marshaller.StartUnmarshal(input).GetRawReader();
 
             var nodeId = rawReader.ReadGuid();
 
@@ -163,7 +163,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// <param name="reader">The reader.</param>
         public MessageFilterHolder(IPortableReader reader)
         {
-            var reader0 = (PortableReaderImpl)reader.RawReader();
+            var reader0 = (PortableReaderImpl)reader.GetRawReader();
 
             _filter = PortableUtils.ReadPortableOrSerializable<object>(reader0);
 

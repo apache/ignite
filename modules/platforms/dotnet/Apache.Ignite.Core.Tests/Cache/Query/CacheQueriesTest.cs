@@ -920,7 +920,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /** <inheritdoc /> */
         public void ReadPortable(IPortableReader reader)
         {
-            var r = reader.RawReader();
+            var r = reader.GetRawReader();
 
             ThrowErr = r.ReadBoolean();
         }

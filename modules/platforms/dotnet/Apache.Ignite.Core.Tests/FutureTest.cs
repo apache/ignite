@@ -231,7 +231,7 @@ namespace Apache.Ignite.Core.Tests
             public void ReadPortable(IPortableReader reader)
             {
                 A = reader.ReadInt("a");
-                B = reader.RawReader().ReadString();
+                B = reader.GetRawReader().ReadString();
             }
 
             /** <inheritDoc /> */

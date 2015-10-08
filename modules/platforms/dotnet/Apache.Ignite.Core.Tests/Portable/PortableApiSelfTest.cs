@@ -1499,7 +1499,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void ReadPortable(IPortableReader reader)
         {
             A = reader.ReadInt("a");
-            B = reader.RawReader().ReadInt();
+            B = reader.GetRawReader().ReadInt();
         }
     }
 

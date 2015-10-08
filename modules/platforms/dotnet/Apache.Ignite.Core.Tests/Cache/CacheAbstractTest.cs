@@ -225,7 +225,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritdoc /> */
         public void ReadPortable(IPortableReader reader)
         {
-            var r = reader.RawReader();
+            var r = reader.GetRawReader();
 
             ThrowErr = r.ReadBoolean();
             ThrowErrPortable = r.ReadBoolean();
@@ -269,7 +269,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritdoc /> */
         public void ReadPortable(IPortableReader reader)
         {
-            Info = reader.RawReader().ReadString();
+            Info = reader.GetRawReader().ReadString();
         }
     }
 

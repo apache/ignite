@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="reader">The reader.</param>
         public ContinuousQueryFilterHolder(IPortableReader reader)
         {
-            PortableReaderImpl rawReader = (PortableReaderImpl) reader.RawReader();
+            PortableReaderImpl rawReader = (PortableReaderImpl) reader.GetRawReader();
 
             _keyTyp = PortableUtils.ReadPortableOrSerializable<Type>(rawReader);
             _valTyp = PortableUtils.ReadPortableOrSerializable<Type>(rawReader);

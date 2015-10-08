@@ -184,7 +184,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /** <inheritDoc /> */
             public void ReadPortable(IPortableReader reader)
             {
-                Msg = reader.RawReader().ReadString();
+                Msg = reader.GetRawReader().ReadString();
             }
         }
 

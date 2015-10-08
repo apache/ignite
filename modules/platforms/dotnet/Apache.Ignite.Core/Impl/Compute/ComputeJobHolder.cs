@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             Debug.Assert(reader != null);
 
-            var reader0 = (PortableReaderImpl) reader.RawReader();
+            var reader0 = (PortableReaderImpl) reader.GetRawReader();
 
             _ignite = reader0.Marshaller.Ignite;
 

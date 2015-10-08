@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="reader">The reader.</param>
         public PortableOrSerializableObjectHolder(IPortableReader reader)
         {
-            _item = PortableUtils.ReadPortableOrSerializable<object>((PortableReaderImpl)reader.RawReader());
+            _item = PortableUtils.ReadPortableOrSerializable<object>((PortableReaderImpl)reader.GetRawReader());
         }
     }
 }

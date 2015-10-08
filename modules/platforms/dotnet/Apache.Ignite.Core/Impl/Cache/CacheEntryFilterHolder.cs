@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Invocation result.</returns>
         public int Invoke(IPortableStream input)
         {
-            var rawReader = _marsh.StartUnmarshal(input, _keepPortable).RawReader();
+            var rawReader = _marsh.StartUnmarshal(input, _keepPortable).GetRawReader();
 
             return _invoker(rawReader.ReadObject<object>(), rawReader.ReadObject<object>()) ? 1 : 0;
         }
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="reader">The reader.</param>
         public CacheEntryFilterHolder(IPortableReader reader)
         {
-            var reader0 = (PortableReaderImpl)reader.RawReader();
+            var reader0 = (PortableReaderImpl)reader.GetRawReader();
 
             _pred = PortableUtils.ReadPortableOrSerializable<object>(reader0);
 

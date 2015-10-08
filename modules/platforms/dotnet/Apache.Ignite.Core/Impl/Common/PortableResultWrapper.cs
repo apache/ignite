@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="reader">The reader.</param>
         public PortableResultWrapper(IPortableReader reader)
         {
-            var reader0 = (PortableReaderImpl)reader.RawReader();
+            var reader0 = (PortableReaderImpl)reader.GetRawReader();
 
             _result = PortableUtils.ReadPortableOrSerializable<object>(reader0);
         }
