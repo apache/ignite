@@ -24,7 +24,7 @@ using Apache.Ignite.ExamplesDll.Messaging;
 namespace Apache.Ignite.Examples.Messaging
 {
     /// <summary>
-    /// Example demonstrating Ignite messaging. Should be run with standalone Apache Ignite .Net node.
+    /// Example demonstrating Ignite messaging. Should be run with standalone Apache Ignite.NET node.
     /// <para />
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/Apache.Ignite/bin/${Platform]/${Configuration}/Apache.Ignite.exe:
     /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-compute.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
