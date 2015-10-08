@@ -17,21 +17,37 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicLong;
+import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
@@ -52,6 +68,9 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
+    private boolean client;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -60,15 +79,17 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
 
         discoSpi.setIpFinder(IP_FINDER);
 
-        cfg.setDiscoverySpi(discoSpi);
+        cfg.setDiscoverySpi(discoSpi).setNetworkTimeout(30_000);
 
         AtomicConfiguration atomicCfg = new AtomicConfiguration();
-        atomicCfg.setCacheMode(CacheMode.PARTITIONED);
+        atomicCfg.setCacheMode(PARTITIONED);
         atomicCfg.setBackups(1);
 
         cfg.setAtomicConfiguration(atomicCfg);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
+
+        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -106,6 +127,110 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
         info("Increments: " + queue.size());
 
         assert !queue.isEmpty();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientAtomicLongCreateCloseFailover() throws Exception {
+        testFailoverWithClient(new IgniteInClosure<Ignite>() {
+            @Override public void apply(Ignite ignite) {
+                for (int i = 0; i < 100; i++) {
+                    IgniteAtomicLong l = ignite.atomicLong("long-" + 1, 0, true);
+
+                    l.close();
+                }
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientQueueCreateCloseFailover() throws Exception {
+        testFailoverWithClient(new IgniteInClosure<Ignite>() {
+            @Override public void apply(Ignite ignite) {
+                for (int i = 0; i < 100; i++) {
+                    CollectionConfiguration colCfg = new CollectionConfiguration();
+
+                    colCfg.setBackups(1);
+                    colCfg.setCacheMode(PARTITIONED);
+                    colCfg.setAtomicityMode(i % 2 == 0 ? TRANSACTIONAL : ATOMIC);
+
+                    IgniteQueue q = ignite.queue("q-" + i, 0, colCfg);
+
+                    q.close();
+                }
+            }
+        });
+    }
+
+    /**
+     * @param c Test iteration closure.
+     * @throws Exception If failed.
+     */
+    private void testFailoverWithClient(IgniteInClosure<Ignite> c) throws Exception {
+        startGridsMultiThreaded(GRID_CNT, false);
+
+        client = true;
+
+        Ignite ignite = startGrid(GRID_CNT);
+
+        assertTrue(ignite.configuration().isClientMode());
+
+        client = false;
+
+        final AtomicBoolean finished = new AtomicBoolean();
+
+        IgniteInternalFuture<?> fut = restartThread(finished);
+
+        long stop = System.currentTimeMillis() + 30_000;
+
+        try {
+            int iter = 0;
+
+            while (System.currentTimeMillis() < stop) {
+                log.info("Iteration: " + iter++);
+
+                c.apply(ignite);
+            }
+
+            finished.set(true);
+
+            fut.get();
+        }
+        finally {
+            finished.set(true);
+        }
+    }
+
+    /**
+     * @param finished Finished flag.
+     * @return Future.
+     */
+    private IgniteInternalFuture<?> restartThread(final AtomicBoolean finished) {
+        return GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                while (!finished.get()) {
+                    for (int i = 0; i < GRID_CNT; i++) {
+                        log.info("Stop node: " + i);
+
+                        stopGrid(i);
+
+                        U.sleep(500);
+
+                        log.info("Start node: " + i);
+
+                        startGrid(i);
+
+                        if (finished.get())
+                            break;
+                    }
+                }
+
+                return null;
+            }
+        }, "restart-thread");
     }
 
     /**
