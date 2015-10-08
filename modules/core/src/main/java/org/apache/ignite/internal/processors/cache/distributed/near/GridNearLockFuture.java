@@ -718,7 +718,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             // Continue mapping on the same topology version as it was before.
             this.topVer.compareAndSet(null, topVer);
 
-            map(keys, false);
+            map(keys, false, true);
 
             markInitialized();
 
@@ -773,7 +773,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                     this.topVer.compareAndSet(null, topVer);
                 }
 
-                map(keys, remap);
+                map(keys, remap, false);
 
                 markInitialized();
             }
@@ -807,8 +807,9 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
      *
      * @param keys Keys.
      * @param remap Remap flag.
+     * @param topLocked {@code True} if thread already acquired lock preventing topology change.
      */
-    private void map(Iterable<KeyCacheObject> keys, boolean remap) {
+    private void map(Iterable<KeyCacheObject> keys, boolean remap, boolean topLocked) {
         try {
             AffinityTopologyVersion topVer = this.topVer.get();
 
@@ -938,7 +939,9 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                         boolean clientFirst = false;
 
                                         if (first) {
-                                            clientFirst = clientNode && (tx == null || !tx.hasRemoteLocks());
+                                            clientFirst = clientNode &&
+                                                !topLocked &&
+                                                (tx == null || !tx.hasRemoteLocks());
 
                                             first = false;
                                         }
