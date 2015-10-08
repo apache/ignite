@@ -317,7 +317,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             else if (type == typeof(Guid))
             {
                 writeAction = GetWriter<Guid>(field, (f, w, o) => w.WriteGuid(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadGuidNullable(f) ?? default(Guid));
+                readAction = GetReader(field, (f, r) => r.ReadGuid(f));
             }
             else if (nullable && nullableType == typeof(Guid))
             {
@@ -327,7 +327,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             else if (type == typeof(DateTime))
             {
                 writeAction = GetWriter<DateTime>(field, (f, w, o) => w.WriteDate(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadDateNullable(f) ?? default(DateTime));
+                readAction = GetReader(field, (f, r) => r.ReadDate(f));
             }
             else if (nullable && nullableType == typeof(DateTime))
             {

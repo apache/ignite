@@ -159,7 +159,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
                     WriteEventTypes(types, writer);
                 },
-                reader => Marshaller.StartUnmarshal(reader).ReadGuidNullable() ?? Guid.Empty);
+                reader => Marshaller.StartUnmarshal(reader).ReadGuid());
         }
 
         /** <inheritDoc /> */

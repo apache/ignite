@@ -745,7 +745,7 @@ namespace Apache.Ignite.Core.Tests
         public static readonly CountdownEvent ReceivedEvent = new CountdownEvent(0);
 
         /** */
-        public static readonly ConcurrentStack<Guid> LastNodeIds = new ConcurrentStack<Guid>();
+        public static readonly ConcurrentStack<Guid?> LastNodeIds = new ConcurrentStack<Guid?>();
 
         /** */
         public static volatile bool ListenResult = true;
@@ -813,7 +813,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         /// <param name="id">Originating node ID.</param>
         /// <param name="evt">Event.</param>
-        private static bool Listen(Guid id, IEvent evt)
+        private static bool Listen(Guid? id, IEvent evt)
         {
             try
             {
@@ -841,19 +841,19 @@ namespace Apache.Ignite.Core.Tests
     public class EventFilter<T> : IEventFilter<T> where T : IEvent
     {
         /** */
-        private readonly Func<Guid, T, bool> _invoke;
+        private readonly Func<Guid?, T, bool> _invoke;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RemoteListenEventFilter"/> class.
         /// </summary>
         /// <param name="invoke">The invoke delegate.</param>
-        public EventFilter(Func<Guid, T, bool> invoke)
+        public EventFilter(Func<Guid?, T, bool> invoke)
         {
             _invoke = invoke;
         }
 
         /** <inheritdoc /> */
-        bool IEventFilter<T>.Invoke(Guid nodeId, T evt)
+        bool IEventFilter<T>.Invoke(Guid? nodeId, T evt)
         {
             return _invoke(nodeId, evt);
         }
@@ -880,7 +880,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /** <inheritdoc /> */
-        public bool Invoke(Guid nodeId, IEvent evt)
+        public bool Invoke(Guid? nodeId, IEvent evt)
         {
             return evt.Type == _type;
         }
@@ -904,7 +904,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /** <inheritdoc /> */
-        public bool Invoke(Guid nodeId, IEvent evt)
+        public bool Invoke(Guid? nodeId, IEvent evt)
         {
             return evt.Type == _type;
         }
