@@ -912,13 +912,13 @@ namespace Apache.Ignite.Core.Tests
         /** <inheritdoc /> */
         public void WritePortable(IPortableWriter writer)
         {
-            writer.RawWriter().WriteInt(_type);
+            writer.GetRawWriter().WriteInt(_type);
         }
 
         /** <inheritdoc /> */
         public void ReadPortable(IPortableReader reader)
         {
-            _type = reader.RawReader().ReadInt();
+            _type = reader.GetRawReader().ReadInt();
         }
     }
 

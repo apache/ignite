@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public void WritePortable(IPortableWriter writer)
         {
-            var writer0 = (PortableWriterImpl)writer.RawWriter();
+            var writer0 = (PortableWriterImpl)writer.GetRawWriter();
 
             writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _func));
         }
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="reader">The reader.</param>
         public ComputeOutFuncWrapper(IPortableReader reader)
         {
-            var reader0 = (PortableReaderImpl)reader.RawReader();
+            var reader0 = (PortableReaderImpl)reader.GetRawReader();
 
             _func = PortableUtils.ReadPortableOrSerializable<object>(reader0);
 

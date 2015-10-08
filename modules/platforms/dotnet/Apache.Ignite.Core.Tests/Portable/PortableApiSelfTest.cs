@@ -1513,14 +1513,14 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void WritePortable(IPortableWriter writer)
         {
             writer.WriteInt("a", A);
-            writer.RawWriter().WriteInt(B);
+            writer.GetRawWriter().WriteInt(B);
         }
 
         /** <inheritDoc /> */
         public void ReadPortable(IPortableReader reader)
         {
             A = reader.ReadInt("a");
-            B = reader.RawReader().ReadInt();
+            B = reader.GetRawReader().ReadInt();
         }
     }
 

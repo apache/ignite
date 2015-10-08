@@ -335,6 +335,6 @@ namespace Apache.Ignite.Core.Portable
         /// Get raw reader. 
         /// </summary>
         /// <returns>Raw reader.</returns>
-        IPortableRawReader RawReader();
+        IPortableRawReader GetRawReader();
     }
 }

@@ -1223,7 +1223,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>
         /// Raw writer.
         /// </returns>
-        public IPortableRawWriter RawWriter()
+        public IPortableRawWriter GetRawWriter()
         {
             if (_curRawPos == 0)
                 _curRawPos = _stream.Position;

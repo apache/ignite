@@ -224,14 +224,14 @@ namespace Apache.Ignite.Core.Tests
             public void WritePortable(IPortableWriter writer)
             {
                 writer.WriteInt("a", A);
-                writer.RawWriter().WriteString(B);
+                writer.GetRawWriter().WriteString(B);
             }
 
             /** <inheritDoc /> */
             public void ReadPortable(IPortableReader reader)
             {
                 A = reader.ReadInt("a");
-                B = reader.RawReader().ReadString();
+                B = reader.GetRawReader().ReadString();
             }
 
             /** <inheritDoc /> */

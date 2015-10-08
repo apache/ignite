@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public IPortableRawReader RawReader()
+        public IPortableRawReader GetRawReader()
         {
             MarkRaw();
 

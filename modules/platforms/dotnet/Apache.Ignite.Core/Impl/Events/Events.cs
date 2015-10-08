@@ -370,7 +370,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <returns>Resulting list or null.</returns>
         protected static List<T> ReadEvents<T>(PortableReaderImpl portableReader) where T : IEvent
         {
-            var count = portableReader.RawReader().ReadInt();
+            var count = portableReader.GetRawReader().ReadInt();
 
             if (count == -1)
                 return null;
