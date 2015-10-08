@@ -106,7 +106,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
     /** Concurrent operations count.
      * ! Not more than ~150, see https://issues.apache.org/jira/browse/IGNITE-1581. */
-    protected static final int OPS_CNT = 100; // Diagnostic: 100; Regression: 16
+    protected static final int OPS_CNT = 32; // Diagnostic: 100; Regression: 16
 
     /** Renames count. */
     protected static final int RENAME_CNT = OPS_CNT;
@@ -1031,7 +1031,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                 try {
                     is = igfs.open(FILE);
-                } finally {
+                }
+                finally {
                     U.closeQuiet(is);
                 }
 
@@ -1153,7 +1154,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 try {
                     os1 = igfs.create(FILE, true);
                     os2 = igfs.create(FILE, true);
-                } finally {
+                }
+                finally {
                     U.closeQuiet(os1);
                     U.closeQuiet(os2);
                 }
@@ -1238,7 +1240,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             os.write(chunk);
 
             os.close();
-        } finally {
+        }
+        finally {
             U.closeQuiet(os);
         }
 
@@ -1249,7 +1252,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             @Override public boolean apply() {
                 try {
                     return !igfs.context().meta().exists(id0);
-                } catch (IgniteCheckedException ice) {
+                }
+                catch (IgniteCheckedException ice) {
                     throw new IgniteException(ice);
                 }
             }
@@ -1287,7 +1291,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             os.write(chunk);
 
             os.close();
-        } finally {
+        }
+        finally {
             U.closeQuiet(os);
         }
 
@@ -1298,7 +1303,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             @Override public boolean apply() {
                 try {
                     return !igfs.context().meta().exists(id0);
-                } catch (IgniteCheckedException ice) {
+                }
+                catch (IgniteCheckedException ice) {
                     throw new IgniteException(ice);
                 }
             }
@@ -1562,7 +1568,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 try {
                     os1 = igfs.append(FILE, false);
                     os2 = igfs.append(FILE, false);
-                } finally {
+                }
+                finally {
                     U.closeQuiet(os1);
                     U.closeQuiet(os2);
                 }
@@ -1570,8 +1577,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 return null;
             }
         }, IgniteException.class, null);
-
-        X.println("finoished.");
     }
 
     /**
@@ -1651,7 +1656,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             os.write(chunk);
 
             os.close();
-        } finally {
+        }
+        finally {
             U.closeQuiet(os);
         }
 
@@ -1700,7 +1706,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             os.write(chunk);
 
             os.close();
-        } finally {
+        }
+        finally {
             U.closeQuiet(os);
         }
 
@@ -2768,7 +2775,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected void checkNotExist(IgfsImpl igfs, UniversalFileSystemAdapter igfsSecondary, IgfsPath... paths)
-            throws Exception {
+        throws Exception {
         checkNotExist(igfs, paths);
 
         if (dual)
@@ -2892,7 +2899,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                     read = is.read(buf);
 
-                    assert read == chunk.length : "Chunk #" + chunkIdx + " was not read fully: read=" + read + ", expected=" + chunk.length;
+                    assert read == chunk.length : "Chunk #" + chunkIdx + " was not read fully:" +
+                            " read=" + read + ", expected=" + chunk.length;
                     assert Arrays.equals(chunk, buf) : "Bad chunk [igfs=" + uni.name() + ", chunkIdx=" + chunkIdx +
                         ", expected=" + Arrays.toString(chunk) + ", actual=" + Arrays.toString(buf) + ']';
 
