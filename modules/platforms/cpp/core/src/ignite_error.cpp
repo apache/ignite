@@ -76,12 +76,12 @@ namespace ignite
         ReleaseChars(msg);
     }
 
-    int32_t IgniteError::GetCode()
+    int32_t IgniteError::GetCode() const
     {
         return code;
     }
 
-    const char* IgniteError::GetText()
+    const char* IgniteError::GetText() const
     {
         if (code == IGNITE_SUCCESS)
             return "Operation completed successfully.";

@@ -33,13 +33,17 @@ namespace Apache.Ignite.Core.Tests.Examples
         [Test]
         public void CheckConfigFilesExist()
         {
-            Directory.GetFiles(PathUtil.ExamplesDevSourcePath, "*.cs", SearchOption.AllDirectories)
+            var paths = Directory.GetFiles(PathUtil.ExamplesSourcePath, "*.cs", SearchOption.AllDirectories)
                 .Select(File.ReadAllText)
-                .SelectMany(src => Regex.Matches(src, @"modules\\platform[^\s]+.xml").OfType<Match>())
+                .SelectMany(src => Regex.Matches(src, @"platforms[^\s]+.xml").OfType<Match>())
                 .Where(match => match.Success)
-                .Select(match => Path.Combine(PathUtil.ExamplesDevSourcePath, match.Value))
-                .ToList()
-                .ForEach(path => Assert.IsTrue(File.Exists(path), "Config file does not exist: " + path));
+                .Select(match => PathUtil.GetFullConfigPath(match.Value))
+                .Distinct()
+                .ToList();
+
+            Assert.AreEqual(4, paths.Count);
+
+            paths.ForEach(path => Assert.IsTrue(File.Exists(path), "Config file does not exist: " + path));
         }
     }
 }

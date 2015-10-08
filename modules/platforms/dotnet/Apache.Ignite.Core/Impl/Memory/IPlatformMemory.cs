@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// Gets stream for read/write operations on the given memory chunk.
         /// </summary>
         /// <returns></returns>
-        PlatformMemoryStream Stream();
+        PlatformMemoryStream GetStream();
 
         /// <summary>
         /// Cross-platform pointer.

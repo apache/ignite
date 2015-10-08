@@ -18,6 +18,9 @@
 namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
+    using System.Collections.Generic;
+
+    using Apache.Ignite.Core.Impl.Portable.Structure;
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
@@ -104,5 +107,18 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             get;
         }
+
+        /// <summary>
+        /// Type structure.
+        /// </summary>
+        PortableStructure TypeStructure { get; }
+
+        /// <summary>
+        /// Update type structure.
+        /// </summary>
+        /// <param name="exp">Expected type structure.</param>
+        /// <param name="pathIdx">Path index.</param>
+        /// <param name="updates">Recorded updates.</param>
+        void UpdateStructure(PortableStructure exp, int pathIdx, IList<PortableStructureUpdate> updates);
     }
 }

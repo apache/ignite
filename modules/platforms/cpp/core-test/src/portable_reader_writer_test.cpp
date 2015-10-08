@@ -1744,7 +1744,7 @@ BOOST_AUTO_TEST_CASE(TestCollection)
     CheckCollection(NULL);
 }
 
-BOOST_AUTO_TEST_CASE(TestCollectionTyped)
+BOOST_AUTO_TEST_CASE(testCollectionTyped)
 {
     CollectionType typ = IGNITE_COLLECTION_CONCURRENT_SKIP_LIST_SET;
 
