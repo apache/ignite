@@ -1,9 +1,9 @@
-Apache Ignite .Net Examples
+Apache Ignite .NET Examples
 ==================================
 
 Common requirements
 ----------------------------------
- * Apache Ignite .Net library must be built using instructions from %IGNITE_HOME%\platforms\dotnet\README.txt.
+ * Apache Ignite .NET library must be built using instructions from %IGNITE_HOME%\platforms\dotnet\README.txt.
 
 
 Running examples
