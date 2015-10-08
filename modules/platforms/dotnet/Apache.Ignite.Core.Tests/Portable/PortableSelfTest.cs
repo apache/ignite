@@ -417,8 +417,8 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveDecimalArray()
         {
-            decimal[] vals = { decimal.One, decimal.Parse("11,12") };
-            decimal[] newVals = _marsh.Unmarshal<decimal[]>(_marsh.Marshal(vals));
+            decimal?[] vals = { decimal.One, decimal.Parse("11,12") };
+            var newVals = _marsh.Unmarshal<decimal?[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
@@ -710,13 +710,13 @@ namespace Apache.Ignite.Core.Tests.Portable
             DecimalReflective obj1 = new DecimalReflective
             {
                 Val = decimal.Zero,
-                ValArr = new[] {decimal.One, decimal.MinusOne}
+                ValArr = new decimal?[] {decimal.One, decimal.MinusOne}
             };
 
             IPortableObject portObj = marsh.Unmarshal<IPortableObject>(marsh.Marshal(obj1), PortableMode.ForcePortable);
 
             Assert.AreEqual(obj1.Val, portObj.GetField<decimal>("val"));
-            Assert.AreEqual(obj1.ValArr, portObj.GetField<decimal[]>("valArr"));
+            Assert.AreEqual(obj1.ValArr, portObj.GetField<decimal?[]>("valArr"));
 
             Assert.AreEqual(obj1.Val, portObj.Deserialize<DecimalReflective>().Val);
             Assert.AreEqual(obj1.ValArr, portObj.Deserialize<DecimalReflective>().ValArr);
@@ -725,14 +725,14 @@ namespace Apache.Ignite.Core.Tests.Portable
             DecimalMarshalAware obj2 = new DecimalMarshalAware();
 
             obj2.Val = decimal.Zero;
-            obj2.ValArr = new[] { decimal.One, decimal.MinusOne };
+            obj2.ValArr = new decimal?[] { decimal.One, decimal.MinusOne };
             obj2.RawVal = decimal.MaxValue;
-            obj2.RawValArr = new[] { decimal.MinusOne, decimal.One} ;
+            obj2.RawValArr = new decimal?[] { decimal.MinusOne, decimal.One} ;
 
             portObj = marsh.Unmarshal<IPortableObject>(marsh.Marshal(obj2), PortableMode.ForcePortable);
 
             Assert.AreEqual(obj2.Val, portObj.GetField<decimal>("val"));
-            Assert.AreEqual(obj2.ValArr, portObj.GetField<decimal[]>("valArr"));
+            Assert.AreEqual(obj2.ValArr, portObj.GetField<decimal?[]>("valArr"));
 
             Assert.AreEqual(obj2.Val, portObj.Deserialize<DecimalMarshalAware>().Val);
             Assert.AreEqual(obj2.ValArr, portObj.Deserialize<DecimalMarshalAware>().ValArr);
@@ -1952,7 +1952,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             public decimal Val;
 
             /** */
-            public decimal[] ValArr;
+            public decimal?[] ValArr;
         }
 
         public class DecimalMarshalAware : DecimalReflective, IPortableMarshalAware
@@ -1961,7 +1961,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             public decimal RawVal;
 
             /** */
-            public decimal[] RawValArr;
+            public decimal?[] RawValArr;
 
             /** <inheritDoc /> */
             public void WritePortable(IPortableWriter writer)

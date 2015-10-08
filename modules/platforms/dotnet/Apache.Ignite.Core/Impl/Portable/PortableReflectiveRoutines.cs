@@ -255,9 +255,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                 writeAction = GetWriter<double[]>(field, (f, w, o) => w.WriteDoubleArray(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadDoubleArray(f));
             }
-            else if (elemType == typeof(decimal))
+            else if (elemType == typeof(decimal?))
             {
-                writeAction = GetWriter<decimal[]>(field, (f, w, o) => w.WriteDecimalArray(f, o));
+                writeAction = GetWriter<decimal?[]>(field, (f, w, o) => w.WriteDecimalArray(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadDecimalArray(f));
             }
             else if (elemType == typeof(string))

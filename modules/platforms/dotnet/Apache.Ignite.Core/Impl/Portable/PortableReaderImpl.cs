@@ -312,13 +312,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public decimal[] ReadDecimalArray(string fieldName)
+        public decimal?[] ReadDecimalArray(string fieldName)
         {
             return ReadField(fieldName, PortableUtils.ReadDecimalArray);
         }
 
         /** <inheritdoc /> */
-        public decimal[] ReadDecimalArray()
+        public decimal?[] ReadDecimalArray()
         {
             return Read(PortableUtils.ReadDecimalArray);
         }

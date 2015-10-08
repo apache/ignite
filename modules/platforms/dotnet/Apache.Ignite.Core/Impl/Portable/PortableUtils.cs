@@ -983,14 +983,14 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="stream">Stream.</param>
          * <returns>Decimal array.</returns>
          */
-        public static decimal[] ReadDecimalArray(IPortableStream stream)
+        public static decimal?[] ReadDecimalArray(IPortableStream stream)
         {
             int len = stream.ReadInt();
 
-            decimal[] vals = new decimal[len];
+            var vals = new decimal?[len];
 
             for (int i = 0; i < len; i++)
-                vals[i] = ReadDecimal(stream);
+                vals[i] = stream.ReadByte() == HdrNull ? (decimal?) null : ReadDecimal(stream);
 
             return vals;
         }

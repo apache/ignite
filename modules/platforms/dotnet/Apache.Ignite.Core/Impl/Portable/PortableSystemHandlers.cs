@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 new PortableSystemReader<double[]>(PortableUtils.ReadDoubleArray);
 
             ReadHandlers[PortableUtils.TypeArrayDecimal] =
-                new PortableSystemReader<decimal[]>(PortableUtils.ReadDecimalArray);
+                new PortableSystemReader<decimal?[]>(PortableUtils.ReadDecimalArray);
 
             // 6. Date array.
             ReadHandlers[PortableUtils.TypeArrayDate] =
@@ -514,7 +514,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayDecimal);
 
-            PortableUtils.WriteDecimalArray((decimal[])obj, ctx.Stream);
+            PortableUtils.WriteDecimalArray((decimal?[])obj, ctx.Stream);
         }
 
         /// <summary>

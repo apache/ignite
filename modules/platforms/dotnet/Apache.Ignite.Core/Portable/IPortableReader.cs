@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Decimal array.</returns>
-        decimal[] ReadDecimalArray(string fieldName);
+        decimal?[] ReadDecimalArray(string fieldName);
 
         /// <summary>
         /// Read named date value in UTC form. Shortcut for <c>ReadDate(fieldName, false)</c>.
