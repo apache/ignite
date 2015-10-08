@@ -106,9 +106,15 @@ namespace Apache.Ignite.Core.Common
         {
             var guid = r.ReadGuidNullable();
 
-            return guid == null
-                ? new IgniteGuid(Guid.Empty, 0)
-                : new IgniteGuid(guid.Value, r.ReadLong());
+            if (guid == null) 
+                return new IgniteGuid(Guid.Empty, 0);
+
+
+            if (!guid.HasValue)
+                throw new InvalidOperationException("Invalid data on IgniteGuid deserialization: " +
+                                                    "GlobalId can't be null.");
+
+            return new IgniteGuid(guid.Value, r.ReadLong());
         }
 
         /// <summary>
