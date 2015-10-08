@@ -104,17 +104,7 @@ namespace Apache.Ignite.Core.Common
         /// <param name="r">Reader.</param>
         public static IgniteGuid ReadPortable(IPortableRawReader r)
         {
-            var guid = r.ReadGuidNullable();
-
-            if (guid == null) 
-                return new IgniteGuid(Guid.Empty, 0);
-
-
-            if (!guid.HasValue)
-                throw new InvalidOperationException("Invalid data on IgniteGuid deserialization: " +
-                                                    "GlobalId can't be null.");
-
-            return new IgniteGuid(guid.Value, r.ReadLong());
+            return new IgniteGuid(r.ReadGuid(), r.ReadLong());
         }
 
         /// <summary>

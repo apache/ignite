@@ -290,7 +290,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             // 1. Unmarshal result.
             PortableReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream);
 
-            Guid nodeId = reader.ReadGuidNullable().Value;
+            var nodeId = reader.ReadGuid();
             bool cancelled = reader.ReadBoolean();
 
             try
