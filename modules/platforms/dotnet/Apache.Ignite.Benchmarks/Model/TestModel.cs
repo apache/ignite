@@ -101,11 +101,11 @@ namespace Apache.Ignite.Benchmarks.Model
             Decimal = reader.ReadDecimal("Decimal");
             DecimalArray = reader.ReadDecimalArray("DecimalArray");
             Date = reader.ReadDate("Date");
-            DateArray = reader.ReadDateArray("DateArray");
+            DateArray = reader.ReadDateArrayNullable("DateArray");
             String = reader.ReadString("String");
             StringArray = reader.ReadStringArray("StringArray");
             Guid = reader.ReadGuid("Guid");
-            GuidArray = reader.ReadGuidArray("GuidArray");
+            GuidArray = reader.ReadGuidArrayNullable("GuidArray");
         }
     }
 }
