@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Events
         private readonly IClusterNode _taskNode;
 
         /** */
-        private readonly Guid _taskSubjectId;
+        private readonly Guid? _taskSubjectId;
 
         /// <summary>
         /// Constructor.
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Events
             _taskSessionId = IgniteGuid.ReadPortable(r);
             _jobId = IgniteGuid.ReadPortable(r);
             _taskNode = ReadNode(r);
-            _taskSubjectId = r.ReadGuidNullable() ?? Guid.Empty;
+            _taskSubjectId = r.ReadGuidNullable();
         }
 		
         /// <summary>
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// Gets task subject ID. 
         /// </summary>
-        public Guid TaskSubjectId { get { return _taskSubjectId; } }
+        public Guid? TaskSubjectId { get { return _taskSubjectId; } }
 
         /** <inheritDoc /> */
 	    public override string ToShortString()
