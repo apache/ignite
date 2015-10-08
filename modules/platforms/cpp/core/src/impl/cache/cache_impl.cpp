@@ -131,7 +131,7 @@ namespace ignite
                 JniContext::Release(javaRef);
             }
 
-            char* CacheImpl::GetName()
+            const char* CacheImpl::GetName() const
             {
                 return name;
             }

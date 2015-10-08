@@ -49,7 +49,7 @@ namespace ignite
              *
              * @param val Value.
              */
-            void WriteInt8(const int8_t val);
+            void WriteInt8(int8_t val);
 
             /**
              * Write array of 8-byte signed integers. Maps to "byte[]" type in Java.
@@ -57,14 +57,14 @@ namespace ignite
              * @param val Array.
              * @param len Array length.
              */
-            void WriteInt8Array(const int8_t* val, const int32_t len);
+            void WriteInt8Array(const int8_t* val, int32_t len);
 
             /**
              * Write bool. Maps to "short" type in Java.
              *
              * @param val Value.
              */
-            void WriteBool(const bool val);
+            void WriteBool(bool val);
 
             /**
              * Write array of bools. Maps to "bool[]" type in Java.
@@ -72,14 +72,14 @@ namespace ignite
              * @param val Array.
              * @param len Array length.
              */
-            void WriteBoolArray(const bool* val, const int32_t len);
+            void WriteBoolArray(const bool* val, int32_t len);
 
             /**
              * Write 16-byte signed integer. Maps to "short" type in Java.
              *
              * @param val Value.
              */
-            void WriteInt16(const int16_t val);
+            void WriteInt16(int16_t val);
 
             /**
              * Write array of 16-byte signed integers. Maps to "short[]" type in Java.
@@ -87,14 +87,14 @@ namespace ignite
              * @param val Array.
              * @param len Array length.
              */
-            void WriteInt16Array(const int16_t* val, const int32_t len);
+            void WriteInt16Array(const int16_t* val, int32_t len);
 
             /**
              * Write 16-byte unsigned integer. Maps to "char" type in Java.
              *
              * @param val Value.
              */
-            void WriteUInt16(const uint16_t val);
+            void WriteUInt16(uint16_t val);
 
             /**
              * Write array of 16-byte unsigned integers. Maps to "char[]" type in Java.
@@ -102,14 +102,14 @@ namespace ignite
              * @param val Array.
              * @param len Array length.
              */
-            void WriteUInt16Array(const uint16_t* val, const int32_t len);
+            void WriteUInt16Array(const uint16_t* val, int32_t len);
 
             /**
              * Write 32-byte signed integer. Maps to "int" type in Java.
              *
              * @param val Value.
              */
-            void WriteInt32(const int32_t val);
+            void WriteInt32(int32_t val);
 
             /**
              * Write array of 32-byte signed integers. Maps to "int[]" type in Java.
@@ -117,14 +117,14 @@ namespace ignite
              * @param val Array.
              * @param len Array length.
              */
-            void WriteInt32Array(const int32_t* val, const int32_t len);
+            void WriteInt32Array(const int32_t* val, int32_t len);
 
             /**
              * Write 64-byte signed integer. Maps to "long" type in Java.
              *
              * @param val Value.
              */
-            void WriteInt64(const int64_t val);
+            void WriteInt64(int64_t val);
 
             /**
              * Write array of 64-byte signed integers. Maps to "long[]" type in Java.
@@ -132,14 +132,14 @@ namespace ignite
              * @param val Array.
              * @param len Array length.
              */
-            void WriteInt64Array(const int64_t* val, const int32_t len);
+            void WriteInt64Array(const int64_t* val, int32_t len);
 
             /**
              * Write float. Maps to "float" type in Java.
              *
              * @param val Value.
              */
-            void WriteFloat(const float val);
+            void WriteFloat(float val);
 
             /**
              * Write array of floats. Maps to "float[]" type in Java.
@@ -147,14 +147,14 @@ namespace ignite
              * @param val Array.
              * @param len Array length.
              */
-            void WriteFloatArray(const float* val, const int32_t len);
+            void WriteFloatArray(const float* val, int32_t len);
 
             /**
              * Write double. Maps to "double" type in Java.
              *
              * @param val Value.
              */
-            void WriteDouble(const double val);
+            void WriteDouble(double val);
 
             /**
              * Write array of doubles. Maps to "double[]" type in Java.
@@ -162,14 +162,14 @@ namespace ignite
              * @param val Array.
              * @param len Array length.
              */
-            void WriteDoubleArray(const double* val, const int32_t len);
+            void WriteDoubleArray(const double* val, int32_t len);
 
             /**
              * Write Guid. Maps to "UUID" type in Java.
              *
              * @param val Value.
              */
-            void WriteGuid(const Guid val);
+            void WriteGuid(const Guid& val);
 
             /**
              * Write array of Guids. Maps to "UUID[]" type in Java.
@@ -177,7 +177,7 @@ namespace ignite
              * @param val Array.
              * @param len Array length.
              */
-            void WriteGuidArray(const Guid* val, const int32_t len);
+            void WriteGuidArray(const Guid* val, int32_t len);
 
             /**
              * Write string.
@@ -192,8 +192,8 @@ namespace ignite
              * @param val String.
              * @param len String length (characters).
              */
-            void WriteString(const char* val, const int32_t len);
 
+            void WriteString(const char* val, int32_t len);
             /**
              * Start string array write.
              *

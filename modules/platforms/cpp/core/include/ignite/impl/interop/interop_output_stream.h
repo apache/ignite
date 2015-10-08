@@ -176,7 +176,7 @@ namespace ignite
                 /**
                  * Get current stream position.
                  */
-                int32_t Position();
+                int32_t Position() const;
 
                 /**
                  * Set current stream position (absolute).

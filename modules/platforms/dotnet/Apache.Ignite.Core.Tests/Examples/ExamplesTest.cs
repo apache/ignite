@@ -76,9 +76,17 @@ namespace Apache.Ignite.Core.Tests.Examples
                 return;
             }
 
-            Assert.IsTrue(File.Exists(example.SpringConfigUrl));
-
-            var gridConfig = new IgniteConfiguration {SpringConfigUrl = example.SpringConfigUrl};
+            // First node to start in current process defines JVM options.
+            var gridConfig = new IgniteConfiguration
+            {
+                SpringConfigUrl = example.SpringConfigUrl,
+                JvmOptions =
+                    new[]
+                    {
+                        "-Xms512m", "-Xmx1024m", "-Xdebug", "-Xnoagent", "-Djava.compiler=NONE",
+                        "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+                    }
+            };
 
             // Try with multiple standalone nodes
             for (var i = 0; i < 2; i++)
@@ -112,6 +120,8 @@ namespace Apache.Ignite.Core.Tests.Examples
         public void FixtureSetUp()
         {
             Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
+            Environment.SetEnvironmentVariable(Ignition.EnvIgniteSpringConfigUrlPrefix, 
+                PathUtil.SpringConfigUrlDevPrefix);
 
             Directory.SetCurrentDirectory(PathUtil.IgniteHome);
         }
@@ -127,11 +137,20 @@ namespace Apache.Ignite.Core.Tests.Examples
         }
 
         /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            Environment.SetEnvironmentVariable(Ignition.EnvIgniteSpringConfigUrlPrefix, null);
+        }
+
+        /// <summary>
         /// Gets the test cases.
         /// </summary>
         public IEnumerable<Example> TestCases
         {
-            get { return Example.All; }
+            get { return Example.GetExamples(); }
         }
     }
 }

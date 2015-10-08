@@ -163,12 +163,12 @@ namespace ignite
                 IGNITE_INTEROP_IN_READ_ARRAY(len, 3);
             }
                 
-            int32_t InteropInputStream::Remaining()
+            int32_t InteropInputStream::Remaining() const
             {
                 return len - pos;
             }
 
-            int32_t InteropInputStream::Position()
+            int32_t InteropInputStream::Position() const
             {
                 return pos;
             }
@@ -189,7 +189,7 @@ namespace ignite
                 len = mem->Length();
             }
             
-            void InteropInputStream::EnsureEnoughData(int32_t cnt)
+            void InteropInputStream::EnsureEnoughData(int32_t cnt) const
             {
                 if (len - pos < cnt) {
                     IGNITE_ERROR_FORMATTED_4(IgniteError::IGNITE_ERR_MEMORY, "Not enough data in the stream",

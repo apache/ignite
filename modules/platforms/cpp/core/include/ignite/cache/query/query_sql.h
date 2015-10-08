@@ -118,7 +118,7 @@ namespace ignite
                  *
                  * @return Type name.
                  */
-                const char* GetType()
+                const char* GetType() const
                 {
                     return type.c_str();
                 }
@@ -138,7 +138,7 @@ namespace ignite
                  *
                  * @return SQL string.
                  */
-                const char* GetSql()
+                const char* GetSql() const
                 {
                     return sql.c_str();
                 }
@@ -158,7 +158,7 @@ namespace ignite
                  *
                  * @return Page size.
                  */
-                int32_t GetPageSize()
+                int32_t GetPageSize() const
                 {
                     return pageSize;
                 }
@@ -178,7 +178,7 @@ namespace ignite
                  *
                  * @return Local flag.
                  */
-                bool IsLocal()
+                bool IsLocal() const
                 {
                     return loc;
                 }

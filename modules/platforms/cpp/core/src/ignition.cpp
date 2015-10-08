@@ -380,17 +380,17 @@ namespace ignite
         return res;
     }
 
-    bool Ignition::Stop(const bool cancel)
+    bool Ignition::Stop(bool cancel)
     {
         return Stop(NULL, cancel);
     }
 
-    bool Ignition::Stop(const bool cancel, IgniteError* err)
+    bool Ignition::Stop(bool cancel, IgniteError* err)
     {
         return Stop(NULL, cancel, err);
     }
 
-    bool Ignition::Stop(const char* name, const bool cancel)
+    bool Ignition::Stop(const char* name, bool cancel)
     {
         IgniteError err;
 
@@ -401,7 +401,7 @@ namespace ignite
         return res;
     }
 
-    bool Ignition::Stop(const char* name, const bool cancel, IgniteError* err)
+    bool Ignition::Stop(const char* name, bool cancel, IgniteError* err)
     {
         bool res = false;
 
@@ -435,7 +435,7 @@ namespace ignite
         return res;
     }
 
-    void Ignition::StopAll(const bool cancel)
+    void Ignition::StopAll(bool cancel)
     {
         IgniteError err;
 
@@ -444,7 +444,7 @@ namespace ignite
         IgniteError::ThrowIfNeeded(err);
     }
 
-    void Ignition::StopAll(const bool cancel, IgniteError* err)
+    void Ignition::StopAll(bool cancel, IgniteError* err)
     {
         factoryLock.Enter();
 

@@ -33,7 +33,7 @@ namespace ignite
             return impl->ReadInt8(fieldName);
         }
 
-        int32_t PortableReader::ReadInt8Array(const char* fieldName, int8_t* res, const int32_t len)
+        int32_t PortableReader::ReadInt8Array(const char* fieldName, int8_t* res, int32_t len)
         {
             return impl->ReadInt8Array(fieldName, res, len);
         }
@@ -43,7 +43,7 @@ namespace ignite
             return impl->ReadBool(fieldName);
         }
 
-        int32_t PortableReader::ReadBoolArray(const char* fieldName, bool* res, const int32_t len)
+        int32_t PortableReader::ReadBoolArray(const char* fieldName, bool* res, int32_t len)
         {
             return impl->ReadBoolArray(fieldName, res, len);
         }
@@ -53,7 +53,7 @@ namespace ignite
             return impl->ReadInt16(fieldName);
         }
 
-        int32_t PortableReader::ReadInt16Array(const char* fieldName, int16_t* res, const int32_t len)
+        int32_t PortableReader::ReadInt16Array(const char* fieldName, int16_t* res, int32_t len)
         {
             return impl->ReadInt16Array(fieldName, res, len);
         }
@@ -63,7 +63,7 @@ namespace ignite
             return impl->ReadUInt16(fieldName);
         }
 
-        int32_t PortableReader::ReadUInt16Array(const char* fieldName, uint16_t* res, const int32_t len)
+        int32_t PortableReader::ReadUInt16Array(const char* fieldName, uint16_t* res, int32_t len)
         {
             return impl->ReadUInt16Array(fieldName, res, len);
         }
@@ -73,7 +73,7 @@ namespace ignite
             return impl->ReadInt32(fieldName);
         }
 
-        int32_t PortableReader::ReadInt32Array(const char* fieldName, int32_t* res, const int32_t len)
+        int32_t PortableReader::ReadInt32Array(const char* fieldName, int32_t* res, int32_t len)
         {
             return impl->ReadInt32Array(fieldName, res, len);
         }
@@ -83,7 +83,7 @@ namespace ignite
             return impl->ReadInt64(fieldName);
         }
 
-        int32_t PortableReader::ReadInt64Array(const char* fieldName, int64_t* res, const int32_t len)
+        int32_t PortableReader::ReadInt64Array(const char* fieldName, int64_t* res, int32_t len)
         {
             return impl->ReadInt64Array(fieldName, res, len);
         }
@@ -93,7 +93,7 @@ namespace ignite
             return impl->ReadFloat(fieldName);
         }
 
-        int32_t PortableReader::ReadFloatArray(const char* fieldName, float* res, const int32_t len)
+        int32_t PortableReader::ReadFloatArray(const char* fieldName, float* res, int32_t len)
         {
             return impl->ReadFloatArray(fieldName, res, len);
         }
@@ -103,7 +103,7 @@ namespace ignite
             return impl->ReadDouble(fieldName);
         }
 
-        int32_t PortableReader::ReadDoubleArray(const char* fieldName, double* res, const int32_t len)
+        int32_t PortableReader::ReadDoubleArray(const char* fieldName, double* res, int32_t len)
         {
             return impl->ReadDoubleArray(fieldName, res, len);
         }
@@ -113,12 +113,12 @@ namespace ignite
             return impl->ReadGuid(fieldName);
         }
 
-        int32_t PortableReader::ReadGuidArray(const char* fieldName, Guid* res, const int32_t len)
+        int32_t PortableReader::ReadGuidArray(const char* fieldName, Guid* res, int32_t len)
         {
             return impl->ReadGuidArray(fieldName, res, len);
         }
         
-        int32_t PortableReader::ReadString(const char* fieldName, char* res, const int32_t len)
+        int32_t PortableReader::ReadString(const char* fieldName, char* res, int32_t len)
         {
             return impl->ReadString(fieldName, res, len);
         }

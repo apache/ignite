@@ -477,7 +477,7 @@ namespace ignite
                 }
             }
 
-            bool PortableReaderImpl::HasNextElement(int32_t id)
+            bool PortableReaderImpl::HasNextElement(int32_t id) const
             {
                 return elemId == id && elemRead < elemCnt;
             }
@@ -600,7 +600,7 @@ namespace ignite
                 return -1;
             }
 
-            void PortableReaderImpl::CheckRawMode(bool expected)
+            void PortableReaderImpl::CheckRawMode(bool expected) const
             {
                 if (expected && !rawMode) {
                     IGNITE_ERROR_1(IgniteError::IGNITE_ERR_PORTABLE, "Operation can be performed only in raw mode.")
@@ -610,7 +610,7 @@ namespace ignite
                 }
             }
 
-            void PortableReaderImpl::CheckSingleMode(bool expected)
+            void PortableReaderImpl::CheckSingleMode(bool expected) const
             {
                 if (expected && elemId != 0) {
                     IGNITE_ERROR_1(IgniteError::IGNITE_ERR_PORTABLE, "Operation cannot be performed when container is being read.");
@@ -660,7 +660,7 @@ namespace ignite
                 }
             }
 
-            void PortableReaderImpl::CheckSession(int32_t expSes)
+            void PortableReaderImpl::CheckSession(int32_t expSes) const
             {
                 if (elemId != expSes) {
                     IGNITE_ERROR_1(IgniteError::IGNITE_ERR_PORTABLE, "Containter read session has been finished or is not started yet.");
@@ -672,7 +672,7 @@ namespace ignite
                 IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_PORTABLE, "Invalid header", "position", pos, "expected", expHdr, "actual", hdr)
             }
 
-            void PortableReaderImpl::ThrowOnInvalidHeader(int8_t expHdr, int8_t hdr)
+            void PortableReaderImpl::ThrowOnInvalidHeader(int8_t expHdr, int8_t hdr) const
             {
                 int32_t pos = stream->Position() - 1;
 

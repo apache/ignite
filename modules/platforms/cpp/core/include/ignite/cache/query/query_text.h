@@ -41,7 +41,8 @@ namespace ignite
                  * @param type Type name.
                  * @param text Text string.
                  */
-                TextQuery(const char* type, const char* text) : type(type), text(text), pageSize(1024), loc(false)
+                TextQuery(const char* type, const char* text) : type(type), text(text), 
+                    pageSize(1024), loc(false)
                 {
                     // No-op.
                 }
@@ -91,7 +92,7 @@ namespace ignite
                  *
                  * @return Page size.
                  */
-                int32_t GetPageSize()
+                int32_t GetPageSize() const
                 {
                     return pageSize;
                 }
@@ -111,7 +112,7 @@ namespace ignite
                  *
                  * @return Local flag.
                  */
-                bool IsLocal()
+                bool IsLocal() const
                 {
                     return loc;
                 }

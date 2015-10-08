@@ -542,7 +542,7 @@ namespace ignite
                  * @param id Session ID.
                  * @return True if next element exists for the given session.
                  */
-                bool HasNextElement(int32_t id);
+                bool HasNextElement(int32_t id) const;
 
                 /**
                  * Read element.
@@ -680,7 +680,7 @@ namespace ignite
                  * Get NULL value for the given type.
                  */
                 template<typename T>
-                T GetNull()
+                T GetNull() const
                 {
                     ignite::portable::PortableType<T> type;
 
@@ -961,14 +961,14 @@ namespace ignite
                  * 
                  * @param expected Expected raw mode of the reader.
                  */
-                void CheckRawMode(bool expected);
+                void CheckRawMode(bool expected) const;
 
                 /**
                  * Check whether reader is currently operating in single mode.
                  *
                  * @param expected Expected value.
                  */
-                void CheckSingleMode(bool expected);
+                void CheckSingleMode(bool expected) const;
 
                 /**
                  * Start new container reader session.
@@ -985,7 +985,7 @@ namespace ignite
                  *
                  * @param ses Expected session ID.
                  */
-                void CheckSession(int32_t expSes);
+                void CheckSession(int32_t expSes) const;
 
                 /**
                  * Throw an error due to invalid header.
@@ -1002,7 +1002,7 @@ namespace ignite
                  * @param expHdr Expected header.
                  * @param hdr Actual header.
                  */
-                void ThrowOnInvalidHeader(int8_t expHdr, int8_t hdr);
+                void ThrowOnInvalidHeader(int8_t expHdr, int8_t hdr) const;
 
                 /**
                  * Internal string read routine.

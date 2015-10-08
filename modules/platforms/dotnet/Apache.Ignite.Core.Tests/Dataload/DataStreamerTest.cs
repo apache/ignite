@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [TearDown]
         public void AfterTest()
         {
-            TestUtils.AssertHandleRegistryIsEmpty(_grid, 1000);
+            TestUtils.AssertHandleRegistryIsEmpty(1000, _grid);
         }
 
         /// <summary>

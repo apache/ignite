@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// </returns>
         internal static CacheStore CreateInstance(long memPtr, HandleRegistry registry)
         {
-            using (var stream = IgniteManager.Memory.Get(memPtr).Stream())
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
                 var reader = PortableUtils.Marshaller.StartUnmarshal(stream, PortableMode.KeepPortable);
 
@@ -235,7 +235,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// <param name="objects">Objects.</param>
         private static void WriteObjects(IUnmanagedTarget cb, Ignite grid, params object[] objects)
         {
-            using (var stream = IgniteManager.Memory.Allocate().Stream())
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
                 PortableWriterImpl writer = grid.Marshaller.StartMarshal(stream);
 

@@ -41,7 +41,7 @@ namespace ignite
              * @param id Identifier.
              * @param impl Writer.
              */
-            PortableStringArrayWriter(impl::portable::PortableWriterImpl* impl, const int32_t id);
+            PortableStringArrayWriter(impl::portable::PortableWriterImpl* impl, int32_t id);
 
             /**
              * Write string.
@@ -56,7 +56,7 @@ namespace ignite
              * @param val String.
              * @param len String length (characters).
              */
-            void Write(const char* val, const int32_t len);
+            void Write(const char* val, int32_t len);
 
             /**
              * Close the writer.
@@ -83,7 +83,7 @@ namespace ignite
              * @param impl Writer.
              * @param id Identifier.
              */
-            PortableArrayWriter(impl::portable::PortableWriterImpl* impl, const int32_t id) : impl(impl), id(id)
+            PortableArrayWriter(impl::portable::PortableWriterImpl* impl, int32_t id) : impl(impl), id(id)
             {
                 // No-op.
             }
@@ -126,7 +126,7 @@ namespace ignite
              * @param impl Writer.
              * @param id Identifier.
              */
-            PortableCollectionWriter(impl::portable::PortableWriterImpl* impl, const int32_t id) : impl(impl), id(id)
+            PortableCollectionWriter(impl::portable::PortableWriterImpl* impl, int32_t id) : impl(impl), id(id)
             {
                 // No-op.
             }
@@ -168,7 +168,7 @@ namespace ignite
              *
              * @param impl Writer.
              */
-            PortableMapWriter(impl::portable::PortableWriterImpl* impl, const int32_t id) : impl(impl), id(id)
+            PortableMapWriter(impl::portable::PortableWriterImpl* impl, int32_t id) : impl(impl), id(id)
             {
                 // No-op.
             }
@@ -212,7 +212,7 @@ namespace ignite
              * @param id Identifier.
              * @param size Array size.
              */
-            PortableStringArrayReader(impl::portable::PortableReaderImpl* impl, const int32_t id, const int32_t size);
+            PortableStringArrayReader(impl::portable::PortableReaderImpl* impl, int32_t id, int32_t size);
 
             /**
              * Check whether next element is available for read.
@@ -232,7 +232,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t GetNext(char* res, const int32_t len);
+            int32_t GetNext(char* res, int32_t len);
 
             /**
              * Get next element.
@@ -260,12 +260,12 @@ namespace ignite
              *
              * @return Size or -1 if array is NULL.
              */
-            int32_t GetSize();
+            int32_t GetSize() const;
 
             /**
              * Whether array is NULL.
              */
-            bool IsNull();
+            bool IsNull() const;
         private:
             /** Implementation delegate. */
             impl::portable::PortableReaderImpl* impl;  
@@ -291,7 +291,7 @@ namespace ignite
              * @param id Identifier.
              * @param size Array size.
              */
-            PortableArrayReader(impl::portable::PortableReaderImpl* impl, const int32_t id, const int32_t size) : 
+            PortableArrayReader(impl::portable::PortableReaderImpl* impl, int32_t id, int32_t size) : 
                 impl(impl), id(id), size(size)
             {
                 // No-op.
@@ -360,8 +360,8 @@ namespace ignite
              * @param type Collection type.
              * @param size Collection size.
              */
-            PortableCollectionReader(impl::portable::PortableReaderImpl* impl, const int32_t id, 
-                const CollectionType type,  const int32_t size) : impl(impl), id(id), type(type), size(size)
+            PortableCollectionReader(impl::portable::PortableReaderImpl* impl, int32_t id, 
+                const CollectionType type,  int32_t size) : impl(impl), id(id), type(type), size(size)
             {
                 // No-op.
             }
@@ -442,8 +442,8 @@ namespace ignite
              * @param type Map type.
              * @param size Map size.
             */
-            PortableMapReader(impl::portable::PortableReaderImpl* impl, const int32_t id, const MapType type,
-                const int32_t size) : impl(impl), id(id), type(type), size(size)
+            PortableMapReader(impl::portable::PortableReaderImpl* impl, int32_t id, MapType type,
+                int32_t size) : impl(impl), id(id), type(type), size(size)
             {
                 // No-op.
             }

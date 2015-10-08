@@ -18,6 +18,9 @@
 namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
+    using System.Collections.Generic;
+
+    using Apache.Ignite.Core.Impl.Portable.Structure;
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
@@ -54,6 +57,9 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Affinity field key name. */
         private readonly string _affKeyFieldName;
+
+        /** Type structure. */
+        private volatile PortableStructure _typeStruct = PortableStructure.CreateEmpty();
 
         /// <summary>
         /// Constructor.
@@ -170,6 +176,22 @@ namespace Apache.Ignite.Core.Impl.Portable
         public string AffinityKeyFieldName
         {
             get { return _affKeyFieldName; }
+        }
+
+        /** <inheritDoc /> */
+        public PortableStructure TypeStructure
+        {
+            get { return _typeStruct; }
+        }
+
+        /** <inheritDoc /> */
+        public void UpdateStructure(PortableStructure exp, int pathIdx, 
+            IList<PortableStructureUpdate> updates)
+        {
+            lock (this)
+            {
+                _typeStruct = _typeStruct.Merge(exp, pathIdx, updates);
+            }
         }
     }
 }
