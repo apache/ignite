@@ -209,7 +209,14 @@ int main(int argc, const char* argv[])
         // Pick command line arguments.
         config::Configure(cfg, args);
 
-        ignite::Ignition::Start(cfg);
+        ignite::Ignite ignite = ignite::Ignition::Start(cfg);
+
+        ignite::impl::IgniteImpl *igniteImpl = ignite::impl::IgniteImpl::GetFromProxy(ignite);
+
+        if (igniteImpl)
+        {
+            igniteImpl->DestroyJvm();
+        }
     }
     catch (ignite::IgniteError& e)
     {

@@ -29,6 +29,7 @@ namespace ignite
      */
     class IGNITE_IMPORT_EXPORT Ignite
     {
+        friend class impl::IgniteImpl;
     public:
         /**
          * Default constructor.

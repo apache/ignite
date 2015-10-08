@@ -75,7 +75,7 @@ namespace ignite
      */
     char** CreateJvmOptions(const IgniteConfiguration& cfg, const std::string* home, const std::string& cp, int* optsLen)
     {
-        *optsLen = 3 + (home ? 1 : 0) + cfg.jvmOpts.size();
+        *optsLen = 3 + (home ? 1 : 0) + static_cast<int>(cfg.jvmOpts.size());
         char** opts = new char*[*optsLen];
 
         int idx = 0;

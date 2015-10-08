@@ -26,13 +26,13 @@
 #include "ignite/impl/utils.h"
 
 namespace ignite 
-{    
+{
     namespace impl 
-    {            
+    {
         /**
          * Ignite implementation.
          */
-        class IgniteImpl
+        class IGNITE_IMPORT_EXPORT IgniteImpl
         {
             friend class Ignite;
         public:
@@ -55,6 +55,11 @@ namespace ignite
              * @param Name.
              */
             char* GetName();
+
+            /**
+            * Destroy Java Virtual Machine associated with this instance.
+            */
+            void DestroyJvm();
 
             /**
              * Get cache.
@@ -130,6 +135,13 @@ namespace ignite
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
+
+            template<typename T>
+            static IgniteImpl* GetFromProxy(T& proxy)
+            {
+                return proxy.impl.Get();
+            }
+
         private:
             /** Environment. */
             ignite::common::concurrent::SharedPointer<IgniteEnvironment> env;
@@ -140,7 +152,6 @@ namespace ignite
             IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl)
         };
     }
-    
 }
 
 #endif
