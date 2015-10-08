@@ -82,13 +82,8 @@ namespace Apache.Ignite.Core.Impl.Cluster
             NonHeapMemoryTotal = reader.ReadLong();
             Uptime = reader.ReadLong();
 
-            DateTime? startTime0 = reader.ReadDateNullable();
-
-            StartTime = startTime0 ?? default(DateTime);
-
-            DateTime? nodeStartTime0 = reader.ReadDateNullable();
-
-            NodeStartTime = nodeStartTime0 ?? default(DateTime);
+            StartTime = reader.ReadDate();
+            NodeStartTime = reader.ReadDate();
 
             CurrentThreadCount = reader.ReadInt();
             MaximumThreadCount = reader.ReadInt();

@@ -32,8 +32,8 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <param name="reader">The reader.</param>
         public TransactionMetricsImpl(IPortableRawReader reader)
         {
-            CommitTime = reader.ReadDateNullable() ?? default(DateTime);
-            RollbackTime = reader.ReadDateNullable() ?? default(DateTime);
+            CommitTime = reader.ReadDate();
+            RollbackTime = reader.ReadDate();
 
             TxCommits = reader.ReadInt();
             TxRollbacks = reader.ReadInt();
