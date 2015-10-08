@@ -43,6 +43,15 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     private static final long serialVersionUID = 0L;
 
     /** */
+    private static final byte BACKUP_ENTRY = 0b0001;
+
+    /** */
+    private static final byte ORDERED_ENTRY = 0b0010;
+
+    /** */
+    private static final byte FILTERED_ENTRY = 0b0100;
+
+    /** */
     private static final EventType[] EVT_TYPE_VALS = EventType.values();
 
     /**
@@ -82,8 +91,8 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     /** Update index. */
     private long updateIdx;
 
-    /** */
-    private boolean filtered;
+    /** Flags. */
+    private byte flags;
 
     /** */
     @GridToStringInclude
@@ -91,7 +100,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     private AffinityTopologyVersion topVer;
 
     /**
-     * Required by {@link org.apache.ignite.plugin.extensions.communication.Message}.
+     * Required by {@link Message}.
      */
     public CacheContinuousQueryEntry() {
         // No-op.
@@ -134,13 +143,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /**
-     * @return Cache ID.
-     */
-    int cacheId() {
-        return cacheId;
-    }
-
-    /**
      * @return Event type.
      */
     EventType eventType() {
@@ -155,13 +157,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /**
-     * Mark this event as filtered.
-     */
-    void markFiltered() {
-        filtered = true;
-    }
-
-    /**
      * @return Update index.
      */
     long updateIndex() {
@@ -169,10 +164,45 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /**
-     * @return Filtered entry.
+     * Mark that entry create on backup.
+     */
+    void markBackup() {
+        flags |= BACKUP_ENTRY;
+    }
+
+    /**
+     * Mark that entry ordered.
+     */
+    void markOrdered() {
+        flags |= ORDERED_ENTRY;
+    }
+
+    /**
+     * Mark that entry filtered.
+     */
+    void markFiltered() {
+        flags |= FILTERED_ENTRY;
+    }
+
+    /**
+     * @return {@code True} if entry sent by backup node.
+     */
+    boolean isBackup() {
+        return (flags & BACKUP_ENTRY) != 0;
+    }
+
+    /**
+     * @return {@code True} .
+     */
+    boolean isOrdered() {
+        return (flags & ORDERED_ENTRY) != 0;
+    }
+
+    /**
+     * @return {@code True} if entry was filtered.
      */
     boolean filtered() {
-        return filtered;
+        return (flags & FILTERED_ENTRY) != 0;
     }
 
     /**
@@ -297,7 +327,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeBoolean("filtered", filtered))
+                if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
@@ -376,7 +406,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 reader.incrementState();
 
             case 7:
-                filtered = reader.readBoolean("filtered");
+                flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
                     return false;
@@ -390,7 +420,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 
     /** {@inheritDoc} */

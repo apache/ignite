@@ -389,11 +389,6 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void partitionLost(String cacheName, int partId) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public Object orderedTopic() {
         return null;
     }

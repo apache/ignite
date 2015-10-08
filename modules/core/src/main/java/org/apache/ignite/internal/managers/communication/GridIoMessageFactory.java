@@ -92,7 +92,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBatchAck;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryLostPartition;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder;
@@ -688,11 +687,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 114:
                 msg = new CacheContinuousQueryBatchAck();
-
-                break;
-
-            case 115:
-                msg = new CacheContinuousQueryLostPartition();
 
                 break;
 

@@ -58,18 +58,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.LongAdder8;
 
-import javax.cache.CacheException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.AtomicStampedReference;
-import java.util.concurrent.locks.ReentrantLock;
-
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
@@ -128,8 +116,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /** Group reservations. */
     private final CopyOnWriteArrayList<GridDhtPartitionsReservation> reservations = new CopyOnWriteArrayList<>();
 
-    /** Continuous query update index. */
-    private final AtomicLong contQryUpdIdx = new AtomicLong();
+    /** Update index. */
+    private final AtomicLong updIdx = new AtomicLong();
 
     /**
      * @param cctx Context.
@@ -636,28 +624,28 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /**
      * @return Next update index.
      */
-    public long nextContinuousQueryUpdateIndex() {
-        return contQryUpdIdx.incrementAndGet();
+    public long nextUpdateIndex() {
+        return updIdx.incrementAndGet();
     }
 
     /**
      * @return Current update index.
      */
-    public long continuousQueryUpdateIndex() {
-        return contQryUpdIdx.get();
+    public long updateIndex() {
+        return updIdx.get();
     }
 
     /**
      * @param val Update index value.
      */
-    public void continuousQueryUpdateIndex(long val) {
+    public void updateIndex(long val) {
         while (true) {
-            long val0 = contQryUpdIdx.get();
+            long val0 = updIdx.get();
 
             if (val0 >= val)
                 break;
 
-            if (contQryUpdIdx.compareAndSet(val0, val))
+            if (updIdx.compareAndSet(val0, val))
                 break;
         }
     }

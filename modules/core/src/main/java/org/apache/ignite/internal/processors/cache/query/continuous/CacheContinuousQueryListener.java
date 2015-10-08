@@ -55,21 +55,6 @@ interface CacheContinuousQueryListener<K, V> {
     public void cleanupBackupQueue(Map<Integer, Long> updateIdxs);
 
     /**
-     * Fire event that partition lost.
-     *
-     * @param cacheName Cache name.
-     * @param partId Partition ID.
-     */
-    public void firePartitionLostEvent(String cacheName, int partId);
-
-    /**
-     * Handle partition lost event.
-     *
-     * @param partId Partition ID.
-     */
-    public void partitionLost(int partId);
-
-    /**
      * Flushes backup queue.
      *
      * @param ctx Context.

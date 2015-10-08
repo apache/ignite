@@ -46,9 +46,6 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.CacheRebalancingEvent;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -90,6 +87,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     /** */
     private static final long BACKUP_ACK_FREQ = 5000;
 
+    public static final boolean SUPER_DEBUG = false;
+
     /** Listeners. */
     private final ConcurrentMap<UUID, CacheContinuousQueryListener> lsnrs = new ConcurrentHashMap8<>();
 
@@ -127,16 +126,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 }
             });
 
-        cctx.io().addHandler(cctx.cacheId(), CacheContinuousQueryLostPartition.class,
-            new CI2<UUID, CacheContinuousQueryLostPartition>() {
-                @Override public void apply(UUID uuid, CacheContinuousQueryLostPartition msg) {
-                    CacheContinuousQueryListener lsnr = lsnrs.get(msg.routineId());
-
-                    if (lsnr != null)
-                        lsnr.partitionLost(msg.partition());
-                }
-            });
-
         cctx.time().schedule(new Runnable() {
             @Override public void run() {
                 for (CacheContinuousQueryListener lsnr : lsnrs.values())
@@ -146,20 +135,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                     lsnr.acknowledgeBackupOnTimeout(cctx.kernalContext());
             }
         }, BACKUP_ACK_FREQ, BACKUP_ACK_FREQ);
-
-        cctx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(Event evt) {
-                assert evt instanceof CacheRebalancingEvent;
-
-                CacheRebalancingEvent evt0 = (CacheRebalancingEvent)evt;
-
-                for (CacheContinuousQueryListener lsnr : lsnrs.values())
-                    lsnr.firePartitionLostEvent(evt0.cacheName(), evt0.partition());
-
-                for (CacheContinuousQueryListener lsnr : intLsnrs.values())
-                    lsnr.firePartitionLostEvent(evt0.cacheName(), evt0.partition());
-            }
-        }, EVT_CACHE_REBALANCE_PART_DATA_LOST);
     }
 
     /** {@inheritDoc} */
@@ -319,7 +294,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                    null,
                    lsnr.oldValueRequired() ? oldVal : null,
                    e.partition(),
-                   0,
+                   -1,
                    null);
 
                 CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent(
@@ -566,7 +541,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                     e.rawGet(),
                                     null,
                                     0,
-                                    0,
+                                    -1,
                                     null);
 
                                 next = new CacheContinuousQueryEvent<>(

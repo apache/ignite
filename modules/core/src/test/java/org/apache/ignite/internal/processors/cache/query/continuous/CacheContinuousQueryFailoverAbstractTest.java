@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -39,6 +39,8 @@ import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -47,6 +49,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ContinuousQuery;
@@ -71,10 +74,10 @@ import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -279,6 +282,17 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         IgniteCache<Object, Object> clnCache = qryClient.cache(null);
 
+        IgniteOutClosure<IgniteCache<Integer, Integer>> rndCache =
+            new IgniteOutClosure<IgniteCache<Integer, Integer>>() {
+                int cnt = 0;
+
+                @Override public IgniteCache<Integer, Integer> apply() {
+                    ++cnt;
+
+                    return grid(cnt % SRV_NODES + 1).cache(null);
+                }
+            };
+
         Ignite igniteSrv = ignite(0);
 
         IgniteCache<Object, Object> srvCache = igniteSrv.cache(null);
@@ -290,16 +304,18 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
         for (int j = 0; j < 50; ++j) {
             ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
-            final TestLocalListener lsnr = new TestLocalListener();
+            final CacheEventListener3 lsnr = new CacheEventListener3();
 
             qry.setLocalListener(lsnr);
+
+            qry.setRemoteFilter(lsnr);
 
             int keyIter = 0;
 
             for (; keyIter < keyCnt / 2; keyIter++) {
                 int key = keys.get(keyIter);
 
-                clnCache.put(key, key);
+                rndCache.apply().put(key, key);
             }
 
             assert lsnr.evts.isEmpty();
@@ -312,28 +328,40 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
             Affinity<Object> aff = affinity(srvCache);
 
+            boolean filtered = false;
+
             for (; keyIter < keys.size(); keyIter++) {
                 int key = keys.get(keyIter);
 
-                log.info("Put [key=" + key + ", part=" + aff.partition(key) + ']');
+                int val = filtered ? 1 : 2;
+
+                log.info("Put [key=" + key + ", val=" + val + ", part=" + aff.partition(key) + ']');
 
                 T2<Object, Object> t = updates.get(key);
 
                 if (t == null) {
-                    updates.put(key, new T2<>((Object)key, null));
+                    // Check filtered.
+                    if (!filtered) {
+                        updates.put(key, new T2<>((Object)val, null));
 
-                    expEvts.add(new T3<>((Object)key, (Object)key, null));
+                        expEvts.add(new T3<>((Object)key, (Object)val, null));
+                    }
                 }
                 else {
-                    updates.put(key, new T2<>((Object)key, (Object)key));
+                    // Check filtered.
+                    if (!filtered) {
+                        updates.put(key, new T2<>((Object)val, (Object)t.get1()));
 
-                    expEvts.add(new T3<>((Object)key, (Object)key, (Object)key));
+                        expEvts.add(new T3<>((Object)key, (Object)val, (Object)t.get1()));
+                    }
                 }
 
-                srvCache.put(key, key);
+                rndCache.apply().put(key, val);
+
+                filtered = !filtered;
             }
 
-            checkEvents(expEvts, lsnr);
+            checkEvents(expEvts, lsnr, false);
 
             query.close();
         }
@@ -357,7 +385,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
-        final TestLocalListener lsnr = new TestLocalListener();
+        final CacheEventListener3 lsnr = new CacheEventListener3();
 
         qry.setLocalListener(lsnr);
 
@@ -421,7 +449,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
             filtered = !filtered;
         }
 
-        checkEvents(expEvts, lsnr);
+        checkEvents(expEvts, lsnr, false);
 
         List<Thread> stopThreads = new ArrayList<>(3);
 
@@ -488,7 +516,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
             filtered = !filtered;
         }
 
-        checkEvents(expEvts, lsnr);
+        checkEvents(expEvts, lsnr, false);
 
         query.close();
     }
@@ -518,7 +546,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
-        final TestLocalListener lsnr = new TestLocalListener();
+        final CacheEventListener3 lsnr = new CacheEventListener3();
 
         qry.setLocalListener(lsnr);
 
@@ -599,40 +627,10 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
                 fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + keys0.size() + ']');
             }
 
-            checkEvents(expEvts, lsnr);
+            checkEvents(expEvts, lsnr, false);
         }
 
         cur.close();
-    }
-
-    /**
-     *
-     */
-    public static class TestLocalListener implements CacheEntryUpdatedListener<Object, Object>,
-        CacheEntryEventSerializableFilter<Object, Object> {
-        /** Keys. */
-        GridConcurrentHashSet<Integer> keys = new GridConcurrentHashSet<>();
-
-        /** Events. */
-        private final ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
-
-        /** {@inheritDoc} */
-        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> events) throws CacheEntryListenerException {
-            for (CacheEntryEvent<?, ?> e : events) {
-                System.err.println("Update entry: " + e);
-
-                Integer key = (Integer)e.getKey();
-
-                keys.add(key);
-
-                evts.put(key, e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean evaluate(CacheEntryEvent<?, ?> e) throws CacheEntryListenerException {
-            return (Integer)e.getValue() % 2 == 0;
-        }
     }
 
     /**
@@ -822,21 +820,144 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
     /**
      * @param expEvts Expected events.
      * @param lsnr Listener.
+     * @param lostAllow If {@code true} than won't assert on lost events.
      */
-    private void checkEvents(final List<T3<Object, Object, Object>> expEvts, final TestLocalListener lsnr)
-        throws Exception {
-        assert GridTestUtils.waitForCondition(new PA() {
+    private void checkEvents(final List<T3<Object, Object, Object>> expEvts, final CacheEventListener2 lsnr,
+        boolean lostAllow) throws Exception {
+        boolean b = GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
-                return lsnr.evts.size() == expEvts.size();
+                return expEvts.size() == lsnr.size();
             }
         }, 2000L);
+
+        List<T3<Object, Object, Object>> lostEvents = new ArrayList<>();
+
+        for (T3<Object, Object, Object> exp : expEvts) {
+            List<CacheEntryEvent<?, ?>> rcvdEvts = lsnr.evts.get(exp.get1());
+
+            if (rcvdEvts == null || rcvdEvts.isEmpty()) {
+                lostEvents.add(exp);
+
+                continue;
+            }
+
+            Iterator<CacheEntryEvent<?, ?>> iter = rcvdEvts.iterator();
+
+            boolean found = false;
+
+            while (iter.hasNext()) {
+                CacheEntryEvent<?, ?> e = iter.next();
+
+                if ((exp.get2() != null && e.getValue() != null && exp.get2() == e.getValue())
+                    && equalOldValue(e, exp)) {
+                    found = true;
+
+                    iter.remove();
+
+                    break;
+                }
+            }
+
+            // Lost event is acceptable.
+            if (!found)
+                lostEvents.add(exp);
+        }
+
+        boolean dup = false;
+
+        // Check duplicate.
+        if (!lsnr.evts.isEmpty()) {
+            for (List<CacheEntryEvent<?, ?>> evts : lsnr.evts.values()) {
+                if (!evts.isEmpty()) {
+                    for (CacheEntryEvent<?, ?> e : evts) {
+                        boolean found = false;
+
+                        for (T3<Object, Object, Object> lostEvt : lostEvents) {
+                            if (e.getKey().equals(lostEvt.get1()) && e.getValue().equals(lostEvt.get2())
+                                && equalOldValue(e, lostEvt)) {
+                                found = true;
+
+                                lostEvents.remove(lostEvt);
+
+                                break;
+                            }
+                        }
+
+                        if (!found) {
+                            dup = true;
+
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (dup) {
+                for (T3<Object, Object, Object> e : lostEvents)
+                    log.error("Lost event: " + e);
+
+                for (List<CacheEntryEvent<?, ?>> e : lsnr.evts.values())
+                    if (!e.isEmpty())
+                        log.error("Duplicate event: " + e);
+            }
+
+            assertFalse("Received duplicate events, see log for details.", dup);
+        }
+
+        if (!lostAllow && !lostEvents.isEmpty()) {
+            log.error("Lost event cnt: " + lostEvents.size());
+
+            for (T3<Object, Object, Object> e : lostEvents)
+                log.error("Lost event: " + e);
+
+            assertTrue("Lose events, see log for details.", false);
+        }
+
+        log.error("Lost event cnt: " + lostEvents.size());
+
+        expEvts.clear();
+
+        lsnr.evts.clear();
+    }
+
+    /**
+     * @param e Event
+     * @param expVals expected value
+     * @return {@code True} if entries has the same key, value and oldValue. If cache start without backups
+     *          than oldValue ignoring in comparison.
+     */
+    private boolean equalOldValue(CacheEntryEvent<?, ?> e, T3<Object, Object, Object> expVals) {
+        return (e.getOldValue() == null && expVals.get3() == null) // Both null
+            || (e.getOldValue() != null && expVals.get3() != null  // Equals
+                && e.getOldValue().equals(expVals.get3()))
+            || (backups == 0); // If we start without backup than oldValue might be lose.
+    }
+
+    /**
+     * @param expEvts Expected events.
+     * @param lsnr Listener.
+     */
+    private void checkEvents(final List<T3<Object, Object, Object>> expEvts, final CacheEventListener3 lsnr,
+        boolean allowLoseEvent) throws Exception {
+        if (!allowLoseEvent)
+            assert GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    return lsnr.evts.size() == expEvts.size();
+                }
+            }, 2000L);
 
         for (T3<Object, Object, Object> exp : expEvts) {
             CacheEntryEvent<?, ?> e = lsnr.evts.get(exp.get1());
 
             assertNotNull("No event for key: " + exp.get1(), e);
             assertEquals("Unexpected value: " + e, exp.get2(), e.getValue());
+
+            if (allowLoseEvent)
+                lsnr.evts.remove(exp.get1());
         }
+
+        if (allowLoseEvent)
+            assert lsnr.evts.isEmpty();
 
         expEvts.clear();
 
@@ -1058,6 +1179,8 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         final AtomicReference<CountDownLatch> checkLatch = new AtomicReference<>();
 
+        boolean processorPut = false;
+
         IgniteInternalFuture<?> restartFut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 final int idx = SRV_NODES + 1;
@@ -1093,7 +1216,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
         final Map<Integer, List<T2<Integer, Integer>>> expEvts = new HashMap<>();
 
         try {
-            long stopTime = System.currentTimeMillis() + 3 * 60_000;
+            long stopTime = System.currentTimeMillis() + 1 * 60_000;
 
             final int PARTS = qryClient.affinity(null).partitions();
 
@@ -1110,7 +1233,20 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
                 else
                     val = val + 1;
 
-                qryClientCache.put(key, val);
+                if (processorPut && prevVal != null) {
+                    qryClientCache.invoke(key, new CacheEntryProcessor<Object, Object, Void>() {
+                        @Override public Void process(MutableEntry<Object, Object> entry,
+                            Object... arguments) throws EntryProcessorException {
+                            entry.setValue(arguments[0]);
+
+                            return null;
+                        }
+                    }, val);
+                }
+                else
+                    qryClientCache.put(key, val);
+
+                processorPut = !processorPut;
 
                 vals.put(key, val);
 
@@ -1180,6 +1316,497 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
             assertTrue(checkEvents(true, expEvts, lsnr));
 
         cur.close();
+
+        assertFalse("Unexpected error during test, see log for details.", err);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFailoverFilter() throws Exception {
+        final int SRV_NODES = 4;
+
+        startGridsMultiThreaded(SRV_NODES);
+
+        client = true;
+
+        Ignite qryClient = startGrid(SRV_NODES);
+
+        client = false;
+
+        IgniteCache<Object, Object> qryClientCache = qryClient.cache(null);
+
+        final CacheEventListener2 lsnr = new CacheEventListener2();
+
+        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+        qry.setLocalListener(lsnr);
+
+        qry.setRemoteFilter(new CacheEventFilter());
+
+        QueryCursor<?> cur = qryClientCache.query(qry);
+
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        final AtomicReference<CountDownLatch> checkLatch = new AtomicReference<>();
+
+        IgniteInternalFuture<?> restartFut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                final int idx = SRV_NODES + 1;
+
+                while (!stop.get() && !err) {
+                    log.info("Start node: " + idx);
+
+                    startGrid(idx);
+
+                    Thread.sleep(3000);
+
+                    log.info("Stop node: " + idx);
+
+                    stopGrid(idx);
+
+                    CountDownLatch latch = new CountDownLatch(1);
+
+                    assertTrue(checkLatch.compareAndSet(null, latch));
+
+                    if (!stop.get()) {
+                        log.info("Wait for event check.");
+
+                        assertTrue(latch.await(1, MINUTES));
+                    }
+                }
+
+                return null;
+            }
+        });
+
+        final Map<Integer, Integer> vals = new HashMap<>();
+
+        final Map<Integer, List<T2<Integer, Integer>>> expEvts = new HashMap<>();
+
+        try {
+            long stopTime = System.currentTimeMillis() + 1 * 60_000;
+
+            final int PARTS = qryClient.affinity(null).partitions();
+
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+            boolean filtered = false;
+
+            boolean processorPut = false;
+
+            while (System.currentTimeMillis() < stopTime) {
+                Integer key = rnd.nextInt(PARTS);
+
+                Integer prevVal = vals.get(key);
+                Integer val = vals.get(key);
+
+                if (val == null)
+                    val = 0;
+                else
+                    val = Math.abs(val) + 1;
+
+                if (filtered)
+                    val = -val;
+
+                if (processorPut && prevVal != null) {
+                    qryClientCache.invoke(key, new CacheEntryProcessor<Object, Object, Void>() {
+                        @Override public Void process(MutableEntry<Object, Object> entry,
+                            Object... arguments) throws EntryProcessorException {
+                            entry.setValue(arguments[0]);
+
+                            return null;
+                        }
+                    }, val);
+                }
+                else
+                    qryClientCache.put(key, val);
+
+                processorPut = !processorPut;
+
+                vals.put(key, val);
+
+                if (val >= 0) {
+                    List<T2<Integer, Integer>> keyEvts = expEvts.get(key);
+
+                    if (keyEvts == null) {
+                        keyEvts = new ArrayList<>();
+
+                        expEvts.put(key, keyEvts);
+                    }
+
+                    keyEvts.add(new T2<>(val, prevVal));
+                }
+
+                filtered = !filtered;
+
+                CountDownLatch latch = checkLatch.get();
+
+                if (latch != null) {
+                    log.info("Check events.");
+
+                    checkLatch.set(null);
+
+                    boolean success = false;
+
+                    try {
+                        if (err)
+                            break;
+
+                        boolean check = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                            @Override public boolean apply() {
+                                return checkEvents(false, expEvts, lsnr);
+                            }
+                        }, 10_000);
+
+                        if (!check)
+                            assertTrue(checkEvents(true, expEvts, lsnr));
+
+                        success = true;
+
+                        log.info("Events checked.");
+                    }
+                    finally {
+                        if (!success)
+                            err = true;
+
+                        latch.countDown();
+                    }
+                }
+            }
+        }
+        finally {
+            stop.set(true);
+        }
+
+        CountDownLatch latch = checkLatch.get();
+
+        if (latch != null)
+            latch.countDown();
+
+        restartFut.get();
+
+        boolean check = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return checkEvents(false, expEvts, lsnr);
+            }
+        }, 10_000);
+
+        if (!check)
+            assertTrue(checkEvents(true, expEvts, lsnr));
+
+        cur.close();
+
+        assertFalse("Unexpected error during test, see log for details.", err);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFailoverStartStopWithoutBackup() throws Exception {
+        failoverStartStopFilter(0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFailoverStartStopOneBackup() throws Exception {
+        failoverStartStopFilter(1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void _testStartStop() throws Exception {
+        this.backups = 0;
+
+        final int SRV_NODES = 4;
+
+        startGridsMultiThreaded(SRV_NODES);
+
+        client = true;
+
+        Ignite qryClient = startGrid(SRV_NODES);
+
+        client = false;
+
+        IgniteCache<Object, Object> qryClnCache = qryClient.cache(null);
+
+        final CacheEventListener2 lsnr = new CacheEventListener2();
+
+        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+        qry.setLocalListener(lsnr);
+
+        qry.setRemoteFilter(new CacheEventFilter());
+
+        QueryCursor<?> cur = qryClnCache.query(qry);
+
+        for (int i = 0; i < 100; i++) {
+            final int idx = i % (SRV_NODES - 1);
+
+            log.info("Stop node: " + idx);
+
+            stopGrid(idx);
+
+            Thread.sleep(200);
+
+            List<T3<Object, Object, Object>> afterRestEvents = new ArrayList<>();
+
+            for (int j = 0; j < 10; j++) {
+                Integer oldVal = (Integer)qryClnCache.get(j);
+
+                qryClnCache.put(j, i);
+
+                afterRestEvents.add(new T3<>((Object)j, (Object)i, (Object)oldVal));
+            }
+
+            checkEvents(new ArrayList<>(afterRestEvents), lsnr, false);
+
+            log.info("Start node: " + idx);
+
+            startGrid(idx);
+        }
+
+        cur.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void failoverStartStopFilter(int backups) throws Exception {
+        this.backups = backups;
+
+        final int SRV_NODES = 4;
+
+        startGridsMultiThreaded(SRV_NODES);
+
+        client = true;
+
+        Ignite qryClient = startGrid(SRV_NODES);
+
+        client = false;
+
+        IgniteCache<Object, Object> qryClnCache = qryClient.cache(null);
+
+        final CacheEventListener2 lsnr = new CacheEventListener2();
+
+        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+        qry.setLocalListener(lsnr);
+
+        qry.setRemoteFilter(new CacheEventFilter());
+
+        QueryCursor<?> cur = qryClnCache.query(qry);
+
+        CacheEventListener2 dinLsnr = null;
+
+        QueryCursor<?> dinQry = null;
+
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        final AtomicReference<CountDownLatch> checkLatch = new AtomicReference<>();
+
+        IgniteInternalFuture<?> restartFut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                while (!stop.get() && !err) {
+                    final int idx = ThreadLocalRandom.current().nextInt(SRV_NODES - 1);
+
+                    log.info("Stop node: " + idx);
+
+                    stopGrid(idx);
+
+                    Thread.sleep(100);
+
+                    log.info("Start node: " + idx);
+
+                    startGrid(idx);
+
+                    CountDownLatch latch = new CountDownLatch(1);
+
+                    assertTrue(checkLatch.compareAndSet(null, latch));
+
+                    if (!stop.get()) {
+                        log.info("Wait for event check.");
+
+                        assertTrue(latch.await(1, MINUTES));
+                    }
+                }
+
+                return null;
+            }
+        });
+
+        final Map<Integer, Integer> vals = new HashMap<>();
+
+        final Map<Integer, List<T2<Integer, Integer>>> expEvts = new HashMap<>();
+
+        final List<T3<Object, Object, Object>> expEvtsNewLsnr = new ArrayList<>();
+
+        final List<T3<Object, Object, Object>> expEvtsLsnr = new ArrayList<>();
+
+        try {
+            long stopTime = System.currentTimeMillis() + 60_000;
+
+            // Start new filter each 5 sec.
+            long startFilterTime = System.currentTimeMillis() + 5_000;
+
+            final int PARTS = qryClient.affinity(null).partitions();
+
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+            boolean filtered = false;
+
+            boolean processorPut = false;
+
+            while (System.currentTimeMillis() < stopTime) {
+                Integer key = rnd.nextInt(PARTS);
+
+                Integer prevVal = vals.get(key);
+                Integer val = vals.get(key);
+
+                if (System.currentTimeMillis() > startFilterTime) {
+                    // Stop filter and check events.
+                    if (dinQry != null) {
+                        dinQry.close();
+
+                        log.error("Continuous query listener closed.");
+
+                        checkEvents(expEvtsNewLsnr, dinLsnr, backups == 0);
+                    }
+
+                    dinLsnr = new CacheEventListener2();
+
+                    ContinuousQuery<Object, Object> newQry = new ContinuousQuery<>();
+
+                    newQry.setLocalListener(dinLsnr);
+
+                    newQry.setRemoteFilter(new CacheEventFilter());
+
+                    dinQry = qryClnCache.query(newQry);
+
+                    log.error("Continuous query listener started.");
+
+                    startFilterTime = System.currentTimeMillis() + 5_000;
+                }
+
+                if (val == null)
+                    val = 0;
+                else
+                    val = Math.abs(val) + 1;
+
+                if (filtered)
+                    val = -val;
+
+                if (processorPut && prevVal != null) {
+                    qryClnCache.invoke(key, new CacheEntryProcessor<Object, Object, Void>() {
+                        @Override public Void process(MutableEntry<Object, Object> entry,
+                            Object... arguments) throws EntryProcessorException {
+                            entry.setValue(arguments[0]);
+
+                            return null;
+                        }
+                    }, val);
+                }
+                else
+                    qryClnCache.put(key, val);
+
+                processorPut = !processorPut;
+
+                vals.put(key, val);
+
+                if (val >= 0) {
+                    List<T2<Integer, Integer>> keyEvts = expEvts.get(key);
+
+                    if (keyEvts == null) {
+                        keyEvts = new ArrayList<>();
+
+                        expEvts.put(key, keyEvts);
+                    }
+
+                    keyEvts.add(new T2<>(val, prevVal));
+
+                    T3<Object, Object, Object> tupVal = new T3<>((Object)key, (Object)val, (Object)prevVal);
+
+                    expEvtsLsnr.add(tupVal);
+
+                    if (dinQry != null)
+                        expEvtsNewLsnr.add(tupVal);
+                }
+
+                filtered = !filtered;
+
+                CountDownLatch latch = checkLatch.get();
+
+                if (latch != null) {
+                    log.info("Check events.");
+
+                    checkLatch.set(null);
+
+                    boolean success = false;
+
+                    try {
+                        if (err)
+                            break;
+
+                        checkEvents(expEvtsLsnr, lsnr, backups == 0);
+
+                        success = true;
+
+                        log.info("Events checked.");
+                    }
+                    finally {
+                        if (!success)
+                            err = true;
+
+                        latch.countDown();
+                    }
+                }
+            }
+        }
+        finally {
+            stop.set(true);
+        }
+
+        CountDownLatch latch = checkLatch.get();
+
+        if (latch != null)
+            latch.countDown();
+
+        restartFut.get();
+
+        checkEvents(expEvtsLsnr, lsnr, backups == 0);
+
+        lsnr.evts.clear();
+        lsnr.vals.clear();
+
+        if (dinQry != null) {
+            checkEvents(expEvtsNewLsnr, dinLsnr, backups == 0);
+
+            dinLsnr.evts.clear();
+            dinLsnr.vals.clear();
+
+            dinQry.close();
+        }
+
+        List<T3<Object, Object, Object>> afterRestEvents = new ArrayList<>();
+
+        for (int i = 0; i < 1024; i++) {
+            Integer oldVal = (Integer)qryClnCache.get(i);
+
+            qryClnCache.put(i, i);
+
+            afterRestEvents.add(new T3<>((Object)i, (Object)i, (Object)oldVal));
+        }
+
+        checkEvents(new ArrayList<>(afterRestEvents), lsnr, false);
+
+        //checkEvents(new ArrayList<>(afterRestEvents), dinLsnr, false);
+
+        cur.close();
+
+        if (dinQry != null)
+            dinQry.close();
 
         assertFalse("Unexpected error during test, see log for details.", err);
     }
@@ -1384,7 +2011,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                     this.evts.put(evt.getKey(), evt);
 
-                    keys.add((Integer) evt.getKey());
+                    keys.add((Integer)evt.getKey());
 
                     if (allEvts != null)
                         allEvts.add(evt);
@@ -1422,6 +2049,18 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         /** */
         private final ConcurrentHashMap<Integer, List<CacheEntryEvent<?, ?>>> evts = new ConcurrentHashMap<>();
+
+        /**
+         * @return Count events.
+         */
+        public int size() {
+            int size = 0;
+
+            for (List<CacheEntryEvent<?, ?>> e : evts.values())
+                size += e.size();
+
+            return size;
+        }
 
         /** {@inheritDoc} */
         @Override public synchronized void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts)
@@ -1461,6 +2100,44 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                 log.error("Unexpected error", e);
             }
+        }
+    }
+
+    /**
+     *
+     */
+    public static class CacheEventListener3 implements CacheEntryUpdatedListener<Object, Object>,
+        CacheEntryEventSerializableFilter<Object, Object> {
+        /** Keys. */
+        GridConcurrentHashSet<Integer> keys = new GridConcurrentHashSet<>();
+
+        /** Events. */
+        private final ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
+
+        /** {@inheritDoc} */
+        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> events) throws CacheEntryListenerException {
+            for (CacheEntryEvent<?, ?> e : events) {
+                Integer key = (Integer)e.getKey();
+
+                keys.add(key);
+
+                assert evts.put(key, e) == null;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean evaluate(CacheEntryEvent<?, ?> e) throws CacheEntryListenerException {
+            return (Integer)e.getValue() % 2 == 0;
+        }
+    }
+
+    /**
+     *
+     */
+    public static class CacheEventFilter implements CacheEntryEventSerializableFilter<Object, Object> {
+        /** {@inheritDoc} */
+        @Override public boolean evaluate(CacheEntryEvent<?, ?> event) throws CacheEntryListenerException {
+            return ((Integer)event.getValue()) >= 0;
         }
     }
 

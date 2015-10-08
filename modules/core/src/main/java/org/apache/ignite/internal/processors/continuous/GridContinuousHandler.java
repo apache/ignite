@@ -114,12 +114,6 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     public void onBatchAcknowledged(UUID routineId, GridContinuousBatch batch, GridKernalContext ctx);
 
     /**
-     * @param cacheName Cache name.
-     * @param partId Partition ID.
-     */
-    public void partitionLost(String cacheName, int partId);
-
-    /**
      * @return Topic for ordered notifications. If {@code null}, notifications
      * will be sent in non-ordered messages.
      */

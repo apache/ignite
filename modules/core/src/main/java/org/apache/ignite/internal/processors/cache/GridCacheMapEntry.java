@@ -3249,14 +3249,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     private long nextPartIndex(AffinityTopologyVersion topVer) {
         long updateIdx;
 
-        //U.dumpStack();
-
         if (!cctx.isLocal() && !isNear()) {
             GridDhtLocalPartition locPart = cctx.topology().localPartition(partition(), topVer, false);
 
             assert locPart != null;
 
-            updateIdx = locPart.nextContinuousQueryUpdateIndex();
+            updateIdx = locPart.nextUpdateIndex();
         }
         else
             updateIdx = 0;
