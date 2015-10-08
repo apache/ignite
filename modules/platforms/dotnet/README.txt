@@ -1,8 +1,8 @@
-Apache Ignite .NET
+Apache Ignite.NET
 ==================================
 
-Apache Ignite .NET provides a full featured .NET data grid and .NET compute grid functionality.
-Using Apache Ignite .NET APIs you can execute any computation closure on the grid,
+Apache Ignite.NET provides a full featured .NET data grid and .NET compute grid functionality.
+Using Apache Ignite.NET APIs you can execute any computation closure on the grid,
 perform concurrent operations on the data stored in cache, start ACID transactions,
 create distributed locks, subscribe for event listeners, etc.
 

@@ -19,10 +19,10 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Apache.Ignite.Core.Tests.TestDll")]
-[assembly: AssemblyDescription("Apache Ignite .NET Core Tests Testing Library")]
+[assembly: AssemblyDescription("Apache Ignite.NET Core Tests Testing Library")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Apache Software Foundation")]
-[assembly: AssemblyProduct("Apache Ignite .NET")]
+[assembly: AssemblyProduct("Apache Ignite.NET")]
 [assembly: AssemblyCopyright("Copyright ©  2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

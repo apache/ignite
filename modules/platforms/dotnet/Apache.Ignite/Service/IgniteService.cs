@@ -35,14 +35,14 @@ namespace Apache.Ignite.Service
     internal class IgniteService : ServiceBase
     {
         /** Service name. */
-        internal static readonly string SvcName = "Apache Ignite .NET";
+        internal static readonly string SvcName = "Apache Ignite.NET";
 
         /** Service display name. */
-        internal static readonly string SvcDisplayName = "Apache Ignite .NET " + 
+        internal static readonly string SvcDisplayName = "Apache Ignite.NET " + 
             Assembly.GetExecutingAssembly().GetName().Version.ToString(4);
 
         /** Service description. */
-        internal static readonly string SvcDesc = "Apache Ignite .NET Service.";
+        internal static readonly string SvcDesc = "Apache Ignite.NET Service.";
 
         /** Current executable name. */
         internal static readonly string ExeName =

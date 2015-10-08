@@ -19,10 +19,10 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Apache.Ignite.Benchmarks")]
-[assembly: AssemblyDescription("Apache Ignite .NET Benchmarks")]
+[assembly: AssemblyDescription("Apache Ignite.NET Benchmarks")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Apache Software Foundation")]
-[assembly: AssemblyProduct("Apache Ignite .NET")]
+[assembly: AssemblyProduct("Apache Ignite.NET")]
 [assembly: AssemblyCopyright("Copyright ©  2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

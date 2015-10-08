@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<FxCopProject Version="1.36" Name="Apache Ignite .NET">
+<FxCopProject Version="1.36" Name="Apache Ignite.NET">
  <ProjectOptions>
   <SharedProject>True</SharedProject>
   <Stylesheet Apply="False" />
