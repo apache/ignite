@@ -21,10 +21,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Apache.Ignite.Core")]
-[assembly: AssemblyDescription("Apache Ignite .NET Core")]
+[assembly: AssemblyDescription("Apache Ignite.NET Core")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Apache Software Foundation")]
-[assembly: AssemblyProduct("Apache Ignite")]
+[assembly: AssemblyProduct("Apache Ignite.NET")]
 [assembly: AssemblyCopyright("Copyright ©  2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

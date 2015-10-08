@@ -53,7 +53,8 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritdoc /> */
-        public override List<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, params int[] types)
+        public override ICollection<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null,
+            params int[] types)
         {
             _lastAsyncOp.Value = (int) Op.RemoteQuery;
 

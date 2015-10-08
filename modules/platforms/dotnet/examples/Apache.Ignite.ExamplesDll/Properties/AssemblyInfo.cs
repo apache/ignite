@@ -18,11 +18,11 @@
 using System.Reflection;
 ﻿﻿using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("Apache Ignite Examples Dll")]
+[assembly: AssemblyTitle("Apache Ignite.NET Examples Library")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Apache Software Foundation")]
-[assembly: AssemblyProduct("Apache Ignite")]
+[assembly: AssemblyProduct("Apache Ignite.NET")]
 [assembly: AssemblyCopyright("Copyright ©  2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

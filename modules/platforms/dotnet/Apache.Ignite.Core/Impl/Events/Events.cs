@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Impl.Events
         public IClusterGroup ClusterGroup { get; private set; }
 
         /** <inheritDoc /> */
-        public virtual List<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, params int[] types)
+        public virtual ICollection<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, params int[] types)
             where T : IEvent
         {
             IgniteArgumentCheck.NotNull(filter, "filter");
@@ -120,6 +120,13 @@ namespace Apache.Ignite.Core.Impl.Events
                     WriteEventTypes(types, writer);
                 },
                 reader => ReadEvents<T>(reader));
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, 
+            IEnumerable<int> types = null) where T : IEvent
+        {
+            return RemoteQuery(filter, timeout, TypesToArray(types));
         }
 
         /** <inheritDoc /> */
@@ -156,6 +163,14 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
+        public Guid RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
+            IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, IEnumerable<int> types = null) 
+            where T : IEvent
+        {
+            return RemoteListen(bufSize, interval, autoUnsubscribe, localListener, remoteFilter, TypesToArray(types));
+        }
+
+        /** <inheritDoc /> */
         public virtual void StopRemoteListen(Guid opId)
         {
             DoOutOp((int) Op.StopRemoteListen, writer =>
@@ -168,6 +183,12 @@ namespace Apache.Ignite.Core.Impl.Events
         public IEvent WaitForLocal(params int[] types)
         {
             return WaitForLocal<IEvent>(null, types);
+        }
+
+        /** <inheritDoc /> */
+        public IEvent WaitForLocal(IEnumerable<int> types)
+        {
+            return WaitForLocal(TypesToArray(types));
         }
 
         /** <inheritDoc /> */
@@ -187,11 +208,23 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
-        public List<IEvent> LocalQuery(params int[] types)
+        public T WaitForLocal<T>(IEventFilter<T> filter, IEnumerable<int> types) where T : IEvent
+        {
+            return WaitForLocal(filter, TypesToArray(types));
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<IEvent> LocalQuery(params int[] types)
         {
             return DoOutInOp((int) Op.LocalQuery,
                 writer => WriteEventTypes(types, writer),
                 reader => ReadEvents<IEvent>(reader));
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<IEvent> LocalQuery(IEnumerable<int> types)
+        {
+            return LocalQuery(TypesToArray(types));
         }
 
         /** <inheritDoc /> */
@@ -208,6 +241,12 @@ namespace Apache.Ignite.Core.Impl.Events
 
             foreach (var type in types)
                 LocalListen(listener, type);
+        }
+
+        /** <inheritDoc /> */
+        public void LocalListen<T>(IEventFilter<T> listener, IEnumerable<int> types) where T : IEvent
+        {
+            LocalListen(listener, TypesToArray(types));
         }
 
         /** <inheritDoc /> */
@@ -232,6 +271,18 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
+        public bool StopLocalListen<T>(IEventFilter<T> listener, IEnumerable<int> types) where T : IEvent
+        {
+            return StopLocalListen(listener, TypesToArray(types));
+        }
+
+        /** <inheritDoc /> */
+        public void EnableLocal(IEnumerable<int> types)
+        {
+            EnableLocal(TypesToArray(types));
+        }
+
+        /** <inheritDoc /> */
         public void EnableLocal(params int[] types)
         {
             IgniteArgumentCheck.NotNullOrEmpty(types, "types");
@@ -248,7 +299,13 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
-        public int[] GetEnabledEvents()
+        public void DisableLocal(IEnumerable<int> types)
+        {
+            DisableLocal(TypesToArray(types));
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<int> GetEnabledEvents()
         {
             return DoInOp((int)Op.GetEnabledEvents, reader => ReadEventTypes(reader));
         }
@@ -438,7 +495,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="writer">Writer.</param>
         private static void WriteEventTypes(int[] types, IPortableRawWriter writer)
         {
-            if (types.Length == 0)
+            if (types != null && types.Length == 0)
                 types = null;  // empty array means no type filtering
 
             writer.WriteIntArray(types);
@@ -451,6 +508,17 @@ namespace Apache.Ignite.Core.Impl.Events
         private int[] ReadEventTypes(IPortableStream reader)
         {
             return Marshaller.StartUnmarshal(reader).ReadIntArray();
+        }
+
+        /// <summary>
+        /// Converts types enumerable to array.
+        /// </summary>
+        private static int[] TypesToArray(IEnumerable<int> types)
+        {
+            if (types == null)
+                return null;
+
+            return types as int[] ?? types.ToArray();
         }
 
         /// <summary>
