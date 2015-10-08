@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Events
         private readonly bool _hasNewValue;
 
         /** */
-        private readonly Guid _subjectId;
+        private readonly Guid? _subjectId;
 
         /** */
         private readonly string _closureClassName;
@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Events
             _oldValue = r.ReadObject<object>();
             _hasOldValue = r.ReadBoolean();
             _hasNewValue = r.ReadBoolean();
-            _subjectId = r.ReadGuidNullable() ?? Guid.Empty;
+            _subjectId = r.ReadGuidNullable();
             _closureClassName = r.ReadString();
             _taskName = r.ReadString();
         }
@@ -151,11 +151,11 @@ namespace Apache.Ignite.Core.Events
 
         /// <summary>
         /// Gets security subject ID initiated this cache event, if available. This property is available only for <see 
-        /// cref="EventType.EvtCacheObjectPut" />, <see cref="EventType.EvtCacheObjectRemoved" /> and <see 
-        /// cref="EventType.EvtCacheObjectRead" /> cache events. Subject ID will be set either to nodeId initiated 
+        /// cref="EventType.EventCacheObjectPut" />, <see cref="EventType.EventCacheObjectRemoved" /> and <see 
+        /// cref="EventType.EventCacheObjectRead" /> cache events. Subject ID will be set either to nodeId initiated 
         /// cache update or read or client ID initiated cache update or read. 
         /// </summary>
-        public Guid SubjectId { get { return _subjectId; } }
+        public Guid? SubjectId { get { return _subjectId; } }
 
         /// <summary>
         /// Gets closure class name (applicable only for TRANSFORM operations). 

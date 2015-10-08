@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Events
         private readonly bool _internal;
 
         /** */
-        private readonly Guid _subjectId;
+        private readonly Guid? _subjectId;
 
         /// <summary>
         /// Constructor.
@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Events
             _taskClassName = r.ReadString();
             _taskSessionId = IgniteGuid.ReadPortable(r);
             _internal = r.ReadBoolean();
-            _subjectId = r.ReadGuidNullable() ?? Guid.Empty;
+            _subjectId = r.ReadGuidNullable();
         }
 		
         /// <summary>
@@ -77,10 +77,10 @@ namespace Apache.Ignite.Core.Events
 
         /// <summary>
         /// Gets security subject ID initiated this task event, if available. This property is not available for 
-        /// <see cref="EventType.EvtTaskSessionAttrSet" /> task event. 
+        /// <see cref="EventType.EventTaskSessionAttrSet" /> task event. 
         /// Subject ID will be set either to node ID or client ID initiated task execution. 
         /// </summary>
-        public Guid SubjectId { get { return _subjectId; } }
+        public Guid? SubjectId { get { return _subjectId; } }
 
         /** <inheritDoc /> */
 	    public override string ToShortString()
