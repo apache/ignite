@@ -35,8 +35,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Atomic retries failover benchmark. Client generates continuous load to the cluster (random get, put, invoke, remove
- * operations)
+ * Transactional write read failover benchmark.
  */
 public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstractBenchmark<String, Long> {
     /** {@inheritDoc} */
