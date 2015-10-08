@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Events
         private readonly string _taskClassName;
 
         /** */
-        private readonly IgniteGuid _taskSessionId;
+        private readonly IgniteGuid? _taskSessionId;
 
         /** */
         private readonly bool _internal;
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// Gets session ID of the task that triggered the event. 
         /// </summary>
-        public IgniteGuid TaskSessionId { get { return _taskSessionId; } }
+        public IgniteGuid? TaskSessionId { get { return _taskSessionId; } }
 
         /// <summary>
         /// Returns true if task is created by Ignite and is used for system needs. 

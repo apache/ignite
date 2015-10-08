@@ -56,7 +56,12 @@ namespace Apache.Ignite.Core.Events
         /// <param name="r">The reader to read data from.</param>
         protected EventBase(IPortableRawReader r)
         {
-            _id = IgniteGuid.ReadPortable(r);
+            var id = IgniteGuid.ReadPortable(r);
+
+            if (id == null)
+                throw new InvalidOperationException("Invalid data on EventBase deserialization: id can't be null.");
+
+            _id = id.Value;
 
             _localOrder = r.ReadLong();
 

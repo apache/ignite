@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Events
         private readonly object _key;
 
         /** */
-        private readonly IgniteGuid _xid;
+        private readonly IgniteGuid? _xid;
 
         /** */
         private readonly object _lockId;
@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// ID of surrounding cache cache transaction or null if there is no surrounding transaction. 
         /// </summary>
-        public IgniteGuid Xid { get { return _xid; } }
+        public IgniteGuid? Xid { get { return _xid; } }
 
         /// <summary>
         /// ID of the lock if held or null if no lock held. 
