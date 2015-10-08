@@ -40,7 +40,6 @@
         <yardstick.version>0.8.0</yardstick.version>
     </properties>
 
-
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>

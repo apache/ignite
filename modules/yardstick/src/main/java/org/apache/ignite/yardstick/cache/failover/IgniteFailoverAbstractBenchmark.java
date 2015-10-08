@@ -31,9 +31,10 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.yardstick.Utils;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
+import org.yardstickframework.BenchmarkUtils;
+import org.yardstickframework.BenchmarkUtils.ProcessExecutionResult;
 
 import static org.yardstickframework.BenchmarkUtils.println;
 
@@ -102,7 +103,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
                                 BenchmarkConfiguration bc = srvsCfgs.get(id);
 
-                                Utils.ProcessExecutionResult res = Utils.kill9Server(bc, isDebug);
+                                ProcessExecutionResult res = BenchmarkUtils.kill9Server(bc, isDebug);
 
                                 println("[RESTARTER] Server with id " + id + " has been killed."
                                     + (isDebug ? " Result:\n" + res : ""));
@@ -115,7 +116,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
                                 BenchmarkConfiguration bc = srvsCfgs.get(id);
 
-                                Utils.ProcessExecutionResult res = Utils.startServer(bc, isDebug);
+                                ProcessExecutionResult res = BenchmarkUtils.startServer(bc, isDebug);
 
                                 println("[RESTARTER] Server with id " + id + " has been started."
                                     + (isDebug ? " Result:\n" + res : ""));
