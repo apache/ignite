@@ -34,13 +34,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             LastUpdateTimeRaw = reader.ReadLong();
 
-            var lastUpdateTime = reader.ReadDateNullable();
-
-            if (!lastUpdateTime.HasValue)
-                throw new InvalidOperationException("Invalid data on ClusterMetrics deserialization: " +
-                                                    "lastUpdateTime can't be null.");
-
-            LastUpdateTime = lastUpdateTime.Value;
+            LastUpdateTime = reader.ReadDate();
             MaximumActiveJobs = reader.ReadInt();
             CurrentActiveJobs = reader.ReadInt();
             AverageActiveJobs = reader.ReadFloat();

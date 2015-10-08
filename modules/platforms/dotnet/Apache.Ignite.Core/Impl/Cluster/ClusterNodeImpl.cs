@@ -62,13 +62,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <param name="reader">The reader.</param>
         public ClusterNodeImpl(IPortableRawReader reader)
         {
-            var id = reader.ReadGuidNullable();
-
-            if (!id.HasValue)
-                throw new InvalidOperationException("Invalid data on ClusterNode deserialization: " +
-                                                    "id can't be null.");
-
-            _id = id.Value;
+            _id = reader.ReadGuid();
 
             _attrs = reader.ReadGenericDictionary<string, object>().AsReadOnly();
             _addrs = reader.ReadGenericCollection<string>().AsReadOnly();

@@ -65,14 +65,7 @@ namespace Apache.Ignite.Core.Events
             _message = r.ReadString();
             _type = r.ReadInt();
             _name = r.ReadString();
-            
-            var timestamp = r.ReadDateNullable();
-
-            if (!timestamp.HasValue)
-                throw new InvalidOperationException("Invalid data on EventBase deserialization: " +
-                                                    "Timestamp can't be null");
-
-            _timestamp = timestamp.Value;
+            _timestamp = r.ReadDate();
         }
 
         /** <inheritDoc /> */
