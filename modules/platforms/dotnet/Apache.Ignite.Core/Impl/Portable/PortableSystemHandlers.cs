@@ -237,7 +237,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 else if (elemType == typeof(ulong))
                     return WriteUlongArray;
                 // Special types.
-                else if (elemType == typeof (decimal))
+                else if (elemType == typeof (decimal?))
                     return WriteDecimalArray;
                 else if (elemType == typeof(string))
                     return WriteStringArray;
