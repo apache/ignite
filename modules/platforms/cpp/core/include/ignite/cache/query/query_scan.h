@@ -58,7 +58,7 @@ namespace ignite
                  *
                  * @return Partition to scan.
                  */
-                int32_t GetPartition()
+                int32_t GetPartition() const
                 {
                     return part;
                 }
@@ -78,7 +78,7 @@ namespace ignite
                  *
                  * @return Page size.
                  */
-                int32_t GetPageSize()
+                int32_t GetPageSize() const
                 {
                     return pageSize;
                 }
@@ -98,7 +98,7 @@ namespace ignite
                  *
                  * @return Local flag.
                  */
-                bool IsLocal()
+                bool IsLocal() const
                 {
                     return loc;
                 }

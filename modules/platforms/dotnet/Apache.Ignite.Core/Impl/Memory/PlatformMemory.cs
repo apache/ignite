@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritdoc /> */
-        public virtual PlatformMemoryStream Stream()
+        public virtual PlatformMemoryStream GetStream()
         {
             return BitConverter.IsLittleEndian ? new PlatformMemoryStream(this) : 
                 new PlatformBigEndianMemoryStream(this);

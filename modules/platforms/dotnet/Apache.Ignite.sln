@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.ExamplesDll",
 		{27F7F3C6-BDDE-43A9-B565-856F8395A04B} = {27F7F3C6-BDDE-43A9-B565-856F8395A04B}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Benchmarks", "Apache.Ignite.Benchmarks\Apache.Ignite.Benchmarks.csproj", "{8F507DBE-56F9-437F-82D4-74C02EC44E41}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E0784F76-949C-456E-A529-A55D0E389165}"
 	ProjectSection(SolutionItems) = preProject
 		Apache.Ignite.FxCop = Apache.Ignite.FxCop
@@ -90,6 +92,14 @@ Global
 		{DFB08363-202E-412D-8812-349EF10A8702}.Release|x64.Build.0 = Release|x64
 		{DFB08363-202E-412D-8812-349EF10A8702}.Release|x86.ActiveCfg = Release|x86
 		{DFB08363-202E-412D-8812-349EF10A8702}.Release|x86.Build.0 = Release|x86
+		{8F507DBE-56F9-437F-82D4-74C02EC44E41}.Debug|x64.ActiveCfg = Debug|x64
+		{8F507DBE-56F9-437F-82D4-74C02EC44E41}.Debug|x64.Build.0 = Debug|x64
+		{8F507DBE-56F9-437F-82D4-74C02EC44E41}.Debug|x86.ActiveCfg = Debug|x86
+		{8F507DBE-56F9-437F-82D4-74C02EC44E41}.Debug|x86.Build.0 = Debug|x86
+		{8F507DBE-56F9-437F-82D4-74C02EC44E41}.Release|x64.ActiveCfg = Release|x64
+		{8F507DBE-56F9-437F-82D4-74C02EC44E41}.Release|x64.Build.0 = Release|x64
+		{8F507DBE-56F9-437F-82D4-74C02EC44E41}.Release|x86.ActiveCfg = Release|x86
+		{8F507DBE-56F9-437F-82D4-74C02EC44E41}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

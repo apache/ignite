@@ -75,7 +75,7 @@ namespace ignite
          * Start Ignite instance.
          *
          * @param cfg Configuration.
-         * @return Ignite instance or null in case of error.
+         * @return Ignite instance.
          */
         static Ignite Start(const IgniteConfiguration& cfg);
 
@@ -84,7 +84,7 @@ namespace ignite
          *
          * @param cfg Configuration.
          * @param err Error.
-         * @return Ignite instance or null in case of error.
+         * @return Ignite instance.
          */
         static Ignite Start(const IgniteConfiguration& cfg, IgniteError* err);
 
@@ -93,7 +93,7 @@ namespace ignite
          *
          * @param cfg Configuration.
          * @param name Ignite name.
-         * @return Ignite instance or null in case of error.
+         * @return Ignite instance.
          */
         static Ignite Start(const IgniteConfiguration& cfg, const char* name);
 
@@ -103,7 +103,7 @@ namespace ignite
          * @param cfg Configuration.
          * @param name Ignite name.
          * @param err Error.
-         * @return Ignite instance or null in case of error.
+         * @return Ignite instance.
          */
         static Ignite Start(const IgniteConfiguration& cfg, const char* name, IgniteError* err);
 
@@ -145,7 +145,7 @@ namespace ignite
          * @param cancel Cancel flag.
          * @return True if default Ignite instance was stopped by this call.
          */
-        static bool Stop(const bool cancel);
+        static bool Stop(bool cancel);
 
         /**
          * Stop default Ignite instance.
@@ -154,7 +154,7 @@ namespace ignite
          * @param err Error.
          * @return True if Ignite instance was stopped by this call.
          */
-        static bool Stop(const bool cancel, IgniteError* err);
+        static bool Stop(bool cancel, IgniteError* err);
 
         /**
          * Stop Ignite instance with the given name.
@@ -163,7 +163,7 @@ namespace ignite
          * @param cancel Cancel flag.
          * @return True if Ignite instance was stopped by this call.
          */
-        static bool Stop(const char* name, const bool cancel);
+        static bool Stop(const char* name, bool cancel);
 
         /**
          * Stop Ignite instance with the given name.
@@ -173,14 +173,14 @@ namespace ignite
          * @param err Error.
          * @return True if Ignite instance was stopped by this call.
          */
-        static bool Stop(const char* name, const bool cancel, IgniteError* err);
+        static bool Stop(const char* name, bool cancel, IgniteError* err);
 
         /**
          * Stop all running Ignite instances.
          *
          * @param cancel Cancel flag.
          */
-        static void StopAll(const bool cancel);
+        static void StopAll(bool cancel);
 
         /**
          * Stop all running Ignite instances.
@@ -188,7 +188,7 @@ namespace ignite
          * @param cancel Cancel flag.
          * @param err Error.
          */
-        static void StopAll(const bool cancel, IgniteError* err);
+        static void StopAll(bool cancel, IgniteError* err);
     };    
 }
 

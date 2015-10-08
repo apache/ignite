@@ -180,6 +180,16 @@ namespace ignite
                             "Instance is not usable (did you check for error?).");
                 }
 
+                /**
+                 * Check if the instance is valid.
+                 *
+                 * @return True if the instance is valid and can be used.
+                 */
+                bool IsValid()
+                {
+                    return impl.IsValid();
+                }
+
             private:
                 /** Implementation delegate. */
                 ignite::common::concurrent::SharedPointer<impl::cache::query::QueryCursorImpl> impl;
