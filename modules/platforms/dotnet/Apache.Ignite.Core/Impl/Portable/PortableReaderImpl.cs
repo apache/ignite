@@ -300,25 +300,25 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public decimal ReadDecimal(string fieldName)
+        public decimal? ReadDecimalNullable(string fieldName)
         {
             return ReadField(fieldName, PortableUtils.ReadDecimal);
         }
 
         /** <inheritdoc /> */
-        public decimal ReadDecimal()
+        public decimal? ReadDecimalNullable()
         {
             return Read(PortableUtils.ReadDecimal);
         }
 
         /** <inheritdoc /> */
-        public decimal?[] ReadDecimalArray(string fieldName)
+        public decimal?[] ReadDecimalArrayNullable(string fieldName)
         {
             return ReadField(fieldName, PortableUtils.ReadDecimalArray);
         }
 
         /** <inheritdoc /> */
-        public decimal?[] ReadDecimalArray()
+        public decimal?[] ReadDecimalArrayNullable()
         {
             return Read(PortableUtils.ReadDecimalArray);
         }

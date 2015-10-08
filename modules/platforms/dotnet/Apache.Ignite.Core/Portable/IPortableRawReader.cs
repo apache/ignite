@@ -126,13 +126,13 @@ namespace Apache.Ignite.Core.Portable
         /// Read decimal value. 
         /// </summary>
         /// <returns>Decimal value.</returns>
-        decimal ReadDecimal();
+        decimal? ReadDecimalNullable();
 
         /// <summary>
         /// Read decimal array. 
         /// </summary>
         /// <returns>Decimal array.</returns>
-        decimal?[] ReadDecimalArray();
+        decimal?[] ReadDecimalArrayNullable();
 
         /// <summary>
         /// Read date value in UTC form. Shortcut for <c>ReadDate(false)</c>.

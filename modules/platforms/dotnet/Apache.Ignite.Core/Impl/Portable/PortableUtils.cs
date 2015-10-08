@@ -901,7 +901,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="stream">Stream.</param>
          * <returns>Decimal value.</returns>
          */
-        public static decimal ReadDecimal(IPortableStream stream)
+        public static decimal? ReadDecimal(IPortableStream stream)
         {
             int scale = stream.ReadInt();
 

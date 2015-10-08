@@ -1978,13 +1978,13 @@ namespace Apache.Ignite.Core.Tests.Portable
             /** <inheritDoc /> */
             public void ReadPortable(IPortableReader reader)
             {
-                Val = reader.ReadDecimal("val");
-                ValArr = reader.ReadDecimalArray("valArr");
+                Val = reader.ReadDecimalNullable("val");
+                ValArr = reader.ReadDecimalArrayNullable("valArr");
 
                 IPortableRawReader rawReader = reader.GetRawReader();
 
-                RawVal = rawReader.ReadDecimal();
-                RawValArr = rawReader.ReadDecimalArray();
+                RawVal = rawReader.ReadDecimalNullable();
+                RawValArr = rawReader.ReadDecimalArrayNullable();
             }
         }
 

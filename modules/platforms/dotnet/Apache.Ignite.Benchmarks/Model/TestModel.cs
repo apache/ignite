@@ -98,8 +98,8 @@ namespace Apache.Ignite.Benchmarks.Model
             FloatArray = reader.ReadFloatArray("FloatArray");
             Double = reader.ReadDouble("Double");
             DoubleArray = reader.ReadDoubleArray("DoubleArray");
-            Decimal = reader.ReadDecimal("Decimal");
-            DecimalArray = reader.ReadDecimalArray("DecimalArray");
+            Decimal = reader.ReadDecimalNullable("Decimal");
+            DecimalArray = reader.ReadDecimalArrayNullable("DecimalArray");
             Date = reader.ReadDate("Date");
             DateArray = reader.ReadDateArrayNullable("DateArray");
             String = reader.ReadString("String");
