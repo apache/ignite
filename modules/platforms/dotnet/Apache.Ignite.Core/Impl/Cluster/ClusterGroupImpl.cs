@@ -538,7 +538,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
         
         /** <inheritDoc /> */
-        public IPortableMetadata Metadata(int typeId)
+        public IPortableMetadata GetMetadata(int typeId)
         {
             return DoOutInOp<IPortableMetadata>(OpMetadata, 
                 writer =>

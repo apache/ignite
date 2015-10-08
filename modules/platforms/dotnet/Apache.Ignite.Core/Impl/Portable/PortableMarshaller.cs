@@ -264,7 +264,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             if (Ignite != null)
             {
-                IPortableMetadata meta = Ignite.Metadata(typeId);
+                IPortableMetadata meta = Ignite.GetMetadata(typeId);
 
                 if (meta != null)
                     return meta;
