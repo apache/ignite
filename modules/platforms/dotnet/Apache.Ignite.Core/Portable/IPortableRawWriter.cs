@@ -217,7 +217,13 @@ namespace Apache.Ignite.Core.Portable
         /// Only "object[]" arrays can be used for interop with other platforms.
         /// </summary>
         /// <param name="val">Object array.</param>
-        void WriteObjectArray<T>(T[] val);
+        void WriteArray(object[] val);
+
+        /// <summary>
+        /// Write generic array.
+        /// </summary>
+        /// <param name="val">Object array.</param>
+        void WriteGenericArray<T>(T[] val);
 
         /// <summary>
         /// Write non-generic collection.

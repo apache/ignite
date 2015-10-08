@@ -249,7 +249,14 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Object array.</param>
-        void WriteObjectArray<T>(string fieldName, T[] val);
+        void WriteArray(string fieldName, object[] val);
+
+        /// <summary>
+        /// Write named generic array.
+        /// </summary>
+        /// <param name="fieldName">Field name.</param>
+        /// <param name="val">Object array.</param>
+        void WriteGenericArray<T>(string fieldName, T[] val);
 
         /// <summary>
         /// Write named collection.
