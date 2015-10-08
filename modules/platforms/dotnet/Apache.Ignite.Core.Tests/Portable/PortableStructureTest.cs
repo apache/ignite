@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 Console.WriteLine();
 
                 // 4. Ensure that all fields are recorded.
-                IPortableTypeDescriptor desc = marsh.Descriptor(typeof (BranchedType));
+                IPortableTypeDescriptor desc = marsh.GetDescriptor(typeof (BranchedType));
 
                 PortableStructure typeStruct = desc.TypeStructure;
 

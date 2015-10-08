@@ -106,7 +106,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 T res = _marsh.Unmarshal<T>(stream, mode);
 
-                IPortableTypeDescriptor desc = _marsh.Descriptor(true, _typeId);
+                IPortableTypeDescriptor desc = _marsh.GetDescriptor(true, _typeId);
 
                 if (!desc.KeepDeserialized)
                     return res;
@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public IPortableMetadata GetMetadata()
         {
-            return _marsh.Metadata(_typeId);
+            return _marsh.GetMetadata(_typeId);
         }
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns></returns>
         public T Field<T>(string fieldName, PortableBuilderImpl builder)
         {
-            IPortableTypeDescriptor desc = _marsh.Descriptor(true, _typeId);
+            IPortableTypeDescriptor desc = _marsh.GetDescriptor(true, _typeId);
 
             InitializeFields();
 
@@ -295,13 +295,13 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             StringBuilder sb;
 
-            IPortableTypeDescriptor desc = _marsh.Descriptor(true, _typeId);
+            IPortableTypeDescriptor desc = _marsh.GetDescriptor(true, _typeId);
 
             IPortableMetadata meta;
 
             try
             {
-                meta = _marsh.Metadata(_typeId);
+                meta = _marsh.GetMetadata(_typeId);
             }
             catch (IgniteException)
             {
