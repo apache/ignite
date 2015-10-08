@@ -41,7 +41,7 @@ namespace Apache.Ignite.Benchmarks.Model
         public float[] FloatArray { get; set; }
         public double Double { get; set; }
         public double[] DoubleArray { get; set; }
-        public decimal Decimal { get; set; }
+        public decimal? Decimal { get; set; }
         public decimal?[] DecimalArray { get; set; }
         public DateTime? Date { get; set; }
         public DateTime?[] DateArray { get; set; }

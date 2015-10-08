@@ -1949,7 +1949,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public class DecimalReflective
         {
             /** */
-            public decimal Val;
+            public decimal? Val;
 
             /** */
             public decimal?[] ValArr;
@@ -1958,7 +1958,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public class DecimalMarshalAware : DecimalReflective, IPortableMarshalAware
         {
             /** */
-            public decimal RawVal;
+            public decimal? RawVal;
 
             /** */
             public decimal?[] RawValArr;
