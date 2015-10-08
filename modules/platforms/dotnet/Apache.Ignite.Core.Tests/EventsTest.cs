@@ -397,13 +397,15 @@ namespace Apache.Ignite.Core.Tests
             if (async)
                 listenId = events.GetFuture<Guid>().Get();
 
+            Assert.IsNotNull(listenId);
+
             CheckSend(3, typeof(JobEvent), expectedType);
 
             _grid3.GetEvents().DisableLocal(EventType.EventsJobExecution);
 
             CheckSend(2, typeof(JobEvent), expectedType);
 
-            events.StopRemoteListen(listenId);
+            events.StopRemoteListen(listenId.Value);
 
             if (async)
                 events.GetFuture().Get();

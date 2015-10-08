@@ -130,7 +130,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
-        public virtual Guid RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
+        public virtual Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
             IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, params int[] types)
             where T : IEvent
         {
@@ -159,11 +159,11 @@ namespace Apache.Ignite.Core.Impl.Events
 
                     WriteEventTypes(types, writer);
                 },
-                reader => Marshaller.StartUnmarshal(reader).ReadGuid());
+                reader => Marshaller.StartUnmarshal(reader).ReadGuidNullable());
         }
 
         /** <inheritDoc /> */
-        public Guid RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
+        public Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
             IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, IEnumerable<int> types = null) 
             where T : IEvent
         {

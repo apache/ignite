@@ -81,9 +81,12 @@ namespace Apache.Ignite.Examples.Events
                 var listenId = ignite.GetEvents().RemoteListen(localListener: localListener,
                     remoteFilter: remoteFilter, types: EventType.EventsJobExecution);
 
+                if (listenId == null)
+                    throw new InvalidOperationException("Subscription failed.");
+
                 ExecuteTask(ignite);
 
-                ignite.GetEvents().StopRemoteListen(listenId);
+                ignite.GetEvents().StopRemoteListen(listenId.Value);
 
                 Console.WriteLine(">>> Received events count: " + localListener.EventsReceived);
             }
