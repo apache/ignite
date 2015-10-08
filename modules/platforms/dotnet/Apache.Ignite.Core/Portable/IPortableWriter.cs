@@ -254,6 +254,6 @@ namespace Apache.Ignite.Core.Portable
         /// Get raw writer. 
         /// </summary>
         /// <returns>Raw writer.</returns>
-        IPortableRawWriter RawWriter();
+        IPortableRawWriter GetRawWriter();
     }
 }

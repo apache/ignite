@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /** <inheritDoc /> */
         public void WritePortable(IPortableWriter writer)
         {
-            PortableWriterImpl writer0 = (PortableWriterImpl) writer.RawWriter();
+            PortableWriterImpl writer0 = (PortableWriterImpl) writer.GetRawWriter();
 
             writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _clo));
             writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _arg));
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// <param name="reader">The reader.</param>
         public ComputeFuncJob(IPortableReader reader)
         {
-            var reader0 = (PortableReaderImpl) reader.RawReader();
+            var reader0 = (PortableReaderImpl) reader.GetRawReader();
             
             _clo = PortableUtils.ReadPortableOrSerializable<IComputeFunc>(reader0);
             _arg = PortableUtils.ReadPortableOrSerializable<object>(reader0);

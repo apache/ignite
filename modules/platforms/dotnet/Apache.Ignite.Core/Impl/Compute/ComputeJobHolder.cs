@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             Debug.Assert(reader != null);
 
-            var reader0 = (PortableReaderImpl) reader.RawReader();
+            var reader0 = (PortableReaderImpl) reader.GetRawReader();
 
             _ignite = reader0.Marshaller.Ignite;
 
@@ -218,7 +218,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public void WritePortable(IPortableWriter writer)
         {
-            PortableWriterImpl writer0 = (PortableWriterImpl) writer.RawWriter();
+            PortableWriterImpl writer0 = (PortableWriterImpl) writer.GetRawWriter();
 
             writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _job));
         }

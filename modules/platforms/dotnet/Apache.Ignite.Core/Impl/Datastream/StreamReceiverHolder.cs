@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /** <inheritdoc /> */
         public void WritePortable(IPortableWriter writer)
         {
-            var w = writer.RawWriter();
+            var w = writer.GetRawWriter();
 
             var writeAware = _rcv as IPortableWriteAware;
 

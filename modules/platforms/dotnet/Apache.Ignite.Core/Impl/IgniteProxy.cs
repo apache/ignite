@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Datastream;
+    using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Portable;
@@ -311,6 +312,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public IAtomicLong GetAtomicLong(string name, long initialValue, bool create)
+        {
+            return _ignite.GetAtomicLong(name, initialValue, create);
+        }
+
+        /** <inheritdoc /> */
         public void WritePortable(IPortableWriter writer)
         {
             // No-op.
@@ -328,9 +335,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IPortableMetadata Metadata(int typeId)
+        public IPortableMetadata GetMetadata(int typeId)
         {
-            return ((IClusterGroupEx)_ignite).Metadata(typeId);
+            return ((IClusterGroupEx)_ignite).GetMetadata(typeId);
         }
     }
 }

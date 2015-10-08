@@ -98,6 +98,10 @@ extern "C" {
         return ctx->ProcessorExtensions(static_cast<jobject>(obj));
     }
 
+    void* IGNITE_CALL IgniteProcessorAtomicLong(gcj::JniContext* ctx, void* obj, char* name, long long initVal, bool create) {
+        return ctx->ProcessorAtomicLong(static_cast<jobject>(obj), name, initVal, create);
+    }
+
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
         return ctx->TargetInStreamOutLong(static_cast<jobject>(obj), opType, memPtr);
     }
@@ -409,5 +413,49 @@ extern "C" {
 
 	void* IGNITE_CALL IgniteServicesGetServiceProxy(gcj::JniContext* ctx, void* obj, char* name, bool sticky) {
 		return ctx->ServicesGetServiceProxy(static_cast<jobject>(obj), name, sticky);
+    }
+
+    long long IGNITE_CALL IgniteAtomicLongGet(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicLongGet(static_cast<jobject>(obj));
+    }
+
+    long long IGNITE_CALL IgniteAtomicLongIncrementAndGet(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicLongIncrementAndGet(static_cast<jobject>(obj));
+    }
+
+    long long IGNITE_CALL IgniteAtomicLongGetAndIncrement(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicLongGetAndIncrement(static_cast<jobject>(obj));
+    }
+
+    long long IGNITE_CALL IgniteAtomicLongAddAndGet(gcj::JniContext* ctx, void* obj, long long value) {
+        return ctx->AtomicLongAddAndGet(static_cast<jobject>(obj), value);
+    }
+
+    long long IGNITE_CALL IgniteAtomicLongGetAndAdd(gcj::JniContext* ctx, void* obj, long long value) {
+        return ctx->AtomicLongGetAndAdd(static_cast<jobject>(obj), value);
+    }
+
+    long long IGNITE_CALL IgniteAtomicLongDecrementAndGet(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicLongDecrementAndGet(static_cast<jobject>(obj));
+    }
+
+    long long IGNITE_CALL IgniteAtomicLongGetAndDecrement(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicLongGetAndDecrement(static_cast<jobject>(obj));
+    }
+
+    long long IGNITE_CALL IgniteAtomicLongGetAndSet(gcj::JniContext* ctx, void* obj, long long value) {
+        return ctx->AtomicLongGetAndSet(static_cast<jobject>(obj), value);
+    }
+
+    long long IGNITE_CALL IgniteAtomicLongCompareAndSetAndGet(gcj::JniContext* ctx, void* obj, long long expVal, long long newVal) {
+        return ctx->AtomicLongCompareAndSetAndGet(static_cast<jobject>(obj), expVal, newVal);
+    }
+
+    bool IGNITE_CALL IgniteAtomicLongIsClosed(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicLongIsClosed(static_cast<jobject>(obj));
+    }
+
+    void IGNITE_CALL IgniteAtomicLongClose(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicLongClose(static_cast<jobject>(obj));
     }
 }

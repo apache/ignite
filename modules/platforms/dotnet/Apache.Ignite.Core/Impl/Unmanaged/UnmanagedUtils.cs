@@ -53,6 +53,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcProcessorEvents = "IgniteProcessorEvents";
         private const string ProcProcessorServices = "IgniteProcessorServices";
         private const string ProcProcessorExtensions = "IgniteProcessorExtensions";
+        private const string ProcProcessorAtomicLong = "IgniteProcessorAtomicLong";
         
         private const string ProcTargetInStreamOutLong = "IgniteTargetInStreamOutLong";
         private const string ProcTargetInStreamOutStream = "IgniteTargetInStreamOutStream";
@@ -150,7 +151,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcServicesCancel = "IgniteServicesCancel";
         private const string ProcServicesCancelAll = "IgniteServicesCancelAll";
         private const string ProcServicesGetServiceProxy = "IgniteServicesGetServiceProxy";
-        
+
+        private const string ProcAtomicLongGet = "IgniteAtomicLongGet";
+        private const string ProcAtomicLongIncrementAndGet = "IgniteAtomicLongIncrementAndGet";
+        private const string ProcAtomicLongAddAndGet = "IgniteAtomicLongAddAndGet";
+        private const string ProcAtomicLongDecrementAndGet = "IgniteAtomicLongDecrementAndGet";
+        private const string ProcAtomicLongGetAndSet = "IgniteAtomicLongGetAndSet";
+        private const string ProcAtomicLongCompareAndSetAndGet = "IgniteAtomicLongCompareAndSetAndGet";
+        private const string ProcAtomicLongIsClosed = "IgniteAtomicLongIsClosed";
+        private const string ProcAtomicLongClose = "IgniteAtomicLongClose";
+
         #endregion
 
         #region DELEGATE DEFINITIONS
@@ -174,6 +184,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void* ProcessorEventsDelegate(void* ctx, void* obj, void* prj);
         private delegate void* ProcessorServicesDelegate(void* ctx, void* obj, void* prj);
         private delegate void* ProcessorExtensionsDelegate(void* ctx, void* obj);
+        private delegate void* ProcessorAtomicLongDelegate(void* ctx, void* obj, sbyte* name, long initVal, bool create);
         
         private delegate long TargetInStreamOutLongDelegate(void* ctx, void* target, int opType, long memPtr);
         private delegate void TargetInStreamOutStreamDelegate(void* ctx, void* target, int opType, long inMemPtr, long outMemPtr);
@@ -272,6 +283,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate long ServicesCancelAllDelegate(void* ctx, void* target);
         private delegate void* ServicesGetServiceProxyDelegate(void* ctx, void* target, char* name, bool sticky);
 
+        private delegate long AtomicLongGetDelegate(void* ctx, void* target);
+        private delegate long AtomicLongIncrementAndGetDelegate(void* ctx, void* target);
+        private delegate long AtomicLongAddAndGetDelegate(void* ctx, void* target, long value);
+        private delegate long AtomicLongDecrementAndGetDelegate(void* ctx, void* target);
+        private delegate long AtomicLongGetAndSetDelegate(void* ctx, void* target, long value);
+        private delegate long AtomicLongCompareAndSetAndGetDelegate(void* ctx, void* target, long expVal, long newVal);
+        private delegate bool AtomicLongIsClosedDelegate(void* ctx, void* target);
+        private delegate void AtomicLongCloseDelegate(void* ctx, void* target);
+
         #endregion
 
         #region DELEGATE MEMBERS
@@ -296,6 +316,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly ProcessorEventsDelegate PROCESSOR_EVENTS;
         private static readonly ProcessorServicesDelegate PROCESSOR_SERVICES;
         private static readonly ProcessorExtensionsDelegate PROCESSOR_EXTENSIONS;
+        private static readonly ProcessorAtomicLongDelegate PROCESSOR_ATOMIC_LONG;
         
         private static readonly TargetInStreamOutLongDelegate TARGET_IN_STREAM_OUT_LONG;
         private static readonly TargetInStreamOutStreamDelegate TARGET_IN_STREAM_OUT_STREAM;
@@ -393,6 +414,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly ServicesCancelDelegate SERVICES_CANCEL;
         private static readonly ServicesCancelAllDelegate SERVICES_CANCEL_ALL;
         private static readonly ServicesGetServiceProxyDelegate SERVICES_GET_SERVICE_PROXY;
+
+        private static readonly AtomicLongGetDelegate ATOMIC_LONG_GET;
+        private static readonly AtomicLongIncrementAndGetDelegate ATOMIC_LONG_INCREMENT_AND_GET;
+        private static readonly AtomicLongAddAndGetDelegate ATOMIC_LONG_ADD_AND_GET;
+        private static readonly AtomicLongDecrementAndGetDelegate ATOMIC_LONG_DECREMENT_AND_GET;
+        private static readonly AtomicLongGetAndSetDelegate ATOMIC_LONG_GET_AND_SET;
+        private static readonly AtomicLongCompareAndSetAndGetDelegate ATOMIC_LONG_COMPARE_AND_SET_AND_GET;
+        private static readonly AtomicLongIsClosedDelegate ATOMIC_LONG_IS_CLOSED;
+        private static readonly AtomicLongCloseDelegate ATOMIC_LONG_CLOSE;
+
         // ReSharper restore InconsistentNaming
 
         #endregion
@@ -433,6 +464,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             PROCESSOR_EVENTS = CreateDelegate<ProcessorEventsDelegate>(ProcProcessorEvents);
             PROCESSOR_SERVICES = CreateDelegate<ProcessorServicesDelegate>(ProcProcessorServices);
             PROCESSOR_EXTENSIONS = CreateDelegate<ProcessorExtensionsDelegate>(ProcProcessorExtensions);
+            PROCESSOR_ATOMIC_LONG = CreateDelegate<ProcessorAtomicLongDelegate>(ProcProcessorAtomicLong);
             
             TARGET_IN_STREAM_OUT_LONG = CreateDelegate<TargetInStreamOutLongDelegate>(ProcTargetInStreamOutLong);
             TARGET_IN_STREAM_OUT_STREAM = CreateDelegate<TargetInStreamOutStreamDelegate>(ProcTargetInStreamOutStream);
@@ -529,6 +561,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             SERVICES_CANCEL = CreateDelegate<ServicesCancelDelegate>(ProcServicesCancel);
             SERVICES_CANCEL_ALL = CreateDelegate<ServicesCancelAllDelegate>(ProcServicesCancelAll);
             SERVICES_GET_SERVICE_PROXY = CreateDelegate<ServicesGetServiceProxyDelegate>(ProcServicesGetServiceProxy);
+
+            ATOMIC_LONG_GET = CreateDelegate<AtomicLongGetDelegate>(ProcAtomicLongGet);
+            ATOMIC_LONG_INCREMENT_AND_GET = CreateDelegate<AtomicLongIncrementAndGetDelegate>(ProcAtomicLongIncrementAndGet);
+            ATOMIC_LONG_ADD_AND_GET = CreateDelegate<AtomicLongAddAndGetDelegate>(ProcAtomicLongAddAndGet);
+            ATOMIC_LONG_DECREMENT_AND_GET = CreateDelegate<AtomicLongDecrementAndGetDelegate>(ProcAtomicLongDecrementAndGet);
+            ATOMIC_LONG_GET_AND_SET = CreateDelegate<AtomicLongGetAndSetDelegate>(ProcAtomicLongGetAndSet);
+            ATOMIC_LONG_COMPARE_AND_SET_AND_GET = CreateDelegate<AtomicLongCompareAndSetAndGetDelegate>(ProcAtomicLongCompareAndSetAndGet);
+            ATOMIC_LONG_IS_CLOSED = CreateDelegate<AtomicLongIsClosedDelegate>(ProcAtomicLongIsClosed);
+            ATOMIC_LONG_CLOSE = CreateDelegate<AtomicLongCloseDelegate>(ProcAtomicLongClose);
         }
 
         #region NATIVE METHODS: PROCESSOR
@@ -709,6 +750,23 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             void* res = PROCESSOR_EXTENSIONS(target.Context, target.Target);
 
             return target.ChangeTarget(res);
+        }
+
+        internal static IUnmanagedTarget ProcessorAtomicLong(IUnmanagedTarget target, string name, long initialValue, 
+            bool create)
+        {
+            var name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                var res = PROCESSOR_ATOMIC_LONG(target.Context, target.Target, name0, initialValue, create);
+
+                return res == null ? null : target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
         }
 
         #endregion
@@ -1232,6 +1290,50 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 Marshal.FreeHGlobal(new IntPtr(nameChars));
             }
+        }
+
+        #endregion
+
+        #region NATIVE METHODS: DATA STRUCTURES
+
+        internal static long AtomicLongGet(IUnmanagedTarget target)
+        {
+            return ATOMIC_LONG_GET(target.Context, target.Target);
+        }
+
+        internal static long AtomicLongIncrementAndGet(IUnmanagedTarget target)
+        {
+            return ATOMIC_LONG_INCREMENT_AND_GET(target.Context, target.Target);
+        }
+
+        internal static long AtomicLongAddAndGet(IUnmanagedTarget target, long value)
+        {
+            return ATOMIC_LONG_ADD_AND_GET(target.Context, target.Target, value);
+        }
+
+        internal static long AtomicLongDecrementAndGet(IUnmanagedTarget target)
+        {
+            return ATOMIC_LONG_DECREMENT_AND_GET(target.Context, target.Target);
+        }
+
+        internal static long AtomicLongGetAndSet(IUnmanagedTarget target, long value)
+        {
+            return ATOMIC_LONG_GET_AND_SET(target.Context, target.Target, value);
+        }
+
+        internal static long AtomicLongCompareAndSetAndGet(IUnmanagedTarget target, long expVal, long newVal)
+        {
+            return ATOMIC_LONG_COMPARE_AND_SET_AND_GET(target.Context, target.Target, expVal, newVal);
+        }
+
+        internal static bool AtomicLongIsClosed(IUnmanagedTarget target)
+        {
+            return ATOMIC_LONG_IS_CLOSED(target.Context, target.Target);
+        }
+
+        internal static void AtomicLongClose(IUnmanagedTarget target)
+        {
+            ATOMIC_LONG_CLOSE(target.Context, target.Target);
         }
 
         #endregion

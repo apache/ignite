@@ -173,6 +173,7 @@ namespace ignite
             JniMethod M_PLATFORM_PROCESSOR_EVENTS = JniMethod("events", "(Lorg/apache/ignite/internal/processors/platform/PlatformTarget;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_SERVICES = JniMethod("services", "(Lorg/apache/ignite/internal/processors/platform/PlatformTarget;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_EXTENSIONS = JniMethod("extensions", "()Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
+            JniMethod M_PLATFORM_PROCESSOR_ATOMIC_LONG = JniMethod("atomicLong", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             
             const char* C_PLATFORM_TARGET = "org/apache/ignite/internal/processors/platform/PlatformTarget";
             JniMethod M_PLATFORM_TARGET_IN_STREAM_OUT_LONG = JniMethod("inStreamOutLong", "(IJ)J", false);
@@ -349,6 +350,19 @@ namespace ignite
 			JniMethod M_PLATFORM_SERVICES_CANCEL = JniMethod("cancel", "(Ljava/lang/String;)V", false);
 			JniMethod M_PLATFORM_SERVICES_CANCEL_ALL = JniMethod("cancelAll", "()V", false);
 			JniMethod M_PLATFORM_SERVICES_SERVICE_PROXY = JniMethod("dotNetServiceProxy", "(Ljava/lang/String;Z)Ljava/lang/Object;", false);
+
+            const char* C_PLATFORM_ATOMIC_LONG = "org/apache/ignite/internal/processors/platform/datastructures/PlatformAtomicLong";
+            JniMethod M_PLATFORM_ATOMIC_LONG_GET = JniMethod("get", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_INCREMENT_AND_GET = JniMethod("incrementAndGet", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_GET_AND_INCREMENT = JniMethod("getAndIncrement", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_ADD_AND_GET = JniMethod("addAndGet", "(J)J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_GET_AND_ADD = JniMethod("getAndAdd", "(J)J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_DECREMENT_AND_GET = JniMethod("decrementAndGet", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_GET_AND_DECREMENT = JniMethod("getAndDecrement", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_GET_AND_SET = JniMethod("getAndSet", "(J)J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_COMPARE_AND_SET_AND_GET = JniMethod("compareAndSetAndGet", "(JJ)J", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_IS_CLOSED = JniMethod("isClosed", "()Z", false);
+            JniMethod M_PLATFORM_ATOMIC_LONG_CLOSE = JniMethod("close", "()V", false);
 
             /* STATIC STATE. */
             gcc::CriticalSection JVM_LOCK;
@@ -598,6 +612,7 @@ namespace ignite
                 m_PlatformProcessor_events = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_EVENTS);
                 m_PlatformProcessor_services = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_SERVICES);
                 m_PlatformProcessor_extensions = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_EXTENSIONS);
+                m_PlatformProcessor_atomicLong = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_LONG);
 
                 c_PlatformTarget = FindClass(env, C_PLATFORM_TARGET);
                 m_PlatformTarget_inStreamOutLong = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_STREAM_OUT_LONG);
@@ -624,6 +639,19 @@ namespace ignite
                 c_PlatformUtils = FindClass(env, C_PLATFORM_UTILS);
                 m_PlatformUtils_reallocate = FindMethod(env, c_PlatformUtils, M_PLATFORM_UTILS_REALLOC);
                 m_PlatformUtils_errData = FindMethod(env, c_PlatformUtils, M_PLATFORM_UTILS_ERR_DATA);
+
+                jclass c_PlatformAtomicLong = FindClass(env, C_PLATFORM_ATOMIC_LONG);
+                m_PlatformAtomicLong_get = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_GET);
+                m_PlatformAtomicLong_incrementAndGet = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_INCREMENT_AND_GET);
+                m_PlatformAtomicLong_getAndIncrement = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_GET_AND_INCREMENT);
+                m_PlatformAtomicLong_addAndGet = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_ADD_AND_GET);
+                m_PlatformAtomicLong_getAndAdd = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_GET_AND_ADD);
+                m_PlatformAtomicLong_decrementAndGet = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_DECREMENT_AND_GET);
+                m_PlatformAtomicLong_getAndDecrement = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_GET_AND_DECREMENT);
+                m_PlatformAtomicLong_getAndSet = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_GET_AND_SET);
+                m_PlatformAtomicLong_compareAndSetAndGet = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_COMPARE_AND_SET_AND_GET);
+                m_PlatformAtomicLong_isClosed = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_IS_CLOSED);
+                m_PlatformAtomicLong_close = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_CLOSE);
 
                 // Find utility classes which are not used from context, but are still required in other places.
                 CheckClass(env, C_PLATFORM_NO_CALLBACK_EXCEPTION);
@@ -1164,6 +1192,22 @@ namespace ignite
                 JNIEnv* env = Attach();
 
                 jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_extensions);
+
+                ExceptionCheck(env);
+
+                return LocalToGlobal(env, res);
+            }
+
+            jobject JniContext::ProcessorAtomicLong(jobject obj, char* name, long long initVal, bool create)
+            {
+                JNIEnv* env = Attach();
+
+                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
+
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_atomicLong, name0, initVal, create);
+
+                if (name0)
+                    env->DeleteLocalRef(name0);
 
                 ExceptionCheck(env);
 
@@ -1847,6 +1891,125 @@ namespace ignite
 
 				return res;
 			}
+
+            long long JniContext::AtomicLongGet(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_get);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicLongIncrementAndGet(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_incrementAndGet);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicLongGetAndIncrement(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_getAndIncrement);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicLongAddAndGet(jobject obj, long long value)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_addAndGet, value);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicLongGetAndAdd(jobject obj, long long value)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_getAndAdd, value);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicLongDecrementAndGet(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_decrementAndGet);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicLongGetAndDecrement(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_getAndDecrement);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicLongGetAndSet(jobject obj, long long value)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_getAndSet, value);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicLongCompareAndSetAndGet(jobject obj, long long expVal, long long newVal)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_compareAndSetAndGet, expVal, newVal);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            bool JniContext::AtomicLongIsClosed(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_isClosed);
+
+                ExceptionCheck(env);
+
+                return res != 0;;
+            }
+
+            void JniContext::AtomicLongClose(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAtomicLong_close);
+
+                ExceptionCheck(env);
+            }
 
 			jobject JniContext::Acquire(jobject obj)
             {

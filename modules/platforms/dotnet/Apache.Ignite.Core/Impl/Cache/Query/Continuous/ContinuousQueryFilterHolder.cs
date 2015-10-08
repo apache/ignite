@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="writer">Writer.</param>
         public void WritePortable(IPortableWriter writer)
         {
-            PortableWriterImpl rawWriter = (PortableWriterImpl) writer.RawWriter();
+            PortableWriterImpl rawWriter = (PortableWriterImpl) writer.GetRawWriter();
 
             PortableUtils.WritePortableOrSerializable(rawWriter, _keyTyp);
             PortableUtils.WritePortableOrSerializable(rawWriter, _valTyp);
@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="reader">The reader.</param>
         public ContinuousQueryFilterHolder(IPortableReader reader)
         {
-            PortableReaderImpl rawReader = (PortableReaderImpl) reader.RawReader();
+            PortableReaderImpl rawReader = (PortableReaderImpl) reader.GetRawReader();
 
             _keyTyp = PortableUtils.ReadPortableOrSerializable<Type>(rawReader);
             _valTyp = PortableUtils.ReadPortableOrSerializable<Type>(rawReader);

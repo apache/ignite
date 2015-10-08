@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public void WritePortable(IPortableWriter writer)
         {
-            var writer0 = (PortableWriterImpl)writer.RawWriter();
+            var writer0 = (PortableWriterImpl)writer.GetRawWriter();
 
             writer0.WithDetach(w => PortableUtils.WriteSerializable(w, Item));
         }
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="reader">The reader.</param>
         public SerializableObjectHolder(IPortableReader reader)
         {
-            _item = PortableUtils.ReadSerializable<object>((PortableReaderImpl)reader.RawReader());
+            _item = PortableUtils.ReadSerializable<object>((PortableReaderImpl)reader.GetRawReader());
         }
     }
 }

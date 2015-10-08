@@ -306,6 +306,7 @@ namespace ignite
                 jmethodID m_PlatformProcessor_events;
                 jmethodID m_PlatformProcessor_services;
                 jmethodID m_PlatformProcessor_extensions;
+                jmethodID m_PlatformProcessor_atomicLong;
 
                 jclass c_PlatformTarget;
                 jmethodID m_PlatformTarget_inStreamOutLong;
@@ -332,6 +333,19 @@ namespace ignite
                 jclass c_PlatformUtils;
                 jmethodID m_PlatformUtils_reallocate;
                 jmethodID m_PlatformUtils_errData;
+
+                jclass c_PlatformAtomicLong;
+                jmethodID m_PlatformAtomicLong_get;
+                jmethodID m_PlatformAtomicLong_incrementAndGet;
+                jmethodID m_PlatformAtomicLong_getAndIncrement;
+                jmethodID m_PlatformAtomicLong_addAndGet;
+                jmethodID m_PlatformAtomicLong_getAndAdd;
+                jmethodID m_PlatformAtomicLong_decrementAndGet;
+                jmethodID m_PlatformAtomicLong_getAndDecrement;
+                jmethodID m_PlatformAtomicLong_getAndSet;
+                jmethodID m_PlatformAtomicLong_compareAndSetAndGet;
+                jmethodID m_PlatformAtomicLong_isClosed;
+                jmethodID m_PlatformAtomicLong_close;
 
                 /**
                  * Constructor.
@@ -476,6 +490,7 @@ namespace ignite
                 jobject ProcessorEvents(jobject obj, jobject prj);
                 jobject ProcessorServices(jobject obj, jobject prj);
                 jobject ProcessorExtensions(jobject obj);
+                jobject ProcessorAtomicLong(jobject obj, char* name, long long initVal, bool create);
                 
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
@@ -561,6 +576,18 @@ namespace ignite
 				void ServicesCancel(jobject obj, char* name);
 				void ServicesCancelAll(jobject obj);
 				void* ServicesGetServiceProxy(jobject obj, char* name, bool sticky);
+
+                long long AtomicLongGet(jobject obj);
+                long long AtomicLongIncrementAndGet(jobject obj);
+                long long AtomicLongGetAndIncrement(jobject obj);
+                long long AtomicLongAddAndGet(jobject obj, long long value);
+                long long AtomicLongGetAndAdd(jobject obj, long long value);
+                long long AtomicLongDecrementAndGet(jobject obj);
+                long long AtomicLongGetAndDecrement(jobject obj);
+                long long AtomicLongGetAndSet(jobject obj, long long value);
+                long long AtomicLongCompareAndSetAndGet(jobject obj, long long expVal, long long newVal);
+                bool AtomicLongIsClosed(jobject obj);
+                void AtomicLongClose(jobject obj);
 
                 jobject Acquire(jobject obj);
 

@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
-    /// 
+    /// Extended internal Ignite interface.
     /// </summary>
     internal interface IClusterGroupEx : IClusterGroup
     {
@@ -30,6 +30,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </summary>
         /// <param name="typeId">Type ID.</param>
         /// <returns>Metadata.</returns>
-        IPortableMetadata Metadata(int typeId);
+        IPortableMetadata GetMetadata(int typeId);
     }
 }

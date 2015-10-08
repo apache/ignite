@@ -113,6 +113,7 @@
     <Compile Include="Datastream\IStreamReceiver.cs" />
     <Compile Include="Datastream\StreamTransformer.cs" />
     <Compile Include="Datastream\StreamVisitor.cs" />
+    <Compile Include="DataStructures\IAtomicLong.cs" />
     <Compile Include="Events\CacheEvent.cs" />
     <Compile Include="Events\CacheQueryExecutedEvent.cs" />
     <Compile Include="Events\CacheQueryReadEvent.cs" />
@@ -208,6 +209,7 @@
     <Compile Include="Impl\Datastream\DataStreamerImpl.cs" />
     <Compile Include="Impl\Datastream\DataStreamerRemoveEntry.cs" />
     <Compile Include="Impl\Datastream\StreamReceiverHolder.cs" />
+    <Compile Include="Impl\DataStructures\AtomicLong.cs" />
     <Compile Include="Impl\Events\Events.cs" />
     <Compile Include="Impl\Events\EventsAsync.cs" />
     <Compile Include="Impl\Events\RemoteListenEventFilter.cs" />
@@ -273,6 +275,10 @@
     <Compile Include="Impl\Portable\PortableUtils.cs" />
     <Compile Include="Impl\Portable\PortableWriterImpl.cs" />
     <Compile Include="Impl\Portable\SerializableObjectHolder.cs" />
+    <Compile Include="Impl\Portable\Structure\PortableStructure.cs" />
+    <Compile Include="Impl\Portable\Structure\PortableStructureEntry.cs" />
+    <Compile Include="Impl\Portable\Structure\PortableStructureJumpTable.cs" />
+    <Compile Include="Impl\Portable\Structure\PortableStructureUpdate.cs" />
     <Compile Include="Impl\Portable\TypeResolver.cs" />
     <Compile Include="Impl\Resource\IResourceInjector.cs" />
     <Compile Include="Impl\Resource\ResourceFieldInjector.cs" />

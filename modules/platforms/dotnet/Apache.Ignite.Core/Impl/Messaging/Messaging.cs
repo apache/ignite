@@ -197,7 +197,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
                 }, 
                 input =>
                 {
-                    var id0 = Marshaller.StartUnmarshal(input).RawReader().ReadGuidNullable();
+                    var id0 = Marshaller.StartUnmarshal(input).GetRawReader().ReadGuidNullable();
 
                     Debug.Assert(IsAsync || id0.HasValue);
 
