@@ -63,7 +63,7 @@ namespace Apache.Ignite.Examples.Events
                 Console.WriteLine(">>> Listening for a local event...");
 
                 var listener = new LocalListener();
-                ignite.GetEvents().LocalListen(listener, EventType.EvtsTaskExecution);
+                ignite.GetEvents().LocalListen(listener, EventType.EventsTaskExecution);
 
                 ExecuteTask(ignite);
 
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Examples.Events
                 var remoteFilter = new RemoteFilter();
 
                 var listenId = ignite.GetEvents().RemoteListen(localListener: localListener,
-                    remoteFilter: remoteFilter, types: EventType.EvtsJobExecution);
+                    remoteFilter: remoteFilter, types: EventType.EventsJobExecution);
 
                 ExecuteTask(ignite);
 
