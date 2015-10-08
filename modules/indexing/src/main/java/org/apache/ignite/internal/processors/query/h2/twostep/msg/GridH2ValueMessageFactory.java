@@ -99,6 +99,9 @@ public class GridH2ValueMessageFactory implements MessageFactory {
 
             case -25:
                 return new GridH2RowMessage();
+
+            case -26:
+                return new GridH2QueryRequest();
         }
 
         return null;

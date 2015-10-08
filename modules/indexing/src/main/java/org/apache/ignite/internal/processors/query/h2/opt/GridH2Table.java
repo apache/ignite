@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -292,7 +291,7 @@ public class GridH2Table extends TableBase {
     private Object[] takeIndexesSnapshot() {
         int len = idxs.size();
 
-        Object[] snapshot = new ConcurrentNavigableMap[len - 1];
+        Object[] snapshot = new Object[len - 1];
 
         for (int i = 1; i < len; i++) { // Take snapshots on all except first which is scan.
             Object s = index(i).takeSnapshot(null);

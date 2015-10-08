@@ -93,9 +93,11 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2MarshallableMessage;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -103,11 +105,13 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.JavaObjectSerializer;
@@ -1358,6 +1362,58 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // TODO https://issues.apache.org/jira/browse/IGNITE-751
         // registerMBean(gridName, this, GridH2IndexingSpiMBean.class);
+    }
+
+    /**
+     * @param topic Topic.
+     * @param nodes Nodes.
+     * @param msg Message.
+     * @param specialize Optional closure to specialize message for each node.
+     * @param locNodeHandler Handler for local node.
+     * @return {@code true} If all messages sent successfully.
+     */
+    public boolean send(
+        Object topic,
+        Collection<ClusterNode> nodes,
+        Message msg,
+        @Nullable IgniteBiClosure<ClusterNode, Message, Message> specialize,
+        @Nullable IgniteInClosure2X<ClusterNode, Message> locNodeHandler
+    ) {
+        boolean ok = true;
+
+        if (specialize == null && msg instanceof GridH2MarshallableMessage)
+            ((GridH2MarshallableMessage)msg).marshall(marshaller);
+
+        ClusterNode locNode = null;
+
+        for (ClusterNode node : nodes) {
+            if (node.isLocal()) {
+                locNode = node;
+
+                continue;
+            }
+
+            try {
+                if (specialize != null) {
+                    msg = specialize.apply(node, msg);
+
+                    if (msg instanceof GridH2MarshallableMessage)
+                        ((GridH2MarshallableMessage)msg).marshall(marshaller);
+                }
+
+                ctx.io().send(node, topic, msg, GridReduceQueryExecutor.QUERY_POOL);
+            }
+            catch (IgniteCheckedException e) {
+                ok = false;
+
+                U.warn(log, e.getMessage());
+            }
+        }
+
+        if (locNode != null) // Local node goes the last to allow parallel execution.
+            locNodeHandler.apply(locNode, specialize == null ? msg : specialize.apply(locNode, msg));
+
+        return ok;
     }
 
     /**

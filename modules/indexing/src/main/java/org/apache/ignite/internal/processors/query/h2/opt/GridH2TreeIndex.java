@@ -418,7 +418,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public boolean canGetFirstOrLast() {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */

@@ -35,6 +35,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Query request.
  */
+@Deprecated
 @IgniteCodeGeneratingFail
 public class GridQueryRequest implements Message {
     /** */

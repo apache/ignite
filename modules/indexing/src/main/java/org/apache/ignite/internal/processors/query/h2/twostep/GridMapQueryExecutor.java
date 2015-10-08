@@ -59,12 +59,12 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2MarshallableMessage;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.result.ResultInterface;
@@ -158,6 +158,9 @@ public class GridMapQueryExecutor {
                     return;
 
                 try {
+                    if (msg instanceof GridH2MarshallableMessage)
+                        ((GridH2MarshallableMessage)msg).unmarshall(ctx.config().getMarshaller());
+
                     GridMapQueryExecutor.this.onMessage(nodeId, msg);
                 }
                 finally {
@@ -403,22 +406,7 @@ public class GridMapQueryExecutor {
         List<GridReservable> reserved = new ArrayList<>();
 
         try {
-            // Unmarshall query params.
-            Collection<GridCacheSqlQuery> qrys;
-
-            try {
-                qrys = req.queries();
-
-                if (!node.isLocal()) {
-                    Marshaller m = ctx.config().getMarshaller();
-
-                    for (GridCacheSqlQuery qry : qrys)
-                        qry.unmarshallParams(m);
-                }
-            }
-            catch (IgniteCheckedException e) {
-                throw new CacheException("Failed to unmarshall parameters.", e);
-            }
+            Collection<GridCacheSqlQuery> qrys = req.queries();
 
             List<String> caches = (List<String>)F.concat(true, req.space(), req.extraSpaces());
 
