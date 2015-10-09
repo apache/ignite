@@ -488,7 +488,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.Put(key1, 1);
 
             Assert.AreEqual(1, cache.LocalPeek(key1));
-            Assert.AreEqual(0, cache.LocalPeek(-1));
+            Assert.IsFalse(cache.TryLocalPeek(-1).HasValue);
 
             Assert.AreEqual(1, cache.LocalPeek(key1, CachePeekMode.All));
             Assert.AreEqual(0, cache.LocalPeek(-1, CachePeekMode.All));
@@ -659,7 +659,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             Assert.AreEqual(true, cache.PutIfAbsent(1, 1));
 
@@ -1173,7 +1173,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(0, cache.GetSize());
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             cache.Put(1, 1);
 
