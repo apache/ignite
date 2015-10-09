@@ -115,9 +115,9 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
                         // prepare the config
                         Config conf = new Config();
-                        conf.setNumWorkers(2);
+                        
                         // this parameter is necessary
-                        conf.setMessageTimeoutSecs(6000);
+                        conf.setMessageTimeoutSecs(10);
 
                         CompleteTopologyParam completeTopologyParam = new CompleteTopologyParam();
                         completeTopologyParam.setMockedSources(mockedSources);
@@ -133,9 +133,10 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
     public void compareStreamCacheData(HashMap<String, String> keyValMap){
         Ignite ignite = grid();
-        System.out.println(" -=------------------------- ");
+
         // Get the cache.
         IgniteCache<String, String> cache = ignite.cache(cacheName);
+
         for (Map.Entry<String, String> entry : keyValMap.entrySet()) {
             System.out.println(" Key === " +entry.getKey() +  " Value ====  " +  cache.get(entry.getKey()));
             assertEquals(entry.getValue(), cache.get(entry.getKey()));
