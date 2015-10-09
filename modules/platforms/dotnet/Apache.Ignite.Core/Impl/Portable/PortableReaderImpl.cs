@@ -602,7 +602,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 case PortableUtils.HdrNull:
                     if (default(T) != null)
                         throw new PortableException(string.Format("Invalid data on deserialization. " +
-                                                                  "Expected: {0} But was: null", typeof (T)));
+                                                                  "Expected: '{0}' But was: null", typeof (T)));
 
                     return default(T);
 
