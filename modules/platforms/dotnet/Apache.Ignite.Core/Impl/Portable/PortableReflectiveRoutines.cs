@@ -258,7 +258,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             else if (elemType == typeof(decimal?))
             {
                 writeAction = GetWriter<decimal?[]>(field, (f, w, o) => w.WriteDecimalArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadDecimalArrayNullable(f));
+                readAction = GetReader(field, (f, r) => r.ReadDecimalArray(f));
             }
             else if (elemType == typeof(string))
             {
@@ -268,12 +268,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             else if (elemType == typeof(Guid?))
             {
                 writeAction = GetWriter<Guid?[]>(field, (f, w, o) => w.WriteGuidArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadGuidArrayNullable(f));
+                readAction = GetReader(field, (f, r) => r.ReadGuidArray(f));
             } 
             else if (elemType == typeof(DateTime?))
             {
                 writeAction = GetWriter<DateTime?[]>(field, (f, w, o) => w.WriteDateArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadDateArrayNullable(f));
+                readAction = GetReader(field, (f, r) => r.ReadDateArray(f));
             }
             else if (elemType.IsEnum)
             {
@@ -307,7 +307,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (type == typeof(decimal))
             {
                 writeAction = GetWriter<decimal>(field, (f, w, o) => w.WriteDecimal(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadDecimalNullable(f));
+                readAction = GetReader(field, (f, r) => r.ReadDecimal(f));
             }
             else if (type == typeof(string))
             {
@@ -322,7 +322,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             else if (nullable && nullableType == typeof(Guid))
             {
                 writeAction = GetWriter<Guid?>(field, (f, w, o) => w.WriteGuid(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadGuidNullable(f));
+                readAction = GetReader(field, (f, r) => r.ReadGuid(f));
             } 
             else if (type == typeof(DateTime))
             {
@@ -332,7 +332,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             else if (nullable && nullableType == typeof(DateTime))
             {
                 writeAction = GetWriter<DateTime?>(field, (f, w, o) => w.WriteDate(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadDateNullable(f));
+                readAction = GetReader(field, (f, r) => r.ReadDate(f));
             }
             else if (type.IsEnum)
             {

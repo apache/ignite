@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
             var evt = EventReader.Read<IEvent>(reader);
 
-            var nodeId = reader.ReadGuidNullable();
+            var nodeId = reader.ReadGuid();
 
             return _filter(nodeId, evt) ? 1 : 0;
         }

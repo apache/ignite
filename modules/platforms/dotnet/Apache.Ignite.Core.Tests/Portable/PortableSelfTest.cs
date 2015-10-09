@@ -1609,7 +1609,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 PString = reader.ReadString("string");
                 PGuid = reader.ReadObject<Guid>("guid");
-                PnGuid = reader.ReadGuidNullable("nguid");
+                PnGuid = reader.ReadGuid("nguid");
             }
         }
 
@@ -1668,8 +1668,8 @@ namespace Apache.Ignite.Core.Tests.Portable
                 PUlong = *(ulong*)&uLong;
 
                 PString = rawReader.ReadString();
-                PGuid = rawReader.ReadGuid();
-                PnGuid = rawReader.ReadGuidNullable();
+                PGuid = rawReader.ReadGuid().Value;
+                PnGuid = rawReader.ReadGuid();
             }
         }
 
@@ -1729,7 +1729,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 obj0.PString = reader.ReadString("string");
                 obj0.PGuid = reader.ReadObject<Guid>("guid");
-                obj0.PnGuid = reader.ReadGuidNullable("nguid");
+                obj0.PnGuid = reader.ReadGuid("nguid");
             }
         }
 
@@ -1791,8 +1791,8 @@ namespace Apache.Ignite.Core.Tests.Portable
                 obj0.PUlong = *(ulong*)&uLong;
 
                 obj0.PString = rawReader.ReadString();
-                obj0.PGuid = rawReader.ReadGuid();
-                obj0.PnGuid = rawReader.ReadGuidNullable();
+                obj0.PGuid = rawReader.ReadGuid().Value;
+                obj0.PnGuid = rawReader.ReadGuid();
             }
         }
 
@@ -1978,13 +1978,13 @@ namespace Apache.Ignite.Core.Tests.Portable
             /** <inheritDoc /> */
             public void ReadPortable(IPortableReader reader)
             {
-                Val = reader.ReadDecimalNullable("val");
-                ValArr = reader.ReadDecimalArrayNullable("valArr");
+                Val = reader.ReadDecimal("val");
+                ValArr = reader.ReadDecimalArray("valArr");
 
                 IPortableRawReader rawReader = reader.GetRawReader();
 
-                RawVal = rawReader.ReadDecimalNullable();
-                RawValArr = rawReader.ReadDecimalArrayNullable();
+                RawVal = rawReader.ReadDecimal();
+                RawValArr = rawReader.ReadDecimalArray();
             }
         }
 
@@ -2059,19 +2059,19 @@ namespace Apache.Ignite.Core.Tests.Portable
             /** <inheritDoc /> */
             public void ReadPortable(IPortableReader reader)
             {
-                Loc = reader.ReadDate("loc", true);
-                Utc = reader.ReadDate("utc", false);
-                LocNull = reader.ReadDateNullable("loc", true);
-                UtcNull = reader.ReadDateNullable("utc", false);
-                LocArr = reader.ReadDateArrayNullable("locArr", true);
-                UtcArr = reader.ReadDateArrayNullable("utcArr", false);
+                Loc = reader.ReadDate("loc", true).Value;
+                Utc = reader.ReadDate("utc", false).Value;
+                LocNull = reader.ReadDate("loc", true);
+                UtcNull = reader.ReadDate("utc", false);
+                LocArr = reader.ReadDateArray("locArr", true);
+                UtcArr = reader.ReadDateArray("utcArr", false);
 
                 IPortableRawReader rawReader = reader.GetRawReader();
 
-                LocRaw = rawReader.ReadDate(true);
-                UtcRaw = rawReader.ReadDate(false);
-                LocNullRaw = rawReader.ReadDateNullable(true);
-                UtcNullRaw = rawReader.ReadDateNullable(false);
+                LocRaw = rawReader.ReadDate(true).Value;
+                UtcRaw = rawReader.ReadDate(false).Value;
+                LocNullRaw = rawReader.ReadDate(true);
+                UtcNullRaw = rawReader.ReadDate(false);
                 LocArrRaw = rawReader.ReadDateArray(true);
                 UtcArrRaw = rawReader.ReadDateArray(false);
             }

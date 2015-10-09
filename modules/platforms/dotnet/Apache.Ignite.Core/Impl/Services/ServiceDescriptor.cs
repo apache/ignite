@@ -53,14 +53,14 @@ namespace Apache.Ignite.Core.Impl.Services
             CacheName = reader.ReadString();
             MaxPerNodeCount = reader.ReadInt();
             TotalCount = reader.ReadInt();
-            OriginNodeId = reader.ReadGuidNullable() ?? Guid.Empty;
+            OriginNodeId = reader.ReadGuid() ?? Guid.Empty;
             AffinityKey = reader.ReadObject<object>();
 
             var mapSize = reader.ReadInt();
             var snap = new Dictionary<Guid, int>(mapSize);
 
             for (var i = 0; i < mapSize; i++)
-                snap[reader.ReadGuidNullable() ?? Guid.Empty] = reader.ReadInt();
+                snap[reader.ReadGuid() ?? Guid.Empty] = reader.ReadInt();
 
             TopologySnapshot = snap.AsReadOnly();
         }

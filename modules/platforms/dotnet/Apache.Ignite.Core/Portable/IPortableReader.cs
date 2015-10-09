@@ -175,21 +175,21 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Decimal value.</returns>
-        decimal? ReadDecimalNullable(string fieldName);
+        decimal? ReadDecimal(string fieldName);
 
         /// <summary>
         /// Read named decimal array.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Decimal array.</returns>
-        decimal?[] ReadDecimalArrayNullable(string fieldName);
+        decimal?[] ReadDecimalArray(string fieldName);
 
         /// <summary>
         /// Read named date value in UTC form. Shortcut for <c>ReadDate(fieldName, false)</c>.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Date value.</returns>
-        DateTime? ReadDateNullable(string fieldName);
+        DateTime? ReadDate(string fieldName);
 
         /// <summary>
         /// Read named date value.
@@ -197,14 +197,14 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Field name.</param>
         /// <param name="local">Whether to read date in local (<c>true</c>) or UTC (<c>false</c>) form.</param>
         /// <returns>Date vaule.</returns>
-        DateTime? ReadDateNullable(string fieldName, bool local);
+        DateTime? ReadDate(string fieldName, bool local);
 
         /// <summary>
         /// Read named date array in UTC form. Shortcut for <c>ReadDateArray(fieldName, false)</c>.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Date array.</returns>
-        DateTime?[] ReadDateArrayNullable(string fieldName);
+        DateTime?[] ReadDateArray(string fieldName);
 
         /// <summary>
         /// Read named date array.
@@ -212,7 +212,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Field name.</param>
         /// <param name="local">Whether to read date in local (<c>true</c>) or UTC (<c>false</c>) form.</param>
         /// <returns>Date array.</returns>
-        DateTime?[] ReadDateArrayNullable(string fieldName, bool local);
+        DateTime?[] ReadDateArray(string fieldName, bool local);
 
         /// <summary>
         /// Read named string value.
@@ -233,14 +233,14 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>GUID value.</returns>
-        Guid? ReadGuidNullable(string fieldName);
+        Guid? ReadGuid(string fieldName);
 
         /// <summary>
         /// Read named GUID array.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>GUID array.</returns>
-        Guid?[] ReadGuidArrayNullable(string fieldName);
+        Guid?[] ReadGuidArray(string fieldName);
         
         /// <summary>
         /// Read named enum value.

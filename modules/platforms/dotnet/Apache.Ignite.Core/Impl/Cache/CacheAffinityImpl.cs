@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         private IClusterNode ReadNode(PortableReaderImpl r)
         {
-            return GetNode(r.ReadGuidNullable());
+            return GetNode(r.ReadGuid());
         }
 
         /// <summary>

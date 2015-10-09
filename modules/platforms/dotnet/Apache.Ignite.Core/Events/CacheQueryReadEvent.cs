@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Events
             _cacheName = r.ReadString();
             _className = r.ReadString();
             _clause = r.ReadString();
-            _subjectId = r.ReadGuidNullable();
+            _subjectId = r.ReadGuid();
             _taskName = r.ReadString();
             _key = r.ReadObject<object>();
             _value = r.ReadObject<object>();

@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             var rawReader = _ignite.Marshaller.StartUnmarshal(input).GetRawReader();
 
-            var nodeId = rawReader.ReadGuidNullable();
+            var nodeId = rawReader.ReadGuid();
 
             Debug.Assert(nodeId != null);
 

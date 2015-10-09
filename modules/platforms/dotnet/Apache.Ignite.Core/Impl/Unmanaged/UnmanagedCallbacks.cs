@@ -987,7 +987,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     var filter = (IClusterNodeFilter) reader.ReadObject<PortableOrSerializableObjectHolder>().Item;
 
-                    return filter.Invoke(_ignite.GetNode(reader.ReadGuidNullable())) ? 1 : 0;
+                    return filter.Invoke(_ignite.GetNode(reader.ReadGuid())) ? 1 : 0;
                 }
             });
         }

@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Common
         /// <param name="r">Reader.</param>
         public static IgniteGuid? ReadPortable(IPortableRawReader r)
         {
-            var guid = r.ReadGuidNullable();
+            var guid = r.ReadGuid();
 
             if (guid == null)
                 return null;

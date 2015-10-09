@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Events
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
@@ -70,7 +71,10 @@ namespace Apache.Ignite.Core.Events
             _message = r.ReadString();
             _type = r.ReadInt();
             _name = r.ReadString();
-            _timestamp = r.ReadDate();
+            
+            var timestamp = r.ReadDate();
+            Debug.Assert(timestamp.HasValue);
+            _timestamp = timestamp.Value;
         }
 
         /** <inheritDoc /> */
@@ -160,7 +164,7 @@ namespace Apache.Ignite.Core.Events
         /// <returns>Node or null.</returns>
         protected static IClusterNode ReadNode(IPortableRawReader reader)
         {
-            return ((PortableReaderImpl)reader).Marshaller.Ignite.GetNode(reader.ReadGuidNullable());
+            return ((PortableReaderImpl)reader).Marshaller.Ignite.GetNode(reader.ReadGuid());
         }
     }
 }

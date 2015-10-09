@@ -416,13 +416,13 @@ namespace Apache.Ignite.Core.Impl
             if (pred == null)
             {
                 for (var i = 0; i < cnt; i++)
-                    res.Add(ignite.GetNode(reader.ReadGuidNullable()));
+                    res.Add(ignite.GetNode(reader.ReadGuid()));
             }
             else
             {
                 for (var i = 0; i < cnt; i++)
                 {
-                    var node = ignite.GetNode(reader.ReadGuidNullable());
+                    var node = ignite.GetNode(reader.ReadGuid());
                     
                     if (pred(node))
                         res.Add(node);

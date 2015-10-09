@@ -300,61 +300,61 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public decimal? ReadDecimalNullable(string fieldName)
+        public decimal? ReadDecimal(string fieldName)
         {
             return ReadField(fieldName, PortableUtils.ReadDecimal);
         }
 
         /** <inheritdoc /> */
-        public decimal? ReadDecimalNullable()
+        public decimal? ReadDecimal()
         {
             return Read(PortableUtils.ReadDecimal);
         }
 
         /** <inheritdoc /> */
-        public decimal?[] ReadDecimalArrayNullable(string fieldName)
+        public decimal?[] ReadDecimalArray(string fieldName)
         {
             return ReadField(fieldName, PortableUtils.ReadDecimalArray);
         }
 
         /** <inheritdoc /> */
-        public decimal?[] ReadDecimalArrayNullable()
+        public decimal?[] ReadDecimalArray()
         {
             return Read(PortableUtils.ReadDecimalArray);
         }
 
         /** <inheritdoc /> */
-        public DateTime? ReadDateNullable(string fieldName)
+        public DateTime? ReadDate(string fieldName)
         {
-            return ReadDateNullable(fieldName, false);
+            return ReadDate(fieldName, false);
         }
 
         /** <inheritdoc /> */
-        public DateTime? ReadDateNullable(string fieldName, bool local)
+        public DateTime? ReadDate(string fieldName, bool local)
         {
             return ReadField(fieldName, r => PortableUtils.ReadDate(r, local));
         }
 
         /** <inheritdoc /> */
-        public DateTime? ReadDateNullable()
+        public DateTime? ReadDate()
         {
-            return ReadDateNullable(false);
+            return ReadDate(false);
         }
 
         /** <inheritdoc /> */
-        public DateTime? ReadDateNullable(bool local)
+        public DateTime? ReadDate(bool local)
         {
             return Read(r => PortableUtils.ReadDate(r, local));
         }
 
         /** <inheritdoc /> */
-        public DateTime?[] ReadDateArrayNullable(string fieldName)
+        public DateTime?[] ReadDateArray(string fieldName)
         {
-            return ReadDateArrayNullable(fieldName, false);
+            return ReadDateArray(fieldName, false);
         }
 
         /** <inheritdoc /> */
-        public DateTime?[] ReadDateArrayNullable(string fieldName, bool local)
+        public DateTime?[] ReadDateArray(string fieldName, bool local)
         {
             return ReadField(fieldName, r => PortableUtils.ReadDateArray(r, local));
         }
@@ -396,25 +396,25 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public Guid? ReadGuidNullable(string fieldName)
+        public Guid? ReadGuid(string fieldName)
         {
             return ReadField(fieldName, PortableUtils.ReadGuid);
         }
 
         /** <inheritdoc /> */
-        public Guid? ReadGuidNullable()
+        public Guid? ReadGuid()
         {
             return Read(PortableUtils.ReadGuid);
         }
 
         /** <inheritdoc /> */
-        public Guid?[] ReadGuidArrayNullable(string fieldName)
+        public Guid?[] ReadGuidArray(string fieldName)
         {
             return ReadField(fieldName, r => PortableUtils.ReadGenericArray<Guid?>(r, false));
         }
 
         /** <inheritdoc /> */
-        public Guid?[] ReadGuidArrayNullable()
+        public Guid?[] ReadGuidArray()
         {
             return Read(r => PortableUtils.ReadGenericArray<Guid?>(r, false));
         }

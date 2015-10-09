@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Events
             _taskSessionId = IgniteGuid.ReadPortable(r);
             _jobId = IgniteGuid.ReadPortable(r);
             _taskNode = ReadNode(r);
-            _taskSubjectId = r.ReadGuidNullable();
+            _taskSubjectId = r.ReadGuid();
         }
 		
         /// <summary>
