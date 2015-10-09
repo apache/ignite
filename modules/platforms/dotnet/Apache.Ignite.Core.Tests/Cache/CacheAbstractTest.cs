@@ -563,7 +563,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(0, cache.Get(1));
 
-            int old = cache.GetAndPut(1, 1);
+            int old = cache.GetAndPut(1, 1).Value;
 
             Assert.AreEqual(0, old);
 

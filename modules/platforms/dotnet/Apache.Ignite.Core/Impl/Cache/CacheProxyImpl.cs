@@ -185,6 +185,19 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public IgniteNullable<TV> TryLocalPeek(TK key, params CachePeekMode[] modes)
+        {
+            return _cache.TryLocalPeek(key, modes);
+        }
+
+        /** <inheritDoc /> */
+        public TV this[TK key]
+        {
+            get { return _cache[key]; }
+            set { _cache[key] = value; }
+        }
+
+        /** <inheritDoc /> */
         public TV Get(TK key)
         {
             var result = _cache.Get(key);
@@ -192,6 +205,12 @@ namespace Apache.Ignite.Core.Impl.Cache
             SetLastAsyncOp(CacheOp.Get);
 
             return result;
+        }
+
+        /** <inheritDoc /> */
+        public IgniteNullable<TV> TryGet(TK key)
+        {
+            return _cache.TryGet(key);
         }
 
         /** <inheritDoc /> */
@@ -213,7 +232,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public TV GetAndPut(TK key, TV val)
+        public IgniteNullable<TV> GetAndPut(TK key, TV val)
         {
             var result = _cache.GetAndPut(key, val);
 
@@ -223,7 +242,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public TV GetAndReplace(TK key, TV val)
+        public IgniteNullable<TV> GetAndReplace(TK key, TV val)
         {
             var result = _cache.GetAndReplace(key, val);
 
@@ -233,7 +252,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public TV GetAndRemove(TK key)
+        public IgniteNullable<TV> GetAndRemove(TK key)
         {
             var result = _cache.GetAndRemove(key);
 
@@ -253,7 +272,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public TV GetAndPutIfAbsent(TK key, TV val)
+        public IgniteNullable<TV> GetAndPutIfAbsent(TK key, TV val)
         {
             var result = _cache.GetAndPutIfAbsent(key, val);
 

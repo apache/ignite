@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
@@ -507,25 +508,49 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
+        /// Perform out-in operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="outAction">Out action.</param>
+        /// <returns>Result.</returns>
+        protected IgniteNullable<TR> DoOutInOpNullable<TR>(int type, Action<PortableWriterImpl> outAction)
+        {
+            var res = DoOutInOp<object>(type, outAction);
+
+            return res == null
+                ? new IgniteNullable<TR>(default(TR), false)
+                : new IgniteNullable<TR>((TR) res, true);
+        }
+
+        /// <summary>
+        /// Perform simple out-in operation accepting single argument.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="val1">Value.</param>
+        /// <param name="val2">Value.</param>
+        /// <returns>Result.</returns>
+        protected IgniteNullable<TR> DoOutInOpNullable<T1, T2, TR>(int type, T1 val1, T2 val2)
+        {
+            var res = DoOutInOp<T1, T2, object>(type, val1, val2);
+
+            return res == null 
+                ? new IgniteNullable<TR>(default(TR), false) 
+                : new IgniteNullable<TR>((TR) res, true);
+        }
+
+        /// <summary>
         /// Perform simple out-in operation accepting single argument.
         /// </summary>
         /// <param name="type">Operation type.</param>
         /// <param name="val">Value.</param>
-        /// <param name="result">Result.</param>
-        /// <returns>False when the opration returned null; otherwise true.</returns>
-        protected bool DoOutInOp<T1, TR>(int type, T1 val, out TR result)
+        /// <returns>Result.</returns>
+        protected IgniteNullable<TR> DoOutInOpNullable<T1, TR>(int type, T1 val)
         {
-            // TODO: This causes boxing.
             var res = DoOutInOp<T1, object>(type, val);
 
-            if (res == null)
-            {
-                result = default(TR);
-                return false;
-            }
-
-            result = (TR) res;
-            return true;
+            return res == null 
+                ? new IgniteNullable<TR>(default(TR), false) 
+                : new IgniteNullable<TR>((TR) res, true);
         }
 
         /// <summary>

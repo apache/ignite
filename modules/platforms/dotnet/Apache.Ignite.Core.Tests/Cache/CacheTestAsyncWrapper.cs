@@ -149,10 +149,29 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public IgniteNullable<TV> TryLocalPeek(TK key, params CachePeekMode[] modes)
+        {
+            return _cache.TryLocalPeek(key, modes);
+        }
+
+        /** <inheritDoc /> */
+        public TV this[TK key]
+        {
+            get { return _cache[key]; }
+            set { _cache[key] = value; }
+        }
+
+        /** <inheritDoc /> */
         public TV Get(TK key)
         {
             _cache.Get(key);
             return GetResult<TV>();
+        }
+
+        /** <inheritDoc /> */
+        public IgniteNullable<TV> TryGet(TK key)
+        {
+            return _cache.TryGet(key);
         }
 
         /** <inheritDoc /> */
@@ -170,24 +189,24 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public TV GetAndPut(TK key, TV val)
+        public IgniteNullable<TV> GetAndPut(TK key, TV val)
         {
             _cache.GetAndPut(key, val);
-            return GetResult<TV>();
+            return GetResult<IgniteNullable<TV>>();
         }
 
         /** <inheritDoc /> */
-        public TV GetAndReplace(TK key, TV val)
+        public IgniteNullable<TV> GetAndReplace(TK key, TV val)
         {
             _cache.GetAndReplace(key, val);
-            return GetResult<TV>();
+            return GetResult<IgniteNullable<TV>>();
         }
 
         /** <inheritDoc /> */
-        public TV GetAndRemove(TK key)
+        public IgniteNullable<TV> GetAndRemove(TK key)
         {
             _cache.GetAndRemove(key);
-            return GetResult<TV>();
+            return GetResult<IgniteNullable<TV>>();
         }
 
         /** <inheritDoc /> */
@@ -198,10 +217,10 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public TV GetAndPutIfAbsent(TK key, TV val)
+        public IgniteNullable<TV> GetAndPutIfAbsent(TK key, TV val)
         {
             _cache.GetAndPutIfAbsent(key, val);
-            return GetResult<TV>();
+            return GetResult<IgniteNullable<TV>>();
         }
 
         /** <inheritDoc /> */

@@ -298,11 +298,38 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public IgniteNullable<TV> TryLocalPeek(TK key, params CachePeekMode[] modes)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+
+            return DoOutInOpNullable<TV>((int)CacheOp.Peek, writer =>
+            {
+                writer.Write(key);
+                writer.WriteInt(EncodePeekModes(modes));
+            });
+        }
+
+        /** <inheritDoc /> */
+        public TV this[TK key]
+        {
+            get { return Get(key); }
+            set { Put(key, value); }
+        }
+
+        /** <inheritDoc /> */
         public TV Get(TK key)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutInOp<TK, TV>((int)CacheOp.Get, key);
+        }
+
+        /** <inheritDoc /> */
+        public IgniteNullable<TV> TryGet(TK key)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+
+            return DoOutInOpNullable<TK, TV>((int) CacheOp.Get, key);
         }
 
         /** <inheritDoc /> */
@@ -331,31 +358,31 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public TV GetAndPut(TK key, TV val)
+        public IgniteNullable<TV> GetAndPut(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOp<TK, TV, TV>((int)CacheOp.GetAndPut, key, val);
+            return DoOutInOpNullable<TK, TV, TV>((int)CacheOp.GetAndPut, key, val);
         }
 
         /** <inheritDoc /> */
-        public TV GetAndReplace(TK key, TV val)
+        public IgniteNullable<TV> GetAndReplace(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOp<TK, TV, TV>((int)CacheOp.GetAndReplace, key, val);
+            return DoOutInOpNullable<TK, TV, TV>((int)CacheOp.GetAndReplace, key, val);
         }
 
         /** <inheritDoc /> */
-        public TV GetAndRemove(TK key)
+        public IgniteNullable<TV> GetAndRemove(TK key)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOp<TK, TV>((int)CacheOp.GetAndRemove, key);
+            return DoOutInOpNullable<TK, TV>((int)CacheOp.GetAndRemove, key);
         }
 
         /** <inheritdoc /> */
@@ -369,13 +396,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritdoc /> */
-        public TV GetAndPutIfAbsent(TK key, TV val)
+        public IgniteNullable<TV> GetAndPutIfAbsent(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOp<TK, TV, TV>((int)CacheOp.GetAndPutIfAbsent, key, val);
+            return DoOutInOpNullable<TK, TV, TV>((int)CacheOp.GetAndPutIfAbsent, key, val);
         }
 
         /** <inheritdoc /> */

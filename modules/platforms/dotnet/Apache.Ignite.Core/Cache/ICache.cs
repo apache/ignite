@@ -169,7 +169,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="key">Key.</param>
         /// <param name="modes">Peek modes.</param>
         /// <returns>Peeked value.</returns>
-        ICacheValue<TV> TryLocalPeek(TK key, params CachePeekMode[] modes);
+        IgniteNullable<TV> TryLocalPeek(TK key, params CachePeekMode[] modes);
 
         /// <summary>
         /// Gets or sets a cache value with the specified key.
@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="key">Key.</param>
         /// <returns>Value.</returns>
         [AsyncSupported]
-        ICacheValue<TV> TryGet(TK key);
+        IgniteNullable<TV> TryGet(TK key);
 
         /// <summary>
         /// Retrieves values mapped to the specified keys from cache.
@@ -237,7 +237,7 @@ namespace Apache.Ignite.Core.Cache
         /// The value associated with the key at the start of the operation.
         /// </returns>
         [AsyncSupported]
-        ICacheValue<TV> GetAndPut(TK key, TV val);
+        IgniteNullable<TV> GetAndPut(TK key, TV val);
         
         /// <summary>
         /// Atomically replaces the value for a given key if and only if there is a value currently mapped by the key.
@@ -248,7 +248,7 @@ namespace Apache.Ignite.Core.Cache
         /// The previous value associated with the specified key.
         /// </returns>
         [AsyncSupported]
-        ICacheValue<TV> GetAndReplace(TK key, TV val);
+        IgniteNullable<TV> GetAndReplace(TK key, TV val);
 
         /// <summary>
         /// Atomically removes the entry for a key only if currently mapped to some value.
@@ -256,7 +256,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="key">Key with which the specified value is associated.</param>
         /// <returns>The value if one existed.</returns>
         [AsyncSupported]
-        ICacheValue<TV> GetAndRemove(TK key);
+        IgniteNullable<TV> GetAndRemove(TK key);
 
         /// <summary>
         /// Atomically associates the specified key with the given value if it is not already associated with a value.
@@ -284,7 +284,7 @@ namespace Apache.Ignite.Core.Cache
         /// Previously contained value regardless of whether put happened or not.
         /// </returns>
         [AsyncSupported]
-        ICacheValue<TV> GetAndPutIfAbsent(TK key, TV val);
+        IgniteNullable<TV> GetAndPutIfAbsent(TK key, TV val);
 
         /// <summary>
         /// Stores given key-value pair in cache only if there is a previous mapping for it.
