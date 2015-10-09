@@ -585,8 +585,12 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 if (req != null) {
                     res = new GridNearAtomicUpdateResponse(cctx.cacheId(), nodeId, req.futureVersion());
 
-                    res.addFailedKeys(req.keys(), new ClusterTopologyCheckedException("Primary node left grid before " +
-                        "response is received: " + nodeId));
+                    ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Primary node left grid " +
+                        "before response is received: " + nodeId);
+
+                    e.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(req.topologyVersion()));
+
+                    res.addFailedKeys(req.keys(), e);
                 }
             }
 

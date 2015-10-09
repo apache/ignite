@@ -92,7 +92,7 @@ public interface Marshaller {
     public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException;
 
     /**
-     * Unmarshals object from the output stream using given class loader.
+     * Unmarshals object from the input stream using given class loader.
      * This method should not close given input stream.
      *
      * @param <T> Type of unmarshalled object.
