@@ -553,7 +553,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
             Collection<Entry<K, V>> res = new ArrayList<>();
 
             for (Entry<K, V> e : cache().localEntries(peekModes))
-                res.add(new CacheEntryImpl<>(e.getKey(), e.getValue()));
+                res.add(e);
 
             return res;
         }
