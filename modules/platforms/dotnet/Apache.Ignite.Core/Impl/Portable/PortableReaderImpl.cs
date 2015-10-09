@@ -600,7 +600,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             switch (hdr)
             {
                 case PortableUtils.HdrNull:
-                    if (typeof (T).IsValueType)
+                    if (default(T) != null)
                         throw new PortableException(string.Format("Invalid data on deserialization. " +
                                                                   "Expected: {0} but was: Null.", typeof (T)));
                     
