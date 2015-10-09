@@ -2061,8 +2061,8 @@ namespace Apache.Ignite.Core.Tests.Portable
             {
                 Loc = reader.ReadDate("loc", true).Value;
                 Utc = reader.ReadDate("utc", false).Value;
-                LocNull = reader.ReadDate("loc", true);
-                UtcNull = reader.ReadDate("utc", false);
+                LocNull = reader.ReadDate("loc", true).Value;
+                UtcNull = reader.ReadDate("utc", false).Value;
                 LocArr = reader.ReadDateArray("locArr", true);
                 UtcArr = reader.ReadDateArray("utcArr", false);
 
@@ -2070,8 +2070,8 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 LocRaw = rawReader.ReadDate(true).Value;
                 UtcRaw = rawReader.ReadDate(false).Value;
-                LocNullRaw = rawReader.ReadDate(true);
-                UtcNullRaw = rawReader.ReadDate(false);
+                LocNullRaw = rawReader.ReadDate(true).Value;
+                UtcNullRaw = rawReader.ReadDate(false).Value;
                 LocArrRaw = rawReader.ReadDateArray(true);
                 UtcArrRaw = rawReader.ReadDateArray(false);
             }
