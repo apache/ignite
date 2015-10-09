@@ -234,10 +234,10 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="key">Key with which the specified value is to be associated.</param>
         /// <param name="val">Value to be associated with the specified key.</param>
         /// <returns>
-        /// The value associated with the key at the start of the operation or null if none was associated.
+        /// The value associated with the key at the start of the operation.
         /// </returns>
         [AsyncSupported]
-        TV GetAndPut(TK key, TV val);
+        ICacheValue<TV> GetAndPut(TK key, TV val);
         
         /// <summary>
         /// Atomically replaces the value for a given key if and only if there is a value currently mapped by the key.
@@ -245,18 +245,18 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="key">Key with which the specified value is to be associated.</param>
         /// <param name="val">Value to be associated with the specified key.</param>
         /// <returns>
-        /// The previous value associated with the specified key, or null if there was no mapping for the key.
+        /// The previous value associated with the specified key.
         /// </returns>
         [AsyncSupported]
-        TV GetAndReplace(TK key, TV val);
+        ICacheValue<TV> GetAndReplace(TK key, TV val);
 
         /// <summary>
         /// Atomically removes the entry for a key only if currently mapped to some value.
         /// </summary>
         /// <param name="key">Key with which the specified value is associated.</param>
-        /// <returns>The value if one existed or null if no mapping existed for this key.</returns>
+        /// <returns>The value if one existed.</returns>
         [AsyncSupported]
-        TV GetAndRemove(TK key);
+        ICacheValue<TV> GetAndRemove(TK key);
 
         /// <summary>
         /// Atomically associates the specified key with the given value if it is not already associated with a value.
@@ -281,10 +281,10 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="key">Key to store in cache.</param>
         /// <param name="val">Value to be associated with the given key.</param>
         /// <returns>
-        /// Previously contained value regardless of whether put happened or not (null if there was no previous value).
+        /// Previously contained value regardless of whether put happened or not.
         /// </returns>
         [AsyncSupported]
-        TV GetAndPutIfAbsent(TK key, TV val);
+        ICacheValue<TV> GetAndPutIfAbsent(TK key, TV val);
 
         /// <summary>
         /// Stores given key-value pair in cache only if there is a previous mapping for it.
