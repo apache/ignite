@@ -1133,7 +1133,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 cache.LocalClear(key);
 
-                Assert.AreEqual(0, cache.LocalPeek(key));
+                Assert.IsFalse(cache.TryLocalPeek(key).HasValue);
 
                 Assert.Less(cache.GetSize(), i);
 
@@ -1155,7 +1155,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.LocalClearAll(keys);
 
             foreach (var key in keys)
-                Assert.AreEqual(0, cache.LocalPeek(key));
+                Assert.IsFalse(cache.TryLocalPeek(key).HasValue);
 
             cache.Clear();
         }
@@ -2863,7 +2863,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             // Remove entry
             Assert.AreEqual(0, cache.Invoke(key, new T {Remove = true}, arg));
-            Assert.AreEqual(0, cache.Get(key));
+            Assert.AreEqual(false, cache.TryGet(key).HasValue);
 
             // Test exceptions
             AssertThrowsCacheEntryProcessorException(() => cache.Invoke(key, new T {ThrowErr = true}, arg));
