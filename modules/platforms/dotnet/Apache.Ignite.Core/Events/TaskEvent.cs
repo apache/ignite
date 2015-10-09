@@ -34,13 +34,13 @@ namespace Apache.Ignite.Core.Events
         private readonly string _taskClassName;
 
         /** */
-        private readonly IgniteGuid _taskSessionId;
+        private readonly IgniteGuid? _taskSessionId;
 
         /** */
         private readonly bool _internal;
 
         /** */
-        private readonly Guid _subjectId;
+        private readonly Guid? _subjectId;
 
         /// <summary>
         /// Constructor.
@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Events
             _taskClassName = r.ReadString();
             _taskSessionId = IgniteGuid.ReadPortable(r);
             _internal = r.ReadBoolean();
-            _subjectId = r.ReadGuid() ?? Guid.Empty;
+            _subjectId = r.ReadGuid();
         }
 		
         /// <summary>
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// Gets session ID of the task that triggered the event. 
         /// </summary>
-        public IgniteGuid TaskSessionId { get { return _taskSessionId; } }
+        public IgniteGuid? TaskSessionId { get { return _taskSessionId; } }
 
         /// <summary>
         /// Returns true if task is created by Ignite and is used for system needs. 
@@ -77,10 +77,10 @@ namespace Apache.Ignite.Core.Events
 
         /// <summary>
         /// Gets security subject ID initiated this task event, if available. This property is not available for 
-        /// <see cref="EventType.EvtTaskSessionAttrSet" /> task event. 
+        /// <see cref="EventType.EventTaskSessionAttrSet" /> task event. 
         /// Subject ID will be set either to node ID or client ID initiated task execution. 
         /// </summary>
-        public Guid SubjectId { get { return _subjectId; } }
+        public Guid? SubjectId { get { return _subjectId; } }
 
         /** <inheritDoc /> */
 	    public override string ToShortString()

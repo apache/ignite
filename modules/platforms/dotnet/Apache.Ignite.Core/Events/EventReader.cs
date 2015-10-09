@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Events
         /// <exception cref="System.InvalidCastException">Incompatible event type.</exception>
         public static T Read<T>(IPortableReader reader) where T : IEvent
         {
-            var r = reader.RawReader();
+            var r = reader.GetRawReader();
 
             var clsId = r.ReadInt();
 

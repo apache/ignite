@@ -101,7 +101,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         }
         else if (!(marsh instanceof PortableMarshaller))
             throw new IgniteException("Unsupported marshaller (only " + PortableMarshaller.class.getName() +
-                " can be used when running Ignite for .Net): " + marsh.getClass().getName());
+                " can be used when running Apache Ignite.NET): " + marsh.getClass().getName());
 
         // Set Ignite home so that marshaller context works.
         String ggHome = igniteCfg.getIgniteHome();

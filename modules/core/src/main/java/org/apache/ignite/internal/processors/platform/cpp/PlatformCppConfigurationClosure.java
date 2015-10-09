@@ -78,7 +78,7 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
         }
         else if (!(marsh instanceof PortableMarshaller))
             throw new IgniteException("Unsupported marshaller (only " + PortableMarshaller.class.getName() +
-                " can be used when running Ignite for C++): " + marsh.getClass().getName());
+                " can be used when running Apache Ignite C++): " + marsh.getClass().getName());
 
         // Set Ignite home so that marshaller context works.
         String ggHome = igniteCfg.getIgniteHome();

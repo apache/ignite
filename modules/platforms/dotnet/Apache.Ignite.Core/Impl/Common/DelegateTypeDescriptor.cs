@@ -19,11 +19,14 @@ namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
     using System.Globalization;
+
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
@@ -45,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private readonly Func<object, object, object> _computeFunc;
 
         /** */
-        private readonly Func<object, Guid, object, bool> _eventFilter;
+        private readonly Func<object, Guid?, object, bool> _eventFilter;
 
         /** */
         private readonly Func<object, object, object, bool> _cacheEntryFilter;
@@ -68,6 +71,9 @@ namespace Apache.Ignite.Core.Impl.Common
 
         /** */
         private readonly Func<object, object> _streamTransformerCtor;
+
+        /** */
+        private readonly Func<object, object, object> _continuousQueryFilterCtor;
 
         /// <summary>
         /// Gets the <see cref="IComputeFunc{T}" /> invocator.
@@ -94,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Precompiled invocator delegate.</returns>
-        public static Func<object, Guid, object, bool> GetEventFilter(Type type)
+        public static Func<object, Guid?, object, bool> GetEventFilter(Type type)
         {
             return Get(type)._eventFilter;
         }
@@ -174,6 +180,16 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
+        /// Gets the <see cref="ContinuousQueryFilter{TK,TV}"/>> ctor invocator.
+        /// </summary>
+        /// <param name="type">Type.</param>
+        /// <returns>Precompiled invocator delegate.</returns>
+        public static Func<object, object, object> GetContinuousQueryFilterCtor(Type type)
+        {
+            return Get(type)._continuousQueryFilterCtor;
+        }
+
+        /// <summary>
         /// Gets the <see cref="DelegateTypeDescriptor" /> by type.
         /// </summary>
         private static DelegateTypeDescriptor Get(Type type)
@@ -229,8 +245,8 @@ namespace Apache.Ignite.Core.Impl.Common
 
                     var args = iface.GetGenericArguments();
 
-                    _eventFilter = DelegateConverter.CompileFunc<Func<object, Guid, object, bool>>(iface, 
-                        new[] {typeof (Guid), args[0]}, new[] {false, true, false});
+                    _eventFilter = DelegateConverter.CompileFunc<Func<object, Guid?, object, bool>>(iface, 
+                        new[] {typeof (Guid?), args[0]}, new[] {false, true, false});
                 }
                 else if (genericTypeDefinition == typeof (ICacheEntryFilter<,>))
                 {
@@ -307,6 +323,16 @@ namespace Apache.Ignite.Core.Impl.Common
                                 typeof (bool)
                             },
                             new[] {true, false, false, false, false, false});
+                }
+                else if (genericTypeDefinition == typeof (ICacheEntryEventFilter<,>))
+                {
+                    ThrowIfMultipleInterfaces(_streamReceiver, type, typeof(ICacheEntryEventFilter<,>));
+
+                    var args = iface.GetGenericArguments();
+
+                    _continuousQueryFilterCtor =
+                        DelegateConverter.CompileCtor<Func<object, object, object>>(
+                            typeof(ContinuousQueryFilter<,>).MakeGenericType(args), new[] { iface, typeof(bool) });
                 }
             }
         }

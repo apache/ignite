@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 {
-    using System;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Portable;
 
@@ -27,12 +26,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
     /// </summary>
     public class ContinuousQueryFilterHolder : IPortableWriteAware
     {
-        /** Key type. */
-        private readonly Type _keyTyp;
-
-        /** Value type. */
-        private readonly Type _valTyp;
-
         /** Filter object. */
         private readonly object _filter;
 
@@ -42,32 +35,12 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="keyTyp">Key type.</param>
-        /// <param name="valTyp">Value type.</param>
         /// <param name="filter">Filter.</param>
         /// <param name="keepPortable">Keep portable flag.</param>
-        public ContinuousQueryFilterHolder(Type keyTyp, Type valTyp, object filter, bool keepPortable)
+        public ContinuousQueryFilterHolder(object filter, bool keepPortable)
         {
-            _keyTyp = keyTyp;
-            _valTyp = valTyp;
             _filter = filter;
             _keepPortable = keepPortable;
-        }
-
-        /// <summary>
-        /// Key type.
-        /// </summary>
-        internal Type KeyType
-        {
-            get { return _keyTyp; }
-        }
-
-        /// <summary>
-        /// Value type.
-        /// </summary>
-        internal Type ValueType
-        {
-            get { return _valTyp; }
         }
 
         /// <summary>
@@ -92,10 +65,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="writer">Writer.</param>
         public void WritePortable(IPortableWriter writer)
         {
-            PortableWriterImpl rawWriter = (PortableWriterImpl) writer.RawWriter();
+            PortableWriterImpl rawWriter = (PortableWriterImpl) writer.GetRawWriter();
 
-            PortableUtils.WritePortableOrSerializable(rawWriter, _keyTyp);
-            PortableUtils.WritePortableOrSerializable(rawWriter, _valTyp);
             PortableUtils.WritePortableOrSerializable(rawWriter, _filter);
 
             rawWriter.WriteBoolean(_keepPortable);
@@ -107,10 +78,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="reader">The reader.</param>
         public ContinuousQueryFilterHolder(IPortableReader reader)
         {
-            PortableReaderImpl rawReader = (PortableReaderImpl) reader.RawReader();
+            var rawReader = (PortableReaderImpl) reader.GetRawReader();
 
-            _keyTyp = PortableUtils.ReadPortableOrSerializable<Type>(rawReader);
-            _valTyp = PortableUtils.ReadPortableOrSerializable<Type>(rawReader);
             _filter = PortableUtils.ReadPortableOrSerializable<object>(rawReader);
             _keepPortable = rawReader.ReadBoolean();
         }

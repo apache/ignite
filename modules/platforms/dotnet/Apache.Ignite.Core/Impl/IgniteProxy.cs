@@ -335,9 +335,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IPortableMetadata Metadata(int typeId)
+        public IPortableMetadata GetMetadata(int typeId)
         {
-            return ((IClusterGroupEx)_ignite).Metadata(typeId);
+            return ((IClusterGroupEx)_ignite).GetMetadata(typeId);
         }
     }
 }
