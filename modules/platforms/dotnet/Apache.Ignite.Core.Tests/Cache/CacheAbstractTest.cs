@@ -569,7 +569,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(1, cache.Get(1));
 
-            old = cache.GetAndPut(1, 2);
+            old = cache.GetAndPut(1, 2).Value;
 
             Assert.AreEqual(1, old);
 
@@ -619,7 +619,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(0, cache.Get(1));
 
-            int old = cache.GetAndPut(1, 1);
+            var old = cache.GetAndPut(1, 1);
 
             Assert.AreEqual(0, old);
 
@@ -691,15 +691,15 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(0, cache.Get(1));
 
-            int old = cache.GetAndPutIfAbsent(1, 1);
+            var old = cache.GetAndPutIfAbsent(1, 1);
 
-            Assert.AreEqual(0, old);
+            Assert.IsFalse(old.HasValue);
 
             Assert.AreEqual(1, cache.Get(1));
 
             old = cache.GetAndPutIfAbsent(1, 2);
 
-            Assert.AreEqual(1, old);
+            Assert.AreEqual(1, old.Value);
 
             Assert.AreEqual(1, cache.Get(1));
         }
@@ -759,9 +759,9 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(0, cache.Get(1));
 
-            int old = cache.GetAndReplace(1, 1);
+            var old = cache.GetAndReplace(1, 1);
 
-            Assert.AreEqual(0, old);
+            Assert.IsFalse(old.HasValue);
 
             Assert.AreEqual(0, cache.Get(1));
 
@@ -771,7 +771,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             old = cache.GetAndReplace(1, 2);
 
-            Assert.AreEqual(1, old);
+            Assert.AreEqual(1, old.Value);
 
             Assert.AreEqual(2, cache.Get(1));
 
