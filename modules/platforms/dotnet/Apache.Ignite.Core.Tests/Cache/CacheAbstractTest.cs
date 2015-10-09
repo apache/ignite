@@ -505,7 +505,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, cache.Get(1));
             Assert.AreEqual(2, cache.Get(2));
             
-            Assert.Throws<PortableException>(() => cache.Get(3));
+            Assert.Throws<InvalidOperationException>(() => cache.Get(3));
             Assert.IsFalse(cache.TryGet(3).HasValue);
         }
 
@@ -1095,7 +1095,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 cache.Clear(key);
 
                 Assert.IsFalse(cache.TryGet(key).HasValue);
-                Assert.Throws<PortableException>(() => cache.Get(key));
+                Assert.Throws<InvalidOperationException>(() => cache.Get(key));
 
                 Assert.Less(cache.GetSize(), i);
 
