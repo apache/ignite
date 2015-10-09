@@ -504,7 +504,9 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(1, cache.Get(1));
             Assert.AreEqual(2, cache.Get(2));
-            Assert.AreEqual(0, cache.Get(3));
+            
+            Assert.Throws<PortableException>(() => cache.Get(3));
+            Assert.IsFalse(cache.TryGet(3).HasValue);
         }
 
         [Test]
@@ -561,17 +563,17 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.AreEqual(false, cache.TryGet(1).HasValue);
 
-            int old = cache.GetAndPut(1, 1).Value;
+            var old = cache.GetAndPut(1, 1);
 
-            Assert.AreEqual(0, old);
+            Assert.IsFalse(old.HasValue);
 
             Assert.AreEqual(1, cache.Get(1));
 
-            old = cache.GetAndPut(1, 2).Value;
+            old = cache.GetAndPut(1, 2);
 
-            Assert.AreEqual(1, old);
+            Assert.AreEqual(1, old.Value);
 
             Assert.AreEqual(2, cache.Get(1));
         }
@@ -617,17 +619,17 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache().WithAsync().WrapAsync();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.AreEqual(false, cache.TryGet(1).HasValue);
 
             var old = cache.GetAndPut(1, 1);
 
-            Assert.AreEqual(0, old);
+            Assert.IsFalse(old.HasValue);
 
             Assert.AreEqual(1, cache.Get(1));
 
             old = cache.GetAndPut(1, 2);
 
-            Assert.AreEqual(1, old);
+            Assert.AreEqual(1, old.Value);
 
             Assert.AreEqual(2, cache.Get(1));
         }
@@ -1092,7 +1094,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 cache.Clear(key);
 
-                Assert.AreEqual(0, cache.Get(key));
+                Assert.IsFalse(cache.TryGet(key).HasValue);
+                Assert.Throws<PortableException>(() => cache.Get(key));
 
                 Assert.Less(cache.GetSize(), i);
 
@@ -1112,7 +1115,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.ClearAll(keys);
 
             foreach (var key in keys)
-                Assert.AreEqual(0, cache.Get(key));
+                Assert.IsFalse(cache.TryGet(key).HasValue);
         }
 
         [Test]
@@ -2485,12 +2488,12 @@ namespace Apache.Ignite.Core.Tests.Cache
                 TestUtils.RunMultiThreaded(() =>
                 {
                     for (int j = 0; j < 1000; j++)
-                        cache.Get(1);
+                        cache.TryGet(1);
                 }, 5);
 
                 GC.Collect();
 
-                cache.Get(1);
+                cache.TryGet(1);
                 Assert.AreEqual(1, cache.GetFuture<int>().Get());
             }
 
@@ -3246,7 +3249,9 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         private static int PeekInt(ICache<int, int> cache, int key)
         {
-            return cache.LocalPeek(key, CachePeekMode.Onheap);
+            var val = cache.TryLocalPeek(key, CachePeekMode.Onheap);
+
+            return val.HasValue ? val.Value : 0;
         }
     }
 }
