@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using Apache.Ignite.Core.Cache;
@@ -321,7 +322,15 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOp<TK, TV>((int)CacheOp.Get, key);
+            var result = DoOutInOpNullable<TK, TV>((int) CacheOp.Get, key);
+
+            if (IsAsync)
+            {
+                Debug.Assert(!result.HasValue);
+                return default(TV);
+            }
+
+            return result.Value;
         }
 
         /** <inheritDoc /> */
