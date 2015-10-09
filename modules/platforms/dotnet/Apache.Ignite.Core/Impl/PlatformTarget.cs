@@ -511,6 +511,27 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="type">Operation type.</param>
         /// <param name="val">Value.</param>
+        /// <param name="result">Result.</param>
+        /// <returns>False when the opration returned null; otherwise true.</returns>
+        protected bool DoOutInOp<T1, TR>(int type, T1 val, out TR result)
+        {
+            var res = DoOutInOp<T1, object>(type, val);
+
+            if (res == null)
+            {
+                result = default(TR);
+                return false;
+            }
+
+            result = (TR) res;
+            return true;
+        }
+
+        /// <summary>
+        /// Perform simple out-in operation accepting single argument.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="val">Value.</param>
         /// <returns>Result.</returns>
         protected TR DoOutInOp<T1, TR>(int type, T1 val)
         {
