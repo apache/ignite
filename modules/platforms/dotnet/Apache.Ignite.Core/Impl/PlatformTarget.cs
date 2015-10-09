@@ -515,6 +515,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>False when the opration returned null; otherwise true.</returns>
         protected bool DoOutInOp<T1, TR>(int type, T1 val, out TR result)
         {
+            // TODO: This causes boxing.
             var res = DoOutInOp<T1, object>(type, val);
 
             if (res == null)
