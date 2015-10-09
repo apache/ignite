@@ -1833,9 +1833,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendConsistencyMultithreaded() throws Exception {
-        if (dual)
-            fail("Test fails in DUAL modes, see https://issues.apache.org/jira/browse/IGNITE-1631");
-
         final AtomicBoolean stop = new AtomicBoolean();
 
         final AtomicInteger chunksCtr = new AtomicInteger(); // How many chunks were written.

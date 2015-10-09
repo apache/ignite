@@ -2288,7 +2288,7 @@ public class IgfsMetaManager extends IgfsManager {
                             }
 
                             if (info.lockId() != null) {
-                                    throw fsException("Failed to remove file (file is opened for writing) [path=" +
+                                    throw fsException("Failed to open file (file is opened for writing) [path=" +
                                             path + ", fileId=" + info.id() + ", lockId=" + info.lockId() + ']');
                             }
 
