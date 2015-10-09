@@ -160,6 +160,29 @@ namespace Apache.Ignite.Core.Cache
         TV LocalPeek(TK key, params CachePeekMode[] modes);
 
         /// <summary>
+        /// Peeks at cached value using optional set of peek modes. This method will sequentially
+        /// iterate over given peek modes, and try to peek at value using each peek mode. Once a
+        /// non-null value is found, it will be immediately returned.
+        /// This method does not participate in any transactions, however, it may peek at transactional
+        /// value depending on the peek modes used.
+        /// </summary>
+        /// <param name="key">Key.</param>
+        /// <param name="value">When this method returns, the value associated with the specified key, 
+        /// if the key is found; otherwise, the default value for the type of the value parameter. 
+        /// This parameter is passed uninitialized.</param>
+        /// <param name="modes">Peek modes.</param>
+        /// <returns>True if a value has been found, false otherwise. Peeked value in <see cref="value"/>.</returns>
+        bool TryLocalPeek(TK key, out TV value, params CachePeekMode[] modes);
+
+        /// <summary>
+        /// Gets or sets cache value with the specified key.
+        /// Shortcut to <see cref="Get"/> and <see cref="Put"/>
+        /// </summary>
+        /// <param name="key">Key.</param>
+        /// <returns>Cache value with the specified key.</returns>
+        TV this[TK key] { get; set; }
+
+        /// <summary>
         /// Retrieves value mapped to the specified key from cache.
         /// If the value is not present in cache, then it will be looked up from swap storage. If
         /// it's not present in swap, or if swap is disable, and if read-through is allowed, value
