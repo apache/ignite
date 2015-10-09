@@ -324,13 +324,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var result = DoOutInOpNullable<TK, TV>((int) CacheOp.Get, key);
 
-            if (IsAsync)
-            {
-                Debug.Assert(!result.HasValue);
-                return default(TV);
-            }
-
-            return result.Value;
+            return GetNullableResult(result);
         }
 
         /** <inheritDoc /> */
@@ -972,6 +966,19 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return _invokeAllConverter.Value as Func<PortableReaderImpl, TResult>;
 
             return null;
+        }
+
+        /// <summary>
+        /// Gets the nullable result according to async mode.
+        /// </summary>
+        private TV GetNullableResult(IgniteNullable<TV> result)
+        {
+            if (!IsAsync) 
+                return result.Value;
+
+            Debug.Assert(!result.HasValue);
+
+            return default(TV);
         }
     }
 }
