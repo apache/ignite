@@ -78,7 +78,6 @@ import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1919,56 +1918,24 @@ public class IgfsMetaManager extends IgfsManager {
         assert props != null;
         assert validTxState(false);
 
-        List<String> components;
-        SortedSet<IgniteUuid> idSet;
-        IgfsPath existingPath;
+        DirectoryChainBuilder b = null;
 
         while (true) {
             if (busyLock.enterBusy()) {
                 try {
-                    // Take the ids in *path* order out of transaction:
-                    final List<IgniteUuid> idList = fileIds(path);
-
-                    idSet = new TreeSet<IgniteUuid>(PATH_ID_SORTING_COMPARATOR);
-
-                    idSet.add(ROOT_ID);
-
-                    components = path.components();
-
-                    // Store all the non-null ids in the set & construct existing path in one loop:
-                    existingPath = path.root();
-
-                    assert idList.size() == components.size() + 1;
-
-                    // Find the lowermost existing id:
-                    IgniteUuid parentId = ROOT_ID;
-
-                    for (int i = 1; i < idList.size(); i++) {
-                        IgniteUuid id = idList.get(i);
-
-                        if (id == null)
-                            break;
-
-                        parentId = id;
-
-                        boolean added = idSet.add(id);
-
-                        assert added;
-
-                        existingPath = new IgfsPath(existingPath, components.get(i - 1));
-                    }
+                    b = new DirectoryChainBuilder(path, props, props);
 
                     // Start TX.
                     IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                     try {
-                        final Map<IgniteUuid, IgfsFileInfo> lockedInfos = lockIds(idSet);
+                        final Map<IgniteUuid, IgfsFileInfo> lockedInfos = lockIds(b.idSet);
 
                         // If the path was changed, we close the current Tx and repeat the procedure again
                         // starting from taking the path ids.
-                        if (verifyPathIntegrity(existingPath, idList, lockedInfos)) {
+                        if (verifyPathIntegrity(b.existingPath, b.idList, lockedInfos)) {
                             // Locked path okay, trying to proceed with the remainder creation.
-                            IgfsFileInfo lowermostExistingInfo = lockedInfos.get(parentId);
+                            IgfsFileInfo lowermostExistingInfo = lockedInfos.get(b.lowermostExistingId);
 
                             // Check only the lowermost directory in the existing directory chain
                             // because others are already checked in #verifyPathIntegrity() above.
@@ -1976,9 +1943,9 @@ public class IgfsMetaManager extends IgfsManager {
                                 throw new IgfsParentNotDirectoryException("Failed to create directory (parent " +
                                     "element is not a directory)");
 
-                            if (idSet.size() == components.size() + 1) {
-                                assert existingPath.equals(path);
-                                assert lockedInfos.size() == idSet.size();
+                            if (b.existingIdCnt == b.components.size() + 1) {
+                                assert b.existingPath.equals(path);
+                                assert lockedInfos.size() == b.existingIdCnt;
 
                                 // The target directory already exists, nothing to do.
                                 // (The fact that all the path consisns of directories is already checked above).
@@ -1988,46 +1955,13 @@ public class IgfsMetaManager extends IgfsManager {
 
                             Map<String, IgfsListingEntry> parentListing = lowermostExistingInfo.listing();
 
-                            String shortName = components.get(idSet.size() - 1);
+                            String shortName = b.components.get(b.existingIdCnt - 1);
 
                             IgfsListingEntry entry = parentListing.get(shortName);
 
                             if (entry == null) {
-                                IgfsFileInfo childInfo = null;
+                                b.doBuild();
 
-                                String childName = null;
-
-                                IgfsFileInfo newDirInfo;
-
-                                // This loop creates the missing directory chain from the bottom to the top:
-                                for (int i = components.size() - 1; i >= idSet.size() - 1; i--) {
-                                    // Required entry does not exist.
-                                    // Create new directory info:
-                                    if (childName == null) {
-                                        assert childInfo == null;
-
-                                        newDirInfo = new IgfsFileInfo(true, props);
-                                    }
-                                    else {
-                                        assert childInfo != null;
-
-                                        newDirInfo = new IgfsFileInfo(Collections.singletonMap(childName,
-                                            new IgfsListingEntry(childInfo)), props);
-                                    }
-
-                                    boolean put = id2InfoPrj.putIfAbsent(newDirInfo.id(), newDirInfo);
-
-                                    assert put; // Because we used a new id that should be unique.
-
-                                    childInfo = newDirInfo;
-                                    childName = components.get(i);
-                                }
-
-                                // Now link the newly created directory chain to the lowermost existing parent:
-                                id2InfoPrj.invoke(parentId,
-                                    new UpdateListing(childName, new IgfsListingEntry(childInfo), false));
-
-                                // We're close to finish:
                                 tx.commit();
 
                                 break;
@@ -2056,17 +1990,11 @@ public class IgfsMetaManager extends IgfsManager {
             }
             else
                 throw new IllegalStateException("Failed to mkdir because Grid is stopping. [path=" + path + ']');
-        } // retry loop
-
-        if (evts.isRecordable(EVT_IGFS_DIR_CREATED)) {
-            IgfsPath createdPath = existingPath;
-
-            for (int i = idSet.size() - 1; i < components.size(); i++) {
-                createdPath = new IgfsPath(createdPath, components.get(i));
-
-                IgfsUtils.sendEvents(evts, locNode, createdPath, EVT_IGFS_DIR_CREATED);
-            }
         }
+
+        assert b != null;
+
+        b.sendEvents();
 
         return true;
     }
@@ -3622,81 +3550,52 @@ public class IgfsMetaManager extends IgfsManager {
             final boolean append,
             final boolean overwrite,
             Map<String, String> dirProps,
-            int blockSize,
-            @Nullable IgniteUuid affKey,
-            boolean evictExclude,
+            final int blockSize,
+            final @Nullable IgniteUuid affKey,
+            final boolean evictExclude,
             @Nullable Map<String, String> fileProps) throws IgniteCheckedException {
         assert validTxState(false);
         assert path != null;
 
-        List<String> components;
-        SortedSet<IgniteUuid> idSet;
-        IgfsPath existingPath;
-
         final String name = path.name();
+
+        DirectoryChainBuilder b = null;
 
         while (true) {
             if (busyLock.enterBusy()) {
                 try {
-                    // Take the ids in *path* order out of transaction:
-                    final List<IgniteUuid> idList = fileIds(path);
-
-                    idSet = new TreeSet<IgniteUuid>(PATH_ID_SORTING_COMPARATOR);
-
-                    components = path.components();
-
-                    // Store all the non-null ids in the set & construct existing path in one loop:
-                    existingPath = path.root();
-
-                    assert idList.size() == components.size() + 1;
-
-                    // Find the lowermost existing id:
-                    IgniteUuid lowermostExistingId = null;
-
-                    int idIdx = 0;
-
-                    for (IgniteUuid id: idList) {
-                        if (id == null)
-                            break;
-
-                        lowermostExistingId = id;
-
-                        boolean added = idSet.add(id);
-
-                        assert added;
-
-                        if (idIdx >= 1) // skip root.
-                            existingPath = new IgfsPath(existingPath, components.get(idIdx - 1));
-
-                        idIdx++;
-                    }
+                    b = new DirectoryChainBuilder(path, dirProps, fileProps) {
+                        /** {@inheritDoc} */
+                        @Override protected IgfsFileInfo buildLeaf() {
+                            return new IgfsFileInfo(blockSize, 0L, affKey, composeLockId(false),
+                                 evictExclude, leafProps);
+                        }
+                    };
 
                     // Start Tx:
                     IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                     try {
-                        final int existingIdCnt = idSet.size();
-
                         if (overwrite)
                             // Lock also the TRASH directory because in case of overwrite we
                             // may need to delete the old file:
-                            idSet.add(TRASH_ID);
+                            b.idSet.add(TRASH_ID);
 
-                        final Map<IgniteUuid, IgfsFileInfo> lockedInfos = lockIds(idSet);
+                        final Map<IgniteUuid, IgfsFileInfo> lockedInfos = lockIds(b.idSet);
 
                         assert !overwrite || lockedInfos.get(TRASH_ID) != null; // TRASH must exist at this point.
 
                         // If the path was changed, we close the current Tx and repeat the procedure again
                         // starting from taking the path ids.
-                        if (verifyPathIntegrity(existingPath, idList, lockedInfos)) {
+                        if (verifyPathIntegrity(b.existingPath, b.idList, lockedInfos)) {
                             // Locked path okay, trying to proceed with the remainder creation.
-                            final IgfsFileInfo lowermostExistingInfo = lockedInfos.get(lowermostExistingId);
+                            final IgfsFileInfo lowermostExistingInfo = lockedInfos.get(b.lowermostExistingId);
 
-                            if (existingIdCnt == components.size() + 1) {
+                            if (b.existingIdCnt == b.components.size() + 1) {
                                 // Full requestd path exists.
 
-                                assert existingPath.equals(path);
-                                assert lockedInfos.size() == (overwrite ? existingIdCnt + 1/*TRASH*/ : existingIdCnt);
+                                assert b.existingPath.equals(path);
+                                assert lockedInfos.size() == (overwrite ? b.existingIdCnt + 1/*TRASH*/ : b.existingIdCnt);
 
                                 if (lowermostExistingInfo.isDirectory()) {
                                     throw new IgfsPathAlreadyExistsException("Failed to "
@@ -3707,7 +3606,7 @@ public class IgfsMetaManager extends IgfsManager {
                                     // This is a file.
                                     assert lowermostExistingInfo.isFile();
 
-                                    final IgniteUuid parentId = idList.get(idList.size() - 2);
+                                    final IgniteUuid parentId = b.idList.get(b.idList.size() - 2);
 
                                     final IgniteUuid lockId = lowermostExistingInfo.lockId();
 
@@ -3797,72 +3696,21 @@ public class IgfsMetaManager extends IgfsManager {
 
                             Map<String, IgfsListingEntry> parentListing = lowermostExistingInfo.listing();
 
-                            final String uppermostFileToBeCreatedName = components.get(existingIdCnt - 1);
+                            final String uppermostFileToBeCreatedName = b.components.get(b.existingIdCnt - 1);
 
                             final IgfsListingEntry entry = parentListing.get(uppermostFileToBeCreatedName);
 
                             if (entry == null) {
-                                IgfsFileInfo childInfo = null;
+                                b.doBuild();
 
-                                String childName = null;
+                                assert b.leafInfo != null;
+                                assert b.leafParentId != null;
 
-                                IgfsFileInfo newFileInfo, createdFileInfo = null;
-                                IgniteUuid parentId = null;
-
-                                // This loop creates the missing directory chain from the bottom to the top:
-                                for (int i = components.size() - 1; i >= existingIdCnt - 1; i--) {
-                                    // Required entry does not exist.
-                                    if (childName == null) {
-                                        // Cretae the target file:
-                                        assert childInfo == null;
-
-                                        createdFileInfo = newFileInfo
-                                            = new IgfsFileInfo(cfg.getBlockSize(), 0L, affKey, composeLockId(false),
-                                                evictExclude, fileProps);
-                                    } else {
-                                        // Create new directory info:
-                                        assert childInfo != null;
-
-                                        newFileInfo = new IgfsFileInfo(
-                                                Collections.singletonMap(childName,
-                                                        new IgfsListingEntry(childInfo)), dirProps);
-
-                                        if (parentId == null)
-                                            parentId = newFileInfo.id();
-                                    }
-
-                                    boolean put = id2InfoPrj.putIfAbsent(newFileInfo.id(), newFileInfo);
-
-                                    assert put; // Because we used a new id that should be unic.
-
-                                    childName = components.get(i);
-
-                                    childInfo = newFileInfo;
-                                }
-
-                                // Now link the newly created file chain to the lowermost existing parent:
-                                id2InfoPrj.invoke(lowermostExistingId,
-                                        new UpdateListing(childName, new IgfsListingEntry(childInfo), false));
-
-                                if (parentId == null)
-                                    parentId = lowermostExistingId;
-
-                                IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = new T2<>(createdFileInfo, parentId);
+                                IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = new T2<>(b.leafInfo, b.leafParentId);
 
                                 tx.commit();
 
-                                if (evts.isRecordable(EVT_IGFS_DIR_CREATED)) {
-                                    IgfsPath createdPath = existingPath;
-
-                                    for (int i = existingPath.components().size(); i < components.size() - 1; i++) {
-                                        createdPath = new IgfsPath(createdPath, components.get(i));
-
-                                        IgfsUtils.sendEvents(evts, locNode, createdPath, EVT_IGFS_DIR_CREATED);
-                                    }
-                                }
-
-                                IgfsUtils.sendEvents(evts, locNode, path,
-                                        EVT_IGFS_FILE_CREATED, EVT_IGFS_FILE_OPENED_WRITE);
+                                b.sendEvents();
 
                                 return t2;
                             }
@@ -3870,15 +3718,202 @@ public class IgfsMetaManager extends IgfsManager {
                             // Another thread concurrently created file or directory in the path with
                             // the name we need.
                         }
-                    } finally {
+                    }
+                    finally {
                         tx.close();
                     }
-                } finally {
+                }
+                finally {
                     busyLock.leaveBusy();
                 }
             } else
                 throw new IllegalStateException("Failed to mkdir because Grid is stopping. [path=" + path + ']');
-        } // retry loop
+        }
+    }
+
+    /** File chain builder. */
+    private class DirectoryChainBuilder {
+        /** The requested path to be created. */
+        protected final IgfsPath path;
+
+        /** Full path components. */
+        protected final List<String> components;
+
+        /** The list of ids. */
+        protected final List<IgniteUuid> idList;
+
+        /** The set of ids. */
+        protected final SortedSet<IgniteUuid> idSet;
+
+        /** The middle node properties. */
+        protected final Map<String, String> middleProps;
+
+        /** The leaf node properties. */
+        protected final Map<String, String> leafProps;
+
+        /** The lowermost exsiting path id. */
+        protected final IgniteUuid lowermostExistingId;
+
+        /** The existing path. */
+        protected final IgfsPath existingPath;
+
+        /** The created leaf info. */
+        protected IgfsFileInfo leafInfo;
+
+        /** The leaf parent id. */
+        protected IgniteUuid leafParentId;
+
+        /** The number of existing ids. */
+        protected final int existingIdCnt;
+
+        /**
+         * Creates the builder and performa all the initial calculations.
+         */
+        protected DirectoryChainBuilder(IgfsPath path,
+                 Map<String,String> middleProps, Map<String,String> leafProps) throws IgniteCheckedException {
+            this.path = path;
+
+            this.components = path.components();
+
+            this.idList = fileIds(path);
+
+            this.idSet = new TreeSet<IgniteUuid>(PATH_ID_SORTING_COMPARATOR);
+
+            this.middleProps = middleProps;
+
+            this.leafProps = leafProps;
+            // Store all the non-null ids in the set & construct existing path in one loop:
+            IgfsPath existingPath = path.root();
+
+            assert idList.size() == components.size() + 1;
+
+            // Find the lowermost existing id:
+            IgniteUuid lowermostExistingId = null;
+
+            int idIdx = 0;
+
+            for (IgniteUuid id: idList) {
+                if (id == null)
+                    break;
+
+                lowermostExistingId = id;
+
+                boolean added = idSet.add(id);
+
+                assert added : "Not added id = " + id;
+
+                if (idIdx >= 1) // skip root.
+                    existingPath = new IgfsPath(existingPath, components.get(idIdx - 1));
+
+                idIdx++;
+            }
+
+            assert idSet.contains(ROOT_ID);
+
+            this.lowermostExistingId = lowermostExistingId;
+
+            this.existingPath = existingPath;
+
+            this.existingIdCnt = idSet.size();
+        }
+
+        /**
+         * Builds middle nodes.
+         */
+        protected IgfsFileInfo buildMiddleNode(String childName, IgfsFileInfo childInfo) {
+            return new IgfsFileInfo(Collections.singletonMap(childName,
+                    new IgfsListingEntry(childInfo)), middleProps);
+        }
+
+        /**
+         * Builds leaf.
+         */
+        protected IgfsFileInfo buildLeaf()  {
+            return new IgfsFileInfo(true, leafProps);
+        }
+
+        /**
+         * Links newly created chain to existing parent.
+         */
+        final void linkBuiltChainToExistingParent(String childName, IgfsFileInfo childInfo) throws IgniteCheckedException {
+            assert childInfo != null;
+
+            id2InfoPrj.invoke(lowermostExistingId,
+                    new UpdateListing(childName, new IgfsListingEntry(childInfo), false));
+        }
+
+        /**
+         * Does the main portion of job building the renmaining path.
+         */
+        public final void doBuild() throws IgniteCheckedException {
+            IgfsFileInfo childInfo = null;
+
+            String childName = null;
+
+            IgfsFileInfo newLeafInfo;
+            IgniteUuid parentId = null;
+
+            // This loop creates the missing directory chain from the bottom to the top:
+            for (int i = components.size() - 1; i >= existingIdCnt - 1; i--) {
+                // Required entry does not exist.
+                // Create new directory info:
+                if (childName == null) {
+                    assert childInfo == null;
+
+                    newLeafInfo = buildLeaf();
+
+                    assert newLeafInfo != null;
+
+                    leafInfo = newLeafInfo;
+                }
+                else {
+                    assert childInfo != null;
+
+                    newLeafInfo = buildMiddleNode(childName, childInfo);
+
+                    assert newLeafInfo != null;
+
+                    if (parentId == null)
+                        parentId = newLeafInfo.id();
+                }
+
+                boolean put = id2InfoPrj.putIfAbsent(newLeafInfo.id(), newLeafInfo);
+
+                assert put; // Because we used a new id that should be unique.
+
+                childInfo = newLeafInfo;
+
+                childName = components.get(i);
+            }
+
+            if (parentId == null)
+                parentId = lowermostExistingId;
+
+            leafParentId = parentId;
+
+            // Now link the newly created directory chain to the lowermost existing parent:
+            linkBuiltChainToExistingParent(childName, childInfo);
+        }
+
+        /**
+         * Sends events.
+         */
+        public final void sendEvents() {
+            if (evts.isRecordable(EVT_IGFS_DIR_CREATED)) {
+                IgfsPath createdPath = existingPath;
+
+                for (int i = existingPath.components().size(); i < components.size() - 1; i++) {
+                    createdPath = new IgfsPath(createdPath, components.get(i));
+
+                    IgfsUtils.sendEvents(evts, locNode, createdPath, EVT_IGFS_DIR_CREATED);
+                }
+            }
+
+            if (leafInfo.isDirectory())
+                IgfsUtils.sendEvents(evts, locNode, path, EVT_IGFS_DIR_CREATED);
+            else
+                IgfsUtils.sendEvents(evts, locNode, path, EVT_IGFS_FILE_CREATED, EVT_IGFS_FILE_OPENED_WRITE);
+        }
     }
 
     /**

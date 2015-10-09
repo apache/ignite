@@ -774,6 +774,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         catch (IgfsParentNotDirectoryException ignore) {
             // No-op.
         }
+        catch (IgfsException ignore) {
+            // Currently Ok for Hadoop fs:
+            if (!getClass().getSimpleName().startsWith("Hadoop"))
+                throw ignore;
+        }
 
         try {
             igfs.mkdirs(new IgfsPath("/d/f/something/else"), null);
@@ -782,6 +787,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         }
         catch (IgfsParentNotDirectoryException ignore) {
             // No-op.
+        }
+        catch (IgfsException ignore) {
+            // Currently Ok for Hadoop fs:
+            if (!getClass().getSimpleName().startsWith("Hadoop"))
+                throw ignore;
         }
 
         create(igfs, paths(DIR, SUBDIR), null);
@@ -1837,7 +1847,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
-                while (!stop.get()  && err.get() == null) {
+                while (!stop.get() && err.get() == null) {
                     IgfsOutputStream os = null;
 
                     try {
