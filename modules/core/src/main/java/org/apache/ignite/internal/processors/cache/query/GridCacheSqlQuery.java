@@ -34,7 +34,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Query.
  */
-public class GridCacheSqlQuery implements Message {
+public class GridCacheSqlQuery implements Message, GridCacheQueryMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -111,10 +111,8 @@ public class GridCacheSqlQuery implements Message {
         return params;
     }
 
-    /**
-     * @param m Marshaller.
-     */
-    public void marshallParams(Marshaller m) {
+    /** {@inheritDoc} */
+    @Override public void marshall(Marshaller m) {
         if (paramsBytes != null)
             return;
 
@@ -128,10 +126,8 @@ public class GridCacheSqlQuery implements Message {
         }
     }
 
-    /**
-     * @param m Marshaller.
-     */
-    public void unmarshallParams(Marshaller m) {
+    /** {@inheritDoc} */
+    @Override public void unmarshall(Marshaller m) {
         if (params != null)
             return;
 

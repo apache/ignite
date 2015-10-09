@@ -24,9 +24,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -37,7 +40,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 @Deprecated
 @IgniteCodeGeneratingFail
-public class GridQueryRequest implements Message {
+public class GridQueryRequest implements Message, GridCacheQueryMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -168,6 +171,24 @@ public class GridQueryRequest implements Message {
      */
     public Collection<GridCacheSqlQuery> queries() throws IgniteCheckedException {
         return qrys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void marshall(Marshaller m) {
+        if (F.isEmpty(qrys))
+            return;
+
+        for (GridCacheSqlQuery qry : qrys)
+            qry.marshall(m);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unmarshall(Marshaller m) {
+        if (F.isEmpty(qrys))
+            return;
+
+        for (GridCacheSqlQuery qry : qrys)
+            qry.unmarshall(m);
     }
 
     /** {@inheritDoc} */

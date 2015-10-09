@@ -24,8 +24,10 @@ import java.util.UUID;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -35,7 +37,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Query request.
  */
-public class GridH2QueryRequest implements Message, GridH2MarshallableMessage {
+public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -191,18 +193,20 @@ public class GridH2QueryRequest implements Message, GridH2MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public void marshall(Marshaller m) {
-        if (qrys != null) {
-            for (GridCacheSqlQuery qry : qrys)
-                qry.marshallParams(m);
-        }
+        if (F.isEmpty(qrys))
+            return;
+
+        for (GridCacheSqlQuery qry : qrys)
+            qry.marshall(m);
     }
 
     /** {@inheritDoc} */
     @Override public void unmarshall(Marshaller m) {
-        if (qrys != null) {
-            for (GridCacheSqlQuery qry : qrys)
-                qry.unmarshallParams(m);
-        }
+        if (F.isEmpty(qrys))
+            return;
+
+        for (GridCacheSqlQuery qry : qrys)
+            qry.unmarshall(m);
     }
 
     /** {@inheritDoc} */

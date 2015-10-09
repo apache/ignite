@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep.msg;
+package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.marshaller.Marshaller;
 
 /**
  * Message which needs to be marshalled and unmarshalled before sending or processing it.
  */
-public interface GridH2MarshallableMessage {
+public interface GridCacheQueryMarshallable {
     /**
      * @param m Marshaller.
      */

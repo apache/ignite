@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -93,7 +94,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2MarshallableMessage;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -1381,8 +1381,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     ) {
         boolean ok = true;
 
-        if (specialize == null && msg instanceof GridH2MarshallableMessage)
-            ((GridH2MarshallableMessage)msg).marshall(marshaller);
+        if (specialize == null && msg instanceof GridCacheQueryMarshallable)
+            ((GridCacheQueryMarshallable)msg).marshall(marshaller);
 
         ClusterNode locNode = null;
 
@@ -1397,8 +1397,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (specialize != null) {
                     msg = specialize.apply(node, msg);
 
-                    if (msg instanceof GridH2MarshallableMessage)
-                        ((GridH2MarshallableMessage)msg).marshall(marshaller);
+                    if (msg instanceof GridCacheQueryMarshallable)
+                        ((GridCacheQueryMarshallable)msg).marshall(marshaller);
                 }
 
                 ctx.io().send(node, topic, msg, GridReduceQueryExecutor.QUERY_POOL);
