@@ -167,20 +167,30 @@ namespace Apache.Ignite.Core.Cache
         /// value depending on the peek modes used.
         /// </summary>
         /// <param name="key">Key.</param>
-        /// <param name="value">When this method returns, the value associated with the specified key, 
-        /// if the key is found; otherwise, the default value for the type of the value parameter. 
-        /// This parameter is passed uninitialized.</param>
         /// <param name="modes">Peek modes.</param>
-        /// <returns>True if a value has been found, false otherwise. Peeked value in <see cref="value"/>.</returns>
-        bool TryLocalPeek(TK key, out TV value, params CachePeekMode[] modes);
+        /// <returns>Peeked value.</returns>
+        ICacheValue<TV> TryLocalPeek(TK key, params CachePeekMode[] modes);
 
         /// <summary>
-        /// Gets or sets cache value with the specified key.
+        /// Gets or sets a cache value with the specified key.
         /// Shortcut to <see cref="Get"/> and <see cref="Put"/>
         /// </summary>
         /// <param name="key">Key.</param>
         /// <returns>Cache value with the specified key.</returns>
         TV this[TK key] { get; set; }
+
+        /// <summary>
+        /// Retrieves value mapped to the specified key from cache. Throws an exception if t
+        /// 
+        /// If the value is not present in cache, then it will be looked up from swap storage. If
+        /// it's not present in swap, or if swap is disable, and if read-through is allowed, value
+        /// will be loaded from persistent store.
+        /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
+        /// </summary>
+        /// <param name="key">Key.</param>
+        /// <returns>Value.</returns>
+        [AsyncSupported]
+        TV Get(TK key);
 
         /// <summary>
         /// Retrieves value mapped to the specified key from cache.
@@ -192,7 +202,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="key">Key.</param>
         /// <returns>Value.</returns>
         [AsyncSupported]
-        TV Get(TK key);
+        ICacheValue<TV> TryGet(TK key);
 
         /// <summary>
         /// Retrieves values mapped to the specified keys from cache.

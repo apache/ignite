@@ -68,6 +68,7 @@
     <Compile Include="Cache\ICacheEntryProcessorResult.cs" />
     <Compile Include="Cache\ICacheLock.cs" />
     <Compile Include="Cache\ICacheMetrics.cs" />
+    <Compile Include="Cache\ICacheValue.cs" />
     <Compile Include="Cache\IMutableCacheEntry.cs" />
     <Compile Include="Cache\Query\Continuous\ContinuousQuery.cs" />
     <Compile Include="Cache\Query\Continuous\IContinuousQueryHandle.cs" />
