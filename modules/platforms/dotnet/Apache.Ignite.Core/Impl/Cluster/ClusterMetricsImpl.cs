@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Cluster
 {
     using System;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Portable;
 
@@ -34,9 +35,10 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             LastUpdateTimeRaw = reader.ReadLong();
 
-            DateTime? lastUpdateTime0 = reader.ReadDate();
+            var lastUpdateTime = reader.ReadDate();
+            Debug.Assert(lastUpdateTime.HasValue);
+            LastUpdateTime = lastUpdateTime.Value;
 
-            LastUpdateTime = lastUpdateTime0 ?? default(DateTime);
             MaximumActiveJobs = reader.ReadInt();
             CurrentActiveJobs = reader.ReadInt();
             AverageActiveJobs = reader.ReadFloat();
@@ -84,13 +86,13 @@ namespace Apache.Ignite.Core.Impl.Cluster
             NonHeapMemoryTotal = reader.ReadLong();
             Uptime = reader.ReadLong();
 
-            DateTime? startTime0 = reader.ReadDate();
+            var startTime = reader.ReadDate();
+            Debug.Assert(startTime.HasValue);
+            StartTime = startTime.Value;
 
-            StartTime = startTime0 ?? default(DateTime);
-
-            DateTime? nodeStartTime0 = reader.ReadDate();
-
-            NodeStartTime = nodeStartTime0 ?? default(DateTime);
+            var nodeStartTime = reader.ReadDate();
+            Debug.Assert(nodeStartTime.HasValue);
+            NodeStartTime = nodeStartTime.Value;
 
             CurrentThreadCount = reader.ReadInt();
             MaximumThreadCount = reader.ReadInt();

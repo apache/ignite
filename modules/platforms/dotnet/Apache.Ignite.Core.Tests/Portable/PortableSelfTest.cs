@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<bool>(_marsh.Marshal(true)), true);
 
             Assert.AreEqual(_marsh.Unmarshal<bool?>(_marsh.Marshal((bool?)false)), false);
-            Assert.AreEqual(_marsh.Unmarshal<bool?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<bool?>(_marsh.Marshal((bool?)null)), null);
         }
 
         /**
@@ -71,6 +71,10 @@ namespace Apache.Ignite.Core.Tests.Portable
             bool[] vals = { true, false };
 
             Assert.AreEqual(_marsh.Unmarshal<bool[]>(_marsh.Marshal(vals)), vals);
+
+            bool?[] vals2 = { true, false };
+
+            Assert.AreEqual(_marsh.Unmarshal<bool?[]>(_marsh.Marshal(vals2)), vals2);
         }
 
         /**
@@ -84,7 +88,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<sbyte>(_marsh.Marshal(sbyte.MaxValue)), sbyte.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<sbyte?>(_marsh.Marshal((sbyte?)1)), (sbyte?)1);
-            Assert.AreEqual(_marsh.Unmarshal<sbyte?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<sbyte?>(_marsh.Marshal((sbyte?)null)), null);
         }
 
         /**
@@ -110,7 +114,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<byte>(_marsh.Marshal(byte.MaxValue)), byte.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<byte?>(_marsh.Marshal((byte?)1)), (byte?)1);
-            Assert.AreEqual(_marsh.Unmarshal<byte?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<byte?>(_marsh.Marshal((byte?)null)), null);
         }
 
         /**
@@ -136,7 +140,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<short>(_marsh.Marshal(short.MaxValue)), short.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<short?>(_marsh.Marshal((short?)1)), (short?)1);
-            Assert.AreEqual(_marsh.Unmarshal<short?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<short?>(_marsh.Marshal((short?)null)), null);
         }
 
         /**
@@ -162,7 +166,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<ushort>(_marsh.Marshal(ushort.MaxValue)), ushort.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<ushort?>(_marsh.Marshal((ushort?)1)), (ushort?)1);
-            Assert.AreEqual(_marsh.Unmarshal<ushort?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<ushort?>(_marsh.Marshal((ushort?)null)), null);
         }
 
         /**
@@ -188,7 +192,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<char>(_marsh.Marshal(char.MaxValue)), char.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<char?>(_marsh.Marshal((char?)1)), (char?)1);
-            Assert.AreEqual(_marsh.Unmarshal<char?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<char?>(_marsh.Marshal((char?)null)), null);
         }
 
         /**
@@ -214,7 +218,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<int>(_marsh.Marshal(int.MaxValue)), int.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<int?>(_marsh.Marshal((int?)1)), (int?)1);
-            Assert.AreEqual(_marsh.Unmarshal<int?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<int?>(_marsh.Marshal((int?)null)), null);
         }
 
         /**
@@ -240,7 +244,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<uint>(_marsh.Marshal(uint.MaxValue)), uint.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<uint?>(_marsh.Marshal((uint?)1)), (int?)1);
-            Assert.AreEqual(_marsh.Unmarshal<uint?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<uint?>(_marsh.Marshal((uint?)null)), null);
         }
 
         /**
@@ -266,7 +270,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<long>(_marsh.Marshal(long.MaxValue)), long.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<long?>(_marsh.Marshal((long?)1)), (long?)1);
-            Assert.AreEqual(_marsh.Unmarshal<long?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<long?>(_marsh.Marshal((long?)null)), null);
         }
 
         /**
@@ -292,7 +296,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<ulong>(_marsh.Marshal(ulong.MaxValue)), ulong.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<ulong?>(_marsh.Marshal((ulong?)1)), (ulong?)1);
-            Assert.AreEqual(_marsh.Unmarshal<ulong?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<ulong?>(_marsh.Marshal((ulong?)null)), null);
         }
 
         /**
@@ -318,7 +322,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<float>(_marsh.Marshal(float.MaxValue)), float.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<float?>(_marsh.Marshal((float?)1)), (float?)1);
-            Assert.AreEqual(_marsh.Unmarshal<float?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<float?>(_marsh.Marshal((float?)null)), null);
         }
 
         /**
@@ -344,7 +348,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<double>(_marsh.Marshal(double.MaxValue)), double.MaxValue);
 
             Assert.AreEqual(_marsh.Unmarshal<double?>(_marsh.Marshal((double?)1)), (double?)1);
-            Assert.AreEqual(_marsh.Unmarshal<double?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<double?>(_marsh.Marshal((double?)null)), null);
         }
 
         /**
@@ -404,7 +408,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<decimal>(_marsh.Marshal(val = decimal.Parse("-11,12"))), val);
 
             // Test null.
-            Assert.AreEqual(_marsh.Unmarshal<decimal?>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<decimal?>(_marsh.Marshal((decimal?)null)), null);
         }
 
         /**
@@ -413,8 +417,8 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestWritePrimitiveDecimalArray()
         {
-            decimal[] vals = { decimal.One, decimal.Parse("11,12") };
-            decimal[] newVals = _marsh.Unmarshal<decimal[]>(_marsh.Marshal(vals));
+            decimal?[] vals = { decimal.One, decimal.Parse("11,12") };
+            var newVals = _marsh.Unmarshal<decimal?[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
         }
@@ -426,7 +430,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestWriteString()
         {
             Assert.AreEqual(_marsh.Unmarshal<string>(_marsh.Marshal("str")), "str");
-            Assert.AreEqual(_marsh.Unmarshal<string>(_marsh.Marshal(null)), null);
+            Assert.AreEqual(_marsh.Unmarshal<string>(_marsh.Marshal((string) null)), null);
         }
 
         /**
@@ -706,13 +710,13 @@ namespace Apache.Ignite.Core.Tests.Portable
             DecimalReflective obj1 = new DecimalReflective
             {
                 Val = decimal.Zero,
-                ValArr = new[] {decimal.One, decimal.MinusOne}
+                ValArr = new decimal?[] {decimal.One, decimal.MinusOne}
             };
 
             IPortableObject portObj = marsh.Unmarshal<IPortableObject>(marsh.Marshal(obj1), PortableMode.ForcePortable);
 
             Assert.AreEqual(obj1.Val, portObj.GetField<decimal>("val"));
-            Assert.AreEqual(obj1.ValArr, portObj.GetField<decimal[]>("valArr"));
+            Assert.AreEqual(obj1.ValArr, portObj.GetField<decimal?[]>("valArr"));
 
             Assert.AreEqual(obj1.Val, portObj.Deserialize<DecimalReflective>().Val);
             Assert.AreEqual(obj1.ValArr, portObj.Deserialize<DecimalReflective>().ValArr);
@@ -721,14 +725,14 @@ namespace Apache.Ignite.Core.Tests.Portable
             DecimalMarshalAware obj2 = new DecimalMarshalAware();
 
             obj2.Val = decimal.Zero;
-            obj2.ValArr = new[] { decimal.One, decimal.MinusOne };
+            obj2.ValArr = new decimal?[] { decimal.One, decimal.MinusOne };
             obj2.RawVal = decimal.MaxValue;
-            obj2.RawValArr = new[] { decimal.MinusOne, decimal.One} ;
+            obj2.RawValArr = new decimal?[] { decimal.MinusOne, decimal.One} ;
 
             portObj = marsh.Unmarshal<IPortableObject>(marsh.Marshal(obj2), PortableMode.ForcePortable);
 
             Assert.AreEqual(obj2.Val, portObj.GetField<decimal>("val"));
-            Assert.AreEqual(obj2.ValArr, portObj.GetField<decimal[]>("valArr"));
+            Assert.AreEqual(obj2.ValArr, portObj.GetField<decimal?[]>("valArr"));
 
             Assert.AreEqual(obj2.Val, portObj.Deserialize<DecimalMarshalAware>().Val);
             Assert.AreEqual(obj2.ValArr, portObj.Deserialize<DecimalMarshalAware>().ValArr);
@@ -1604,7 +1608,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 PUlong = *(ulong*)&uLong;
 
                 PString = reader.ReadString("string");
-                PGuid = reader.ReadGuid("guid").Value;
+                PGuid = reader.ReadObject<Guid>("guid");
                 PnGuid = reader.ReadGuid("nguid");
             }
         }
@@ -1724,7 +1728,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 obj0.PUlong = *(ulong*)&uLong;
 
                 obj0.PString = reader.ReadString("string");
-                obj0.PGuid = reader.ReadGuid("guid").Value;
+                obj0.PGuid = reader.ReadObject<Guid>("guid");
                 obj0.PnGuid = reader.ReadGuid("nguid");
             }
         }
@@ -1945,19 +1949,19 @@ namespace Apache.Ignite.Core.Tests.Portable
         public class DecimalReflective
         {
             /** */
-            public decimal Val;
+            public decimal? Val;
 
             /** */
-            public decimal[] ValArr;
+            public decimal?[] ValArr;
         }
 
         public class DecimalMarshalAware : DecimalReflective, IPortableMarshalAware
         {
             /** */
-            public decimal RawVal;
+            public decimal? RawVal;
 
             /** */
-            public decimal[] RawValArr;
+            public decimal?[] RawValArr;
 
             /** <inheritDoc /> */
             public void WritePortable(IPortableWriter writer)

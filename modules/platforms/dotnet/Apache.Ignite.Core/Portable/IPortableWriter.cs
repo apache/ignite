@@ -143,28 +143,14 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Decimal value.</param>
-        void WriteDecimal(string fieldName, decimal val);
+        void WriteDecimal(string fieldName, decimal? val);
 
         /// <summary>
         /// Write named decimal array.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Decimal array.</param>
-        void WriteDecimalArray(string fieldName, decimal[] val);
-
-//        /// <summary>
-//        /// Write named date value.
-//        /// </summary>
-//        /// <param name="fieldName">Field name.</param>
-//        /// <param name="val">Date value.</param>
-//        void WriteDate(string fieldName, DateTime val);
-//
-//        /// <summary>
-//        /// Write named date array.
-//        /// </summary>
-//        /// <param name="fieldName">Field name.</param>
-//        /// <param name="val">Date array.</param>
-//        void WriteDateArray(string fieldName, DateTime[] val);
+        void WriteDecimalArray(string fieldName, decimal?[] val);
 
         /// <summary>
         /// Write named date value.
@@ -193,20 +179,6 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">String array.</param>
         void WriteStringArray(string fieldName, string[] val);
-
-//        /// <summary>
-//        /// Write named GUID value.
-//        /// </summary>
-//        /// <param name="fieldName">Field name.</param>
-//        /// <param name="val">GUID value.</param>
-//        void WriteGuid(string fieldName, Guid val);
-//
-//        /// <summary>
-//        /// Write named GUID array.
-//        /// </summary>
-//        /// <param name="fieldName">Field name.</param>
-//        /// <param name="val">GUID array.</param>
-//        void WriteGuidArray(string fieldName, Guid[] val);
 
         /// <summary>
         /// Write named GUID value.

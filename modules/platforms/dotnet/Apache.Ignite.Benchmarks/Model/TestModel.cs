@@ -41,8 +41,8 @@ namespace Apache.Ignite.Benchmarks.Model
         public float[] FloatArray { get; set; }
         public double Double { get; set; }
         public double[] DoubleArray { get; set; }
-        public decimal Decimal { get; set; }
-        public decimal[] DecimalArray { get; set; }
+        public decimal? Decimal { get; set; }
+        public decimal?[] DecimalArray { get; set; }
         public DateTime? Date { get; set; }
         public DateTime?[] DateArray { get; set; }
         public string String { get; set; }
@@ -104,7 +104,7 @@ namespace Apache.Ignite.Benchmarks.Model
             DateArray = reader.ReadDateArray("DateArray");
             String = reader.ReadString("String");
             StringArray = reader.ReadStringArray("StringArray");
-            Guid = reader.ReadGuid("Guid");
+            Guid = reader.ReadObject<Guid>("Guid");
             GuidArray = reader.ReadGuidArray("GuidArray");
         }
     }

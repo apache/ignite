@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private readonly Func<object, object, object> _computeFunc;
 
         /** */
-        private readonly Func<object, Guid, object, bool> _eventFilter;
+        private readonly Func<object, Guid?, object, bool> _eventFilter;
 
         /** */
         private readonly Func<object, object, object, bool> _cacheEntryFilter;
@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Precompiled invocator delegate.</returns>
-        public static Func<object, Guid, object, bool> GetEventFilter(Type type)
+        public static Func<object, Guid?, object, bool> GetEventFilter(Type type)
         {
             return Get(type)._eventFilter;
         }
@@ -245,8 +245,8 @@ namespace Apache.Ignite.Core.Impl.Common
 
                     var args = iface.GetGenericArguments();
 
-                    _eventFilter = DelegateConverter.CompileFunc<Func<object, Guid, object, bool>>(iface, 
-                        new[] {typeof (Guid), args[0]}, new[] {false, true, false});
+                    _eventFilter = DelegateConverter.CompileFunc<Func<object, Guid?, object, bool>>(iface, 
+                        new[] {typeof (Guid?), args[0]}, new[] {false, true, false});
                 }
                 else if (genericTypeDefinition == typeof (ICacheEntryFilter<,>))
                 {

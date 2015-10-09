@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Events
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
@@ -56,7 +57,9 @@ namespace Apache.Ignite.Core.Events
         /// <param name="r">The reader to read data from.</param>
         protected EventBase(IPortableRawReader r)
         {
-            _id = IgniteGuid.ReadPortable(r);
+            var id = IgniteGuid.ReadPortable(r);
+            Debug.Assert(id.HasValue);
+            _id = id.Value;
 
             _localOrder = r.ReadLong();
 
@@ -65,7 +68,10 @@ namespace Apache.Ignite.Core.Events
             _message = r.ReadString();
             _type = r.ReadInt();
             _name = r.ReadString();
-            _timestamp = r.ReadDate() ?? DateTime.Now;
+            
+            var timestamp = r.ReadDate();
+            Debug.Assert(timestamp.HasValue);
+            _timestamp = timestamp.Value;
         }
 
         /** <inheritDoc /> */

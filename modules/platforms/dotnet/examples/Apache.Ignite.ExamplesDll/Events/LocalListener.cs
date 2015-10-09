@@ -43,7 +43,7 @@ namespace Apache.Ignite.ExamplesDll.Events
         /// <param name="nodeId">Node identifier.</param>
         /// <param name="evt">Event.</param>
         /// <returns>Value indicating whether specified event passes this filter.</returns>
-        public bool Invoke(Guid nodeId, IEvent evt)
+        public bool Invoke(Guid? nodeId, IEvent evt)
         {
             Interlocked.Increment(ref _eventsReceived);
 
