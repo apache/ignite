@@ -77,7 +77,6 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -85,7 +84,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
@@ -112,7 +110,6 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.ROOT_ID;
-import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.TRASH_ID;
 
 /**
  * Cache-based IGFS implementation.
@@ -741,7 +738,8 @@ public final class IgfsImpl implements IgfsEx {
 
                 // Record event if needed.
                 if (res && desc != null)
-                    meta.sendEvents(path, desc.isFile ? EVT_IGFS_FILE_DELETED : EVT_IGFS_DIR_DELETED);
+                    IgfsUtils.sendEvents(evts, locNode, path,
+                            desc.isFile ? EVT_IGFS_FILE_DELETED : EVT_IGFS_DIR_DELETED);
 
                 return res;
             }
@@ -847,7 +845,7 @@ public final class IgfsImpl implements IgfsEx {
 
                     for (IgfsFile child : children) {
                         IgfsFileInfo fsInfo = new IgfsFileInfo(
-                            child.blockSize(), child.length(), evictExclude(path, false), child.properties());
+                                child.blockSize(), child.length(), evictExclude(path, false), child.properties());
 
                         files.add(new IgfsFileImpl(child.path(), fsInfo, data.groupBlockSize()));
                     }
@@ -863,7 +861,7 @@ public final class IgfsImpl implements IgfsEx {
                         if (info.isFile())
                             // If this is a file, return its description.
                             return Collections.<IgfsFile>singleton(new IgfsFileImpl(path, info,
-                                data.groupBlockSize()));
+                                    data.groupBlockSize()));
 
                         // Perform the listing.
                         for (Map.Entry<String, IgfsListingEntry> e : info.listing().entrySet()) {
@@ -920,9 +918,9 @@ public final class IgfsImpl implements IgfsEx {
                     IgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize0);
 
                     IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, desc.info(),
-                        cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
+                            cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
 
-                    meta.sendEvents(path, EVT_IGFS_FILE_OPENED_READ);
+                    IgfsUtils.sendEvents(evts, locNode, path, EVT_IGFS_FILE_OPENED_READ);
 
                     return os;
                 }
@@ -940,9 +938,9 @@ public final class IgfsImpl implements IgfsEx {
 
                 // Input stream to read data from grid cache with separate blocks.
                 IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, info,
-                    cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
+                        cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
 
-                meta.sendEvents(path, EVT_IGFS_FILE_OPENED_READ);
+                IgfsUtils.sendEvents(evts, locNode, path, EVT_IGFS_FILE_OPENED_READ);
 
                 return os;
             }
@@ -994,7 +992,7 @@ public final class IgfsImpl implements IgfsEx {
             @Override public IgfsOutputStream call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Open file for writing [path=" + path + ", bufSize=" + bufSize + ", overwrite=" +
-                        overwrite + ", props=" + props + ']');
+                            overwrite + ", props=" + props + ']');
 
                 final IgfsMode mode = resolveMode(path);
 
@@ -1006,14 +1004,14 @@ public final class IgfsImpl implements IgfsEx {
                     await(path);
 
                     IgfsSecondaryOutputStreamDescriptor desc = meta.createDual(secondaryFs, path, simpleCreate,
-                        props, overwrite, bufSize, (short) replication, groupBlockSize(), affKey);
+                            props, overwrite, bufSize, (short) replication, groupBlockSize(), affKey);
 
                     batch = newBatch(path, desc.out());
 
                     IgfsEventAwareOutputStream os = new IgfsEventAwareOutputStream(path, desc.info(), desc.parentId(),
-                        bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
+                            bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
 
-                    meta.sendEvents(path, EVT_IGFS_FILE_OPENED_WRITE);
+                    IgfsUtils.sendEvents(evts, locNode, path, EVT_IGFS_FILE_OPENED_WRITE);
 
                     return os;
                 }
@@ -1027,25 +1025,13 @@ public final class IgfsImpl implements IgfsEx {
                 } else
                     dirProps = fileProps = new HashMap<>(props);
 
-                IgfsOutputStream os = meta.create(path, false/*append*/, overwrite, dirProps, new IgniteOutClosureX<IgfsFileInfo>() {
-                    @Override public IgfsFileInfo applyx() throws IgniteCheckedException {
-                        IgfsFileInfo info = new IgfsFileInfo(cfg.getBlockSize(), affKey, evictExclude(path, true), fileProps);
+                IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = meta.create(path, false/*append*/, overwrite, dirProps,
+                    cfg.getBlockSize(), affKey, evictExclude(path, true), fileProps);
 
-                        return meta.lockInfo(info, false);
-                    }
-                }, new IgniteBiClosure<IgfsFileInfo, IgniteUuid, IgfsOutputStream>() {
-                    @Override public IgfsOutputStream apply(IgfsFileInfo info, IgniteUuid parentId) {
-                        assert info.lockId() != null;
-                        assert parentId != null && parentId != TRASH_ID;
+                assert t2 != null;
 
-                        return new IgfsEventAwareOutputStream(path, info, parentId,
+                return new IgfsEventAwareOutputStream(path, t2.get1(), t2.get2(),
                                 bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, null);
-                    }
-                });
-
-                assert os != null;
-
-                return os;
             }
         });
     }
@@ -1116,22 +1102,13 @@ public final class IgfsImpl implements IgfsEx {
                 else
                     dirProps = fileProps = new HashMap<>(props);
 
-                return meta.create(path, true/*append*/, false/*overwrite*/,
-                        dirProps, new IgniteOutClosureX<IgfsFileInfo>() {
-                    @Override public IgfsFileInfo applyx() throws IgniteCheckedException {
-                        IgfsFileInfo info = new IgfsFileInfo(cfg.getBlockSize(), null/*affKey*/, evictExclude(path, true), fileProps);
+                IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = meta.create(path, true/*append*/, false/*overwrite*/,
+                        dirProps, cfg.getBlockSize(), null/*affKey*/, evictExclude(path, true), fileProps);
 
-                        return meta.lockInfo(info, false);
-                    }
-                }, new IgniteBiClosure<IgfsFileInfo, IgniteUuid, IgfsOutputStream>() {
-                    @Override public IgfsOutputStream apply(IgfsFileInfo info, IgniteUuid parentId) {
-                        assert info.lockId() != null;
-                        assert parentId != null && parentId != TRASH_ID;
+                assert t2 != null;
 
-                        return new IgfsEventAwareOutputStream(path, info, parentId,
-                                bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, null);
-                    }
-                });
+                return new IgfsEventAwareOutputStream(path, t2.get1(), t2.get2(),
+                        bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, null);
             }
         });
     }

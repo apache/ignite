@@ -3755,6 +3755,7 @@ public abstract class IgniteUtils {
             }
             catch (Exception ignored) {
                 // No-op.
+                ignored.printStackTrace();
             }
     }
 

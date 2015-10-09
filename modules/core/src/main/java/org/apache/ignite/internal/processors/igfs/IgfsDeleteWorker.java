@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.IgfsEvent;
+import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -35,6 +35,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -230,14 +231,17 @@ public class IgfsDeleteWorker extends IgfsThread {
                 else {
                     assert info.isFile();
 
-                    IgfsFileInfo lockedInfo;
+                    // Lock the file with special lock Id to prevent concurrent writing:
+                    IgfsFileInfo lockedInfo = null;
 
-                    try {
-                        lockedInfo = meta.lock(id, true); // Lock the file to prevent concurrent writing
-                    }
-                    catch (IgniteCheckedException ice) {
-                        return false;
-                    }
+//                    try {
+                        lockedInfo = meta.lock(id, true);
+//                    } catch (IgfsPathNotFoundException ipnfe) {
+//                        // info stays null.
+//                    }
+
+                    if (lockedInfo == null)
+                        return false; // File is locked, we cannot delete it.
 
                     assert id.equals(lockedInfo.id());
 
@@ -247,13 +251,8 @@ public class IgfsDeleteWorker extends IgfsThread {
 
                     boolean ret = meta.delete(TRASH_ID, name, id);
 
-                    if (evts.isRecordable(EVT_IGFS_FILE_PURGED)) {
-                        if (info.path() != null)
-                            evts.record(new IgfsEvent(info.path(),
-                                igfsCtx.kernalContext().discovery().localNode(), EVT_IGFS_FILE_PURGED));
-                        else
-                            LT.warn(log, null, "Removing file without path info: " + info);
-                    }
+                    IgfsUtils.sendEvents(evts, igfsCtx.kernalContext().discovery().localNode(),
+                        info.path(), EVT_IGFS_FILE_PURGED);
 
                     return ret;
                 }
@@ -308,15 +307,23 @@ public class IgfsDeleteWorker extends IgfsThread {
                         if (fileInfo != null) {
                             assert fileInfo.isFile();
 
-                            try {
-                                IgfsFileInfo lockedInfo = meta.lock(fileInfo.id(), true);
+                            IgfsFileInfo lockedInfo = null;
+
+//                            try {
+                                lockedInfo = meta.lock(fileInfo.id(), true);
+//                            } catch (IgfsPathNotFoundException ipnfe) {
+//                                // info stays null;
+//                            }
+
+                            if (lockedInfo == null)
+                                // File is already locked:
+                                failedFiles++;
+                            else {
+                                assert IgfsMetaManager.DELETE_LOCK_ID.equals(lockedInfo.lockId());
 
                                 fut.add(data.delete(lockedInfo));
 
                                 delListing.put(entry.getKey(), entry.getValue());
-                            }
-                            catch (IgniteCheckedException ice) {
-                                failedFiles++;
                             }
                         }
                     }

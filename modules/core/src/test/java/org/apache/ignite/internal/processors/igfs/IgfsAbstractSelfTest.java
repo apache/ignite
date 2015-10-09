@@ -63,7 +63,6 @@ import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -102,11 +101,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static final long BLOCK_SIZE = 32 * 1024 * 1024;
 
     /** Default repeat count. */
-    protected static final int REPEAT_CNT = 5; // Diagnostic: up to 500; Regression: 5
+    protected static final int REPEAT_CNT = 50; // Diagnostic: up to 500; Regression: 5
 
     /** Concurrent operations count.
      * ! Not more than ~150, see https://issues.apache.org/jira/browse/IGNITE-1581. */
-    protected static final int OPS_CNT = 32; // Diagnostic: 100; Regression: 16
+    protected static final int OPS_CNT = 100; // Diagnostic: 100; Regression: 16
 
     /** Renames count. */
     protected static final int RENAME_CNT = OPS_CNT;
@@ -1031,8 +1030,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                 try {
                     is = igfs.open(FILE);
-                }
-                finally {
+                } finally {
                     U.closeQuiet(is);
                 }
 
@@ -1154,8 +1152,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 try {
                     os1 = igfs.create(FILE, true);
                     os2 = igfs.create(FILE, true);
-                }
-                finally {
+                } finally {
                     U.closeQuiet(os1);
                     U.closeQuiet(os2);
                 }
@@ -1425,11 +1422,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         igfs.create(FILE, false).close();
 
-        int threadCnt = 5;
+        int threadCnt = 50;
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
-                while (!stop.get()) {
+                while (!stop.get() && err.get() == null) {
                     IgfsOutputStream os = null;
 
                     try {
@@ -1446,21 +1443,34 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                         Throwable cause = chain[chain.length - 1];
 
-                        if (!e.getMessage().startsWith("Failed to remove file (file is opened for writing)")
+                        if (!e.getMessage().startsWith("Failed to overwrite file (file is opened for writing)")
                                 && (cause == null
-                                    || !cause.getMessage().startsWith("Failed to remove file (file is opened for writing)"))) {
-                            err.compareAndSet(null, e);
+                                    || !cause.getMessage().startsWith("Failed to overwrite file (file is opened for writing)"))) {
 
-                            break;
+                            System.out.println("Failed due to IgniteException exception. Cause:");
+                            cause.printStackTrace(System.out);
+
+                            err.compareAndSet(null, e);
                         }
                     }
                     catch (IOException e) {
                         err.compareAndSet(null, e);
 
-                        break;
+                        Throwable[] chain = X.getThrowables(e);
+
+                        Throwable cause = chain[chain.length - 1];
+
+                        System.out.println("Failed due to IOException exception. Cause:");
+                        cause.printStackTrace(System.out);
                     }
                     finally {
-                        U.closeQuiet(os);
+                        if (os != null)
+                            try {
+                                os.close();
+                            }
+                            catch (IOException ioe) {
+                                throw new IgniteException(ioe);
+                            }
                     }
                 }
             }
@@ -1468,7 +1478,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         long startTime = U.currentTimeMillis();
 
-        while (createCtr.get() < 50 && U.currentTimeMillis() - startTime < 60 * 1000)
+        while (err.get() == null
+                && createCtr.get() < 500
+                && U.currentTimeMillis() - startTime < 60 * 1000)
             U.sleep(100);
 
         stop.set(true);
@@ -1478,7 +1490,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         awaitFileClose(igfs.asSecondary(), FILE);
 
         if (err.get() != null) {
-            X.println("Test failed: Rethrowing accumulated error:");
+            X.println("Test failed: rethrowing first error: " + err.get());
 
             throw err.get();
         }
@@ -1492,6 +1504,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppend() throws Exception {
+        if (dual)
+            fail("Test fails in DUAL modes, see https://issues.apache.org/jira/browse/IGNITE-1631");
+
         create(igfs, paths(DIR, SUBDIR), null);
 
         createFile(igfs, FILE, true, BLOCK_SIZE, chunk);
@@ -1510,7 +1525,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         IgfsOutputStream os = null;
 
         try {
-            // TODO: fails in DUAL modes, see https://issues.apache.org/jira/browse/IGNITE-1631
             os = igfs.append(path2, true/*create*/);
 
             writeFileChunks(os, chunk);
@@ -1567,10 +1581,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                 try {
                     os1 = igfs.append(FILE, false);
+
                     os2 = igfs.append(FILE, false);
-                }
-                finally {
+                } finally {
                     U.closeQuiet(os1);
+
                     U.closeQuiet(os2);
                 }
 
@@ -1808,6 +1823,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppendConsistencyMultithreaded() throws Exception {
+        if (dual)
+            fail("Test fails in DUAL modes, see https://issues.apache.org/jira/browse/IGNITE-1631");
+
         final AtomicBoolean stop = new AtomicBoolean();
 
         final AtomicInteger chunksCtr = new AtomicInteger(); // How many chunks were written.
@@ -1815,11 +1833,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         igfs.create(FILE, false).close();
 
-        int threadCnt = 5;
+        int threadCnt = 50;
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
-                while (!stop.get()) {
+                while (!stop.get()  && err.get() == null) {
                     IgfsOutputStream os = null;
 
                     try {
@@ -1827,25 +1845,31 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                         os.write(chunk);
 
-                        U.sleep(50);
-
                         os.close();
 
                         chunksCtr.incrementAndGet();
                     }
-                    catch (IgniteInterruptedCheckedException | IgniteException ignore) {
-                        try {
-                            U.sleep(10);
-                        }
-                        catch (IgniteInterruptedCheckedException ignored) {
-                            // nO-op.
-                        }
+                    catch (IgniteException e) {
+                        Throwable[] chain = X.getThrowables(e);
+
+                        Throwable cause = chain[chain.length - 1];
+
+                        if (!e.getMessage().startsWith("Failed to open file (file is opened for writing)")
+                                && (cause == null
+                                || !cause.getMessage().startsWith("Failed to open file (file is opened for writing)")))
+                            err.compareAndSet(null, e);
                     }
                     catch (IOException e) {
                         err.compareAndSet(null, e);
                     }
                     finally {
-                        U.closeQuiet(os);
+                        if (os != null)
+                            try {
+                                os.close();
+                            }
+                            catch (IOException ioe) {
+                                throw new IgniteException(ioe);
+                            }
                     }
                 }
             }
@@ -1853,7 +1877,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         long startTime = U.currentTimeMillis();
 
-        while (chunksCtr.get() < 50 && U.currentTimeMillis() - startTime < 60 * 1000)
+        while (err.get() == null
+                && chunksCtr.get() < 50 && U.currentTimeMillis() - startTime < 60 * 1000)
             U.sleep(100);
 
         stop.set(true);
@@ -1862,8 +1887,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         awaitFileClose(igfs.asSecondary(), FILE);
 
-        if (err.get() != null)
+        if (err.get() != null) {
+            X.println("Test failed: rethrowing first error: " + err.get());
+
             throw err.get();
+        }
 
         byte[][] data = new byte[chunksCtr.get()][];
 
@@ -3118,5 +3146,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         clear(igfs, igfsSecondary);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 3 * 60 * 1000L;
     }
 }
