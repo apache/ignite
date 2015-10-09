@@ -136,12 +136,18 @@ namespace ignite
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
 
+            /**
+             * Get instance of the implementation from the proxy class.
+             * Internal method. Should not be used by user.
+             *
+             * @param proxy Proxy instance containing IgniteImpl.
+             * @return IgniteImpl instance associated with the proxy or null-pointer.
+             */
             template<typename T>
             static IgniteImpl* GetFromProxy(T& proxy)
             {
                 return proxy.impl.Get();
             }
-
         private:
             /** Environment. */
             ignite::common::concurrent::SharedPointer<IgniteEnvironment> env;
