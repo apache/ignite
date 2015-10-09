@@ -300,21 +300,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public decimal ReadDecimal(string fieldName)
-        {
-            return GetDecimalFromNullable(ReadDecimalNullable(fieldName));
-        }
-
-        /** <inheritdoc /> */
         public decimal? ReadDecimalNullable(string fieldName)
         {
             return ReadField(fieldName, PortableUtils.ReadDecimal);
-        }
-
-        /** <inheritdoc /> */
-        public decimal ReadDecimal()
-        {
-            return GetDecimalFromNullable(ReadDecimalNullable());
         }
 
         /** <inheritdoc /> */
@@ -333,30 +321,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         public decimal?[] ReadDecimalArrayNullable()
         {
             return Read(PortableUtils.ReadDecimalArray);
-        }
-
-        /** <inheritdoc /> */
-        public DateTime ReadDate(string fieldName)
-        {
-            return GetDateTimeFromNullable(ReadDateNullable(fieldName, false));
-        }
-
-        /** <inheritdoc /> */
-        public DateTime ReadDate(string fieldName, bool local)
-        {
-            return GetDateTimeFromNullable(ReadField(fieldName, r => PortableUtils.ReadDate(r, local)));
-        }
-
-        /** <inheritdoc /> */
-        public DateTime ReadDate()
-        {
-            return ReadDate(false);
-        }
-
-        /** <inheritdoc /> */
-        public DateTime ReadDate(bool local)
-        {
-            return GetDateTimeFromNullable(Read(r => PortableUtils.ReadDate(r, local)));
         }
 
         /** <inheritdoc /> */
@@ -429,18 +393,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         public string[] ReadStringArray()
         {
             return Read(r => PortableUtils.ReadGenericArray<string>(r, false));
-        }
-
-        /** <inheritdoc /> */
-        public Guid ReadGuid(string fieldName)
-        {
-            return GetGuidFromNullable(ReadField(fieldName, PortableUtils.ReadGuid));
-        }
-
-        /** <inheritdoc /> */
-        public Guid ReadGuid()
-        {
-            return GetGuidFromNullable(Read(PortableUtils.ReadGuid));
         }
 
         /** <inheritdoc /> */
@@ -1057,42 +1009,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             var hash = Stream.ReadInt();
 
             return new PortableUserObject(_marsh, bytes, offs, id, hash);
-        }
-
-        /// <summary>
-        /// Gets the decimal from nullable decimal.
-        /// Throws an exception for null value.
-        /// </summary>
-        private static decimal GetDecimalFromNullable(decimal? val)
-        {
-            if (!val.HasValue)
-                throw new PortableException("Invalid data on deserialization. Expected: decimal but was: null.");
-
-            return val.Value;
-        }
-
-        /// <summary>
-        /// Gets the DateTime from nullable DateTime.
-        /// Throws an exception for null value.
-        /// </summary>
-        private static DateTime GetDateTimeFromNullable(DateTime? val)
-        {
-            if (!val.HasValue)
-                throw new PortableException("Invalid data on deserialization. Expected: DateTime but was: null.");
-
-            return val.Value;
-        }
-
-        /// <summary>
-        /// Gets the Guid from nullable Guid.
-        /// Throws an exception for null value.
-        /// </summary>
-        private static Guid GetGuidFromNullable(Guid? val)
-        {
-            if (!val.HasValue)
-                throw new PortableException("Invalid data on deserialization. Expected: Guid but was: null.");
-
-            return val.Value;
         }
     }
 }

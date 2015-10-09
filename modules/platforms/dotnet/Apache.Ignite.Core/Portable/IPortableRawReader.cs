@@ -126,12 +126,6 @@ namespace Apache.Ignite.Core.Portable
         /// Read decimal value. 
         /// </summary>
         /// <returns>Decimal value.</returns>
-        decimal ReadDecimal();
-
-        /// <summary>
-        /// Read decimal value. 
-        /// </summary>
-        /// <returns>Decimal value.</returns>
         decimal? ReadDecimalNullable();
 
         /// <summary>
@@ -139,19 +133,6 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <returns>Decimal array.</returns>
         decimal?[] ReadDecimalArrayNullable();
-
-        /// <summary>
-        /// Read date value in UTC form. Shortcut for <c>ReadDate(false)</c>.
-        /// </summary>
-        /// <returns>Date value.</returns>
-        DateTime ReadDate();
-
-        /// <summary>
-        /// Read date value.
-        /// </summary>
-        /// <param name="local">Whether to read date in local (<c>true</c>) or UTC (<c>false</c>) form.</param>
-        /// <returns></returns>
-        DateTime ReadDate(bool local);
 
         /// <summary>
         /// Read date value in UTC form. Shortcut for <c>ReadDate(false)</c>.
@@ -190,12 +171,6 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <returns>String array.</returns>
         string[] ReadStringArray();
-
-        /// <summary>
-        /// Read GUID value. 
-        /// </summary>
-        /// <returns>GUID value.</returns>
-        Guid ReadGuid();
 
         /// <summary>
         /// Read GUID value. 
