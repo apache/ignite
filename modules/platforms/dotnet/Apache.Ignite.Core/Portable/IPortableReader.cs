@@ -255,13 +255,6 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>GUID value.</returns>
-        Guid ReadGuid(string fieldName);
-
-        /// <summary>
-        /// Read named GUID value.
-        /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <returns>GUID value.</returns>
         Guid? ReadGuidNullable(string fieldName);
 
         /// <summary>

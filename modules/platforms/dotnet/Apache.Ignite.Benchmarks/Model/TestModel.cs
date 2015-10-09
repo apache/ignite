@@ -104,7 +104,7 @@ namespace Apache.Ignite.Benchmarks.Model
             DateArray = reader.ReadDateArrayNullable("DateArray");
             String = reader.ReadString("String");
             StringArray = reader.ReadStringArray("StringArray");
-            Guid = reader.ReadGuid("Guid");
+            Guid = reader.ReadObject<Guid>("Guid");
             GuidArray = reader.ReadGuidArrayNullable("GuidArray");
         }
     }

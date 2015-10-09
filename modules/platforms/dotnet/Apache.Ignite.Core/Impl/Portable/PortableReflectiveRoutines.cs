@@ -317,7 +317,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             else if (type == typeof(Guid))
             {
                 writeAction = GetWriter<Guid>(field, (f, w, o) => w.WriteGuid(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadGuid(f));
+                readAction = GetReader(field, (f, r) => r.ReadObject<Guid>(f));
             }
             else if (nullable && nullableType == typeof(Guid))
             {
