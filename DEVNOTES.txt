@@ -23,7 +23,8 @@ mvn clean package -DskipTests -Dignite.edition=hadoop [-Dhadoop.version=X.X.X]
 
 Use 'hadoop.version' parameter to build Ignite against a specific Hadoop version.
 
-Look for apache-ignite-hadoop-<version>-bin.zip in ./target/bin directory.
+Look for apache-ignite-hadoop-<version>-bin.zip in ./target/bin directory. Resulting binary
+assembly will also include integration module for Apache Spark.
 
 NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
 
