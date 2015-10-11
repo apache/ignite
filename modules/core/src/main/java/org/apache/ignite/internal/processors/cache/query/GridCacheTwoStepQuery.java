@@ -47,11 +47,28 @@ public class GridCacheTwoStepQuery {
     /** */
     private Set<String> spaces;
 
+    /** */
+    private boolean collocated;
+
     /**
      * @param spaces All spaces accessed in query.
      */
     public GridCacheTwoStepQuery(Set<String> spaces) {
         this.spaces = spaces;
+    }
+
+    /**
+     * @param collocated If it is a collocated query and no distributed joins can occur.
+     */
+    public void collocated(boolean collocated) {
+        this.collocated = collocated;
+    }
+
+    /**
+     * @return {@code true} If it is a collocated query and no distributed joins can occur.
+     */
+    public boolean collocated() {
+        return collocated;
     }
 
     /**

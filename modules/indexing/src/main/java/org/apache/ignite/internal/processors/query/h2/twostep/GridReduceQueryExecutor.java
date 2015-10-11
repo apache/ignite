@@ -599,7 +599,7 @@ public class GridReduceQueryExecutor {
                             .caches(join(space, extraSpaces))
                             .partitions(convert(partsMap))
                             .queries(mapQrys)
-                            .flags(0), // TODO flag if
+                            .flags(qry.collocated() ? 0 : GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS),
                     oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null)) {
                     awaitAllReplies(r, nodes);
 
@@ -642,7 +642,7 @@ public class GridReduceQueryExecutor {
                         res = h2.executeSqlQueryWithTimer(space, r.conn, rdc.query(), F.asList(rdc.parameters()));
                     }
                     finally {
-                        GridH2QueryContext.clear();
+                        GridH2QueryContext.clear(false);
                     }
                 }
 

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -169,7 +168,7 @@ public class GridQueryRequest implements Message, GridCacheQueryMarshallable {
     /**
      * @return Queries.
      */
-    public Collection<GridCacheSqlQuery> queries() throws IgniteCheckedException {
+    public Collection<GridCacheSqlQuery> queries() {
         return qrys;
     }
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.util.lang.GridFilteredIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -36,6 +37,15 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractK
  * Index base.
  */
 public abstract class GridH2IndexBase extends BaseIndex {
+    /** */
+    private static final AtomicLong idxIdGen = new AtomicLong();
+
+    /** */
+    private final long idxId = idxIdGen.incrementAndGet();
+
+    /** */
+    private final ThreadLocal<Object> snapshot = new ThreadLocal<>();
+
     /**
      * If the index supports rebuilding it has to creates its own copy.
      *
@@ -68,15 +78,55 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param s Optional existing snapshot to use.
      * @return Snapshot.
      */
-    public Object takeSnapshot(@Nullable Object s) {
+    public final Object takeSnapshot(@Nullable Object s) {
+        assert snapshot.get() == null;
+
+        if (s == null)
+            s = doTakeSnapshot();
+
+        if (s != null) {
+            snapshot.set(s);
+
+            GridH2QueryContext qctx = GridH2QueryContext.get();
+
+            if (qctx != null)
+                qctx.putSnapshot(idxId, s);
+        }
+
         return s;
     }
 
     /**
-     * Releases snapshot for current thread.
+     * Takes and returns actual snapshot or {@code null} if snapshots are not supported.
+     * By default index does not support snapshots.
      */
-    public void releaseSnapshot() {
-        // No-op.
+    @Nullable protected Object doTakeSnapshot() {
+        return null;
+    }
+
+    /**
+     * @return Thread local snapshot.
+     */
+    @SuppressWarnings("unchecked")
+    protected <T> T threadLocalSnapshot() {
+        return (T)snapshot.get();
+    }
+
+    /**
+     * Releases snapshot for current thread and optionally for the given query context.
+     *
+     *
+     */
+    public void releaseSnapshot(@Nullable GridH2QueryContext qctx) {
+        snapshot.remove();
+
+        if (qctx == null)
+            return;
+
+        Object s = qctx.getSnapshot(idxId);
+
+        if (s instanceof AutoCloseable)
+            U.closeQuiet((AutoCloseable)s);
     }
 
     /**

@@ -56,6 +56,9 @@ public final class SqlFieldsQuery extends Query<List<?>> {
     /** Collocation flag. */
     private boolean collocated;
 
+    /** */
+    private boolean enforceJoinOrder;
+
     /**
      * Constructs SQL fields query.
      *
@@ -137,6 +140,32 @@ public final class SqlFieldsQuery extends Query<List<?>> {
      */
     public SqlFieldsQuery setCollocated(boolean collocated) {
         this.collocated = collocated;
+
+        return this;
+    }
+
+    /**
+     * Checks if join order of tables if enforced.
+     *
+     * @return Flag value.
+     */
+    public boolean isEnforceJoinOrder() {
+        return enforceJoinOrder;
+    }
+
+    /**
+     * Sets flag to enforce join order of tables in the query. If set to {@code true}
+     * query optimizer will not reorder tables in join. By default is {@code false}.
+     * <p>
+     * It is not recommended to enable this property until you are sure that
+     * your indexes and the query itself are correct and tuned as much as possible but
+     * query optimizer still produces wrong join order.
+     *
+     * @param enforceJoinOrder Flag value.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setEnforceJoinOrder(boolean enforceJoinOrder) {
+        this.enforceJoinOrder = enforceJoinOrder;
 
         return this;
     }

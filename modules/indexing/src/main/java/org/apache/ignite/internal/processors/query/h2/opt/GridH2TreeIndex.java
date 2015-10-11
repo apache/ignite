@@ -81,10 +81,6 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree;
 
     /** */
-    private final ThreadLocal<ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row>> snapshot =
-        new ThreadLocal<>();
-
-    /** */
     private final Object msgTopic;
 
     /** */
@@ -199,42 +195,18 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         return (GridH2Table)super.getTable();
     }
 
-    /**
-     * Takes snapshot to be used in current thread. If argument is null it will be taken from current trees.
-     *
-     * @param s Map to be used as snapshot if not null.
-     * @return Taken snapshot or given argument back.
-     */
-    @SuppressWarnings("unchecked")
-    @Override public Object takeSnapshot(@Nullable Object s) {
-        assert snapshot.get() == null;
-
-        if (s == null)
-            s = tree instanceof SnapTreeMap ? ((SnapTreeMap)tree).clone() :
-                ((GridOffHeapSnapTreeMap)tree).clone();
-
-        snapshot.set((ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row>)s);
-
-        return s;
-    }
-
-    /**
-     * Releases snapshot for current thread.
-     */
-    @Override public void releaseSnapshot() {
-        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> s = snapshot.get();
-
-        snapshot.remove();
-
-        if (s instanceof Closeable)
-            U.closeQuiet((Closeable)s);
+    /** {@inheritDoc} */
+    @Override protected Object doTakeSnapshot() {
+        return tree instanceof SnapTreeMap ?
+            ((SnapTreeMap)tree).clone() :
+            ((GridOffHeapSnapTreeMap)tree).clone();
     }
 
     /**
      * @return Snapshot for current thread if there is one.
      */
     private ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead() {
-        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> res = snapshot.get();
+        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> res = threadLocalSnapshot();
 
         if (res == null)
             res = tree;
@@ -244,7 +216,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public void close(Session ses) {
-        assert snapshot.get() == null;
+        assert threadLocalSnapshot() == null;
 
         if (tree instanceof Closeable)
             U.closeQuiet((Closeable)tree);

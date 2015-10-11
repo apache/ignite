@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -60,6 +61,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -185,12 +187,14 @@ public class GridMapQueryExecutor {
 
             boolean processed = true;
 
-            if (msg instanceof GridQueryRequest)
-                onQueryRequest(node, (GridQueryRequest)msg);
+            if (msg instanceof GridH2QueryRequest)
+                onQueryRequest(node, (GridH2QueryRequest)msg);
             else if (msg instanceof GridQueryNextPageRequest)
                 onNextPageRequest(node, (GridQueryNextPageRequest)msg);
             else if (msg instanceof GridQueryCancelRequest)
                 onCancel(node, (GridQueryCancelRequest)msg);
+            else if (msg instanceof GridQueryRequest)
+                onQueryRequest(node, (GridQueryRequest)msg);
             else
                 processed = false;
 
@@ -399,6 +403,46 @@ public class GridMapQueryExecutor {
      * @param req Query request.
      */
     private void onQueryRequest(ClusterNode node, GridQueryRequest req) {
+        List<String> caches = (List<String>)F.concat(true, req.space(), req.extraSpaces());
+
+        onQueryRequest0(node, req.requestId(), req.queries(), caches, req.topologyVersion(), null, req.partitions(),
+            req.pageSize(), false);
+    }
+
+    /**
+     * @param node Node.
+     * @param req Query request.
+     */
+    private void onQueryRequest(ClusterNode node, GridH2QueryRequest req) {
+        Map<UUID,int[]> partsMap = req.partitions();
+        int[] parts = partsMap == null ? null : partsMap.get(ctx.localNodeId());
+
+        onQueryRequest0(node, req.requestId(),req.queries(), req.caches(), req.topologyVersion(), partsMap, parts,
+            req.pageSize(), req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS));
+    }
+
+    /**
+     * @param node Node authored request.
+     * @param reqId Request ID.
+     * @param qrys Queries to execute.
+     * @param caches Caches which will be affected by these queries.
+     * @param topVer Topology version.
+     * @param partsMap Partitions map for unstable topology.
+     * @param parts Partitions for current node.
+     * @param pageSize Page size.
+     * @param distributedJoins Can we expect distributed joins to be ran.
+     */
+    private void onQueryRequest0(
+        ClusterNode node,
+        long reqId,
+        Collection<GridCacheSqlQuery> qrys,
+        List<String> caches,
+        AffinityTopologyVersion topVer,
+        Map<UUID, int[]> partsMap,
+        int[] parts,
+        int pageSize,
+        boolean distributedJoins
+    ) {
         ConcurrentMap<Long,QueryResults> nodeRess = resultsForNode(node.id());
 
         QueryResults qr = null;
@@ -406,35 +450,34 @@ public class GridMapQueryExecutor {
         List<GridReservable> reserved = new ArrayList<>();
 
         try {
-            Collection<GridCacheSqlQuery> qrys = req.queries();
-
-            List<String> caches = (List<String>)F.concat(true, req.space(), req.extraSpaces());
-
-            // Topology version can be null in rolling restart with previous version!
-            final AffinityTopologyVersion topVer = req.topologyVersion();
-
             if (topVer != null) {
                 // Reserve primary for topology version or explicit partitions.
-                if (!reservePartitions(caches, topVer, req.partitions(), reserved)) {
-                    sendRetry(node, req.requestId());
+                if (!reservePartitions(caches, topVer, parts, reserved)) {
+                    sendRetry(node, reqId);
 
                     return;
                 }
             }
 
+            String mainCache = caches.get(0);
+
             // Prepare to run queries.
-            GridCacheContext<?,?> mainCctx = cacheContext(req.space());
+            GridCacheContext<?,?> mainCctx = cacheContext(mainCache);
 
             if (mainCctx == null)
-                throw new CacheException("Failed to find cache: " + req.space());
+                throw new CacheException("Failed to find cache: " + mainCache);
 
-            qr = new QueryResults(req.requestId(), qrys.size(), mainCctx);
+            qr = new QueryResults(reqId, qrys.size(), mainCctx);
 
-            if (nodeRess.put(req.requestId(), qr) != null)
+            if (nodeRess.put(reqId, qr) != null)
                 throw new IllegalStateException();
 
-            GridH2QueryContext.set(new GridH2QueryContext(ctx.localNodeId(), node.id(), req.requestId(), MAP)
-                .filter(h2.backupFilter(caches, topVer, req.partitions())));
+            GridH2QueryContext.set(
+                new GridH2QueryContext(ctx.localNodeId(), node.id(), reqId, MAP)
+                    .filter(h2.backupFilter(caches, topVer, parts))
+                    .partitionsMap(partsMap));
+
+            h2.enforceJoinOrder(true);
 
             // TODO Prepare snapshots for all the needed tables before the run.
             try {
@@ -442,7 +485,7 @@ public class GridMapQueryExecutor {
                 int i = 0;
 
                 for (GridCacheSqlQuery qry : qrys) {
-                    ResultSet rs = h2.executeSqlQueryWithTimer(req.space(), h2.connectionForSpace(req.space()), qry.query(),
+                    ResultSet rs = h2.executeSqlQueryWithTimer(mainCache, h2.connectionForSpace(mainCache), qry.query(),
                         F.asList(qry.parameters()));
 
                     if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
@@ -472,25 +515,27 @@ public class GridMapQueryExecutor {
                     }
 
                     // Send the first page.
-                    sendNextPage(nodeRess, node, qr, i, req.pageSize());
+                    sendNextPage(nodeRess, node, qr, i, pageSize);
 
                     i++;
                 }
             }
             finally {
-                GridH2QueryContext.clear();
+                h2.enforceJoinOrder(false);
+
+                GridH2QueryContext.clear(distributedJoins);
             }
         }
         catch (Throwable e) {
             if (qr != null) {
-                nodeRess.remove(req.requestId(), qr);
+                nodeRess.remove(reqId, qr);
 
                 qr.cancel();
             }
 
-            U.error(log, "Failed to execute local query: " + req, e);
+            U.error(log, "Failed to execute local query.", e);
 
-            sendError(node, req.requestId(), e);
+            sendError(node, reqId, e);
 
             if (e instanceof Error)
                 throw (Error)e;

@@ -41,8 +41,11 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Map query will not destroy context until explicit query cancel request will be received. */
-    public static int FLAG_EXPLICIT_QRY_FINISH = 1;
+    /**
+     * Map query will not destroy context until explicit query cancel request
+     * will be received because distributed join requests can be received.
+     */
+    public static int FLAG_DISTRIBUTED_JOINS = 1;
 
     /** */
     private long reqId;

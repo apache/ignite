@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -39,7 +41,16 @@ public class GridH2QueryContext {
     private final Key key;
 
     /** */
+    private final ConcurrentMap<Long, Object> idxSnapshots = new ConcurrentHashMap8<>();
+
+    /** */
     private IndexingQueryFilter filter;
+
+    /** */
+    private Map<UUID,int[]> partsMap;
+
+    /** */
+    private UUID[] partsNodes;
 
     /**
      * @param locNodeId Local node ID.
@@ -49,6 +60,80 @@ public class GridH2QueryContext {
      */
     public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
         key = new Key(locNodeId, nodeId, qryId, type);
+    }
+
+    /**
+     * @param partsMap Partitions map.
+     * @return {@code this}.
+     */
+    public GridH2QueryContext partitionsMap(Map<UUID,int[]> partsMap) {
+        this.partsMap = partsMap;
+
+        return this;
+    }
+
+    /**
+     * @return Partitions map.
+     */
+    public Map<UUID,int[]> partitionsMap() {
+        return partsMap;
+    }
+
+    /**
+     * @param p Partition.
+     * @return Owning node ID.
+     */
+    public UUID nodeForPartition(int p) {
+        UUID[] nodeIds = partsNodes;
+
+        if (nodeIds == null) {
+            assert partsMap != null;
+
+            int allParts = 0;
+
+            for (int[] nodeParts : partsMap.values())
+                allParts += nodeParts.length;
+
+            nodeIds = new UUID[allParts];
+
+            for (Map.Entry<UUID,int[]> e : partsMap.entrySet()) {
+                UUID nodeId = e.getKey();
+                int[] nodeParts = e.getValue();
+
+                assert nodeId != null;
+                assert !F.isEmpty(nodeParts);
+
+                for (int part : nodeParts) {
+                    assert nodeIds[part] == null;
+
+                    nodeIds[part] = nodeId;
+                }
+            }
+
+            partsNodes = nodeIds;
+        }
+
+        return nodeIds[p];
+    }
+
+    /**
+     * @param idxId Index ID.
+     * @param snapshot Index snapshot.
+     */
+    public void putSnapshot(long idxId, Object snapshot) {
+        assert snapshot != null;
+
+        if (idxSnapshots.putIfAbsent(idxId, snapshot) != null)
+            throw new IllegalStateException("Index already snapshoted.");
+    }
+
+    /**
+     * @param idxId Index ID.
+     * @return Index snapshot or {@code null} if none.
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T getSnapshot(long idxId) {
+        return (T)idxSnapshots.get(idxId);
     }
 
     /**
@@ -68,14 +153,37 @@ public class GridH2QueryContext {
 
     /**
      * Drops current thread local context.
+     *
+     * @param onlyThreadLoc Drop only thread local context but keep global.
      */
-    public static void clear() {
+    public static void clear(boolean onlyThreadLoc) {
         GridH2QueryContext x = qctx.get();
 
-        if (x.key.type != LOCAL && !qctxs.remove(x.key, x))
-            throw new IllegalStateException();
-
         qctx.remove();
+
+        if (!onlyThreadLoc && x.key.type != LOCAL)
+            doClear(x.key);
+    }
+
+    /**
+     * @param locNodeId Local node ID.
+     * @param nodeId The node who initiated the query.
+     * @param qryId The query ID.
+     * @param type Query type.
+     */
+    public static void clear(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
+        doClear(new Key(locNodeId, nodeId, qryId, type));
+    }
+
+    /**
+     * @param key Context key.
+     */
+    private static void doClear(Key key) {
+        GridH2QueryContext qctx0 = qctxs.remove(key);
+
+        if (qctx0 != null) {
+            // TODO close all snapshots
+        }
     }
 
     /**

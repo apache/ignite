@@ -116,7 +116,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.CommandInterface;
-import org.h2.command.dml.Optimizer;
+import org.h2.command.dml.OptimizerHints;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
 import org.h2.index.SpatialIndex;
@@ -647,14 +647,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
-        @Nullable final Collection<Object> params, final IndexingQueryFilter filters)
+        @Nullable final Collection<Object> params, final IndexingQueryFilter filters, boolean enforceJoinOrder)
         throws IgniteCheckedException {
         initLocalQueryContext(filters);
 
         try {
-            Connection conn = connectionForThread(schema(spaceName));
+            Connection conn = connectionForSpace(spaceName);
 
-            ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, qry, params);
+            enforceJoinOrder(enforceJoinOrder);
+
+            ResultSet rs;
+
+            try {
+                rs = executeSqlQueryWithTimer(spaceName, conn, qry, params);
+            }
+            finally {
+                enforceJoinOrder(false);
+            }
 
             List<GridQueryFieldMetadata> meta = null;
 
@@ -670,7 +679,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return new GridQueryFieldsResultAdapter(meta, new FieldsIterator(rs));
         }
         finally {
-            GridH2QueryContext.clear();
+            GridH2QueryContext.clear(false);
         }
     }
 
@@ -853,7 +862,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return new KeyValIterator(rs);
         }
         finally {
-            GridH2QueryContext.clear();
+            GridH2QueryContext.clear(false);
         }
     }
 
@@ -929,6 +938,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         };
     }
 
+    /**
+     * @param enforce If {@code true}, then table join order will be enforced.
+     */
+    public void enforceJoinOrder(boolean enforce) {
+        OptimizerHints hints = null;
+        if (enforce) {
+            hints = new OptimizerHints();
+            hints.setJoinReorderEnabled(false);
+        }
+        OptimizerHints.set(hints);
+    }
+
     /** {@inheritDoc} */
     @Override public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, SqlFieldsQuery qry) {
         String space = cctx.name();
@@ -938,8 +959,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         PreparedStatement stmt;
 
-        // We need to just parse the query here.
-        Optimizer.setEnabled(false);
+        enforceJoinOrder(qry.isEnforceJoinOrder());
 
         try {
             stmt = c.prepareStatement(sqlQry);
@@ -948,7 +968,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new CacheException("Failed to parse query: " + sqlQry, e);
         }
         finally {
-            Optimizer.setEnabled(true);
+            enforceJoinOrder(false);
         }
 
         GridCacheTwoStepQuery twoStepQry;
