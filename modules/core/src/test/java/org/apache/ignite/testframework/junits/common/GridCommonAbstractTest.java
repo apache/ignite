@@ -246,10 +246,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected static <K, V> boolean nearEnabled(final IgniteCache<K,V> cache) {
         CacheConfiguration cfg = GridAbstractTest.executeOnLocalOrRemoteJvm(cache,
             new TestCacheCallable<K, V, CacheConfiguration>() {
-            @Override public CacheConfiguration call(Ignite ignite, IgniteCache<K, V> cache) throws Exception {
-                return ((IgniteKernal)ignite).<K, V>internalCache(cache.getName()).context().config();
-            }
-        });
+                private static final long serialVersionUID = 0L;
+
+                @Override public CacheConfiguration call(Ignite ignite, IgniteCache<K, V> cache) throws Exception {
+                    return ((IgniteKernal)ignite).<K, V>internalCache(cache.getName()).context().config();
+                }
+            });
 
         return isNearEnabled(cfg);
     }
@@ -285,10 +287,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    protected static <K> void loadAll(Cache<K, ?> cache, final Set<K> keys, final boolean replaceExistingValues) throws Exception {
+    protected static <K> void loadAll(Cache<K, ?> cache, final Set<K> keys, final boolean replaceExistingValues)
+        throws Exception {
         IgniteCache<K, Object> cacheCp = (IgniteCache<K, Object>)cache;
 
         GridAbstractTest.executeOnLocalOrRemoteJvm(cacheCp, new TestCacheRunnable<K, Object>() {
+            private static final long serialVersionUID = -3030833765012500545L;
+
             @Override public void run(Ignite ignite, IgniteCache<K, Object> cache) throws Exception {
                 final AtomicReference<Exception> ex = new AtomicReference<>();
 
