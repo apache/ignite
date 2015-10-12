@@ -689,7 +689,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cfg.getName(),
                     cfg.getNodeFilter(),
                     cfg.getNearConfiguration() != null && cfg.getCacheMode() == PARTITIONED,
-                    cfg.getCacheMode() == LOCAL);
+                    cfg.getCacheMode());
 
                 ctx.discovery().addClientNode(cfg.getName(),
                     ctx.localNodeId(),
@@ -1941,7 +1941,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                     req.cacheName(),
                                     ccfg.getNodeFilter(),
                                     ccfg.getNearConfiguration() != null,
-                                    ccfg.getCacheMode() == LOCAL);
+                                    ccfg.getCacheMode());
                             }
                         }
                         else {
@@ -1968,7 +1968,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 req.cacheName(),
                                 ccfg.getNodeFilter(),
                                 ccfg.getNearConfiguration() != null,
-                                ccfg.getCacheMode() == LOCAL);
+                                ccfg.getCacheMode());
                         }
                     }
                 }
@@ -2468,7 +2468,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             ccfg.getName(),
                             ccfg.getNodeFilter(),
                             ccfg.getNearConfiguration() != null,
-                            ccfg.getCacheMode() == LOCAL);
+                            ccfg.getCacheMode());
 
                         ctx.discovery().addClientNode(req.cacheName(),
                             req.initiatingNodeId(),
@@ -3480,6 +3480,46 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     *
+     */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+    private class TemplateConfigurationFuture extends GridFutureAdapter<Object> {
+        /** Start ID. */
+        @GridToStringInclude
+        private IgniteUuid deploymentId;
+
+        /** Cache name. */
+        private String cacheName;
+
+        /**
+         * @param cacheName Cache name.
+         * @param deploymentId Deployment ID.
+         */
+        private TemplateConfigurationFuture(String cacheName, IgniteUuid deploymentId) {
+            this.deploymentId = deploymentId;
+            this.cacheName = cacheName;
+        }
+
+        /**
+         * @return Start ID.
+         */
+        public IgniteUuid deploymentId() {
+            return deploymentId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
+            // Make sure to remove future before completion.
+            pendingTemplateFuts.remove(maskNull(cacheName), this);
+
+            return super.onDone(res, err);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TemplateConfigurationFuture.class, this);
+        }
+    }    /**
      *
      */
     private static class LocalAffinityFunction implements AffinityFunction {

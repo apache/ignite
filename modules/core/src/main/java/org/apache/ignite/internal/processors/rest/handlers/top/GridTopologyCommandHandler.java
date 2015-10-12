@@ -27,11 +27,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocol;
@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestTopologyReques
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgnitePortProtocol;
@@ -194,23 +195,25 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         nodeBean.setTcpAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_ADDRS)));
         nodeBean.setTcpHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_HOST_NAMES)));
 
-        GridCacheAttributes[] caches = node.attribute(ATTR_CACHE);
+        Map<String, CacheMode> nodeCaches = ctx.discovery().nodeCaches(node);
 
-        if (!F.isEmpty(caches)) {
-            Map<String, String> cacheMap = new HashMap<>();
+        Map<String, String> cacheMap = U.newHashMap(nodeCaches.size());
 
-            for (GridCacheAttributes cacheAttr : caches) {
-                if (ctx.cache().systemCache(cacheAttr.cacheName()))
-                    continue;
+        for (Map.Entry<String, CacheMode> cache : nodeCaches.entrySet()) {
+            String cacheName = cache.getKey();
 
-                if (cacheAttr.cacheName() != null)
-                    cacheMap.put(cacheAttr.cacheName(), cacheAttr.cacheMode().toString());
-                else
-                    nodeBean.setDefaultCacheMode(cacheAttr.cacheMode().toString());
-            }
+            if (CU.isSystemCache(cacheName) || CU.isIgfsCache(ctx.config(), cacheName))
+                continue;
 
-            nodeBean.setCaches(cacheMap);
+            String mode = cache.getValue().toString();
+
+            if (cacheName != null)
+                cacheMap.put(cacheName, mode);
+            else
+                nodeBean.setDefaultCacheMode(mode);
         }
+
+        nodeBean.setCaches(cacheMap);
 
         if (mtr) {
             ClusterMetrics metrics = node.metrics();
@@ -304,6 +307,135 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /**
+     * Creates node bean out of grid node. Notice that cache attribute is handled separately.
+     *
+     * @param node Grid node.
+     * @param mtr {@code true} to add metrics.
+     * @param attr {@code true} to add attributes.
+     * @return Grid Node bean.
+     */
+    private GridClientNodeBean createNodeBean(ClusterNode node, boolean mtr, boolean attr) {
+        assert node != null;
+
+        GridClientNodeBean nodeBean = new GridClientNodeBean();
+
+        nodeBean.setNodeId(node.id());
+        nodeBean.setConsistentId(node.consistentId());
+        nodeBean.setTcpPort(attribute(node, ATTR_REST_TCP_PORT, 0));
+
+        nodeBean.setTcpAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_ADDRS)));
+        nodeBean.setTcpHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_HOST_NAMES)));
+
+        Map<String, CacheMode> nodeCaches = ctx.discovery().nodeCaches(node);
+
+        Map<String, String> cacheMap = U.newHashMap(nodeCaches.size());
+
+        for (Map.Entry<String, CacheMode> cache : nodeCaches.entrySet()) {
+            String cacheName = cache.getKey();
+
+            if (CU.isSystemCache(cacheName) || CU.isIgfsCache(ctx.config(), cacheName))
+                continue;
+
+            String mode = cache.getValue().toString();
+
+            if (cacheName != null)
+                cacheMap.put(cacheName, mode);
+            else
+                nodeBean.setDefaultCacheMode(mode);
+        }
+
+        nodeBean.setCaches(cacheMap);
+
+        if (mtr) {
+            ClusterMetrics metrics = node.metrics();
+
+            GridClientNodeMetricsBean metricsBean = new GridClientNodeMetricsBean();
+
+            metricsBean.setStartTime(metrics.getStartTime());
+            metricsBean.setAverageActiveJobs(metrics.getAverageActiveJobs());
+            metricsBean.setAverageCancelledJobs(metrics.getAverageCancelledJobs());
+            metricsBean.setAverageCpuLoad(metrics.getAverageCpuLoad());
+            metricsBean.setAverageJobExecuteTime(metrics.getAverageJobExecuteTime());
+            metricsBean.setAverageJobWaitTime(metrics.getAverageJobWaitTime());
+            metricsBean.setAverageRejectedJobs(metrics.getAverageRejectedJobs());
+            metricsBean.setAverageWaitingJobs(metrics.getAverageWaitingJobs());
+            metricsBean.setCurrentActiveJobs(metrics.getCurrentActiveJobs());
+            metricsBean.setCurrentCancelledJobs(metrics.getCurrentCancelledJobs());
+            metricsBean.setCurrentCpuLoad(metrics.getCurrentCpuLoad());
+            metricsBean.setCurrentGcCpuLoad(metrics.getCurrentGcCpuLoad());
+            metricsBean.setCurrentDaemonThreadCount(metrics.getCurrentDaemonThreadCount());
+            metricsBean.setCurrentIdleTime(metrics.getCurrentIdleTime());
+            metricsBean.setCurrentJobExecuteTime(metrics.getCurrentJobExecuteTime());
+            metricsBean.setCurrentJobWaitTime(metrics.getCurrentJobWaitTime());
+            metricsBean.setCurrentRejectedJobs(metrics.getCurrentRejectedJobs());
+            metricsBean.setCurrentThreadCount(metrics.getCurrentThreadCount());
+            metricsBean.setCurrentWaitingJobs(metrics.getCurrentWaitingJobs());
+            metricsBean.setHeapMemoryCommitted(metrics.getHeapMemoryCommitted());
+            metricsBean.setHeapMemoryInitialized(metrics.getHeapMemoryInitialized());
+            metricsBean.setHeapMemoryMaximum(metrics.getHeapMemoryMaximum());
+            metricsBean.setHeapMemoryUsed(metrics.getHeapMemoryUsed());
+            metricsBean.setLastDataVersion(metrics.getLastDataVersion());
+            metricsBean.setLastUpdateTime(metrics.getLastUpdateTime());
+            metricsBean.setMaximumActiveJobs(metrics.getMaximumActiveJobs());
+            metricsBean.setMaximumCancelledJobs(metrics.getMaximumCancelledJobs());
+            metricsBean.setMaximumJobExecuteTime(metrics.getMaximumJobExecuteTime());
+            metricsBean.setMaximumJobWaitTime(metrics.getMaximumJobWaitTime());
+            metricsBean.setMaximumRejectedJobs(metrics.getMaximumRejectedJobs());
+            metricsBean.setMaximumThreadCount(metrics.getMaximumThreadCount());
+            metricsBean.setMaximumWaitingJobs(metrics.getMaximumWaitingJobs());
+            metricsBean.setNodeStartTime(metrics.getNodeStartTime());
+            metricsBean.setNonHeapMemoryCommitted(metrics.getNonHeapMemoryCommitted());
+            metricsBean.setNonHeapMemoryInitialized(metrics.getNonHeapMemoryInitialized());
+            metricsBean.setNonHeapMemoryMaximum(metrics.getNonHeapMemoryMaximum());
+            metricsBean.setNonHeapMemoryUsed(metrics.getNonHeapMemoryUsed());
+            metricsBean.setStartTime(metrics.getStartTime());
+            metricsBean.setTotalCancelledJobs(metrics.getTotalCancelledJobs());
+            metricsBean.setTotalCpus(metrics.getTotalCpus());
+            metricsBean.setTotalExecutedJobs(metrics.getTotalExecutedJobs());
+            metricsBean.setTotalIdleTime(metrics.getTotalIdleTime());
+            metricsBean.setTotalRejectedJobs(metrics.getTotalRejectedJobs());
+            metricsBean.setTotalStartedThreadCount(metrics.getTotalStartedThreadCount());
+            metricsBean.setTotalExecutedTasks(metrics.getTotalExecutedTasks());
+            metricsBean.setSentMessagesCount(metrics.getSentMessagesCount());
+            metricsBean.setSentBytesCount(metrics.getSentBytesCount());
+            metricsBean.setReceivedMessagesCount(metrics.getReceivedMessagesCount());
+            metricsBean.setReceivedBytesCount(metrics.getReceivedBytesCount());
+            metricsBean.setUpTime(metrics.getUpTime());
+
+            nodeBean.setMetrics(metricsBean);
+        }
+
+        if (attr) {
+            Map<String, Object> attrs = new HashMap<>(node.attributes());
+
+            attrs.remove(ATTR_CACHE);
+            attrs.remove(ATTR_TX_CONFIG);
+            attrs.remove(ATTR_SECURITY_SUBJECT);
+            attrs.remove(ATTR_SECURITY_CREDENTIALS);
+
+            for (Iterator<Map.Entry<String, Object>> i = attrs.entrySet().iterator(); i.hasNext();) {
+                Map.Entry<String, Object> e = i.next();
+
+                if (!e.getKey().startsWith("org.apache.ignite.") && !e.getKey().startsWith("plugins.") &&
+                    System.getProperty(e.getKey()) == null) {
+                    i.remove();
+
+                    continue;
+                }
+
+                if (e.getValue() != null) {
+                  if (e.getValue().getClass().isEnum() || e.getValue() instanceof InetAddress)
+                      e.setValue(e.getValue().toString());
+                  else if (e.getValue().getClass().isArray())
+                      i.remove();
+                }
+            }
+
+            nodeBean.setAttributes(attrs);
+        }
+
+        return nodeBean;
+    }    /**
      * @param col Collection;
      * @return Non-empty list.
      */

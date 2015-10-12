@@ -51,7 +51,7 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.GridTcpRestProto
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
-import org.apache.ignite.internal.processors.rest.request.RestSqlQueryRequest;
+import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -565,6 +565,53 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Applies {@link ConnectorMessageInterceptor}
+     * from {@link ConnectorConfiguration#getMessageInterceptor()} ()}
+     * to all user parameters in the request.
+     *
+     * @param req Client request.
+     */
+    private void interceptRequest(GridRestRequest req) {
+        ConnectorMessageInterceptor interceptor = config().getMessageInterceptor();
+
+        if (interceptor == null)
+            return;
+
+        if (req instanceof GridRestCacheRequest) {
+            GridRestCacheRequest req0 = (GridRestCacheRequest) req;
+
+            req0.key(interceptor.onReceive(req0.key()));
+            req0.value(interceptor.onReceive(req0.value()));
+            req0.value2(interceptor.onReceive(req0.value2()));
+
+            Map<Object, Object> oldVals = req0.values();
+
+            if (oldVals != null) {
+                Map<Object, Object> newVals = U.newHashMap(oldVals.size());
+
+                for (Map.Entry<Object, Object> e : oldVals.entrySet())
+                    newVals.put(interceptor.onReceive(e.getKey()), interceptor.onReceive(e.getValue()));
+
+                req0.values(U.sealMap(newVals));
+            }
+        }
+        else if (req instanceof GridRestTaskRequest) {
+            GridRestTaskRequest req0 = (GridRestTaskRequest) req;
+
+            List<Object> oldParams = req0.params();
+
+            if (oldParams != null) {
+                Collection<Object> newParams = new ArrayList<>(oldParams.size());
+
+                for (Object o : oldParams)
+                    newParams.add(interceptor.onReceive(o));
+
+                req0.params(U.sealList(newParams));
+            }
+        }
+    }
+
+    /**
      * Applies {@link ConnectorMessageInterceptor} from
      * {@link ConnectorConfiguration#getMessageInterceptor()}
      * to all user objects in the response.
@@ -609,9 +656,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     break;
             }
         }
-    }
-
-    /**
+    }    /**
      * Applies interceptor to a response object.
      * Specially handler {@link Map} and {@link Collection} responses.
      *
@@ -715,10 +760,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             case EXECUTE_SQL_QUERY:
             case EXECUTE_SQL_FIELDS_QUERY:
+            case EXECUTE_SCAN_QUERY:
             case CLOSE_SQL_QUERY:
             case FETCH_SQL_QUERY:
                 perm = SecurityPermission.CACHE_READ;
-                name = ((RestSqlQueryRequest)req).cacheName();
+                name = ((RestQueryRequest)req).cacheName();
 
                 break;
 
@@ -764,6 +810,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             case CACHE_METRICS:
             case CACHE_SIZE:
+            case CACHE_METADATA:
             case TOPOLOGY:
             case NODE:
             case VERSION:
@@ -884,15 +931,13 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         /** Session token id. */
         private final UUID sesId;
-
-        /** Security context. */
-        private volatile SecurityContext secCtx;
-
         /**
          * Time when session is used last time.
          * If this time was set at TIMEDOUT_FLAG, then it should never be changed.
          */
         private final AtomicLong lastTouchTime = new AtomicLong(U.currentTimeMillis());
+        /** Security context. */
+        private volatile SecurityContext secCtx;
 
         /**
          * @param clientId Client ID.
