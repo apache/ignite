@@ -41,6 +41,7 @@ import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
@@ -420,6 +421,970 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     /** {@inheritDoc} */
     @Override public CacheMetricsMXBean mxBean() {
         throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /**
+     *
+     */
+    private static class GetConfigurationTask<K, V, C extends Configuration<K, V>> extends CacheTaskAdapter<K, V, C> {
+        /** Clazz. */
+        private final Class<C> clazz;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param clazz Clazz.
+         */
+        public GetConfigurationTask(String cacheName, boolean async, Class<C> clazz) {
+            super(cacheName, async);
+            this.clazz = clazz;
+        }
+
+        /** {@inheritDoc} */
+        @Override public C call() throws Exception {
+            return cache().getConfiguration(clazz);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class LocalLoadCacheTask<K, V> extends CacheTaskAdapter<K, V, Void> {
+        /** Predicate. */
+        private final IgniteBiPredicate<K, V> p;
+
+        /** Args. */
+        private final Object[] args;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param p P.
+         * @param args Args.
+         */
+        public LocalLoadCacheTask(String cacheName, boolean async, IgniteBiPredicate<K, V> p, Object[] args) {
+            super(cacheName, async);
+            this.p = p;
+            this.args = args;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() {
+            cache().localLoadCache(p, args);
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class GetAndPutIfAbsentTask<K, V> extends CacheTaskAdapter<K, V, V> {
+        /** Key. */
+        private final K key;
+
+        /** Value. */
+        private final V val;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param key Key.
+         * @param val Value.
+         */
+        public GetAndPutIfAbsentTask(String cacheName, boolean async, K key, V val) {
+            super(cacheName, async);
+            this.key = key;
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public V call() throws Exception {
+            return cache().getAndPutIfAbsent(key, val);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class IsLocalLockedTask<K> extends CacheTaskAdapter<K, Void, Boolean> {
+        /** Key. */
+        private final K key;
+
+        /** By current thread. */
+        private final boolean byCurrThread;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param key Key.
+         * @param byCurrThread By current thread.
+         */
+        public IsLocalLockedTask(String cacheName, boolean async, K key, boolean byCurrThread) {
+            super(cacheName, async);
+            this.key = key;
+            this.byCurrThread = byCurrThread;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean call() throws Exception {
+            return cache().isLocalLocked(key, byCurrThread);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class LocalEntriesTask<K, V> extends CacheTaskAdapter<K, V, Iterable<Entry<K, V>>> {
+        /** Peek modes. */
+        private final CachePeekMode[] peekModes;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param peekModes Peek modes.
+         */
+        public LocalEntriesTask(String cacheName, boolean async, CachePeekMode[] peekModes) {
+            super(cacheName, async);
+            this.peekModes = peekModes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterable<Entry<K, V>> call() throws Exception {
+            Collection<Entry<K, V>> res = new ArrayList<>();
+
+            for (Entry<K, V> e : cache().localEntries(peekModes))
+                res.add(new CacheEntryImpl<>(e.getKey(), e.getValue()));
+
+            return res;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class LocalEvictTask<K> extends CacheTaskAdapter<K, Void, Void> {
+        /** Keys. */
+        private final Collection<? extends K> keys;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param keys Keys.
+         */
+        public LocalEvictTask(String cacheName, boolean async, Collection<? extends K> keys) {
+            super(cacheName, async);
+            this.keys = keys;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() {
+            cache().localEvict(keys);
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class LocalPeekTask<K, V> extends CacheTaskAdapter<K, V, V> {
+        /** Key. */
+        private final K key;
+
+        /** Peek modes. */
+        private final CachePeekMode[] peekModes;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param key Key.
+         * @param peekModes Peek modes.
+         */
+        public LocalPeekTask(String cacheName, boolean async, K key, CachePeekMode[] peekModes) {
+            super(cacheName, async);
+            this.key = key;
+            this.peekModes = peekModes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public V call() throws Exception {
+            return cache().localPeek(key, peekModes);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class SizeTask extends CacheTaskAdapter<Void, Void, Integer> {
+        /** Peek modes. */
+        private final CachePeekMode[] peekModes;
+
+        /** Local. */
+        private final boolean loc;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param peekModes Peek modes.
+         * @param loc Local.
+         */
+        public SizeTask(String cacheName, boolean async, CachePeekMode[] peekModes, boolean loc) {
+            super(cacheName, async);
+            this.loc = loc;
+            this.peekModes = peekModes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer call() throws Exception {
+            return loc ? cache().localSize(peekModes) : cache().size(peekModes);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class GetTask<K, V> extends CacheTaskAdapter<K, V, V> {
+        /** Key. */
+        private final K key;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param key Key.
+         */
+        public GetTask(String cacheName, boolean async, K key) {
+            super(cacheName, async);
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public V call() throws Exception {
+            return cache().get(key);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class RemoveAllTask<K, V> extends CacheTaskAdapter<K, V, Void> {
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         */
+        public RemoveAllTask(String cacheName, boolean async) {
+            super(cacheName, async);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() {
+            IgniteCache<K, V> cache = cache();
+
+            cache.removeAll();
+
+            if (async)
+                cache.future().get();
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class PutTask<K, V> extends CacheTaskAdapter<K, V, Void> {
+        /** Key. */
+        private final K key;
+
+        /** Value. */
+        private final V val;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param key Key.
+         * @param val Value.
+         */
+        public PutTask(String cacheName, boolean async, K key, V val) {
+            super(cacheName, async);
+            this.key = key;
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() {
+            cache().put(key, val);
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ContainsKeyTask<K> extends CacheTaskAdapter<K, Object, Boolean> {
+        /** Key. */
+        private final K key;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param key Key.
+         */
+        public ContainsKeyTask(String cacheName, boolean async, K key) {
+            super(cacheName, async);
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean call() throws Exception {
+            return cache().containsKey(key);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ClearTask extends CacheTaskAdapter<Object, Object, Void> {
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         */
+        public ClearTask(String cacheName, boolean async) {
+            super(cacheName, async);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() {
+            cache().clear();
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class IteratorTask<K, V> extends CacheTaskAdapter<K, V, Collection<Entry<K, V>>> {
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         */
+        public IteratorTask(String cacheName, boolean async) {
+            super(cacheName, async);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<Entry<K, V>> call() throws Exception {
+            Collection<Entry<K, V>> res = new ArrayList<>();
+
+            for (Entry<K, V> o : cache())
+                res.add(o);
+
+            return res;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ReplaceTask<K, V> extends CacheTaskAdapter<K, V, Boolean> {
+        /** Key. */
+        private final K key;
+
+        /** Value. */
+        private final V val;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param key Key.
+         * @param val Value.
+         */
+        public ReplaceTask(String cacheName, boolean async, K key, V val) {
+            super(cacheName, async);
+            this.key = key;
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean call() throws Exception {
+            return cache().replace(key, val);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class GetNameTask extends CacheTaskAdapter<Void, Void, String> {
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         */
+        public GetNameTask(String cacheName, boolean async) {
+            super(cacheName, async);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String call() throws Exception {
+            return cache().getName();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class RemoveTask<K> extends CacheTaskAdapter<K, Void, Boolean> {
+        /** Key. */
+        private final K key;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param key Key.
+         */
+        public RemoveTask(String cacheName, boolean async, K key) {
+            super(cacheName, async);
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean call() throws Exception {
+            return cache().remove(key);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class PutAllTask<K, V> extends CacheTaskAdapter<K, V, Void> {
+        /** Map. */
+        private final Map<? extends K, ? extends V> map;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param map Map.
+         */
+        public PutAllTask(String cacheName, boolean async, Map<? extends K, ? extends V> map) {
+            super(cacheName, async);
+            this.map = map;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() {
+            cache().putAll(map);
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class RemoveAllKeysTask<K> extends CacheTaskAdapter<K, Void, Void> {
+        /** Keys. */
+        private final Set<? extends K> keys;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param keys Keys.
+         */
+        public RemoveAllKeysTask(String cacheName, boolean async, Set<? extends K> keys) {
+            super(cacheName, async);
+            this.keys = keys;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() {
+            cache().removeAll(keys);
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class GetAllTask<K, V> extends CacheTaskAdapter<K, V, Map<K, V>> {
+        /** Keys. */
+        private final Set<? extends K> keys;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param keys Keys.
+         */
+        public GetAllTask(String cacheName, boolean async, Set<? extends K> keys) {
+            super(cacheName, async);
+            this.keys = keys;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<K, V> call() throws Exception {
+            return cache().getAll(keys);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class GetAllOutTxTask<K, V> extends CacheTaskAdapter<K, V, Map<K, V>> {
+        /** Keys. */
+        private final Set<? extends K> keys;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param keys Keys.
+         */
+        public GetAllOutTxTask(String cacheName, boolean async, Set<? extends K> keys) {
+            super(cacheName, async);
+            this.keys = keys;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<K, V> call() throws Exception {
+            return cache().getAllOutTx(keys);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ContainsKeysTask<K, V> extends CacheTaskAdapter<K, V, Boolean> {
+        /** Keys. */
+        private final Set<? extends K> keys;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param keys Keys.
+         */
+        public ContainsKeysTask(String cacheName, boolean async, Set<? extends K> keys) {
+            super(cacheName, async);
+            this.keys = keys;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean call() throws Exception {
+            return cache().containsKeys(keys);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class GetAndPutTask<K, V> extends CacheTaskAdapter<K, V, V> {
+        /** Key. */
+        private final K key;
+
+        /** Value. */
+        private final V val;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param key Key.
+         * @param val Value.
+         */
+        public GetAndPutTask(String cacheName, boolean async, K key, V val) {
+            super(cacheName, async);
+            this.key = key;
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public V call() throws Exception {
+            return cache().getAndPut(key, val);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class PutIfAbsentTask<K, V> extends CacheTaskAdapter<K, V, Boolean> {
+        /** Key. */
+        private final K key;
+
+        /** Value. */
+        private final V val;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param key Key.
+         * @param val Value.
+         */
+        public PutIfAbsentTask(String cacheName, boolean async, K key, V val) {
+            super(cacheName, async);
+            this.key = key;
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean call() throws Exception {
+            return cache().putIfAbsent(key, val);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class RemoveIfExistsTask<K, V> extends CacheTaskAdapter<K, V, Boolean> {
+        /** Key. */
+        private final K key;
+
+        /** Old value. */
+        private final V oldVal;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param key Key.
+         * @param oldVal Old value.
+         */
+        public RemoveIfExistsTask(String cacheName, boolean async, K key, V oldVal) {
+            super(cacheName, async);
+            this.key = key;
+            this.oldVal = oldVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean call() throws Exception {
+            return cache().remove(key, oldVal);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class GetAndRemoveTask<K, V> extends CacheTaskAdapter<K, V, V> {
+        /** Key. */
+        private final K key;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param key Key.
+         */
+        public GetAndRemoveTask(String cacheName, boolean async, K key) {
+            super(cacheName, async);
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public V call() throws Exception {
+            return cache().getAndRemove(key);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ReplaceIfExistsTask<K, V> extends CacheTaskAdapter<K, V, Boolean> {
+        /** Key. */
+        private final K key;
+
+        /** Old value. */
+        private final V oldVal;
+
+        /** New value. */
+        private final V newVal;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param key Key.
+         * @param oldVal Old value.
+         * @param newVal New value.
+         */
+        public ReplaceIfExistsTask(String cacheName, boolean async, K key, V oldVal, V newVal) {
+            super(cacheName, async);
+            this.key = key;
+            this.oldVal = oldVal;
+            this.newVal = newVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean call() throws Exception {
+            return cache().replace(key, oldVal, newVal);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class GetAndReplaceTask<K, V> extends CacheTaskAdapter<K, V, V> {
+        /** Key. */
+        private final K key;
+
+        /** Value. */
+        private final V val;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param key Key.
+         * @param val Value.
+         */
+        public GetAndReplaceTask(String cacheName, boolean async, K key, V val) {
+            super(cacheName, async);
+            this.key = key;
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public V call() throws Exception {
+            return cache().getAndReplace(key, val);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ClearKeyTask<K> extends CacheTaskAdapter<K, Void, Void> {
+        /** Key. */
+        private final K key;
+
+        /** Local. */
+        private final boolean loc;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param key Key.
+         */
+        public ClearKeyTask(String cacheName, boolean async, boolean loc, K key) {
+            super(cacheName, async);
+            this.key = key;
+            this.loc = loc;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() {
+            if (loc)
+                cache().localClear(key);
+            else
+                cache().clear(key);
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ClearAllKeys<K> extends CacheTaskAdapter<K, Void, Void> {
+        /** Keys. */
+        private final Set<? extends K> keys;
+
+        /** Local. */
+        private final boolean loc;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param keys Keys.
+         */
+        public ClearAllKeys(String cacheName, boolean async, boolean loc, Set<? extends K> keys) {
+            super(cacheName, async);
+            this.keys = keys;
+            this.loc = loc;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() {
+            if (loc)
+                cache().localClearAll(keys);
+            else
+                cache().clearAll(keys);
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class InvokeTask<K, V, R> extends CacheTaskAdapter<K, V, R> {
+        /** Key. */
+        private final K key;
+
+        /** Processor. */
+        private final EntryProcessor<K, V, R> processor;
+
+        /** Args. */
+        private final Object[] args;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param key Key.
+         * @param processor Processor.
+         * @param args Args.
+         */
+        public InvokeTask(String cacheName, boolean async, K key, EntryProcessor<K, V, R> processor,
+            Object[] args) {
+            super(cacheName, async);
+            this.args = args;
+            this.key = key;
+            this.processor = processor;
+        }
+
+        /** {@inheritDoc} */
+        @Override public R call() throws Exception {
+            return cache().invoke(key, processor, args);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class InvokeAllTask<K, V, T> extends CacheTaskAdapter<K, V, Map<K, EntryProcessorResult<T>>> {
+        /** Keys. */
+        private final Set<? extends K> keys;
+
+        /** Processor. */
+        private final EntryProcessor<K, V, T> processor;
+
+        /** Args. */
+        private final Object[] args;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param keys Keys.
+         * @param processor Processor.
+         * @param args Args.
+         */
+        public InvokeAllTask(String cacheName, boolean async, Set<? extends K> keys,
+            EntryProcessor<K, V, T> processor, Object[] args) {
+            super(cacheName, async);
+            this.args = args;
+            this.keys = keys;
+            this.processor = processor;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<K, EntryProcessorResult<T>> call() throws Exception {
+            return cache().invokeAll(keys, processor, args);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class CloseTask extends CacheTaskAdapter<Void, Void, Void> {
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         */
+        public CloseTask(String cacheName, boolean async) {
+            super(cacheName, async);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() {
+            cache().close();
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class DestroyTask extends CacheTaskAdapter<Void, Void, Void> {
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         */
+        public DestroyTask(String cacheName, boolean async) {
+            super(cacheName, async);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() {
+            cache().destroy();
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class IsClosedTask extends CacheTaskAdapter<Void, Void, Boolean> {
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         */
+        public IsClosedTask(String cacheName, boolean async) {
+            super(cacheName, async);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean call() throws Exception {
+            return cache().isClosed();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class UnwrapTask<R> extends CacheTaskAdapter<Void, Void, R> {
+        /** Clazz. */
+        private final Class<R> clazz;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param clazz Clazz.
+         */
+        public UnwrapTask(String cacheName, boolean async, Class<R> clazz) {
+            super(cacheName, async);
+            this.clazz = clazz;
+        }
+
+        /** {@inheritDoc} */
+        @Override public R call() throws Exception {
+            return cache().unwrap(clazz);
+        }
+    }
+
+    /**
+     *
+     */
+    private static abstract class CacheTaskAdapter<K, V, R> implements IgniteCallable<R> {
+        /** Ignite. */
+        @IgniteInstanceResource
+        protected Ignite ignite;
+
+        /** Cache name. */
+        protected final String cacheName;
+
+        /** Async. */
+        protected final boolean async;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         */
+        public CacheTaskAdapter(String cacheName, boolean async) {
+            this.async = async;
+            this.cacheName = cacheName;
+        }
+
+        /**
+         * Returns cache instance.
+         */
+        protected IgniteCache<K, V> cache() {
+            IgniteCache<K, V> cache = ignite.cache(cacheName);
+
+            return async ? cache.withAsync() : cache;
+        }
     }
 
     /**

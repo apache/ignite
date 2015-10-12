@@ -118,7 +118,11 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         cfg.setClientMode(client);
 
-        cfg.setCommunicationSpi(new TestCommunicationSpi());
+        TestCommunicationSpi commSpi = new TestCommunicationSpi();
+
+        commSpi.setSharedMemoryPort(-1);
+
+        cfg.setCommunicationSpi(commSpi);
 
         cfg.setCacheConfiguration(ccfg);
 

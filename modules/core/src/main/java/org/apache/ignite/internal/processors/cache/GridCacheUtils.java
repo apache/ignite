@@ -286,14 +286,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @param msg Message to check.
-     * @return {@code True} if preloader message.
-     */
-    public static boolean allowForStartup(Object msg) {
-        return ((GridCacheMessage)msg).allowForStartup();
-    }
-
-    /**
      * Writes {@link GridCacheVersion} to output stream. This method is meant to be used by
      * implementations of {@link Externalizable} interface.
      *

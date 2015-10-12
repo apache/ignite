@@ -261,6 +261,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public void onReconnected() {
         startFut = new GridFutureAdapter<>();
+
+        long topVer0 = cctx.kernalContext().discovery().topologyVersion();
+
+        assert topVer0 > 0 : topVer0;
+
+        topVer.set(topVer0);
     }
 
     /** {@inheritDoc} */
@@ -340,7 +346,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @param msg Force keys message.
      */
     private void processForceKeysRequest(final ClusterNode node, final GridDhtForceKeysRequest msg) {
-        IgniteInternalFuture<?> fut = cctx.mvcc().finishKeys(msg.keys(), msg.topologyVersion());
+        IgniteInternalFuture<?> fut = cctx.mvcc().finishKeys(msg.keys(), msg.cacheId(), msg.topologyVersion());
 
         if (fut.isDone())
             processForceKeysRequest0(node, msg);

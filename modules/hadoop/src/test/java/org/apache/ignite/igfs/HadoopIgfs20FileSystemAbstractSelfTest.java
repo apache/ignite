@@ -59,6 +59,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
+import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsCommonAbstractTest;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
@@ -352,7 +353,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         try {
-            fs.delete(new Path("/"), true);
+            HadoopIgfsUtils.clear(fs);
         }
         catch (Exception ignore) {
             // No-op.
@@ -627,7 +628,9 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
 
         Path root = new Path(fsHome, "/");
 
-        assertTrue(fs.delete(root, true));
+        assertFalse(fs.delete(root, true));
+
+        assertTrue(fs.delete(new Path(fsHome, "/someDir1"), true));
 
         assertPathDoesNotExist(fs, someDir3);
         assertPathDoesNotExist(fs, new Path(fsHome, "/someDir1/someDir2"));

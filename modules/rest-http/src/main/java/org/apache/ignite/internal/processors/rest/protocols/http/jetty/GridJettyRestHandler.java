@@ -51,7 +51,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTopologyRequest;
-import org.apache.ignite.internal.processors.rest.request.RestSqlQueryRequest;
+import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -64,6 +64,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_C
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_ALL;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXECUTE_SQL_QUERY;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 
 /**
@@ -84,18 +85,14 @@ public class GridJettyRestHandler extends AbstractHandler {
 
     /** Logger. */
     private final IgniteLogger log;
-
-    /** Request handlers. */
-    private GridRestProtocolHandler hnd;
-
-    /** Default page. */
-    private volatile String dfltPage;
-
-    /** Favicon. */
-    private volatile byte[] favicon;
-
     /** Authentication checker. */
     private final IgniteClosure<String, Boolean> authChecker;
+    /** Request handlers. */
+    private GridRestProtocolHandler hnd;
+    /** Default page. */
+    private volatile String dfltPage;
+    /** Favicon. */
+    private volatile byte[] favicon;
 
     /**
      * Creates new HTTP requests handler.
@@ -131,6 +128,74 @@ public class GridJettyRestHandler extends AbstractHandler {
         }
         catch (IOException e) {
             U.warn(log, "Failed to initialize favicon: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Retrieves long value from parameters map.
+     *
+     * @param key Key.
+     * @param params Parameters map.
+     * @param dfltVal Default value.
+     * @return Long value from parameters map or {@code dfltVal} if null
+     *     or not exists.
+     * @throws IgniteCheckedException If parsing failed.
+     */
+    @Nullable private static Long longValue(String key, Map<String, Object> params, Long dfltVal) throws IgniteCheckedException {
+        assert key != null;
+
+        String val = (String) params.get(key);
+
+        try {
+            return val == null ? dfltVal : Long.valueOf(val);
+        }
+        catch (NumberFormatException ignore) {
+            throw new IgniteCheckedException("Failed to parse parameter of Long type [" + key + "=" + val + "]");
+        }
+    }
+
+    /**
+     * Retrieves int value from parameters map.
+     *
+     * @param key Key.
+     * @param params Parameters map.
+     * @param dfltVal Default value.
+     * @return Integer value from parameters map or {@code dfltVal} if null
+     *     or not exists.
+     * @throws IgniteCheckedException If parsing failed.
+     */
+    @Nullable private static Integer intValue(String key, Map<String, Object> params, Integer dfltVal) throws IgniteCheckedException {
+        assert key != null;
+
+        String val = (String) params.get(key);
+
+        try {
+            return val == null ? dfltVal : Integer.valueOf(val);
+        }
+        catch (NumberFormatException ignore) {
+            throw new IgniteCheckedException("Failed to parse parameter of Integer type [" + key + "=" + val + "]");
+        }
+    }
+
+    /**
+     * Retrieves UUID value from parameters map.
+     *
+     * @param key Key.
+     * @param params Parameters map.
+     * @return UUID value from parameters map or {@code null} if null
+     *     or not exists.
+     * @throws IgniteCheckedException If parsing failed.
+     */
+    @Nullable private static UUID uuidValue(String key, Map<String, Object> params) throws IgniteCheckedException {
+        assert key != null;
+
+        String val = (String) params.get(key);
+
+        try {
+            return val == null ? null : UUID.fromString(val);
+        }
+        catch (NumberFormatException ignore) {
+            throw new IgniteCheckedException("Failed to parse parameter of UUID type [" + key + "=" + val + "]");
         }
     }
 
@@ -396,6 +461,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             case CACHE_CAS:
             case CACHE_METRICS:
             case CACHE_SIZE:
+            case CACHE_METADATA:
             case CACHE_REPLACE:
             case CACHE_APPEND:
             case CACHE_PREPEND: {
@@ -497,9 +563,9 @@ public class GridJettyRestHandler extends AbstractHandler {
 
             case EXECUTE_SQL_QUERY:
             case EXECUTE_SQL_FIELDS_QUERY: {
-                RestSqlQueryRequest restReq0 = new RestSqlQueryRequest();
+                RestQueryRequest restReq0 = new RestQueryRequest();
 
-                restReq0.sqlQuery((String) params.get("qry"));
+                restReq0.sqlQuery((String)params.get("qry"));
 
                 restReq0.arguments(values("arg", params).toArray());
 
@@ -512,20 +578,46 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                 restReq0.cacheName((String)params.get("cacheName"));
 
+                if (cmd == EXECUTE_SQL_QUERY)
+                    restReq0.queryType(RestQueryRequest.QueryType.SQL);
+                else
+                    restReq0.queryType(RestQueryRequest.QueryType.SQL_FIELDS);
+
+                restReq = restReq0;
+
+                break;
+            }
+
+            case EXECUTE_SCAN_QUERY: {
+                RestQueryRequest restReq0 = new RestQueryRequest();
+
+                restReq0.sqlQuery((String)params.get("qry"));
+
+                String pageSize = (String)params.get("pageSize");
+
+                if (pageSize != null)
+                    restReq0.pageSize(Integer.parseInt(pageSize));
+
+                restReq0.cacheName((String)params.get("cacheName"));
+
+                restReq0.className((String)params.get("classname"));
+
+                restReq0.queryType(RestQueryRequest.QueryType.SCAN);
+
                 restReq = restReq0;
 
                 break;
             }
 
             case FETCH_SQL_QUERY: {
-                RestSqlQueryRequest restReq0 = new RestSqlQueryRequest();
+                RestQueryRequest restReq0 = new RestQueryRequest();
 
                 String qryId = (String) params.get("qryId");
 
                 if (qryId != null)
                     restReq0.queryId(Long.parseLong(qryId));
 
-                String pageSize = (String) params.get("pageSize");
+                String pageSize = (String)params.get("pageSize");
 
                 if (pageSize != null)
                     restReq0.pageSize(Integer.parseInt(pageSize));
@@ -538,7 +630,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             }
 
             case CLOSE_SQL_QUERY: {
-                RestSqlQueryRequest restReq0 = new RestSqlQueryRequest();
+                RestQueryRequest restReq0 = new RestQueryRequest();
 
                 String qryId = (String) params.get("qryId");
 
@@ -598,74 +690,6 @@ public class GridJettyRestHandler extends AbstractHandler {
         }
 
         return restReq;
-    }
-
-    /**
-     * Retrieves long value from parameters map.
-     *
-     * @param key Key.
-     * @param params Parameters map.
-     * @param dfltVal Default value.
-     * @return Long value from parameters map or {@code dfltVal} if null
-     *     or not exists.
-     * @throws IgniteCheckedException If parsing failed.
-     */
-    @Nullable private static Long longValue(String key, Map<String, Object> params, Long dfltVal) throws IgniteCheckedException {
-        assert key != null;
-
-        String val = (String) params.get(key);
-
-        try {
-            return val == null ? dfltVal : Long.valueOf(val);
-        }
-        catch (NumberFormatException ignore) {
-            throw new IgniteCheckedException("Failed to parse parameter of Long type [" + key + "=" + val + "]");
-        }
-    }
-
-    /**
-     * Retrieves int value from parameters map.
-     *
-     * @param key Key.
-     * @param params Parameters map.
-     * @param dfltVal Default value.
-     * @return Integer value from parameters map or {@code dfltVal} if null
-     *     or not exists.
-     * @throws IgniteCheckedException If parsing failed.
-     */
-    @Nullable private static Integer intValue(String key, Map<String, Object> params, Integer dfltVal) throws IgniteCheckedException {
-        assert key != null;
-
-        String val = (String) params.get(key);
-
-        try {
-            return val == null ? dfltVal : Integer.valueOf(val);
-        }
-        catch (NumberFormatException ignore) {
-            throw new IgniteCheckedException("Failed to parse parameter of Integer type [" + key + "=" + val + "]");
-        }
-    }
-
-    /**
-     * Retrieves UUID value from parameters map.
-     *
-     * @param key Key.
-     * @param params Parameters map.
-     * @return UUID value from parameters map or {@code null} if null
-     *     or not exists.
-     * @throws IgniteCheckedException If parsing failed.
-     */
-    @Nullable private static UUID uuidValue(String key, Map<String, Object> params) throws IgniteCheckedException {
-        assert key != null;
-
-        String val = (String) params.get(key);
-
-        try {
-            return val == null ? null : UUID.fromString(val);
-        }
-        catch (NumberFormatException ignore) {
-            throw new IgniteCheckedException("Failed to parse parameter of UUID type [" + key + "=" + val + "]");
-        }
     }
 
     /**

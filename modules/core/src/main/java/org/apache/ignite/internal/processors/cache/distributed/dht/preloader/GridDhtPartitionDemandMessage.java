@@ -98,11 +98,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean allowForStartup() {
-        return true;
-    }
-
     /**
      * @param p Partition.
      */
