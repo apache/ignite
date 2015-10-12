@@ -206,7 +206,13 @@ namespace Apache.Ignite.Core.Portable
         /// Read object array. 
         /// </summary>
         /// <returns>Object array.</returns>
-        T[] ReadArray<T>();
+        object[] ReadArray();
+
+        /// <summary>
+        /// Read generic array. 
+        /// </summary>
+        /// <returns>Object array.</returns>
+        T[] ReadGenericArray<T>();
 
         /// <summary>
         /// Read non-generic collection.

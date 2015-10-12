@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Cache.Store
 {
-    using System;
     using System.Collections;
     using System.Diagnostics;
     using Apache.Ignite.Core.Cache.Store;
@@ -166,7 +165,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                 switch (opType)
                 {
                     case OpLoadCache:
-                        _store.LoadCache((k, v) => WriteObjects(cb, grid, k, v), rawReader.ReadArray<object>());
+                        _store.LoadCache((k, v) => WriteObjects(cb, grid, k, v), rawReader.ReadArray());
 
                         break;
 

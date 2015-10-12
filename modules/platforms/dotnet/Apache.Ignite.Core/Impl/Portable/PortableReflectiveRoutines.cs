@@ -280,6 +280,11 @@ namespace Apache.Ignite.Core.Impl.Portable
                 writeAction = GetWriter(field, MthdWriteEnumArray, elemType);
                 readAction = GetReader(field, MthdReadEnumArray, elemType);
             }
+            else if (elemType == typeof (object))
+            {
+                writeAction = GetWriter<object[]>(field, (f, w, o) => w.WriteArray(f, o));
+                readAction = GetReader(field, (f, r) => r.ReadArray(f));
+            }
             else
             {
                 writeAction = GetWriter(field, MthdWriteObjArray, elemType);
