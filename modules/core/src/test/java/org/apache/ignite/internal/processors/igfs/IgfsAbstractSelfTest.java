@@ -1519,6 +1519,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         create(igfs, paths(DIR, SUBDIR), null);
 
+        assert igfs.exists(SUBDIR);
+
         createFile(igfs, FILE, true, BLOCK_SIZE, chunk);
 
         checkFile(igfs, igfsSecondary, FILE, chunk);
@@ -1526,8 +1528,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         appendFile(igfs, FILE, chunk);
 
         checkFile(igfs, igfsSecondary, FILE, chunk, chunk);
-
-        assert igfs.exists(SUBDIR);
 
         // Test create via append:
         IgfsPath path2 = FILE2;
@@ -1557,6 +1557,88 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         }
 
         checkFile(igfs, igfsSecondary, path2, chunk, chunk);
+
+        // Negative append (create == false):
+        try {
+            try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/should-not-be-created"), false)) {}
+
+            fail("Exception expected");
+        } catch (IgniteException e) {
+            // okay
+        }
+        checkNotExist(igfs, igfsSecondary, new IgfsPath("/d1"));
+
+        // Positive mkdirs via append:
+        try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/k/l"), true)) {
+            checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
+            assert igfs.info(new IgfsPath("/k/l")).isFile();
+        }
+
+        // Negative append (file is immediate parent):
+        try {
+            try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/k/l/m"), true)) {}
+
+            fail("Exception expected");
+        } catch (IgniteException e) {
+            // okay
+        }
+        checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
+        checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
+        assert igfs.info(new IgfsPath("/k/l")).isFile();
+
+        // Negative append (file is in the parent chain):
+        try {
+            try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/k/l/m/n/o/p"), true)) {}
+
+            fail("Exception expected");
+        } catch (IgniteException e) {
+            // okay
+        }
+        checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
+        checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
+        assert igfs.info(new IgfsPath("/k/l")).isFile();
+
+        // Negative append (target is a directory):
+        igfs.mkdirs(new IgfsPath("/x/y"), null);
+        checkExist(igfs, igfsSecondary, new IgfsPath("/x/y"));
+        assert igfs.info(new IgfsPath("/x/y")).isDirectory();
+        try {
+            try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/x/y"), true)) {}
+
+            fail("Exception expected");
+        } catch (IgniteException e) {
+            // okay
+        }
+
+        // Positive append with create
+        try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/x/y/f"), true)) {
+            assert igfs.info(new IgfsPath("/x/y/f")).isFile();
+        }
+
+        // Positive append with create & 1 mkdirs:
+        try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/x/y/z/f"), true)) {
+            assert igfs.info(new IgfsPath("/x/y/z/f")).isFile();
+        }
+
+        // Positive append with create & 2 mkdirs:
+        try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/x/y/z/t/f"), true)) {
+            assert igfs.info(new IgfsPath("/x/y/z/t/f")).isFile();
+        }
+
+        // Positive mkdirs create & many mkdirs:
+        try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/x/y/z/t/t2/t3/t4/t5/f"), true)) {
+            assert igfs.info(new IgfsPath("/x/y/z/t/t2/t3/t4/t5/f")).isFile();
+        }
+
+        // Negative mkdirs via append (create == false):
+        try {
+            try (IgfsOutputStream os0 = igfs.append(new IgfsPath("/d1/d2/d3/f"), false)) {}
+
+            fail("Exception expected");
+        } catch (IgniteException e) {
+            // okay
+        }
+        checkNotExist(igfs, igfsSecondary, new IgfsPath("/d1"));
     }
 
     /**

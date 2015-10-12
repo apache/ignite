@@ -1086,12 +1086,6 @@ public final class IgfsImpl implements IgfsEx {
                 if (ids.size() == 1)
                     throw new IgfsPathIsDirectoryException("Failed to open file (not a file): " + path);
 
-                final IgniteUuid parentId = ids.get(ids.size() - 2);
-
-                // Despite of create, append never creates directories:
-                if (parentId == null)
-                    throw new IgfsPathNotFoundException("Failed to resolve parent directory: " + path.parent());
-
                 final Map<String, String> dirProps, fileProps;
 
                 if (props == null) {
@@ -1926,13 +1920,13 @@ public final class IgfsImpl implements IgfsEx {
     /**
      * Perform IGFS operation in safe context.
      *
-     * @param action Action.
+     * @param act Action.
      * @return Result.
      */
-    private <T> T safeOp(Callable<T> action) {
+    private <T> T safeOp(Callable<T> act) {
         if (enterBusy()) {
             try {
-                return action.call();
+                return act.call();
             }
             catch (Exception e) {
                 throw IgfsUtils.toIgfsException(e);
