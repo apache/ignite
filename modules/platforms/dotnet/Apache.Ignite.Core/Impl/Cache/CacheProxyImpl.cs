@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private readonly CacheImpl<TK, TV> _cache;
 
         /** */
-        private readonly ThreadLocal<int> _lastAsyncOp = new ThreadLocal<int>(() => PlatformTarget.OpNone);
+        private readonly ThreadLocal<CacheOp> _lastAsyncOp = new ThreadLocal<CacheOp>(() => CacheOp.None);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheProxyImpl{K, V}"/> class.
@@ -503,7 +503,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private void SetLastAsyncOp(CacheOp opId)
         {
             if (IsAsync)
-                _lastAsyncOp.Value = (int) opId;
+                _lastAsyncOp.Value = opId;
         }
 
         /// <summary>
@@ -513,7 +513,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private void ClearLastAsyncOp()
         {
             if (IsAsync)
-                _lastAsyncOp.Value = PlatformTarget.OpNone;
+                _lastAsyncOp.Value = CacheOp.None;
         }
     }
 }

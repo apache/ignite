@@ -125,22 +125,22 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Gets and resets future for previous asynchronous operation.
         /// </summary>
-        /// <param name="lastAsyncOpId">The last async op id.</param>
+        /// <param name="lastAsyncOp">The last async op id.</param>
         /// <returns>
         /// Future for previous asynchronous operation.
         /// </returns>
         /// <exception cref="System.InvalidOperationException">Asynchronous mode is disabled</exception>
-        internal IFuture<TResult> GetFuture<TResult>(int lastAsyncOpId)
+        internal IFuture<TResult> GetFuture<TResult>(CacheOp lastAsyncOp) 
         {
             if (!_flagAsync)
                 throw IgniteUtils.GetAsyncModeDisabledException();
 
-            var converter = GetFutureResultConverter<TResult>(lastAsyncOpId);
+            var converter = GetFutureResultConverter<TResult>(lastAsyncOp);
 
             _invokeAllConverter.Value = null;
 
-            return GetFuture((futId, futTypeId) => UU.TargetListenFutureForOperation(Target, futId, futTypeId, lastAsyncOpId), 
-                _flagKeepPortable, converter);
+            return GetFuture((futId, futTypeId) => UU.TargetListenFutureForOperation(Target, futId, futTypeId, 
+                (int) lastAsyncOp), _flagKeepPortable, converter);
         }
 
         /** <inheritDoc /> */
@@ -946,24 +946,43 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <typeparam name="TResult">The type of the future result.</typeparam>
         /// <param name="lastAsyncOpId">The last op id.</param>
         /// <returns>Future result converter.</returns>
-        private Func<PortableReaderImpl, TResult> GetFutureResultConverter<TResult>(int lastAsyncOpId)
+        private Func<PortableReaderImpl, TResult> GetFutureResultConverter<TResult>(CacheOp lastAsyncOpId)
         {
-            if (lastAsyncOpId == (int) CacheOp.GetAll)
-                return reader => (TResult)ReadGetAllDictionary(reader);
-            
-            if (lastAsyncOpId == (int)CacheOp.Invoke)
-                return reader =>
-                {
-                    var hasError = reader.ReadBoolean();
+            switch (lastAsyncOpId)
+            {
+                case CacheOp.GetAll:
+                    return reader => (TResult)ReadGetAllDictionary(reader);
 
-                    if (hasError)
-                        throw ReadException(reader.Stream);
+                case CacheOp.Invoke:
+                    return reader =>
+                    {
+                        var hasError = reader.ReadBoolean();
 
-                    return reader.ReadObject<TResult>();
-                };
+                        if (hasError)
+                            throw ReadException(reader.Stream);
 
-            if (lastAsyncOpId == (int) CacheOp.InvokeAll)
-                return _invokeAllConverter.Value as Func<PortableReaderImpl, TResult>;
+                        return reader.ReadObject<TResult>();
+                    };
+
+                case CacheOp.InvokeAll:
+                    return _invokeAllConverter.Value as Func<PortableReaderImpl, TResult>;
+
+                case CacheOp.Get:
+                case CacheOp.GetAndPut:
+                case CacheOp.GetAndPutIfAbsent:
+                case CacheOp.GetAndRemove:
+                case CacheOp.GetAndReplace:
+                    return reader =>
+                    {
+                        var res = reader.ReadObject<object>();
+
+                        var nullableRes = res == null
+                            ? new IgniteNullable<TV>(default(TV), false)
+                            : new IgniteNullable<TV>((TV) res, true);
+
+                        return TypeCaster<TResult>.Cast(nullableRes);
+                    };
+            }
 
             return null;
         }
@@ -973,7 +992,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         private TV GetNullableResult(IgniteNullable<TV> result)
         {
-            if (!IsAsync) 
+            if (!IsAsync)
                 return result.Value;
 
             Debug.Assert(!result.HasValue);
