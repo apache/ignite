@@ -18,10 +18,14 @@
 namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
+    using System.Collections.Generic;
+
+    using Apache.Ignite.Core.Impl.Portable.Structure;
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
-    /// Surrogate type descriptor. Used in cases when type if identified by name and is not provided in configuration.
+    /// Surrogate type descriptor. Used in cases when type if identified by name and 
+    /// is not provided in configuration.
     /// </summary>
     internal class PortableSurrogateTypeDescriptor : IPortableTypeDescriptor
     {
@@ -33,6 +37,9 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Type name. */
         private readonly string _name;
+
+        /** Type structure. */
+        private volatile PortableStructure _typeStruct = PortableStructure.CreateEmpty();
 
         /// <summary>
         /// Constructor.
@@ -116,6 +123,21 @@ namespace Apache.Ignite.Core.Impl.Portable
         public string AffinityKeyFieldName
         {
             get { return null; }
+        }
+
+        /** <inheritDoc /> */
+        public PortableStructure TypeStructure
+        {
+            get { return _typeStruct; }
+        }
+
+        /** <inheritDoc /> */
+        public void UpdateStructure(PortableStructure exp, int pathIdx, IList<PortableStructureUpdate> updates)
+        {
+            lock (this)
+            {
+                _typeStruct = _typeStruct.Merge(exp, pathIdx, updates);
+            }
         }
     }
 }

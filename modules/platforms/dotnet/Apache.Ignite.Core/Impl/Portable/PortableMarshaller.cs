@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="val">Value.</param>
         /// <returns>Serialized data as byte array.</returns>
-        public byte[] Marshal(object val)
+        public byte[] Marshal<T>(T val)
         {
             PortableHeapStream stream = new PortableHeapStream(128);
 
@@ -259,11 +259,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="typeId">Type ID.</param>
         /// <returns>Metadata or null.</returns>
-        public IPortableMetadata Metadata(int typeId)
+        public IPortableMetadata GetMetadata(int typeId)
         {
             if (Ignite != null)
             {
-                IPortableMetadata meta = Ignite.Metadata(typeId);
+                IPortableMetadata meta = Ignite.GetMetadata(typeId);
 
                 if (meta != null)
                     return meta;
@@ -277,7 +277,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="desc">Type descriptor.</param>
         /// <returns>Metadata handler.</returns>
-        public IPortableMetadataHandler MetadataHandler(IPortableTypeDescriptor desc)
+        public IPortableMetadataHandler GetMetadataHandler(IPortableTypeDescriptor desc)
         {
             PortableMetadataHolder holder;
 
@@ -308,6 +308,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 return new PortableHashsetMetadataHandler(ids, newType);
             }
+
             return null;
         }
 
@@ -340,7 +341,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Descriptor.</returns>
-        public IPortableTypeDescriptor Descriptor(Type type)
+        public IPortableTypeDescriptor GetDescriptor(Type type)
         {
             IPortableTypeDescriptor desc;
 
@@ -354,7 +355,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="typeName">Type name.</param>
         /// <returns>Descriptor.</returns>
-        public IPortableTypeDescriptor Descriptor(string typeName)
+        public IPortableTypeDescriptor GetDescriptor(string typeName)
         {
             IPortableTypeDescriptor desc;
 
@@ -368,7 +369,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="userType"></param>
         /// <param name="typeId"></param>
         /// <returns></returns>
-        public IPortableTypeDescriptor Descriptor(bool userType, int typeId)
+        public IPortableTypeDescriptor GetDescriptor(bool userType, int typeId)
         {
             IPortableTypeDescriptor desc;
 

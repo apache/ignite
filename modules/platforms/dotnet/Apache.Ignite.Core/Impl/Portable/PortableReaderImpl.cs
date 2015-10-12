@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public IPortableRawReader RawReader()
+        public IPortableRawReader GetRawReader()
         {
             MarkRaw();
 
@@ -300,25 +300,25 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public decimal ReadDecimal(string fieldName)
+        public decimal? ReadDecimal(string fieldName)
         {
             return ReadField(fieldName, PortableUtils.ReadDecimal);
         }
 
         /** <inheritdoc /> */
-        public decimal ReadDecimal()
+        public decimal? ReadDecimal()
         {
             return Read(PortableUtils.ReadDecimal);
         }
 
         /** <inheritdoc /> */
-        public decimal[] ReadDecimalArray(string fieldName)
+        public decimal?[] ReadDecimalArray(string fieldName)
         {
             return ReadField(fieldName, PortableUtils.ReadDecimalArray);
         }
 
         /** <inheritdoc /> */
-        public decimal[] ReadDecimalArray()
+        public decimal?[] ReadDecimalArray()
         {
             return Read(PortableUtils.ReadDecimalArray);
         }

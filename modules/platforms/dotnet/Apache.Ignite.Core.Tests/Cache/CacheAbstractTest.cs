@@ -211,7 +211,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritdoc /> */
         public void WritePortable(IPortableWriter writer)
         {
-            var w = writer.RawWriter();
+            var w = writer.GetRawWriter();
 
             w.WriteBoolean(ThrowErr);
             w.WriteBoolean(ThrowErrPortable);
@@ -224,7 +224,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritdoc /> */
         public void ReadPortable(IPortableReader reader)
         {
-            var r = reader.RawReader();
+            var r = reader.GetRawReader();
 
             ThrowErr = r.ReadBoolean();
             ThrowErrPortable = r.ReadBoolean();
@@ -262,13 +262,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritdoc /> */
         public void WritePortable(IPortableWriter writer)
         {
-            writer.RawWriter().WriteString(Info);
+            writer.GetRawWriter().WriteString(Info);
         }
 
         /** <inheritdoc /> */
         public void ReadPortable(IPortableReader reader)
         {
-            Info = reader.RawReader().ReadString();
+            Info = reader.GetRawReader().ReadString();
         }
     }
 

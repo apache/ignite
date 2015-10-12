@@ -290,7 +290,9 @@ namespace Apache.Ignite.Core.Impl.Compute
             // 1. Unmarshal result.
             PortableReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream);
 
-            Guid nodeId = reader.ReadGuid().Value;
+            var nodeId = reader.ReadGuid();
+            Debug.Assert(nodeId.HasValue);
+
             bool cancelled = reader.ReadBoolean();
 
             try
@@ -300,7 +302,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                 var data = PortableUtils.ReadInvocationResult(reader, out err);
 
                 // 2. Process the result.
-                return (int) JobResult0(new ComputeJobResultImpl(data, (Exception) err, job.Job, nodeId, cancelled));
+                return (int) JobResult0(new ComputeJobResultImpl(data, (Exception) err, job.Job, nodeId.Value, cancelled));
             }
             catch (Exception e)
             {

@@ -178,13 +178,13 @@ namespace Apache.Ignite.Core.Tests.Compute
             /** <inheritDoc /> */
             public void WritePortable(IPortableWriter writer)
             {
-                writer.RawWriter().WriteString(Msg);
+                writer.GetRawWriter().WriteString(Msg);
             }
 
             /** <inheritDoc /> */
             public void ReadPortable(IPortableReader reader)
             {
-                Msg = reader.RawReader().ReadString();
+                Msg = reader.GetRawReader().ReadString();
             }
         }
 

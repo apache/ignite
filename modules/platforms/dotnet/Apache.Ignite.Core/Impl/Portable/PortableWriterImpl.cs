@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Portable.Metadata;
+    using Apache.Ignite.Core.Impl.Portable.Structure;
     using Apache.Ignite.Core.Portable;
 
     using PU = PortableUtils;
@@ -56,12 +57,21 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Current mapper. */
         private IPortableIdMapper _curMapper;
-
-        /** Current metadata handler. */
-        private IPortableMetadataHandler _curMetaHnd;
         
         /** Current raw position. */
         private long _curRawPos;
+
+        /** Current type structure. */
+        private PortableStructure _curStruct;
+
+        /** Current type structure path index. */
+        private int _curStructPath;
+
+        /** Current type structure action index. */
+        private int _curStructAction;
+
+        /** Current type structure updates. */
+        private List<PortableStructureUpdate> _curStructUpdates; 
         
         /** Whether we are currently detaching an object. */
         private bool _detaching;
@@ -535,26 +545,36 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Decimal value.</param>
-        public void WriteDecimal(string fieldName, decimal val)
+        public void WriteDecimal(string fieldName, decimal? val)
         {
             WriteFieldId(fieldName, PU.TypeDecimal);
 
-            int pos = SkipFieldLength();
+            if (val == null)
+                WriteNullField();
+            else
+            {
+                int pos = SkipFieldLength();
 
-            _stream.WriteByte(PU.TypeDecimal);
-            PortableUtils.WriteDecimal(val, _stream);
+                _stream.WriteByte(PU.TypeDecimal);
+                PortableUtils.WriteDecimal(val.Value, _stream);
 
-            WriteFieldLength(_stream, pos);
+                WriteFieldLength(_stream, pos);
+            }
         }
 
         /// <summary>
         /// Write decimal value.
         /// </summary>
         /// <param name="val">Decimal value.</param>
-        public void WriteDecimal(decimal val)
+        public void WriteDecimal(decimal? val)
         {
-            _stream.WriteByte(PU.TypeDecimal);
-            PortableUtils.WriteDecimal(val, _stream);
+            if (val == null)
+                WriteNullRawField();
+            else
+            {
+                _stream.WriteByte(PU.TypeDecimal);
+                PortableUtils.WriteDecimal(val.Value, _stream);
+            }
         }
 
         /// <summary>
@@ -562,7 +582,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Decimal array.</param>
-        public void WriteDecimalArray(string fieldName, decimal[] val)
+        public void WriteDecimalArray(string fieldName, decimal?[] val)
         {
             WriteFieldId(fieldName, PU.TypeArrayDecimal);
 
@@ -583,7 +603,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write decimal array.
         /// </summary>
         /// <param name="val">Decimal array.</param>
-        public void WriteDecimalArray(decimal[] val)
+        public void WriteDecimalArray(decimal?[] val)
         {
             if (val == null)
                 WriteNullRawField();
@@ -593,63 +613,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 PU.WriteDecimalArray(val, _stream);
             }
         }
-
-//        /// <summary>
-//        /// Write named date value.
-//        /// </summary>
-//        /// <param name="fieldName">Field name.</param>
-//        /// <param name="val">Date value.</param>
-//        public void WriteDate(string fieldName, DateTime val)
-//        {
-//            WriteFieldId(fieldName, PU.TypeDate);
-//
-//            _stream.WriteInt(PU.LengthTypeId + 12);
-//
-//            _stream.WriteByte(PortableUtils.TypeDate);
-//            PortableUtils.WriteDate(val, _stream);
-//        }
-//
-//        /// <summary>
-//        /// Write date value.
-//        /// </summary>
-//        /// <param name="val">Date value.</param>
-//        public void WriteDate(DateTime val)
-//        {
-//            _stream.WriteByte(PortableUtils.TypeDate);
-//            PortableUtils.WriteDate(val, _stream);
-//        }
-//
-//        /// <summary>
-//        /// Write named date array.
-//        /// </summary>
-//        /// <param name="fieldName">Field name.</param>
-//        /// <param name="val">Date array.</param>
-//        public void WriteDateArray(string fieldName, DateTime[] val)
-//        {
-//            WriteFieldId(fieldName, PU.TypeDate);
-//
-//            if (val == null)
-//                WriteNullField();
-//            else
-//            {
-//                int pos = SkipFieldLength();
-//
-//                _stream.WriteByte(PortableUtils.TypeArrayDate);
-//                PortableUtils.WriteDateArray(val, _stream);
-//
-//                WriteFieldLength(_stream, pos);
-//            }
-//        }
-//
-//        /// <summary>
-//        /// Write date array.
-//        /// </summary>
-//        /// <param name="val">Date array.</param>
-//        public void WriteDateArray(DateTime[] val)
-//        {
-//            _stream.WriteByte(PortableUtils.TypeArrayDate);
-//            PortableUtils.WriteDateArray(val, _stream);
-//        }
 
         /// <summary>
         /// Write named date value.
@@ -796,68 +759,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 PU.WriteStringArray(val, _stream);
             }
         }
-
-//        /// <summary>
-//        /// Write named GUID value.
-//        /// </summary>
-//        /// <param name="fieldName">Field name.</param>
-//        /// <param name="val">GUID value.</param>
-//        public void WriteGuid(string fieldName, Guid val)
-//        {
-//            WriteFieldId(fieldName, PU.TypeGuid);
-//
-//            _stream.WriteInt(PU.LengthTypeId + 16);
-//
-//            _stream.WriteByte(PU.TypeGuid);
-//            PU.WriteGuid(val, _stream);
-//        }
-//
-//        /// <summary>
-//        /// Write GUID value.
-//        /// </summary>
-//        /// <param name="val">GUID value.</param>
-//        public void WriteGuid(Guid val)
-//        {
-//            _stream.WriteByte(PU.TypeGuid);
-//            PU.WriteGuid(val, _stream);
-//        }
-//
-//        /// <summary>
-//        /// Write named GUID array.
-//        /// </summary>
-//        /// <param name="fieldName">Field name.</param>
-//        /// <param name="val">GUID array.</param>
-//        public void WriteGuidArray(string fieldName, Guid[] val)
-//        {
-//            WriteFieldId(fieldName, PU.TypeArrayGuid);
-//
-//            if (val == null)
-//                WriteNullField();
-//            else
-//            {
-//                int pos = SkipFieldLength();
-//
-//                _stream.WriteByte(PU.TypeArrayGuid);
-//                PU.WriteGuidArray(val, _stream);
-//
-//                WriteFieldLength(_stream, pos);
-//            }
-//        }
-//
-//        /// <summary>
-//        /// Write GUID array.
-//        /// </summary>
-//        /// <param name="val">GUID array.</param>
-//        public void WriteGuidArray(Guid[] val)
-//        {
-//            if (val == null)
-//                WriteNullRawField();
-//            else
-//            {
-//                _stream.WriteByte(PU.TypeArrayGuid);
-//                PU.WriteGuidArray(val, _stream);
-//            }
-//        }
 
         /// <summary>
         /// Write named GUID value.
@@ -1213,7 +1114,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>
         /// Raw writer.
         /// </returns>
-        public IPortableRawWriter RawWriter()
+        public IPortableRawWriter GetRawWriter()
         {
             if (_curRawPos == 0)
                 _curRawPos = _stream.Position;
@@ -1245,7 +1146,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             _marsh = marsh;
             _stream = stream;
         }
-        
+
         /// <summary>
         /// Write object.
         /// </summary>
@@ -1277,7 +1178,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 return;
 
             // Suppose that we faced normal object and perform descriptor lookup.
-            IPortableTypeDescriptor desc = _marsh.Descriptor(type);
+            IPortableTypeDescriptor desc = _marsh.GetDescriptor(type);
 
             if (desc != null)
             {
@@ -1301,15 +1202,23 @@ namespace Apache.Ignite.Core.Impl.Portable
                 int oldTypeId = _curTypeId;
                 IPortableNameMapper oldConverter = _curConverter;
                 IPortableIdMapper oldMapper = _curMapper;
-                IPortableMetadataHandler oldMetaHnd = _curMetaHnd;
                 long oldRawPos = _curRawPos;
+                
+                PortableStructure oldStruct = _curStruct;
+                int oldStructPath = _curStructPath;
+                int oldStructAction = _curStructAction;
+                var oldStructUpdates = _curStructUpdates;
 
                 // Push new frame.
                 _curTypeId = desc.TypeId;
                 _curConverter = desc.NameConverter;
                 _curMapper = desc.Mapper;
-                _curMetaHnd = desc.MetadataEnabled ? _marsh.MetadataHandler(desc) : null;
                 _curRawPos = 0;
+
+                _curStruct = desc.TypeStructure;
+                _curStructPath = 0;
+                _curStructAction = 0;
+                _curStructUpdates = null;
 
                 // Write object fields.
                 desc.Serializer.WritePortable(obj, this);
@@ -1324,21 +1233,35 @@ namespace Apache.Ignite.Core.Impl.Portable
                 else
                     _stream.WriteInt(pos + 14, len);
 
-                // 13. Collect metadata.
-                if (_curMetaHnd != null)
+                // Apply structure updates if any.
+                if (_curStructUpdates != null)
                 {
-                    IDictionary<string, int> meta = _curMetaHnd.OnObjectWriteFinished();
+                    desc.UpdateStructure(_curStruct, _curStructPath, _curStructUpdates);
 
-                    if (meta != null)
-                        SaveMetadata(_curTypeId, desc.TypeName, desc.AffinityKeyFieldName, meta);
+                    IPortableMetadataHandler metaHnd = _marsh.GetMetadataHandler(desc);
+
+                    if (metaHnd != null)
+                    {
+                        foreach (var u in _curStructUpdates)
+                            metaHnd.OnFieldWrite(u.FieldId, u.FieldName, u.FieldType);
+
+                        IDictionary<string, int> meta = metaHnd.OnObjectWriteFinished();
+
+                        if (meta != null)
+                            SaveMetadata(_curTypeId, desc.TypeName, desc.AffinityKeyFieldName, meta);
+                    }
                 }
 
                 // Restore old frame.
                 _curTypeId = oldTypeId;
                 _curConverter = oldConverter;
                 _curMapper = oldMapper;
-                _curMetaHnd = oldMetaHnd;
                 _curRawPos = oldRawPos;
+
+                _curStruct = oldStruct;
+                _curStructPath = oldStructPath;
+                _curStructAction = oldStructAction;
+                _curStructUpdates = oldStructUpdates;
             }
             else
             {
@@ -1537,7 +1460,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     {
                         // Merge newly recorded handles with old ones and restore old on the stack.
                         // Otherwise we can use current handles right away.
-                        oldHnds.Merge(_hnds);
+                        if (_hnds != null)
+                            oldHnds.Merge(_hnds);
 
                         _hnds = oldHnds;
                     }
@@ -1578,7 +1502,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Collections, Enums and non-primitive arrays do not have descriptors
                 // and this is fine here because we cannot know whether their members
                 // are portable.
-                return _marsh.Descriptor(type) != null || PortableSystemHandlers.GetWriteHandler(type) != null;
+                return _marsh.GetDescriptor(type) != null || PortableSystemHandlers.GetWriteHandler(type) != null;
             }
 
             return true;
@@ -1594,12 +1518,40 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_curRawPos != 0)
                 throw new PortableException("Cannot write named fields after raw data is written.");
 
-            int fieldId = PU.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
+            int action = _curStructAction++;
+
+            int fieldId;
+
+            if (_curStructUpdates == null)
+            {
+                fieldId = _curStruct.GetFieldId(fieldName, fieldTypeId, ref _curStructPath, action);
+
+                if (fieldId == 0)
+                    fieldId = GetNewFieldId(fieldName, fieldTypeId, action);
+            }
+            else
+                fieldId = GetNewFieldId(fieldName, fieldTypeId, action);
 
             _stream.WriteInt(fieldId);
+        }
 
-            if (_curMetaHnd != null)
-                _curMetaHnd.OnFieldWrite(fieldId, fieldName, fieldTypeId);
+        /// <summary>
+        /// Get ID for the new field and save structure update.
+        /// </summary>
+        /// <param name="fieldName">Field name.</param>
+        /// <param name="fieldTypeId">Field type ID.</param>
+        /// <param name="action">Action index.</param>
+        /// <returns>Field ID.</returns>
+        private int GetNewFieldId(string fieldName, byte fieldTypeId, int action)
+        {
+            int fieldId = PU.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
+
+            if (_curStructUpdates == null)
+                _curStructUpdates = new List<PortableStructureUpdate>();
+
+            _curStructUpdates.Add(new PortableStructureUpdate(fieldName, fieldId, fieldTypeId, action));
+
+            return fieldId;
         }
 
         /// <summary>

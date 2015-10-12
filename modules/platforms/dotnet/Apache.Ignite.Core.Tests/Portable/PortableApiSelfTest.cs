@@ -415,7 +415,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(DecimalHolder))
                 .SetField("val", decimal.One)
-                .SetField("valArr", new[] { decimal.MinusOne })
+                .SetField("valArr", new decimal?[] { decimal.MinusOne })
                 .Build();
 
             IPortableMetadata meta = portObj.GetMetadata();
@@ -428,12 +428,12 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(PortableTypeNames.TypeNameArrayDecimal, meta.GetFieldTypeName("valArr"));
 
             Assert.AreEqual(decimal.One, portObj.GetField<decimal>("val"));
-            Assert.AreEqual(new[] { decimal.MinusOne }, portObj.GetField<decimal[]>("valArr"));
+            Assert.AreEqual(new decimal?[] { decimal.MinusOne }, portObj.GetField<decimal?[]>("valArr"));
 
             DecimalHolder obj = portObj.Deserialize<DecimalHolder>();
 
             Assert.AreEqual(decimal.One, obj.Val);
-            Assert.AreEqual(new[] { decimal.MinusOne }, obj.ValArr);
+            Assert.AreEqual(new decimal?[] { decimal.MinusOne }, obj.ValArr);
         }
 
         /// <summary>
@@ -1381,7 +1381,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(IdMapper.TestTypeId, _grid.GetPortables().GetTypeId(IdMapper.TestTypeName));
             
-            Assert.AreEqual(PortableUtils.StringHashCode("someTypeName"), _grid.GetPortables().GetTypeId("someTypeName"));
+            Assert.AreEqual(PortableUtils.GetStringHashCode("someTypeName"), _grid.GetPortables().GetTypeId("someTypeName"));
         }
 
         /// <summary>
@@ -1513,14 +1513,14 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void WritePortable(IPortableWriter writer)
         {
             writer.WriteInt("a", A);
-            writer.RawWriter().WriteInt(B);
+            writer.GetRawWriter().WriteInt(B);
         }
 
         /** <inheritDoc /> */
         public void ReadPortable(IPortableReader reader)
         {
             A = reader.ReadInt("a");
-            B = reader.RawReader().ReadInt();
+            B = reader.GetRawReader().ReadInt();
         }
     }
 
@@ -1758,7 +1758,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public decimal Val;
 
         /** */
-        public decimal[] ValArr;
+        public decimal?[] ValArr;
     }
 
     /// <summary>

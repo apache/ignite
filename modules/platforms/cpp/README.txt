@@ -1,4 +1,4 @@
-Apache Ignite for C++
+Apache Ignite C++
 ==================================
 
 Ignite C++ provides data grid functionality.

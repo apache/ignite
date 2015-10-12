@@ -75,7 +75,7 @@ namespace ignite
          * Start Ignite instance.
          *
          * @param cfg Configuration.
-         * @return Ignite instance or null in case of error.
+         * @return Ignite instance.
          */
         static Ignite Start(const IgniteConfiguration& cfg);
 
@@ -84,7 +84,7 @@ namespace ignite
          *
          * @param cfg Configuration.
          * @param err Error.
-         * @return Ignite instance or null in case of error.
+         * @return Ignite instance.
          */
         static Ignite Start(const IgniteConfiguration& cfg, IgniteError* err);
 
@@ -93,7 +93,7 @@ namespace ignite
          *
          * @param cfg Configuration.
          * @param name Ignite name.
-         * @return Ignite instance or null in case of error.
+         * @return Ignite instance.
          */
         static Ignite Start(const IgniteConfiguration& cfg, const char* name);
 
@@ -103,7 +103,7 @@ namespace ignite
          * @param cfg Configuration.
          * @param name Ignite name.
          * @param err Error.
-         * @return Ignite instance or null in case of error.
+         * @return Ignite instance.
          */
         static Ignite Start(const IgniteConfiguration& cfg, const char* name, IgniteError* err);
 

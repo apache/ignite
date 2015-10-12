@@ -1143,6 +1143,16 @@ namespace ignite
                 return query::QueryCursor<K, V>(cursorImpl);
             }
 
+            /**
+             * Check if the instance is valid.
+             *
+             * @return True if the instance is valid and can be used.
+             */
+            bool IsValid()
+            {
+                return impl.IsValid();
+            }
+
         private:
             /** Implementation delegate. */
             ignite::common::concurrent::SharedPointer<impl::cache::CacheImpl> impl;

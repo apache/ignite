@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="reader">The reader.</param>
         public ComputeJobWrapper(IPortableReader reader)
         {
-            var reader0 = (PortableReaderImpl)reader.RawReader();
+            var reader0 = (PortableReaderImpl)reader.GetRawReader();
 
             _job = reader0.ReadObject<object>();
 
@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public void WritePortable(IPortableWriter writer)
         {
-            var writer0 = (PortableWriterImpl)writer.RawWriter();
+            var writer0 = (PortableWriterImpl)writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(Job));
         }

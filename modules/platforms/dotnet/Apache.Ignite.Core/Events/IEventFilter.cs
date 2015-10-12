@@ -31,6 +31,6 @@ namespace Apache.Ignite.Core.Events
         /// <param name="nodeId">Node identifier.</param>
         /// <param name="evt">Event.</param>
         /// <returns>Value indicating whether specified event passes this filtger.</returns>
-        bool Invoke(Guid nodeId, T evt);
+        bool Invoke(Guid? nodeId, T evt);
     }
 }
