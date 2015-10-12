@@ -722,7 +722,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static object ReadEnumArray(PortableReaderImpl ctx, Type type)
         {
-            return PortableUtils.ReadArray<int>(ctx, true);
+            return PortableUtils.ReadTypedArray(ctx, true, type.GetElementType());
         }
 
         /**

@@ -273,6 +273,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         public static readonly MethodInfo MtdhReadGenericDictionary0 =
             typeof(PortableUtils).GetMethod("ReadGenericDictionary0", _bindFlagsStatic);
 
+        /** Method: ReadArray. */
+        public static readonly MethodInfo MtdhReadArray =
+            typeof(PortableUtils).GetMethod("ReadArray", _bindFlagsStatic);
+
         /** Method: ReadGenericArray. */
         public static readonly MethodInfo MtdhReadGenericArray0 =
             typeof(PortableUtils).GetMethod("ReadGenericArray0", _bindFlagsStatic);
@@ -283,6 +287,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** StringHashCode(assemblyQualifiedName) -> Type map. */
         private static readonly CopyOnWriteConcurrentDictionary<int, Type> TypeNameMap =
             new CopyOnWriteConcurrentDictionary<int, Type>();
+
+        /** Cached generic array read funcs. */
+        private static readonly CopyOnWriteConcurrentDictionary<Type, Func<PortableReaderImpl, bool, object>>
+            ArrayReaders = new CopyOnWriteConcurrentDictionary<Type, Func<PortableReaderImpl, bool, object>>();
 
         /// <summary>
         /// Default marshaller.
@@ -1079,11 +1087,18 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="ctx">Read context.</param>
         /// <param name="typed">Typed flag.</param>
         /// <param name="elementType">Type of the element.</param>
-        /// <returns> Array. </returns>
-        public static object ReadArray(PortableReaderImpl ctx, bool typed, Type elementType)
+        /// <returns>Array.</returns>
+        public static object ReadTypedArray(PortableReaderImpl ctx, bool typed, Type elementType)
         {
-            // TODO: restore old ArrayReaders
-            return null;
+            Func<PortableReaderImpl, bool, object> result;
+
+            if (!ArrayReaders.TryGetValue(elementType, out result))
+                result = ArrayReaders.GetOrAdd(elementType, t =>
+                    DelegateConverter.CompileFunc<Func<PortableReaderImpl, bool, object>>(null,
+                        MtdhReadArray.MakeGenericMethod(t),
+                        new[] {typeof (PortableReaderImpl), typeof (bool)}, new[] {false, false, true}));
+
+            return result(ctx, typed);
         }
 
         /// <summary>
