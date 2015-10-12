@@ -54,8 +54,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             typeof(IPortableReader).GetMethod("ReadEnumArray", new[] { typeof(string) });
 
         /** Method: read array. */
-        private static readonly MethodInfo MthdReadObjArray =
-            typeof(IPortableReader).GetMethod("ReadArray", new[] { typeof(string) });
+        private static readonly MethodInfo MthdReadGenericArray =
+            typeof(IPortableReader).GetMethod("ReadGenericArray", new[] { typeof(string) });
 
         /** Method: read generic collection. */
         private static readonly MethodInfo MthdReadGenericCollection =
@@ -74,8 +74,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             typeof(IPortableWriter).GetMethod("WriteEnumArray");
 
         /** Method: write array. */
-        private static readonly MethodInfo MthdWriteObjArray =
-            typeof(IPortableWriter).GetMethod("WriteArray");
+        private static readonly MethodInfo MthdWriteGenericArray =
+            typeof(IPortableWriter).GetMethod("WriteGenericArray");
 
         /** Method: write generic collection. */
         private static readonly MethodInfo MthdWriteGenericCollection =
@@ -287,8 +287,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             else
             {
-                writeAction = GetWriter(field, MthdWriteObjArray, elemType);
-                readAction = GetReader(field, MthdReadObjArray, elemType);
+                writeAction = GetWriter(field, MthdWriteGenericArray, elemType);
+                readAction = GetReader(field, MthdReadGenericArray, elemType);
             }  
         }
 
