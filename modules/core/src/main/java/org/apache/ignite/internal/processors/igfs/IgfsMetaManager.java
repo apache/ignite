@@ -3920,6 +3920,9 @@ public class IgfsMetaManager extends IgfsManager {
      */
     private static class LockFileProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo>,
             Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** New lock id to lock the entry. */
         private IgniteUuid newLockId;
 
