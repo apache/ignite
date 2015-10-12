@@ -967,7 +967,6 @@ namespace Apache.Ignite.Core.Impl.Cache
                 case CacheOp.InvokeAll:
                     return _invokeAllConverter.Value as Func<PortableReaderImpl, TResult>;
 
-                case CacheOp.Get:
                 case CacheOp.GetAndPut:
                 case CacheOp.GetAndPutIfAbsent:
                 case CacheOp.GetAndRemove:
