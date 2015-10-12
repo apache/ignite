@@ -519,7 +519,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             
             Assert.AreEqual(1, cache.Get(1));
             Assert.AreEqual(2, cache.Get(2));
-            Assert.AreEqual(0, cache.Get(3));
+            Assert.IsFalse(cache.ContainsKey(3));
+            Assert.Throws<InvalidOperationException>(() => cache.Get(3));
         }
 
         [Test]
@@ -691,7 +692,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache().WithAsync().WrapAsync();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             var old = cache.GetAndPutIfAbsent(1, 1);
 
@@ -711,8 +712,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache().WithAsync().WrapAsync();
 
-            // TODO: Why the f this works?
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.Throws<InvalidOperationException>(() => cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             Assert.IsTrue(cache.PutIfAbsent(1, 1));
 
@@ -728,13 +729,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             bool success = cache.Replace(1, 1);
 
             Assert.AreEqual(false, success);
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             cache.Put(1, 1);
 
@@ -760,13 +761,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache().WithAsync().WrapAsync();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             var old = cache.GetAndReplace(1, 1);
 
             Assert.IsFalse(old.HasValue);
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             cache.Put(1, 1);
 
@@ -792,11 +793,11 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             Assert.IsFalse(cache.Replace(1, 1));
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             cache.Put(1, 1);
 
@@ -812,11 +813,11 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache().WithAsync().WrapAsync();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             Assert.IsFalse(cache.Replace(1, 1));
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             cache.Put(1, 1);
 
@@ -1201,7 +1202,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(0, cache.GetSize());
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             cache.Put(1, 1);
 
@@ -1212,7 +1213,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(0, cache.GetSize());
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
         }
 
         [Test]
@@ -1246,7 +1247,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(0, cache.GetSize());
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
         }
 
         [Test]
@@ -1286,8 +1287,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(0, cache.GetSize());
 
-            Assert.AreEqual(0, cache.Get(keys[0]));
-            Assert.AreEqual(0, cache.Get(keys[1]));
+            Assert.IsFalse(cache.ContainsKeys(keys));
         }
 
         [Test]
@@ -1332,8 +1332,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(1, cache.GetSize(CachePeekMode.Primary));
 
-            Assert.AreEqual(0, cache.Get(1));
-            Assert.AreEqual(0, cache.Get(2));
+            Assert.IsFalse(cache.ContainsKeys(new[] {1, 2}));
             Assert.AreEqual(3, cache.Get(3));
         }
 
