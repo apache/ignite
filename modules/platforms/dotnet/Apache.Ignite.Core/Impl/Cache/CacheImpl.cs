@@ -313,8 +313,20 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public TV this[TK key]
         {
-            get { return Get(key); }
-            set { Put(key, value); }
+            get
+            {
+                if (IsAsync)
+                    throw new InvalidOperationException("Indexer can't be used in async mode.");
+
+                return Get(key);
+            }
+            set
+            {
+                if (IsAsync)
+                    throw new InvalidOperationException("Indexer can't be used in async mode.");
+
+                Put(key, value);
+            }
         }
 
         /** <inheritDoc /> */

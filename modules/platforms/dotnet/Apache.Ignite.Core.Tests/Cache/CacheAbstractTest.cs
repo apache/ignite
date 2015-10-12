@@ -3080,6 +3080,18 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(10, cache1.Get(1));
         }
 
+        [Test]
+        public void TestIndexer()
+        {
+            var cache = Cache();
+
+            Assert.Throws<InvalidOperationException>(() => Console.WriteLine(cache[0]));  // missing key throws
+
+            cache[1] = 5;
+
+            Assert.AreEqual(5, cache[1]);
+        }
+
         private void TestKeepPortableFlag(bool async)
         {
             var cache0 = async ? Cache().WithAsync().WrapAsync() : Cache();
