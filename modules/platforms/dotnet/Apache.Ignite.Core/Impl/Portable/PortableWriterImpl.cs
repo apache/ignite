@@ -970,13 +970,31 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public void WriteGenericArray<T>(string fieldName, T[] val)
         {
-            throw new NotImplementedException();
+            WriteFieldId(fieldName, PU.TypeArray);
+
+            if (val == null)
+                WriteNullField();
+            else
+            {
+                int pos = SkipFieldLength();
+
+                _stream.WriteByte(PU.TypeGenericArray);
+                PortableUtils.WriteGenericArray(val, this);
+
+                WriteFieldLength(_stream, pos);
+            }
         }
 
         /** <inheritdoc /> */
         public void WriteGenericArray<T>(T[] val)
         {
-            throw new NotImplementedException();
+            if (val == null)
+                WriteNullRawField();
+            else
+            {
+                _stream.WriteByte(PU.TypeGenericArray);
+                PortableUtils.WriteGenericArray(val, this);
+            }
         }
 
         /// <summary>
