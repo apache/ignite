@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -57,8 +56,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -98,9 +95,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /** Stopping flag. */
     private boolean stopping;
-
-    /** Error flag. */
-    private final AtomicBoolean startErr = new AtomicBoolean();
 
     /** Mutex. */
     private final GridSpinReadWriteLock rw = new GridSpinReadWriteLock();
@@ -944,10 +938,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     /**
      * @param nodeId Sender node ID.
      * @param cacheMsg Message.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ErrorNotRethrown", "unchecked"})
-    private void unmarshall(UUID nodeId, GridCacheMessage cacheMsg) throws IgniteCheckedException {
+    private void unmarshall(UUID nodeId, GridCacheMessage cacheMsg) {
         if (cctx.localNodeId().equals(nodeId))
             return;
 

@@ -193,6 +193,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private boolean clientOnlyExchange;
 
+    /** Init timestamp. Used to track the amount of time spent to complete the future. */
+    private long initTs;
+
     /**
      * Dummy future created to trigger reassignments if partition
      * topology changed while preloading.
@@ -475,9 +478,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         busyLock.readLock().unlock();
     }
 
-    // TODO remove
-    long inited;
-
     /**
      * Starts activity.
      *
@@ -491,7 +491,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (isDone())
                 return;
 
-            inited = U.currentTimeMillis();
+            initTs = U.currentTimeMillis();
 
             try {
                 // Wait for event to occur to make sure that discovery
@@ -1065,7 +1065,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (super.onDone(res, err) && !dummy && !forcePreload) {
             if (log.isDebugEnabled())
                 log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
-                    "duration=" + duration() + ", durationFromInit=" + (U.currentTimeMillis() - inited) + ']');
+                    "duration=" + duration() + ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
 
             initFut.onDone(err == null);
 
@@ -1196,16 +1196,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     if (match) {
                         boolean allReceived;
 
-                        long start = U.currentTimeMillis();
-
                         synchronized (rcvdIds) {
                             if (rcvdIds.add(nodeId))
                                 updatePartitionSingleMap(msg);
 
                             allReceived = allReceived();
                         }
-
-                        long end = U.currentTimeMillis();
 
                         // If got all replies, and initialization finished, and reply has not been sent yet.
                         if (allReceived && ready.get() && replied.compareAndSet(false, true)) {
@@ -1216,7 +1212,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         else if (log.isDebugEnabled())
                             log.debug("Exchange future full map is not sent [allReceived=" + allReceived() +
                                 ", ready=" + ready + ", replied=" + replied.get() + ", init=" + init.get() +
-                                ", fut=" + GridDhtPartitionsExchangeFuture.this + ", updateDur=" + (end - start) + ']');
+                                ", fut=" + GridDhtPartitionsExchangeFuture.this + ']');
                     }
                 }
             });

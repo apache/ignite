@@ -203,4 +203,3 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             "super", super.toString());
     }
 }
-
