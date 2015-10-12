@@ -29,11 +29,14 @@ import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import sun.misc.Unsafe;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 
 /**
  * Miscellaneous utility methods to facilitate {@link OptimizedMarshaller}.
@@ -42,9 +45,9 @@ class OptimizedMarshallerUtils {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
-    /** Use default {@code serialVersionUid} for {@link Serializable} classes. */
+    /** Use default {@code serialVersionUID} for {@link Serializable} classes. */
     private static final boolean USE_DFLT_SUID =
-        Boolean.valueOf(System.getProperty("ignite.marsh.optimized.useDefaultSUID", Boolean.TRUE.toString()));
+        IgniteSystemProperties.getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, false);
 
     /** */
     static final long HASH_SET_MAP_OFF;
