@@ -152,7 +152,7 @@ namespace ignite
 
             void Write(PortableWriter& writer, QueryPerson obj)
             {
-                writer.WriteString("name", obj.GetName());
+                writer.WriteString("name", obj.GetName().c_str());
                 writer.WriteInt32("age", obj.GetAge());
             }
 

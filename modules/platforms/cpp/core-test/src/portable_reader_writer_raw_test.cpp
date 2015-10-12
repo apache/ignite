@@ -799,7 +799,7 @@ BOOST_AUTO_TEST_CASE(TestString) {
 
     rawWriter.WriteString(writeVal1);
     rawWriter.WriteString(writeVal1, 4);
-    rawWriter.WriteString(writeVal3);
+    rawWriter.WriteString(writeVal3.c_str());
     rawWriter.WriteString(NULL);
     rawWriter.WriteString(NULL, 4);
 
@@ -930,7 +930,7 @@ BOOST_AUTO_TEST_CASE(TestStringArrayEmpty)
     {
         std::string val = "test";
 
-        arrWriter.Write(val);
+        arrWriter.Write(val.c_str());
 
         BOOST_FAIL("Error expected.");
     }
@@ -1007,7 +1007,7 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
     arrWriter.Write(writeVal1, 4);
     arrWriter.Write(NULL); // NULL value.
     arrWriter.Write(NULL, 100); // NULL value again.
-    arrWriter.Write(writeVal3);
+    arrWriter.Write(writeVal3.c_str());
 
     CheckRawWritesRestricted(rawWriter);
 
@@ -1045,7 +1045,7 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
     {
         std::string val = "test";
 
-        arrWriter.Write(val);
+        arrWriter.Write(val.c_str());
 
         BOOST_FAIL("Error expected.");
     }

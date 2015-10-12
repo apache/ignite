@@ -68,7 +68,7 @@ namespace ignite
             
         void Write(PortableWriter& writer, Person obj)
         {
-            writer.WriteString("name", obj.name);
+            writer.WriteString("name", obj.name.c_str());
             writer.WriteInt32("age", obj.age);            
         }
 

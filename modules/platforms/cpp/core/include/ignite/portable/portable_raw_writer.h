@@ -192,18 +192,8 @@ namespace ignite
              * @param val String.
              * @param len String length (characters).
              */
+
             void WriteString(const char* val, int32_t len);
-            
-            /**
-             * Write string.
-             *
-             * @param val String.
-             */
-            void WriteString(const std::string& val)
-            {
-                WriteString(val.c_str());
-            }
-            
             /**
              * Start string array write.
              *

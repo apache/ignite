@@ -41,8 +41,8 @@ namespace ignite
                  * @param type Type name.
                  * @param text Text string.
                  */
-                TextQuery(const std::string& type, const std::string& text) :
-                    type(type), text(text), pageSize(1024), loc(false)
+                TextQuery(const char* type, const char* text) : type(type), text(text), 
+                    pageSize(1024), loc(false)
                 {
                     // No-op.
                 }
@@ -52,9 +52,9 @@ namespace ignite
                  *
                  * @return Type name.
                  */
-                const std::string& GetType() const
+                const char* GetType()
                 {
-                    return type;
+                    return type.c_str();
                 }
 
                 /*
@@ -62,7 +62,7 @@ namespace ignite
                  *
                  * @param sql Type name.
                  */
-                void SetType(const std::string& type)
+                void SetType(const char* type)
                 {
                     this->type = type;
                 }
@@ -72,9 +72,9 @@ namespace ignite
                  *
                  * @return text string.
                  */
-                const std::string& GetText() const
+                const char* GetText()
                 {
-                    return text;
+                    return text.c_str();
                 }
 
                 /*
@@ -82,7 +82,7 @@ namespace ignite
                  *
                  * @param text Text string.
                  */
-                void SetText(const std::string& text)
+                void SetText(const char* text)
                 {
                     this->text = text;
                 }
@@ -135,8 +135,8 @@ namespace ignite
                 void Write(portable::PortableRawWriter& writer) const
                 {
                     writer.WriteBool(loc);
-                    writer.WriteString(text);
-                    writer.WriteString(type);
+                    writer.WriteString(text.c_str());
+                    writer.WriteString(type.c_str());
                     writer.WriteInt32(pageSize);
                 }
 
