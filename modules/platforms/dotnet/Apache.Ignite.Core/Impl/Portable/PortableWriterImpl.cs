@@ -970,31 +970,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public void WriteGenericArray<T>(string fieldName, T[] val)
         {
-            WriteFieldId(fieldName, PU.TypeArray);
+            WriteFieldId(fieldName, PU.TypeGenericCollection);
 
-            if (val == null)
-                WriteNullField();
-            else
-            {
-                int pos = SkipFieldLength();
-
-                _stream.WriteByte(PU.TypeGenericArray);
-                PortableUtils.WriteGenericCollection(val, this);
-
-                WriteFieldLength(_stream, pos);
-            }
+            Write(val);
         }
 
         /** <inheritdoc /> */
         public void WriteGenericArray<T>(T[] val)
         {
-            if (val == null)
-                WriteNullRawField();
-            else
-            {
-                _stream.WriteByte(PU.TypeGenericArray);
-                PortableUtils.WriteGenericCollection(val, this);
-            }
+            Write(val);
         }
 
         /// <summary>
@@ -1036,7 +1020,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Collection.</param>
         public void WriteGenericCollection<T>(string fieldName, ICollection<T> val)
         {
-            WriteFieldId(fieldName, PU.TypeCollection);
+            WriteFieldId(fieldName, PU.TypeGenericCollection);
 
             if (val == null)
                 WriteNullField();
@@ -1098,7 +1082,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Dictionary.</param>
         public void WriteGenericDictionary<TK, TV>(string fieldName, IDictionary<TK, TV> val)
         {
-            WriteFieldId(fieldName, PU.TypeDictionary);
+            WriteFieldId(fieldName, PU.TypeGenericCollection);
 
             if (val == null)
                 WriteNullField();

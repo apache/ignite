@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
@@ -755,14 +756,20 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (TypeIds.TryGetValue(type, out typeId))
                 return typeId;
+
             if (type.IsEnum)
                 return PortableUtils.TypeEnum;
+
             if (type.IsArray)
                 return type.GetElementType().IsEnum ? PortableUtils.TypeArrayEnum : PortableUtils.TypeArray;
-            PortableCollectionInfo colInfo = PortableCollectionInfo.GetInstance(type);
 
-            return colInfo.IsAny ? colInfo.IsCollection || colInfo.IsGenericCollection ?
-                PortableUtils.TypeCollection : PortableUtils.TypeDictionary : PortableUtils.TypeObject;
+            if (typeof (IDictionary).IsAssignableFrom(type))
+                return PortableUtils.TypeDictionary;
+            
+            if (typeof (ICollection).IsAssignableFrom(type))
+                return PortableUtils.TypeCollection;
+
+            return PortableUtils.TypeObject;
         }
 
         /// <summary>
@@ -816,7 +823,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var colInfo = PortableCollectionInfo.GetInstance(type);
 
-            if (colInfo.IsGenericCollection || colInfo.IsGenericDictionary)
+            if (colInfo.IsAny)
                 throw new NotSupportedException(
                     string.Format("PortableBuilder does not support generic collections: '{0}'. " +
                                   "Please use non-generic counterpart.", type));

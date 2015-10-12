@@ -130,9 +130,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Type: object array. */
         public const byte TypeArray = 23;
 
-        /** Type: generic array (with element type information). */
-        public const byte TypeGenericArray = 95;
-
         /** Type: collection. */
         public const byte TypeCollection = 24;
 
@@ -141,9 +138,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Type: map. */
         public const byte TypeDictionary = 25;
-
-        /** Type: generic map (with element type information). */
-        public const byte TypeGenericDictionary = 97;
 
         /** Type: map entry. */
         public const byte TypeMapEntry = 26;
@@ -1658,11 +1652,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 case TypeArrayDate:
                 case TypeArrayEnum:
                 case TypeArray:
-                case TypeGenericArray:
                 case TypeCollection:
-                case TypeGenericCollection:
                 case TypeDictionary:
-                case TypeGenericDictionary:
                 case TypeMapEntry:
                 case TypePortable:
                     return true;

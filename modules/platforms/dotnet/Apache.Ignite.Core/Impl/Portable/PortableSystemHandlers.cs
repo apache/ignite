@@ -33,15 +33,6 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <param name="obj">Object to write.</param>
     internal delegate void PortableSystemWriteDelegate(PortableWriterImpl writer, object obj);
 
-    /// <summary>
-    /// Typed write delegate.
-    /// </summary>
-    /// <param name="stream">Stream.</param>
-    /// <param name="obj">Object to write.</param>
-    // ReSharper disable once TypeParameterCanBeVariant
-    // Generic variance in a delegate causes performance hit
-    internal delegate void PortableSystemTypedWriteDelegate<T>(IPortableStream stream, T obj);
-
     /**
      * <summary>Collection of predefined handlers for various system types.</summary>
      */
@@ -62,14 +53,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Write handler: dictionary. */
         public static readonly PortableSystemWriteDelegate WriteHndDictionary = WriteDictionary;
-
-        /** Write handler: generic collection. */
-        public static readonly PortableSystemWriteDelegate WriteHndGenericCollection =
-            WriteGenericCollection;
-
-        /** Write handler: generic dictionary. */
-        public static readonly PortableSystemWriteDelegate WriteHndGenericDictionary =
-            WriteGenericDictionary;
 
         /// <summary>
         /// Initializes the <see cref="PortableSystemHandlers"/> class.
@@ -140,20 +123,11 @@ namespace Apache.Ignite.Core.Impl.Portable
             // 9. Array.
             ReadHandlers[PortableUtils.TypeArray] = new PortableSystemReader(ReadArray);
 
-            // 10. Generic Array.
-            ReadHandlers[PortableUtils.TypeGenericArray] = new PortableSystemReader(ReadGenericArray);
-
             // 11. Arbitrary collection.
             ReadHandlers[PortableUtils.TypeCollection] = new PortableSystemReader(ReadCollection);
 
-            // 12. Generic collection.
-            ReadHandlers[PortableUtils.TypeGenericCollection] = new PortableSystemReader(ReadGenericCollection);
-
             // 13. Arbitrary dictionary.
             ReadHandlers[PortableUtils.TypeDictionary] = new PortableSystemReader(ReadDictionary);
-
-            // 14. Generic dictionary.
-            ReadHandlers[PortableUtils.TypeGenericDictionary] = new PortableSystemReader(ReadGenericDictionary);
 
             // 15. Map entry.
             ReadHandlers[PortableUtils.TypeMapEntry] = new PortableSystemReader(ReadMapEntry);
@@ -262,20 +236,11 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Object array.
                 if (elemType == typeof (object))
                     return WriteArray;
-                
-                // Generic array.
-                return WriteGenericArray;
             }
             if (type.IsEnum)
                 // We know how to write enums.
                 return WriteEnum;
             
-            // We know how to write collections.
-            PortableCollectionInfo info = PortableCollectionInfo.GetInstance(type);
-
-            if (info.IsAny)
-                return info.WriteHandler;
-
             return null;
         }
 
@@ -605,20 +570,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             PortableUtils.WriteArray((Array)obj, ctx);
         }
 
-        /// <summary>
-        /// Writes generic array (not compatible with Java).
-        /// </summary>
-        private static void WriteGenericArray(PortableWriterImpl ctx, object obj)
-        {
-            PortableCollectionInfo info = PortableCollectionInfo.GetInstance(obj.GetType());
-
-            Debug.Assert(info.IsArray, "Not array: " + obj.GetType().FullName);
-
-            ctx.Stream.WriteByte(PortableUtils.TypeGenericArray);
-
-            info.WriteGeneric(ctx, obj);
-        }
-
         /**
          * <summary>Write collection.</summary>
          */
@@ -630,20 +581,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /**
-         * <summary>Write generic collection.</summary>
-         */
-        private static void WriteGenericCollection(PortableWriterImpl ctx, object obj)
-        {
-            PortableCollectionInfo info = PortableCollectionInfo.GetInstance(obj.GetType());
-
-            Debug.Assert(info.IsGenericCollection, "Not generic collection: " + obj.GetType().FullName);
-
-            ctx.Stream.WriteByte(PortableUtils.TypeGenericCollection);
-
-            info.WriteGeneric(ctx, obj);
-        }
-
-        /**
          * <summary>Write dictionary.</summary>
          */
         private static void WriteDictionary(PortableWriterImpl ctx, object obj)
@@ -651,20 +588,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             ctx.Stream.WriteByte(PortableUtils.TypeDictionary);
 
             PortableUtils.WriteDictionary((IDictionary)obj, ctx);
-        }
-
-        /**
-         * <summary>Write generic dictionary.</summary>
-         */
-        private static void WriteGenericDictionary(PortableWriterImpl ctx, object obj)
-        {
-            PortableCollectionInfo info = PortableCollectionInfo.GetInstance(obj.GetType());
-
-            Debug.Assert(info.IsGenericDictionary, "Not generic dictionary: " + obj.GetType().FullName);
-
-            ctx.Stream.WriteByte(PortableUtils.TypeGenericDictionary);
-
-            info.WriteGeneric(ctx, obj);
         }
 
         /**
@@ -733,14 +656,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             return PortableUtils.ReadArray<object>(ctx, true);
         }
 
-        /// <summary>
-        /// Reads generic array.
-        /// </summary>
-        private static object ReadGenericArray(PortableReaderImpl ctx, Type type)
-        {
-            return PortableUtils.ReadGenericCollection(ctx);
-        }
-
         /**
          * <summary>Read collection.</summary>
          */
@@ -749,30 +664,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             return PortableUtils.ReadCollection(ctx, null, null);
         }
 
-        /// <summary>
-        /// Reads generic collection.
-        /// </summary>
-        /// <param name="reader">Reader.</param>
-        /// <param name="type">Type.</param>
-        private static object ReadGenericCollection(PortableReaderImpl reader, Type type)
-        {
-            return PortableUtils.ReadGenericCollection(reader);
-        }
-
         /**
          * <summary>Read dictionary.</summary>
          */
         private static object ReadDictionary(PortableReaderImpl ctx, Type type)
         {
             return PortableUtils.ReadDictionary(ctx, null);
-        }
-
-        /// <summary>
-        /// Reads the generic dictionary.
-        /// </summary>
-        private static object ReadGenericDictionary(PortableReaderImpl ctx, Type type)
-        {
-            return PortableUtils.ReadGenericDictionary(ctx);
         }
 
         /**

@@ -28,37 +28,9 @@ namespace Apache.Ignite.Core.Impl.Portable
      */
     internal class PortableCollectionInfo
     {
-        /** Flag: none. */
-        private const byte FlagNone = 0;
-
-        /** Flag: generic dictionary. */
-        private const byte FlagGenericDictionary = 1;
-
-        /** Flag: generic collection. */
-        private const byte FlagGenericCollection = 2;
-
-        /** Flag: dictionary. */
-        private const byte FlagDictionary = 3;
-
-        /** Flag: collection. */
-        private const byte FlagCollection = 4;
-
-        /** Flag: collection. */
-        private const byte FlagArray = 5;
-
         /** Cache "none" value. */
         private static readonly PortableCollectionInfo None =
-            new PortableCollectionInfo(FlagNone, null, null, null, null);
-
-        /** Cache "dictionary" value. */
-        private static readonly PortableCollectionInfo Dictionary =
-            new PortableCollectionInfo(FlagDictionary, PortableSystemHandlers.WriteHndDictionary,
-                null, null, null);
-
-        /** Cache "collection" value. */
-        private static readonly PortableCollectionInfo Collection =
-            new PortableCollectionInfo(FlagCollection, PortableSystemHandlers.WriteHndCollection,
-                null, null, null);
+            new PortableCollectionInfo(null, null, null);
 
         /** Cached infos. */
         private static readonly ConcurrentDictionary<Type, PortableCollectionInfo> Infos =
@@ -103,12 +75,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                     return GetGenericCollectionInfo(type, genTyp);
             }
 
-            if (type == PortableUtils.TypDictionary || type.GetInterface(PortableUtils.TypDictionary.FullName) != null)
-                return Dictionary;
-
-            if (type == PortableUtils.TypCollection || type.GetInterface(PortableUtils.TypCollection.FullName) != null)
-                return Collection;
-
             return None;
         }
 
@@ -125,8 +91,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             var readMthd = PortableUtils.MtdhReadGenericCollection0.MakeGenericMethod(typeArguments);
             var ctorInfo = type.GetConstructor(new[] { typeof(int) });
 
-            return new PortableCollectionInfo(FlagGenericCollection,
-                PortableSystemHandlers.WriteHndGenericCollection, writeMthd, readMthd, ctorInfo);
+            return new PortableCollectionInfo(writeMthd, readMthd, ctorInfo);
         }
 
         /// <summary>
@@ -141,8 +106,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             var readMthd = PortableUtils.MtdhReadGenericArray0.MakeGenericMethod(typeArguments);
             var ctorInfo = type.GetConstructor(new[] { typeof(int) });
 
-            return new PortableCollectionInfo(FlagArray, 
-                PortableSystemHandlers.WriteHndGenericCollection, writeMthd, readMthd, ctorInfo);
+            return new PortableCollectionInfo(writeMthd, readMthd, ctorInfo);
         }
 
         /// <summary>
@@ -158,15 +122,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             var readMthd = PortableUtils.MtdhReadGenericDictionary0.MakeGenericMethod(typeArguments);
             var ctorInfo = type.GetConstructor(new[] { typeof(int) });
 
-            return new PortableCollectionInfo(FlagGenericDictionary,
-                PortableSystemHandlers.WriteHndGenericDictionary, writeMthd, readMthd, ctorInfo);
+            return new PortableCollectionInfo(writeMthd, readMthd, ctorInfo);
         }
-
-        /** Flag. */
-        private readonly byte _flag;
-
-        /** Write handler. */
-        private readonly PortableSystemWriteDelegate _writeHnd;
 
         /** Generic write func. */
         private readonly Action<object, PortableWriterImpl> _writeFunc;
@@ -180,17 +137,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Initializes a new instance of the <see cref="PortableCollectionInfo"/> class.
         /// </summary>
-        /// <param name="flag">The flag.</param>
-        /// <param name="writeHnd">The write handler.</param>
         /// <param name="writeMethod">The write method.</param>
         /// <param name="readMethod">The read method.</param>
         /// <param name="ctorInfo">The ctor information.</param>
-        private PortableCollectionInfo(byte flag, PortableSystemWriteDelegate writeHnd,
-            MethodInfo writeMethod, MethodInfo readMethod, ConstructorInfo ctorInfo)
+        private PortableCollectionInfo(MethodInfo writeMethod, MethodInfo readMethod, ConstructorInfo ctorInfo)
         {
-            _flag = flag;
-            _writeHnd = writeHnd;
-
             if (writeMethod != null)
                 _writeFunc = DelegateConverter.CompileFunc<Action<object, PortableWriterImpl>>(null, writeMethod, null,
                     new[] {true, false, false});
@@ -203,60 +154,12 @@ namespace Apache.Ignite.Core.Impl.Portable
                 _ctor = DelegateConverter.CompileCtor<Func<object, object>>(ctorInfo, new[] {typeof (int)});
         }
 
-        /**
-         * <summary>Generic dictionary flag.</summary>
-         */
-        public bool IsGenericDictionary
-        {
-            get { return _flag == FlagGenericDictionary; }
-        }
-
-        /**
-         * <summary>Generic collection flag.</summary>
-         */
-        public bool IsGenericCollection
-        {
-            get { return _flag == FlagGenericCollection; }
-        }
-
         /// <summary>
-        /// Gets a value indicating whether this instance represents an array.
+        /// Gets a value indicating whether this instance represents any generic collection.
         /// </summary>
-        public bool IsArray
-        {
-            get { return _flag == FlagArray; }
-        }
-
-        /**
-         * <summary>Dictionary flag.</summary>
-         */
-        public bool IsDictionary
-        {
-            get { return _flag == FlagDictionary; }
-        }
-
-        /**
-         * <summary>Collection flag.</summary>
-         */
-        public bool IsCollection
-        {
-            get { return _flag == FlagCollection; }
-        }
-
-        /**
-         * <summary>Whether at least one flag is set..</summary>
-         */
         public bool IsAny
         {
-            get { return _flag != FlagNone; }
-        }
-
-        /**
-         * <summary>Write handler.</summary>
-         */
-        public PortableSystemWriteDelegate WriteHandler
-        {
-            get { return _writeHnd; }
+            get { return _readFunc != null || _writeFunc != null; }
         }
 
         /// <summary>
