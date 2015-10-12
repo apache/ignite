@@ -605,13 +605,13 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(1, cache.Get(1));
 
-            Assert.AreEqual(0, cache.GetAndRemove(0));
+            Assert.IsFalse(cache.GetAndRemove(0).HasValue);
             
             Assert.AreEqual(1, cache.GetAndRemove(1));
+
+            Assert.IsFalse(cache.GetAndRemove(1).HasValue);
             
-            Assert.AreEqual(0, cache.GetAndRemove(1));
-            
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.TryGet(1).HasValue);
         }
 
         [Test]
