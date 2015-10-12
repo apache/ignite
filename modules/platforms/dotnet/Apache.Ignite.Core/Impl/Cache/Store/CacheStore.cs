@@ -166,7 +166,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                 switch (opType)
                 {
                     case OpLoadCache:
-                        _store.LoadCache((k, v) => WriteObjects(cb, grid, k, v), rawReader.ReadObjectArray<object>());
+                        _store.LoadCache((k, v) => WriteObjects(cb, grid, k, v), rawReader.ReadArray<object>());
 
                         break;
 

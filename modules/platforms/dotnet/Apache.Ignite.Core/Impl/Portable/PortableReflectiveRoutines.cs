@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Method: read array. */
         private static readonly MethodInfo MthdReadObjArray =
-            typeof(IPortableReader).GetMethod("ReadObjectArray", new[] { typeof(string) });
+            typeof(IPortableReader).GetMethod("ReadArray", new[] { typeof(string) });
 
         /** Method: read generic collection. */
         private static readonly MethodInfo MthdReadGenericCollection =
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Method: write array. */
         private static readonly MethodInfo MthdWriteObjArray =
-            typeof(IPortableWriter).GetMethod("WriteObjectArray");
+            typeof(IPortableWriter).GetMethod("WriteArray");
 
         /** Method: write generic collection. */
         private static readonly MethodInfo MthdWriteGenericCollection =

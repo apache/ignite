@@ -268,7 +268,7 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Object array.</returns>
-        T[] ReadObjectArray<T>(string fieldName);
+        T[] ReadArray<T>(string fieldName);
 
         /// <summary>
         /// Read named collection.

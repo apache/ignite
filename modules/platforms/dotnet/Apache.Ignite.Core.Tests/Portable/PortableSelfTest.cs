@@ -1529,10 +1529,10 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             public void ReadPortable(IPortableReader reader)
             {
-                GuidArr = reader.ReadObjectArray<Guid>("a");
-                NGuidArr = reader.ReadObjectArray<Guid?>("b");
-                DateArr = reader.ReadObjectArray<DateTime>("c");
-                NDateArr = reader.ReadObjectArray<DateTime?>("d");
+                GuidArr = reader.ReadArray<Guid>("a");
+                NGuidArr = reader.ReadArray<Guid?>("b");
+                DateArr = reader.ReadArray<DateTime>("c");
+                NDateArr = reader.ReadArray<DateTime?>("d");
             }
         }
 
