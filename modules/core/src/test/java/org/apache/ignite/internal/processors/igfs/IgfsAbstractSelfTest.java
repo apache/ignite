@@ -101,11 +101,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static final long BLOCK_SIZE = 32 * 1024 * 1024;
 
     /** Default repeat count. */
-    protected static final int REPEAT_CNT = 32; // Diagnostic: up to 500; Regression: 5
+    protected static final int REPEAT_CNT = 5; // Diagnostic: up to 500; Regression: 5
 
     /** Concurrent operations count.
      * ! Not more than ~150, see https://issues.apache.org/jira/browse/IGNITE-1581. */
-    protected static final int OPS_CNT = 32;
+    protected static final int OPS_CNT = 16;
 
     /** Renames count. */
     protected static final int RENAME_CNT = OPS_CNT;
