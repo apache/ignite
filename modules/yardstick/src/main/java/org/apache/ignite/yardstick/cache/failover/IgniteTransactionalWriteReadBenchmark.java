@@ -26,7 +26,6 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterTopologyException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
@@ -85,8 +84,6 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
                                 println(cfg, "Entry [key=" + key + ", val=" + val + "]");
                         }
                     }
-
-                    U.dumpThreads(null);
 
                     throw new IllegalStateException("Found different values for keys (see above information).");
                 }

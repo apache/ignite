@@ -29,7 +29,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterTopologyException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
@@ -104,8 +103,6 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
                                         println(cfg, "Entry [key=" + key + ", val=" + val + "]");
                                 }
                             }
-
-                            U.dumpThreads(null);
 
                             throw new IllegalStateException("Found different values for keys (see above information).");
                         }

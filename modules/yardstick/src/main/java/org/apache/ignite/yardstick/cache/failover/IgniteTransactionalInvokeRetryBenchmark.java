@@ -125,8 +125,6 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                     }
                                 }
 
-                                U.dumpThreads(null);
-
                                 throw new IllegalStateException("Cache and local map are in inconsistent state.");
                             }
 
@@ -144,8 +142,6 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                     println("Got exception: " + e);
 
                     e.printStackTrace();
-
-                    U.dumpThreads(null);
 
                     if (e instanceof Error)
                         throw (Error)e;

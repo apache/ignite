@@ -31,6 +31,8 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.mxbean.IgniteMXBean;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
@@ -139,41 +141,27 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
             restarterThread.setDaemon(true);
             restarterThread.start();
         }
-
-        Thread threadDumpPrinterThread = new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    while (!Thread.currentThread().isInterrupted()) {
-                        Thread.sleep(30 * 60 * 1000); // 30 min.
-
-                        U.dumpThreads(null);
-                    }
-                }
-                catch (Throwable e) {
-                    println("Got exception: " + e);
-                    e.printStackTrace();
-
-                    U.dumpThreads(null);
-
-                    if (e instanceof Error)
-                        throw (Error)e;
-                }
-            }
-        }, "thread-dump-printer");
-
-        threadDumpPrinterThread.setDaemon(true);
-        threadDumpPrinterThread.start();
     }
 
     /** {@inheritDoc} */
     @Override public void onException(Throwable e) {
         // Proceess only the first exception to prevent a multiple printing of a full thread dump.
         if (firtsExProcessed.compareAndSet(false, true)) {
+            // Debug info on servers.
             Ignite ignite = ignite();
 
             ClusterGroup srvs = ignite.cluster().forServers();
 
             ignite.compute(srvs).withAsync().broadcast(new ThreadDumpPrinterTask(ignite.cluster().localNode().id(), e));
+
+            // Debug info on current client.
+            println("Full thread dump of the current server node below.");
+
+            U.dumpThreads(null);
+
+            println("");
+
+            ((IgniteMXBean)ignite()).dumpDebugInfo();
         }
     }
 
@@ -182,6 +170,10 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
     private static class ThreadDumpPrinterTask implements IgniteRunnable {
         /** */
         private static final long serialVersionUID = 0;
+
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /** */
         private final UUID id;
@@ -204,6 +196,10 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
             println("Full thread dump of the current server node below.");
 
             U.dumpThreads(null);
+
+            println("");
+
+            ((IgniteMXBean)ignite).dumpDebugInfo();
         }
     }
 }
