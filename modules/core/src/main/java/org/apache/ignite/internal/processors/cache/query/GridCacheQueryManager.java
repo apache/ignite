@@ -3082,47 +3082,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     *
-     */
-    private class OffheapIteratorClosure
-        extends CX2<T2<Long, Integer>, T2<Long, Integer>, IgniteBiTuple<K, V>> {
-        /** */
-        private static final long serialVersionUID = 7410163202728985912L;
-
-        /** */
-        private IgniteBiPredicate<K, V> filter;
-
-        /** */
-        private boolean keepPortable;
-
-        /**
-         * @param filter Filter.
-         * @param keepPortable Keep portable flag.
-         */
-        private OffheapIteratorClosure(
-            @Nullable IgniteBiPredicate<K, V> filter,
-            boolean keepPortable) {
-            assert filter != null;
-
-            this.filter = filter;
-            this.keepPortable = keepPortable;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple<K, V> applyx(T2<Long, Integer> keyPtr,
-            T2<Long, Integer> valPtr)
-            throws IgniteCheckedException {
-            LazyOffheapEntry e = new LazyOffheapEntry(keyPtr, valPtr);
-
-            K key = (K)cctx.unwrapPortableIfNeeded(e.key(), keepPortable);
-            V val = (V)cctx.unwrapPortableIfNeeded(e.value(), keepPortable);
-
-            if (!filter.apply(key, val))
-                return null;
-
-            return new IgniteBiTuple<>(e.key(), (V)cctx.unwrapTemporary(e.value()));
-        }
-    }    /**
      * Creates user's SQL fields query for given clause. For more information refer to {@link CacheQuery}
      * documentation.
      *
