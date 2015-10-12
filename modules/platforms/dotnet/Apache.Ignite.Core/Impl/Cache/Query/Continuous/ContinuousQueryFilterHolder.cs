@@ -65,10 +65,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="writer">Writer.</param>
         public void WritePortable(IPortableWriter writer)
         {
-            PortableWriterImpl rawWriter = (PortableWriterImpl) writer.GetRawWriter();
+            var rawWriter = (PortableWriterImpl) writer.GetRawWriter();
 
-            PortableUtils.WritePortableOrSerializable(rawWriter, _filter);
-
+            rawWriter.WriteObject(_filter);
             rawWriter.WriteBoolean(_keepPortable);
         }
 
@@ -80,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         {
             var rawReader = (PortableReaderImpl) reader.GetRawReader();
 
-            _filter = PortableUtils.ReadPortableOrSerializable<object>(rawReader);
+            _filter = rawReader.ReadObject<object>();
             _keepPortable = rawReader.ReadBoolean();
         }
     }
