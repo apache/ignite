@@ -2810,6 +2810,22 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
+        public void TestSerializableKeepPortable()
+        {
+            var cache = Cache<int, TestSerializableObject>();
+
+            var obj = new TestSerializableObject {Name = "Vasya", Id = 128};
+
+            cache.Put(1, obj);
+
+            var portableResult = cache.WithKeepPortable<int, IPortableObject>().Get(1);
+
+            var resultObj = portableResult.Deserialize<TestSerializableObject>();
+
+            Assert.AreEqual(obj, resultObj);
+        }
+
+        [Test]
         public void TestInvoke()
         {
             TestInvoke(false);
