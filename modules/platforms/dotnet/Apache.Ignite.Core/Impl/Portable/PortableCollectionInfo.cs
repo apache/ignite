@@ -138,7 +138,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             var typeArguments = type.GetElementType();
 
             var writeMthd = PortableUtils.MtdhWriteGenericCollection.MakeGenericMethod(typeArguments);
-            var readMthd = PortableUtils.MtdhReadGenericCollection0.MakeGenericMethod(typeArguments);
+            var readMthd = PortableUtils.MtdhReadGenericArray0.MakeGenericMethod(typeArguments);
             var ctorInfo = type.GetConstructor(new[] { typeof(int) });
 
             return new PortableCollectionInfo(FlagArray, 

@@ -472,7 +472,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public T[] ReadGenericArray<T>(string fieldName)
         {
-            return (T[]) ReadField(fieldName, r => PortableUtils.ReadGenericCollection<T>(r, null));
+            return ReadField(fieldName, PortableUtils.ReadGenericArray<T>);
         }
 
         /** <inheritdoc /> */
@@ -484,7 +484,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public T[] ReadGenericArray<T>()
         {
-            return (T[]) Read(r => PortableUtils.ReadGenericCollection<T>(r, null));
+            return Read(PortableUtils.ReadGenericArray<T>);
         }
 
         /** <inheritdoc /> */

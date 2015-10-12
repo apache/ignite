@@ -274,8 +274,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             typeof(PortableUtils).GetMethod("ReadGenericDictionary0", _bindFlagsStatic);
 
         /** Method: ReadGenericArray. */
-        public static readonly MethodInfo MtdhReadGenericArray =
-            typeof(PortableUtils).GetMethod("ReadGenericArray", _bindFlagsStatic);
+        public static readonly MethodInfo MtdhReadGenericArray0 =
+            typeof(PortableUtils).GetMethod("ReadGenericArray0", _bindFlagsStatic);
 
         /** Cached UTF8 encoding. */
         private static readonly Encoding Utf8 = Encoding.UTF8;
@@ -1299,6 +1299,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             PortableGenericCollectionFactory<T> factory, PortableCollectionInfo colInfo)
         {
             Debug.Assert(reader != null);
+            Debug.Assert(colInfo != null);
 
             int len = reader.Stream.ReadInt();
 
@@ -1308,6 +1309,37 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             for (int i = 0; i < len; i++)
                 res.Add(reader.Deserialize<T>());
+
+            return res;
+        }
+
+        /// <summary>
+        /// Reads generic collection in typed context.
+        /// </summary>
+        public static T[] ReadGenericArray<T>(PortableReaderImpl reader)
+        {
+            var collectionType = ReadType(reader);
+
+            return ReadGenericArray0<T>(reader, null, PortableCollectionInfo.GetInstance(collectionType));
+        }
+
+        /// <summary>
+        /// Reads generic collection without type information.
+        /// </summary>
+        // ReSharper disable once UnusedParameter.Local (for signature compatibility)
+        private static T[] ReadGenericArray0<T>(PortableReaderImpl reader, object factory, 
+            PortableCollectionInfo colInfo)
+        {
+            Debug.Assert(reader != null);
+            Debug.Assert(factory == null);
+            Debug.Assert(colInfo != null);
+
+            int len = reader.Stream.ReadInt();
+
+            var res = (T[]) colInfo.Constructor(len);
+
+            for (int i = 0; i < len; i++)
+                res[i] = reader.Deserialize<T>();
 
             return res;
         }
