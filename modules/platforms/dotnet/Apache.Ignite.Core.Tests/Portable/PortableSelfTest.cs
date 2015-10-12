@@ -1182,16 +1182,19 @@ namespace Apache.Ignite.Core.Tests.Portable
             DateTime?[] nDateArr = { DateTime.Now.ToUniversalTime() };
 
             // Use special object.
-            SpecialArray obj1 = new SpecialArray();
-
-            obj1.GuidArr = guidArr;
-            obj1.NGuidArr = nGuidArr;
-            obj1.DateArr = dateArr;
-            obj1.NDateArr = nDateArr;
+            SpecialArray obj1 = new SpecialArray
+            {
+                GuidArr = guidArr,
+                NGuidArr = nGuidArr,
+                DateArr = dateArr,
+                NDateArr = nDateArr
+            };
 
             byte[] bytes = marsh.Marshal(obj1);
 
             IPortableObject portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+
+            Assert.IsNotNull(portObj.Deserialize<SpecialArray>());
 
             Assert.AreEqual(guidArr, portObj.GetField<Guid[]>("guidArr"));
             Assert.AreEqual(nGuidArr, portObj.GetField<Guid?[]>("nGuidArr"));
