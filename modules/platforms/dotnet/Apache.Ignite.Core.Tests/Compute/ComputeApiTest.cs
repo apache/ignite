@@ -847,12 +847,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskPortableArray()
         {
-            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputePortable[]>(EchoTask, EchoTypePortableArray);
+            var res = _grid1.GetCompute().ExecuteJavaTask<object[]>(EchoTask, EchoTypePortableArray);
             
             Assert.AreEqual(3, res.Length);
 
             for (var i = 0; i < res.Length; i++)
-                Assert.AreEqual(i + 1, res[i].Field);
+                Assert.AreEqual(i + 1, ((PlatformComputePortable) res[i]).Field);
         }
 
         /// <summary>
