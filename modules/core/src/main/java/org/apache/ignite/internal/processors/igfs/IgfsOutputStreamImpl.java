@@ -326,7 +326,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @param deleted Whether we already know that the file was deleted.
      * @throws IOException If failed.
      */
-    private void onClose(final boolean deleted) throws IOException {
+    private void onClose(boolean deleted) throws IOException {
         assert Thread.holdsLock(this);
 
         if (onCloseGuard.compareAndSet(false, true)) {

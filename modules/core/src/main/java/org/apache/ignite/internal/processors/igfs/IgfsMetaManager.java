@@ -473,7 +473,7 @@ public class IgfsMetaManager extends IgfsManager {
      * Lock the file explicitly outside of transaction.
      *
      * @param fileId File ID to lock.
-     * @return Locked file info or {@code null} if file cannot be locked.
+     * @return Locked file info or {@code null} if file cannot be locked or doesn't exist.
      * @throws IgniteCheckedException If the file with such id does not exist, or on another failure.
      */
     public @Nullable IgfsFileInfo lock(IgniteUuid fileId, boolean isDeleteLock) throws IgniteCheckedException {
@@ -490,7 +490,6 @@ public class IgfsMetaManager extends IgfsManager {
 
                     if (oldInfo == null)
                         return null;
-                        //throw new IgfsPathNotFoundException("Failed to lock file (file not found): " + fileId);
 
                     if (oldInfo.lockId() != null)
                         return null; // The file is already locked, we cannot lock it.
@@ -802,7 +801,7 @@ public class IgfsMetaManager extends IgfsManager {
 
     /**
      * Add file into file system structure.
-     * TODO: this method is used in tests only, remove it.
+     * TODO: this method is used in tests only, we can remove it.
      *
      * @param parentId Parent file ID.
      * @param fileName File name in the parent's listing.

@@ -101,11 +101,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static final long BLOCK_SIZE = 32 * 1024 * 1024;
 
     /** Default repeat count. */
-    protected static final int REPEAT_CNT = 50; // Diagnostic: up to 500; Regression: 5
+    protected static final int REPEAT_CNT = 32; // Diagnostic: up to 500; Regression: 5
 
     /** Concurrent operations count.
      * ! Not more than ~150, see https://issues.apache.org/jira/browse/IGNITE-1581. */
-    protected static final int OPS_CNT = 100; // Diagnostic: 100; Regression: 16
+    protected static final int OPS_CNT = 32;
 
     /** Renames count. */
     protected static final int RENAME_CNT = OPS_CNT;
@@ -1673,11 +1673,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                 try {
                     os1 = igfs.append(FILE, false);
-
                     os2 = igfs.append(FILE, false);
-                } finally {
+                }
+                finally {
                     U.closeQuiet(os1);
-
                     U.closeQuiet(os2);
                 }
 
@@ -3235,10 +3234,5 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         clear(igfs, igfsSecondary);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 3 * 60 * 1000L;
     }
 }

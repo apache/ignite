@@ -27,7 +27,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -35,7 +34,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -232,13 +230,7 @@ public class IgfsDeleteWorker extends IgfsThread {
                     assert info.isFile();
 
                     // Lock the file with special lock Id to prevent concurrent writing:
-                    IgfsFileInfo lockedInfo = null;
-
-//                    try {
-                        lockedInfo = meta.lock(id, true);
-//                    } catch (IgfsPathNotFoundException ipnfe) {
-//                        // info stays null.
-//                    }
+                    IgfsFileInfo lockedInfo = meta.lock(id, true);
 
                     if (lockedInfo == null)
                         return false; // File is locked, we cannot delete it.
@@ -307,13 +299,7 @@ public class IgfsDeleteWorker extends IgfsThread {
                         if (fileInfo != null) {
                             assert fileInfo.isFile();
 
-                            IgfsFileInfo lockedInfo = null;
-
-//                            try {
-                                lockedInfo = meta.lock(fileInfo.id(), true);
-//                            } catch (IgfsPathNotFoundException ipnfe) {
-//                                // info stays null;
-//                            }
+                            IgfsFileInfo lockedInfo = meta.lock(fileInfo.id(), true);
 
                             if (lockedInfo == null)
                                 // File is already locked:
@@ -357,7 +343,7 @@ public class IgfsDeleteWorker extends IgfsThread {
             }
             else
                 return true; // Directory entry was deleted concurrently.
-        } // while
+        }
     }
 
     /**
