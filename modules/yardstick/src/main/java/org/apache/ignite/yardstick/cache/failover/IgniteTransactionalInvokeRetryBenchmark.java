@@ -35,7 +35,9 @@ import org.yardstickframework.BenchmarkConfiguration;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Invoke retry failover benchmark. Each client maintains a local map that it updates together with cache.
+ * Invoke retry failover benchmark.
+ * <p>
+ * Each client maintains a local map that it updates together with cache.
  * Client invokes an increment closure for all generated keys and atomically increments value for corresponding
  * keys in the local map. To validate cache contents, all writes from the client are stopped, values in
  * the local map are compared to the values in the cache.

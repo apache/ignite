@@ -37,7 +37,7 @@
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <yardstick.version>0.8.0</yardstick.version>
+        <yardstick.version>0.8.0-SNAPSHOT</yardstick.version>
     </properties>
 
     <dependencies>

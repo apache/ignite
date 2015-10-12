@@ -136,33 +136,33 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
                 }
             }, "servers-restarter");
 
-            Thread threadDumpPrinterThread = new Thread(new Runnable() {
-                @Override public void run() {
-                    try {
-                        while (!Thread.currentThread().isInterrupted()) {
-                            Thread.sleep(30 * 60 * 1000);
-
-                            U.dumpThreads(null);
-                        }
-                    }
-                    catch (Throwable e) {
-                        println("Got exception: " + e);
-                        e.printStackTrace();
-
-                        U.dumpThreads(null);
-
-                        if (e instanceof Error)
-                            throw (Error)e;
-                    }
-                }
-            }, "thread-dump-printer");
-
             restarterThread.setDaemon(true);
             restarterThread.start();
-
-            threadDumpPrinterThread.setDaemon(true);
-            threadDumpPrinterThread.start();
         }
+
+        Thread threadDumpPrinterThread = new Thread(new Runnable() {
+            @Override public void run() {
+                try {
+                    while (!Thread.currentThread().isInterrupted()) {
+                        Thread.sleep(30 * 60 * 1000); // 30 min.
+
+                        U.dumpThreads(null);
+                    }
+                }
+                catch (Throwable e) {
+                    println("Got exception: " + e);
+                    e.printStackTrace();
+
+                    U.dumpThreads(null);
+
+                    if (e instanceof Error)
+                        throw (Error)e;
+                }
+            }
+        }, "thread-dump-printer");
+
+        threadDumpPrinterThread.setDaemon(true);
+        threadDumpPrinterThread.start();
     }
 
     /** {@inheritDoc} */

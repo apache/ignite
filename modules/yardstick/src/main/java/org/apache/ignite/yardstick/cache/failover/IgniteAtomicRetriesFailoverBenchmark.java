@@ -24,7 +24,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
 
 /**
- * Atomic retries failover benchmark. Client generates continuous load to the cluster (random get, put, invoke, remove
+ * Atomic retries failover benchmark.
+ * <p>
+ * Client generates continuous load to the cluster (random get, put, invoke, remove
  * operations).
  */
 public class IgniteAtomicRetriesFailoverBenchmark extends IgniteFailoverAbstractBenchmark<Integer, String> {

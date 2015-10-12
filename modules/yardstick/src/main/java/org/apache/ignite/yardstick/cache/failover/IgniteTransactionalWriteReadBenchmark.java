@@ -36,6 +36,10 @@ import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
  * Transactional write read failover benchmark.
+ * <p>
+ * Each client generates a random integer K in a limited range and creates keys in the form 'key-' + K + '-1',
+ * 'key-' + K + '-2', ... Then client starts a pessimistic repeatable read transaction, reads value associated with
+ * each key. Values must be equal. Client increments value by 1, commits the transaction.
  */
 public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstractBenchmark<String, Long> {
     /** {@inheritDoc} */

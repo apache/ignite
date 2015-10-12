@@ -39,6 +39,15 @@ import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
  * Transactional write invoke failover benchmark.
+ * <p>
+ * Each client generates a random integer K in a limited range and creates keys in the form 'key-' + K + 'master',
+ * 'key-' + K + '-1', 'key-' + K + '-2', ... Then client starts a pessimistic repeatable read transaction
+ * and randomly chooses between read and write scenarios:
+ * <ul>
+ * <li>Reads value associated with the master key and child keys. Values must be equal.</li>
+ * <li>Reads value associated with the master key, increments it by 1 and puts the value, then invokes increment
+ * closure on child keys. No validation is performed.</li>
+ * </ul>
  */
 public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstractBenchmark<String, Long> {
     /** {@inheritDoc} */
