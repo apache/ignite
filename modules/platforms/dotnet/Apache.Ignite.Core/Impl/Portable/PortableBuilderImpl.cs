@@ -819,6 +819,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     throw new NotSupportedException(
                         string.Format("PortableBuilder does not support arrays of '{0}'. Please use object array.",
                             elementType));
+
+                return;
             }
 
             var colInfo = PortableCollectionInfo.GetInstance(type);
