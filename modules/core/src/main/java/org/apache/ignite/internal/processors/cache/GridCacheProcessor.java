@@ -3482,46 +3482,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    private class TemplateConfigurationFuture extends GridFutureAdapter<Object> {
-        /** Start ID. */
-        @GridToStringInclude
-        private IgniteUuid deploymentId;
-
-        /** Cache name. */
-        private String cacheName;
-
-        /**
-         * @param cacheName Cache name.
-         * @param deploymentId Deployment ID.
-         */
-        private TemplateConfigurationFuture(String cacheName, IgniteUuid deploymentId) {
-            this.deploymentId = deploymentId;
-            this.cacheName = cacheName;
-        }
-
-        /**
-         * @return Start ID.
-         */
-        public IgniteUuid deploymentId() {
-            return deploymentId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
-            // Make sure to remove future before completion.
-            pendingTemplateFuts.remove(maskNull(cacheName), this);
-
-            return super.onDone(res, err);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(TemplateConfigurationFuture.class, this);
-        }
-    }    /**
-     *
-     */
     private static class LocalAffinityFunction implements AffinityFunction {
         /** */
         private static final long serialVersionUID = 0L;
