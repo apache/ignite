@@ -799,7 +799,15 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     var wrappedSerializable = obj as SerializableObjectHolder;
 
-                    return wrappedSerializable != null ? (T) wrappedSerializable.Item : (T) obj;
+                    if (wrappedSerializable != null) 
+                        return (T) wrappedSerializable.Item;
+
+                    var wrappedCollection = obj as CollectionHolder;
+
+                    if (wrappedCollection != null)
+                        return (T) wrappedCollection.Collection;
+                    
+                    return (T) obj;
                 }
             }
             finally
