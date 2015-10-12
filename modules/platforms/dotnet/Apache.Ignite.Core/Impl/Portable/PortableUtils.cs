@@ -1078,6 +1078,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Read context.</param>
         /// <param name="typed">Typed flag.</param>
+        /// <param name="elementType">Type of the element.</param>
+        /// <returns> Array. </returns>
+        public static object ReadArray(PortableReaderImpl ctx, bool typed, Type elementType)
+        {
+            // TODO: restore old ArrayReaders
+            return null;
+        }
+
+        /// <summary>
+        /// Read array.
+        /// </summary>
+        /// <param name="ctx">Read context.</param>
+        /// <param name="typed">Typed flag.</param>
         /// <returns>Array.</returns>
         public static T[] ReadArray<T>(PortableReaderImpl ctx, bool typed)
         {
