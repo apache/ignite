@@ -545,26 +545,36 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Decimal value.</param>
-        public void WriteDecimal(string fieldName, decimal val)
+        public void WriteDecimal(string fieldName, decimal? val)
         {
             WriteFieldId(fieldName, PU.TypeDecimal);
 
-            int pos = SkipFieldLength();
+            if (val == null)
+                WriteNullField();
+            else
+            {
+                int pos = SkipFieldLength();
 
-            _stream.WriteByte(PU.TypeDecimal);
-            PortableUtils.WriteDecimal(val, _stream);
+                _stream.WriteByte(PU.TypeDecimal);
+                PortableUtils.WriteDecimal(val.Value, _stream);
 
-            WriteFieldLength(_stream, pos);
+                WriteFieldLength(_stream, pos);
+            }
         }
 
         /// <summary>
         /// Write decimal value.
         /// </summary>
         /// <param name="val">Decimal value.</param>
-        public void WriteDecimal(decimal val)
+        public void WriteDecimal(decimal? val)
         {
-            _stream.WriteByte(PU.TypeDecimal);
-            PortableUtils.WriteDecimal(val, _stream);
+            if (val == null)
+                WriteNullRawField();
+            else
+            {
+                _stream.WriteByte(PU.TypeDecimal);
+                PortableUtils.WriteDecimal(val.Value, _stream);
+            }
         }
 
         /// <summary>
@@ -572,7 +582,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Decimal array.</param>
-        public void WriteDecimalArray(string fieldName, decimal[] val)
+        public void WriteDecimalArray(string fieldName, decimal?[] val)
         {
             WriteFieldId(fieldName, PU.TypeArrayDecimal);
 
@@ -593,7 +603,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write decimal array.
         /// </summary>
         /// <param name="val">Decimal array.</param>
-        public void WriteDecimalArray(decimal[] val)
+        public void WriteDecimalArray(decimal?[] val)
         {
             if (val == null)
                 WriteNullRawField();
@@ -603,63 +613,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 PU.WriteDecimalArray(val, _stream);
             }
         }
-
-//        /// <summary>
-//        /// Write named date value.
-//        /// </summary>
-//        /// <param name="fieldName">Field name.</param>
-//        /// <param name="val">Date value.</param>
-//        public void WriteDate(string fieldName, DateTime val)
-//        {
-//            WriteFieldId(fieldName, PU.TypeDate);
-//
-//            _stream.WriteInt(PU.LengthTypeId + 12);
-//
-//            _stream.WriteByte(PortableUtils.TypeDate);
-//            PortableUtils.WriteDate(val, _stream);
-//        }
-//
-//        /// <summary>
-//        /// Write date value.
-//        /// </summary>
-//        /// <param name="val">Date value.</param>
-//        public void WriteDate(DateTime val)
-//        {
-//            _stream.WriteByte(PortableUtils.TypeDate);
-//            PortableUtils.WriteDate(val, _stream);
-//        }
-//
-//        /// <summary>
-//        /// Write named date array.
-//        /// </summary>
-//        /// <param name="fieldName">Field name.</param>
-//        /// <param name="val">Date array.</param>
-//        public void WriteDateArray(string fieldName, DateTime[] val)
-//        {
-//            WriteFieldId(fieldName, PU.TypeDate);
-//
-//            if (val == null)
-//                WriteNullField();
-//            else
-//            {
-//                int pos = SkipFieldLength();
-//
-//                _stream.WriteByte(PortableUtils.TypeArrayDate);
-//                PortableUtils.WriteDateArray(val, _stream);
-//
-//                WriteFieldLength(_stream, pos);
-//            }
-//        }
-//
-//        /// <summary>
-//        /// Write date array.
-//        /// </summary>
-//        /// <param name="val">Date array.</param>
-//        public void WriteDateArray(DateTime[] val)
-//        {
-//            _stream.WriteByte(PortableUtils.TypeArrayDate);
-//            PortableUtils.WriteDateArray(val, _stream);
-//        }
 
         /// <summary>
         /// Write named date value.
@@ -806,68 +759,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 PU.WriteStringArray(val, _stream);
             }
         }
-
-//        /// <summary>
-//        /// Write named GUID value.
-//        /// </summary>
-//        /// <param name="fieldName">Field name.</param>
-//        /// <param name="val">GUID value.</param>
-//        public void WriteGuid(string fieldName, Guid val)
-//        {
-//            WriteFieldId(fieldName, PU.TypeGuid);
-//
-//            _stream.WriteInt(PU.LengthTypeId + 16);
-//
-//            _stream.WriteByte(PU.TypeGuid);
-//            PU.WriteGuid(val, _stream);
-//        }
-//
-//        /// <summary>
-//        /// Write GUID value.
-//        /// </summary>
-//        /// <param name="val">GUID value.</param>
-//        public void WriteGuid(Guid val)
-//        {
-//            _stream.WriteByte(PU.TypeGuid);
-//            PU.WriteGuid(val, _stream);
-//        }
-//
-//        /// <summary>
-//        /// Write named GUID array.
-//        /// </summary>
-//        /// <param name="fieldName">Field name.</param>
-//        /// <param name="val">GUID array.</param>
-//        public void WriteGuidArray(string fieldName, Guid[] val)
-//        {
-//            WriteFieldId(fieldName, PU.TypeArrayGuid);
-//
-//            if (val == null)
-//                WriteNullField();
-//            else
-//            {
-//                int pos = SkipFieldLength();
-//
-//                _stream.WriteByte(PU.TypeArrayGuid);
-//                PU.WriteGuidArray(val, _stream);
-//
-//                WriteFieldLength(_stream, pos);
-//            }
-//        }
-//
-//        /// <summary>
-//        /// Write GUID array.
-//        /// </summary>
-//        /// <param name="val">GUID array.</param>
-//        public void WriteGuidArray(Guid[] val)
-//        {
-//            if (val == null)
-//                WriteNullRawField();
-//            else
-//            {
-//                _stream.WriteByte(PU.TypeArrayGuid);
-//                PU.WriteGuidArray(val, _stream);
-//            }
-//        }
 
         /// <summary>
         /// Write named GUID value.
@@ -1257,7 +1148,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             _marsh = marsh;
             _stream = stream;
         }
-        
+
         /// <summary>
         /// Write object.
         /// </summary>

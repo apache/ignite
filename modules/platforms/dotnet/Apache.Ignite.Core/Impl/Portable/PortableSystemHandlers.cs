@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             ReadHandlers[PortableUtils.TypeLong] = new PortableSystemReader<long>(s => s.ReadLong());
             ReadHandlers[PortableUtils.TypeFloat] = new PortableSystemReader<float>(s => s.ReadFloat());
             ReadHandlers[PortableUtils.TypeDouble] = new PortableSystemReader<double>(s => s.ReadDouble());
-            ReadHandlers[PortableUtils.TypeDecimal] = new PortableSystemReader<decimal>(PortableUtils.ReadDecimal);
+            ReadHandlers[PortableUtils.TypeDecimal] = new PortableSystemReader<decimal?>(PortableUtils.ReadDecimal);
 
             // 2. Date.
             ReadHandlers[PortableUtils.TypeDate] = new PortableSystemReader<DateTime?>(s => PortableUtils.ReadDate(s, false));
@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 new PortableSystemReader<double[]>(PortableUtils.ReadDoubleArray);
 
             ReadHandlers[PortableUtils.TypeArrayDecimal] =
-                new PortableSystemReader<decimal[]>(PortableUtils.ReadDecimalArray);
+                new PortableSystemReader<decimal?[]>(PortableUtils.ReadDecimalArray);
 
             // 6. Date array.
             ReadHandlers[PortableUtils.TypeArrayDate] =
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (elemType == typeof(ulong))
                     return WriteUlongArray;
                 // Special types.
-                if (elemType == typeof (decimal))
+                else if (elemType == typeof (decimal?))
                     return WriteDecimalArray;
                 if (elemType == typeof(string))
                     return WriteStringArray;
@@ -522,7 +522,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayDecimal);
 
-            PortableUtils.WriteDecimalArray((decimal[])obj, ctx.Stream);
+            PortableUtils.WriteDecimalArray((decimal?[])obj, ctx.Stream);
         }
 
         /// <summary>

@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Events
         private readonly string _clause;
 
         /** */
-        private readonly Guid _subjectId;
+        private readonly Guid? _subjectId;
 
         /** */
         private readonly string _taskName;
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Events
             _cacheName = r.ReadString();
             _className = r.ReadString();
             _clause = r.ReadString();
-            _subjectId = r.ReadGuid() ?? Guid.Empty;
+            _subjectId = r.ReadGuid();
             _taskName = r.ReadString();
         }
 		
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// Gets security subject ID. 
         /// </summary>
-        public Guid SubjectId { get { return _subjectId; } }
+        public Guid? SubjectId { get { return _subjectId; } }
 
         /// <summary>
         /// Gets the name of the task that executed the query (if any). 

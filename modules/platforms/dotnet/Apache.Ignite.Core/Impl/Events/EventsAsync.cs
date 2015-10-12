@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritdoc /> */
-        public override Guid RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
+        public override Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
             IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, params int[] types)
         {
             _lastAsyncOp.Value = (int) Op.RemoteListen;

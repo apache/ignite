@@ -255,9 +255,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                 writeAction = GetWriter<double[]>(field, (f, w, o) => w.WriteDoubleArray(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadDoubleArray(f));
             }
-            else if (elemType == typeof(decimal))
+            else if (elemType == typeof(decimal?))
             {
-                writeAction = GetWriter<decimal[]>(field, (f, w, o) => w.WriteDecimalArray(f, o));
+                writeAction = GetWriter<decimal?[]>(field, (f, w, o) => w.WriteDecimalArray(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadDecimalArray(f));
             }
             else if (elemType == typeof(string))
@@ -317,7 +317,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             else if (type == typeof(Guid))
             {
                 writeAction = GetWriter<Guid>(field, (f, w, o) => w.WriteGuid(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadGuid(f) ?? default(Guid));
+                readAction = GetReader(field, (f, r) => r.ReadObject<Guid>(f));
             }
             else if (nullable && nullableType == typeof(Guid))
             {
@@ -327,7 +327,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             else if (type == typeof(DateTime))
             {
                 writeAction = GetWriter<DateTime>(field, (f, w, o) => w.WriteDate(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadDate(f) ?? default(DateTime));
+                readAction = GetReader(field, (f, r) => r.ReadDate(f));
             }
             else if (nullable && nullableType == typeof(DateTime))
             {

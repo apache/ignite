@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Collections;
     using Apache.Ignite.Core.Impl.Common;
@@ -63,7 +64,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <param name="reader">The reader.</param>
         public ClusterNodeImpl(IPortableRawReader reader)
         {
-            _id = reader.ReadGuid() ?? default(Guid);
+            var id = reader.ReadGuid();
+
+            Debug.Assert(id.HasValue);
+
+            _id = id.Value;
 
             _attrs = reader.ReadDictionaryAsGeneric<string, object>().AsReadOnly();
             _addrs = reader.ReadCollectionAsList<string>().AsReadOnly();

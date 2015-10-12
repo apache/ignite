@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             TypeIds[typeof(long[])] = PortableUtils.TypeArrayLong;
             TypeIds[typeof(float[])] = PortableUtils.TypeArrayFloat;
             TypeIds[typeof(double[])] = PortableUtils.TypeArrayDouble;
-            TypeIds[typeof(decimal[])] = PortableUtils.TypeArrayDecimal;
+            TypeIds[typeof(decimal?[])] = PortableUtils.TypeArrayDecimal;
 
             // 2. String.
             TypeIds[typeof(string)] = PortableUtils.TypeString;

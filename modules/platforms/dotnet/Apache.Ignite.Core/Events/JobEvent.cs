@@ -35,16 +35,16 @@ namespace Apache.Ignite.Core.Events
         private readonly string _taskClassName;
 
         /** */
-        private readonly IgniteGuid _taskSessionId;
+        private readonly IgniteGuid? _taskSessionId;
 
         /** */
-        private readonly IgniteGuid _jobId;
+        private readonly IgniteGuid? _jobId;
 
         /** */
         private readonly IClusterNode _taskNode;
 
         /** */
-        private readonly Guid _taskSubjectId;
+        private readonly Guid? _taskSubjectId;
 
         /// <summary>
         /// Constructor.
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Events
             _taskSessionId = IgniteGuid.ReadPortable(r);
             _jobId = IgniteGuid.ReadPortable(r);
             _taskNode = ReadNode(r);
-            _taskSubjectId = r.ReadGuid() ?? Guid.Empty;
+            _taskSubjectId = r.ReadGuid();
         }
 		
         /// <summary>
@@ -73,12 +73,12 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// Gets task session ID of the task that triggered this event. 
         /// </summary>
-        public IgniteGuid TaskSessionId { get { return _taskSessionId; } }
+        public IgniteGuid? TaskSessionId { get { return _taskSessionId; } }
 
         /// <summary>
         /// Gets job ID. 
         /// </summary>
-        public IgniteGuid JobId { get { return _jobId; } }
+        public IgniteGuid? JobId { get { return _jobId; } }
 
         /// <summary>
         /// Get node where parent task of the job has originated. 
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// Gets task subject ID. 
         /// </summary>
-        public Guid TaskSubjectId { get { return _taskSubjectId; } }
+        public Guid? TaskSubjectId { get { return _taskSubjectId; } }
 
         /** <inheritDoc /> */
 	    public override string ToShortString()

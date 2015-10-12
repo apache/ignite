@@ -51,7 +51,7 @@ namespace Apache.Ignite.Benchmarks.Portable
             Date = DateTime.Now,
             DateArray = Enumerable.Range(1, 15).Select(x => (DateTime?) DateTime.Now.AddDays(x)).ToArray(),
             Decimal = decimal.MinValue,
-            DecimalArray = new[] {1.1M, decimal.MinValue, decimal.MaxValue, decimal.MinusOne, decimal.One},
+            DecimalArray = new decimal?[] {1.1M, decimal.MinValue, decimal.MaxValue, decimal.MinusOne, decimal.One},
             Double = double.MaxValue/2,
             DoubleArray = new[] {double.MaxValue, double.MinValue, double.Epsilon, double.NegativeInfinity},
             Float = 98,

@@ -878,7 +878,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="stream">Stream.</param>
          * <returns>Decimal value.</returns>
          */
-        public static decimal ReadDecimal(IPortableStream stream)
+        public static decimal? ReadDecimal(IPortableStream stream)
         {
             int scale = stream.ReadInt();
 
@@ -938,12 +938,21 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="vals">Decimal array.</param>
          * <param name="stream">Stream.</param>
          */
-        public static void WriteDecimalArray(decimal[] vals, IPortableStream stream)
+        public static void WriteDecimalArray(decimal?[] vals, IPortableStream stream)
         {
             stream.WriteInt(vals.Length);
 
-            foreach (decimal val in vals)
-                WriteDecimal(val, stream);
+            foreach (var val in vals)
+            {
+                if (val.HasValue)
+                {
+                    stream.WriteByte(TypeDecimal);
+
+                    WriteDecimal(val.Value, stream);
+                }
+                else
+                    stream.WriteByte(HdrNull);
+            }
         }
 
         /**
@@ -951,14 +960,14 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="stream">Stream.</param>
          * <returns>Decimal array.</returns>
          */
-        public static decimal[] ReadDecimalArray(IPortableStream stream)
+        public static decimal?[] ReadDecimalArray(IPortableStream stream)
         {
             int len = stream.ReadInt();
 
-            decimal[] vals = new decimal[len];
+            var vals = new decimal?[len];
 
             for (int i = 0; i < len; i++)
-                vals[i] = ReadDecimal(stream);
+                vals[i] = stream.ReadByte() == HdrNull ? (decimal?) null : ReadDecimal(stream);
 
             return vals;
         }
