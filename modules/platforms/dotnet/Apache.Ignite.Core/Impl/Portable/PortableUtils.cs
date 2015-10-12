@@ -1885,7 +1885,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 return reader.ReadObject<object>();
 
             err = reader.ReadBoolean()
-                ? reader.ReadObject<Exception>()
+                ? reader.ReadObject<object>()
                 : ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
 
             return null;
