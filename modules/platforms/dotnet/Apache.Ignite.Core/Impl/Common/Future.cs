@@ -215,6 +215,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /** <inheritdoc /> */
         public void OnNullResult()
         {
+            if (default(T) != null)
+                OnError(new InvalidOperationException(string.Format("Invalid Future result. " +
+                                                                    "Expected: '{0}' But was: null", typeof (T))));
+
             OnResult(default(T));
         }
 

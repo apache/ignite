@@ -675,13 +675,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
-            Assert.AreEqual(0, cache.GetAndPutIfAbsent(1, 1));
+            Assert.IsFalse(cache.GetAndPutIfAbsent(1, 1).HasValue);
 
             Assert.AreEqual(1, cache.Get(1));
 
-            Assert.AreEqual(1, cache.GetAndPutIfAbsent(1, 2));
+            Assert.AreEqual(1, cache.GetAndPutIfAbsent(1, 2).Value);
 
             Assert.AreEqual(1, cache.Get(1));
         }
