@@ -39,9 +39,9 @@ namespace ignite
             return env.Get()->InstanceName();
         }
 
-        void IgniteImpl::DestroyJvm()
+        JniContext* IgniteImpl::GetContext()
         {
-            env.Get()->Context()->DestroyJvm();
+            return env.Get()->Context();
         }
     }    
 }

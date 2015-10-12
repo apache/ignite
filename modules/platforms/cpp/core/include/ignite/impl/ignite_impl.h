@@ -32,7 +32,7 @@ namespace ignite
         /**
          * Ignite implementation.
          */
-        class IGNITE_IMPORT_EXPORT IgniteImpl
+        class IGNITE_FRIEND_EXPORT IgniteImpl
         {
             friend class Ignite;
         public:
@@ -57,9 +57,11 @@ namespace ignite
             const char* GetName() const;
 
             /**
-            * Destroy Java Virtual Machine associated with this instance.
-            */
-            void DestroyJvm();
+             * Get JNI context associated with this instance.
+             *
+             * @return JNI context for this instance.
+             */
+            common::java::JniContext* GetContext();
 
             /**
              * Get cache.

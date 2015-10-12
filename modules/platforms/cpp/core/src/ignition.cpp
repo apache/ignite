@@ -100,7 +100,7 @@ namespace ignite
         *(opts + idx++) = CopyChars(xmxStr.c_str());
 
         // 4. Set the rest options.
-        for (IgniteConfiguration::OptionList::const_iterator i = cfg.jvmOpts.begin(); i != cfg.jvmOpts.end(); ++i) {
+        for (std::list<std::string>::const_iterator i = cfg.jvmOpts.begin(); i != cfg.jvmOpts.end(); ++i) {
             char* optCopy = CopyChars(i->c_str());
 
             opts[idx++] = optCopy;

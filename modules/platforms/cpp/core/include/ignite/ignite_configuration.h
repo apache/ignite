@@ -31,8 +31,6 @@ namespace ignite
      */
     struct IgniteConfiguration
     {
-        typedef std::list<std::string> OptionList;
-
         /** Path to Ignite home. */
         std::string igniteHome;
 
@@ -52,7 +50,7 @@ namespace ignite
         int32_t jvmMaxMem;
 
         /** Additional JVM options. */
-        OptionList jvmOpts;
+        std::list<std::string> jvmOpts;
 
         /**
          * Constructor.

@@ -23,50 +23,26 @@
 
 #include "ignite/ignite_configuration.h"
 #include "ignite/ignition.h"
+#include "ignite/common/utils.h"
 
 typedef std::list<std::string> StringList;
 typedef std::set<std::string> StringSet;
 
-void IntoLower(std::string& str)
-{
-    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
-}
-
-std::string ToLower(const std::string& str)
-{
-    std::string res(str);
-    IntoLower(res);
-    return res;
-}
-
-std::string LongToString(long val)
-{
-    std::stringstream tmp;
-    tmp << val;
-    return tmp.str();
-}
-
-int ParseInt(const std::string& str)
-{
-    return atoi(str.c_str());
-}
-
 namespace config
 {
+    using ignite::common::util::ToLower;
+
     /** Command line argument: Ignite home. */
     const std::string CmdIgniteHome = ToLower("-IgniteHome=");
     
     /** Command line argument: Spring config URL. */
     const std::string CmdSpringCfgUrl = ToLower("SpringConfigUrl=");
 
-    /** Command line argument: Path to JVM dll. */
+    /** Command line argument: Path to JVM library. */
     const std::string CmdJvmLib = ToLower("JvmLibPath=");
 
     /** Command line argument: JVM classpath. */
     const std::string CmdJvmClasspath = ToLower("JvmClasspath=");
-
-    /** Command line argument: suppress warnings flag. */
-    const std::string CmdSuppressWarn = ToLower("SuppressWarnings=");
 
     /** Command line argument: JVM option prefix. */
     const std::string CmdJvmOpt = ToLower("J");
@@ -79,9 +55,14 @@ namespace config
 
     /**
      * Convert configuration to arguments.
+     *
+     * @param cfg Input configuration.
+     * @param args Output arguments.
      */
     void ToArgs(const ignite::IgniteConfiguration& cfg, StringList& args)
     {
+        using ignite::common::util::LongToString;
+
         if (!cfg.igniteHome.empty())
             args.push_back(CmdIgniteHome + cfg.igniteHome);
 
@@ -103,9 +84,17 @@ namespace config
         args.push_back(CmdJvmMinMem + LongToString(cfg.jvmInitMem));
         args.push_back(CmdJvmMaxMem + LongToString(cfg.jvmMaxMem));
     }
-
+    
+    /**
+     * Convert arguments to configuration.
+     *
+     * @param cfg Output configuration.
+     * @param args Input arguments.
+     */
     void Configure(ignite::IgniteConfiguration& cfg, const StringList& src)
     {
+        using ignite::common::util::ParseInt;
+
         StringList jvmOpts;
 
         for (StringList::const_iterator i = src.begin(); i != src.end(); ++i)
@@ -138,29 +127,18 @@ namespace config
                 std::copy(jvmOpts.begin(), jvmOpts.end(), std::back_insert_iterator<StringList>(cfg.jvmOpts));
         }
     }
-
-   /**
-    * Convert arguments to configuration.
-    *
-    * @param args Arguments.
-    * @return Configuration.
-    */
-    void FromArgs(const StringList& args, ignite::IgniteConfiguration& cfg)
-    {
-        Configure(cfg, args);
-    }
 }
 
 
 /**
-* Prints help to standard output.
-*/
+ * Prints help to standard output.
+ */
 void PrintHelp()
 {
     std::cout << "Usage: ignite [-options]" << std::endl;
     std::cout << std::endl;
     std::cout << "Options:" << std::endl;
-    std::cout << "\t-IgniteHome            path to Ignite installation directory (if not provided IGNITE_HOME environment variable is used)" << std::endl;
+    std::cout << "\t-igniteHome            path to Ignite installation directory (if not provided IGNITE_HOME environment variable is used)" << std::endl;
     std::cout << "\t-springConfigUrl       path to spring configuration file (if not provided \"config/default-config.xml\" is used)" << std::endl;
     std::cout << "\t-jvmLibPath            path to JVM library (if not provided JAVA_HOME environment variable is used)" << std::endl;
     std::cout << "\t-jvmClasspath          classpath passed to JVM (enlist additional jar files here)" << std::endl;
@@ -170,7 +148,7 @@ void PrintHelp()
     std::cout << std::endl;
     std::cout << "Examples:" << std::endl;
     std::cout << "\tignite -J-Xms1024m -J-Xmx1024m -springConfigUrl=C:/woer/gg-test/my-test-gg-confignative.xml" << std::endl;
-    std::cout << "\tignite -IgniteHome=c:/apache-ignite -jvmClasspath=libs/myLib1.jar;libs/myLib2.jar" << std::endl;
+    std::cout << "\tignite -igniteHome=c:/apache-ignite -jvmClasspath=libs/myLib1.jar;libs/myLib2.jar" << std::endl;
     std::cout << "\tignite -jvmInitialMemoryMB=1024 -jvmMaxMemoryMB=4096" << std::endl;
     std::cout << std::endl;
 }
@@ -188,13 +166,16 @@ int main(int argc, const char* argv[])
 
     StringList args;
     std::copy(argv + 1, argv + argc, std::back_insert_iterator<StringList>(args));
-    
+
     try
     {
         // Check for special cases.
-        if (argc > 1)
+        if (!args.empty())
         {
+            using ignite::common::util::ToLower;
+
             std::string first = ToLower(args.front());
+
             if (Help.find(first) != Help.end())
             {
                 PrintHelp();
@@ -215,7 +196,11 @@ int main(int argc, const char* argv[])
 
         if (igniteImpl)
         {
-            igniteImpl->DestroyJvm();
+            ignite::common::java::JniContext* context = igniteImpl->GetContext();
+            if (context)
+            {
+                context->DestroyJvm();
+            }
         }
     }
     catch (ignite::IgniteError& e)
