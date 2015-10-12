@@ -31,12 +31,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         private readonly object _collection;
 
         /** Write action. */
-        private readonly Action<object, PortableWriterImpl> _writeAction;
+        private readonly Action<PortableWriterImpl, object> _writeAction;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CollectionHolder" /> class.
         /// </summary>
-        public CollectionHolder(object collection, Action<object, PortableWriterImpl> writeAction)
+        public CollectionHolder(object collection, Action<PortableWriterImpl, object> writeAction)
         {
             Debug.Assert(collection != null);
             Debug.Assert(writeAction != null);
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             Debug.Assert(_writeAction != null);
 
-            _writeAction(_collection, (PortableWriterImpl) writer.GetRawWriter());
+            _writeAction((PortableWriterImpl) writer.GetRawWriter(), _collection);
         }
     }
 }

@@ -1286,11 +1286,15 @@ namespace Apache.Ignite.Core.Impl.Portable
                     handler.Invoke(this, obj);
                 else
                 {
-                    // Last chance: is object seializable?
-                    if (type.IsSerializable)
+                    // Is it a .Net-specific (generic) collection?
+                    var colInfo = PortableCollectionInfo.GetInstance(type);
+
+                    if (colInfo.IsAny)
+                        Write(new CollectionHolder(obj, colInfo.WriteGeneric));
+                    else if (type.IsSerializable)
                         Write(new SerializableObjectHolder(obj));
                     else
-                        // We did our best, object cannot be marshalled.
+                    // We did our best, object cannot be marshalled.
                         throw new PortableException("Unsupported object type [type=" + type + ", object=" + obj + ']');
                 }
             }
