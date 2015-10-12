@@ -2229,6 +2229,26 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
+        @Override public Map<String, String> keyClasses() {
+            return keyClasses;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, String> valClasses() {
+            return valClasses;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Map<String, String>> fields() {
+            return fields;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<GridCacheSqlIndexMetadata>> indexes() {
+            return indexes;
+        }
+
+        /** {@inheritDoc} */
         @Override public Collection<GridCacheSqlIndexMetadata> indexes(String type) {
             return indexes.get(type);
         }
@@ -2316,6 +2336,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override public boolean descending(String field) {
             return descendings.contains(field);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<String> descendings() {
+            return descendings;
         }
 
         /** {@inheritDoc} */
@@ -2687,14 +2712,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Cached result.
      */
     private abstract static class CachedResult<R> extends GridFutureAdapter<IgniteSpiCloseableIterator<R>> {
-        /** */
-        private CircularQueue<R> queue;
-
-        /** */
-        private int pruned;
-
         /** Absolute position of each recipient. */
         private final Map<Object, QueueIterator> recipients = new GridLeanMap<>(1);
+        /** */
+        private CircularQueue<R> queue;
+        /** */
+        private int pruned;
 
         /**
          * @param rcpt ID of the recipient.
@@ -3059,6 +3082,47 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     *
+     */
+    private class OffheapIteratorClosure
+        extends CX2<T2<Long, Integer>, T2<Long, Integer>, IgniteBiTuple<K, V>> {
+        /** */
+        private static final long serialVersionUID = 7410163202728985912L;
+
+        /** */
+        private IgniteBiPredicate<K, V> filter;
+
+        /** */
+        private boolean keepPortable;
+
+        /**
+         * @param filter Filter.
+         * @param keepPortable Keep portable flag.
+         */
+        private OffheapIteratorClosure(
+            @Nullable IgniteBiPredicate<K, V> filter,
+            boolean keepPortable) {
+            assert filter != null;
+
+            this.filter = filter;
+            this.keepPortable = keepPortable;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public IgniteBiTuple<K, V> applyx(T2<Long, Integer> keyPtr,
+            T2<Long, Integer> valPtr)
+            throws IgniteCheckedException {
+            LazyOffheapEntry e = new LazyOffheapEntry(keyPtr, valPtr);
+
+            K key = (K)cctx.unwrapPortableIfNeeded(e.key(), keepPortable);
+            V val = (V)cctx.unwrapPortableIfNeeded(e.value(), keepPortable);
+
+            if (!filter.apply(key, val))
+                return null;
+
+            return new IgniteBiTuple<>(e.key(), (V)cctx.unwrapTemporary(e.value()));
+        }
+    }    /**
      * Creates user's SQL fields query for given clause. For more information refer to {@link CacheQuery}
      * documentation.
      *
