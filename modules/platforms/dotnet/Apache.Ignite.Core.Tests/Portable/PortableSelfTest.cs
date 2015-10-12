@@ -1521,10 +1521,10 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             public void WritePortable(IPortableWriter writer)
             {
-                writer.WriteObjectArray("a", GuidArr);
-                writer.WriteObjectArray("b", NGuidArr);
-                writer.WriteObjectArray("c", DateArr);
-                writer.WriteObjectArray("d", NDateArr);
+                writer.WriteObject("a", GuidArr);
+                writer.WriteObject("b", NGuidArr);
+                writer.WriteObject("c", DateArr);
+                writer.WriteObject("d", NDateArr);
             }
 
             public void ReadPortable(IPortableReader reader)

@@ -933,10 +933,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named object array.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Object array.</param>
-        public void WriteObjectArray<T>(string fieldName, T[] val)
+        public void WriteArray(string fieldName, object[] val)
         {
             WriteFieldId(fieldName, PU.TypeArray);
 
@@ -956,9 +955,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write object array.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         /// <param name="val">Object array.</param>
-        public void WriteObjectArray<T>(T[] val)
+        public void WriteArray(object[] val)
         {
             if (val == null)
                 WriteNullRawField();
@@ -967,6 +965,18 @@ namespace Apache.Ignite.Core.Impl.Portable
                 _stream.WriteByte(PU.TypeArray);
                 PortableUtils.WriteArray(val, this);
             }
+        }
+
+        /** <inheritdoc /> */
+        public void WriteGenericArray<T>(string fieldName, T[] val)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public void WriteGenericArray<T>(T[] val)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
