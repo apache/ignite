@@ -46,11 +46,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestPortableObjectInTask()
         {
-            IPortableObject taskArg = ToPortable(Grid1, new PortableTaskArgument(100));
+            var taskArg = new PortableWrapper {Item = ToPortable(Grid1, new PortableTaskArgument(100))};
 
             TestTask task = new TestTask(Grid1, taskArg);
 
-            IPortableObject res = Grid1.GetCompute().Execute(task, taskArg);
+            var res = Grid1.GetCompute().Execute(task, taskArg).Item;
 
             Assert.NotNull(res);
 
@@ -78,46 +78,48 @@ namespace Apache.Ignite.Core.Tests.Compute
             portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableTaskArgument)));
             portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableTaskResult)));
             portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableJob)));
+            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableWrapper)));
         }
 
         /// <summary>
         /// Test task.
         /// </summary>
-        public class TestTask : ComputeTaskAdapter<IPortableObject, IPortableObject, IPortableObject>
+        class TestTask : ComputeTaskAdapter<PortableWrapper, PortableWrapper, PortableWrapper>
         {
             /** */
             private readonly IIgnite _grid;
 
-            private readonly IPortableObject _taskArgField;
+            private readonly PortableWrapper _taskArgField;
 
-            public TestTask(IIgnite grid, IPortableObject taskArgField)
+            public TestTask(IIgnite grid, PortableWrapper taskArgField)
             {
                 _grid = grid;
                 _taskArgField = taskArgField;
             }
 
             /** <inheritDoc /> */
-            override public IDictionary<IComputeJob<IPortableObject>, IClusterNode> Map(IList<IClusterNode> subgrid, IPortableObject arg)
+            override public IDictionary<IComputeJob<PortableWrapper>, IClusterNode> Map(IList<IClusterNode> subgrid, PortableWrapper arg)
             {
                 Assert.AreEqual(3, subgrid.Count);
                 Assert.NotNull(_grid);
 
-                IPortableObject taskArg = arg;
+                var taskArg = arg;
 
                 CheckTaskArgument(taskArg);
 
                 CheckTaskArgument(_taskArgField);
 
-                IDictionary<IComputeJob<IPortableObject>, IClusterNode> jobs = new Dictionary<IComputeJob<IPortableObject>, IClusterNode>();
+                var jobs = new Dictionary<IComputeJob<PortableWrapper>, IClusterNode>();
 
 
                 foreach (IClusterNode node in subgrid)
                 {
                     if (!Grid3Name.Equals(node.GetAttribute<string>("org.apache.ignite.ignite.name"))) // Grid3 does not have cache.
                     {
-                        PortableJob job = new PortableJob();
-
-                        job.Arg = ToPortable(_grid, new PortableJobArgument(200));
+                        var job = new PortableJob
+                        {
+                            Arg = new PortableWrapper {Item = ToPortable(_grid, new PortableJobArgument(200))}
+                        };
 
                         jobs.Add(job, node);
                     }
@@ -128,8 +130,12 @@ namespace Apache.Ignite.Core.Tests.Compute
                 return jobs;
             }
 
-            private void CheckTaskArgument(IPortableObject taskArg)
+            private void CheckTaskArgument(PortableWrapper arg)
             {
+                Assert.IsNotNull(arg);
+                
+                var taskArg = arg.Item;
+
                 Assert.IsNotNull(taskArg);
 
                 Assert.AreEqual(100, taskArg.GetField<int>("val"));
@@ -140,15 +146,15 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
 
             /** <inheritDoc /> */
-            override public IPortableObject Reduce(IList<IComputeJobResult<IPortableObject>> results)
+            override public PortableWrapper Reduce(IList<IComputeJobResult<PortableWrapper>> results)
             {
                 Assert.NotNull(_grid);
 
                 Assert.AreEqual(2, results.Count);
 
-                foreach (IComputeJobResult<IPortableObject> res in results)
+                foreach (var res in results)
                 {
-                    IPortableObject jobRes = res.Data;
+                    var jobRes = res.Data.Item;
 
                     Assert.NotNull(jobRes);
 
@@ -159,7 +165,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                     Assert.AreEqual(300, jobResObj.Val);
                 }
 
-                return ToPortable(_grid, new PortableTaskResult(400));
+                return new PortableWrapper {Item = ToPortable(_grid, new PortableTaskResult(400))};
             }
         }
 
@@ -222,32 +228,42 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        class PortableJob : IComputeJob<IPortableObject>
+        class PortableJob : IComputeJob<PortableWrapper>
         {
             [InstanceResource]
             private IIgnite _grid = null;
             
             /** */
-            public IPortableObject Arg;
+            public PortableWrapper Arg;
 
             /** <inheritDoc /> */
-            public IPortableObject Execute()
+
+            public PortableWrapper Execute()
             {
                 Assert.IsNotNull(Arg);
 
-                Assert.AreEqual(200, Arg.GetField<int>("val"));
+                var arg = Arg.Item;
 
-                PortableJobArgument argObj = Arg.Deserialize<PortableJobArgument>();
+                Assert.IsNotNull(arg);
+
+                Assert.AreEqual(200, arg.GetField<int>("val"));
+
+                PortableJobArgument argObj = arg.Deserialize<PortableJobArgument>();
 
                 Assert.AreEqual(200, argObj.Val);
 
-                return ToPortable(_grid, new PortableJobResult(300));
+                return new PortableWrapper {Item = ToPortable(_grid, new PortableJobResult(300))};
             }
 
             public void Cancel()
             {
                 // No-op.
             }
+        }
+
+        class PortableWrapper
+        {
+            public IPortableObject Item { get; set; }
         }
     }
 }
