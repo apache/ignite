@@ -386,13 +386,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public string[] ReadStringArray(string fieldName)
         {
-            return ReadField(fieldName, r => PortableUtils.ReadGenericArray<string>(r, false));
+            return ReadField(fieldName, r => PortableUtils.ReadArray<string>(r, false));
         }
 
         /** <inheritdoc /> */
         public string[] ReadStringArray()
         {
-            return Read(r => PortableUtils.ReadGenericArray<string>(r, false));
+            return Read(r => PortableUtils.ReadArray<string>(r, false));
         }
 
         /** <inheritdoc /> */
@@ -410,13 +410,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public Guid?[] ReadGuidArray(string fieldName)
         {
-            return ReadField(fieldName, r => PortableUtils.ReadGenericArray<Guid?>(r, false));
+            return ReadField(fieldName, r => PortableUtils.ReadArray<Guid?>(r, false));
         }
 
         /** <inheritdoc /> */
         public Guid?[] ReadGuidArray()
         {
-            return Read(r => PortableUtils.ReadGenericArray<Guid?>(r, false));
+            return Read(r => PortableUtils.ReadArray<Guid?>(r, false));
         }
 
         /** <inheritdoc /> */
@@ -434,13 +434,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public T[] ReadEnumArray<T>(string fieldName)
         {
-            return ReadField(fieldName, r => PortableUtils.ReadGenericArray<T>(r, true));
+            return ReadField(fieldName, r => PortableUtils.ReadArray<T>(r, true));
         }
 
         /** <inheritdoc /> */
         public T[] ReadEnumArray<T>()
         {
-            return Read(r => PortableUtils.ReadGenericArray<T>(r, true));
+            return Read(r => PortableUtils.ReadArray<T>(r, true));
         }
 
         /** <inheritdoc /> */
@@ -466,25 +466,25 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public object[] ReadArray(string fieldName)
         {
-            return ReadField(fieldName, r => PortableUtils.ReadGenericArray<object>(r, true));
+            return ReadField(fieldName, r => PortableUtils.ReadArray<object>(r, true));
         }
 
         /** <inheritdoc /> */
         public T[] ReadGenericArray<T>(string fieldName)
         {
-            return ReadField(fieldName, r => PortableUtils.ReadGenericArray<T>(r, true));
+            return (T[]) ReadField(fieldName, r => PortableUtils.ReadGenericCollection<T>(r, null));
         }
 
         /** <inheritdoc /> */
         public object[] ReadArray()
         {
-            return Read(r => PortableUtils.ReadGenericArray<object>(r, true));
+            return Read(r => PortableUtils.ReadArray<object>(r, true));
         }
 
         /** <inheritdoc /> */
         public T[] ReadGenericArray<T>()
         {
-            return Read(r => PortableUtils.ReadGenericArray<T>(r, true));
+            return (T[]) Read(r => PortableUtils.ReadGenericCollection<T>(r, null));
         }
 
         /** <inheritdoc /> */

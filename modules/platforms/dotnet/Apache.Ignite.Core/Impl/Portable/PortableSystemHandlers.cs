@@ -610,9 +610,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private static void WriteGenericArray(PortableWriterImpl ctx, object obj)
         {
+            PortableCollectionInfo info = PortableCollectionInfo.GetInstance(obj.GetType());
+
+            Debug.Assert(info.IsArray, "Not array: " + obj.GetType().FullName);
+
             ctx.Stream.WriteByte(PortableUtils.TypeGenericArray);
 
-            PortableUtils.WriteGenericArray((Array)obj, ctx);
+            info.WriteGeneric(ctx, obj);
         }
 
         /**
@@ -718,7 +722,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static object ReadEnumArray(PortableReaderImpl ctx, Type type)
         {
-            return PortableUtils.ReadArray(ctx, true, type.GetElementType());
+            return PortableUtils.ReadArray<object>(ctx, true);
         }
 
         /**
@@ -726,9 +730,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static object ReadArray(PortableReaderImpl ctx, Type type)
         {
-            var elemType = type.IsArray ? type.GetElementType() : typeof(object);
-
-            return PortableUtils.ReadArray(ctx, true, elemType);
+            return PortableUtils.ReadArray<object>(ctx, true);
         }
 
         /// <summary>
@@ -736,7 +738,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private static object ReadGenericArray(PortableReaderImpl ctx, Type type)
         {
-            return PortableUtils.ReadTypedArray(ctx);
+            return PortableUtils.ReadGenericCollection(ctx);
         }
 
         /**
@@ -970,7 +972,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             public TResult Read<TResult>(PortableReaderImpl ctx)
             {
-                return TypeCaster<TResult>.Cast(PortableUtils.ReadGenericArray<T>(ctx, false));
+                return TypeCaster<TResult>.Cast(PortableUtils.ReadGenericCollection<T>(ctx, null));
             }
         }
 

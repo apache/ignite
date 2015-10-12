@@ -43,6 +43,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Flag: collection. */
         private const byte FlagCollection = 4;
 
+        /** Flag: collection. */
+        private const byte FlagArray = 5;
+
         /** Cache "none" value. */
         private static readonly PortableCollectionInfo None =
             new PortableCollectionInfo(FlagNone, null, null, null, null);
@@ -78,6 +81,9 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static PortableCollectionInfo CreateInstance(Type type)
         {
+            if (type.IsArray)
+                return GetGenericArrayInfo(type);
+
             if (type.IsGenericType)
             {
                 if (type.GetGenericTypeDefinition() == PortableUtils.TypGenericDictionary)
@@ -113,11 +119,29 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="genType">Generic collection type.</param>
         private static PortableCollectionInfo GetGenericCollectionInfo(Type type, Type genType)
         {
-            var writeMthd = PortableUtils.MtdhWriteGenericCollection.MakeGenericMethod(genType.GetGenericArguments());
-            var readMthd = PortableUtils.MtdhReadGenericCollection0.MakeGenericMethod(genType.GetGenericArguments());
+            var typeArguments = genType.GetGenericArguments();
+
+            var writeMthd = PortableUtils.MtdhWriteGenericCollection.MakeGenericMethod(typeArguments);
+            var readMthd = PortableUtils.MtdhReadGenericCollection0.MakeGenericMethod(typeArguments);
             var ctorInfo = type.GetConstructor(new[] { typeof(int) });
 
             return new PortableCollectionInfo(FlagGenericCollection,
+                PortableSystemHandlers.WriteHndGenericCollection, writeMthd, readMthd, ctorInfo);
+        }
+
+        /// <summary>
+        /// Gets the generic collection information.
+        /// </summary>
+        /// <param name="type">Original type.</param>
+        private static PortableCollectionInfo GetGenericArrayInfo(Type type)
+        {
+            var typeArguments = type.GetElementType();
+
+            var writeMthd = PortableUtils.MtdhWriteGenericCollection.MakeGenericMethod(typeArguments);
+            var readMthd = PortableUtils.MtdhReadGenericCollection0.MakeGenericMethod(typeArguments);
+            var ctorInfo = type.GetConstructor(new[] { typeof(int) });
+
+            return new PortableCollectionInfo(FlagArray, 
                 PortableSystemHandlers.WriteHndGenericCollection, writeMthd, readMthd, ctorInfo);
         }
 
@@ -128,8 +152,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="genType">Generic collection type.</param>
         private static PortableCollectionInfo GetGenericDictionaryInfo(Type type, Type genType)
         {
-            var writeMthd = PortableUtils.MtdhWriteGenericDictionary.MakeGenericMethod(genType.GetGenericArguments());
-            var readMthd = PortableUtils.MtdhReadGenericDictionary0.MakeGenericMethod(genType.GetGenericArguments());
+            var typeArguments = genType.GetGenericArguments();
+
+            var writeMthd = PortableUtils.MtdhWriteGenericDictionary.MakeGenericMethod(typeArguments);
+            var readMthd = PortableUtils.MtdhReadGenericDictionary0.MakeGenericMethod(typeArguments);
             var ctorInfo = type.GetConstructor(new[] { typeof(int) });
 
             return new PortableCollectionInfo(FlagGenericDictionary,
@@ -191,6 +217,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         public bool IsGenericCollection
         {
             get { return _flag == FlagGenericCollection; }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance represents an array.
+        /// </summary>
+        public bool IsArray
+        {
+            get { return _flag == FlagArray; }
         }
 
         /**

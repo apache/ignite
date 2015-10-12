@@ -979,7 +979,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 int pos = SkipFieldLength();
 
                 _stream.WriteByte(PU.TypeGenericArray);
-                PortableUtils.WriteGenericArray(val, this);
+                PortableUtils.WriteGenericCollection(val, this);
 
                 WriteFieldLength(_stream, pos);
             }
@@ -993,7 +993,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             else
             {
                 _stream.WriteByte(PU.TypeGenericArray);
-                PortableUtils.WriteGenericArray(val, this);
+                PortableUtils.WriteGenericCollection(val, this);
             }
         }
 

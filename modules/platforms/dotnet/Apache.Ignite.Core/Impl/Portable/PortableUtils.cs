@@ -280,10 +280,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Cached UTF8 encoding. */
         private static readonly Encoding Utf8 = Encoding.UTF8;
 
-        /** Cached generic array read funcs. */
-        private static readonly CopyOnWriteConcurrentDictionary<Type, Func<PortableReaderImpl, bool, object>>
-            ArrayReaders = new CopyOnWriteConcurrentDictionary<Type, Func<PortableReaderImpl, bool, object>>();
-
         /** StringHashCode(assemblyQualifiedName) -> Type map. */
         private static readonly CopyOnWriteConcurrentDictionary<int, Type> TypeNameMap =
             new CopyOnWriteConcurrentDictionary<int, Type>();
@@ -967,7 +963,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             var vals = new decimal?[len];
 
             for (int i = 0; i < len; i++)
-                vals[i] = stream.ReadByte() == HdrNull ? (decimal?) null : ReadDecimal(stream);
+                vals[i] = stream.ReadByte() == HdrNull ? null : ReadDecimal(stream);
 
             return vals;
         }
@@ -1082,30 +1078,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Read context.</param>
         /// <param name="typed">Typed flag.</param>
-        /// <param name="elementType">Type of the element.</param>
         /// <returns>Array.</returns>
-        public static object ReadArray(PortableReaderImpl ctx, bool typed, Type elementType)
+        public static T[] ReadArray<T>(PortableReaderImpl ctx, bool typed)
         {
-            Func<PortableReaderImpl, bool, object> result;
-
-            if (!ArrayReaders.TryGetValue(elementType, out result))
-                result = ArrayReaders.GetOrAdd(elementType, t =>
-                    DelegateConverter.CompileFunc<Func<PortableReaderImpl, bool, object>>(null,
-                        MtdhReadGenericArray.MakeGenericMethod(t),
-                        new[] {typeof (PortableReaderImpl), typeof (bool)}, new[] {false, false, true}));
-
-            return result(ctx, typed);
-        }
-
-        /// <summary>
-        /// Read array.
-        /// </summary>
-        /// <param name="ctx">Read context.</param>
-        /// <param name="typed">Typed flag.</param>
-        /// <returns>Array.</returns>
-        public static T[] ReadGenericArray<T>(PortableReaderImpl ctx, bool typed)
-        {
-            IPortableStream stream = ctx.Stream;
+            var stream = ctx.Stream;
 
             if (typed)
                 stream.ReadInt();
@@ -1118,38 +1094,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 vals[i] = ctx.Deserialize<T>();
 
             return vals;
-        }
-
-        /// <summary>
-        /// Write generic array (with element type information).
-        /// </summary>
-        /// <param name="val">Array.</param>
-        /// <param name="ctx">Write context.</param>
-        public static void WriteGenericArray(Array val, PortableWriterImpl ctx)
-        {
-            Debug.Assert(val != null);
-            Debug.Assert(ctx != null);
-
-            var stream = ctx.Stream;
-
-            var elementType = val.GetType().GetElementType();
-
-            WriteType(elementType, ctx);
-
-            stream.WriteInt(val.Length);
-
-            for (int i = 0; i < val.Length; i++)
-                ctx.Write(val.GetValue(i));
-        }
-
-        /// <summary>
-        /// Reads typed array.
-        /// </summary>
-        public static object ReadTypedArray(PortableReaderImpl reader)
-        {
-            var elementType = ReadType(reader);
-
-            return ReadArray(reader, false, elementType);
         }
 
         /// <summary>
