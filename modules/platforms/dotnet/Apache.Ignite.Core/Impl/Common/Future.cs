@@ -215,6 +215,14 @@ namespace Apache.Ignite.Core.Impl.Common
         /** <inheritdoc /> */
         public void OnNullResult()
         {
+            var type = typeof(T);
+
+            // default(IgniteNullable<>) represents null value, which is correct. All other value types can't be null.
+            if (default(T) != null && 
+                !(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IgniteNullable<>)))
+                OnError(new InvalidOperationException(string.Format("Invalid Future result. " +
+                                                                    "Expected: '{0}' But was: null", type)));
+
             OnResult(default(T));
         }
 
