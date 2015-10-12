@@ -132,10 +132,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                 new PortableSystemReader<DateTime?[]>(s => PortableUtils.ReadDateArray(s, false));
 
             // 7. String array.
-            ReadHandlers[PortableUtils.TypeArrayString] = new PortableSystemGenericArrayReader<string>();
+            ReadHandlers[PortableUtils.TypeArrayString] = new PortableSystemTypedArrayReader<string>();
 
             // 8. Guid array.
-            ReadHandlers[PortableUtils.TypeArrayGuid] = new PortableSystemGenericArrayReader<Guid?>();
+            ReadHandlers[PortableUtils.TypeArrayGuid] = new PortableSystemTypedArrayReader<Guid?>();
 
             // 9. Array.
             ReadHandlers[PortableUtils.TypeArray] = new PortableSystemReader(ReadArray);
@@ -968,11 +968,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Reader without boxing.
         /// </summary>
-        private class PortableSystemGenericArrayReader<T> : IPortableSystemReader
+        private class PortableSystemTypedArrayReader<T> : IPortableSystemReader
         {
             public TResult Read<TResult>(PortableReaderImpl ctx)
             {
-                return TypeCaster<TResult>.Cast(PortableUtils.ReadGenericCollection<T>(ctx, null));
+                return TypeCaster<TResult>.Cast(PortableUtils.ReadArray<T>(ctx, false));
             }
         }
 
