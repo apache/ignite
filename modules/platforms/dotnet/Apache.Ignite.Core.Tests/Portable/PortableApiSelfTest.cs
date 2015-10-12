@@ -932,7 +932,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(100, portObj.GetHashCode());
 
-            IPortableObject[] portInArr = portObj.GetField<IPortableObject[]>("inArr");
+            IPortableObject[] portInArr = portObj.GetField<object[]>("inArr").Cast<IPortableObject>().ToArray();
 
             Assert.AreEqual(1, portInArr.Length);
             Assert.AreEqual(1, portInArr[0].GetField<int>("val"));
@@ -949,7 +949,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(200, portObj.GetHashCode());
 
-            portInArr = portObj.GetField<IPortableObject[]>("inArr");
+            portInArr = portObj.GetField<object[]>("inArr").Cast<IPortableObject>().ToArray();
 
             Assert.AreEqual(2, portInArr.Length);
             Assert.AreEqual(1, portInArr[0].GetField<int>("val"));
@@ -969,7 +969,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(300, portObj.GetHashCode());
 
-            portInArr = portObj.GetField<IPortableObject[]>("inArr");
+            portInArr = portObj.GetField<object[]>("inArr").Cast<IPortableObject>().ToArray();
 
             Assert.AreEqual(2, portInArr.Length);
             Assert.AreEqual(1, portInArr[0].GetField<int>("val"));
@@ -992,7 +992,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(100, portObj.GetHashCode());
 
-            portInArr = portObj.GetField<IPortableObject[]>("inArr");
+            portInArr = portObj.GetField<object[]>("inArr").Cast<IPortableObject>().ToArray();
 
             Assert.AreEqual(2, portInArr.Length);
             Assert.AreEqual(1, portInArr[0].GetField<int>("val"));
@@ -1012,7 +1012,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(200, portObj.GetHashCode());
 
-            portInArr = portObj.GetField<IPortableObject[]>("inArr");
+            portInArr = portObj.GetField<object[]>("inArr").Cast<IPortableObject>().ToArray();
 
             Assert.AreEqual(2, portInArr.Length);
             Assert.AreEqual(2, portInArr[0].GetField<int>("val"));
@@ -1040,7 +1040,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(100, portObj.GetHashCode());
 
-            IPortableObject[] portOutArr = portObj.GetField<IPortableObject[]>("outArr");
+            var portOutArr = portObj.GetField<object[]>("outArr").Cast<IPortableObject>().ToArray();
 
             Assert.AreEqual(2, portOutArr.Length);
             Assert.AreEqual(1, portOutArr[0].GetField<IPortableObject>("inner").GetField<int>("val"));
@@ -1061,7 +1061,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(200, portObj.GetHashCode());
 
-            portInArr = portObj.GetField<IPortableObject[]>("outArr");
+            portInArr = portObj.GetField<object[]>("outArr").Cast<IPortableObject>().ToArray();
 
             Assert.AreEqual(2, portInArr.Length);
             Assert.AreEqual(2, portOutArr[0].GetField<IPortableObject>("inner").GetField<int>("val"));
