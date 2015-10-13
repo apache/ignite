@@ -38,6 +38,7 @@ import static org.apache.ignite.agent.AgentConfiguration.DFLT_SERVER_PORT;
 public class AgentLauncher {
     /** */
     private static final Logger log = Logger.getLogger(AgentLauncher.class.getName());
+
     /** */
     private static final int RECONNECT_INTERVAL = 3000;
 
