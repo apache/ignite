@@ -44,15 +44,15 @@ router.get('/download', function (req, res) {
 });
 
 /* Get grid topology. */
-router.get('/download-zip', function (req, res) {
+router.get('/download/zip', function (req, res) {
     var fs = require('fs');
     var JSZip = require('jszip');
     var config = require('../helpers/configuration-loader.js');
 
-    var agentFld =  'ignite-web-agent-1.5.0-SNAPSHOT';
+    var agentFld = 'ignite-web-agent-1.5.0-SNAPSHOT';
     var agentZip =  agentFld + '.zip';
 
-    // read a zip file
+    // Read a zip file.
     fs.readFile('public/agent/' + agentZip, function(err, data) {
         if (err)
             return res.download('public/agent/' + agentZip, agentZip);
@@ -65,6 +65,7 @@ router.get('/download-zip', function (req, res) {
 
         prop.push('token=' + req.user.token);
         prop.push('server-uri=wss://' + host + ':' + config.get('agent-server:port'));
+        prop.push('#Uncomment following options if needed:');
         prop.push('#node-uri=http://localhost:8080');
         prop.push('#driver-folder=./jdbc-drivers');
         prop.push('#test-drive-metadata=true');
@@ -78,7 +79,6 @@ router.get('/download-zip', function (req, res) {
         res.attachment(agentZip);
 
         res.send(buffer);
-
     });
 });
 

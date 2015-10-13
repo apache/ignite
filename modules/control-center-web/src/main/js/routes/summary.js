@@ -45,42 +45,27 @@ router.post('/download', function (req, res) {
 
         var clientNearConfiguration = req.body.clientNearConfiguration;
 
-        var archiver = require('archiver');
+        var JSZip = require('jszip');
 
-        // Creating archive.
-        var zip = archiver('zip');
-
-        zip.on('error', function (err) {
-            res.status(500).send({error: err.message});
-        });
-
-        // On stream closed we can end the request.
-        res.on('close', function () {
-            return res.status(200).send('OK').end();
-        });
+        var zip = new JSZip();
 
         // Set the archive name.
         res.attachment(cluster.name + (clientNearConfiguration ? '-client' : '-server') + '-configuration.zip');
 
-        // Send the file to the page output.
-        zip.pipe(res);
-
         var builder = $generatorProperties.sslProperties(cluster);
 
         if (!clientNearConfiguration) {
-            zip.append($generatorDocker.clusterDocker(cluster, req.body.os), {name: 'Dockerfile'});
+            zip.file('Dockerfile', $generatorDocker.clusterDocker(cluster, req.body.os));
 
             builder = $generatorProperties.dataSourcesProperties(cluster, builder);
         }
 
         if (builder)
-            zip.append(builder.asString(), {name: 'secret.properties'});
+            zip.file('secret.properties', builder.asString());
 
-        zip.append($generatorXml.cluster(cluster, clientNearConfiguration), {name: cluster.name + '.xml'})
-            .append($generatorJava.cluster(cluster, false, clientNearConfiguration),
-                {name: cluster.name + '.snippet.java'})
-            .append($generatorJava.cluster(cluster, true, clientNearConfiguration),
-                {name: 'ConfigurationFactory.java'});
+        zip.file(cluster.name + '.xml', $generatorXml.cluster(cluster, clientNearConfiguration));
+        zip.file(cluster.name + '.snippet.java', $generatorJava.cluster(cluster, false, clientNearConfiguration));
+        zip.file('ConfigurationFactory.java', $generatorJava.cluster(cluster, true, clientNearConfiguration));
 
         $generatorJava.pojos(cluster.caches, req.body.useConstructor, req.body.includeKeyFields);
 
@@ -90,12 +75,14 @@ router.post('/download', function (req, res) {
             var meta = metadatas[metaIx];
 
             if (meta.keyClass)
-                zip.append(meta.keyClass, {name: meta.keyType.replace(/\./g, '/') + '.java'});
+                zip.file(meta.keyType.replace(/\./g, '/') + '.java', meta.keyClass);
 
-            zip.append(meta.valueClass, {name: meta.valueType.replace(/\./g, '/') + '.java'});
+            zip.file(meta.valueType.replace(/\./g, '/') + '.java', meta.valueClass);
         }
 
-        zip.finalize();
+        var buffer = zip.generate({type:"nodebuffer"});
+
+        res.send(buffer);
     });
 });
 

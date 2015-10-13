@@ -20,7 +20,6 @@
     "node": ">=0.12.4"
   },
   "dependencies": {
-    "archiver": "^0.15.1",
     "async": "1.4.2",
     "body-parser": "~1.14.1",
     "bootstrap-sass": "^3.3.5",

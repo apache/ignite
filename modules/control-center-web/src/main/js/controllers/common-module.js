@@ -1914,7 +1914,7 @@ consoleModule.controller('agent-download', [
         $scope.downloadAgent = function () {
             var lnk = document.createElement('a');
 
-            lnk.setAttribute('href', '/agent/download-zip');
+            lnk.setAttribute('href', '/agent/download/zip');
             lnk.style.display = 'none';
 
             document.body.appendChild(lnk);
