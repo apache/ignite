@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Executes given Java task on the grid projection. If task for given name has not been deployed yet,
         /// then 'taskName' will be used as task class name to auto-deploy the task.
         /// </summary>
-        public T ExecuteJavaTask<T>(string taskName, object taskArg)
+        public TReduceRes ExecuteJavaTask<TReduceRes>(string taskName, object taskArg)
         {
             IgniteArgumentCheck.NotNullOrEmpty(taskName, "taskName");
 
@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             try
             {
-                T res = DoOutInOp<T>(OpExec, writer =>
+                TReduceRes res = DoOutInOp<TReduceRes>(OpExec, writer =>
                 {
                     WriteTask(writer, taskName, taskArg, nodes);
                 });
@@ -150,7 +150,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// If task for given name has not been deployed yet,
         /// then 'taskName' will be used as task class name to auto-deploy the task.
         /// </summary>
-        public IFuture<T> ExecuteJavaTaskAsync<T>(string taskName, object taskArg)
+        public IFuture<TReduceRes> ExecuteJavaTaskAsync<TReduceRes>(string taskName, object taskArg)
         {
             IgniteArgumentCheck.NotNullOrEmpty(taskName, "taskName");
 
@@ -158,14 +158,14 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             try
             {
-                IFuture<T> fut = null;
+                IFuture<TReduceRes> fut = null;
 
                 DoOutInOp(OpExecAsync, writer =>
                 {
                     WriteTask(writer, taskName, taskArg, nodes);
                 }, input =>
                 {
-                    fut = GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp), _keepPortable.Value);
+                    fut = GetFuture<TReduceRes>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp), _keepPortable.Value);
                 });
 
                 return fut;

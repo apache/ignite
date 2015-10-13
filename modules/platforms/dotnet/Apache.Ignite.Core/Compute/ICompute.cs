@@ -84,8 +84,8 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="taskName">Java task name</param>
         /// <param name="taskArg">Optional argument of task execution, can be null.</param>
         /// <returns>Task result.</returns>
-        /// <typeparam name="T">Type of task result.</typeparam>
-        T ExecuteJavaTask<T>(string taskName, object taskArg);
+        /// <typeparam name="TReduceRes">Type of task result.</typeparam>
+        TReduceRes ExecuteJavaTask<TReduceRes>(string taskName, object taskArg);
 
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
