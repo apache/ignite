@@ -484,8 +484,7 @@ namespace Apache.Ignite.Core.Impl.Events
         {
             var evt = EventReader.Read<T>(Marshaller.StartUnmarshal(stream));
 
-            // No guid in local mode
-            return listener.Invoke(Guid.Empty, evt);
+            return listener.Invoke(Ignite.GetLocalNode().Id, evt);
         }
 
         /// <summary>
