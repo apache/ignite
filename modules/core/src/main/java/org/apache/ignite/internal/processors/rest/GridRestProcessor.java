@@ -565,53 +565,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Applies {@link ConnectorMessageInterceptor}
-     * from {@link ConnectorConfiguration#getMessageInterceptor()} ()}
-     * to all user parameters in the request.
-     *
-     * @param req Client request.
-     */
-    private void interceptRequest(GridRestRequest req) {
-        ConnectorMessageInterceptor interceptor = config().getMessageInterceptor();
-
-        if (interceptor == null)
-            return;
-
-        if (req instanceof GridRestCacheRequest) {
-            GridRestCacheRequest req0 = (GridRestCacheRequest) req;
-
-            req0.key(interceptor.onReceive(req0.key()));
-            req0.value(interceptor.onReceive(req0.value()));
-            req0.value2(interceptor.onReceive(req0.value2()));
-
-            Map<Object, Object> oldVals = req0.values();
-
-            if (oldVals != null) {
-                Map<Object, Object> newVals = U.newHashMap(oldVals.size());
-
-                for (Map.Entry<Object, Object> e : oldVals.entrySet())
-                    newVals.put(interceptor.onReceive(e.getKey()), interceptor.onReceive(e.getValue()));
-
-                req0.values(U.sealMap(newVals));
-            }
-        }
-        else if (req instanceof GridRestTaskRequest) {
-            GridRestTaskRequest req0 = (GridRestTaskRequest) req;
-
-            List<Object> oldParams = req0.params();
-
-            if (oldParams != null) {
-                Collection<Object> newParams = new ArrayList<>(oldParams.size());
-
-                for (Object o : oldParams)
-                    newParams.add(interceptor.onReceive(o));
-
-                req0.params(U.sealList(newParams));
-            }
-        }
-    }
-
-    /**
      * Applies {@link ConnectorMessageInterceptor} from
      * {@link ConnectorConfiguration#getMessageInterceptor()}
      * to all user objects in the response.
