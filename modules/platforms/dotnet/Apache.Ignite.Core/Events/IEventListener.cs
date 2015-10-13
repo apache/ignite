@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="evt">Event.</param>
         /// <returns>
         /// Value indicating whether this instance should remain subscribed. 
-        /// Returning <c>false</c> will unsubscribe this event listener from further notifications
+        /// Returning <c>false</c> will unsubscribe this event listener from further notifications.
         /// </returns>
         bool Invoke(Guid? nodeId, T evt);
     }

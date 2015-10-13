@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Messaging
         /// <param name="message">Message.</param>
         /// <returns>
         /// Value indicating whether this instance should remain subscribed. 
-        /// Returning <c>false</c> will unsubscribe this message listener from further notifications
+        /// Returning <c>false</c> will unsubscribe this message listener from further notifications.
         /// </returns>
         bool Invoke(Guid nodeId, T message);
     }
