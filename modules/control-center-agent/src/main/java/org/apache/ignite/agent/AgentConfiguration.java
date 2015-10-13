@@ -197,17 +197,17 @@ public class AgentConfiguration {
         if (val != null)
             token(val);
 
-        val = (String)props.remove("serverURI");
+        val = (String)props.remove("server-uri");
 
         if (val != null)
             serverUri(val);
 
-        val = (String)props.remove("nodeURI");
+        val = (String)props.remove("node-uri");
 
         if (val != null)
             nodeUri(val);
 
-        val = (String)props.remove("driverFolder");
+        val = (String)props.remove("driver-folder");
 
         if (val != null)
             driversFolder(val);

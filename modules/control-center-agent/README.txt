@@ -47,9 +47,9 @@ Configuration file:
 
     Available entries names:
         token
-        serverURI
-        nodeURI
-        driverFolder
+        server-uri
+        node-uri
+        driver-folder
         test-drive-metadata
         test-drive-sql
 
