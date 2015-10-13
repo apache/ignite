@@ -1509,9 +1509,24 @@ a {
 }
 
 .chart-settings-link {
-    font-size: $font-size-base;
-    color: $link-color !important;
     margin-left: 10px;
+    line-height: $input-height;
+
+    label, button {
+        margin-left: 5px;
+        margin-right: 0;
+    }
+
+    button.select-manual-caret {
+        padding-right: 3px;
+
+        .caret { margin-left: 3px; }
+    }
+
+    a, i {
+        font-size: $font-size-base;
+        color: $link-color !important;
+    }
 }
 
 .chart-settings {

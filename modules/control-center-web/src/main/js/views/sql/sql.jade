@@ -32,14 +32,12 @@ mixin btn-toolbar-data(btn, kind, tip)
     i.btn.btn-default.fa(class=btn ng-click='setResult(paragraph, "#{kind}")' ng-class='{active: resultEq(paragraph, "#{kind}")}' bs-tooltip='' data-title=tip data-trigger='hover' data-placement='bottom')
 
 mixin chart-settings(mdl)
-    .col-sm-2.chart-settings-link
+    .chart-settings-link
         i.fa.fa-chevron-circle-down
         a(ng-show='paragraph.chart' ng-click='$event.stopPropagation()' bs-popover data-template-url='chart-settings' data-placement='bottom' data-auto-close='1' data-trigger='click') Chart settings
-    .col-sm-3
-        label Show
-        button.select-toggle.btn.btn-default(ng-model='paragraph.timeLineSpan' bs-options='item for item in timeLineSpans' bs-select)
+        label(style='margin-left: 20px') Show
+        button.select-manual-caret.btn.btn-default(ng-model='paragraph.timeLineSpan' bs-options='item for item in timeLineSpans' bs-select data-caret-html='<span class="caret"></span>')
         label min
-
 block container
     .row
         .col-sm-12(ng-init='noteId = "#{noteId}"')
