@@ -21,6 +21,7 @@
 #include "ignite/cache/query/query_scan.h"
 #include "ignite/cache/query/query_sql.h"
 #include "ignite/cache/query/query_text.h"
+#include "ignite/cache/query/query_sql_fields.h"
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/impl/cache/query/query_impl.h"
 #include "ignite/impl/operations.h"
@@ -316,6 +317,15 @@ namespace ignite
                  * @return Query cursor.
                  */
                 query::QueryCursorImpl* QueryScan(const ignite::cache::query::ScanQuery& qry, IgniteError* err);
+
+                /*
+                 * Invoke sql fields query.
+                 *
+                 * @param qry Query.
+                 * @param err Error.
+                 * @return Query cursor.
+                 */
+                query::QueryCursorImpl* QuerySqlFields(const ignite::cache::query::SqlFieldsQuery& qry, IgniteError* err);
                 
             private:
                 /** Name. */
