@@ -69,7 +69,7 @@ consoleModule.controller('sqlController',
     };
 
     $scope.chartAcceptKeyColumn = function(paragraph, item) {
-        var accepted = !_.includes(paragraph.chartKeyCols, item);
+        var accepted = _.findIndex(paragraph.chartKeyCols, item) < 0;
 
         if (accepted) {
             paragraph.chartKeyCols = [item];
@@ -81,7 +81,7 @@ consoleModule.controller('sqlController',
     };
 
     $scope.chartAcceptValColumn = function(paragraph, item) {
-        var accepted = !_.includes(paragraph.chartValCols, item) && item != TIME_LINE && _numberType(item.type);
+        var accepted = _.findIndex(paragraph.chartValCols, item) < 0 && item != TIME_LINE && _numberType(item.type);
 
         if (accepted) {
             paragraph.chartValCols.push(item);
