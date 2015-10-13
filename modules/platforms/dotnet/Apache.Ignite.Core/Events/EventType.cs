@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+// ReSharper disable ConvertToConstant.Global
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedMember.Global
 namespace Apache.Ignite.Core.Events
 {
     using System.Collections.Generic;
@@ -347,8 +350,8 @@ namespace Apache.Ignite.Core.Events
         }.AsReadOnly();
 
         /// <summary>
-        /// All discovery events except for <see cref="EventNodeMetricsUpdated" />. Subscription to <see 
-        /// cref="EventNodeMetricsUpdated" /> can generate massive amount of event processing in most cases is not 
+        /// All discovery events except for <see cref="NodeMetricsUpdated" />. Subscription to <see 
+        /// cref="NodeMetricsUpdated" /> can generate massive amount of event processing in most cases is not 
         /// necessary. If this event is indeed required you can subscribe to it individually or use <see 
         /// cref="EventsDiscoveryAll0" /> array.
         /// </summary>
@@ -571,8 +574,8 @@ namespace Apache.Ignite.Core.Events
         }
 
         /// <summary>
-        /// All discovery events except for <see cref="EventNodeMetricsUpdated" />. Subscription to <see 
-        /// cref="EventNodeMetricsUpdated" /> can generate massive amount of event processing in most cases is not 
+        /// All discovery events except for <see cref="NodeMetricsUpdated" />. Subscription to <see 
+        /// cref="NodeMetricsUpdated" /> can generate massive amount of event processing in most cases is not 
         /// necessary. If this event is indeed required you can subscribe to it individually or use <see 
         /// cref="EventsDiscoveryAll0" /> array.
         /// </summary>
