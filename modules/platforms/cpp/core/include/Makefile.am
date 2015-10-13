@@ -22,12 +22,16 @@ nobase_include_HEADERS = ignite/cache/cache.h \
                          ignite/cache/cache_peek_mode.h \
                          ignite/cache/query/query_argument.h \
                          ignite/cache/query/query_cursor.h \
+                         ignite/cache/query/query_fields_cursor.h \
+                         ignite/cache/query/query_fields_row.h \
                          ignite/cache/query/query_scan.h \
                          ignite/cache/query/query_sql.h \
+                         ignite/cache/query/query_sql_fields.h \
                          ignite/cache/query/query_text.h \
                          ignite/cache/query/query.h \
                          ignite/impl/cache/cache_impl.h \
                          ignite/impl/cache/query/query_impl.h \
+                         ignite/impl/cache/query/query_fields_row_impl.h \
                          ignite/impl/interop/interop.h \
                          ignite/impl/interop/interop_input_stream.h \
                          ignite/impl/interop/interop_memory.h \
