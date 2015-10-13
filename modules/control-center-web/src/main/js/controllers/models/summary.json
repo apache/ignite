@@ -1,0 +1,172 @@
+{
+  "screenTip": {
+    "workflowTitle": "On This Screen:",
+    "workflowContent": [
+      "Download XML Config",
+      "Download Java Code",
+      "Download Docker File",
+      "more-info"
+    ],
+    "whatsNextTitle": "Next Steps:",
+    "whatsNextContent": [
+      "Deploy Ignite Servers",
+      "Connect Ignite Clients",
+      "Analyze with SQL"
+    ]
+  },
+  "moreInfo": {
+    "title": "Summary page",
+    "content": ["Generated cluster's configuration showed on this page.",
+      "Configurations available in XML, Java and Dockerfile format for Server and Client mode.",
+      "Database table POJO classes for cluster's metadatas available on \"POJO\" tab.",
+      "Use \"Download\" button to receive configurations in ZIP file.",
+      "Go back to change configuration on <a href='/configuration/clusters'>clusters</a>, <a href='/configuration/caches'>caches</a> or <a href='/configuration/metadata'>metadata</a> pages."
+    ]
+  },
+  "clientFields": [
+    {
+      "label": "Near cache start size",
+      "type": "number",
+      "path": "nearConfiguration",
+      "model": "nearStartSize",
+      "placeholder": 375000,
+      "tip": [
+        "Initial cache size for near cache which will be used to pre-create internal hash table after start"
+      ]
+    },
+    {
+      "label": "Near cache eviction policy",
+      "type": "dropdown-details",
+      "settings": true,
+      "path": "nearConfiguration.nearEvictionPolicy",
+      "model": "kind",
+      "placeholder": "Choose eviction policy",
+      "items": "evictionPolicies",
+      "tip": [
+        "Cache expiration policy"
+      ],
+      "details": {
+        "LRU": {
+          "expanded": false,
+          "fields": [
+            {
+              "label": "Batch size",
+              "type": "number",
+              "path": "nearConfiguration.nearEvictionPolicy.LRU",
+              "model": "batchSize",
+              "placeholder": 1,
+              "tip": [
+                "Number of entries to remove on shrink"
+              ]
+            },
+            {
+              "label": "Max memory size",
+              "type": "number",
+              "path": "nearConfiguration.nearEvictionPolicy.LRU",
+              "model": "maxMemorySize",
+              "placeholder": 0,
+              "tip": [
+                "Maximum allowed cache size in bytes"
+              ]
+            },
+            {
+              "label": "Max size",
+              "type": "number",
+              "path": "nearConfiguration.nearEvictionPolicy.LRU",
+              "model": "maxSize",
+              "placeholder": 100000,
+              "tip": [
+                "Maximum allowed size of cache before entry will start getting evicted"
+              ]
+            }
+          ]
+        },
+        "RND": {
+          "expanded": false,
+          "fields": [
+            {
+              "label": "Max size",
+              "type": "number",
+              "path": "nearConfiguration.nearEvictionPolicy.RND",
+              "model": "maxSize",
+              "placeholder": 100000,
+              "tip": [
+                "Maximum allowed size of cache before entry will start getting evicted"
+              ]
+            }
+          ]
+        },
+        "FIFO": {
+          "expanded": false,
+          "fields": [
+            {
+              "label": "Batch size",
+              "type": "number",
+              "path": "nearConfiguration.nearEvictionPolicy.FIFO",
+              "model": "batchSize",
+              "placeholder": 1,
+              "tip": [
+                "Number of entries to remove on shrink"
+              ]
+            },
+            {
+              "label": "Max memory size",
+              "type": "number",
+              "path": "nearConfiguration.nearEvictionPolicy.FIFO",
+              "model": "maxMemorySize",
+              "placeholder": 0,
+              "tip": [
+                "Maximum allowed cache size in bytes"
+              ]
+            },
+            {
+              "label": "Max size",
+              "type": "number",
+              "path": "nearConfiguration.nearEvictionPolicy.FIFO",
+              "model": "maxSize",
+              "placeholder": 100000,
+              "tip": [
+                "Maximum allowed size of cache before entry will start getting evicted"
+              ]
+            }
+          ]
+        },
+        "SORTED": {
+          "expanded": false,
+          "fields": [
+            {
+              "label": "Batch size",
+              "type": "number",
+              "path": "nearConfiguration.nearEvictionPolicy.SORTED",
+              "model": "batchSize",
+              "placeholder": 1,
+              "tip": [
+                "Number of entries to remove on shrink"
+              ]
+            },
+            {
+              "label": "Max memory size",
+              "type": "number",
+              "path": "nearConfiguration.nearEvictionPolicy.SORTED",
+              "model": "maxMemorySize",
+              "placeholder": 0,
+              "tip": [
+                "Maximum allowed cache size in bytes"
+              ]
+            },
+            {
+              "label": "Max size",
+              "type": "number",
+              "path": "nearConfiguration.nearEvictionPolicy.SORTED",
+              "model": "maxSize",
+              "placeholder": 100000,
+              "tip": [
+                "Maximum allowed size of cache before entry will start getting evicted"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

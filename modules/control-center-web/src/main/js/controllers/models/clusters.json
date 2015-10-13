@@ -1,0 +1,1333 @@
+{
+  "screenTip": {
+    "workflowTitle": "On This Screen:",
+    "workflowContent": [
+      "Configure Clusters",
+      "Link Clusters to Caches",
+      "more-info"
+    ],
+    "whatsNextTitle": "Next Steps:",
+    "whatsNextContent": [
+      "Continue to <a href='/configuration/caches'>Caches</a>",
+      "Continue to <a href='/configuration/summary'>Summary</a>"
+    ]
+  },
+  "moreInfo": {
+    "title": "Clusters page",
+    "content": ["Manage you clusters on current page.",
+      "Generated clusters configuration available on <a href='/configuration/summary'>summary</a> page."]
+  },
+  "general": [
+    {
+      "label": "General",
+      "group": "general",
+      "fields": [
+        {
+          "label": "Name",
+          "id": "clusterName",
+          "type": "text",
+          "model": "name",
+          "required": true,
+          "placeholder": "Input name"
+        },
+        {
+          "label": "Caches",
+          "id": "caches",
+          "type": "dropdown-multiple",
+          "model": "caches",
+          "placeholder": "Choose caches",
+          "placeholderEmpty": "No caches configured",
+          "items": "caches",
+          "tip": [
+            "Select caches to start in cluster or add a new cache"
+          ],
+          "addLink": {
+            "label": "Add cache(s)",
+            "ref": "/configuration/caches?new"
+          }
+        },
+        {
+          "label": "Discovery",
+          "id": "discovery",
+          "type": "dropdown-details",
+          "settings": false,
+          "path": "discovery",
+          "model": "kind",
+          "items": "discoveries",
+          "tip": [
+            "Discovery allows to discover remote nodes in grid"
+          ],
+          "details": {
+            "Vm": {
+              "fields": [
+                {
+                  "label": "Addresses",
+                  "type": "table-simple",
+                  "path": "discovery.Vm",
+                  "model": "addresses",
+                  "reordering": true,
+                  "ipaddress": true,
+                  "placeholder": "IP address:port",
+                  "focusId": "IpAddress",
+                  "addTip": "Add new address.",
+                  "removeTip": "Remove address",
+                  "tableTip": [
+                    "Addresses may be represented as follows:",
+                    "<ul>",
+                    "  <li>IP address (e.g. 127.0.0.1, 9.9.9.9, etc)</li>",
+                    "  <li>IP address and port (e.g. 127.0.0.1:47500, 9.9.9.9:47501, etc)</li>",
+                    "  <li>IP address and port range (e.g. 127.0.0.1:47500..47510, 9.9.9.9:47501..47504, etc)</li>",
+                    "  <li>Hostname (e.g. host1.com, host2, etc)</li>",
+                    "  <li>Hostname and port (e.g. host1.com:47500, host2:47502, etc)</li>",
+                    "  <li>Hostname and port range (e.g. host1.com:47500..47510, host2:47502..47508, etc)</li>",
+                    "</ul>",
+                    "If port is 0 or not provided then default port will be used (depends on discovery SPI configuration)",
+                    "If port range is provided (e.g. host:port1..port2) the following should be considered:",
+                    "<ul>",
+                    "  <li>port1 < port2 should be true</li>",
+                    "  <li>Both port1 and port2 should be greater than 0</li>",
+                    "</ul>"
+                  ]
+                }
+              ]
+            },
+            "Multicast": {
+              "fields": [
+                {
+                  "label": "IP address",
+                  "type": "text",
+                  "path": "discovery.Multicast",
+                  "model": "multicastGroup",
+                  "placeholder": "228.1.2.4",
+                  "tip": [
+                    "IP address of multicast group"
+                  ]
+                },
+                {
+                  "label": "Port number",
+                  "type": "number",
+                  "path": "discovery.Multicast",
+                  "model": "multicastPort",
+                  "max": 65535,
+                  "placeholder": 47400,
+                  "tip": [
+                    "Port number which multicast messages are sent to"
+                  ]
+                },
+                {
+                  "label": "Waits for reply",
+                  "type": "number",
+                  "path": "discovery.Multicast",
+                  "model": "responseWaitTime",
+                  "placeholder": 500,
+                  "tip": [
+                    "Time in milliseconds IP finder waits for reply to multicast address request"
+                  ]
+                },
+                {
+                  "label": "Attempts count",
+                  "type": "number",
+                  "path": "discovery.Multicast",
+                  "model": "addressRequestAttempts",
+                  "placeholder": 2,
+                  "tip": [
+                    "Number of attempts to send multicast address request.",
+                    "IP finder re-sends request only in case if no reply for previous request is received"
+                  ]
+                },
+                {
+                  "label": "Local address",
+                  "type": "text",
+                  "path": "discovery.Multicast",
+                  "model": "localAddress",
+                  "tip": [
+                    "Local host address used by this IP finder",
+                    "If provided address is non-loopback then multicast socket is bound to this interface",
+                    "If local address is not set or is any local address then IP finder creates multicast sockets for all found non-loopback addresses"
+                  ]
+                },
+                {
+                  "label": "Addresses",
+                  "type": "table-simple",
+                  "path": "discovery.Multicast",
+                  "model": "addresses",
+                  "reordering": true,
+                  "ipaddress": true,
+                  "placeholder": "IP address:port",
+                  "focusId": "IpAddress",
+                  "addTip": "Add new address",
+                  "removeTip": "Remove address",
+                  "tableTip": [
+                    "Addresses may be represented as follows:",
+                    "<ul>",
+                    "  <li>IP address (e.g. 127.0.0.1, 9.9.9.9, etc)</li>",
+                    "  <li>IP address and port (e.g. 127.0.0.1:47500, 9.9.9.9:47501, etc)</li>",
+                    "  <li>IP address and port range (e.g. 127.0.0.1:47500..47510, 9.9.9.9:47501..47504, etc)</li>",
+                    "  <li>Hostname (e.g. host1.com, host2, etc)</li>",
+                    "  <li>Hostname and port (e.g. host1.com:47500, host2:47502, etc)</li>",
+                    "  <li>Hostname and port range (e.g. host1.com:47500..47510, host2:47502..47508, etc)</li>",
+                    "</ul>",
+                    "If port is 0 or not provided then default port will be used (depends on discovery SPI configuration)",
+                    "If port range is provided (e.g. host:port1..port2) the following should be considered:",
+                    "<ul>",
+                    "  <li>port1 < port2 should be true</li>",
+                    "  <li>Both port1 and port2 should be greater than 0</li>",
+                    "</ul>"
+                  ]
+                }
+              ]
+            },
+            "S3": {
+              "fields": [
+                {
+                  "label": "Bucket name",
+                  "type": "text",
+                  "required": true,
+                  "path": "discovery.S3",
+                  "model": "bucketName",
+                  "tip": [
+                    "Bucket name for IP finder"
+                  ]
+                },
+                {
+                  "label": "Note, AWS credentials will be generated as stubs.",
+                  "type": "label"
+                }
+              ]
+            },
+            "Cloud": {
+              "fields": [
+                {
+                  "label": "Credential",
+                  "type": "text",
+                  "path": "discovery.Cloud",
+                  "model": "credential",
+                  "tip": [
+                    "Credential that is used during authentication on the cloud",
+                    "Depending on a cloud platform it can be a password or access key"
+                  ]
+                },
+                {
+                  "label": "Path to credential",
+                  "type": "text",
+                  "path": "discovery.Cloud",
+                  "model": "credentialPath",
+                  "tip": [
+                    "Path to a credential that is used during authentication on the cloud",
+                    "Access key or private key should be stored in a plain or PEM file without a passphrase"
+                  ]
+                },
+                {
+                  "label": "Identity",
+                  "type": "text",
+                  "required": true,
+                  "path": "discovery.Cloud",
+                  "model": "identity",
+                  "tip": [
+                    "Identity that is used as a user name during a connection to the cloud",
+                    "Depending on a cloud platform it can be an email address, user name, etc"
+                  ]
+                },
+                {
+                  "label": "Provider",
+                  "type": "text",
+                  "required": true,
+                  "path": "discovery.Cloud",
+                  "model": "provider",
+                  "tip": [
+                    "Cloud provider to use"
+                  ]
+                },
+                {
+                  "label": "Regions",
+                  "type": "table-simple",
+                  "path": "discovery.Cloud",
+                  "model": "regions",
+                  "placeholder": "Region name",
+                  "focusId": "Region",
+                  "addTip": "Add new region",
+                  "removeTip": "Remove region",
+                  "tableTip": [
+                    "List of regions where VMs are located",
+                    "If the regions are not set then every region, that a cloud provider has, will be investigated. This could lead to significant performance degradation",
+                    "Note, that some cloud providers, like Google Compute Engine, doesn't have a notion of a region. For such providers regions are redundant"
+                  ],
+                  "tip": [
+                    "Region where VMs are located"
+                  ]
+                },
+                {
+                  "label": "Zones",
+                  "ui": "table-simple",
+                  "type": "table-simple",
+                  "path": "discovery.Cloud",
+                  "model": "zones",
+                  "placeholder": "Zone name",
+                  "focusId": "Zone",
+                  "addTip": "Add new zone",
+                  "removeTip": "Remove zone",
+                  "tableTip": [
+                    "List of zones where VMs are located",
+                    "If the zones are not set then every zone from specified regions, will be taken into account",
+                    "Note, that some cloud providers, like Rackspace, doesn't have a notion of a zone. For such providers zones are redundant"
+                  ],
+                  "tip": [
+                    "Zone where VMs are located"
+                  ]
+                }
+              ]
+            },
+            "GoogleStorage": {
+              "fields": [
+                {
+                  "label": "Project name",
+                  "type": "text",
+                  "required": true,
+                  "path": "discovery.GoogleStorage",
+                  "model": "projectName",
+                  "tip": [
+                    "Google Cloud Platforms project name",
+                    "Usually this is an auto generated project number (ex. 208709979073) that can be found in 'Overview' section of Google Developer Console"
+                  ]
+                },
+                {
+                  "label": "Bucket name",
+                  "type": "text",
+                  "required": true,
+                  "path": "discovery.GoogleStorage",
+                  "model": "bucketName",
+                  "tip": [
+                    "Google Cloud Storage bucket name",
+                    "If the bucket doesn't exist Ignite will automatically create it",
+                    "However the name must be unique across whole Google Cloud Storage and Service Account Id must be authorized to perform this operation"
+                  ]
+                },
+                {
+                  "label": "Private key path",
+                  "type": "text",
+                  "required": true,
+                  "path": "discovery.GoogleStorage",
+                  "model": "serviceAccountP12FilePath",
+                  "tip": [
+                    "Full path to the private key in PKCS12 format of the Service Account"
+                  ]
+                },
+                {
+                  "label": "Account id",
+                  "type": "text",
+                  "required": true,
+                  "path": "discovery.GoogleStorage",
+                  "model": "serviceAccountId",
+                  "tip": [
+                    "Service account ID (typically an e-mail address)"
+                  ]
+                }
+              ]
+            },
+            "Jdbc": {
+              "fields": [
+                {
+                  "label": "DB schema should be initialized by Ignite",
+                  "type": "check",
+                  "path": "discovery.Jdbc",
+                  "model": "initSchema",
+                  "tip": [
+                    "Flag indicating whether DB schema should be initialized by Ignite or was explicitly created by user"
+                  ]
+                }
+              ]
+            },
+            "SharedFs": {
+              "fields": [
+                {
+                  "label": "File path",
+                  "type": "text",
+                  "path": "discovery.SharedFs",
+                  "model": "path",
+                  "placeholder": "disco/tcp"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "advanced": [
+    {
+      "label": "Atomic configuration",
+      "group": "atomics",
+      "tip": [
+        "Configuration for atomic data structures",
+        "Atomics are distributed across the cluster, essentially enabling performing atomic operations (such as increment-and-get or compare-and-set) with the same globally-visible value"
+      ],
+      "fields": [
+        {
+          "label": "Cache mode",
+          "id": "cacheMode",
+          "type": "dropdown",
+          "path": "atomicConfiguration",
+          "model": "cacheMode",
+          "placeholder": "PARTITIONED",
+          "items": "cacheModes",
+          "tip": [
+            "Cache modes:",
+            "<ul>",
+            "  <li>Partitioned - in this mode the overall key set will be divided into partitions and all partitions will be split equally between participating nodes</li>",
+            "  <li>Replicated - in this mode all the keys are distributed to all participating nodes</li>",
+            "  <li>Local - in this mode caches residing on different grid nodes will not know about each other</li>",
+            "</ul>"
+          ]
+        },
+        {
+          "label": "Sequence reserve",
+          "id": "atomicSequenceReserveSize",
+          "type": "number",
+          "path": "atomicConfiguration",
+          "model": "atomicSequenceReserveSize",
+          "placeholder": 1000,
+          "tip": [
+            "Default number of sequence values reserved for IgniteAtomicSequence instances",
+            "After a certain number has been reserved, consequent increments of sequence will happen locally, without communication with other nodes, until the next reservation has to be made"
+          ]
+        },
+        {
+          "label": "Backups",
+          "id": "backups",
+          "type": "number",
+          "path": "atomicConfiguration",
+          "model": "backups",
+          "hide": "backupItem.atomicConfiguration &&  backupItem.atomicConfiguration.cacheMode && backupItem.atomicConfiguration.cacheMode != 'PARTITIONED'",
+          "placeholder": 0,
+          "tip": [
+            "Number of backup nodes"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Communication",
+      "group": "communication",
+      "tip": [
+        "Cluster communication network properties"
+      ],
+      "fields": [
+        {
+          "label": "Timeout",
+          "id": "networkTimeout",
+          "type": "number",
+          "model": "networkTimeout",
+          "placeholder": 5000,
+          "tip": [
+            "Maximum timeout in milliseconds for network requests"
+          ]
+        },
+        {
+          "label": "Send retry delay",
+          "id": "networkSendRetryDelay",
+          "type": "number",
+          "model": "networkSendRetryDelay",
+          "placeholder": 1000,
+          "tip": [
+            "Interval in milliseconds between message send retries"
+          ]
+        },
+        {
+          "label": "Send retry count",
+          "id": "networkSendRetryCount",
+          "type": "number",
+          "model": "networkSendRetryCount",
+          "placeholder": 3,
+          "tip": [
+            "Message send retries count"
+          ]
+        },
+        {
+          "label": "Discovery startup delay",
+          "id": "discoveryStartupDelay",
+          "type": "number",
+          "model": "discoveryStartupDelay",
+          "placeholder": 600000,
+          "tip": [
+            "This value is used to expire messages from waiting list whenever node discovery discrepancies happen"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Deployment",
+      "group": "deployment",
+      "previewMinLines": 1,
+      "tip": [
+        "Task and resources deployment in cluster"
+      ],
+      "fields": [
+        {
+          "label": "Mode",
+          "id": "deploymentMode",
+          "type": "dropdown",
+          "model": "deploymentMode",
+          "placeholder": "SHARED",
+          "items": "deploymentModes",
+          "tip": [
+            "Task classes and resources sharing mode",
+            "The following deployment modes are supported:",
+            "<ul>",
+            "  <li>PRIVATE - in this mode deployed classes do not share resources</li>",
+            "  <li>ISOLATED - in this mode tasks or classes deployed within the same class loader will share the same instances of resources</li>",
+            "  <li>SHARED - same as ISOLATED, but now tasks from different master nodes with the same user version and same class loader will share the same class loader on remote nodes</li>",
+            "  <li>CONTINUOUS - same as SHARED deployment mode, but resources will not be undeployed even after all master nodes left grid</li>",
+            "</ul>"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Discovery",
+      "group": "discovery",
+      "tip": [
+        "Discovery properties configuration"
+      ],
+      "fields": [
+        {
+          "label": "Local address",
+          "id": "localAddress",
+          "type": "text",
+          "path": "discovery",
+          "model": "localAddress",
+          "placeholder": "228.1.2.4",
+          "tip": [
+            "Local address"
+          ]
+        },
+        {
+          "label": "Local port",
+          "id": "localPort",
+          "type": "number",
+          "path": "discovery",
+          "model": "localPort",
+          "placeholder": 47500,
+          "tip": [
+            "Local port which node uses"
+          ]
+        },
+        {
+          "label": "Local port range",
+          "id": "localPortRange",
+          "type": "number",
+          "path": "discovery",
+          "model": "localPortRange",
+          "placeholder": 100,
+          "tip": [
+            "Local port range"
+          ]
+        },
+        {
+          "label": "Address resolver",
+          "id": "addressResolver",
+          "type": "text",
+          "path": "discovery",
+          "model": "addressResolver",
+          "tip": [
+            "Class name of resolution between external and internal addresses provider"
+          ]
+        },
+        {
+          "label": "Socket timeout",
+          "id": "socketTimeout",
+          "type": "number",
+          "path": "discovery",
+          "model": "socketTimeout",
+          "tip": [
+            "Socket operations timeout"
+          ]
+        },
+        {
+          "label": "Acknowledgement timeout",
+          "id": "ackTimeout",
+          "type": "number",
+          "path": "discovery",
+          "model": "ackTimeout",
+          "tip": [
+            "Message acknowledgement timeout"
+          ]
+        },
+        {
+          "label": "Max acknowledgement timeout",
+          "id": "maxAckTimeout",
+          "type": "number",
+          "path": "discovery",
+          "model": "maxAckTimeout",
+          "placeholder": 600000,
+          "tip": [
+            "Maximum message acknowledgement timeout"
+          ]
+        },
+        {
+          "label": "Network timeout",
+          "id": "networkTimeout",
+          "type": "number",
+          "path": "discovery",
+          "model": "networkTimeout",
+          "placeholder": 5000,
+          "tip": [
+            "Network timeout"
+          ]
+        },
+        {
+          "label": "Join timeout",
+          "id": "joinTimeout",
+          "type": "number",
+          "path": "discovery",
+          "model": "joinTimeout",
+          "placeholder": 0,
+          "tip": [
+            "Join timeout"
+          ]
+        },
+        {
+          "label": "Thread priority",
+          "id": "threadPriority",
+          "type": "number",
+          "path": "discovery",
+          "model": "threadPriority",
+          "placeholder": 10,
+          "tip": [
+            "Thread priority for all threads started by SPI"
+          ]
+        },
+        {
+          "label": "Heartbeat frequency",
+          "id": "heartbeatFrequency",
+          "type": "number",
+          "path": "discovery",
+          "model": "heartbeatFrequency",
+          "placeholder": 2000,
+          "tip": [
+            "Heartbeat messages issuing frequency"
+          ]
+        },
+        {
+          "label": "Max heartbeats miss w/o init",
+          "id": "maxMissedClientHeartbeats",
+          "type": "number",
+          "path": "discovery",
+          "model": "maxMissedClientHeartbeats",
+          "placeholder": 1,
+          "tip": [
+            "Max heartbeats count node can miss without initiating status check"
+          ]
+        },
+        {
+          "label": "Max heartbeats miss w/o failing client node",
+          "id": "maxMissedClientHbs",
+          "type": "number",
+          "path": "discovery",
+          "model": "maxMissedClientHbs",
+          "placeholder": 5,
+          "tip": [
+            "Max heartbeats count node can miss without failing client node"
+          ]
+        },
+        {
+          "label": "Topology history",
+          "id": "topHistorySize",
+          "type": "number",
+          "path": "discovery",
+          "model": "topHistorySize",
+          "placeholder": 1000,
+          "tip": [
+            "Size of topology snapshots history"
+          ]
+        },
+        {
+          "label": "Discovery listener",
+          "id": "listener",
+          "type": "text",
+          "path": "discovery",
+          "model": "listener",
+          "tip": [
+            "Grid discovery listener"
+          ]
+        },
+        {
+          "label": "Data exchange",
+          "id": "dataExchange",
+          "type": "text",
+          "path": "discovery",
+          "model": "dataExchange",
+          "tip": [
+            "Class name of handler for initial data exchange between Ignite nodes"
+          ]
+        },
+        {
+          "label": "Metrics provider",
+          "id": "metricsProvider",
+          "type": "text",
+          "path": "discovery",
+          "model": "metricsProvider",
+          "tip": [
+            "Class name of metric provider to discovery SPI"
+          ]
+        },
+        {
+          "label": "Reconnect count",
+          "id": "reconnectCount",
+          "type": "number",
+          "path": "discovery",
+          "model": "reconnectCount",
+          "placeholder": 10,
+          "tip": [
+            "Reconnect attempts count"
+          ]
+        },
+        {
+          "label": "Statistics frequency",
+          "id": "statisticsPrintFrequency",
+          "type": "number",
+          "path": "discovery",
+          "model": "statisticsPrintFrequency",
+          "placeholder": 0,
+          "tip": [
+            "Statistics print frequency"
+          ]
+        },
+        {
+          "label": "IP finder clean frequency",
+          "id": "ipFinderCleanFrequency",
+          "type": "number",
+          "path": "discovery",
+          "model": "ipFinderCleanFrequency",
+          "placeholder": 60000,
+          "tip": [
+            "IP finder clean frequency"
+          ]
+        },
+        {
+          "label": "Node authenticator",
+          "id": "authenticator",
+          "type": "text",
+          "path": "discovery",
+          "model": "authenticator",
+          "tip": [
+            "Node authenticator"
+          ]
+        },
+        {
+          "label": "Force server mode",
+          "id": "forceServerMode",
+          "type": "check",
+          "path": "discovery",
+          "model": "forceServerMode",
+          "tip": [
+            "Force server mode"
+          ]
+        },
+        {
+          "label": "Client reconnect disabled",
+          "id": "clientReconnectDisabled",
+          "type": "check",
+          "path": "discovery",
+          "model": "clientReconnectDisabled",
+          "tip": [
+            "Client reconnect disabled"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Events",
+      "group": "events",
+      "tip": [
+        " Grid events are used for notification about what happens within the grid"
+      ],
+      "fields": [
+        {
+          "label": "Include type",
+          "id": "includeEventTypes",
+          "type": "dropdown-multiple",
+          "model": "includeEventTypes",
+          "placeholder": "Choose recorded event types",
+          "items": "events",
+          "tip": [
+            "Array of event types, which will be recorded by GridEventStorageManager#record(Event)",
+            "Note, that either the include event types or the exclude event types can be established"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Marshaller",
+      "group": "marshaller",
+      "tip": [
+        "Marshaller allows to marshal or unmarshal objects in grid",
+        "It provides serialization/deserialization mechanism for all instances that are sent across networks or are otherwise serialized"
+      ],
+      "fields": [
+        {
+          "label": "Marshaller",
+          "model": "marshaller",
+          "type": "dropdown-details",
+          "settings": true,
+          "path": "marshaller",
+          "model": "kind",
+          "placeholder": "Choose marshaller",
+          "items": "marshallers",
+          "tip": [
+            "Instance of marshaller to use in grid. If not provided, OptimizedMarshaller will be used on Java HotSpot VM, and JdkMarshaller will be used on other VMs"
+          ],
+          "details": {
+            "OptimizedMarshaller": {
+              "expanded": false,
+              "fields": [
+                {
+                  "label": "Streams pool size",
+                  "type": "number",
+                  "path": "marshaller.OptimizedMarshaller",
+                  "model": "poolSize",
+                  "placeholder": 0,
+                  "tip": [
+                    "Specifies size of cached object streams used by marshaller",
+                    "Object streams are cached for performance reason to avoid costly recreation for every serialization routine",
+                    "If 0 (default), pool is not used and each thread has its own cached object stream which it keeps reusing",
+                    "Since each stream has an internal buffer, creating a stream for each thread can lead to high memory consumption if many large messages are marshalled or unmarshalled concurrently",
+                    "Consider using pool in this case. This will limit number of streams that can be created and, therefore, decrease memory consumption",
+                    "NOTE: Using streams pool can decrease performance since streams will be shared between different threads which will lead to more frequent context switching"
+                  ]
+                },
+                {
+                  "label": "Require serializable",
+                  "type": "check",
+                  "path": "marshaller.OptimizedMarshaller",
+                  "model": "requireSerializable",
+                  "tip": [
+                    "Whether marshaller should require Serializable interface or not"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "label": "Marshal local jobs",
+          "type": "check",
+          "model": "marshalLocalJobs",
+          "placeholder": "false",
+          "tip": [
+            "If this flag is enabled, jobs mapped to local node will be marshalled as if it was remote node"
+          ]
+        },
+        {
+          "label": "Keep alive time",
+          "type": "number",
+          "model": "marshallerCacheKeepAliveTime",
+          "placeholder": 10000,
+          "tip": [
+            "Keep alive time of thread pool that is in charge of processing marshaller messages"
+          ]
+        },
+        {
+          "label": "Pool size",
+          "type": "number",
+          "model": "marshallerCacheThreadPoolSize",
+          "placeholder": "max(8, availableProcessors) * 2",
+          "tip": [
+            "Default size of thread pool that is in charge of processing marshaller messages"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Metrics",
+      "group": "metrics",
+      "tip": [
+        "Cluster runtime metrics settings"
+      ],
+      "fields": [
+        {
+          "label": "Elapsed time",
+          "id": "metricsExpireTime",
+          "type": "number",
+          "model": "metricsExpireTime",
+          "placeholder": "Long.MAX_VALUE",
+          "min": 1,
+          "tip": [
+            "Time in milliseconds after which a certain metric value is considered expired"
+          ]
+        },
+        {
+          "label": "History size",
+          "id": "metricsHistorySize",
+          "type": "number",
+          "model": "metricsHistorySize",
+          "placeholder": 10000,
+          "min": 1,
+          "tip": [
+            "Number of metrics kept in history to compute totals and averages"
+          ]
+        },
+        {
+          "label": "Log frequency",
+          "id": "metricsLogFrequency",
+          "type": "number",
+          "model": "metricsLogFrequency",
+          "placeholder": 60000,
+          "tip": [
+            "Frequency of metrics log print out. To disable set to 0"
+          ]
+        },
+        {
+          "label": "Update frequency",
+          "id": "metricsUpdateFrequency",
+          "type": "number",
+          "model": "metricsUpdateFrequency",
+          "placeholder": 60000,
+          "tip": [
+            "Job metrics update frequency in milliseconds",
+            "<ul>",
+            "  <li>If set to -1 job metrics are never updated</li>",
+            "  <li>If set to 0 job metrics are updated on each job start and finish</li>",
+            "  <li>Positive value defines the actual update frequency</li>",
+            "</ul>"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Peer class loading",
+      "group": "p2p",
+      "tip": [
+        "Cluster peer class loading settings"
+      ],
+      "fields": [
+        {
+          "label": "Enable peer class loading",
+          "id": "peerClassLoadingEnabled",
+          "type": "check",
+          "model": "peerClassLoadingEnabled",
+          "tip": [
+            "Enables/disables peer class loading"
+          ]
+        },
+        {
+          "label": "Missed resources cache size",
+          "id": "peerClassLoadingMissedResourcesCacheSize",
+          "type": "number",
+          "model": "peerClassLoadingMissedResourcesCacheSize",
+          "disabled": "!backupItem.peerClassLoadingEnabled",
+          "placeholder": 100,
+          "tip": [
+            "If size greater than 0, missed resources will be cached and next resource request ignored",
+            "If size is 0, then request for the resource will be sent to the remote node every time this resource is requested"
+          ]
+        },
+        {
+          "label": "Pool size",
+          "id": "peerClassLoadingThreadPoolSize",
+          "type": "number",
+          "model": "peerClassLoadingThreadPoolSize",
+          "disabled": "!backupItem.peerClassLoadingEnabled",
+          "placeholder": "availableProcessors",
+          "tip": [
+            "Thread pool size to use for peer class loading"
+          ]
+        },
+        {
+          "label": "Local class path exclude",
+          "id": "peerClassLoadingLocalClassPathExclude",
+          "type": "table-simple",
+          "model": "peerClassLoadingLocalClassPathExclude",
+          "disabled": "!backupItem.peerClassLoadingEnabled",
+          "focusId": "PeerClsPathExclude",
+          "addTip": "Add package name",
+          "removeTip": "Remove package name",
+          "tableTip": [
+            "List of packages from the system classpath that need to be peer-to-peer loaded from task originating node",
+            "'*' is supported at the end of the package name which means that all sub-packages and their classes are included like in Java package import clause"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "SSL configuration",
+      "group": "sslConfiguration",
+      "tip": [
+        "Settings for SSL configuration"
+      ],
+      "fields": [
+        {
+          "label": "Enabled",
+          "id": "sslEnabled",
+          "type": "check",
+          "model": "sslEnabled",
+          "tip": [
+            "Flag indicating whether to configure SSL configuration"
+          ]
+        },
+        {
+          "label": "Algorithm to create a key manager",
+          "id": "keyAlgorithm",
+          "type": "typeahead",
+          "path": "sslContextFactory",
+          "model": "keyAlgorithm",
+          "placeholder": "SumX509",
+          "items": "sslKeyAlgorithms",
+          "hide": "!backupItem.sslEnabled",
+          "tip": [
+            "Sets key manager algorithm that will be used to create a key manager",
+            "Notice that in most cased default value suites well, however, on Android platform this value need to be set to X509"
+          ]
+        },
+        {
+          "label": "Key store file",
+          "id": "keyStoreFilePath",
+          "type": "text",
+          "path": "sslContextFactory",
+          "model": "keyStoreFilePath",
+          "required": true,
+          "hide": "!backupItem.sslEnabled",
+          "tip": [
+            "Path to the key store file",
+            "This is a mandatory parameter since ssl context could not be initialized without key manager"
+          ]
+        },
+        {
+          "label": "Key store type",
+          "id": "keyStoreType",
+          "type": "typeahead",
+          "path": "sslContextFactory",
+          "model": "keyStoreType",
+          "placeholder": "JKS",
+          "items": "sslStoreType",
+          "hide": "!backupItem.sslEnabled",
+          "tip": [
+            "Key store type used in context initialization"
+          ]
+        },
+        {
+          "label": "Protocol",
+          "id": "protocol",
+          "type": "typeahead",
+          "path": "sslContextFactory",
+          "model": "protocol",
+          "placeholder": "TSL",
+          "items": "sslProtocols",
+          "hide": "!backupItem.sslEnabled",
+          "tip": [
+            "Protocol for secure transport"
+          ]
+        },
+        {
+          "label": "Trust managers",
+          "type": "table-simple",
+          "path": "sslContextFactory",
+          "model": "trustManagers",
+          "placeholder": "Trust manager",
+          "focusId": "trustManagers",
+          "addTip": "Add new trust manager.",
+          "removeTip": "Remove trust manager",
+          "hide": "!backupItem.sslEnabled",
+          "tableTip": [
+            "Pre-configured trust managers"
+          ]
+        },
+        {
+          "label": "Trust store file",
+          "id": "trustStoreFilePath",
+          "type": "text",
+          "path": "sslContextFactory",
+          "model": "trustStoreFilePath",
+          "hide": "!backupItem.sslEnabled || trustManagersConfigured()",
+          "tip": [
+            "Path to the trust store file"
+          ]
+        },
+        {
+          "label": "Trust store type",
+          "id": "trustStoreType",
+          "type": "typeahead",
+          "path": "sslContextFactory",
+          "model": "trustStoreType",
+          "placeholder": "JKS",
+          "items": "sslStoreType",
+          "hide": "!backupItem.sslEnabled || trustManagersConfigured()",
+          "tip": [
+            "Trust store type used in context initialization"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Swap",
+      "group": "swap",
+      "tip": [
+        "Settings for overflow data to disk if it cannot fit in memory"
+      ],
+      "fields": [
+        {
+          "label": "Swap space SPI",
+          "id": "swapSpaceSpi",
+          "type": "dropdown-details",
+          "settings": true,
+          "path": "swapSpaceSpi",
+          "model": "kind",
+          "items": "swapSpaceSpis",
+          "placeholder": "Choose swap SPI",
+          "tip": [
+            "Provides a mechanism in grid for storing data on disk",
+            "Ignite cache uses swap space to overflow data to disk if it cannot fit in memory"
+          ],
+          "details": {
+            "FileSwapSpaceSpi": {
+              "fields": [
+                {
+                  "label": "Base directory",
+                  "type": "text",
+                  "path": "swapSpaceSpi.FileSwapSpaceSpi",
+                  "model": "baseDirectory",
+                  "placeholder": "swapspace",
+                  "tip": [
+                    "Base directory where to write files"
+                  ]
+                },
+                {
+                  "label": "Read stripe size",
+                  "type": "number",
+                  "path": "swapSpaceSpi.FileSwapSpaceSpi",
+                  "model": "readStripesNumber",
+                  "placeholder": "available CPU cores",
+                  "tip": [
+                    "Read stripe size defines number of file channels to be used concurrently"
+                  ]
+                },
+                {
+                  "label": "Maximum sparsity",
+                  "type": "number",
+                  "path": "swapSpaceSpi.FileSwapSpaceSpi",
+                  "model": "maximumSparsity",
+                  "placeholder": 0.5,
+                  "tip": [
+                    "This property defines maximum acceptable wasted file space to whole file size ratio",
+                    "When this ratio becomes higher than specified number compacting thread starts working"
+                  ]
+                },
+                {
+                  "label": "Max write queue size",
+                  "type": "number",
+                  "path": "swapSpaceSpi.FileSwapSpaceSpi",
+                  "model": "maxWriteQueueSize",
+                  "placeholder": "1024 * 1024",
+                  "tip": [
+                    "Max write queue size in bytes",
+                    "If there are more values are waiting for being written to disk then specified size, SPI will block on store operation"
+                  ]
+                },
+                {
+                  "label": "Write buffer size",
+                  "type": "number",
+                  "path": "swapSpaceSpi.FileSwapSpaceSpi",
+                  "model": "writeBufferSize",
+                  "placeholder": "Available CPU cores",
+                  "tip": [
+                    "Write buffer size in bytes",
+                    "Write to disk occurs only when this buffer is full"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "label": "Time configuration",
+      "group": "time",
+      "tip": [
+        "Time settings for CLOCK write ordering mode"
+      ],
+      "fields": [
+        {
+          "label": "Samples size",
+          "id": "clockSyncSamples",
+          "type": "number",
+          "model": "clockSyncSamples",
+          "placeholder": 8,
+          "tip": [
+            "Number of samples used to synchronize clocks between different nodes",
+            "Clock synchronization is used for cache version assignment in CLOCK order mode"
+          ]
+        },
+        {
+          "label": "Frequency",
+          "id": "clockSyncFrequency",
+          "type": "number",
+          "model": "clockSyncFrequency",
+          "placeholder": 120000,
+          "tip": [
+            "Frequency at which clock is synchronized between nodes, in milliseconds",
+            "Clock synchronization is used for cache version assignment in CLOCK order mode"
+          ]
+        },
+        {
+          "label": "Port base",
+          "id": "timeServerPortBase",
+          "type": "number",
+          "model": "timeServerPortBase",
+          "max": 65535,
+          "placeholder": 31100,
+          "tip": [
+            "Time server provides clock synchronization between nodes",
+            "Base UPD port number for grid time server. Time server will be started on one of free ports in range"
+          ]
+        },
+        {
+          "label": "Port range",
+          "id": "timeServerPortRange",
+          "type": "number",
+          "model": "timeServerPortRange",
+          "placeholder": 100,
+          "tip": [
+            "Time server port range"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Thread pools size",
+      "group": "pools",
+      "tip": [
+        "Settings for node thread pools"
+      ],
+      "fields": [
+        {
+          "label": "Public",
+          "id": "publicThreadPoolSize",
+          "type": "number",
+          "model": "publicThreadPoolSize",
+          "placeholder": "max(8, availableProcessors) * 2",
+          "tip": [
+            "Thread pool that is in charge of processing ComputeJob, GridJobs and user messages sent to node"
+          ]
+        },
+        {
+          "label": "System",
+          "id": "systemThreadPoolSize",
+          "type": "number",
+          "model": "systemThreadPoolSize",
+          "placeholder": "max(8, availableProcessors) * 2",
+          "tip": [
+            "Thread pool that is in charge of processing internal system messages"
+          ]
+        },
+        {
+          "label": "Management",
+          "id": "managementThreadPoolSize",
+          "type": "number",
+          "model": "managementThreadPoolSize",
+          "placeholder": 4,
+          "tip": [
+            "Thread pool that is in charge of processing internal and Visor ComputeJob, GridJobs"
+          ]
+        },
+        {
+          "label": "IGFS",
+          "id": "igfsThreadPoolSize",
+          "type": "number",
+          "model": "igfsThreadPoolSize",
+          "placeholder": "availableProcessors",
+          "tip": [
+            "Thread pool that is in charge of processing outgoing IGFS messages"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Transactions",
+      "group": "transactions",
+      "tip": [
+        "Settings for transactions"
+      ],
+      "fields": [
+        {
+          "label": "Concurrency",
+          "id": "defaultTxConcurrency",
+          "type": "dropdown",
+          "path": "transactionConfiguration",
+          "model": "defaultTxConcurrency",
+          "placeholder": "PESSIMISTIC",
+          "items": "transactionConcurrency",
+          "tip": [
+            "Cache transaction concurrency to use when one is not explicitly specified"
+          ]
+        },
+        {
+          "label": "Isolation",
+          "id": "transactionIsolation",
+          "type": "dropdown",
+          "path": "transactionConfiguration",
+          "model": "transactionIsolation",
+          "placeholder": "REPEATABLE_READ",
+          "items": "transactionIsolation",
+          "tip": [
+            "Default transaction isolation"
+          ]
+        },
+        {
+          "label": "Default timeout",
+          "id": "defaultTxTimeout",
+          "type": "number",
+          "path": "transactionConfiguration",
+          "model": "defaultTxTimeout",
+          "placeholder": 0,
+          "tip": [
+            "Default transaction timeout"
+          ]
+        },
+        {
+          "label": "Pessimistic log cleanup delay",
+          "id": "pessimisticTxLogLinger",
+          "type": "number",
+          "path": "transactionConfiguration",
+          "model": "pessimisticTxLogLinger",
+          "placeholder": 10000,
+          "tip": [
+            "Delay, in milliseconds, after which pessimistic recovery entries will be cleaned up for failed node"
+          ]
+        },
+        {
+          "label": "Pessimistic log size",
+          "id": "pessimisticTxLogSize",
+          "type": "number",
+          "path": "transactionConfiguration",
+          "model": "pessimisticTxLogSize",
+          "placeholder": 0,
+          "tip": [
+            "Size of pessimistic transactions log stored on node in order to recover transaction commit if originating node has left grid before it has sent all messages to transaction nodes"
+          ]
+        },
+        {
+          "label": "Manager lookup",
+          "id": "txManagerLookupClassName",
+          "type": "text",
+          "path": "transactionConfiguration",
+          "model": "txManagerLookupClassName",
+          "tip": [
+            "Class name of transaction manager finder for integration for JEE app servers"
+          ]
+        },
+        {
+          "label": "Enable serializable cache transactions",
+          "id": "txSerializableEnabled",
+          "type": "check",
+          "path": "transactionConfiguration",
+          "model": "txSerializableEnabled",
+          "hide": "true",
+          "tip": [
+            "Flag to enable/disable isolation level for cache transactions",
+            "Serializable level does carry certain overhead and if not used, should be disabled"
+          ]
+        }
+      ]
+    }
+  ]
+}

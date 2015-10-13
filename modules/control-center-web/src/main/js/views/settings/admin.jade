@@ -1,0 +1,57 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+         http://www.apache.org/licenses/LICENSE-2.0
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+extends ../templates/layout
+
+append scripts
+    script(src='/admin-controller.js')
+
+block container
+    .row(ng-controller='adminController')
+        .docs-content
+            .docs-header
+                h1 List of registered users
+                hr
+            .docs-body
+                table.table.table-striped.admin(st-table='displayedUsers' st-safe-src='users')
+                    thead
+                        tr
+                            th.header(colspan='5')
+                                .col-sm-2.pull-right
+                                    input.form-control(type='text' st-search='' placeholder='Filter users...')
+                        tr
+                            th(st-sort='username') User name
+                            th(st-sort='email') Email
+                            th.col-sm-2(st-sort='lastLogin') Last login
+                            th(width='1%'  st-sort='admin') Admin
+                            th(width='1%') Actions
+                    tbody
+                        tr(ng-repeat='row in displayedUsers')
+                            td {{row.username}}
+                            td
+                                a(ng-href='mailto:{{row.email}}') {{row.email}}
+                            td
+                                span {{row.lastLogin | date:'medium'}}
+                            td(style='text-align: center;')
+                                input(type='checkbox' ng-disabled='row.adminChanging || row._id == user._id'
+                                    ng-model='row.admin' ng-change='toggleAdmin(row)')
+                            td(style='text-align: center;')
+                                div(ng-show='row._id != user._id')
+                                    i.fa.fa-remove(ng-click='removeUser(row)' bs-tooltip data-title='Remove user')
+                                    i.fa.fa-eye(ng-click='becomeUser(row)' style='margin-left: 5px'  bs-tooltip data-title='Become this user')
+                    tfoot
+                        tr
+                            td.text-right(colspan='5')
+                                div(st-pagination st-items-by-page='15' st-displayed-pages='5')
+

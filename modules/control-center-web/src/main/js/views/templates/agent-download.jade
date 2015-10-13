@@ -1,0 +1,49 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+         http://www.apache.org/licenses/LICENSE-2.0
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+.modal.center(tabindex='-1' role='dialog')
+    .modal-dialog
+        .modal-content
+            #errors-container.modal-header.header
+                button.close(ng-if='!checkConnection' ng-click='$hide()') &times;
+                h4.modal-title Connection to Ignite Web Agent is not established
+            .agent-download
+                p Please download and run&nbsp;
+                    a(href='javascript:void(0)' ng-click='downloadAgent()') ignite-web-agent
+                    | &nbsp;in order to {{::agentGoal}}.
+                p For installation:
+                ul
+                    li Download and unzip&nbsp;
+                        b ignite-web-agent
+                        | .
+                    li For list of options, run&nbsp;
+                        b ignite-web-agent.{sh|bat} --help
+                        | .
+                    li To test drive, run&nbsp;
+                        b ignite-web-agent.{sh|bat} {{::agentTestDriveOption}}
+                        | .
+                    li Refer to&nbsp;
+                        b README.txt
+                        | &nbsp;for more information.
+                .modal-advanced-options
+                    i.fa.fa-chevron-circle-up(ng-show='agentLoad.showToken' ng-click='agentLoad.showToken = ! agentLoad.showToken')
+                    i.fa.fa-chevron-circle-down(ng-show='!agentLoad.showToken' ng-click='agentLoad.showToken = ! agentLoad.showToken')
+                    a(ng-click='agentLoad.showToken = ! agentLoad.showToken') {{agentLoad.showToken ? 'Hide security token...' : 'Show security token...'}}
+                .details-row(ng-show='agentLoad.showToken')
+                    label.labelField Security token: {{user.token}}
+                    i.tipLabel.fa.fa-clipboard(ng-click-copy='{{user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
+                    i.tipLabel.fa.fa-question-circle(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
+            .modal-footer
+                button.btn.btn-default(ng-if='checkConnection' ng-click='goHome()') Back to Configuration
+                button.btn.btn-primary(ng-click='downloadAgent()') Download zip

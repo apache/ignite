@@ -1,0 +1,21 @@
+Ignite Web Console Instructions
+======================================
+
+How to deploy:
+
+1. Install locally NodeJS using installer from site https://nodejs.org for your OS.
+2. Install locally MongoDB follow instructions from site http://docs.mongodb.org/manual/installation
+3. Checkout ignite-843 branch.
+4. Change directory '$IGNITE_HOME/modules/control-center-web/src/main/js'.
+5. Run "npm install" in terminal for download all dependencies.
+
+Steps 1 - 5 should be executed once.
+
+How to run:
+
+1. Run MongoDB.
+ 1.1 In terminal change dir to $MONGO_INSTALL_DIR/server/3.0/bin.
+ 1.2 Run "mongod".
+2. In new terminal change directory '$IGNITE_HOME/modules/control-center-web/src/main/js'.
+3. Start application by executing "npm start".
+4. In browser open: http://localhost:3000

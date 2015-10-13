@@ -1,0 +1,82 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+doctype html
+html(ng-app='ignite-web-console' ng-init='user = #{JSON.stringify(user)}; becomeUsed = #{becomeUsed}')
+    head
+        title=title
+
+        block css
+            // Font Awesome Icons
+            link(rel='stylesheet', href='//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.css')
+
+            // Font
+            link(rel='stylesheet', href='//fonts.googleapis.com/css?family=Roboto+Slab:700:serif|Roboto+Slab:400:serif')
+            link(rel='stylesheet', href='//cdnjs.cloudflare.com/ajax/libs/angular-motion/0.4.2/angular-motion.min.css')
+            link(rel='stylesheet', href='//cdn.rawgit.com/wix/angular-tree-control/master/css/tree-control.css')
+            link(rel='stylesheet', href='//cdn.rawgit.com/wix/angular-tree-control/master/css/tree-control-attribute.css')
+            link(rel='stylesheet'  href='//rawgithub.com/darthwade/angular-loading/master/angular-loading.css')
+            link(rel='stylesheet'  href='//cdn.rawgit.com/ceolter/ag-grid/master/dist/ag-grid.css')
+            link(rel='stylesheet', href='/stylesheets/style.css')
+
+        block scripts
+            script(src='/common-utils.js')
+
+            script(src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.js')
+
+            script(src='//cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.min.js')
+
+            script(src='//ajax.googleapis.com/ajax/libs/angularjs/1.4.6/angular.min.js')
+            script(src='//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.6/angular-sanitize.min.js')
+            script(src='//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.6/angular-animate.min.js')
+
+            // script(src='//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.3.2/angular-strap.js')
+            // script(src='/js/angular-strap-2.3.2.js')
+            // TODO IGNITE-843: Forked Angular Strap with fix for https://github.com/mgcrea/angular-strap/issues/1852
+            script(src='//cdn.rawgit.com/akuznetsov-gridgain/angular-strap/fix-1852/dist/angular-strap.min.js')
+            script(src='//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.3.2/angular-strap.tpl.min.js')
+
+            script(src='//cdnjs.cloudflare.com/ajax/libs/angular-smart-table/2.1.3/smart-table.js')
+
+            script(src='//cdnjs.cloudflare.com/ajax/libs/ace/1.2.0/ace.js')
+            script(src='//cdnjs.cloudflare.com/ajax/libs/ace/1.2.0/theme-chrome.js')
+            script(src='//angular-ui.github.io/ui-ace/dist/ui-ace.min.js')
+
+            script(src='//cdn.rawgit.com/wix/angular-tree-control/master/angular-tree-control.js')
+
+            script(src='//cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js')
+            script(src='//rawgithub.com/darthwade/angular-loading/master/angular-loading.min.js')
+
+            script(src='//cdn.rawgit.com/ceolter/ag-grid/master/dist/ag-grid.js')
+
+            script(src='//cdnjs.cloudflare.com/ajax/libs/angular-drag-and-drop-lists/1.3.0/angular-drag-and-drop-lists.min.js')
+
+            script(src='//cdn.rawgit.com/krispo/angular-nvd3/master/dist/angular-nvd3.min.js')
+
+            script(src='/common-module.js')
+            script(src='/data-structures.js')
+
+    body.theme-line.body-overlap.greedy
+        .wrapper
+            block body
+                include ../includes/header
+
+                block main-container
+                    .container.body-container
+                        .main-content
+                            block container
+
+                include ../includes/footer

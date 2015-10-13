@@ -1,0 +1,124 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+extends sidebar
+
+append scripts
+    script(src='//cdnjs.cloudflare.com/ajax/libs/ace/1.2.0/mode-dockerfile.js')
+
+    script(src='/generator-docker.js')
+    script(src='/summary-controller.js')
+
+include ../includes/controls
+
+mixin hard-link(ref, txt)
+    a(style='color:#ec1c24' href=ref target='_blank') #{txt}
+
+mixin btn-download(side)
+    .panel-tip-container(style='float: right;' data-placement='bottom' bs-tooltip='"Download #{side} configuration"')
+        button.btn.btn-primary.pull-right(type='submit' ng-click='$event.stopPropagation()') Download
+
+mixin pojos(side)
+    div(bs-pane title='POJO' ng-show='pojoAvailable()')
+        .details-row
+            .col-xs-2.col-sm-2.col-md-2
+                label POJO class:
+            .col-xs-10.col-sm-10.col-md-10
+                button.select-toggle.form-control(ng-model='config#{side}.pojoClass' bs-select bs-options='item for item in pojoClasses()')
+            .col-xs-2.col-sm-2.col-md-2
+                label
+            .col-xs-10.col-sm-10.col-md-10
+                input(type='checkbox' ng-model='configServer.useConstructor')
+                | Generate constructors
+            .col-xs-2.col-sm-2.col-md-2
+                label
+            .col-xs-10.col-sm-10.col-md-10
+                input(type='checkbox' ng-model='configServer.includeKeyFields')
+                | Include key fields
+        div(ui-ace='{ onLoad: aceInit, mode: "java" }' ng-model='config#{side}.pojoClassBody')
+
+block content
+    .docs-header
+        h1 Configurations Summary
+    .docs-body(ng-controller='summaryController' dw-loading='loadingSummaryScreen' dw-loading-options='{text: "Loading summary screen...", className: "page-loading-overlay"}')
+        +block-callout('{{screenTip.workflowTitle}}', 'screenTip.workflowContent', '{{screenTip.whatsNextTitle}}', 'screenTip.whatsNextContent')
+        hr
+        .padding-dflt(ng-if='clusters.length == 0')
+            | You have no clusters configured. Please configure them &nbsp;
+            a(href='clusters') here.
+        +main-table('Clusters:', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}')
+        div(ng-show='selectedItem' role='tab' method='post' action='summary/download')
+            .padding-dflt(bs-collapse data-start-collapsed='false')
+                .panel.panel-default
+                    form.panel-heading(role='tab' method='post' action='summary/download' bs-collapse-toggle) Server
+                        input(type='hidden' name='_id' value='{{selectedItem._id}}')
+                        input(type='hidden' name='os' value='{{os}}')
+                        input(type='hidden' name='javaClass' value='{{javaClassServer}}')
+                        input(type='hidden' name='useConstructor' value='{{configServer.useConstructor}}')
+                        input(type='hidden' name='includeKeyFields' value='{{configServer.includeKeyFields}}')
+                        +btn-download('server')
+                    .panel-collapse(role='tabpanel' bs-collapse-target)
+                        .summary-tabs(bs-tabs data-bs-active-pane="tabsServer.activeTab" ng-show='selectedItem' template='summary/summary-tabs')
+                            div(bs-pane title='XML')
+                                div(ui-ace='{ onLoad: aceInit, mode: "xml" }' ng-model='xmlServer')
+                            div(bs-pane title='Java')
+                                .details-row
+                                    .col-xs-2.col-sm-2.col-md-1
+                                        label Generate:
+                                    .col-xs-4.col-sm-3.col-md-3
+                                        button.select-toggle.form-control(ng-model='configServer.javaClassServer' bs-select bs-options='item.value as item.label for item in javaClassItems' data-sort='false')
+                                div(ui-ace='{ onLoad: aceInit, mode: "java" }' ng-model='javaServer')
+                            +pojos('Server')
+                            div(bs-pane title='Dockerfile')
+                                .details-row
+                                    p
+                                        +hard-link('https://docs.docker.com/reference/builder', 'Docker')
+                                        | &nbsp;file is a text file with instructions to create Docker image.<br/>
+                                        | To build image you have to store following Docker file with your Ignite XML configuration to the same directory.<br>
+                                        | Also you could use predefined&nbsp;
+                                        +hard-link('https://ignite.apache.org/download.html#docker', 'Apache Ignite docker image')
+                                        | . For more information about using Ignite with Docker please read&nbsp;
+                                        +hard-link('http://apacheignite.readme.io/docs/docker-deployment', 'documentation')
+                                        |.
+                                    .col-xs-3.col-sm-2
+                                        label(for='os') Operation System:
+                                    .col-xs-5.col-sm-4
+                                        input#os.form-control(type='text' ng-model='configServer.os' placeholder='debian:8' data-min-length='0' data-html='1' data-auto-select='true' bs-typeahead retain-selection bs-options='os for os in oss')
+                                div(ui-ace='{ onLoad: aceInit, mode: "dockerfile" }' ng-model='dockerServer')
+            .padding-dflt(bs-collapse data-start-collapsed='false')
+                .panel.panel-default
+                    form.panel-heading(role='tab' method='post' action='summary/download' bs-collapse-toggle) Client
+                        input(type='hidden' name='_id' value='{{selectedItem._id}}')
+                        input(type='hidden' name='javaClass' value='{{javaClassClient}}')
+                        input(type='hidden' name='clientNearConfiguration' value='{{backupItem}}')
+                        input(type='hidden' name='useConstructor' value='{{configServer.useConstructor}}')
+                        input(type='hidden' name='includeKeyFields' value='{{configServer.includeKeyFields}}')
+                        +btn-download('client')
+                    .panel-collapse(role='tabpanel' bs-collapse-target)
+                        div(ng-show='selectedItem')
+                            .details-row(ng-repeat='field in clientFields')
+                                +form-row-custom(['col-xs-4 col-sm-4 col-md-3'], ['col-xs-4 col-sm-4 col-md-3'], 'backupItem')
+                            .summary-tabs(bs-tabs data-bs-active-pane="tabsClient.activeTab" template='summary/summary-tabs')
+                                div(bs-pane title='XML')
+                                    div(ui-ace='{ onLoad: aceInit, mode: "xml" }' ng-model='xmlClient')
+                                div(bs-pane title='Java')
+                                    .details-row
+                                        .col-xs-2.col-sm-2.col-md-1
+                                            label Generate:
+                                        .col-xs-4.col-sm-3.col-md-3
+                                            button.select-toggle.form-control(ng-model='backupItem.javaClassClient' bs-select bs-options='item.value as item.label for item in javaClassItems' data-sort='false')
+                                    div(ui-ace='{ onLoad: aceInit, mode: "java" }' ng-model='javaClient')
+                                +pojos('Client')

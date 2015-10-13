@@ -1,0 +1,26 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+         http://www.apache.org/licenses/LICENSE-2.0
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+.popover.cache-metadata(tabindex='-1' dw-loading='loadingCacheMetadata' dw-loading-options='{text: ""}' ng-init='tryLoadMetadata(cache)')
+    h3.popover-title Metadata for: <b>{{cache.name}}</b></br>Cache mode: <b>{{cache.mode}}</b>
+    button.close(id='cache-metadata-close' ng-click='$hide()') &times;
+    .popover-content(ng-if='cache.metadata && cache.metadata.length > 0')
+        treecontrol.tree-classic(tree-model='cache.metadata' options='treeOptions')
+            label.clickable(ng-if='node.type == "type"' ng-dblclick='dblclickMetadata(paragraph, node)') {{node.name}}
+            label.clickable(ng-if='node.type == "field"' ng-dblclick='dblclickMetadata(paragraph, node)') {{node.name}} [{{node.clazz}}]
+            label(ng-if='node.type == "indexes"') {{node.name}}
+            label(ng-if='node.type == "index"') {{node.name}}
+            label.clickable(ng-if='node.type == "index-field"' ng-dblclick='dblclickMetadata(paragraph, node)') {{node.name}} [{{node.order ? 'ASC' : 'DESC'}}]
+    .popover-content(ng-if='!cache.metadata || cache.metadata.length == 0')
+        label.content-empty No types found
+    h3.popover-footer Double click to paste into editor

@@ -1,0 +1,279 @@
+{
+  "screenTip": {
+    "workflowTitle": "On This Screen:",
+    "workflowContent": [
+      "Manually enter Metadata",
+      "Load Metadata from Database",
+      "more-info"
+    ],
+    "whatsNextTitle": "Next Steps:",
+    "whatsNextContent": [
+      "Continue to <a href='/configuration/summary'>Summary</a>",
+      "Back to <a href='/configuration/caches'>Caches</a>",
+      "Back to <a href='/configuration/clusters'>Clusters</a>"
+    ]
+  },
+  "moreInfo": {
+    "title": "Metadata page",
+    "content": ["Manage you type metadata on current page.",
+      "Metadata can be assigned to specified <a href='/configuration/caches'>caches</a>.",
+      "Generated cluster with caches with metadata configuration available on <a href='/configuration/summary'>summary</a> page."]
+  },
+  "metadata": [
+    {
+      "label": "Metadata common",
+      "group": "general",
+      "tip": [
+        "Metadata properties common to Query and Store"
+      ],
+      "fields": [
+        {
+          "label": "Caches",
+          "id": "caches",
+          "type": "dropdown-multiple",
+          "model": "caches",
+          "placeholder": "Choose caches",
+          "placeholderEmpty": "No caches configured",
+          "items": "caches",
+          "tip": [
+            "Select caches to associate database with cache"
+          ],
+          "addLink": {
+            "label": "Add cache(s)",
+            "ref": "/configuration/caches?new"
+          }
+        },
+        {
+          "label": "Key type",
+          "id": "keyType",
+          "type": "typeahead",
+          "items": "javaBuildInClasses",
+          "model": "keyType",
+          "required": true,
+          "placeholder": "Full class name for Key",
+          "tip": [
+            "Key class used to store key in cache"
+          ]
+        },
+        {
+          "label": "Value type",
+          "id": "valueType",
+          "type": "text",
+          "model": "valueType",
+          "required": true,
+          "placeholder": "Full class name for Value",
+          "tip": [
+            "Value class used to store value in cache"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Metadata for SQL query",
+      "group": "query",
+      "tip": [
+        "Metadata properties for fields queries"
+      ],
+      "fields": [
+        {
+          "label": "Not indexed fields",
+          "id": "queryFields",
+          "ui": "table-pair",
+          "type": "queryFieldsFirst",
+          "model": "queryFields",
+          "keyName": "name",
+          "valueName": "className",
+          "focusId": "QryField",
+          "addTip": "Add not indexed field to query",
+          "removeTip": "Remove field",
+          "tip": [
+            "Collection of name-to-type mappings to be queried, in addition to indexed fields"
+          ]
+        },
+        {
+          "label": "Ascending indexed fields",
+          "id": "ascendingFields",
+          "ui": "table-pair",
+          "type": "queryFields",
+          "model": "ascendingFields",
+          "keyName": "name",
+          "valueName": "className",
+          "focusId": "AscField",
+          "addTip": "Add field to index in ascending order",
+          "removeTip": "Remove field",
+          "tip": [
+            "Collection of name-to-type mappings to index in ascending order"
+          ]
+        },
+        {
+          "label": "Descending indexed fields",
+          "id": "descendingFields",
+          "ui": "table-pair",
+          "type": "queryFields",
+          "model": "descendingFields",
+          "keyName": "name",
+          "valueName": "className",
+          "focusId": "DescField",
+          "addTip": "Add field to index in descending order",
+          "removeTip": "Remove field",
+          "tip": [
+            "Collection of name-to-type mappings to index in descending order"
+          ]
+        },
+        {
+          "label": "Text indexed fields",
+          "id": "textFields",
+          "type": "table-simple",
+          "model": "textFields",
+          "placeholder": "Field name",
+          "focusId": "TextField",
+          "addTip": "Add field to index as text",
+          "removeTip": "Remove field",
+          "tableTip": [
+            "Fields to index as text"
+          ],
+          "tip": [
+            "Field to index as text"
+          ]
+        },
+        {
+          "label": "Group indexes",
+          "id": "groups",
+          "type": "table-query-groups",
+          "model": "groups",
+          "addTip": "Add new group",
+          "removeTip": "Remove group",
+          "addItemTip": "Add new field to group",
+          "removeItemTip": "Remove field from group",
+          "tip": [
+            "Collection of group indexes"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Metadata for cache store",
+      "group": "store",
+      "tip": [
+        "Metadata properties for binding database with cache via POJO cache store"
+      ],
+      "fields": [
+        {
+          "label": "Database schema",
+          "id": "databaseSchema",
+          "type": "text",
+          "model": "databaseSchema",
+          "placeholder": "Input DB schema name",
+          "tip": [
+            "Schema name in database"
+          ]
+        },
+        {
+          "label": "Database table",
+          "id": "databaseTable",
+          "type": "text",
+          "model": "databaseTable",
+          "placeholder": "Input DB table name",
+          "tip": [
+            "Table name in database"
+          ]
+        },
+        {
+          "label": "Key fields",
+          "id": "keyFields",
+          "type": "table-db-fields",
+          "model": "keyFields",
+          "keyName": "name",
+          "valueName": "className",
+          "hide": "isJavaBuildInClass()",
+          "focusId": "KeyField",
+          "addTip": "Add key field",
+          "removeTip": "Remove key field",
+          "tip": [
+            "Collection of key fields descriptions for CacheJdbcPojoStore"
+          ]
+        },
+        {
+          "label": "Value fields",
+          "id": "valueFields",
+          "type": "table-db-fields",
+          "model": "valueFields",
+          "keyName": "name",
+          "valueName": "className",
+          "focusId": "ValueField",
+          "addTip": "Add value field",
+          "removeTip": "Remove value field",
+          "tip": [
+            "Collection of value fields descriptions for CacheJdbcPojoStore"
+          ]
+        }
+      ]
+    }
+  ],
+  "metadataDb": [
+    {
+      "label": "Driver JAR",
+      "id": "jdbcDriverJar",
+      "type": "dropdown",
+      "container": "false",
+      "model": "jdbcDriverJar",
+      "items": "jdbcDriverJars",
+      "tip": [
+        "Select appropriate JAR with JDBC driver",
+        "To add another driver you need to place it into '/drivers' folder of Ignite Web Agent",
+        "Refer to Ignite Web Agent README.txt for for more information"
+      ]
+    },
+    {
+      "label": "JDBC Driver",
+      "id": "jdbcDriverClass",
+      "type": "text",
+      "model": "jdbcDriverClass",
+      "placeholder": "Full class name of JDBC driver",
+      "tip": [
+        "Full class name of JDBC driver that will be used to connect to database"
+      ]
+    },
+    {
+      "label": "JDBC URL",
+      "id": "jdbcUrl",
+      "type": "text",
+      "model": "jdbcUrl",
+      "placeholder": "JDBC URL",
+      "tip": [
+        "JDBC URL for connecting to database.",
+        "Refer to your database documentation for details"
+      ]
+    },
+    {
+      "label": "User",
+      "id": "user",
+      "type": "text",
+      "model": "user",
+      "tip": [
+        "User name for connecting to database"
+      ]
+    },
+    {
+      "label": "Password",
+      "id": "password",
+      "type": "password",
+      "model": "password",
+      "onEnter": "loadMetadataNext()",
+      "tip": [
+        "Password for connecting to database",
+        "Note, password would not be saved"
+      ]
+    },
+    {
+      "label": "Tables only",
+      "id": "tablesOnly",
+      "type": "check",
+      "model": "tablesOnly",
+      "tip": [
+        "If selected then only tables metadata will be parsed",
+        "Otherwise table and view metadata will be parsed"
+      ]
+    }
+  ]
+}

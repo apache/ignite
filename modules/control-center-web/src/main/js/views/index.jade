@@ -1,0 +1,141 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+extends templates/layout
+
+append scripts
+    script(src='//cdn.rawgit.com/twbs/bootstrap/master/js/carousel.js')
+
+mixin lbl(txt)
+    label.col-xs-3.col-md-3.required #{txt}
+
+block body
+    header#header.header
+        .container
+            h1.navbar-brand
+                a(href='/') Apache Ignite Web Configurator
+            p.navbar-text(style='font-size: 18px;') Apache Ignite Web Console
+
+    .container.body-container
+        .main-content(ng-controller='auth')
+            .row.greedy.home
+                .col-xs-12.col-md-6
+                    form(name='loginForm')
+                        .modal-body.row(style='padding: 0; margin: 0')
+                            .settings-row(ng-if='action == "register"')
+                                h3.login-header Sign Up
+                            .settings-row(ng-if='action == "login"')
+                                h3.login-header Sign In
+                            .settings-row(ng-if='action == "password/forgot"')
+                                h3.login-header Forgot password?
+                            .settings-row
+                                p.col-xs-12.col-md-11(ng-show='action == "password/forgot"')
+                                    | That's ok! Simply enter your email below and a reset password link will be sent to you via email. You can then follow that link and select a new password.
+                            .settings-row(ng-show='action == "register"')
+                                +lbl('Full Name:')
+                                .col-xs-9.col-md-8
+                                    input#user_name.form-control(enter-focus-next='user_email' type='text' ng-model='user_info.username' placeholder='John Smith' ng-required='action=="register"')
+                            .settings-row
+                                +lbl('Email:')
+                                .col-xs-9.col-md-8
+                                    input#user_email.form-control(enter-focus-next='user_password' type='email' ng-model='user_info.email' placeholder='you@domain.com' required on-enter='action == "password/forgot" && loginForm.$valid && auth(action, user_info)')
+                            .settings-row(ng-show='action != "password/forgot"')
+                                +lbl('Password:')
+                                .col-xs-9.col-md-8
+                                    input#user_password.form-control(enter-focus-next='user_confirm' type='password' ng-model='user_info.password' placeholder='Password' ng-required='action != "password/forgot"' on-enter='action == "login" && loginForm.$valid && auth(action, user_info)')
+                            .settings-row(ng-if='action == "register"')
+                                +lbl('Confirm:')
+                                .col-xs-9.col-md-8
+                                    input#user_confirm.form-control(type='password' ng-model='user_info.confirm' match='user_info.password' placeholder='Confirm password' ng-required='action == "register"' on-enter='loginForm.$valid && auth(action, user_info)')
+                        .col-xs-12.col-md-11
+                            .login-footer(ng-show='action == "register"')
+                                a.labelField(ng-click='action = "password/forgot"' on-click-focus='user_email') Forgot password?
+                                a.labelLogin(ng-click='action = "login"' on-click-focus='user_email') Sign In
+                                button#signup.btn.btn-primary(ng-click='auth(action, user_info)' ng-disabled='loginForm.$invalid') Sign Up
+                        .col-xs-12.col-md-11
+                            .login-footer(ng-show='action == "password/forgot"')
+                                a.labelField(ng-click='action = "login"' on-click-focus='user_email') Sign In
+                                button#forgot.btn.btn-primary(ng-click='auth(action, user_info)' ng-disabled='loginForm.$invalid') Send it to me
+                        .col-xs-12.col-md-11
+                            .login-footer(ng-show='action == "login"')
+                                a.labelField(ng-click='action = "password/forgot"' on-click-focus='user_email') Forgot password?
+                                a.labelLogin(ng-click='action = "register"' on-click-focus='user_name') Sign Up
+                                button#login.btn.btn-primary(ng-click='auth(action, user_info)' ng-disabled='loginForm.$invalid') Sign In
+
+                    .col-xs-12.col-md-11.home-panel
+                        p Apache Ignite Web Console is an interactive web management tool which allows users to:
+                        ul
+                            li Create and download various configurations for Apache Ignite
+                            li Automatically load SQL metadata form any RDBMS
+                            li Connect to Ignite cluster and run SQL analytics on it
+                .col-xs-12.col-md-6
+                    #carousel.carousel.slide(data-ride='carousel')
+                        // Indicators
+                        ol.carousel-indicators
+                            li.active(data-target='#carousel', data-slide-to='0')
+                            li(data-target='#carousel', data-slide-to='1')
+                            li(data-target='#carousel', data-slide-to='2')
+                            li(data-target='#carousel', data-slide-to='3')
+                            li(data-target='#carousel', data-slide-to='4')
+                            li(data-target='#carousel', data-slide-to='5')
+                            li(data-target='#carousel', data-slide-to='6')
+                        // Wrapper for slides
+                        .carousel-inner(role='listbox')
+                            .item.active
+                                img(src='/images/cluster.png', alt='Cluster screen')
+                                .carousel-caption
+                                    h3 Clusters screen
+                                    p Configure clusters, link clusters to caches
+                            .item
+                                img(src='/images/cache.png', alt='Caches screen')
+                                .carousel-caption
+                                    h3 Caches screen
+                                    p Configure caches, link metadata to caches, link caches to clusters
+                            .item
+                                img(src='/images/metadata.png', alt='Metadatas screen')
+                                .carousel-caption
+                                    h3 Metadata screen
+                                    p Manually enter metadata or load from database
+                            .item
+                                img(src='/images/summary.png', alt='Summary screen')
+                                .carousel-caption
+                                    h3 Summary screen
+                                    p Download XML config, JAVA code, Docker file
+                            .item
+                                img(src='/images/query-table.png', alt='Query')
+                                .carousel-caption
+                                    h3 Query
+                                    p Explain SQL, execute, scan queries
+                            .item
+                                img(src='/images/query-metadata.png', alt='Cache metadata')
+                                .carousel-caption
+                                    h3 Cache metadata
+                                    p View cache type metadata
+                            .item
+                                img(src='/images/query-chart.png', alt='Query chart')
+                                .carousel-caption
+                                    h3 Query chart
+                                    p View data in tabular form and as charts
+                        // Controls
+                        a.left.carousel-control(href='#carousel', role='button', data-slide='prev')
+                            span.fa.fa-chevron-left(aria-hidden='true')
+                            span.sr-only Previous
+                        a.right.carousel-control(href='#carousel', role='button', data-slide='next')
+                            span.fa.fa-chevron-right(aria-hidden='true')
+                            span.sr-only Next
+    include includes/footer
+
+

@@ -1,0 +1,89 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../includes/controls
+
+mixin chk(mdl, change, tip)
+    input(type='checkbox' ng-model=mdl ng-change=change bs-tooltip='' data-title=tip data-placement='bottom')
+
+.modal.center(role='dialog')
+    .modal-dialog
+        .modal-content(dw-loading='loadingMetadataFromDb' dw-loading-options='{text: ""}')
+            #errors-container.modal-header.header
+                button.close(ng-click='$hide()' aria-hidden='true') &times;
+                h4.modal-title Load metadata from database
+            .metadata-content(ng-show='loadMeta.action == "connect"' style='margin-bottom: 60px')
+                form.form-horizontal(name='loadForm' novalidate)
+                    .settings-row(ng-repeat='field in metadataDb')
+                        +form-row-custom(['col-xs-4 col-sm-3 col-md-3'], ['col-xs-8 col-sm-9 col-md-9'], 'preset')
+            .metadata-content(ng-show='loadMeta.action == "schemas"')
+                table.table.metadata(st-table='loadMeta.displayedSchemas' st-safe-src='loadMeta.schemas')
+                    thead
+                        tr
+                            th.header(colspan='2')
+                                .col-sm-4.pull-right
+                                    input.form-control(type='text' st-search='' placeholder='Filter schemas...' ng-model='loadMeta.displayedSchemasFilter' ng-change='selectSchema()')
+                        tr
+                            th(width='50px')
+                                +chk('loadMeta.allSchemasSelected',  'selectAllSchemas()', 'Select all schemas')
+                            th
+                                label Schemas
+                        tbody
+                            tr
+                                td(colspan='2')
+                                    .scrollable-y(style='height: 184px')
+                                        table.table-modal-striped(id='metadataSchemaData')
+                                            tbody
+                                                tr(ng-repeat='schema in loadMeta.displayedSchemas')
+                                                    td(width='50px')
+                                                        input(type='checkbox' ng-model='schema.use' ng-change='selectSchema()')
+                                                    td
+                                                        label {{::schema.name}}
+            .metadata-content(ng-show='loadMeta.action == "tables"')
+                .metadata-package-name
+                    label.required Package:
+                    span
+                        input.form-control(id='metadataLoadPackage' type="text" ng-model='ui.packageName' placeholder='Package for POJOs generation' bs-tooltip='' data-title='Package that will be used for POJOs generation' data-placement='top' data-trigger='hover')
+                table.table.metadata(st-table='loadMeta.displayedTables' st-safe-src='loadMeta.tables')
+                    thead
+                        tr
+                            th.header(colspan='3')
+                                .col-sm-4.pull-right
+                                    input.form-control(type='text' st-search='' placeholder='Filter tables...' ng-model='loadMeta.displayedTablesFilter' ng-change='selectTable()')
+                        tr
+                            th(width='50px')
+                                +chk('loadMeta.allTablesSelected',  'selectAllTables()', 'Select all tables')
+                            th(width='200px')
+                                label Schemas
+                            th
+                                label Tables
+                    tbody
+                        tr
+                            td(colspan='3')
+                                .scrollable-y(style='height: 146px')
+                                    table.table-modal-striped(id='metadataTableData')
+                                        tbody
+                                            tr(ng-repeat='table in loadMeta.displayedTables')
+                                                td(width='50px')
+                                                    input(type='checkbox' ng-model='table.use' ng-change='selectTable()')
+                                                td(width='200px')
+                                                    label {{::table.schema}}
+                                                td
+                                                    label {{::table.tbl}}
+            .modal-footer
+                label.labelField {{loadMeta.info}}
+                button.btn.btn-primary(ng-show='loadMeta.action != "connect"' ng-click='loadMetadataPrev()') Prev
+                a.btn.btn-primary(ng-click='loadMetadataNext()' ng-disabled='!nextAvailable()' bs-tooltip data-title='{{nextTooltipText()}}' data-placement='bottom') {{loadMeta.button}}
