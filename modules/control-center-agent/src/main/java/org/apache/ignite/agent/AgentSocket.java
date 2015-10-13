@@ -32,8 +32,6 @@ import org.apache.ignite.agent.handlers.RestExecutor;
 import org.apache.ignite.agent.remote.Remote;
 import org.apache.ignite.agent.remote.RemoteHandler;
 import org.apache.ignite.agent.remote.WebSocketSender;
-import org.apache.ignite.agent.testdrive.AgentMetadataTestDrive;
-import org.apache.ignite.agent.testdrive.AgentSqlTestDrive;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -48,10 +46,13 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 public class AgentSocket implements WebSocketSender {
     /** */
     public static final Gson GSON = new Gson();
+
     /** */
     public static final JsonParser PARSER = new JsonParser();
+
     /** */
     private static final Logger log = Logger.getLogger(AgentSocket.class.getName());
+
     /** */
     private final CountDownLatch closeLatch = new CountDownLatch(1);
 

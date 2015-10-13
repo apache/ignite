@@ -31,12 +31,16 @@ import java.util.Properties;
 public class AgentConfiguration {
     /** Default server port. */
     public static final int DFLT_SERVER_PORT = 3001;
+
     /** Default Ignite node HTTP port. */
     public static final int DFLT_NODE_PORT = 8080;
+
     /** Default server URI. */
     private static final String DFLT_SERVER_URI = "wss://localhost:3001";
+
     /** Default Ignite node HTTP URI. */
     private static final String DFLT_NODE_URI = "http://localhost:8080";
+
     /** */
     @Parameter(names = {"-t", "--token"}, description = "User's security token used to establish connection to Ignite Console.")
     private String tok;

@@ -40,12 +40,16 @@ import org.apache.http.auth.AuthenticationException;
 public class RemoteHandler implements AutoCloseable {
     /** */
     public static final Gson GSON = new Gson();
+
     /** */
     public static final Object[] EMPTY_OBJECTS = new Object[0];
+
     /** */
     private static final Logger log = Logger.getLogger(RemoteHandler.class.getName());
+
     /** */
     private static final String INTERNAL_EXCEPTION_TYPE = "org.apache.ignite.agent.AgentException";
+
     /** */
     private final WebSocketSender snd;
 
