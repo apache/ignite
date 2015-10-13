@@ -348,7 +348,7 @@ namespace Apache.Ignite.Core.Tests
 
             // Filter
             waitTask = getWaitTask(() => events.WaitForLocal(
-                new EventFilter<IEvent>((g, e) => e.Type == EventType.EventTaskReduced)));
+                new EventListener<IEvent>((g, e) => e.Type == EventType.EventTaskReduced)));
 
             Assert.IsTrue(waitTask.Wait(timeout));
             Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
@@ -356,7 +356,7 @@ namespace Apache.Ignite.Core.Tests
 
             // Filter & types
             waitTask = getWaitTask(() => events.WaitForLocal(
-                new EventFilter<IEvent>((g, e) => e.Type == EventType.EventTaskReduced), EventType.EventTaskReduced));
+                new EventListener<IEvent>((g, e) => e.Type == EventType.EventTaskReduced), EventType.EventTaskReduced));
 
             Assert.IsTrue(waitTask.Wait(timeout));
             Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
@@ -383,15 +383,15 @@ namespace Apache.Ignite.Core.Tests
             var expectedType = EventType.EventJobStarted;
 
             var remoteFilter = portable 
-                ?  (IEventFilter<IEvent>) new RemoteEventPortableFilter(expectedType) 
-                :  new RemoteEventFilter(expectedType);
+                ?  (IEventListener<IEvent>) new RemoteEventPortableListener(expectedType) 
+                :  new RemoteEventListener(expectedType);
 
             var localListener = EventsTestHelper.GetListener();
 
             if (async)
                 events = events.WithAsync();
 
-            var listenId = events.RemoteListen(localListener: localListener, remoteFilter: remoteFilter,
+            var listenId = events.RemoteListen(localListener: localListener, remoteListener: remoteFilter,
                 autoUnsubscribe: autoUnsubscribe);
 
             if (async)
@@ -413,7 +413,7 @@ namespace Apache.Ignite.Core.Tests
             CheckNoEvent();
 
             // Check unsubscription with listener
-            events.RemoteListen(localListener: localListener, remoteFilter: remoteFilter,
+            events.RemoteListen(localListener: localListener, remoteListener: remoteFilter,
                 autoUnsubscribe: autoUnsubscribe);
 
             if (async)
@@ -439,7 +439,7 @@ namespace Apache.Ignite.Core.Tests
 
             var events = _grid1.GetEvents();
 
-            var eventFilter = new RemoteEventFilter(EventType.EventJobStarted);
+            var eventFilter = new RemoteEventListener(EventType.EventJobStarted);
 
             var oldEvents = events.RemoteQuery(eventFilter);
 
@@ -628,7 +628,7 @@ namespace Apache.Ignite.Core.Tests
                 {
                     TypeConfigurations = new List<PortableTypeConfiguration>
                     {
-                        new PortableTypeConfiguration(typeof (RemoteEventPortableFilter))
+                        new PortableTypeConfiguration(typeof (RemoteEventPortableListener))
                     }
                 }
             };
@@ -788,9 +788,9 @@ namespace Apache.Ignite.Core.Tests
         /// Gets the event listener.
         /// </summary>
         /// <returns>New instance of event listener.</returns>
-        public static IEventFilter<IEvent> GetListener()
+        public static IEventListener<IEvent> GetListener()
         {
-            return new EventFilter<IEvent>(Listen);
+            return new EventListener<IEvent>(Listen);
         }
 
         /// <summary>
@@ -840,7 +840,7 @@ namespace Apache.Ignite.Core.Tests
     /// Test event filter.
     /// </summary>
     [Serializable]
-    public class EventFilter<T> : IEventFilter<T> where T : IEvent
+    public class EventListener<T> : IEventListener<T> where T : IEvent
     {
         /** */
         private readonly Func<Guid?, T, bool> _invoke;
@@ -849,13 +849,13 @@ namespace Apache.Ignite.Core.Tests
         /// Initializes a new instance of the <see cref="RemoteListenEventFilter"/> class.
         /// </summary>
         /// <param name="invoke">The invoke delegate.</param>
-        public EventFilter(Func<Guid?, T, bool> invoke)
+        public EventListener(Func<Guid?, T, bool> invoke)
         {
             _invoke = invoke;
         }
 
         /** <inheritdoc /> */
-        bool IEventFilter<T>.Invoke(Guid? nodeId, T evt)
+        bool IEventListener<T>.Invoke(Guid? nodeId, T evt)
         {
             return _invoke(nodeId, evt);
         }
@@ -871,12 +871,12 @@ namespace Apache.Ignite.Core.Tests
     /// Remote event filter.
     /// </summary>
     [Serializable]
-    public class RemoteEventFilter : IEventFilter<IEvent>
+    public class RemoteEventListener : IEventListener<IEvent>
     {
         /** */
         private readonly int _type;
 
-        public RemoteEventFilter(int type)
+        public RemoteEventListener(int type)
         {
             _type = type;
         }
@@ -891,16 +891,16 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Portable remote event filter.
     /// </summary>
-    public class RemoteEventPortableFilter : IEventFilter<IEvent>, IPortableMarshalAware
+    public class RemoteEventPortableListener : IEventListener<IEvent>, IPortableMarshalAware
     {
         /** */
         private int _type;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="RemoteEventPortableFilter"/> class.
+        /// Initializes a new instance of the <see cref="RemoteEventPortableListener"/> class.
         /// </summary>
         /// <param name="type">The event type.</param>
-        public RemoteEventPortableFilter(int type)
+        public RemoteEventPortableListener(int type)
         {
             _type = type;
         }

@@ -124,7 +124,7 @@
     <Compile Include="Events\EventReader.cs" />
     <Compile Include="Events\EventType.cs" />
     <Compile Include="Events\IEvent.cs" />
-    <Compile Include="Events\IEventFilter.cs" />
+    <Compile Include="Events\IEventListener.cs" />
     <Compile Include="Events\IEvents.cs" />
     <Compile Include="Events\JobEvent.cs" />
     <Compile Include="Events\SwapSpaceEvent.cs" />

@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Gets the <see cref="IEventFilter{T}" /> invocator.
+        /// Gets the <see cref="IEventListener{T}" /> invocator.
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Precompiled invocator delegate.</returns>
@@ -239,9 +239,9 @@ namespace Apache.Ignite.Core.Impl.Common
 
                     _computeFunc = DelegateConverter.CompileFunc<Func<object, object, object>>(iface, new[] {args[0]});
                 }
-                else if (genericTypeDefinition == typeof (IEventFilter<>))
+                else if (genericTypeDefinition == typeof (IEventListener<>))
                 {
-                    ThrowIfMultipleInterfaces(_eventFilter, type, typeof(IEventFilter<>));
+                    ThrowIfMultipleInterfaces(_eventFilter, type, typeof(IEventListener<>));
 
                     var args = iface.GetGenericArguments();
 

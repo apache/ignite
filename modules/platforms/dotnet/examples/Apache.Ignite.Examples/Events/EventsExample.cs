@@ -76,10 +76,10 @@ namespace Apache.Ignite.Examples.Events
                 Console.WriteLine(">>> Listening for remote events...");
 
                 var localListener = new LocalListener();
-                var remoteFilter = new RemoteFilter();
+                var remoteFilter = new RemoteListener();
 
                 var listenId = ignite.GetEvents().RemoteListen(localListener: localListener,
-                    remoteFilter: remoteFilter, types: EventType.EventsJobExecution);
+                    remoteListener: remoteFilter, types: EventType.EventsJobExecution);
 
                 if (listenId == null)
                     throw new InvalidOperationException("Subscription failed.");

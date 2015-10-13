@@ -53,12 +53,12 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritdoc /> */
-        public override ICollection<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null,
+        public override ICollection<T> RemoteQuery<T>(IEventListener<T> listener, TimeSpan? timeout = null,
             params int[] types)
         {
             _lastAsyncOp.Value = (int) Op.RemoteQuery;
 
-            var result = base.RemoteQuery(filter, timeout, types);
+            var result = base.RemoteQuery(listener, timeout, types);
 
             // Result is a List<T> so we can't create proper converter later in GetFuture call from user.
             // ReSharper disable once RedundantTypeArgumentsOfMethod (otherwise won't compile in VS2010 / TC)
@@ -70,12 +70,12 @@ namespace Apache.Ignite.Core.Impl.Events
 
         /** <inheritdoc /> */
         public override Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
-            IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, params int[] types)
+            IEventListener<T> localListener = null, IEventListener<T> remoteListener = null, params int[] types)
         {
             _lastAsyncOp.Value = (int) Op.RemoteListen;
             _curFut.Value = null;
 
-            return base.RemoteListen(bufSize, interval, autoUnsubscribe, localListener, remoteFilter, types);
+            return base.RemoteListen(bufSize, interval, autoUnsubscribe, localListener, remoteListener, types);
         }
 
         /** <inheritdoc /> */
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritdoc /> */
-        public override T WaitForLocal<T>(IEventFilter<T> filter, params int[] types)
+        public override T WaitForLocal<T>(IEventListener<T> listener, params int[] types)
         {
             _lastAsyncOp.Value = (int) Op.WaitForLocal;
 
@@ -96,9 +96,9 @@ namespace Apache.Ignite.Core.Impl.Events
 
             try
             {
-                var result = WaitForLocal0(filter, ref hnd, types);
+                var result = WaitForLocal0(listener, ref hnd, types);
 
-                if (filter != null)
+                if (listener != null)
                 {
                     // Dispose handle as soon as future ends.
                     var fut = GetFuture<T>();
