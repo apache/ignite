@@ -23,9 +23,9 @@ namespace Apache.Ignite.Core.Compute
     using Apache.Ignite.Core.Common;
 
     /// <summary>
-    /// Convenience adapter for <see cref="IComputeTask{A,T,R}"/> interface
+    /// Convenience adapter for <see cref="IComputeTask{TArg,TJobRes,TTaskRes}"/> interface
     /// </summary>
-    public abstract class ComputeTaskAdapter<TA, T, TR> : IComputeTask<TA, T, TR>
+    public abstract class ComputeTaskAdapter<TArg, TJobRes, TTaskRes> : IComputeTask<TArg, TJobRes, TTaskRes>
     {
         /// <summary>
         /// Default implementation which will wait for all jobs to complete before
@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="res">Received remote Ignite executable result.</param>
         /// <param name="rcvd">All previously received results.</param>
         /// <returns>Result policy that dictates how to process further upcoming job results.</returns>
-        public virtual ComputeJobResultPolicy Result(IComputeJobResult<T> res, IList<IComputeJobResult<T>> rcvd)
+        public virtual ComputeJobResultPolicy Result(IComputeJobResult<TJobRes> res, IList<IComputeJobResult<TJobRes>> rcvd)
         {
             Exception err = res.Exception();
 
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Compute
         /// Map of Ignite jobs assigned to subgrid node. If <c>null</c> or empty map is returned,
         /// exception will be thrown.
         /// </returns>
-        public abstract IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, TA arg);
+        public abstract IDictionary<IComputeJob<TJobRes>, IClusterNode> Map(IList<IClusterNode> subgrid, TArg arg);
 
         /// <summary>
         /// Reduces (or aggregates) results received so far into one compound result to be returned to
@@ -88,6 +88,6 @@ namespace Apache.Ignite.Core.Compute
         /// <returns>
         /// Task result constructed from results of remote executions.
         /// </returns>
-        public abstract TR Reduce(IList<IComputeJobResult<T>> results);
+        public abstract TTaskRes Reduce(IList<IComputeJobResult<TJobRes>> results);
     }
 }

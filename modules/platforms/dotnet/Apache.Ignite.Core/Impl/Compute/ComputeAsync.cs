@@ -189,9 +189,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public TR2 Call<TR1, TR2>(IEnumerable<IComputeFunc<TR1>> clos, IComputeReducer<TR1, TR2> rdc)
+        public TR2 Call<TR1, TR2>(IEnumerable<IComputeFunc<TR1>> clos, IComputeReducer<TR1, TR2> reducer)
         {
-            _curFut.Value = Compute.Execute(clos, rdc);
+            _curFut.Value = Compute.Execute(clos, reducer);
 
             return default(TR2);
         }
