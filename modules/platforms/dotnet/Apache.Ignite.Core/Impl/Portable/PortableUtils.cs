@@ -256,24 +256,24 @@ namespace Apache.Ignite.Core.Impl.Portable
             typeof(PortableUtils).GetMethod("WriteGenericCollection", _bindFlagsStatic);
 
         /** Method: ReadGenericCollection0. */
-        public static readonly MethodInfo MtdhReadGenericCollection0 =
-            typeof(PortableUtils).GetMethod("ReadGenericCollection0", _bindFlagsStatic);
+        public static readonly MethodInfo MtdhReadGenericCollection =
+            typeof(PortableUtils).GetMethod("ReadGenericCollection", _bindFlagsStatic);
 
         /** Method: WriteGenericDictionary. */
         public static readonly MethodInfo MtdhWriteGenericDictionary =
             typeof(PortableUtils).GetMethod("WriteGenericDictionary", _bindFlagsStatic);
 
         /** Method: ReadGenericDictionary. */
-        public static readonly MethodInfo MtdhReadGenericDictionary0 =
-            typeof(PortableUtils).GetMethod("ReadGenericDictionary0", _bindFlagsStatic);
+        public static readonly MethodInfo MtdhReadGenericDictionary =
+            typeof(PortableUtils).GetMethod("ReadGenericDictionary", _bindFlagsStatic);
 
         /** Method: ReadArray. */
         public static readonly MethodInfo MtdhReadArray =
             typeof(PortableUtils).GetMethod("ReadArray", _bindFlagsStatic);
 
         /** Method: ReadGenericArray. */
-        public static readonly MethodInfo MtdhReadGenericArray0 =
-            typeof(PortableUtils).GetMethod("ReadGenericArray0", _bindFlagsStatic);
+        public static readonly MethodInfo MtdhReadGenericArray =
+            typeof(PortableUtils).GetMethod("ReadGenericArray", _bindFlagsStatic);
 
         /** Cached UTF8 encoding. */
         private static readonly Encoding Utf8 = Encoding.UTF8;
@@ -1294,7 +1294,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Reads generic collection in untyped context.
         /// </summary>
-        public static object ReadGenericCollection(PortableReaderImpl reader)
+        public static object ReadGenericCollectionAsObject(PortableReaderImpl reader)
         {
             var colType = ReadType(reader);
 
@@ -1307,7 +1307,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Reads generic collection without type information.
         /// </summary>
         // ReSharper disable once UnusedMember.Local (used by reflection)
-        private static ICollection<T> ReadGenericCollection0<T>(PortableReaderImpl reader, 
+        private static ICollection<T> ReadGenericCollection<T>(PortableReaderImpl reader, 
             PortableGenericCollectionFactory<T> factory, PortableCollectionInfo colInfo)
         {
             Debug.Assert(reader != null);
@@ -1330,7 +1330,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         // ReSharper disable once UnusedParameter.Local (for signature compatibility)
         // ReSharper disable once UnusedMember.Local (used by reflection)
-        private static T[] ReadGenericArray0<T>(PortableReaderImpl reader, object factory, 
+        private static T[] ReadGenericArray<T>(PortableReaderImpl reader, object factory, 
             PortableCollectionInfo colInfo)
         {
             Debug.Assert(reader != null);
@@ -1432,7 +1432,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Reads the generic dictionary.
         /// </summary>
         // ReSharper disable once UnusedMember.Local (used by reflection)
-        private static IDictionary<TK, TV> ReadGenericDictionary0<TK, TV>(PortableReaderImpl reader,
+        private static IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableReaderImpl reader,
             PortableGenericDictionaryFactory<TK, TV> factory, PortableCollectionInfo colInfo)
         {
             var len = reader.Stream.ReadInt();

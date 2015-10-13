@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             var typeArguments = genType.GetGenericArguments();
 
             var writeMthd = PortableUtils.MtdhWriteGenericCollection.MakeGenericMethod(typeArguments);
-            var readMthd = PortableUtils.MtdhReadGenericCollection0.MakeGenericMethod(typeArguments);
+            var readMthd = PortableUtils.MtdhReadGenericCollection.MakeGenericMethod(typeArguments);
             var ctorInfo = type.GetConstructor(new[] { typeof(int) });
 
             return new PortableCollectionInfo(writeMthd, readMthd, ctorInfo);
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             var typeArguments = type.GetElementType();
 
             var writeMthd = PortableUtils.MtdhWriteGenericCollection.MakeGenericMethod(typeArguments);
-            var readMthd = PortableUtils.MtdhReadGenericArray0.MakeGenericMethod(typeArguments);
+            var readMthd = PortableUtils.MtdhReadGenericArray.MakeGenericMethod(typeArguments);
             var ctorInfo = type.GetConstructor(new[] { typeof(int) });
 
             return new PortableCollectionInfo(writeMthd, readMthd, ctorInfo);
@@ -119,7 +119,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             var typeArguments = genType.GetGenericArguments();
 
             var writeMthd = PortableUtils.MtdhWriteGenericDictionary.MakeGenericMethod(typeArguments);
-            var readMthd = PortableUtils.MtdhReadGenericDictionary0.MakeGenericMethod(typeArguments);
+            var readMthd = PortableUtils.MtdhReadGenericDictionary.MakeGenericMethod(typeArguments);
             var ctorInfo = type.GetConstructor(new[] { typeof(int) });
 
             return new PortableCollectionInfo(writeMthd, readMthd, ctorInfo);

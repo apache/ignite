@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public CollectionHolder(IPortableReader reader)
         {
-            _collection = PortableUtils.ReadGenericCollection((PortableReaderImpl) reader.GetRawReader());
+            _collection = PortableUtils.ReadGenericCollectionAsObject((PortableReaderImpl) reader.GetRawReader());
         }
 
         /// <summary>
