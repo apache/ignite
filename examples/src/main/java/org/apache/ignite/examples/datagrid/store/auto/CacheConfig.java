@@ -45,6 +45,9 @@ public class CacheConfig {
         cfg.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setCacheStoreFactory(new Factory<CacheStore<? super Long, ? super Person>>() {
+            /** */
+            private static final long serialVersionUID = 0L;
+
             @Override public CacheStore<? super Long, ? super Person> create() {
                 CacheJdbcPojoStore<Long, Person> store = new CacheJdbcPojoStore<>();
 

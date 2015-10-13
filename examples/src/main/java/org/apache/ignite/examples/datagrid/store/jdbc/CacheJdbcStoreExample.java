@@ -79,6 +79,9 @@ public class CacheJdbcStoreExample {
 
             // Configure JDBC session listener.
             cacheCfg.setCacheStoreSessionListenerFactories(new Factory<CacheStoreSessionListener>() {
+                /** */
+                private static final long serialVersionUID = 0L;
+
                 @Override public CacheStoreSessionListener create() {
                     CacheJdbcStoreSessionListener lsnr = new CacheJdbcStoreSessionListener();
 
