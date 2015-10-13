@@ -63,7 +63,7 @@ namespace Apache.Ignite.Examples.Events
                 Console.WriteLine(">>> Listening for a local event...");
 
                 var listener = new LocalListener();
-                ignite.GetEvents().LocalListen(listener, EventType.EventsTaskExecution);
+                ignite.GetEvents().LocalListen(listener, EventType.TaskExecutionAll);
 
                 ExecuteTask(ignite);
 
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Examples.Events
                 var remoteFilter = new RemoteFilter();
 
                 var listenId = ignite.GetEvents().RemoteListen(localListener: localListener,
-                    remoteFilter: remoteFilter, types: EventType.EventsJobExecution);
+                    remoteFilter: remoteFilter, types: EventType.JobExecutionAll);
 
                 if (listenId == null)
                     throw new InvalidOperationException("Subscription failed.");

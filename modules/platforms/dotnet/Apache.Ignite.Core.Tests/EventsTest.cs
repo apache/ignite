@@ -104,19 +104,19 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(0, events.GetEnabledEvents().Count);
             
-            Assert.IsFalse(EventType.EventsCache.Any(events.IsEnabled));
+            Assert.IsFalse(EventType.CacheAll.Any(events.IsEnabled));
 
-            events.EnableLocal(EventType.EventsCache);
+            events.EnableLocal(EventType.CacheAll);
 
-            Assert.AreEqual(EventType.EventsCache, events.GetEnabledEvents());
+            Assert.AreEqual(EventType.CacheAll, events.GetEnabledEvents());
 
-            Assert.IsTrue(EventType.EventsCache.All(events.IsEnabled));
+            Assert.IsTrue(EventType.CacheAll.All(events.IsEnabled));
 
-            events.EnableLocal(EventType.EventsTaskExecution);
+            events.EnableLocal(EventType.TaskExecutionAll);
 
-            events.DisableLocal(EventType.EventsCache);
+            events.DisableLocal(EventType.CacheAll);
 
-            Assert.AreEqual(EventType.EventsTaskExecution, events.GetEnabledEvents());
+            Assert.AreEqual(EventType.TaskExecutionAll, events.GetEnabledEvents());
         }
 
         /// <summary>
@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var events = _grid1.GetEvents();
             var listener = EventsTestHelper.GetListener();
-            var eventType = EventType.EventsTaskExecution;
+            var eventType = EventType.TaskExecutionAll;
 
             events.EnableLocal(eventType);
 
@@ -166,7 +166,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var events = _grid1.GetEvents();
             var listener = EventsTestHelper.GetListener();
-            var eventType = EventType.EventsTaskExecution;
+            var eventType = EventType.TaskExecutionAll;
 
             events.EnableLocal(eventType);
 
@@ -234,7 +234,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 yield return new EventTestCase
                 {
-                    EventType = EventType.EventsCache,
+                    EventType = EventType.CacheAll,
                     EventObjectType = typeof (CacheEvent),
                     GenerateEvent = g => g.GetCache<int, int>(null).Put(1, 1),
                     VerifyEvents = (e, g) => VerifyCacheEvents(e, g),
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Tests
 
                 yield return new EventTestCase
                 {
-                    EventType = EventType.EventsTaskExecution,
+                    EventType = EventType.TaskExecutionAll,
                     EventObjectType = typeof (TaskEvent),
                     GenerateEvent = g => GenerateTaskEvent(g),
                     VerifyEvents = (e, g) => VerifyTaskEvents(e),
@@ -252,7 +252,7 @@ namespace Apache.Ignite.Core.Tests
 
                 yield return new EventTestCase
                 {
-                    EventType = EventType.EventsJobExecution,
+                    EventType = EventType.JobExecutionAll,
                     EventObjectType = typeof (JobEvent),
                     GenerateEvent = g => GenerateTaskEvent(g),
                     EventCount = 9
@@ -284,7 +284,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var events = _grid1.GetEvents();
 
-            var eventType = EventType.EventsTaskExecution;
+            var eventType = EventType.TaskExecutionAll;
 
             events.EnableLocal(eventType);
 
@@ -311,7 +311,7 @@ namespace Apache.Ignite.Core.Tests
             if (async)
                 events = events.WithAsync();
 
-            var eventType = EventType.EventsTaskExecution;
+            var eventType = EventType.TaskExecutionAll;
 
             events.EnableLocal(eventType);
 
@@ -374,8 +374,8 @@ namespace Apache.Ignite.Core.Tests
         {
             foreach (var g in _grids)
             {
-                g.GetEvents().EnableLocal(EventType.EventsJobExecution);
-                g.GetEvents().EnableLocal(EventType.EventsTaskExecution);
+                g.GetEvents().EnableLocal(EventType.JobExecutionAll);
+                g.GetEvents().EnableLocal(EventType.TaskExecutionAll);
             }
 
             var events = _grid1.GetEvents();
@@ -401,7 +401,7 @@ namespace Apache.Ignite.Core.Tests
 
             CheckSend(3, typeof(JobEvent), expectedType);
 
-            _grid3.GetEvents().DisableLocal(EventType.EventsJobExecution);
+            _grid3.GetEvents().DisableLocal(EventType.JobExecutionAll);
 
             CheckSend(2, typeof(JobEvent), expectedType);
 
@@ -435,7 +435,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestRemoteQuery([Values(true, false)] bool async)
         {
             foreach (var g in _grids)
-                g.GetEvents().EnableLocal(EventType.EventsJobExecution);
+                g.GetEvents().EnableLocal(EventType.JobExecutionAll);
 
             var events = _grid1.GetEvents();
 
@@ -448,7 +448,7 @@ namespace Apache.Ignite.Core.Tests
 
             GenerateTaskEvent();
 
-            var remoteQuery = events.RemoteQuery(eventFilter, EventsTestHelper.Timeout, EventType.EventsJobExecution);
+            var remoteQuery = events.RemoteQuery(eventFilter, EventsTestHelper.Timeout, EventType.JobExecutionAll);
 
             if (async)
             {
@@ -596,7 +596,7 @@ namespace Apache.Ignite.Core.Tests
             GenerateTaskEvent();
 
             EventsTestHelper.VerifyReceive(repeat, eventObjectType ?? typeof (TaskEvent),
-                eventType.Any() ? eventType : EventType.EventsTaskExecution);
+                eventType.Any() ? eventType : EventType.TaskExecutionAll);
         }
 
         /// <summary>

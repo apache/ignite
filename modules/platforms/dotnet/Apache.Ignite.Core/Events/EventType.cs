@@ -335,7 +335,7 @@ namespace Apache.Ignite.Core.Events
         /// All events indicating an error or failure condition. It is convenient to use when fetching all events 
         /// indicating error or failure.
         /// </summary>
-        private static readonly ICollection<int> EventsError0 = new[]
+        private static readonly ICollection<int> ErrorAll0 = new[]
         {
             JobTimedout,
             JobFailed,
@@ -352,9 +352,9 @@ namespace Apache.Ignite.Core.Events
         /// All discovery events except for <see cref="NodeMetricsUpdated" />. Subscription to <see 
         /// cref="NodeMetricsUpdated" /> can generate massive amount of event processing in most cases is not 
         /// necessary. If this event is indeed required you can subscribe to it individually or use <see 
-        /// cref="EventsDiscoveryAll0" /> array.
+        /// cref="DiscoveryAll0" /> array.
         /// </summary>
-        private static readonly ICollection<int> EventsDiscovery0 = new[]
+        private static readonly ICollection<int> DiscoveryAllMinusMetrics0 = new[]
         {
             NodeJoined,
             NodeLeft,
@@ -367,7 +367,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All discovery events.
         /// </summary>
-        private static readonly ICollection<int> EventsDiscoveryAll0 = new[]
+        private static readonly ICollection<int> DiscoveryAll0 = new[]
         {
             NodeJoined,
             NodeLeft,
@@ -381,7 +381,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite job execution events.
         /// </summary>
-        private static readonly ICollection<int> EventsJobExecution0 = new[]
+        private static readonly ICollection<int> JobExecutionAll0 = new[]
         {
             JobMapped,
             JobResulted,
@@ -398,7 +398,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite task execution events.
         /// </summary>
-        private static readonly ICollection<int> EventsTaskExecution0 = new[]
+        private static readonly ICollection<int> TaskExecutionAll0 = new[]
         {
             TaskStarted,
             TaskFinished,
@@ -411,7 +411,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache events.
         /// </summary>
-        private static readonly ICollection<int> EventsCache0 = new[]
+        private static readonly ICollection<int> CacheAll0 = new[]
         {
             CacheEntryCreated,
             CacheEntryDestroyed,
@@ -428,7 +428,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache rebalance events.
         /// </summary>
-        private static readonly ICollection<int> EventsCacheRebalance0 = new[]
+        private static readonly ICollection<int> CacheRebalanceAll0 = new[]
         {
             CacheRebalanceStarted,
             CacheRebalanceStopped,
@@ -442,7 +442,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache lifecycle events.
         /// </summary>
-        private static readonly ICollection<int> EventsCacheLifecycle0 = new[]
+        private static readonly ICollection<int> CacheLifecycleAll0 = new[]
         {
             CacheStarted,
             CacheStopped,
@@ -452,7 +452,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache query events.
         /// </summary>
-        private static readonly ICollection<int> EventsCacheQuery0 = new[]
+        private static readonly ICollection<int> CacheQueryAll0 = new[]
         {
             CacheQueryExecuted,
             CacheQueryObjectRead
@@ -461,7 +461,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All swap space events.
         /// </summary>
-        private static readonly ICollection<int> EventsSwapspace0 = new[]
+        private static readonly ICollection<int> SwapspaceAll0 = new[]
         {
             SwapSpaceCleared,
             SwapSpaceDataRemoved,
@@ -473,112 +473,112 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite events.
         /// </summary>
-        private static readonly ICollection<int> EventsAll0 = GetAllEvents().AsReadOnly();
+        private static readonly ICollection<int> All0 = GetAllEvents().AsReadOnly();
 
         /// <summary>
         /// All Ignite events (<b>excluding</b> metric update event).
         /// </summary>
-        private static readonly ICollection<int> EventsAllMinusMetricUpdate0 =
-            EventsAll0.Where(x => x != NodeMetricsUpdated).ToArray().AsReadOnly();
+        private static readonly ICollection<int> AllMinusMetricUpdate0 =
+            All0.Where(x => x != NodeMetricsUpdated).ToArray().AsReadOnly();
 
         /// <summary>
         /// All events indicating an error or failure condition. It is convenient to use when fetching all events 
         /// indicating error or failure.
         /// </summary>
-        public static ICollection<int> EventsError
+        public static ICollection<int> ErrorAll
         {
-            get { return EventsError0; }
+            get { return ErrorAll0; }
         }
 
         /// <summary>
         /// All Ignite events (<b>excluding</b> metric update event).
         /// </summary>
-        public static ICollection<int> EventsAllMinusMetricUpdate
+        public static ICollection<int> AllMinusMetricUpdate
         {
-            get { return EventsAllMinusMetricUpdate0; }
+            get { return AllMinusMetricUpdate0; }
         }
 
         /// <summary>
         /// All swap space events.
         /// </summary>
-        public static ICollection<int> EventsSwapspace
+        public static ICollection<int> SwapspaceAll
         {
-            get { return EventsSwapspace0; }
+            get { return SwapspaceAll0; }
         }
 
         /// <summary>
         /// All cache query events.
         /// </summary>
-        public static ICollection<int> EventsCacheQuery
+        public static ICollection<int> CacheQueryAll
         {
-            get { return EventsCacheQuery0; }
+            get { return CacheQueryAll0; }
         }
 
         /// <summary>
         /// All cache lifecycle events.
         /// </summary>
-        public static ICollection<int> EventsCacheLifecycle
+        public static ICollection<int> CacheLifecycleAll
         {
-            get { return EventsCacheLifecycle0; }
+            get { return CacheLifecycleAll0; }
         }
 
         /// <summary>
         /// All cache rebalance events.
         /// </summary>
-        public static ICollection<int> EventsCacheRebalance
+        public static ICollection<int> CacheRebalanceAll
         {
-            get { return EventsCacheRebalance0; }
+            get { return CacheRebalanceAll0; }
         }
 
         /// <summary>
         /// All cache events.
         /// </summary>
-        public static ICollection<int> EventsCache
+        public static ICollection<int> CacheAll
         {
-            get { return EventsCache0; }
+            get { return CacheAll0; }
         }
 
         /// <summary>
         /// All Ignite task execution events.
         /// </summary>
-        public static ICollection<int> EventsTaskExecution
+        public static ICollection<int> TaskExecutionAll
         {
-            get { return EventsTaskExecution0; }
+            get { return TaskExecutionAll0; }
         }
 
         /// <summary>
         /// All Ignite job execution events.
         /// </summary>
-        public static ICollection<int> EventsJobExecution
+        public static ICollection<int> JobExecutionAll
         {
-            get { return EventsJobExecution0; }
+            get { return JobExecutionAll0; }
         }
 
         /// <summary>
         /// All discovery events.
         /// </summary>
-        public static ICollection<int> EventsDiscoveryAll
+        public static ICollection<int> DiscoveryAll
         {
-            get { return EventsDiscoveryAll0; }
+            get { return DiscoveryAll0; }
         }
 
         /// <summary>
         /// All discovery events except for <see cref="NodeMetricsUpdated" />. Subscription to <see 
         /// cref="NodeMetricsUpdated" /> can generate massive amount of event processing in most cases is not 
         /// necessary. If this event is indeed required you can subscribe to it individually or use <see 
-        /// cref="EventsDiscoveryAll0" /> array.
+        /// cref="DiscoveryAll0" /> array.
         /// </summary>
-        public static ICollection<int> EventsDiscovery
+        public static ICollection<int> DiscoveryAllMinusMetrics
         {
-            get { return EventsDiscovery0; }
+            get { return DiscoveryAllMinusMetrics0; }
         }
 
         /// <summary>
         /// All Ignite events.
         /// </summary>
-        public static ICollection<int> EventsAll
+        public static ICollection<int> All
         {
-            get { return EventsAll0; }
+            get { return All0; }
         }
 
         /// <summary>
