@@ -31,6 +31,15 @@ mixin btn-toolbar(btn, click, tip)
 mixin btn-toolbar-data(btn, kind, tip)
     i.btn.btn-default.fa(class=btn ng-click='setResult(paragraph, "#{kind}")' ng-class='{active: resultEq(paragraph, "#{kind}")}' bs-tooltip='' data-title=tip data-trigger='hover' data-placement='bottom')
 
+mixin chart-settings(mdl)
+    .col-sm-2.chart-settings-link
+        i.fa.fa-chevron-circle-down
+        a(ng-show='paragraph.chart' ng-click='$event.stopPropagation()' bs-popover data-template-url='chart-settings' data-placement='bottom' data-auto-close='1' data-trigger='click') Chart settings
+    .col-sm-3
+        label Show
+        button.select-toggle.btn.btn-default(ng-model='paragraph.timeLineSpan' bs-options='item for item in timeLineSpans' bs-select)
+        label min
+
 block container
     .row
         .col-sm-12(ng-init='noteId = "#{noteId}"')
@@ -148,16 +157,12 @@ block container
                                     div(ng-show='paragraph.chart() && paragraph.nonEmpty()')
                                         div(ng-show='paragraph.queryExecute()')
                                             div(ng-hide='paragraph.chartColumnsConfigured()')
-                                                .chart-settings-link
-                                                    i.fa.fa-chevron-circle-down
-                                                    a(ng-show='paragraph.chart' ng-click='$event.stopPropagation()' bs-popover data-template-url='chart-settings' data-placement='bottom' data-auto-close='1' data-trigger='click') Chart settings
+                                                +chart-settings
                                                 .sql-empty-result Cannot display chart. Please configure axis using&nbsp
                                                     b Chart settings
                                             div(ng-show='paragraph.chartColumnsConfigured()')
                                                 div(ng-show='paragraph.timeLineSupported() || !paragraph.chartTimeLineEnabled()')
-                                                    .chart-settings-link
-                                                        i.fa.fa-chevron-circle-down
-                                                        a(ng-show='paragraph.chart' ng-click='$event.stopPropagation()' bs-popover data-template-url='chart-settings' data-placement='bottom' data-auto-close='1' data-trigger='click') Chart settings
+                                                    +chart-settings
                                                     div(ng-repeat='chart in paragraph.charts')
                                                         nvd3(options='chart.options' data='chart.data' api='chart.api')
                                                 .sql-empty-result(ng-show='!paragraph.timeLineSupported() && paragraph.chartTimeLineEnabled()') Pie chart does not support 'TIME_LINE' column for X-axis

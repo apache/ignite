@@ -31,6 +31,8 @@ consoleModule.controller('sqlController',
 
     $scope.pageSizes = [50, 100, 200, 400, 800, 1000];
 
+    $scope.timeLineSpans = [1, 5, 10, 15, 30];
+
     $scope.modes = $common.mkOptions(['PARTITIONED', 'REPLICATED', 'LOCAL']);
 
     $scope.timeUnit = [
@@ -274,6 +276,7 @@ consoleModule.controller('sqlController',
             editor: true,
             query: '',
             pageSize: $scope.pageSizes[0],
+            timeLineSpan: $scope.timeLineSpans[0],
             result: 'none',
             rate: {
                 value: 1,

@@ -402,6 +402,7 @@ var NotebookSchema = new Schema({
         editor: Boolean,
         result: {type: String, enum: ['none', 'table', 'bar', 'pie', 'line', 'area']},
         pageSize: Number,
+        timeLineSpan: Number,
         hideSystemColumns: Boolean,
         cacheName: String,
         rate: {

@@ -50,7 +50,7 @@ router.get('/download/zip', function (req, res) {
     var config = require('../helpers/configuration-loader.js');
 
     var agentFld = 'ignite-web-agent-1.5.0-SNAPSHOT';
-    var agentZip =  agentFld + '.zip';
+    var agentZip = agentFld + '.zip';
 
     // Read a zip file.
     fs.readFile('public/agent/' + agentZip, function(err, data) {
