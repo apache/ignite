@@ -295,10 +295,17 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         CacheObject val0 = val;
 
-        if (val0 == null && hasOffHeapPointer()) {
-            IgniteBiTuple<byte[], Byte> t = valueBytes0();
+        if (val0 == null) {
+            if (hasOffHeapPointer()) {
+                IgniteBiTuple<byte[], Byte> t = valueBytes0();
 
-            return cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), t.get2(), t.get1());
+                return cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), t.get2(), t.get1());
+            }
+        }
+        else if (val0 instanceof CacheObjectImpl) {
+            CacheObjectImpl im = (CacheObjectImpl)val0;
+
+            val0 = new CacheObjectImpl(im.val, im.valBytes);
         }
 
         return val0;
@@ -2775,7 +2782,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public KeyCacheObject key() {
-        return key;
+//        return key;
+        return new KeyCacheObjectImpl(((KeyCacheObjectImpl)key).val, ((KeyCacheObjectImpl)key).valBytes);
     }
 
     /** {@inheritDoc} */
