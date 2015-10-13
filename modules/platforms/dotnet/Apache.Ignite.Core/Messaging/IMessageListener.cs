@@ -25,11 +25,14 @@ namespace Apache.Ignite.Core.Messaging
     public interface IMessageListener<in T>
     {
         /// <summary>
-        /// Returns a value indicating whether provided message and node id satisfy this predicate.
+        /// Invokes the message listener when a message arrives.
         /// </summary>
-        /// <param name="nodeId">Node identifier.</param>
+        /// <param name="nodeId">Message source node identifier.</param>
         /// <param name="message">Message.</param>
-        /// <returns>Value indicating whether provided message and node id satisfy this predicate.</returns>
+        /// <returns>
+        /// Value indicating whether this instance should remain subscribed. 
+        /// Returning <c>false</c> will unsubscribe this message listener from further notifications
+        /// </returns>
         bool Invoke(Guid nodeId, T message);
     }
 }
