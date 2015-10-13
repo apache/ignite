@@ -21,7 +21,6 @@
 namespace Apache.Ignite.Core.Events
 {
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
 
@@ -486,7 +485,6 @@ namespace Apache.Ignite.Core.Events
         /// All events indicating an error or failure condition. It is convenient to use when fetching all events 
         /// indicating error or failure.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static ICollection<int> EventsError
         {
             get { return EventsError0; }
@@ -495,7 +493,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite events (<b>excluding</b> metric update event).
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static ICollection<int> EventsAllMinusMetricUpdate
         {
             get { return EventsAllMinusMetricUpdate0; }
@@ -504,7 +501,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All swap space events.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static ICollection<int> EventsSwapspace
         {
             get { return EventsSwapspace0; }
@@ -513,7 +509,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache query events.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static ICollection<int> EventsCacheQuery
         {
             get { return EventsCacheQuery0; }
@@ -522,7 +517,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache lifecycle events.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static ICollection<int> EventsCacheLifecycle
         {
             get { return EventsCacheLifecycle0; }
@@ -531,7 +525,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache rebalance events.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static ICollection<int> EventsCacheRebalance
         {
             get { return EventsCacheRebalance0; }
@@ -540,7 +533,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All cache events.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static ICollection<int> EventsCache
         {
             get { return EventsCache0; }
@@ -549,7 +541,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite task execution events.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static ICollection<int> EventsTaskExecution
         {
             get { return EventsTaskExecution0; }
@@ -558,7 +549,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite job execution events.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static ICollection<int> EventsJobExecution
         {
             get { return EventsJobExecution0; }
@@ -567,7 +557,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All discovery events.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static ICollection<int> EventsDiscoveryAll
         {
             get { return EventsDiscoveryAll0; }
@@ -579,7 +568,6 @@ namespace Apache.Ignite.Core.Events
         /// necessary. If this event is indeed required you can subscribe to it individually or use <see 
         /// cref="EventsDiscoveryAll0" /> array.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static ICollection<int> EventsDiscovery
         {
             get { return EventsDiscovery0; }
@@ -588,7 +576,6 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// All Ignite events.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public static ICollection<int> EventsAll
         {
             get { return EventsAll0; }
