@@ -33,6 +33,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAbstractRestartSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -81,7 +82,7 @@ public class CacheNearDisabledAtomicInvokeRestartSelfTest extends CacheAbstractR
     }
 
     /** {@inheritDoc} */
-    protected void checkCache(IgniteCache cache) {
+    protected void checkCache(IgniteEx ignite, IgniteCache cache) {
         rwl.writeLock().lock();
 
         try {
@@ -153,7 +154,7 @@ public class CacheNearDisabledAtomicInvokeRestartSelfTest extends CacheAbstractR
     }
 
     /** {@inheritDoc} */
-    @Override protected void updateCache(IgniteCache cache) {
+    @Override protected void updateCache(IgniteEx ignite, IgniteCache cache) {
         final int k = ThreadLocalRandom.current().nextInt(RANGE);
 
         final String[] keys = new String[KEYS_CNT];

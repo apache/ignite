@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,9 +36,6 @@ import org.apache.ignite.testframework.GridTestUtils;
  * Abstract restart test.
  */
 public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTest {
-    /** */
-    private IgniteCache cache;
-
     /** */
     private volatile CountDownLatch cacheCheckedLatch = new CountDownLatch(1);
 
@@ -57,7 +55,7 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 15 * 60_000;
+        return 8 * 60_000;
     }
 
     /**
@@ -75,9 +73,11 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
 
         assertTrue(ignite(clientGrid).configuration().isClientMode());
 
-        cache = jcache(clientGrid);
+        final IgniteEx grid = grid(clientGrid);
 
-        updateCache(cache);
+        final IgniteCache cache = jcache(clientGrid);
+
+        updateCache(grid, cache);
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -96,7 +96,7 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
                     while (!stop.get()) {
                         log.info("Start update: " + iter);
 
-                        updateCache(cache);
+                        updateCache(grid, cache);
 
                         log.info("End update: " + iter++);
                     }
@@ -142,7 +142,7 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
             }
         });
 
-        long endTime = System.currentTimeMillis() + 10 * 60_000;
+        long endTime = System.currentTimeMillis() + getTestDuration();
 
         try {
             int iter = 0;
@@ -151,7 +151,7 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
                 try {
                     log.info("Start of cache checking: " + iter);
 
-                    checkCache(cache);
+                    checkCache(grid, cache);
 
                     log.info("End of cache checking: " + iter++);
                 }
@@ -173,7 +173,15 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
 
         restartFut.get();
 
-        checkCache(cache);
+        checkCache(grid, cache);
+    }
+
+    /**
+     * @return Test duration.
+     * @see #getTestTimeout()
+     */
+    protected int getTestDuration() {
+        return 5 * 60_000;
     }
 
     /**
@@ -195,14 +203,15 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
      *
      * @param cache Cache.
      */
-    protected abstract void checkCache(IgniteCache cache);
+    protected abstract void checkCache(IgniteEx grid, IgniteCache cache) throws Exception ;
 
     /**
      * Updates cache.
      *
+     * @param grid Grid.
      * @param cache Cache.
      */
-    protected abstract void updateCache(IgniteCache cache);
+    protected abstract void updateCache(IgniteEx grid, IgniteCache cache) throws Exception ;
 
     /**
      * @param futs Futers.
