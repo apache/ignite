@@ -327,6 +327,12 @@ $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVa
 
                             break;
 
+                        case 'bean':
+                            if (bean[propName])
+                                res.line(beanVarName + '.' + $generatorJava.setterName(propName) + '(new ' + res.importClass(bean[propName]) + '());');
+
+                            break;
+
                         default:
                             $generatorJava.property(res, beanVarName, bean, propName, null, descr.setterName);
                     }
@@ -515,6 +521,12 @@ $generatorJava.clusterAtomics = function (cluster, res) {
 $generatorJava.clusterCommunication = function (cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
+
+    var cfg = $generatorCommon.COMMUNICATION_CONFIGURATION;
+
+    $generatorJava.beanProperty(res, 'cfg', cluster.communication, 'communicationSpi', 'commSpi', cfg.className, cfg.fields);
+
+    res.needEmptyLine = false;
 
     $generatorJava.property(res, 'cfg', cluster, 'networkTimeout');
     $generatorJava.property(res, 'cfg', cluster, 'networkSendRetryDelay');

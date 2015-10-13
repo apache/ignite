@@ -365,12 +365,20 @@ consoleModule.controller('clustersController', [
             if ($common.isEmptyString(item.name))
                 return showPopoverMessage($scope.panels, 'general', 'clusterName', 'Name should not be empty');
 
-            var d = item.discovery;
+            var c = item.communication;
 
-            if (!$common.isEmptyString(d.addressResolver) && !$common.isValidJavaClass('Address resolver', d.addressResolver, false, 'addressResolver', false, $scope.panels, 'discovery'))
+            if ($common.isDefined(c) && !$common.isEmptyString(c.listener) && !$common.isValidJavaClass('Communication listener', c.listener, false, 'comListener', false, $scope.panels, 'communication'))
                 return false;
 
-            if (!$common.isEmptyString(d.listener) && !$common.isValidJavaClass('Discovery listener', d.listener, false, 'listener', false, $scope.panels, 'discovery'))
+            if ($common.isDefined(c) && !$common.isEmptyString(c.addressResolver) && !$common.isValidJavaClass('Address resolver', c.addressResolver, false, 'comAddressResolver', false, $scope.panels, 'communication'))
+                return false;
+
+            var d = item.discovery;
+
+            if (!$common.isEmptyString(d.addressResolver) && !$common.isValidJavaClass('Address resolver', d.addressResolver, false, 'discoAddressResolver', false, $scope.panels, 'discovery'))
+                return false;
+
+            if (!$common.isEmptyString(d.listener) && !$common.isValidJavaClass('Discovery listener', d.listener, false, 'discoListener', false, $scope.panels, 'discovery'))
                 return false;
 
             if (!$common.isEmptyString(d.dataExchange) && !$common.isValidJavaClass('Data exchange', d.dataExchange, false, 'dataExchange', false, $scope.panels, 'discovery'))

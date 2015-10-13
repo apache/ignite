@@ -345,6 +345,34 @@ $generatorCommon.SSL_CONFIGURATION_TRUST_MANAGER_FACTORY = {
     }
 };
 
+// Communication configuration code generation descriptor.
+$generatorCommon.COMMUNICATION_CONFIGURATION = {
+    className: 'org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi',
+    fields: {
+        listener: {type: 'bean'},
+        localAddress: null,
+        localPort: 47100,
+        localPortRange: 100,
+        sharedMemoryPort: 48100,
+        directBuffer: null,
+        directSendBuffer: null,
+        idleConnectionTimeout: 30000,
+        connectTimeout: 5000,
+        maxConnectTimeout: 600000,
+        reconnectCount: 10,
+        socketSendBuffer: 32768,
+        socketReceiveBuffer: 32768,
+        messageQueueLimit: 1024,
+        slowClientQueueLimit: null,
+        tcpNoDelay: true,
+        ackSendThreshold: 16,
+        unacknowledgedMessagesBufferSize: null,
+        socketWriteTimeout: 2000,
+        selectorsCount: null,
+        addressResolver: {type: 'bean'}
+    }
+};
+
 // For server side we should export Java code generation entry point.
 if (typeof window === 'undefined') {
     module.exports = $generatorCommon;

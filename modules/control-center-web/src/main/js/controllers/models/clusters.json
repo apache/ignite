@@ -451,6 +451,232 @@
           "tip": [
             "This value is used to expire messages from waiting list whenever node discovery discrepancies happen"
           ]
+        },
+        {
+          "label": "Communication listener",
+          "id": "comListener",
+          "type": "text",
+          "path": "communication",
+          "model": "listener",
+          "tip": [
+            "Communication listener"
+          ]
+        },
+        {
+          "label": "Local IP address",
+          "id": "comLocalAddress",
+          "type": "text",
+          "path": "communication",
+          "model": "localAddress",
+          "placeholder": "228.1.2.4",
+          "tip": [
+            "Local host address for socket binding"
+          ]
+        },
+        {
+          "label": "Local port",
+          "id": "comLocalPort",
+          "type": "number",
+          "path": "communication",
+          "model": "localPort",
+          "min": 1024,
+          "max": 65535,
+          "placeholder": 47100,
+          "tip": [
+            "Local port for socket binding"
+          ]
+        },
+        {
+          "label": "Local port range",
+          "id": "comLocalPortRange",
+          "type": "number",
+          "path": "communication",
+          "model": "localPortRange",
+          "placeholder": 100,
+          "tip": [
+            "Local port range for local host ports"
+          ]
+        },
+        {
+          "label": "Shared memory port",
+          "id": "sharedMemoryPort",
+          "type": "number",
+          "path": "communication",
+          "model": "sharedMemoryPort",
+          "max": 65535,
+          "placeholder": 48100,
+          "tip": [
+            "Local port to accept shared memory connections"
+          ]
+        },
+        {
+          "label": "Direct buffer",
+          "id": "directBuffer",
+          "type": "check",
+          "path": "communication",
+          "model": "directBuffer",
+          "tip": [
+            "If value is true, then SPI will use ByteBuffer.allocateDirect(int) call",
+            "Otherwise, SPI will use ByteBuffer.allocate(int) call."
+          ]
+        },
+        {
+          "label": "Direct send buffer",
+          "id": "directSendBuffer",
+          "type": "check",
+          "path": "communication",
+          "model": "directSendBuffer",
+          "tip": [
+            "Flag defining whether direct send buffer should be used"
+          ]
+        },
+        {
+          "label": "Idle connection timeout",
+          "id": "idleConnectionTimeout",
+          "type": "number",
+          "path": "communication",
+          "model": "idleConnectionTimeout",
+          "placeholder": 30000,
+          "tip": [
+            "Maximum idle connection timeout upon which a connection to client will be closed"
+          ]
+        },
+        {
+          "label": "Connect timeout",
+          "id": "connectTimeout",
+          "type": "number",
+          "path": "communication",
+          "model": "connectTimeout",
+          "placeholder": 5000,
+          "tip": [
+            "Connect timeout used when establishing connection with remote nodes"
+          ]
+        },
+        {
+          "label": "Maximum connect timeout",
+          "id": "maxConnectTimeout",
+          "type": "number",
+          "path": "communication",
+          "model": "maxConnectTimeout",
+          "placeholder": 600000,
+          "tip": [
+            "Maximum connect timeout"
+          ]
+        },
+        {
+          "label": "Reconnect count",
+          "id": "comReconnectCount",
+          "type": "number",
+          "path": "communication",
+          "model": "reconnectCount",
+          "placeholder": 10,
+          "tip": [
+            "Maximum number of reconnect attempts used when establishing connection with remote nodes"
+          ]
+        },
+        {
+          "label": "Socket send buffer",
+          "id": "socketSendBuffer",
+          "type": "number",
+          "path": "communication",
+          "model": "socketSendBuffer",
+          "placeholder": 32768,
+          "tip": [
+            "Send buffer size for sockets created or accepted by this SPI"
+          ]
+        },
+        {
+          "label": "Socket receive buffer",
+          "id": "socketReceiveBuffer",
+          "type": "number",
+          "path": "communication",
+          "model": "socketReceiveBuffer",
+          "placeholder": 32768,
+          "tip": [
+            "Receive buffer size for sockets created or accepted by this SPI"
+          ]
+        },
+        {
+          "label": "Message queue limit",
+          "id": "messageQueueLimit",
+          "type": "number",
+          "path": "communication",
+          "model": "messageQueueLimit",
+          "placeholder": 1024,
+          "tip": [
+            "Message queue limit for incoming and outgoing messages"
+          ]
+        },
+        {
+          "label": "Slow client queue limit",
+          "type": "slowClientQueueLimit",
+          "path": "communication",
+          "model": "slowClientQueueLimit",
+          "tip": [
+            "Slow client queue limit"
+          ]
+        },
+        {
+          "label": "TCP_NODELAY option",
+          "id": "tcpNoDelay",
+          "type": "check",
+          "path": "communication",
+          "model": "tcpNoDelay",
+          "tip": [
+            "Value for TCP_NODELAY socket option"
+          ]
+        },
+        {
+          "label": "Ack send threshold",
+          "id": "ackSendThreshold",
+          "type": "number",
+          "path": "communication",
+          "model": "ackSendThreshold",
+          "placeholder": 16,
+          "tip": [
+            "Number of received messages per connection to node after which acknowledgment message is sent"
+          ]
+        },
+        {
+          "label": "Unacknowledged messages",
+          "id": "unacknowledgedMessagesBufferSize",
+          "type": "number",
+          "path": "communication",
+          "model": "unacknowledgedMessagesBufferSize",
+          "tip": [
+            "Maximum number of stored unacknowledged messages per connection to node"
+          ]
+        },
+        {
+          "label": "Socket write timeout",
+          "id": "socketWriteTimeout",
+          "type": "number",
+          "path": "communication",
+          "model": "socketWriteTimeout",
+          "placeholder": 2000,
+          "tip": [
+            "Socket write timeout"
+          ]
+        },
+        {
+          "label": "Selectors count",
+          "id": "selectorsCount",
+          "type": "number",
+          "path": "communication",
+          "model": "selectorsCount",
+          "tip": [
+            "Count of selectors te be used in TCP server"
+          ]
+        },
+        {
+          "label": "Address resolver",
+          "id": "comAddressResolver",
+          "type": "text",
+          "path": "communication",
+          "model": "addressResolver",
+          "tip": [
+            "Address resolver"
+          ]
         }
       ]
     },
@@ -491,7 +717,7 @@
       "fields": [
         {
           "label": "Local address",
-          "id": "localAddress",
+          "id": "discoLocalAddress",
           "type": "text",
           "path": "discovery",
           "model": "localAddress",
@@ -502,10 +728,12 @@
         },
         {
           "label": "Local port",
-          "id": "localPort",
+          "id": "discoLocalPort",
           "type": "number",
           "path": "discovery",
           "model": "localPort",
+          "min": 1024,
+          "max": 65535,
           "placeholder": 47500,
           "tip": [
             "Local port which node uses"
@@ -513,7 +741,7 @@
         },
         {
           "label": "Local port range",
-          "id": "localPortRange",
+          "id": "discoLocalPortRange",
           "type": "number",
           "path": "discovery",
           "model": "localPortRange",
@@ -524,7 +752,7 @@
         },
         {
           "label": "Address resolver",
-          "id": "addressResolver",
+          "id": "discoAddressResolver",
           "type": "text",
           "path": "discovery",
           "model": "addressResolver",
@@ -609,10 +837,10 @@
         },
         {
           "label": "Max heartbeats miss w/o init",
-          "id": "maxMissedClientHeartbeats",
+          "id": "maxMissedHeartbeats",
           "type": "number",
           "path": "discovery",
-          "model": "maxMissedClientHeartbeats",
+          "model": "maxMissedHeartbeats",
           "placeholder": 1,
           "tip": [
             "Max heartbeats count node can miss without initiating status check"
@@ -620,10 +848,10 @@
         },
         {
           "label": "Max heartbeats miss w/o failing client node",
-          "id": "maxMissedClientHbs",
+          "id": "maxMissedClientHeartbeats",
           "type": "number",
           "path": "discovery",
-          "model": "maxMissedClientHbs",
+          "model": "maxMissedClientHeartbeats",
           "placeholder": 5,
           "tip": [
             "Max heartbeats count node can miss without failing client node"
@@ -642,7 +870,7 @@
         },
         {
           "label": "Discovery listener",
-          "id": "listener",
+          "id": "discoListener",
           "type": "text",
           "path": "discovery",
           "model": "listener",
@@ -672,7 +900,7 @@
         },
         {
           "label": "Reconnect count",
-          "id": "reconnectCount",
+          "id": "discoReconnectCount",
           "type": "number",
           "path": "discovery",
           "model": "reconnectCount",
