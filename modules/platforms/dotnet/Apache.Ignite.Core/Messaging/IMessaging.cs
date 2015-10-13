@@ -87,7 +87,10 @@ namespace Apache.Ignite.Core.Messaging
         /// group can send a message for a given topic and all nodes within the cluster group will receive
         /// listener notifications.
         /// </summary>
-        /// <param name="listener">Listener predicate.</param>
+        /// <param name="listener">
+        /// Predicate that is called on each received message. If predicate returns false,
+        /// then it will be unsubscribed from any further notifications.
+        /// </param>
         /// <param name="topic">Topic to unsubscribe from.</param>
         /// <returns>
         /// Operation ID that can be passed to <see cref="StopRemoteListen"/> method to stop listening.
