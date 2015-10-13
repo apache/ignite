@@ -77,8 +77,8 @@ namespace Apache.Ignite.Core.Compute
     /// </summary>
     /// <typeparam name="TArg">Argument type.</typeparam>
     /// <typeparam name="TJobRes">Type of job result.</typeparam>
-    /// <typeparam name="TRes">Type of reduce result.</typeparam>
-    public interface IComputeTask<in TArg, TJobRes, out TRes>
+    /// <typeparam name="TTaskRes">Type of reduce result.</typeparam>
+    public interface IComputeTask<in TArg, TJobRes, out TTaskRes>
     {
         /// <summary>
         /// This method is called to map or split Ignite task into multiple Ignite jobs. This is the
@@ -118,14 +118,14 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="results">Received job results. Note that if task class has 
         /// <see cref="ComputeTaskNoResultCacheAttribute"/> attribute, then this list will be empty.</param>
         /// <returns>Task result constructed from results of remote executions.</returns>
-        TRes Reduce(IList<IComputeJobResult<TJobRes>> results);
+        TTaskRes Reduce(IList<IComputeJobResult<TJobRes>> results);
     }
 
     /// <summary>
     /// IComputeTask without an argument.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
-    public interface IComputeTask<T, out TR> : IComputeTask<object, T, TR>
+    public interface IComputeTask<TJobRes, out TReduceRes> : IComputeTask<object, TJobRes, TReduceRes>
     {
         // No-op.
     }

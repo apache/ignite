@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Compute
     /// Ignite job implementation can be injected with <see cref="IIgnite"/> using 
     /// <see cref="InstanceResourceAttribute"/> attribute.
     /// </summary>
-    public interface IComputeJob<out T>
+    public interface IComputeJob<out TRes>
     {
         /// <summary>
         /// Executes this job.
@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Compute
         /// in <see cref="IComputeJobResult{T}"/> object passed into 
         /// <see cref="IComputeTask{A,T,R}.Result(IComputeJobResult{T}, IList{IComputeJobResult{T}})"/>
         /// on caller node.</returns>
-        T Execute();
+        TRes Execute();
 
         /// <summary>
         /// This method is called when system detects that completion of this

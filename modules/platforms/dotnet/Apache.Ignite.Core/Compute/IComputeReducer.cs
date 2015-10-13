@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Compute
     /// <summary>
     /// Compute reducer which is capable of result collecting and reducing.
     /// </summary>
-    public interface IComputeReducer<in TR1, out TR2>
+    public interface IComputeReducer<in TJobRes, out TReduceRes>
     {
         /// <summary>
         /// Collect closure execution result.
@@ -28,12 +28,12 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="res">Result.</param>
         /// <returns><c>True</c> to continue collecting results until all closures are finished, 
         /// <c>false</c> to start reducing.</returns>
-        bool Collect(TR1 res);
+        bool Collect(TJobRes res);
 
         /// <summary>
         /// Reduce closure execution results collected earlier.
         /// </summary>
         /// <returns>Reduce result.</returns>
-        TR2 Reduce();
+        TReduceRes Reduce();
     }
 }
