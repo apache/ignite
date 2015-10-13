@@ -20,7 +20,7 @@
 <!--
     POM file.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -660,6 +660,7 @@
             </activation>
             <modules>
                 <module>modules/schema-import</module>
+                <module>modules/schema-import-db</module>
             </modules>
             <build>
                 <plugins>
@@ -716,6 +717,7 @@
             </activation>
             <modules>
                 <module>modules/schema-import</module>
+                <module>modules/schema-import-db</module>
             </modules>
             <build>
                 <plugins>
@@ -763,6 +765,42 @@
             </build>
         </profile>
 
+        <profile>
+            <id>control-center</id>
+            <modules>
+                <module>modules/control-center-agent</module>
+                <module>modules/control-center-web</module>
+                <module>modules/schema-import-db</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>ignite-npm</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <executable>npm</executable>
+                            <arguments>
+                                <argument>publish</argument>
+                                <argument>modules/nodejs/src/main/js</argument>
+                            </arguments>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        
         <profile>
             <id>update-versions</id>
             <!-- updates dotnet & cpp versions -->

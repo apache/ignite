@@ -38,48 +38,23 @@ import org.apache.ignite.schema.parser.dialect.JdbcMetadataDialect;
 import org.apache.ignite.schema.parser.dialect.MySQLMetadataDialect;
 import org.apache.ignite.schema.parser.dialect.OracleMetadataDialect;
 
+import java.sql.*;
+import java.util.*;
+import java.util.logging.*;
+
 /**
  * Database metadata parser.
  */
 public class DatabaseMetadataParser {
-    /** Logger. */
-    private static final Logger log = Logger.getLogger(DatabaseMetadataParser.class.getName());
-
-    /**
-     * Get specified dialect object for selected database.
-     *
-     * @param conn Connection to database.
-     * @return Specific dialect object.
-     */
-    private static DatabaseMetadataDialect dialect(Connection conn) {
-        try {
-            String dbProductName = conn.getMetaData().getDatabaseProductName();
-
-            if ("Oracle".equals(dbProductName))
-                return new OracleMetadataDialect();
-            else if (dbProductName.startsWith("DB2/"))
-                return new DB2MetadataDialect();
-            else if (dbProductName.equals("MySQL"))
-                return new MySQLMetadataDialect();
-            else
-                return new JdbcMetadataDialect();
-        }
-        catch (SQLException e) {
-            log.log(Level.SEVERE, "Failed to resolve dialect (JdbcMetaDataDialect will be used.", e);
-
-            return new JdbcMetadataDialect();
-        }
-    }
-
     /**
      * Get list of schemas from database.
      *
      * @param conn Connection to database.
      * @return List of schema descriptors.
-     * @throws SQLException If shemas loading failed.
+     * @throws SQLException If schemas loading failed.
      */
     public static ObservableList<SchemaDescriptor> schemas(Connection conn) throws SQLException  {
-        List<String> dbSchemas = dialect(conn).schemas(conn);
+        Collection<String> dbSchemas = DbMetadataReader.getInstance().schemas(conn);
 
         List<SchemaDescriptor> uiSchemas = new ArrayList<>(dbSchemas.size());
 
@@ -93,20 +68,18 @@ public class DatabaseMetadataParser {
      * Parse database metadata.
      *
      * @param conn Connection to database.
-     * @param schemas Collention of schema names to load.
+     * @param schemas Collection of schema names to process.
      * @param tblsOnly If {@code true} then process tables only else process tables and views.
      * @return Collection of POJO descriptors.
      * @throws SQLException If parsing failed.
      */
     public static ObservableList<PojoDescriptor> parse(Connection conn, List<String> schemas, boolean tblsOnly)
         throws SQLException {
-        DatabaseMetadataDialect dialect = dialect(conn);
-
         Map<String, PojoDescriptor> parents = new HashMap<>();
 
         Map<String, Collection<PojoDescriptor>> childrens = new HashMap<>();
 
-        for (DbTable tbl : dialect.tables(conn, schemas, tblsOnly)) {
+        for (DbTable tbl : DbMetadataReader.getInstance().metadata(conn, schemas, tblsOnly)) {
             String schema = tbl.schema();
 
             PojoDescriptor parent = parents.get(schema);
