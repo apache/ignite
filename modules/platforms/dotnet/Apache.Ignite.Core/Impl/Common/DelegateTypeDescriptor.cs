@@ -136,7 +136,7 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Gets the <see cref="IMessageFilter{T}" /> invocator.
+        /// Gets the <see cref="IMessageListener{T}" /> invocator.
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Precompiled invocator delegate.</returns>
@@ -286,9 +286,9 @@ namespace Apache.Ignite.Core.Impl.Common
                     _streamTransformerCtor = DelegateConverter.CompileCtor<Func<object, object>>(transformerType,
                         new[] {iface});
                 }
-                else if (genericTypeDefinition == typeof (IMessageFilter<>))
+                else if (genericTypeDefinition == typeof (IMessageListener<>))
                 {
-                    ThrowIfMultipleInterfaces(_messageFilter, type, typeof(IMessageFilter<>));
+                    ThrowIfMultipleInterfaces(_messageFilter, type, typeof(IMessageListener<>));
 
                     var arg = iface.GetGenericArguments()[0];
 

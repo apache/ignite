@@ -20,17 +20,20 @@ namespace Apache.Ignite.Core.Events
     using System;
 
     /// <summary>
-    /// Represents an event filter.
+    /// Represents an event listener.
     /// </summary>
     /// <typeparam name="T">Event type.</typeparam>
     public interface IEventListener<in T> where T : IEvent
     {
         /// <summary>
-        /// Determines whether specified event passes this filtger.
+        /// Determines whether specified event passes this filter.
         /// </summary>
         /// <param name="nodeId">Node identifier.</param>
         /// <param name="evt">Event.</param>
-        /// <returns>Value indicating whether specified event passes this filtger.</returns>
+        /// <returns>
+        /// Value indicating whether this instance should remain subscribed. 
+        /// Returning <c>false</c> will unsubscribe this event listener from further notifications
+        /// </returns>
         bool Invoke(Guid? nodeId, T evt);
     }
 }

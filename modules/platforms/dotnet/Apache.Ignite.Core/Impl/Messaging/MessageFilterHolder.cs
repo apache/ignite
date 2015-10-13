@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// Initializes a new instance of the <see cref="MessageFilterHolder" /> class.
         /// </summary>
         /// <param name="grid">Grid.</param>
-        /// <param name="filter">The <see cref="IMessageFilter{T}" /> to wrap.</param>
+        /// <param name="filter">The <see cref="IMessageListener{T}" /> to wrap.</param>
         /// <param name="invoker">The invoker func that takes key and value and invokes wrapped IMessageFilter.</param>
         private MessageFilterHolder(Ignite grid, object filter, Func<Guid, object, bool> invoker)
         {
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         }
 
         /// <summary>
-        /// Wrapped <see cref="IMessageFilter{T}" />.
+        /// Wrapped <see cref="IMessageListener{T}" />.
         /// </summary>
         public object Filter
         {
@@ -112,15 +112,15 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// Creates local holder instance.
         /// </summary>
         /// <param name="grid">Ignite instance.</param>
-        /// <param name="filter">Filter.</param>
+        /// <param name="listener">Filter.</param>
         /// <returns>
         /// New instance of <see cref="MessageFilterHolder" />
         /// </returns>
-        public static MessageFilterHolder CreateLocal<T>(Ignite grid, IMessageFilter<T> filter)
+        public static MessageFilterHolder CreateLocal<T>(Ignite grid, IMessageListener<T> listener)
         {
-            Debug.Assert(filter != null);
+            Debug.Assert(listener != null);
 
-            return new MessageFilterHolder(grid, filter, (id, msg) => filter.Invoke(id, (T)msg));
+            return new MessageFilterHolder(grid, listener, (id, msg) => listener.Invoke(id, (T)msg));
         }
 
         /// <summary>

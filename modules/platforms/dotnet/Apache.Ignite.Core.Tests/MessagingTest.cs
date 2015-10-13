@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var grid3GotMessage = false;
 
-            var grid3Listener = new MessageFilter<string>((id, x) =>
+            var grid3Listener = new MessageListener<string>((id, x) =>
             {
                 grid3GotMessage = true;
                 return true;
@@ -199,7 +199,7 @@ namespace Apache.Ignite.Core.Tests
 
             var sharedReceived = 0;
 
-            var sharedListener = new MessageFilter<string>((id, x) =>
+            var sharedListener = new MessageListener<string>((id, x) =>
             {
                 Interlocked.Increment(ref sharedReceived);
                 Thread.MemoryBarrier();
@@ -220,7 +220,7 @@ namespace Apache.Ignite.Core.Tests
                 var localReceived = 0;
                 var stopLocal = 0;
 
-                var localListener = new MessageFilter<string>((id, x) =>
+                var localListener = new MessageListener<string>((id, x) =>
                 {
                     Interlocked.Increment(ref localReceived);
                     Thread.MemoryBarrier();
@@ -569,9 +569,9 @@ namespace Apache.Ignite.Core.Tests
         /// Gets the message listener.
         /// </summary>
         /// <returns>New instance of message listener.</returns>
-        public static IMessageFilter<string> GetListener()
+        public static IMessageListener<string> GetListener()
         {
-            return new MessageFilter<string>(Listen);
+            return new MessageListener<string>(Listen);
         }
 
         /// <summary>
@@ -616,7 +616,7 @@ namespace Apache.Ignite.Core.Tests
     /// Test message filter.
     /// </summary>
     [Serializable]
-    public class MessageFilter<T> : IMessageFilter<T>
+    public class MessageListener<T> : IMessageListener<T>
     {
         /** */
         private readonly Func<Guid, T, bool> _invoke;
@@ -628,10 +628,10 @@ namespace Apache.Ignite.Core.Tests
         #pragma warning restore 649
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MessageFilter{T}"/> class.
+        /// Initializes a new instance of the <see cref="MessageListener{T}"/> class.
         /// </summary>
         /// <param name="invoke">The invoke delegate.</param>
-        public MessageFilter(Func<Guid, T, bool> invoke)
+        public MessageListener(Func<Guid, T, bool> invoke)
         {
             _invoke = invoke;
         }

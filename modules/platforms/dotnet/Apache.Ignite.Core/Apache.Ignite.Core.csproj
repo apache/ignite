@@ -307,7 +307,7 @@
     <Compile Include="Impl\Unmanaged\UnmanagedUtils.cs" />
     <Compile Include="Lifecycle\ILifecycleBean.cs" />
     <Compile Include="Lifecycle\LifecycleEventType.cs" />
-    <Compile Include="Messaging\IMessageFilter.cs" />
+    <Compile Include="Messaging\IMessageListener.cs" />
     <Compile Include="Messaging\IMessaging.cs" />
     <Compile Include="Portable\IPortableBuilder.cs" />
     <Compile Include="Portable\IPortableIdMapper.cs" />
