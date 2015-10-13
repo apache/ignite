@@ -96,9 +96,9 @@ namespace Apache.Ignite.Core.Compute
         /// <returns>Task result.</returns>
         /// <typeparam name="TArg">Argument type.</typeparam>
         /// <typeparam name="TJobRes">Type of job result.</typeparam>
-        /// <typeparam name="TTaskRes">Type of reduce result.</typeparam>
+        /// <typeparam name="TReduceRes">Type of reduce result.</typeparam>
         [AsyncSupported]
-        TTaskRes Execute<TArg, TJobRes, TTaskRes>(IComputeTask<TArg, TJobRes, TTaskRes> task, TArg taskArg);
+        TReduceRes Execute<TArg, TJobRes, TReduceRes>(IComputeTask<TArg, TJobRes, TReduceRes> task, TArg taskArg);
         
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -107,9 +107,9 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="task">Task to execute.</param>
         /// <returns>Task result.</returns>
         /// <typeparam name="TJobRes">Type of job result.</typeparam>
-        /// <typeparam name="TTaskRes">Type of reduce result.</typeparam>
+        /// <typeparam name="TReduceRes">Type of reduce result.</typeparam>
         [AsyncSupported]
-        TTaskRes Execute<TJobRes, TTaskRes>(IComputeTask<TJobRes, TTaskRes> task);
+        TReduceRes Execute<TJobRes, TReduceRes>(IComputeTask<TJobRes, TReduceRes> task);
 
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -120,9 +120,9 @@ namespace Apache.Ignite.Core.Compute
         /// <returns>Task result.</returns>
         /// <typeparam name="TArg">Argument type.</typeparam>
         /// <typeparam name="TJobRes">Type of job result.</typeparam>
-        /// <typeparam name="TTaskRes">Type of reduce result.</typeparam>
+        /// <typeparam name="TReduceRes">Type of reduce result.</typeparam>
         [AsyncSupported]
-        TTaskRes Execute<TArg, TJobRes, TTaskRes>(Type taskType, TArg taskArg);
+        TReduceRes Execute<TArg, TJobRes, TReduceRes>(Type taskType, TArg taskArg);
         
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -131,9 +131,9 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="taskType">Task type.</param>
         /// <returns>Task result.</returns>
         /// <typeparam name="TJobRes">Type of job result.</typeparam>
-        /// <typeparam name="TTaskRes">Type of reduce result.</typeparam>
+        /// <typeparam name="TReduceRes">Type of reduce result.</typeparam>
         [AsyncSupported]
-        TTaskRes Execute<TJobRes, TTaskRes>(Type taskType);
+        TReduceRes Execute<TJobRes, TReduceRes>(Type taskType);
 
         /// <summary>
         /// Executes provided job on a node in this grid projection. The result of the
@@ -270,4 +270,6 @@ namespace Apache.Ignite.Core.Compute
         TReduceRes Apply<TArg, TJobRes, TReduceRes>(IComputeFunc<TArg, TJobRes> clo, IEnumerable<TArg> args, 
             IComputeReducer<TJobRes, TReduceRes> rdc);
     }
+
+    // TODO: Fix naming in implementations
 }
