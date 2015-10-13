@@ -44,6 +44,45 @@ router.get('/download', function (req, res) {
 });
 
 /* Get grid topology. */
+router.get('/download-zip', function (req, res) {
+    var fs = require('fs');
+    var JSZip = require('jszip');
+    var config = require('../helpers/configuration-loader.js');
+
+    var agentFld =  'ignite-web-agent-1.5.0-SNAPSHOT';
+    var agentZip =  agentFld + '.zip';
+
+    // read a zip file
+    fs.readFile('public/agent/' + agentZip, function(err, data) {
+        if (err)
+            return res.download('public/agent/' + agentZip, agentZip);
+
+        var zip = new JSZip(data);
+
+        var prop = [];
+
+        var host = req.hostname.match(/:/g) ? req.hostname.slice(0, req.hostname.indexOf(':')) : req.hostname;
+
+        prop.push('token=' + req.user.token);
+        prop.push('server-uri=wss://' + host + ':' + config.get('agent-server:port'));
+        prop.push('#node-uri=http://localhost:8080');
+        prop.push('#driver-folder=./jdbc-drivers');
+        prop.push('#test-drive-metadata=true');
+        prop.push('#test-drive-sql=true');
+
+        zip.file(agentFld + '/default.properties', prop.join('\n'));
+
+        var buffer = zip.generate({type:"nodebuffer"});
+
+        // Set the archive name.
+        res.attachment(agentZip);
+
+        res.send(buffer);
+
+    });
+});
+
+/* Get grid topology. */
 router.post('/topology', function (req, res) {
     var client = _client(req, res);
 

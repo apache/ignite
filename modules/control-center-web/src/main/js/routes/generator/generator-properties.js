@@ -102,7 +102,7 @@ $generatorProperties.sslProperties = function (cluster, res) {
     }
 
     return res;
-}
+};
 
 // For server side we should export properties generation entry point.
 if (typeof window === 'undefined') {

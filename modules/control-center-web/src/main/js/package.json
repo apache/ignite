@@ -32,6 +32,7 @@
     "express-force-ssl": "^0.3.0",
     "express-session": "^1.11.1",
     "jade": "~1.11.0",
+    "jszip": "^2.5.0",
     "lodash": "3.10.1",
     "mongoose": "^4.1.10",
     "mongoose-deep-populate": "2.0.2",
