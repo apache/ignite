@@ -31,7 +31,7 @@ consoleModule.controller('sqlController',
 
     $scope.pageSizes = [50, 100, 200, 400, 800, 1000];
 
-    $scope.timeLineSpans = [1, 5, 10, 15, 30];
+    $scope.timeLineSpans = ['1', '5', '10', '15', '30'];
 
     $scope.modes = $common.mkOptions(['PARTITIONED', 'REPLICATED', 'LOCAL']);
 
@@ -52,11 +52,13 @@ consoleModule.controller('sqlController',
         }
     };
 
+    // Time line X axis descriptor.
     var TIME_LINE = {value: -1, type: 'java.sql.Date', label: 'TIME_LINE'};
 
     var chartHistory = [];
 
-    var HISTORY_LENGTH = 100;
+    // We need max 1800 items to hold history for 30 mins in case of refresh every second.
+    var HISTORY_LENGTH = 1800;
 
     $scope.chartRemoveKeyColumn = function (paragraph, index) {
         paragraph.chartKeyCols.splice(index, 1);
@@ -788,6 +790,8 @@ consoleModule.controller('sqlController',
                             chartData.shift();
                     }
                     else {
+                        var tm = new Date();
+
                         values = _.map(chartHistory, function (history) {
                             return {
                                 x: history.tm,
@@ -836,6 +840,13 @@ consoleModule.controller('sqlController',
         return datum;
     }
 
+    $scope.paragraphTimeLineSpan = function (paragraph) {
+      if (paragraph && paragraph.timeLineSpan)
+        return paragraph.timeLineSpan.toString();
+
+        return '1';
+    };
+
     function _chartApplySettings(paragraph, resetCharts) {
         if (resetCharts)
             paragraph.charts = [];
@@ -860,6 +871,10 @@ consoleModule.controller('sqlController',
             }
         }
     }
+
+    $scope.applyChartTimeFrame = function (paragraph) {
+        _chartApplySettings(paragraph, true);
+    };
 
     function _colLabel(col) {
         return col.label;
