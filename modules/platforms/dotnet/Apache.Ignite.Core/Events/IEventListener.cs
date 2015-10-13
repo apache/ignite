@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// Invokes the event listener when an event occurs.
         /// </summary>
-        /// <param name="nodeId">Current node identifier.</param>
+        /// <param name="nodeId">Current node identifier (TODO: What is this really?).</param>
         /// <param name="evt">Event.</param>
         /// <returns>
         /// Value indicating whether this instance should remain subscribed. 
