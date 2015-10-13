@@ -383,7 +383,7 @@ namespace Apache.Ignite.Core.Tests
             var expectedType = EventType.EventJobStarted;
 
             var remoteFilter = portable 
-                ?  (IEventListener<IEvent>) new RemoteEventPortableListener(expectedType) 
+                ?  (IEventPredicate<IEvent>) new RemoteEventPortableListener(expectedType) 
                 :  new RemoteEventListener(expectedType);
 
             var localListener = EventsTestHelper.GetListener();
@@ -788,7 +788,7 @@ namespace Apache.Ignite.Core.Tests
         /// Gets the event listener.
         /// </summary>
         /// <returns>New instance of event listener.</returns>
-        public static IEventListener<IEvent> GetListener()
+        public static IEventPredicate<IEvent> GetListener()
         {
             return new EventListener<IEvent>(Listen);
         }
@@ -840,7 +840,7 @@ namespace Apache.Ignite.Core.Tests
     /// Test event filter.
     /// </summary>
     [Serializable]
-    public class EventListener<T> : IEventListener<T> where T : IEvent
+    public class EventListener<T> : IEventPredicate<T> where T : IEvent
     {
         /** */
         private readonly Func<Guid?, T, bool> _invoke;
@@ -855,7 +855,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /** <inheritdoc /> */
-        bool IEventListener<T>.Invoke(Guid? nodeId, T evt)
+        bool IEventPredicate<T>.Invoke(Guid? nodeId, T evt)
         {
             return _invoke(nodeId, evt);
         }
@@ -871,7 +871,7 @@ namespace Apache.Ignite.Core.Tests
     /// Remote event filter.
     /// </summary>
     [Serializable]
-    public class RemoteEventListener : IEventListener<IEvent>
+    public class RemoteEventListener : IEventPredicate<IEvent>
     {
         /** */
         private readonly int _type;
@@ -891,7 +891,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Portable remote event filter.
     /// </summary>
-    public class RemoteEventPortableListener : IEventListener<IEvent>, IPortableMarshalAware
+    public class RemoteEventPortableListener : IEventPredicate<IEvent>, IPortableMarshalAware
     {
         /** */
         private int _type;

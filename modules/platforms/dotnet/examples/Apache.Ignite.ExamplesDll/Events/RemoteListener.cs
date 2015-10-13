@@ -24,7 +24,7 @@ namespace Apache.Ignite.ExamplesDll.Events
     /// Remote event filter.
     /// </summary>
     [Serializable]
-    public class RemoteListener : IEventListener<IEvent>
+    public class RemoteListener : IEventPredicate<IEvent>
     {
         /// <summary>
         /// Determines whether specified event passes this filter.

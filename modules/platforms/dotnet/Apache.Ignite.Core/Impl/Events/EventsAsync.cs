@@ -53,12 +53,12 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritdoc /> */
-        public override ICollection<T> RemoteQuery<T>(IEventListener<T> listener, TimeSpan? timeout = null,
+        public override ICollection<T> RemoteQuery<T>(IEventPredicate<T> filter, TimeSpan? timeout = null,
             params int[] types)
         {
             _lastAsyncOp.Value = (int) Op.RemoteQuery;
 
-            var result = base.RemoteQuery(listener, timeout, types);
+            var result = base.RemoteQuery(filter, timeout, types);
 
             // Result is a List<T> so we can't create proper converter later in GetFuture call from user.
             // ReSharper disable once RedundantTypeArgumentsOfMethod (otherwise won't compile in VS2010 / TC)
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
         /** <inheritdoc /> */
         public override Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
-            IEventListener<T> localListener = null, IEventListener<T> remoteListener = null, params int[] types)
+            IEventPredicate<T> localListener = null, IEventPredicate<T> remoteListener = null, params int[] types)
         {
             _lastAsyncOp.Value = (int) Op.RemoteListen;
             _curFut.Value = null;
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritdoc /> */
-        public override T WaitForLocal<T>(IEventListener<T> listener, params int[] types)
+        public override T WaitForLocal<T>(IEventPredicate<T> listener, params int[] types)
         {
             _lastAsyncOp.Value = (int) Op.WaitForLocal;
 
