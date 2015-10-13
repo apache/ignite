@@ -35,7 +35,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
- * Invoke retry consistency test.
+ * Transactional write read consistency test.
  */
 public class CacheNearDisabledTransactionalWriteReadRestartSelfTest extends CacheAbstractRestartSelfTest{
     /** */
