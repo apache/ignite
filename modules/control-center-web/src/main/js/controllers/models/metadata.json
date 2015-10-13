@@ -36,7 +36,7 @@
           "placeholderEmpty": "No caches configured",
           "items": "caches",
           "tip": [
-            "Select caches to associate database with cache"
+            "Select caches to associate metadata with cache"
           ],
           "addLink": {
             "label": "Add cache(s)",
