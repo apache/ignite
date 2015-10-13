@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
-    using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Runtime.Serialization.Formatters.Binary;
@@ -277,10 +276,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Cached UTF8 encoding. */
         private static readonly Encoding Utf8 = Encoding.UTF8;
-
-        /** StringHashCode(assemblyQualifiedName) -> Type map. */
-        private static readonly CopyOnWriteConcurrentDictionary<int, Type> TypeNameMap =
-            new CopyOnWriteConcurrentDictionary<int, Type>();
 
         /** Cached generic array read funcs. */
         private static readonly CopyOnWriteConcurrentDictionary<Type, Func<PortableReaderImpl, bool, object>>
@@ -1118,84 +1113,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             return vals;
         }
 
-        /// <summary>
-        /// Writes a Type to the writer.
-        /// </summary>
-        /// <param name="type">Type.</param>
-        /// <param name="writer">Writer.</param>
-        private static void WriteType(Type type, PortableWriterImpl writer)
-        {
-            Debug.Assert(type != null);
-            Debug.Assert(writer != null);
-
-            type = ReplaceTypesRecursive(type, typeof (IPortableBuilder), typeof (IPortableObject));
-            type = ReplaceTypesRecursive(type, typeof (PortableUserObject), typeof (object));
-
-            var desc = writer.Marshaller.GetDescriptor(type);
-
-            if (desc != null)
-            {
-                writer.WriteBoolean(true);  // known type
-                
-                writer.WriteBoolean(desc.UserType);
-                writer.WriteInt(desc.TypeId);
-            }
-            else
-            {
-                writer.WriteBoolean(false);  // unknown type
-
-                var typeName = type.AssemblyQualifiedName;
-
-                writer.WriteInt(GetStringHashCode(typeName));
-                writer.WriteString(typeName);
-            }
-        }
-
-        /// <summary>
-        /// Replaces type with another type in a generic of any depth.
-        /// </summary>
-        private static Type ReplaceTypesRecursive(Type type, Type target, Type replacement)
-        {
-            if (type == target)
-                return replacement;
-
-            if (!type.IsGenericType)
-                return type;
-
-            var def = type.GetGenericTypeDefinition();
-
-            var args = type.GetGenericArguments().Select(x => ReplaceTypesRecursive(x, target, replacement)).ToArray();
-
-            return def.MakeGenericType(args);
-        }
-
-        /// <summary>
-        /// Reads a Type from a reader.
-        /// </summary>
-        /// <param name="reader">Reader.</param>
-        /// <returns>Type.</returns>
-        private static Type ReadType(PortableReaderImpl reader)
-        {
-            Debug.Assert(reader != null);
-
-            var hasDesc = reader.ReadBoolean();
-
-            if (hasDesc)
-            {
-                var userType = reader.ReadBoolean();
-                var typeId = reader.ReadInt();
-
-                var desc = reader.Marshaller.GetDescriptor(userType, typeId);
-
-                return desc.Type;
-            }
-
-            var typeNameHash = reader.ReadInt();
-            var typeName = reader.ReadString();
-
-            return TypeNameMap.GetOrAdd(typeNameHash, x => Type.GetType(typeName, true));
-        }
-
         /**
          * <summary>Read DateTime array.</summary>
          * <param name="stream">Stream.</param>
@@ -1283,24 +1200,10 @@ namespace Apache.Ignite.Core.Impl.Portable
             Debug.Assert(val != null);
             Debug.Assert(ctx != null);
 
-            WriteType(val.GetType(), ctx);
-
             ctx.Stream.WriteInt(val.Count);
 
             foreach (T elem in val)
                 ctx.Write(elem);
-        }
-
-        /// <summary>
-        /// Reads generic collection in untyped context.
-        /// </summary>
-        public static object ReadGenericCollectionAsObject(PortableReaderImpl reader)
-        {
-            var colType = ReadType(reader);
-
-            var colInfo = PortableCollectionInfo.GetInstance(colType);
-
-            return colInfo.ReadGeneric(reader);
         }
 
         /// <summary>
@@ -1417,8 +1320,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         // ReSharper disable once UnusedMember.Local (used by reflection)
         private static void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val, PortableWriterImpl ctx)
         {
-            WriteType(val.GetType(), ctx);
-
             ctx.Stream.WriteInt(val.Count);
 
             foreach (var entry in val)

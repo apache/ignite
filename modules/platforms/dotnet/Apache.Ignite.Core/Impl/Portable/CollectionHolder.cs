@@ -19,6 +19,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Diagnostics;
+    using System.Linq;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
@@ -27,6 +29,10 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// </summary>
     internal class CollectionHolder : IPortableWriteAware
     {
+        /** StringHashCode(assemblyQualifiedName) -> Type map. */
+        private static readonly CopyOnWriteConcurrentDictionary<int, Type> TypeNameMap =
+            new CopyOnWriteConcurrentDictionary<int, Type>();
+
         /** Collection. */
         private readonly object _collection;
 
@@ -50,7 +56,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public CollectionHolder(IPortableReader reader)
         {
-            _collection = PortableUtils.ReadGenericCollectionAsObject((PortableReaderImpl) reader.GetRawReader());
+            var r = (PortableReaderImpl) reader.GetRawReader();
+
+            var colType = ReadType(r);
+
+            var colInfo = PortableCollectionInfo.GetInstance(colType);
+
+            _collection = colInfo.ReadGeneric(r);
         }
 
         /// <summary>
@@ -66,7 +78,89 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             Debug.Assert(_writeAction != null);
 
-            _writeAction((PortableWriterImpl) writer.GetRawWriter(), _collection);
+            var w = (PortableWriterImpl)writer.GetRawWriter();
+
+            WriteType(_collection.GetType(), w);
+
+            _writeAction(w, _collection);
+        }
+
+        /// <summary>
+        /// Writes a Type to the writer.
+        /// </summary>
+        /// <param name="type">Type.</param>
+        /// <param name="writer">Writer.</param>
+        private static void WriteType(Type type, PortableWriterImpl writer)
+        {
+            Debug.Assert(type != null);
+            Debug.Assert(writer != null);
+
+            type = ReplaceTypesRecursive(type, typeof(IPortableBuilder), typeof(IPortableObject));
+            type = ReplaceTypesRecursive(type, typeof(PortableUserObject), typeof(object));
+
+            var desc = writer.Marshaller.GetDescriptor(type);
+
+            if (desc != null)
+            {
+                writer.WriteBoolean(true);  // known type
+
+                writer.WriteBoolean(desc.UserType);
+                writer.WriteInt(desc.TypeId);
+            }
+            else
+            {
+                writer.WriteBoolean(false);  // unknown type
+
+                var typeName = type.AssemblyQualifiedName;
+
+                writer.WriteInt(PortableUtils.GetStringHashCode(typeName));
+                writer.WriteString(typeName);
+            }
+        }
+
+        /// <summary>
+        /// Replaces type with another type in a generic of any depth.
+        /// </summary>
+        private static Type ReplaceTypesRecursive(Type type, Type target, Type replacement)
+        {
+            if (type == target)
+                return replacement;
+
+            if (!type.IsGenericType)
+                return type;
+
+            var def = type.GetGenericTypeDefinition();
+
+            var args = type.GetGenericArguments().Select(x => ReplaceTypesRecursive(x, target, replacement)).ToArray();
+
+            return def.MakeGenericType(args);
+        }
+
+        /// <summary>
+        /// Reads a Type from a reader.
+        /// </summary>
+        /// <param name="reader">Reader.</param>
+        /// <returns>Type.</returns>
+        private static Type ReadType(PortableReaderImpl reader)
+        {
+            Debug.Assert(reader != null);
+
+            var hasDesc = reader.ReadBoolean();
+
+            if (hasDesc)
+            {
+                var userType = reader.ReadBoolean();
+                var typeId = reader.ReadInt();
+
+                var desc = reader.Marshaller.GetDescriptor(userType, typeId);
+
+                return desc.Type;
+            }
+
+            var typeNameHash = reader.ReadInt();
+            var typeName = reader.ReadString();
+
+            return TypeNameMap.GetOrAdd(typeNameHash, x => Type.GetType(typeName, true));
         }
     }
 }
