@@ -2842,7 +2842,484 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     }
 
-    /**
+    /** Cache for discovery collections. */
+    private class DiscoCache {
+        /** Remote nodes. */
+        private final List<ClusterNode> rmtNodes;
+
+        /** All nodes. */
+        private final List<ClusterNode> allNodes;
+
+        /** All nodes with at least one cache configured. */
+        @GridToStringInclude
+        private final Collection<ClusterNode> allNodesWithCaches;
+
+        /** All nodes with at least one cache configured. */
+        @GridToStringInclude
+        private final Collection<ClusterNode> rmtNodesWithCaches;
+
+        /** Cache nodes by cache name. */
+        @GridToStringInclude
+        private final Map<String, Collection<ClusterNode>> allCacheNodes;
+
+        /** Remote cache nodes by cache name. */
+        @GridToStringInclude
+        private final Map<String, Collection<ClusterNode>> rmtCacheNodes;
+
+        /** Cache nodes by cache name. */
+        @GridToStringInclude
+        private final Map<String, Collection<ClusterNode>> affCacheNodes;
+
+        /** Caches where at least one node has near cache enabled. */
+        @GridToStringInclude
+        private final Set<String> nearEnabledCaches;
+
+        /** Nodes grouped by version. */
+        private final NavigableMap<IgniteProductVersion, Collection<ClusterNode>> nodesByVer;
+
+        /** Daemon nodes. */
+        private final List<ClusterNode> daemonNodes;
+
+        /** Node map. */
+        private final Map<UUID, ClusterNode> nodeMap;
+
+        /** Local node. */
+        private final ClusterNode loc;
+
+        /** Highest node order. */
+        private final long maxOrder;
+
+        /**
+         * Cached alive nodes list. As long as this collection doesn't accept {@code null}s use {@link
+         * #maskNull(String)} before passing raw cache names to it.
+         */
+        private final ConcurrentMap<String, Collection<ClusterNode>> aliveCacheNodes;
+
+        /**
+         * Cached alive remote nodes list. As long as this collection doesn't accept {@code null}s use {@link
+         * #maskNull(String)} before passing raw cache names to it.
+         */
+        private final ConcurrentMap<String, Collection<ClusterNode>> aliveRmtCacheNodes;
+
+        /**
+         * Cached alive remote nodes with caches.
+         */
+        private final Collection<ClusterNode> aliveNodesWithCaches;
+
+        /**
+         * Cached alive server remote nodes with caches.
+         */
+        private final Collection<ClusterNode> aliveSrvNodesWithCaches;
+
+        /**
+         * Cached alive remote server nodes with caches.
+         */
+        private final Collection<ClusterNode> aliveRmtSrvNodesWithCaches;
+
+        /**
+         * @param loc Local node.
+         * @param rmts Remote nodes.
+         */
+        private DiscoCache(ClusterNode loc, Collection<ClusterNode> rmts) {
+            this.loc = loc;
+
+            rmtNodes = Collections.unmodifiableList(new ArrayList<>(F.view(rmts, daemonFilter)));
+
+            assert !rmtNodes.contains(loc) : "Remote nodes collection shouldn't contain local node" +
+                " [rmtNodes=" + rmtNodes + ", loc=" + loc + ']';
+
+            List<ClusterNode> all = new ArrayList<>(rmtNodes.size() + 1);
+
+            if (!loc.isDaemon())
+                all.add(loc);
+
+            all.addAll(rmtNodes);
+
+            Collections.sort(all, GridNodeOrderComparator.INSTANCE);
+
+            allNodes = Collections.unmodifiableList(all);
+
+            Map<String, Collection<ClusterNode>> cacheMap = new HashMap<>(allNodes.size(), 1.0f);
+            Map<String, Collection<ClusterNode>> rmtCacheMap = new HashMap<>(allNodes.size(), 1.0f);
+            Map<String, Collection<ClusterNode>> dhtNodesMap = new HashMap<>(allNodes.size(), 1.0f);
+            Collection<ClusterNode> nodesWithCaches = new HashSet<>(allNodes.size());
+            Collection<ClusterNode> rmtNodesWithCaches = new HashSet<>(allNodes.size());
+
+            aliveCacheNodes = new ConcurrentHashMap8<>(allNodes.size(), 1.0f);
+            aliveRmtCacheNodes = new ConcurrentHashMap8<>(allNodes.size(), 1.0f);
+            aliveNodesWithCaches = new ConcurrentSkipListSet<>();
+            aliveSrvNodesWithCaches = new ConcurrentSkipListSet<>();
+            aliveRmtSrvNodesWithCaches = new ConcurrentSkipListSet<>();
+            nodesByVer = new TreeMap<>();
+
+            long maxOrder0 = 0;
+
+            Set<String> nearEnabledSet = new HashSet<>();
+
+            for (ClusterNode node : allNodes) {
+                assert node.order() != 0 : "Invalid node order [locNode=" + loc + ", node=" + node + ']';
+
+                if (node.order() > maxOrder0)
+                    maxOrder0 = node.order();
+
+                boolean hasCaches = false;
+
+                for (Map.Entry<String, CachePredicate> entry : registeredCaches.entrySet()) {
+                    String cacheName = entry.getKey();
+
+                    CachePredicate filter = entry.getValue();
+
+                    if (filter.cacheNode(node)) {
+                        nodesWithCaches.add(node);
+
+                        if (!loc.id().equals(node.id()))
+                            rmtNodesWithCaches.add(node);
+
+                        addToMap(cacheMap, cacheName, node);
+
+                        if (alive(node.id()))
+                            addToMap(aliveCacheNodes, maskNull(cacheName), node);
+
+                        if (filter.dataNode(node))
+                            addToMap(dhtNodesMap, cacheName, node);
+
+                        if (filter.nearNode(node))
+                            nearEnabledSet.add(cacheName);
+
+                        if (!loc.id().equals(node.id())) {
+                            addToMap(rmtCacheMap, cacheName, node);
+
+                            if (alive(node.id()))
+                                addToMap(aliveRmtCacheNodes, maskNull(cacheName), node);
+                        }
+
+                        hasCaches = true;
+                    }
+                }
+
+                if (hasCaches) {
+                    if (alive(node.id())) {
+                        aliveNodesWithCaches.add(node);
+
+                        if (!CU.clientNode(node)) {
+                            aliveSrvNodesWithCaches.add(node);
+
+                            if (!loc.id().equals(node.id()))
+                                aliveRmtSrvNodesWithCaches.add(node);
+                        }
+                    }
+                }
+
+                IgniteProductVersion nodeVer = U.productVersion(node);
+
+                // Create collection for this version if it does not exist.
+                Collection<ClusterNode> nodes = nodesByVer.get(nodeVer);
+
+                if (nodes == null) {
+                    nodes = new ArrayList<>(allNodes.size());
+
+                    nodesByVer.put(nodeVer, nodes);
+                }
+
+                nodes.add(node);
+            }
+
+            // Need second iteration to add this node to all previous node versions.
+            for (ClusterNode node : allNodes) {
+                IgniteProductVersion nodeVer = U.productVersion(node);
+
+                // Get all versions lower or equal node's version.
+                NavigableMap<IgniteProductVersion, Collection<ClusterNode>> updateView =
+                    nodesByVer.headMap(nodeVer, false);
+
+                for (Collection<ClusterNode> prevVersions : updateView.values())
+                    prevVersions.add(node);
+            }
+
+            maxOrder = maxOrder0;
+
+            allCacheNodes = Collections.unmodifiableMap(cacheMap);
+            rmtCacheNodes = Collections.unmodifiableMap(rmtCacheMap);
+            affCacheNodes = Collections.unmodifiableMap(dhtNodesMap);
+            allNodesWithCaches = Collections.unmodifiableCollection(nodesWithCaches);
+            this.rmtNodesWithCaches = Collections.unmodifiableCollection(rmtNodesWithCaches);
+            nearEnabledCaches = Collections.unmodifiableSet(nearEnabledSet);
+
+            daemonNodes = Collections.unmodifiableList(new ArrayList<>(
+                F.view(F.concat(false, loc, rmts), F0.not(daemonFilter))));
+
+            Map<UUID, ClusterNode> nodeMap = new HashMap<>(allNodes().size() + daemonNodes.size(), 1.0f);
+
+            for (ClusterNode n : F.concat(false, allNodes(), daemonNodes()))
+                nodeMap.put(n.id(), n);
+
+            this.nodeMap = nodeMap;
+        }
+
+        /**
+         * Adds node to map.
+         *
+         * @param cacheMap Map to add to.
+         * @param cacheName Cache name.
+         * @param rich Node to add
+         */
+        private void addToMap(Map<String, Collection<ClusterNode>> cacheMap, String cacheName, ClusterNode rich) {
+            Collection<ClusterNode> cacheNodes = cacheMap.get(cacheName);
+
+            if (cacheNodes == null) {
+                cacheNodes = new ArrayList<>(allNodes.size());
+
+                cacheMap.put(cacheName, cacheNodes);
+            }
+
+            cacheNodes.add(rich);
+        }
+
+        /** @return Local node. */
+        ClusterNode localNode() {
+            return loc;
+        }
+
+        /** @return Remote nodes. */
+        Collection<ClusterNode> remoteNodes() {
+            return rmtNodes;
+        }
+
+        /** @return All nodes. */
+        Collection<ClusterNode> allNodes() {
+            return allNodes;
+        }
+
+        /**
+         * Gets collection of nodes which have version equal or greater than {@code ver}.
+         *
+         * @param ver Version to check.
+         * @return Collection of nodes with version equal or greater than {@code ver}.
+         */
+        Collection<ClusterNode> elderNodes(IgniteProductVersion ver) {
+            Map.Entry<IgniteProductVersion, Collection<ClusterNode>> entry = nodesByVer.ceilingEntry(ver);
+
+            if (entry == null)
+                return Collections.emptyList();
+
+            return entry.getValue();
+        }
+
+        /**
+         * @return Versions map.
+         */
+        NavigableMap<IgniteProductVersion, Collection<ClusterNode>> versionsMap() {
+            return nodesByVer;
+        }
+
+        /**
+         * Gets collection of nodes with at least one cache configured.
+         *
+         * @param topVer Topology version (maximum allowed node order).
+         * @return Collection of nodes.
+         */
+        Collection<ClusterNode> allNodesWithCaches(final long topVer) {
+            return filter(topVer, allNodesWithCaches);
+        }
+
+        /**
+         * Gets all nodes that have cache with given name.
+         *
+         * @param cacheName Cache name.
+         * @param topVer Topology version.
+         * @return Collection of nodes.
+         */
+        Collection<ClusterNode> cacheNodes(@Nullable String cacheName, final long topVer) {
+            return filter(topVer, allCacheNodes.get(cacheName));
+        }
+
+        /**
+         * Gets all remote nodes that have cache with given name.
+         *
+         * @param cacheName Cache name.
+         * @param topVer Topology version.
+         * @return Collection of nodes.
+         */
+        Collection<ClusterNode> remoteCacheNodes(@Nullable String cacheName, final long topVer) {
+            return filter(topVer, rmtCacheNodes.get(cacheName));
+        }
+
+        /**
+         * Gets all remote nodes that have at least one cache configured.
+         *
+         * @param topVer Topology version.
+         * @return Collection of nodes.
+         */
+        Collection<ClusterNode> remoteCacheNodes(final long topVer) {
+            return filter(topVer, rmtNodesWithCaches);
+        }
+
+        /**
+         * Gets all nodes that have cache with given name and should participate in affinity calculation. With
+         * partitioned cache nodes with near-only cache do not participate in affinity node calculation.
+         *
+         * @param cacheName Cache name.
+         * @param topVer Topology version.
+         * @return Collection of nodes.
+         */
+        Collection<ClusterNode> cacheAffinityNodes(@Nullable String cacheName, final long topVer) {
+            return filter(topVer, affCacheNodes.get(cacheName));
+        }
+
+        /**
+         * Gets all alive nodes that have cache with given name.
+         *
+         * @param cacheName Cache name.
+         * @param topVer Topology version.
+         * @return Collection of nodes.
+         */
+        Collection<ClusterNode> aliveCacheNodes(@Nullable String cacheName, final long topVer) {
+            return filter(topVer, aliveCacheNodes.get(maskNull(cacheName)));
+        }
+
+        /**
+         * Gets all alive remote nodes that have cache with given name.
+         *
+         * @param cacheName Cache name.
+         * @param topVer Topology version.
+         * @return Collection of nodes.
+         */
+        Collection<ClusterNode> aliveRemoteCacheNodes(@Nullable String cacheName, final long topVer) {
+            return filter(topVer, aliveRmtCacheNodes.get(maskNull(cacheName)));
+        }
+
+        /**
+         * Gets all alive remote server nodes with at least one cache configured.
+         *
+         * @param topVer Topology version.
+         * @return Collection of nodes.
+         */
+        Collection<ClusterNode> aliveRemoteServerNodesWithCaches(final long topVer) {
+            return filter(topVer, aliveRmtSrvNodesWithCaches);
+        }
+
+        /**
+         * Gets all alive server nodes with at least one cache configured.
+         *
+         * @param topVer Topology version.
+         * @return Collection of nodes.
+         */
+        Collection<ClusterNode> aliveServerNodesWithCaches(final long topVer) {
+            return filter(topVer, aliveSrvNodesWithCaches);
+        }
+
+        /**
+         * Gets all alive remote nodes with at least one cache configured.
+         *
+         * @param topVer Topology version.
+         * @return Collection of nodes.
+         */
+        Collection<ClusterNode> aliveNodesWithCaches(final long topVer) {
+            return filter(topVer, aliveNodesWithCaches);
+        }
+
+        /**
+         * Checks if cache with given name has at least one node with near cache enabled.
+         *
+         * @param cacheName Cache name.
+         * @return {@code True} if cache with given name has at least one node with near cache enabled.
+         */
+        boolean hasNearCache(@Nullable String cacheName) {
+            return nearEnabledCaches.contains(cacheName);
+        }
+
+        /**
+         * Removes left node from cached alives lists.
+         *
+         * @param leftNode Left node.
+         */
+        void updateAlives(ClusterNode leftNode) {
+            if (leftNode.order() > maxOrder)
+                return;
+
+            filterNodeMap(aliveCacheNodes, leftNode);
+
+            filterNodeMap(aliveRmtCacheNodes, leftNode);
+
+            aliveNodesWithCaches.remove(leftNode);
+            aliveSrvNodesWithCaches.remove(leftNode);
+            aliveRmtSrvNodesWithCaches.remove(leftNode);
+        }
+
+        /**
+         * Creates a copy of nodes map without the given node.
+         *
+         * @param map Map to copy.
+         * @param exclNode Node to exclude.
+         */
+        private void filterNodeMap(ConcurrentMap<String, Collection<ClusterNode>> map, final ClusterNode exclNode) {
+            for (String cacheName : registeredCaches.keySet()) {
+                String maskedName = maskNull(cacheName);
+
+                while (true) {
+                    Collection<ClusterNode> oldNodes = map.get(maskedName);
+
+                    if (oldNodes == null || oldNodes.isEmpty())
+                        break;
+
+                    Collection<ClusterNode> newNodes = new ArrayList<>(oldNodes);
+
+                    if (!newNodes.remove(exclNode))
+                        break;
+
+                    if (map.replace(maskedName, oldNodes, newNodes))
+                        break;
+                }
+            }
+        }
+
+        /**
+         * Replaces {@code null} with {@code NULL_CACHE_NAME}.
+         *
+         * @param cacheName Cache name.
+         * @return Masked name.
+         */
+        private String maskNull(@Nullable String cacheName) {
+            return cacheName == null ? NULL_CACHE_NAME : cacheName;
+        }
+
+        /**
+         * @param topVer Topology version.
+         * @param nodes Nodes.
+         * @return Filtered collection (potentially empty, but never {@code null}).
+         */
+        private Collection<ClusterNode> filter(final long topVer, @Nullable Collection<ClusterNode> nodes) {
+            if (nodes == null)
+                return Collections.emptyList();
+
+            // If no filtering needed, return original collection.
+            return nodes.isEmpty() || topVer < 0 || topVer >= maxOrder ?
+                nodes :
+                F.view(nodes, new P1<ClusterNode>() {
+                    @Override public boolean apply(ClusterNode node) {
+                        return node.order() <= topVer;
+                    }
+                });
+        }
+
+        /** @return Daemon nodes. */
+        Collection<ClusterNode> daemonNodes() {
+            return daemonNodes;
+        }
+
+        /**
+         * @param id Node ID.
+         * @return Node.
+         */
+        @Nullable ClusterNode node(UUID id) {
+            return nodeMap.get(id);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(DiscoCache.class, this, "allNodesWithDaemons", U.toShortString(allNodes));
+        }
+    }    /**
      * Cache predicate.
      */
     private static class CachePredicate {
