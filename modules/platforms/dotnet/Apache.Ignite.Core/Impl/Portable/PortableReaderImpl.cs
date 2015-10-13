@@ -470,21 +470,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public T[] ReadGenericArray<T>(string fieldName)
-        {
-            return ReadField(fieldName, PortableUtils.ReadGenericArray<T>);
-        }
-
-        /** <inheritdoc /> */
         public object[] ReadArray()
         {
             return Read(r => PortableUtils.ReadArray<object>(r, true));
-        }
-
-        /** <inheritdoc /> */
-        public T[] ReadGenericArray<T>()
-        {
-            return Read(PortableUtils.ReadGenericArray<T>);
         }
 
         /** <inheritdoc /> */
@@ -514,31 +502,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public ICollection<T> ReadGenericCollection<T>(string fieldName)
-        {
-            return ReadGenericCollection<T>(fieldName, null);
-        }
-
-        /** <inheritdoc /> */
-        public ICollection<T> ReadGenericCollection<T>()
-        {
-            return ReadGenericCollection((PortableGenericCollectionFactory<T>) null);
-        }
-
-        /** <inheritdoc /> */
-        public ICollection<T> ReadGenericCollection<T>(string fieldName,
-            PortableGenericCollectionFactory<T> factory)
-        {
-            return ReadField(fieldName, r => PortableUtils.ReadGenericCollection(r, factory));
-        }
-
-        /** <inheritdoc /> */
-        public ICollection<T> ReadGenericCollection<T>(PortableGenericCollectionFactory<T> factory)
-        {
-            return Read(r => PortableUtils.ReadGenericCollection(r, factory));
-        }
-
-        /** <inheritdoc /> */
         public IDictionary ReadDictionary(string fieldName)
         {
             return ReadDictionary(fieldName, null);
@@ -560,31 +523,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         public IDictionary ReadDictionary(PortableDictionaryFactory factory)
         {
             return Read(r => PortableUtils.ReadDictionary(r, factory));
-        }
-
-        /** <inheritdoc /> */
-        public IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(string fieldName)
-        {
-            return ReadGenericDictionary<TK, TV>(fieldName, null);
-        }
-
-        /** <inheritdoc /> */
-        public IDictionary<TK, TV> ReadGenericDictionary<TK, TV>()
-        {
-            return ReadGenericDictionary((PortableGenericDictionaryFactory<TK, TV>) null);
-        }
-
-        /** <inheritdoc /> */
-        public IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(string fieldName,
-            PortableGenericDictionaryFactory<TK, TV> factory)
-        {
-            return ReadField(fieldName, r => PortableUtils.ReadGenericDictionary(r, factory));
-        }
-
-        /** <inheritdoc /> */
-        public IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableGenericDictionaryFactory<TK, TV> factory)
-        {
-            return Read(r => PortableUtils.ReadGenericDictionary(r, factory));
         }
 
         /// <summary>

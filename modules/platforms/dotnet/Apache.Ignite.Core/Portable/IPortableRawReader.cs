@@ -209,12 +209,6 @@ namespace Apache.Ignite.Core.Portable
         object[] ReadArray();
 
         /// <summary>
-        /// Read generic array. 
-        /// </summary>
-        /// <returns>Object array.</returns>
-        T[] ReadGenericArray<T>();
-
-        /// <summary>
         /// Read non-generic collection.
         /// Only non-generic collections can be used for interop with other platforms.
         /// </summary>
@@ -231,19 +225,6 @@ namespace Apache.Ignite.Core.Portable
         ICollection ReadCollection(PortableCollectionFactory factory, PortableCollectionAdder adder);
 
         /// <summary>
-        /// Read generic collection. 
-        /// </summary>
-        /// <returns>Collection.</returns>
-        ICollection<T> ReadGenericCollection<T>();
-
-        /// <summary>
-        /// Read generic collection.
-        /// </summary>
-        /// <param name="factory">Factory.</param>
-        /// <returns>Collection.</returns>
-        ICollection<T> ReadGenericCollection<T>(PortableGenericCollectionFactory<T> factory);
-
-        /// <summary>
         /// Read dictionary. 
         /// </summary>
         /// <returns>Dictionary.</returns>
@@ -255,18 +236,5 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="factory">Factory.</param>
         /// <returns>Dictionary.</returns>
         IDictionary ReadDictionary(PortableDictionaryFactory factory);
-
-        /// <summary>
-        /// Read generic dictionary. 
-        /// </summary>
-        /// <returns>Dictionary.</returns>
-        IDictionary<TK, TV> ReadGenericDictionary<TK, TV>();
-
-        /// <summary>
-        /// Read generic dictionary.
-        /// </summary>
-        /// <param name="factory">Factory.</param>
-        /// <returns>Dictionary.</returns>
-        IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableGenericDictionaryFactory<TK, TV> factory);
     }
 }

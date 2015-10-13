@@ -271,13 +271,6 @@ namespace Apache.Ignite.Core.Portable
         object[] ReadArray(string fieldName);
 
         /// <summary>
-        /// Read named generic array.
-        /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <returns>Object array.</returns>
-        T[] ReadGenericArray<T>(string fieldName);
-
-        /// <summary>
         /// Read named collection.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
@@ -294,21 +287,6 @@ namespace Apache.Ignite.Core.Portable
         ICollection ReadCollection(string fieldName, PortableCollectionFactory factory, PortableCollectionAdder adder);
 
         /// <summary>
-        /// Read named generic collection.
-        /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <returns>Collection.</returns>
-        ICollection<T> ReadGenericCollection<T>(string fieldName);
-
-        /// <summary>
-        /// Read named generic collection.
-        /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <param name="factory">Factory.</param>
-        /// <returns>Collection.</returns>
-        ICollection<T> ReadGenericCollection<T>(string fieldName, PortableGenericCollectionFactory<T> factory);
-
-        /// <summary>
         /// Read named dictionary.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
@@ -322,21 +300,6 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="factory">Factory.</param>
         /// <returns>Dictionary.</returns>
         IDictionary ReadDictionary(string fieldName, PortableDictionaryFactory factory);
-
-        /// <summary>
-        /// Read named generic dictionary.
-        /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <returns>Dictionary.</returns>
-        IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(string fieldName);
-
-        /// <summary>
-        /// Read named generic dictionary.
-        /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <param name="factory">Factory.</param>
-        /// <returns>Dictionary.</returns>
-        IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(string fieldName, PortableGenericDictionaryFactory<TK, TV> factory);
 
         /// <summary>
         /// Get raw reader. 
