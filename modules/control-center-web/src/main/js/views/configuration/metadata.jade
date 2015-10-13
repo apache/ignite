@@ -45,12 +45,13 @@ block content
                             tbody
                                 tr
                                     td
-                                        .scrollable-y(style='max-height: 200px')
+                                        .scrollable-y(ng-show='displayedRows.length > 0' style='max-height: 200px')
                                             table
                                                 tbody
                                                     tr(ng-repeat='row in (displayedRows | metadatasValidation:ui.showValid:true) track by row._id')
                                                         td
                                                             a(ng-class='{active: row._id == selectedItem._id}' ng-click='selectItem(row)') {{$index + 1}}) {{row.valueType}}
+                                        label.placeholder(ng-show='displayedRows.length == 0') No metadata found
                 .padding-top-dflt(bs-affix)
                     .panel-tip-container(data-placement='bottom' bs-tooltip data-title='Create new metadata')
                         button.btn.btn-primary(id='new-item' ng-click='createItem()') Add metadata
@@ -58,7 +59,7 @@ block content
                         button.btn.btn-primary(ng-click='showLoadMetadataModal()') Load from database
                     +save-remove-buttons('metadata')
                 hr
-                form.form-horizontal(name='ui.inputForm' ng-if='backupItem' novalidate unsaved-warning-form)
+                form.form-horizontal(name='ui.inputForm' ng-if='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate unsaved-warning-form)
                     .panel-group(bs-collapse ng-model='panels.activePanels' data-allow-multiple='true')
                         +groups('metadata', 'backupItem')
                     .section

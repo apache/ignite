@@ -33,6 +33,7 @@ consoleModule.controller('clustersController', [
         $scope.compactJavaName = $common.compactJavaName;
         $scope.saveBtnTipText = $common.saveBtnTipText;
 
+        $scope.tableVisibleRow = $table.tableVisibleRow;
         $scope.tableReset = $table.tableReset;
         $scope.tableNewItem = $table.tableNewItem;
         $scope.tableNewItemActive = $table.tableNewItemActive;
@@ -561,6 +562,6 @@ consoleModule.controller('clustersController', [
 
             $common.resetItem($scope.backupItem, resetTo, $scope.general, group);
             $common.resetItem($scope.backupItem, resetTo, $scope.advanced, group);
-        }
+        };
     }]
 );

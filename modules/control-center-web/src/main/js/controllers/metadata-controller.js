@@ -40,6 +40,7 @@ consoleModule.controller('metadataController', [
             $scope.compactJavaName = $common.compactJavaName;
             $scope.saveBtnTipText = $common.saveBtnTipText;
 
+            $scope.tableVisibleRow = $table.tableVisibleRow;
             $scope.tableReset = $table.tableReset;
             $scope.tableNewItem = $table.tableNewItem;
             $scope.tableNewItemActive = $table.tableNewItemActive;

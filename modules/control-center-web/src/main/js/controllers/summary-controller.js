@@ -17,8 +17,9 @@
 
 // Controller for Summary screen.
 consoleModule.controller('summaryController', [
-    '$scope', '$http', '$common', '$loading', '$message',
-    function ($scope, $http, $common, $loading, $message) {
+    '$scope', '$http', '$common', '$loading', '$message', '$table',
+    function ($scope, $http, $common, $loading, $message, $table) {
+    $scope.tableVisibleRow = $table.tableVisibleRow;
     $scope.joinTip = $common.joinTip;
     $scope.getModel = $common.getModel;
 

@@ -60,7 +60,7 @@ block content
             | You have no clusters configured. Please configure them &nbsp;
             a(href='clusters') here.
         +main-table('Clusters:', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}')
-        div(ng-show='selectedItem' role='tab' method='post' action='summary/download')
+        div(ng-show='selectedItem && tableVisibleRow(displayedRows, selectedItem)' role='tab' method='post' action='summary/download')
             .padding-dflt(bs-collapse data-start-collapsed='false')
                 .panel.panel-default
                     form.panel-heading(role='tab' method='post' action='summary/download' bs-collapse-toggle) Server

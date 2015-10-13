@@ -1154,6 +1154,9 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
     }
 
     return {
+        tableVisibleRow: function (rows, row) {
+            return !row || !row._id || _.findIndex(rows, function(item) {return item._id == row._id}) >= 0;
+        },
         tableState: function (name, editIndex) {
             _tableState(name, editIndex);
         },

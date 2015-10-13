@@ -35,7 +35,7 @@ block content
                         button.btn.btn-primary(id='new-item' ng-click='createItem()') Add cluster
                     +save-remove-buttons('cluster')
                     hr
-                form.form-horizontal(name='ui.inputForm' ng-if='backupItem' novalidate unsaved-warning-form)
+                form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate unsaved-warning-form)
                     .panel-group(bs-collapse ng-model='panels.activePanels' data-allow-multiple='true' ng-click='triggerDigest = true')
                         +groups('general', 'backupItem')
                         div(ng-show='ui.expanded')

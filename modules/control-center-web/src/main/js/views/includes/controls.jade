@@ -454,12 +454,13 @@ mixin main-table(title, rows, focusId, click, rowTemplate)
                 tbody
                     tr
                         td
-                            .scrollable-y(style='max-height: 200px')
+                            .scrollable-y(ng-show='displayedRows.length > 0' style='max-height: 200px')
                                 table
                                     tbody
                                         tr(ng-repeat='row in displayedRows track by row._id')
                                             td
                                                 a(ng-class='{active: row._id == selectedItem._id}' on-click-focus=focusId ng-click=click) #{rowTemplate}
+                            label.placeholder(ng-show='displayedRows.length == 0') No #{rows} found
 
 mixin groups(groups, dataSource)
     .panel.panel-default(ng-repeat='group in #{groups}' ng-click='triggerDigest=true' ng-hide='{{group.hide}}')
@@ -503,13 +504,14 @@ mixin save-remove-buttons(objectName)
     -var removeTip = '"Remove current ' + objectName + '"'
     -var cloneTip = '"Clone current ' + objectName + '"'
 
-    .panel-tip-container(ng-hide='!backupItem || backupItem._id')
-        a.btn.btn-primary(ng-disabled='!ui.isDirty()' ng-click='ui.isDirty() ? saveItem() : ""' bs-tooltip='' data-title='{{saveBtnTipText(ui.isDirty(), "#{objectName}")}}' data-placement='bottom' data-trigger='hover') Save
-    .panel-tip-container(ng-show='backupItem._id')
-        a.btn.btn-primary(id='save-item' ng-disabled='!ui.isDirty()' ng-click='ui.isDirty() ? saveItem() : ""' bs-tooltip='' data-title='{{saveBtnTipText(ui.isDirty(), "#{objectName}")}}' data-placement='bottom' data-trigger='hover') Save
-    .panel-tip-container(ng-show='backupItem._id')
-        a.btn.btn-primary(id='clone-item' ng-click='cloneItem()' bs-tooltip=cloneTip data-placement='bottom' data-trigger='hover') Clone
-    .btn-group.panel-tip-container(ng-show='backupItem._id')
-        button.btn.btn-primary(id='remove-item' ng-click='removeItem()' bs-tooltip=removeTip data-placement='bottom' data-trigger='hover') Remove
-        button.btn.dropdown-toggle.btn-primary(id='remove-item-dropdown' data-toggle='dropdown' data-container='body' bs-dropdown='removeDropdown' data-placement='bottom-right')
-            span.caret
+    div(ng-show='tableVisibleRow(displayedRows, selectedItem)' style='display: inline-block;')
+        .panel-tip-container(ng-hide='!backupItem || backupItem._id')
+            a.btn.btn-primary(ng-disabled='!ui.isDirty()' ng-click='ui.isDirty() ? saveItem() : ""' bs-tooltip='' data-title='{{saveBtnTipText(ui.isDirty(), "#{objectName}")}}' data-placement='bottom' data-trigger='hover') Save
+        .panel-tip-container(ng-show='backupItem._id')
+            a.btn.btn-primary(id='save-item' ng-disabled='!ui.isDirty()' ng-click='ui.isDirty() ? saveItem() : ""' bs-tooltip='' data-title='{{saveBtnTipText(ui.isDirty(), "#{objectName}")}}' data-placement='bottom' data-trigger='hover') Save
+        .panel-tip-container(ng-show='backupItem._id')
+            a.btn.btn-primary(id='clone-item' ng-click='cloneItem()' bs-tooltip=cloneTip data-placement='bottom' data-trigger='hover') Clone
+        .btn-group.panel-tip-container(ng-show='backupItem._id')
+            button.btn.btn-primary(id='remove-item' ng-click='removeItem()' bs-tooltip=removeTip data-placement='bottom' data-trigger='hover') Remove
+            button.btn.dropdown-toggle.btn-primary(id='remove-item-dropdown' data-toggle='dropdown' data-container='body' bs-dropdown='removeDropdown' data-placement='bottom-right')
+                span.caret
