@@ -241,11 +241,11 @@ public class AgentConfiguration {
         if (driversFolder == null)
             driversFolder(cmd.driversFolder());
 
-        if (testDriveMetadata())
-            testDriveMetadata(true);
+        if (meta == null)
+            testDriveMetadata(cmd.testDriveMetadata());
 
-        if (testDriveSql())
-            testDriveSql(true);
+        if (sql == null)
+            testDriveSql(cmd.testDriveSql());
     }
 
     /** {@inheritDoc} */
