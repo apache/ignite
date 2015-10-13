@@ -63,6 +63,13 @@
             </includes>
         </fileSet>
         <fileSet>
+            <directory>${basedir}/logs</directory>
+            <outputDirectory>/logs</outputDirectory>
+            <includes>
+                <include>README*</include>
+            </includes>
+        </fileSet>
+        <fileSet>
             <directory>${project.build.directory}</directory>
             <outputDirectory>/</outputDirectory>
             <includes>
