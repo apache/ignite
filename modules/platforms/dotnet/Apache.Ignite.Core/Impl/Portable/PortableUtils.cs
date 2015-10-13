@@ -1304,19 +1304,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Reads generic collection in typed context.
-        /// </summary>
-        public static ICollection<T> ReadGenericCollection<T>(PortableReaderImpl reader,
-            PortableGenericCollectionFactory<T> factory)
-        {
-            var collectionType = ReadType(reader);
-
-            return ReadGenericCollection0(reader, factory, PortableCollectionInfo.GetInstance(collectionType));
-        }
-
-        /// <summary>
         /// Reads generic collection without type information.
         /// </summary>
+        // ReSharper disable once UnusedMember.Local (used by reflection)
         private static ICollection<T> ReadGenericCollection0<T>(PortableReaderImpl reader, 
             PortableGenericCollectionFactory<T> factory, PortableCollectionInfo colInfo)
         {
@@ -1336,19 +1326,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Reads generic collection in typed context.
-        /// </summary>
-        public static T[] ReadGenericArray<T>(PortableReaderImpl reader)
-        {
-            var collectionType = ReadType(reader);
-
-            return ReadGenericArray0<T>(reader, null, PortableCollectionInfo.GetInstance(collectionType));
-        }
-
-        /// <summary>
         /// Reads generic collection without type information.
         /// </summary>
         // ReSharper disable once UnusedParameter.Local (for signature compatibility)
+        // ReSharper disable once UnusedMember.Local (used by reflection)
         private static T[] ReadGenericArray0<T>(PortableReaderImpl reader, object factory, 
             PortableCollectionInfo colInfo)
         {
@@ -1433,8 +1414,8 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="val">Value.</param>
          * <param name="ctx">Write context.</param>
          */
-        // ReSharper disable once UnusedMember.Global (used by reflection)
-        public static void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val, PortableWriterImpl ctx)
+        // ReSharper disable once UnusedMember.Local (used by reflection)
+        private static void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val, PortableWriterImpl ctx)
         {
             WriteType(val.GetType(), ctx);
 
@@ -1448,34 +1429,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Reads generic dictionary with type information.
-        /// </summary>
-        /// <param name="reader">The reader.</param>
-        public static object ReadGenericDictionary(PortableReaderImpl reader)
-        {
-            var colType = ReadType(reader);
-
-            var colInfo = PortableCollectionInfo.GetInstance(colType);
-
-            return colInfo.ReadGeneric(reader);
-        }
-
-        /// <summary>
-        /// Reads generic dictionary with type information.
-        /// </summary>
-        /// <param name="reader">The reader.</param>
-        /// <param name="factory">The factory.</param>
-        public static IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableReaderImpl reader,
-            PortableGenericDictionaryFactory<TK, TV> factory)
-        {
-            var colType = ReadType(reader);
-
-            return ReadGenericDictionary0(reader, factory, PortableCollectionInfo.GetInstance(colType));
-        }
-
-        /// <summary>
         /// Reads the generic dictionary.
         /// </summary>
+        // ReSharper disable once UnusedMember.Local (used by reflection)
         private static IDictionary<TK, TV> ReadGenericDictionary0<TK, TV>(PortableReaderImpl reader,
             PortableGenericDictionaryFactory<TK, TV> factory, PortableCollectionInfo colInfo)
         {
