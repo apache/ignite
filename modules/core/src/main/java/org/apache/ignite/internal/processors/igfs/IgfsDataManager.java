@@ -580,11 +580,6 @@ public class IgfsDataManager extends IgfsManager {
      * @return Delete future that will be completed when file is actually erased.
      */
     public IgniteInternalFuture<Object> delete(IgfsFileInfo fileInfo) {
-        //assert validTxState(any); // Allow this method call for any transaction state.
-
-        // TODO: enable this assertion when dual mode #create and #append methods will be reworked.
-        //assert IgfsMetaManager.DELETE_LOCK_ID.equals(fileInfo.lockId());
-
         if (!fileInfo.isFile()) {
             if (log.isDebugEnabled())
                 log.debug("Cannot delete content of not-data file: " + fileInfo);

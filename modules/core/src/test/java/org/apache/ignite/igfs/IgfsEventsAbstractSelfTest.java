@@ -683,7 +683,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
     public void testSingleFileOverwrite() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
-        final int evtsCnt = 3 + 4 + 1;
+        final int evtsCnt = 1 + 4 + 1;
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
@@ -703,7 +703,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
         igfs.create(file, false).close(); // Will generate create, open and close events.
 
-        igfs.create(file, true).close(); // Will generate same event set + delete and purge events.
+        igfs.create(file, true).close(); // Will generate only OPEN_WRITE & close events.
 
         try {
             igfs.create(file, false).close(); // Won't generate any event.

@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -168,14 +169,15 @@ public class IgfsUtils {
      * Sends a series of event.
      *
      * @param path The path of the created file.
-     * @param types The types of the events to send.
+     * @param type The type of event to send.
      */
-    public static void sendEvents(GridEventStorageManager evts, ClusterNode locNode, @Nullable IgfsPath path, int... types) {
-        assert types != null;
+    public static void sendEvents(GridKernalContext kernalCtx, @Nullable IgfsPath path, int type) {
+        assert kernalCtx != null;
 
-        for (int type: types) {
-            if (evts.isRecordable(type))
-                evts.record(new IgfsEvent(path, locNode, type));
-        }
+        GridEventStorageManager evts = kernalCtx.event();
+        ClusterNode locNode = kernalCtx.discovery().localNode();
+
+        if (evts.isRecordable(type))
+            evts.record(new IgfsEvent(path, locNode, type));
     }
 }

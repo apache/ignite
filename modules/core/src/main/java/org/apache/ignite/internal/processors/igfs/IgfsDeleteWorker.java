@@ -31,7 +31,6 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -60,9 +59,6 @@ public class IgfsDeleteWorker extends IgfsThread {
 
     /** Data manager. */
     private final IgfsDataManager data;
-
-    /** Event manager. */
-    private final GridEventStorageManager evts;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -94,8 +90,6 @@ public class IgfsDeleteWorker extends IgfsThread {
 
         meta = igfsCtx.meta();
         data = igfsCtx.data();
-
-        evts = igfsCtx.kernalContext().event();
 
         String igfsName = igfsCtx.igfs().name();
 
@@ -243,7 +237,7 @@ public class IgfsDeleteWorker extends IgfsThread {
 
                     boolean ret = meta.delete(TRASH_ID, name, id);
 
-                    IgfsUtils.sendEvents(evts, igfsCtx.kernalContext().discovery().localNode(),
+                    IgfsUtils.sendEvents(igfsCtx.kernalContext(),
                         info.path(), EVT_IGFS_FILE_PURGED);
 
                     return ret;

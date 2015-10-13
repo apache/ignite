@@ -119,7 +119,7 @@ public final class IgfsImpl implements IgfsEx {
     private static final String PERMISSION_DFLT_VAL = "0777";
 
     /** Default directory metadata. */
-    private static final Map<String, String> DFLT_DIR_META = F.asMap(PROP_PERMISSION, PERMISSION_DFLT_VAL);
+    static final Map<String, String> DFLT_DIR_META = F.asMap(PROP_PERMISSION, PERMISSION_DFLT_VAL);
 
     /** Handshake message. */
     private final IgfsPaths secondaryPaths;
@@ -738,7 +738,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 // Record event if needed.
                 if (res && desc != null)
-                    IgfsUtils.sendEvents(evts, locNode, path,
+                    IgfsUtils.sendEvents(igfsCtx.kernalContext(), path,
                             desc.isFile ? EVT_IGFS_FILE_DELETED : EVT_IGFS_DIR_DELETED);
 
                 return res;
@@ -920,7 +920,7 @@ public final class IgfsImpl implements IgfsEx {
                     IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, desc.info(),
                         cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
 
-                    IgfsUtils.sendEvents(evts, locNode, path, EVT_IGFS_FILE_OPENED_READ);
+                    IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_READ);
 
                     return os;
                 }
@@ -940,7 +940,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, info,
                     cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
 
-                IgfsUtils.sendEvents(evts, locNode, path, EVT_IGFS_FILE_OPENED_READ);
+                IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_READ);
 
                 return os;
             }
@@ -1011,7 +1011,7 @@ public final class IgfsImpl implements IgfsEx {
                     IgfsEventAwareOutputStream os = new IgfsEventAwareOutputStream(path, desc.info(), desc.parentId(),
                         bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
 
-                    IgfsUtils.sendEvents(evts, locNode, path, EVT_IGFS_FILE_OPENED_WRITE);
+                    IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_WRITE);
 
                     return os;
                 }
