@@ -26,9 +26,9 @@ namespace Apache.Ignite.Core.Events
     public interface IEventListener<in T> where T : IEvent
     {
         /// <summary>
-        /// Determines whether specified event passes this filter.
+        /// Invokes the event listener when an event occurs.
         /// </summary>
-        /// <param name="nodeId">Node identifier.</param>
+        /// <param name="nodeId">Event source node identifier.</param>
         /// <param name="evt">Event.</param>
         /// <returns>
         /// Value indicating whether this instance should remain subscribed. 
