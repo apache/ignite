@@ -31,4 +31,6 @@ while [ -h "$SOURCE" ]
 
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
+cd $DIR
+
 java -jar ignite-web-agent-${version}.jar "$@"

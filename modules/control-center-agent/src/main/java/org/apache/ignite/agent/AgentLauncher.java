@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 import static org.apache.ignite.agent.AgentConfiguration.DFLT_SERVER_PORT;
+import static org.apache.ignite.agent.AgentUtils.resolvePath;
 
 /**
  * Control Center Agent launcher.
@@ -67,7 +68,12 @@ public class AgentLauncher {
         AgentConfiguration propCfg = new AgentConfiguration();
 
         try {
-            propCfg.load(new File(prop).toURI().toURL());
+            File f = resolvePath(prop);
+
+            if (f == null)
+                log.log(Level.WARNING, "Failed to find agent property file: '" + prop + "'");
+            else
+                propCfg.load(f.toURI().toURL());
         }
         catch (IOException ignore) {
             if (!AgentConfiguration.DFLT_CFG_PATH.equals(prop))

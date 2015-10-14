@@ -69,4 +69,39 @@ public class AgentUtils {
             return null;
         }
     }
+
+    /**
+     * Gets file associated with path.
+     * <p>
+     * First check if path is relative to agent home.
+     * If not, check if path is absolute.
+     * If all checks fail, then {@code null} is returned.
+     * <p>
+     *
+     * @param path Path to resolve.
+     * @return Resolved path as file, or {@code null} if path cannot be resolved.
+     */
+    public static File resolvePath(String path) {
+        assert path != null;
+
+        File home = getAgentHome();
+
+        if (home != null) {
+            File file = new File(home, path);
+
+            if (file.exists())
+                return file;
+        }
+
+        /*
+         * 2. Check given path as absolute.
+         */
+
+        File file = new File(path);
+
+        if (file.exists())
+            return file;
+
+        return null;
+    }
 }

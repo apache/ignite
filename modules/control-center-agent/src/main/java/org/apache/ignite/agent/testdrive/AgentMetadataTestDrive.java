@@ -26,9 +26,10 @@ import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.ignite.agent.AgentUtils;
 import org.h2.tools.RunScript;
 import org.h2.tools.Server;
+
+import static org.apache.ignite.agent.AgentUtils.resolvePath;
 
 /**
  * Test drive for metadata load from database.
@@ -64,10 +65,14 @@ public class AgentMetadataTestDrive {
             try {
                 Connection conn = DriverManager.getConnection("jdbc:h2:mem:test-drive-db;DB_CLOSE_DELAY=-1", "sa", "");
 
-                File agentHome = AgentUtils.getAgentHome();
+                File sqlScript = resolvePath("test-drive/test-drive.sql");
 
-                File sqlScript = new File(agentHome != null ? new File(agentHome, "test-drive") : new File("test-drive"),
-                    "test-drive.sql");
+                if (sqlScript == null) {
+                    log.log(Level.SEVERE, "TEST-DRIVE: Failed to find test drive script file: test-drive/test-drive.sql");
+                    log.log(Level.SEVERE, "TEST-DRIVE: Test drive for metadata not started");
+
+                    return;
+                }
 
                 RunScript.execute(conn, new FileReader(sqlScript));
 
