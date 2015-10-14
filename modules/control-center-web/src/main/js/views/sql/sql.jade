@@ -37,7 +37,7 @@ mixin chart-settings(mdl)
         a(ng-click='$event.stopPropagation()' bs-popover data-template-url='chart-settings' data-placement='bottom' data-auto-close='1' data-trigger='click') Chart settings
         div(ng-show='paragraphTimeSpanVisible(paragraph)')
             label Show
-            button.select-manual-caret.btn.btn-default(ng-model='paragraph.timeLineSpan' bs-options='item for item in timeLineSpans' bs-select data-caret-html='<span class="caret"></span>')
+            button.select-manual-caret.btn.btn-default(ng-model='paragraph.timeLineSpan' ng-change='applyChartTimeFrame(paragraph)' bs-options='item for item in timeLineSpans' bs-select data-caret-html='<span class="caret"></span>')
             label min
 
 block container

@@ -915,16 +915,27 @@ consoleModule.controller('sqlController',
         }
     };
 
-    function timeAdd(shift) {
+    function _filterDatum(paragraph, datum) {
         var t = new Date();
 
-        t.setMinutes(t.getMinutes() + shift);
+        t.setMinutes(t.getMinutes() - parseInt(paragraph.timeLineSpan));
 
-        return t;
+        return _.map(datum, function (series) {
+                return {
+                    key: series.key,
+                    values: _.filter(series.values, function (v) {
+                        return v.x > t;
+                    })
+                };
+            }
+        );
     }
 
     function _barChart(paragraph) {
         var datum = _chartDatum(paragraph);
+
+        if (paragraph.chartTimeLineEnabled())
+            datum = _filterDatum(paragraph, datum);
 
         if ($common.isEmptyArray(paragraph.charts)) {
             var options = {
@@ -956,17 +967,7 @@ consoleModule.controller('sqlController',
         }
         else
             $timeout(function () {
-                if (paragraph.chartTimeLineEnabled()) {
-                    var tm = timeAdd(-10);
-                    var z = timeAdd(10);
-
-                    paragraph.charts[0].options.chart.xDomain = [tm.getMilliseconds(), z.getMilliseconds()];
-                    paragraph.charts[0].api.updateWithOptions(paragraph.charts[0].options);
-
-                    //paragraph.charts[0].api.update();
-                }
-                else
-                    paragraph.charts[0].api.updateWithData(datum);
+                paragraph.charts[0].api.updateWithData(datum);
             });
     }
 
@@ -1008,6 +1009,9 @@ consoleModule.controller('sqlController',
     function _lineChart(paragraph) {
         var datum = _chartDatum(paragraph);
 
+        if (paragraph.chartTimeLineEnabled())
+            datum = _filterDatum(paragraph, datum);
+
         if ($common.isEmptyArray(paragraph.charts)) {
             var options = {
                 chart: {
@@ -1038,17 +1042,15 @@ consoleModule.controller('sqlController',
         }
         else
             $timeout(function () {
-                if (paragraph.chartTimeLineEnabled()) {
-                    paragraph.charts[0].options.chart.xDomain = [timeAdd(-parseInt(paragraph.timeLineSpan)), timeAdd(1)];
-                    paragraph.charts[0].api.updateWithOptions(paragraph.charts[0].options);
-                }
-                else
-                    paragraph.charts[0].api.updateWithData(datum);
+                paragraph.charts[0].api.updateWithData(datum);
             });
     }
 
     function _areaChart(paragraph) {
         var datum = _chartDatum(paragraph);
+
+        if (paragraph.chartTimeLineEnabled())
+            datum = _filterDatum(paragraph, datum);
 
         if ($common.isEmptyArray(paragraph.charts)) {
             var options = {
@@ -1079,10 +1081,7 @@ consoleModule.controller('sqlController',
         }
         else
             $timeout(function () {
-                if (paragraph.chartTimeLineEnabled())
-                    paragraph.charts[0].api.update();
-                else
-                    paragraph.charts[0].api.updateWithData(datum);
+                paragraph.charts[0].api.updateWithData(datum);
             });
     }
 
