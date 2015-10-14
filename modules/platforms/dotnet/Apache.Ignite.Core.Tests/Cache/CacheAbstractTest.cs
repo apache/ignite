@@ -2481,20 +2481,18 @@ namespace Apache.Ignite.Core.Tests.Cache
             var cache = Cache().WithAsync();
 
             cache.Put(1, 1);
-            
-            int val;
 
             for (int i = 0; i < 10; i++)
             {
                 TestUtils.RunMultiThreaded(() =>
                 {
                     for (int j = 0; j < 1000; j++)
-                        cache.TryGet(1, out val);
+                        cache.Get(1);
                 }, 5);
 
                 GC.Collect();
 
-                cache.TryGet(1, out val);
+                cache.Get(1);
                 Assert.AreEqual(1, cache.GetFuture<int>().Get());
             }
 
