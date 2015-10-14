@@ -8,6 +8,8 @@ How to deploy:
 3. Checkout ignite-843 branch.
 4. Change directory '$IGNITE_HOME/modules/control-center-web/src/main/js'.
 5. Run "npm install" in terminal for download all dependencies.
+6. Build ignite-web-agent module follow instructions from 'modules/control-center-agent/README.txt'.
+7. Copy ignite-web-agent-<version>.zip from target of ignite-web-agent module to 'modules/control-center-web/src/main/js/public/agent' folder.
 
 Steps 1 - 5 should be executed once.
 
