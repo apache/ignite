@@ -1195,18 +1195,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      *      {@code create} is false.
      * @throws IgniteCheckedException If operation failed.
      */
-    public IgniteSemaphore semaphore(final String name,
-                                               final int cnt,
-                                               final boolean fair,
-                                               final boolean create)
-            throws IgniteCheckedException
-    {
+    public IgniteSemaphore semaphore(final String name, final int cnt, final boolean fair, final boolean create)
+        throws IgniteCheckedException {
         A.notNull(name, "name");
 
         awaitInitialization();
-
-        if (create)
-            A.ensure(cnt >= 0, "count can not be negative");
 
         checkAtomicsConfiguration();
 
@@ -1234,12 +1227,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                         return null;
 
                     if (val == null) {
-                        val = new GridCacheSemaphoreState(cnt, 0);
+                        val = new GridCacheSemaphoreState(cnt, 0, fair);
 
                         dsView.put(key, val);
                     }
 
-                    semaphore = new GridCacheSemaphoreImpl(name, val.getCnt(),
+                    semaphore = new GridCacheSemaphoreImpl(name, val.getCount(),
                             fair,
                             key,
                             semaphoreView,
@@ -1278,19 +1271,17 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         awaitInitialization();
 
         removeDataStructure(new IgniteOutClosureX<Void>() {
-            @Override
-            public Void applyx() throws IgniteCheckedException {
+            @Override public Void applyx() throws IgniteCheckedException {
                 GridCacheInternal key = new GridCacheInternalKeyImpl(name);
 
                 dsCacheCtx.gate().enter();
 
                 try (IgniteInternalTx tx = CU.txStartInternal(dsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                     // Check correctness type of removable object.
-                    GridCacheSemaphoreState val =
-                            cast(dsView.get(key), GridCacheSemaphoreState.class);
+                    GridCacheSemaphoreState val = cast(dsView.get(key), GridCacheSemaphoreState.class);
 
                     if (val != null) {
-                        if (val.getCnt() < 0) {
+                        if (val.getCount() < 0) {
                             throw new IgniteCheckedException("Failed to remove semaphore " +
                                     "with blocked threads. ");
                         }
@@ -1318,8 +1309,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If removing failed or class of object is different to expected class.
      */
     private <R> boolean removeInternal(final GridCacheInternal key, final Class<R> cls) throws IgniteCheckedException {
-        return CU.outTx(
-            new Callable<Boolean>() {
+        return CU.outTx(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     try (IgniteInternalTx tx = CU.txStartInternal(dsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         // Check correctness type of removable object.

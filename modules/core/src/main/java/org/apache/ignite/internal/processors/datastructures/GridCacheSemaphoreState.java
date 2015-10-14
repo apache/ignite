@@ -17,7 +17,7 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
     /**
      * Permission count.
      */
-    private int cnt;
+    private int count;
 
     /**
      * Waiter id.
@@ -32,10 +32,10 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
     /**
      * Constructor.
      *
-     * @param cnt Number of permissions.
+     * @param count Number of permissions.
      */
-    public GridCacheSemaphoreState(int cnt, int waiters) {
-        this.cnt = cnt;
+    public GridCacheSemaphoreState(int count, int waiters) {
+        this.count = count;
         this.waiters = waiters;
         this.fair = false;
     }
@@ -43,10 +43,10 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
     /**
      * Constructor.
      *
-     * @param cnt Number of permissions.
+     * @param count Number of permissions.
      */
-    public GridCacheSemaphoreState(int cnt, int waiters, boolean fair) {
-        this.cnt = cnt;
+    public GridCacheSemaphoreState(int count, int waiters, boolean fair) {
+        this.count = count;
         this.waiters = waiters;
         this.fair = fair;
     }
@@ -59,17 +59,17 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
     }
 
     /**
-     * @param cnt New count.
+     * @param count New count.
      */
-    public void setCnt(int cnt) {
-        this.cnt = cnt;
+    public void setCount(int count) {
+        this.count = count;
     }
 
     /**
      * @return Current count.
      */
-    public int getCnt() {
-        return cnt;
+    public int getCount() {
+        return count;
     }
 
     public int getWaiters() {
@@ -95,7 +95,7 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
      * {@inheritDoc}
      */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(cnt);
+        out.writeInt(count);
         out.writeInt(waiters);
         out.writeBoolean(fair);
     }
@@ -104,7 +104,7 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
      * {@inheritDoc}
      */
     @Override public void readExternal(ObjectInput in) throws IOException {
-        cnt = in.readInt();
+        count = in.readInt();
         waiters = in.readInt();
         fair = in.readBoolean();
     }

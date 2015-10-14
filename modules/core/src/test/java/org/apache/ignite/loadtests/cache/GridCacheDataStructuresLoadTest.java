@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -60,6 +61,9 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     /** Count down latch name. */
     private static final String TEST_LATCH_NAME = "test-latch";
 
+    /** Semaphore name. */
+    private static final String TEST_SEMAPHORE_NAME = "test-semaphore";
+
     /** */
     private static final CollectionConfiguration colCfg = new CollectionConfiguration();
 
@@ -68,6 +72,9 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
 
     /** Count down latch initial count. */
     private static final int LATCH_INIT_CNT = 1000;
+
+    /** Semaphore initial count. */
+    private static final int SEMAPHORE_INIT_CNT = 1000;
 
     /** */
     private static final boolean LONG = false;
@@ -88,6 +95,9 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private static final boolean LATCH = true;
 
     /** */
+    private static final boolean SEMAPHORE = true;
+
+    /** */
     private GridCacheDataStructuresLoadTest() {
         // No-op
     }
@@ -95,210 +105,247 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     /** Atomic long write closure. */
     private final CIX1<Ignite> longWriteClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite) {
-            IgniteAtomicLong al = ignite.atomicLong(TEST_LONG_NAME, 0, true);
+            @Override public void applyx(Ignite ignite) {
+                IgniteAtomicLong al = ignite.atomicLong(TEST_LONG_NAME, 0, true);
 
-            for (int i = 0; i < operationsPerTx; i++) {
-                al.addAndGet(RAND.nextInt(MAX_INT));
+                for (int i = 0; i < operationsPerTx; i++) {
+                    al.addAndGet(RAND.nextInt(MAX_INT));
 
-                long cnt = writes.incrementAndGet();
+                    long cnt = writes.incrementAndGet();
 
-                if (cnt % WRITE_LOG_MOD == 0)
-                    info("Performed " + cnt + " writes.");
+                    if (cnt % WRITE_LOG_MOD == 0)
+                        info("Performed " + cnt + " writes.");
+                }
             }
-        }
-    };
+        };
 
     /** Atomic long read closure. */
     private final CIX1<Ignite> longReadClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite) {
-            IgniteAtomicLong al = ignite.atomicLong(TEST_LONG_NAME, 0, true);
+            @Override public void applyx(Ignite ignite) {
+                IgniteAtomicLong al = ignite.atomicLong(TEST_LONG_NAME, 0, true);
 
-            for (int i = 0; i < operationsPerTx; i++) {
-                al.get();
+                for (int i = 0; i < operationsPerTx; i++) {
+                    al.get();
 
-                long cnt = reads.incrementAndGet();
+                    long cnt = reads.incrementAndGet();
 
-                if (cnt % READ_LOG_MOD == 0)
-                    info("Performed " + cnt + " reads.");
+                    if (cnt % READ_LOG_MOD == 0)
+                        info("Performed " + cnt + " reads.");
+                }
             }
-        }
-    };
+        };
 
     /** Atomic reference write closure. */
     private final CIX1<Ignite> refWriteClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite) {
-            IgniteAtomicReference<Integer> ar = ignite.atomicReference(TEST_REF_NAME,
-                null, true);
+            @Override public void applyx(Ignite ignite) {
+                IgniteAtomicReference<Integer> ar = ignite.atomicReference(TEST_REF_NAME,
+                    null, true);
 
-            for (int i = 0; i < operationsPerTx; i++) {
-                ar.set(RAND.nextInt(MAX_INT));
+                for (int i = 0; i < operationsPerTx; i++) {
+                    ar.set(RAND.nextInt(MAX_INT));
 
-                long cnt = writes.incrementAndGet();
+                    long cnt = writes.incrementAndGet();
 
-                if (cnt % WRITE_LOG_MOD == 0)
-                    info("Performed " + cnt + " writes.");
+                    if (cnt % WRITE_LOG_MOD == 0)
+                        info("Performed " + cnt + " writes.");
+                }
             }
-        }
-    };
+        };
 
     /** Atomic reference read closure. */
     private final CIX1<Ignite> refReadClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite) {
-            IgniteAtomicReference<Integer> ar = ignite.atomicReference(TEST_REF_NAME, null,
-                true);
+            @Override public void applyx(Ignite ignite) {
+                IgniteAtomicReference<Integer> ar = ignite.atomicReference(TEST_REF_NAME, null,
+                    true);
 
-            for (int i = 0; i < operationsPerTx; i++) {
-                ar.get();
+                for (int i = 0; i < operationsPerTx; i++) {
+                    ar.get();
 
-                long cnt = reads.incrementAndGet();
+                    long cnt = reads.incrementAndGet();
 
-                if (cnt % READ_LOG_MOD == 0)
-                    info("Performed " + cnt + " reads.");
+                    if (cnt % READ_LOG_MOD == 0)
+                        info("Performed " + cnt + " reads.");
+                }
             }
-        }
-    };
+        };
 
     /** Atomic sequence write closure. */
     private final CIX1<Ignite> seqWriteClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite) {
-            IgniteAtomicSequence as = ignite.atomicSequence(TEST_SEQ_NAME, 0, true);
+            @Override public void applyx(Ignite ignite) {
+                IgniteAtomicSequence as = ignite.atomicSequence(TEST_SEQ_NAME, 0, true);
 
-            for (int i = 0; i < operationsPerTx; i++) {
-                as.addAndGet(RAND.nextInt(MAX_INT) + 1);
+                for (int i = 0; i < operationsPerTx; i++) {
+                    as.addAndGet(RAND.nextInt(MAX_INT) + 1);
 
-                long cnt = writes.incrementAndGet();
+                    long cnt = writes.incrementAndGet();
 
-                if (cnt % WRITE_LOG_MOD == 0)
-                    info("Performed " + cnt + " writes.");
+                    if (cnt % WRITE_LOG_MOD == 0)
+                        info("Performed " + cnt + " writes.");
+                }
             }
-        }
-    };
+        };
 
     /** Atomic sequence read closure. */
     private final CIX1<Ignite> seqReadClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite) {
-            IgniteAtomicSequence as = ignite.atomicSequence(TEST_SEQ_NAME, 0, true);
+            @Override public void applyx(Ignite ignite) {
+                IgniteAtomicSequence as = ignite.atomicSequence(TEST_SEQ_NAME, 0, true);
 
-            for (int i = 0; i < operationsPerTx; i++) {
-                as.get();
+                for (int i = 0; i < operationsPerTx; i++) {
+                    as.get();
 
-                long cnt = reads.incrementAndGet();
+                    long cnt = reads.incrementAndGet();
 
-                if (cnt % READ_LOG_MOD == 0)
-                    info("Performed " + cnt + " reads.");
+                    if (cnt % READ_LOG_MOD == 0)
+                        info("Performed " + cnt + " reads.");
+                }
             }
-        }
-    };
+        };
 
     /** Atomic stamped write closure. */
     private final CIX1<Ignite> stampWriteClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite) {
-            IgniteAtomicStamped<Integer, Integer> as = ignite.atomicStamped(TEST_STAMP_NAME,
-                0, 0, true);
+            @Override public void applyx(Ignite ignite) {
+                IgniteAtomicStamped<Integer, Integer> as = ignite.atomicStamped(TEST_STAMP_NAME,
+                    0, 0, true);
 
-            for (int i = 0; i < operationsPerTx; i++) {
-                as.set(RAND.nextInt(MAX_INT), RAND.nextInt(MAX_INT));
+                for (int i = 0; i < operationsPerTx; i++) {
+                    as.set(RAND.nextInt(MAX_INT), RAND.nextInt(MAX_INT));
 
-                long cnt = writes.incrementAndGet();
+                    long cnt = writes.incrementAndGet();
 
-                if (cnt % WRITE_LOG_MOD == 0)
-                    info("Performed " + cnt + " writes.");
+                    if (cnt % WRITE_LOG_MOD == 0)
+                        info("Performed " + cnt + " writes.");
+                }
             }
-        }
-    };
+        };
 
     /** Atomic stamped read closure. */
     private final CIX1<Ignite> stampReadClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite) {
-            IgniteAtomicStamped<Integer, Integer> as = ignite.atomicStamped(TEST_STAMP_NAME,
-                0, 0, true);
+            @Override public void applyx(Ignite ignite) {
+                IgniteAtomicStamped<Integer, Integer> as = ignite.atomicStamped(TEST_STAMP_NAME,
+                    0, 0, true);
 
-            for (int i = 0; i < operationsPerTx; i++) {
-                as.get();
+                for (int i = 0; i < operationsPerTx; i++) {
+                    as.get();
 
-                long cnt = reads.incrementAndGet();
+                    long cnt = reads.incrementAndGet();
 
-                if (cnt % READ_LOG_MOD == 0)
-                    info("Performed " + cnt + " reads.");
+                    if (cnt % READ_LOG_MOD == 0)
+                        info("Performed " + cnt + " reads.");
+                }
             }
-        }
-    };
+        };
 
     /** Queue write closure. */
     private final CIX1<Ignite> queueWriteClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite) {
-            IgniteQueue<Integer> q = ignite.queue(TEST_QUEUE_NAME, 0, colCfg);
+            @Override public void applyx(Ignite ignite) {
+                IgniteQueue<Integer> q = ignite.queue(TEST_QUEUE_NAME, 0, colCfg);
 
-            for (int i = 0; i < operationsPerTx; i++) {
-                q.put(RAND.nextInt(MAX_INT));
+                for (int i = 0; i < operationsPerTx; i++) {
+                    q.put(RAND.nextInt(MAX_INT));
 
-                long cnt = writes.incrementAndGet();
+                    long cnt = writes.incrementAndGet();
 
-                if (cnt % WRITE_LOG_MOD == 0)
-                    info("Performed " + cnt + " writes.");
+                    if (cnt % WRITE_LOG_MOD == 0)
+                        info("Performed " + cnt + " writes.");
+                }
             }
-        }
-    };
+        };
 
     /** Queue read closure. */
     private final CIX1<Ignite> queueReadClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite) {
-            IgniteQueue<Integer> q = ignite.queue(TEST_QUEUE_NAME, 0, colCfg);
+            @Override public void applyx(Ignite ignite) {
+                IgniteQueue<Integer> q = ignite.queue(TEST_QUEUE_NAME, 0, colCfg);
 
-            for (int i = 0; i < operationsPerTx; i++) {
-                q.peek();
+                for (int i = 0; i < operationsPerTx; i++) {
+                    q.peek();
 
-                long cnt = reads.incrementAndGet();
+                    long cnt = reads.incrementAndGet();
 
-                if (cnt % READ_LOG_MOD == 0)
-                    info("Performed " + cnt + " reads.");
+                    if (cnt % READ_LOG_MOD == 0)
+                        info("Performed " + cnt + " reads.");
+                }
             }
-        }
-    };
+        };
 
     /** Count down latch write closure. */
     private final CIX1<Ignite> latchWriteClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite) {
-            IgniteCountDownLatch l = ignite.countDownLatch(TEST_LATCH_NAME, LATCH_INIT_CNT, true, true);
+            @Override public void applyx(Ignite ignite) {
+                IgniteCountDownLatch l = ignite.countDownLatch(TEST_LATCH_NAME, LATCH_INIT_CNT, true, true);
 
-            for (int i = 0; i < operationsPerTx; i++) {
-                l.countDown();
+                for (int i = 0; i < operationsPerTx; i++) {
+                    l.countDown();
 
-                long cnt = writes.incrementAndGet();
+                    long cnt = writes.incrementAndGet();
 
-                if (cnt % WRITE_LOG_MOD == 0)
-                    info("Performed " + cnt + " writes.");
+                    if (cnt % WRITE_LOG_MOD == 0)
+                        info("Performed " + cnt + " writes.");
+                }
             }
-        }
-    };
+        };
 
     /** Count down latch read closure. */
     private final CIX1<Ignite> latchReadClos =
         new CIX1<Ignite>() {
-        @Override public void applyx(Ignite ignite) {
-            IgniteCountDownLatch l = ignite.countDownLatch(TEST_LATCH_NAME, LATCH_INIT_CNT, true, true);
+            @Override public void applyx(Ignite ignite) {
+                IgniteCountDownLatch l = ignite.countDownLatch(TEST_LATCH_NAME, LATCH_INIT_CNT, true, true);
 
-            for (int i = 0; i < operationsPerTx; i++) {
-                l.count();
+                for (int i = 0; i < operationsPerTx; i++) {
+                    l.count();
 
-                long cnt = reads.incrementAndGet();
+                    long cnt = reads.incrementAndGet();
 
-                if (cnt % READ_LOG_MOD == 0)
-                    info("Performed " + cnt + " reads.");
+                    if (cnt % READ_LOG_MOD == 0)
+                        info("Performed " + cnt + " reads.");
+                }
             }
-        }
-    };
+        };
+
+    /** Semaphore write closure. */
+    private final CIX1<Ignite> semaphoreWriteClos =
+        new CIX1<Ignite>() {
+            @Override public void applyx(Ignite ignite) {
+                IgniteSemaphore s = ignite.semaphore(TEST_SEMAPHORE_NAME, SEMAPHORE_INIT_CNT, false, true);
+
+                for (int i = 0; i < operationsPerTx; i++) {
+                    if ((i % 2) == 0)
+                        s.release();
+                    else
+                        s.acquire();
+
+                    long cnt = writes.incrementAndGet();
+
+                    if (cnt % WRITE_LOG_MOD == 0)
+                        info("Performed " + cnt + " writes.");
+                }
+            }
+        };
+
+    /** Semaphore read closure. */
+    private final CIX1<Ignite> semaphoreReadClos =
+        new CIX1<Ignite>() {
+            @Override public void applyx(Ignite ignite) {
+                IgniteSemaphore s = ignite.semaphore(TEST_SEMAPHORE_NAME, SEMAPHORE_INIT_CNT, false, true);
+
+                for (int i = 0; i < operationsPerTx; i++) {
+                    s.availablePermits();
+
+                    long cnt = reads.incrementAndGet();
+
+                    if (cnt % READ_LOG_MOD == 0)
+                        info("Performed " + cnt + " reads.");
+                }
+            }
+        };
 
     /**
      * @param args Arguments.
@@ -362,6 +409,14 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
 
                 test.loadTestIgnite(test.latchWriteClos, test.latchReadClos);
             }
+
+            System.gc();
+
+            if (SEMAPHORE) {
+                info("Testing semaphore...");
+
+                test.loadTestIgnite(test.semaphoreWriteClos, test.semaphoreReadClos);
+            }
         }
     }
 
@@ -407,7 +462,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
                 @Nullable @Override public Object call() throws Exception {
                     long start = System.currentTimeMillis();
 
-                    while(!done.get()) {
+                    while (!done.get()) {
                         if (tx) {
                             try (Transaction tx = ignite.transactions().txStart()) {
                                 readClos.apply(ignite);

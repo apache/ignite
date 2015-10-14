@@ -261,7 +261,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                                 if (val == null)
                                     throw new IgniteCheckedException("Failed to find semaphore with given name: " + name);
 
-                                boolean retVal = val.getCnt() == expVal;
+                                boolean retVal = val.getCount() == expVal;
 
                                 if (retVal) {
                                         /* If current thread is queued, than this call is the call that is going to be unblocked. */
@@ -274,7 +274,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                                         sync.threadMap.remove(Thread.currentThread());
                                     }
 
-                                    val.setCnt(newVal);
+                                    val.setCount(newVal);
 
                                     semaphoreView.put(key, val);
 
@@ -396,7 +396,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                                     return null;
                                 }
 
-                                final int count = val.getCnt();
+                                final int count = val.getCount();
 
                                 tx.commit();
 
@@ -448,7 +448,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
             return;
 
         // Update permission count.
-        sync.setPermits(val.getCnt());
+        sync.setPermits(val.getCount());
 
         // Update waiters count.
         sync.setWaiters(val.getWaiters());
@@ -463,7 +463,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public void acquire() throws IgniteException {
+    @Override public void acquire() throws IgniteInterruptedException {
         acquire(1);
     }
 
@@ -523,7 +523,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                             if (val == null)
                                 throw new IgniteException("Failed to find semaphore with given name: " + name);
 
-                            int count = val.getCnt();
+                            int count = val.getCount();
 
                             tx.rollback();
 
