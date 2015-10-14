@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Executes given Java task on the grid projection. If task for given name has not been deployed yet,
         /// then 'taskName' will be used as task class name to auto-deploy the task.
         /// </summary>
-        public T ExecuteJavaTask<T>(string taskName, object taskArg)
+        public TReduceRes ExecuteJavaTask<TReduceRes>(string taskName, object taskArg)
         {
             IgniteArgumentCheck.NotNullOrEmpty(taskName, "taskName");
 
@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             try
             {
-                T res = DoOutInOp<T>(OpExec, writer =>
+                TReduceRes res = DoOutInOp<TReduceRes>(OpExec, writer =>
                 {
                     WriteTask(writer, taskName, taskArg, nodes);
                 });
@@ -150,7 +150,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// If task for given name has not been deployed yet,
         /// then 'taskName' will be used as task class name to auto-deploy the task.
         /// </summary>
-        public IFuture<T> ExecuteJavaTaskAsync<T>(string taskName, object taskArg)
+        public IFuture<TReduceRes> ExecuteJavaTaskAsync<TReduceRes>(string taskName, object taskArg)
         {
             IgniteArgumentCheck.NotNullOrEmpty(taskName, "taskName");
 
@@ -158,14 +158,14 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             try
             {
-                IFuture<T> fut = null;
+                IFuture<TReduceRes> fut = null;
 
                 DoOutInOp(OpExecAsync, writer =>
                 {
                     WriteTask(writer, taskName, taskArg, nodes);
                 }, input =>
                 {
-                    fut = GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp), _keepPortable.Value);
+                    fut = GetFuture<TReduceRes>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp), _keepPortable.Value);
                 });
 
                 return fut;
@@ -183,11 +183,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="task">Task to execute.</param>
         /// <param name="taskArg">Optional task argument.</param>
         /// <returns>Task result.</returns>
-        public IFuture<TR> Execute<TA, T, TR>(IComputeTask<TA, T, TR> task, TA taskArg)
+        public IFuture<TReduceRes> Execute<TArg, TJobRes, TReduceRes>(IComputeTask<TArg, TJobRes, TReduceRes> task, 
+            TArg taskArg)
         {
             IgniteArgumentCheck.NotNull(task, "task");
 
-            var holder = new ComputeTaskHolder<TA, T, TR>((Ignite) _prj.Ignite, this, task, taskArg);
+            var holder = new ComputeTaskHolder<TArg, TJobRes, TReduceRes>((Ignite) _prj.Ignite, this, task, taskArg);
 
             long ptr = Marshaller.Ignite.HandleRegistry.Allocate(holder);
 
@@ -203,13 +204,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="taskType">Task type.</param>
         /// <param name="taskArg">Optional task argument.</param>
         /// <returns>Task result.</returns>
-        public IFuture<TR> Execute<TA, T, TR>(Type taskType, TA taskArg)
+        public IFuture<TReduceRes> Execute<TArg, TJobRes, TReduceRes>(Type taskType, TArg taskArg)
         {
             IgniteArgumentCheck.NotNull(taskType, "taskType");
 
             object task = FormatterServices.GetUninitializedObject(taskType);
 
-            var task0 = task as IComputeTask<TA, T, TR>;
+            var task0 = task as IComputeTask<TArg, TJobRes, TReduceRes>;
 
             if (task0 == null)
                 throw new IgniteException("Task type doesn't implement IComputeTask: " + taskType.Name);
@@ -223,11 +224,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="clo">Job to execute.</param>
         /// <returns>Job result for this execution.</returns>
-        public IFuture<TR> Execute<TR>(IComputeFunc<TR> clo)
+        public IFuture<TJobRes> Execute<TJobRes>(IComputeFunc<TJobRes> clo)
         {
             IgniteArgumentCheck.NotNull(clo, "clo");
 
-            return ExecuteClosures0(new ComputeSingleClosureTask<object, TR, TR>(),
+            return ExecuteClosures0(new ComputeSingleClosureTask<object, TJobRes, TJobRes>(),
                 new ComputeOutFuncJob(clo.ToNonGeneric()), null, false);
         }
 
@@ -237,13 +238,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="func">Func to execute.</param>
         /// <returns>Job result for this execution.</returns>
-        public IFuture<TR> Execute<TR>(Func<TR> func)
+        public IFuture<TJobRes> Execute<TJobRes>(Func<TJobRes> func)
         {
             IgniteArgumentCheck.NotNull(func, "func");
 
             var wrappedFunc = new ComputeOutFuncWrapper(func, () => func());
 
-            return ExecuteClosures0(new ComputeSingleClosureTask<object, TR, TR>(),
+            return ExecuteClosures0(new ComputeSingleClosureTask<object, TJobRes, TJobRes>(),
                 new ComputeOutFuncJob(wrappedFunc), null, false);
         }
 
@@ -252,16 +253,16 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="clos">Collection of jobs to execute.</param>
         /// <returns>Collection of job results for this execution.</returns>
-        public IFuture<ICollection<TR>> Execute<TR>(IEnumerable<IComputeFunc<TR>> clos)
+        public IFuture<ICollection<TJobRes>> Execute<TJobRes>(IEnumerable<IComputeFunc<TJobRes>> clos)
         {
             IgniteArgumentCheck.NotNull(clos, "clos");
 
             ICollection<IComputeJob> jobs = new List<IComputeJob>(GetCountOrZero(clos));
 
-            foreach (IComputeFunc<TR> clo in clos)
+            foreach (IComputeFunc<TJobRes> clo in clos)
                 jobs.Add(new ComputeOutFuncJob(clo.ToNonGeneric()));
 
-            return ExecuteClosures0(new ComputeMultiClosureTask<object, TR, ICollection<TR>>(jobs.Count),
+            return ExecuteClosures0(new ComputeMultiClosureTask<object, TJobRes, ICollection<TJobRes>>(jobs.Count),
                 null, jobs, false);
         }
 
@@ -271,7 +272,8 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="clos">Collection of jobs to execute.</param>
         /// <param name="rdc">Reducer to reduce all job results into one individual return value.</param>
         /// <returns>Collection of job results for this execution.</returns>
-        public IFuture<TR2> Execute<TR1, TR2>(IEnumerable<IComputeFunc<TR1>> clos, IComputeReducer<TR1, TR2> rdc)
+        public IFuture<TReduceRes> Execute<TJobRes, TReduceRes>(IEnumerable<IComputeFunc<TJobRes>> clos, 
+            IComputeReducer<TJobRes, TReduceRes> rdc)
         {
             IgniteArgumentCheck.NotNull(clos, "clos");
 
@@ -280,7 +282,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             foreach (var clo in clos)
                 jobs.Add(new ComputeOutFuncJob(clo.ToNonGeneric()));
 
-            return ExecuteClosures0(new ComputeReducingClosureTask<object, TR1, TR2>(rdc), null, jobs, false);
+            return ExecuteClosures0(new ComputeReducingClosureTask<object, TJobRes, TReduceRes>(rdc), null, jobs, false);
         }
 
         /// <summary>
@@ -288,11 +290,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="clo">Job to broadcast to all projection nodes.</param>
         /// <returns>Collection of results for this execution.</returns>
-        public IFuture<ICollection<TR>> Broadcast<TR>(IComputeFunc<TR> clo)
+        public IFuture<ICollection<TJobRes>> Broadcast<TJobRes>(IComputeFunc<TJobRes> clo)
         {
             IgniteArgumentCheck.NotNull(clo, "clo");
 
-            return ExecuteClosures0(new ComputeMultiClosureTask<object, TR, ICollection<TR>>(1),
+            return ExecuteClosures0(new ComputeMultiClosureTask<object, TJobRes, ICollection<TJobRes>>(1),
                 new ComputeOutFuncJob(clo.ToNonGeneric()), null, true);
         }
 
@@ -303,11 +305,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="clo">Job to broadcast to all projection nodes.</param>
         /// <param name="arg">Job closure argument.</param>
         /// <returns>Collection of results for this execution.</returns>
-        public IFuture<ICollection<TR>> Broadcast<T, TR>(IComputeFunc<T, TR> clo, T arg)
+        public IFuture<ICollection<TJobRes>> Broadcast<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, TArg arg)
         {
             IgniteArgumentCheck.NotNull(clo, "clo");
 
-            return ExecuteClosures0(new ComputeMultiClosureTask<object, TR, ICollection<TR>>(1),
+            return ExecuteClosures0(new ComputeMultiClosureTask<object, TJobRes, ICollection<TJobRes>>(1),
                 new ComputeFuncJob(clo.ToNonGeneric(), arg), null, true);
         }
 
@@ -367,11 +369,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="clo">Job to run.</param>
         /// <param name="arg">Job argument.</param>
         /// <returns>Job result for this execution.</returns>
-        public IFuture<TR> Apply<T, TR>(IComputeFunc<T, TR> clo, T arg)
+        public IFuture<TJobRes> Apply<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, TArg arg)
         {
             IgniteArgumentCheck.NotNull(clo, "clo");
 
-            return ExecuteClosures0(new ComputeSingleClosureTask<T, TR, TR>(),
+            return ExecuteClosures0(new ComputeSingleClosureTask<TArg, TJobRes, TJobRes>(),
                 new ComputeFuncJob(clo.ToNonGeneric(), arg), null, false);
         }
 
@@ -383,7 +385,8 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="clo">Job to run.</param>
         /// <param name="args">Job arguments.</param>
         /// <returns>Collection of job results.</returns>
-        public IFuture<ICollection<TR>> Apply<T, TR>(IComputeFunc<T, TR> clo, IEnumerable<T> args)
+        public IFuture<ICollection<TJobRes>> Apply<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, 
+            IEnumerable<TArg> args)
         {
             IgniteArgumentCheck.NotNull(clo, "clo");
 
@@ -393,10 +396,10 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             var func = clo.ToNonGeneric();
             
-            foreach (T arg in args)
+            foreach (TArg arg in args)
                 jobs.Add(new ComputeFuncJob(func, arg));
 
-            return ExecuteClosures0(new ComputeMultiClosureTask<T, TR, ICollection<TR>>(jobs.Count),
+            return ExecuteClosures0(new ComputeMultiClosureTask<TArg, TJobRes, ICollection<TJobRes>>(jobs.Count),
                 null, jobs, false);
         }
 
@@ -410,8 +413,8 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="args">Job arguments.</param>
         /// <param name="rdc">Reducer to reduce all job results into one individual return value.</param>
         /// <returns>Reduced job result for this execution.</returns>
-        public IFuture<TR2> Apply<T, TR1, TR2>(IComputeFunc<T, TR1> clo, IEnumerable<T> args,
-            IComputeReducer<TR1, TR2> rdc)
+        public IFuture<TReduceRes> Apply<TArg, TJobRes, TReduceRes>(IComputeFunc<TArg, TJobRes> clo, 
+            IEnumerable<TArg> args, IComputeReducer<TJobRes, TReduceRes> rdc)
         {
             IgniteArgumentCheck.NotNull(clo, "clo");
 
@@ -423,10 +426,10 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             var func = clo.ToNonGeneric();
 
-            foreach (T arg in args)
+            foreach (TArg arg in args)
                 jobs.Add(new ComputeFuncJob(func, arg));
 
-            return ExecuteClosures0(new ComputeReducingClosureTask<T, TR1, TR2>(rdc),
+            return ExecuteClosures0(new ComputeReducingClosureTask<TArg, TJobRes, TReduceRes>(rdc),
                 null, jobs, false);
         }
 
@@ -454,12 +457,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="affinityKey">Affinity key.</param>
         /// <param name="clo">Job to execute.</param>
         /// <returns>Job result for this execution.</returns>
-        /// <typeparam name="TR">Type of job result.</typeparam>
-        public IFuture<TR> AffinityCall<TR>(string cacheName, object affinityKey, IComputeFunc<TR> clo)
+        /// <typeparam name="TJobRes">Type of job result.</typeparam>
+        public IFuture<TJobRes> AffinityCall<TJobRes>(string cacheName, object affinityKey, IComputeFunc<TJobRes> clo)
         {
             IgniteArgumentCheck.NotNull(clo, "clo");
 
-            return ExecuteClosures0(new ComputeSingleClosureTask<object, TR, TR>(),
+            return ExecuteClosures0(new ComputeSingleClosureTask<object, TJobRes, TJobRes>(),
                 new ComputeOutFuncJob(clo.ToNonGeneric()), opId: OpAffinity,
                 writeAction: w => WriteAffinity(w, cacheName, affinityKey));
         }
@@ -480,7 +483,8 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="jobs">Jobs.</param>
         /// <param name="broadcast">Broadcast flag.</param>
         /// <returns>Future.</returns>
-        private IFuture<TR> ExecuteClosures0<TA, T, TR>(IComputeTask<TA, T, TR> task, IComputeJob job,
+        private IFuture<TReduceRes> ExecuteClosures0<TArg, TJobRes, TReduceRes>(
+            IComputeTask<TArg, TJobRes, TReduceRes> task, IComputeJob job,
             ICollection<IComputeJob> jobs, bool broadcast)
         {
             return ExecuteClosures0(task, job, jobs, broadcast ? OpBroadcast : OpUnicast,
@@ -499,13 +503,14 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <returns>Future.</returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
             Justification = "User code can throw any exception")]
-        private IFuture<TR> ExecuteClosures0<TA, T, TR>(IComputeTask<TA, T, TR> task, IComputeJob job = null,
+        private IFuture<TReduceRes> ExecuteClosures0<TArg, TJobRes, TReduceRes>(
+            IComputeTask<TArg, TJobRes, TReduceRes> task, IComputeJob job = null,
             IEnumerable<IComputeJob> jobs = null, int opId = OpUnicast, int jobsCount = 0,
             Action<PortableWriterImpl> writeAction = null)
         {
             Debug.Assert(job != null || jobs != null);
 
-            var holder = new ComputeTaskHolder<TA, T, TR>((Ignite) _prj.Ignite, this, task, default(TA));
+            var holder = new ComputeTaskHolder<TArg, TJobRes, TReduceRes>((Ignite) _prj.Ignite, this, task, default(TArg));
 
             var taskHandle = Marshaller.Ignite.HandleRegistry.Allocate(holder);
 

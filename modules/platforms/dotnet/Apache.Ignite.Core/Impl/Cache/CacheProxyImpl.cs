@@ -421,7 +421,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public TR Invoke<TR, TA>(TK key, ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg)
+        public TRes Invoke<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
             var result = _cache.Invoke(key, processor, arg);
 
@@ -431,8 +431,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IDictionary<TK, ICacheEntryProcessorResult<TR>> InvokeAll<TR, TA>(IEnumerable<TK> keys,
-            ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg)
+        public IDictionary<TK, ICacheEntryProcessorResult<TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys,
+            ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
             var result = _cache.InvokeAll(keys, processor, arg);
 
