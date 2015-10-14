@@ -270,6 +270,4 @@ namespace Apache.Ignite.Core.Compute
         TReduceRes Apply<TArg, TJobRes, TReduceRes>(IComputeFunc<TArg, TJobRes> clo, IEnumerable<TArg> args, 
             IComputeReducer<TJobRes, TReduceRes> rdc);
     }
-
-    // TODO: Fix naming in implementations
 }
