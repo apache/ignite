@@ -149,7 +149,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public IgniteNullable<TV> TryLocalPeek(TK key, params CachePeekMode[] modes)
+        public CacheResult<TV> TryLocalPeek(TK key, params CachePeekMode[] modes)
         {
             return _cache.TryLocalPeek(key, modes);
         }
@@ -189,24 +189,24 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public IgniteNullable<TV> GetAndPut(TK key, TV val)
+        public CacheResult<TV> GetAndPut(TK key, TV val)
         {
             _cache.GetAndPut(key, val);
-            return GetResult<IgniteNullable<TV>>();
+            return GetResult<CacheResult<TV>>();
         }
 
         /** <inheritDoc /> */
-        public IgniteNullable<TV> GetAndReplace(TK key, TV val)
+        public CacheResult<TV> GetAndReplace(TK key, TV val)
         {
             _cache.GetAndReplace(key, val);
-            return GetResult<IgniteNullable<TV>>();
+            return GetResult<CacheResult<TV>>();
         }
 
         /** <inheritDoc /> */
-        public IgniteNullable<TV> GetAndRemove(TK key)
+        public CacheResult<TV> GetAndRemove(TK key)
         {
             _cache.GetAndRemove(key);
-            return GetResult<IgniteNullable<TV>>();
+            return GetResult<CacheResult<TV>>();
         }
 
         /** <inheritDoc /> */
@@ -217,10 +217,10 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public IgniteNullable<TV> GetAndPutIfAbsent(TK key, TV val)
+        public CacheResult<TV> GetAndPutIfAbsent(TK key, TV val)
         {
             _cache.GetAndPutIfAbsent(key, val);
-            return GetResult<IgniteNullable<TV>>();
+            return GetResult<CacheResult<TV>>();
         }
 
         /** <inheritDoc /> */

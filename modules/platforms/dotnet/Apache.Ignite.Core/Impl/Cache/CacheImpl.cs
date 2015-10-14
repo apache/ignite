@@ -299,7 +299,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IgniteNullable<TV> TryLocalPeek(TK key, params CachePeekMode[] modes)
+        public CacheResult<TV> TryLocalPeek(TK key, params CachePeekMode[] modes)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
@@ -349,9 +349,9 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var res = DoOutInOpNullable<TK, TV>((int) CacheOp.Get, key);
 
-            value = res.HasValue ? res.Value : default(TV);
+            value = res.Success ? res.Value : default(TV);
 
-            return res.HasValue;
+            return res.Success;
         }
 
         /** <inheritDoc /> */
@@ -380,7 +380,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IgniteNullable<TV> GetAndPut(TK key, TV val)
+        public CacheResult<TV> GetAndPut(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
@@ -390,7 +390,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IgniteNullable<TV> GetAndReplace(TK key, TV val)
+        public CacheResult<TV> GetAndReplace(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
@@ -400,7 +400,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IgniteNullable<TV> GetAndRemove(TK key)
+        public CacheResult<TV> GetAndRemove(TK key)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
@@ -418,7 +418,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritdoc /> */
-        public IgniteNullable<TV> GetAndPutIfAbsent(TK key, TV val)
+        public CacheResult<TV> GetAndPutIfAbsent(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
@@ -995,8 +995,8 @@ namespace Apache.Ignite.Core.Impl.Cache
                         var res = reader.ReadObject<object>();
 
                         var nullableRes = res == null
-                            ? new IgniteNullable<TV>(default(TV), false)
-                            : new IgniteNullable<TV>((TV) res, true);
+                            ? new CacheResult<TV>(default(TV), false)
+                            : new CacheResult<TV>((TV) res, true);
 
                         return TypeCaster<TResult>.Cast(nullableRes);
                     };
@@ -1008,12 +1008,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Gets the nullable result according to async mode.
         /// </summary>
-        private TV GetNullableResult(IgniteNullable<TV> result)
+        private TV GetNullableResult(CacheResult<TV> result)
         {
             if (!IsAsync)
                 return result.Value;
 
-            Debug.Assert(!result.HasValue);
+            Debug.Assert(!result.Success);
 
             return default(TV);
         }
