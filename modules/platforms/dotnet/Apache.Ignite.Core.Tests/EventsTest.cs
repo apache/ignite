@@ -383,7 +383,7 @@ namespace Apache.Ignite.Core.Tests
             var expectedType = EventType.JobStarted;
 
             var remoteFilter = portable 
-                ?  (IEventPredicate<IEvent>) new RemoteEventPortableListener(expectedType) 
+                ?  (IEventFilter<IEvent>) new RemoteEventPortableListener(expectedType) 
                 :  new RemoteEventListener(expectedType);
 
             var localListener = EventsTestHelper.GetListener();
@@ -788,7 +788,7 @@ namespace Apache.Ignite.Core.Tests
         /// Gets the event listener.
         /// </summary>
         /// <returns>New instance of event listener.</returns>
-        public static IEventPredicate<IEvent> GetListener()
+        public static IEventFilter<IEvent> GetListener()
         {
             return new EventListener<IEvent>(Listen);
         }
@@ -840,7 +840,7 @@ namespace Apache.Ignite.Core.Tests
     /// Test event filter.
     /// </summary>
     [Serializable]
-    public class EventListener<T> : IEventPredicate<T> where T : IEvent
+    public class EventListener<T> : IEventFilter<T> where T : IEvent
     {
         /** */
         private readonly Func<Guid?, T, bool> _invoke;
@@ -855,7 +855,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /** <inheritdoc /> */
-        bool IEventPredicate<T>.Invoke(Guid? nodeId, T evt)
+        bool IEventFilter<T>.Invoke(Guid? nodeId, T evt)
         {
             return _invoke(nodeId, evt);
         }
@@ -871,7 +871,7 @@ namespace Apache.Ignite.Core.Tests
     /// Remote event filter.
     /// </summary>
     [Serializable]
-    public class RemoteEventListener : IEventPredicate<IEvent>
+    public class RemoteEventListener : IEventFilter<IEvent>
     {
         /** */
         private readonly int _type;
@@ -891,7 +891,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Portable remote event filter.
     /// </summary>
-    public class RemoteEventPortableListener : IEventPredicate<IEvent>, IPortableMarshalAware
+    public class RemoteEventPortableListener : IEventFilter<IEvent>, IPortableMarshalAware
     {
         /** */
         private int _type;

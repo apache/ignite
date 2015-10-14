@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="types">Event types to be queried.</param>
         /// <returns>Collection of Ignite events returned from specified nodes.</returns>
         [AsyncSupported]
-        ICollection<T> RemoteQuery<T>(IEventPredicate<T> filter, TimeSpan? timeout = null, params int[] types) 
+        ICollection<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, params int[] types) 
             where T : IEvent;
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="types">Event types to be queried.</param>
         /// <returns>Collection of Ignite events returned from specified nodes.</returns>
         [AsyncSupported]
-        ICollection<T> RemoteQuery<T>(IEventPredicate<T> filter, TimeSpan? timeout = null, IEnumerable<int> types = null) 
+        ICollection<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, IEnumerable<int> types = null) 
             where T : IEvent;
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Events
         /// </returns>
         [AsyncSupported]
         Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
-            IEventPredicate<T> localListener = null, IEventPredicate<T> remoteListener = null, params int[] types) 
+            IEventFilter<T> localListener = null, IEventFilter<T> remoteListener = null, params int[] types) 
             where T : IEvent;
 
         /// <summary>
@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Events
         /// </returns>
         [AsyncSupported]
         Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
-            IEventPredicate<T> localListener = null, IEventPredicate<T> remoteListener = null, IEnumerable<int> types = null)
+            IEventFilter<T> localListener = null, IEventFilter<T> remoteListener = null, IEnumerable<int> types = null)
             where T : IEvent;
 
         /// <summary>
@@ -138,7 +138,7 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         /// <param name="opId">
         /// Operation ID that was returned from 
-        /// <see cref="RemoteListen{T}(int, TimeSpan?, bool, IEventPredicate{T},IEventPredicate{T},int[])"/>.
+        /// <see cref="RemoteListen{T}(int, TimeSpan?, bool, IEventFilter{T},IEventFilter{T},int[])"/>.
         /// </param>
         [AsyncSupported]
         void StopRemoteListen(Guid opId);
@@ -170,7 +170,7 @@ namespace Apache.Ignite.Core.Events
         /// If not provided, all events will be passed to the filter.</param>
         /// <returns>Ignite event.</returns>
         [AsyncSupported]
-        T WaitForLocal<T>(IEventPredicate<T> listener, params int[] types) where T : IEvent;
+        T WaitForLocal<T>(IEventFilter<T> listener, params int[] types) where T : IEvent;
 
         /// <summary>
         /// Waits for the specified events.
@@ -181,7 +181,7 @@ namespace Apache.Ignite.Core.Events
         /// If not provided, all events will be passed to the filter.</param>
         /// <returns>Ignite event.</returns>
         [AsyncSupported]
-        T WaitForLocal<T>(IEventPredicate<T> listener, IEnumerable<int> types) where T : IEvent;
+        T WaitForLocal<T>(IEventFilter<T> listener, IEnumerable<int> types) where T : IEvent;
 
         /// <summary>
         /// Queries local node for events using of specified types.
@@ -216,7 +216,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="listener">Predicate that is called on each received event. If predicate returns false,
         /// it will be unregistered and will stop receiving events.</param>
         /// <param name="types">Event types for which this listener will be notified, should not be empty.</param>
-        void LocalListen<T>(IEventPredicate<T> listener, params int[] types) where T : IEvent;
+        void LocalListen<T>(IEventFilter<T> listener, params int[] types) where T : IEvent;
 
         /// <summary>
         /// Adds an event listener for local events. Note that listener will be added regardless of whether 
@@ -226,7 +226,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="listener">Predicate that is called on each received event. If predicate returns false,
         /// it will be unregistered and will stop receiving events.</param>
         /// <param name="types">Event types for which this listener will be notified, should not be empty.</param>
-        void LocalListen<T>(IEventPredicate<T> listener, IEnumerable<int> types) where T : IEvent;
+        void LocalListen<T>(IEventFilter<T> listener, IEnumerable<int> types) where T : IEvent;
 
         /// <summary>
         /// Removes local event listener.
@@ -236,7 +236,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="types">Types of events for which to remove listener. If not specified, then listener
         /// will be removed for all types it was registered for.</param>
         /// <returns>True if listener was removed, false otherwise.</returns>
-        bool StopLocalListen<T>(IEventPredicate<T> listener, params int[] types) where T : IEvent;
+        bool StopLocalListen<T>(IEventFilter<T> listener, params int[] types) where T : IEvent;
 
         /// <summary>
         /// Removes local event listener.
@@ -246,7 +246,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="types">Types of events for which to remove listener. If not specified, then listener
         /// will be removed for all types it was registered for.</param>
         /// <returns>True if listener was removed, false otherwise.</returns>
-        bool StopLocalListen<T>(IEventPredicate<T> listener, IEnumerable<int> types) where T : IEvent;
+        bool StopLocalListen<T>(IEventFilter<T> listener, IEnumerable<int> types) where T : IEvent;
 
         /// <summary>
         /// Enables provided events. Allows to start recording events that were disabled before. 

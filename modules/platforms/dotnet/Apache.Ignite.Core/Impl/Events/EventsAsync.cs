@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritdoc /> */
-        public override ICollection<T> RemoteQuery<T>(IEventPredicate<T> filter, TimeSpan? timeout = null,
+        public override ICollection<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null,
             params int[] types)
         {
             _lastAsyncOp.Value = (int) Op.RemoteQuery;
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
         /** <inheritdoc /> */
         public override Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
-            IEventPredicate<T> localListener = null, IEventPredicate<T> remoteListener = null, params int[] types)
+            IEventFilter<T> localListener = null, IEventFilter<T> remoteListener = null, params int[] types)
         {
             _lastAsyncOp.Value = (int) Op.RemoteListen;
             _curFut.Value = null;
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritdoc /> */
-        public override T WaitForLocal<T>(IEventPredicate<T> listener, params int[] types)
+        public override T WaitForLocal<T>(IEventFilter<T> listener, params int[] types)
         {
             _lastAsyncOp.Value = (int) Op.WaitForLocal;
 

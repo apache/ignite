@@ -24,7 +24,7 @@ namespace Apache.Ignite.ExamplesDll.Events
     /// <summary>
     /// Local event listener.
     /// </summary>
-    public class LocalListener : IEventPredicate<IEvent>
+    public class LocalListener : IEventFilter<IEvent>
     {
         /** Сount of received events. */
         private int _eventsReceived;
