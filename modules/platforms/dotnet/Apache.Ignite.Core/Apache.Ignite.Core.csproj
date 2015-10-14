@@ -124,7 +124,7 @@
     <Compile Include="Events\EventReader.cs" />
     <Compile Include="Events\EventType.cs" />
     <Compile Include="Events\IEvent.cs" />
-    <Compile Include="Events\IEventPredicate.cs">
+    <Compile Include="Events\IEventFilter.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Events\IEvents.cs" />
