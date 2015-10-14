@@ -53,7 +53,7 @@ public class AgentLauncher {
      */
     @SuppressWarnings("BusyWait")
     public static void main(String[] args) throws Exception {
-        log.log(Level.INFO, "Starting Apache Ignite Control Center Agent...");
+        log.log(Level.INFO, "Starting Apache Ignite Web Console Agent...");
 
         AgentConfiguration cfg = new AgentConfiguration();
 
@@ -103,7 +103,7 @@ public class AgentLauncher {
         }
 
         if (cfg.token() == null) {
-            String webHost= "";
+            String webHost;
 
             try {
                 webHost = new URI(cfg.serverUri()).getHost();
