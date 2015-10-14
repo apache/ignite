@@ -16,6 +16,7 @@
  */
 
 #include "ignite/impl/cache/query/query_impl.h"
+#include "ignite/impl/cache/query/query_fields_row_impl.h"
 
 using namespace ignite::common::concurrent;
 using namespace ignite::common::java;
@@ -111,6 +112,39 @@ namespace ignite
                         if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
                             *err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, "No more elements available.");
                     }
+                }
+
+                QueryFieldsRowImpl* QueryCursorImpl::GetNextRow(IgniteError* err)
+                {
+                    // Create iterator in Java if needed.
+                    if (!CreateIteratorIfNeeded(err))
+                        return NULL;
+
+                    if (hasNext)
+                    {
+                        JniErrorInfo jniErr;
+
+                        SharedPointer<InteropMemory> inMem = env.Get()->AllocateMemory();
+
+                        env.Get()->Context()->TargetOutStream(javaRef, OP_GET_SINGLE, inMem.Get()->PointerLong(), &jniErr);
+
+                        IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                        if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
+                        {
+                            hasNext = IteratorHasNext(err);
+
+                            return new QueryFieldsRowImpl(inMem);
+                        }
+                    }
+                    else
+                    {
+                        // Ensure we do not overwrite possible previous error.
+                        if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
+                            *err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, "No more elements available.");
+                    }
+
+                    return NULL;
                 }
 
                 void QueryCursorImpl::GetAll(OutputOperation& op, IgniteError* err)

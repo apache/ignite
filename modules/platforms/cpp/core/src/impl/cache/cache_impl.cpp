@@ -294,6 +294,11 @@ namespace ignite
                 return QueryInternal(qry, OP_QRY_SCAN, err);
             }
 
+            QueryCursorImpl* CacheImpl::QuerySqlFields(const SqlFieldsQuery& qry, IgniteError* err)
+            {
+                return QueryInternal(qry, OP_QRY_SQL_FIELDS, err);
+            }
+
             int64_t CacheImpl::WriteTo(InteropMemory* mem, InputOperation& inOp, IgniteError* err)
             {
                 PortableMetadataManager* metaMgr = env.Get()->GetMetadataManager();

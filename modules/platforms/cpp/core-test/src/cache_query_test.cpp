@@ -28,6 +28,7 @@
 #include "ignite/cache/query/query_cursor.h"
 #include "ignite/cache/query/query_sql.h"
 #include "ignite/cache/query/query_text.h"
+#include "ignite/cache/query/query_sql_fields.h"
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
 
@@ -58,7 +59,7 @@ public:
      * @param name Name.
      * @param age Age.
      */
-    QueryPerson(std::string name, int age) : name(CopyChars(name.c_str())), age(age)
+    QueryPerson(const std::string& name, int age) : name(CopyChars(name.c_str())), age(age)
     {
         // No-op.
     }
@@ -237,7 +238,8 @@ struct CacheQueryTestSuiteFixture {
  *
  * @param cur Cursor.
  */
-void CheckHasNextFail(QueryCursor<int, QueryPerson>& cur)
+template<typename Cursor>
+void CheckHasNextFail(Cursor& cur)
 {
     try
     {
@@ -256,7 +258,8 @@ void CheckHasNextFail(QueryCursor<int, QueryPerson>& cur)
  *
  * @param cur Cursor.
  */
-void CheckGetNextFail(QueryCursor<int, QueryPerson>& cur)
+template<typename Cursor>
+void CheckGetNextFail(Cursor& cur)
 {
     try
     {
@@ -275,7 +278,8 @@ void CheckGetNextFail(QueryCursor<int, QueryPerson>& cur)
  *
  * @param cur Cursor.
  */
-void CheckGetAllFail(QueryCursor<int, QueryPerson>& cur)
+template<typename Cursor>
+void CheckGetAllFail(Cursor& cur)
 {
     try 
     {
@@ -305,11 +309,24 @@ void CheckEmpty(QueryCursor<int, QueryPerson>& cur)
 }
 
 /**
+* Check empty result through iteration.
+*
+* @param cur Cursor.
+*/
+void CheckEmpty(QueryFieldsCursor& cur)
+{
+    BOOST_REQUIRE(!cur.HasNext());
+
+    CheckGetNextFail(cur);
+}
+
+/**
  * Check empty result through GetAll().
  *
  * @param cur Cursor.
  */
-void CheckEmptyGetAll(QueryCursor<int, QueryPerson>& cur)
+template<typename Cursor>
+void CheckEmptyGetAll(Cursor& cur)
 {
     std::vector<CacheEntry<int, QueryPerson>> res;
 
@@ -329,7 +346,8 @@ void CheckEmptyGetAll(QueryCursor<int, QueryPerson>& cur)
  * @param name1 Name.
  * @param age1 Age.
  */
-void CheckSingle(QueryCursor<int, QueryPerson>& cur, int key, std::string name, int age)
+template<typename Cursor>
+void CheckSingle(Cursor& cur, int key, const std::string& name, int age)
 {
     BOOST_REQUIRE(cur.HasNext());
 
@@ -357,7 +375,8 @@ void CheckSingle(QueryCursor<int, QueryPerson>& cur, int key, std::string name, 
  * @param name1 Name.
  * @param age1 Age.
  */
-void CheckSingleGetAll(QueryCursor<int, QueryPerson>& cur, int key, std::string name, int age)
+template<typename Cursor>
+void CheckSingleGetAll(Cursor& cur, int key, const std::string& name, int age)
 {
     std::vector<CacheEntry<int, QueryPerson>> res;
 
@@ -389,8 +408,9 @@ void CheckSingleGetAll(QueryCursor<int, QueryPerson>& cur, int key, std::string 
  * @param name2 Name 2.
  * @param age2 Age 2.
  */
-void CheckMultiple(QueryCursor<int, QueryPerson>& cur, int key1, std::string name1, 
-    int age1, int key2, std::string name2, int age2)
+template<typename Cursor>
+void CheckMultiple(Cursor& cur, int key1, const std::string& name1, 
+    int age1, int key2, const std::string& name2, int age2)
 {
     for (int i = 0; i < 2; i++)
     {
@@ -433,8 +453,9 @@ void CheckMultiple(QueryCursor<int, QueryPerson>& cur, int key1, std::string nam
  * @param name2 Name 2.
  * @param age2 Age 2.
  */
-void CheckMultipleGetAll(QueryCursor<int, QueryPerson>& cur, int key1, std::string name1, int age1, 
-    int key2, std::string name2, int age2)
+template<typename Cursor>
+void CheckMultipleGetAll(Cursor& cur, int key1, const std::string& name1,
+    int age1, int key2, const std::string& name2, int age2)
 {
     std::vector<CacheEntry<int, QueryPerson>> res;
 
@@ -651,6 +672,177 @@ BOOST_AUTO_TEST_CASE(TestScanQueryPartitioned)
 
     // Ensure that all keys were read.
     BOOST_REQUIRE(keys.size() == entryCnt);
+}
+
+/**
+ * Test fields query with single entry.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQuerySingle)
+{
+    // Test simple query.
+    Cache<int, QueryPerson> cache = GetCache();
+
+    // Test query with two fields of different type.
+    SqlFieldsQuery qry("select age, name from QueryPerson");
+
+    QueryFieldsCursor cursor = cache.Query(qry);
+    CheckEmpty(cursor);
+    
+    // Test simple query.
+    cache.Put(1, QueryPerson("A1", 10));
+
+    cursor = cache.Query(qry);
+
+    IgniteError error;
+
+    BOOST_REQUIRE(cursor.HasNext(error));
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    QueryFieldsRow row = cursor.GetNext(error);
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    BOOST_REQUIRE(row.HasNext(error));
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    int age = row.GetNext<int>(error);
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    BOOST_REQUIRE(age == 10);
+
+    std::string name = row.GetNext<std::string>(error);
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    BOOST_REQUIRE(name == "A1");
+
+    BOOST_REQUIRE(!row.HasNext());
+
+    CheckEmpty(cursor);
+}
+
+/**
+ * Test fields query with two simultaneously handled rows.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryTwo)
+{
+    // Test simple query.
+    Cache<int, QueryPerson> cache = GetCache();
+
+    // Test query with two fields of different type.
+    SqlFieldsQuery qry("select age, name from QueryPerson");
+
+    QueryFieldsCursor cursor = cache.Query(qry);
+    CheckEmpty(cursor);
+
+    // Test simple query.
+    cache.Put(1, QueryPerson("A1", 10));
+    cache.Put(2, QueryPerson("A2", 20));
+
+    cursor = cache.Query(qry);
+
+    IgniteError error;
+
+    BOOST_REQUIRE(cursor.HasNext(error));
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    QueryFieldsRow row1 = cursor.GetNext(error);
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    QueryFieldsRow row2 = cursor.GetNext(error);
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    BOOST_REQUIRE(row1.HasNext(error));
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    BOOST_REQUIRE(row2.HasNext(error));
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    int age2 = row2.GetNext<int>(error);
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    BOOST_REQUIRE(age2 == 20);
+
+    int age1 = row1.GetNext<int>(error);
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    BOOST_REQUIRE(age1 == 10);
+
+    std::string name1 = row1.GetNext<std::string>(error);
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    BOOST_REQUIRE(name1 == "A1");
+
+    std::string name2 = row2.GetNext<std::string>(error);
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    BOOST_REQUIRE(name2 == "A2");
+
+    BOOST_REQUIRE(!row1.HasNext());
+    BOOST_REQUIRE(!row2.HasNext());
+
+    CheckEmpty(cursor);
+}
+
+/**
+ * Test fields query with several entries.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
+{
+    // Test simple query.
+    Cache<int, QueryPerson> cache = GetCache();
+
+    // Test query with two fields of different type.
+    SqlFieldsQuery qry("select name, age from QueryPerson");
+
+    QueryFieldsCursor cursor = cache.Query(qry);
+    CheckEmpty(cursor);
+
+    int32_t entryCnt = 1000; // Number of entries.
+
+    for (int i = 0; i < entryCnt; i++)
+    {
+        std::stringstream stream;
+
+        stream << "A" << i;
+
+        cache.Put(i, QueryPerson(stream.str(), i * 10));
+    }
+
+    cursor = cache.Query(qry);
+
+    IgniteError error;
+
+    for (int i = 0; i < entryCnt; i++)
+    {
+        std::stringstream stream;
+
+        stream << "A" << i;
+
+        std::string expected_name = stream.str();
+        int expected_age = i * 10;
+
+        BOOST_REQUIRE(cursor.HasNext(error));
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        QueryFieldsRow row = cursor.GetNext(error);
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        BOOST_REQUIRE(row.HasNext(error));
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        std::string name = row.GetNext<std::string>(error);
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        BOOST_REQUIRE(name == expected_name);
+
+        int age = row.GetNext<int>(error);
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        BOOST_REQUIRE(age == expected_age);
+
+        BOOST_REQUIRE(!row.HasNext());
+    }
+
+    CheckEmpty(cursor);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_CURSOR
-#define _IGNITE_CACHE_QUERY_CURSOR
+#ifndef _IGNITE_CACHE_QUERY_FIELDS_ROW
+#define _IGNITE_CACHE_QUERY_FIELDS_ROW
 
 #include <vector>
 
@@ -24,7 +24,7 @@
 
 #include "ignite/cache/cache_entry.h"
 #include "ignite/ignite_error.h"
-#include "ignite/impl/cache/query/query_impl.h"
+#include "ignite/impl/cache/query/query_fields_row_impl.h"
 #include "ignite/impl/operations.h"
 
 namespace ignite
@@ -34,16 +34,15 @@ namespace ignite
         namespace query
         {
             /**
-             * Query cursor.
+             * Query fields cursor.
              */
-            template<typename K, typename V>
-            class QueryCursor
+            class QueryFieldsRow
             {
             public:
                 /**
                  * Default constructor.
                  */
-                QueryCursor() : impl(NULL)
+                QueryFieldsRow() : impl(NULL)
                 {
                     // No-op.
                 }
@@ -53,7 +52,7 @@ namespace ignite
                  *
                  * @param impl Implementation.
                  */
-                QueryCursor(impl::cache::query::QueryCursorImpl* impl) : impl(impl)
+                QueryFieldsRow(impl::cache::query::QueryFieldsRowImpl* impl) : impl(impl)
                 {
                     // No-op.
                 }
@@ -82,10 +81,10 @@ namespace ignite
                  */
                 bool HasNext(IgniteError& err)
                 {
-                    impl::cache::query::QueryCursorImpl* impl0 = impl.Get();
+                    impl::cache::query::QueryFieldsRowImpl* impl0 = impl.Get();
 
                     if (impl0)
-                        return impl0->HasNext(&err);
+                        return impl0->HasNext();
                     else
                     {
                         err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, 
@@ -100,11 +99,12 @@ namespace ignite
                  *
                  * @return Next entry.
                  */
-                CacheEntry<K, V> GetNext()
+                template<typename T>
+                T GetNext()
                 {
                     IgniteError err;
 
-                    CacheEntry<K, V> res = GetNext(err);
+                    QueryFieldsRow res = GetNext<T>(err);
 
                     IgniteError::ThrowIfNeeded(err);
 
@@ -117,66 +117,20 @@ namespace ignite
                  * @param err Error.
                  * @return Next entry.
                  */
-                CacheEntry<K, V> GetNext(IgniteError& err)
+                template<typename T>
+                T GetNext(IgniteError& err)
                 {
-                    impl::cache::query::QueryCursorImpl* impl0 = impl.Get();
+                    impl::cache::query::QueryFieldsRowImpl* impl0 = impl.Get();
 
-                    if (impl0) {
-                        impl::Out2Operation<K, V> outOp;
-
-                        impl0->GetNext(outOp, &err);
-
-                        if (err.GetCode() == IgniteError::IGNITE_SUCCESS) 
-                        {
-                            K& key = outOp.Get1();
-                            V& val = outOp.Get2();
-
-                            return CacheEntry<K, V>(key, val);
-                        }
-                        else 
-                            return CacheEntry<K, V>();
-                    }
+                    if (impl0)
+                        return impl0->GetNext<T>(err);
                     else
                     {
                         err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Instance is not usable (did you check for error?).");
 
-                        return CacheEntry<K, V>();
+                        return T();
                     }
-                }
-
-                /**
-                 * Get all entries.
-                 * 
-                 * @param Vector where query entries will be stored.
-                 */
-                void GetAll(std::vector<CacheEntry<K, V>>& res)
-                {
-                    IgniteError err;
-
-                    GetAll(res, err);
-
-                    IgniteError::ThrowIfNeeded(err);
-                }
-
-                /**
-                 * Get all entries.
-                 * 
-                 * @param Vector where query entries will be stored.
-                 * @param err Error.                 
-                 */
-                void GetAll(std::vector<CacheEntry<K, V>>& res, IgniteError& err)
-                {
-                    impl::cache::query::QueryCursorImpl* impl0 = impl.Get();
-
-                    if (impl0) {
-                        impl::OutQueryGetAllOperation<K, V> outOp(&res);
-
-                        impl0->GetAll(outOp, &err);
-                    }
-                    else
-                        err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                            "Instance is not usable (did you check for error?).");
                 }
 
                 /**
@@ -191,7 +145,7 @@ namespace ignite
 
             private:
                 /** Implementation delegate. */
-                ignite::common::concurrent::SharedPointer<impl::cache::query::QueryCursorImpl> impl;
+                ignite::common::concurrent::SharedPointer<impl::cache::query::QueryFieldsRowImpl> impl;
             };
         }
     }    

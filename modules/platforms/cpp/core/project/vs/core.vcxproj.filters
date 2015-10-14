@@ -213,6 +213,18 @@
     <ClInclude Include="..\..\include\ignite\cache\query\query_scan.h">
       <Filter>Code\cache\query</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\query_sql_fields.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\query_fields_cursor.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\query_fields_row.h">
+      <Filter>Code\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\query_fields_row_impl.h">
+      <Filter>Code\impl\cache\query</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">

@@ -22,6 +22,7 @@
 #include "ignite/cache/query/query_cursor.h"
 #include "ignite/cache/query/query_scan.h"
 #include "ignite/cache/query/query_sql.h"
+#include "ignite/cache/query/query_sql_fields.h"
 #include "ignite/cache/query/query_text.h"
 
 #endif
