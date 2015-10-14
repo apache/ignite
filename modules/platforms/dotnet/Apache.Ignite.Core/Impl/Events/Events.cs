@@ -415,7 +415,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <typeparam name="T">Type of events.</typeparam>
         /// <param name="listener">Predicate that is called on each received event.</param>
         /// <param name="type">Event type for which this listener will be notified</param>
-        private void LocalListen<T>(IEventFilter<T> listener, int type) where T : IEvent
+        private void LocalListen<T>(IEventListener<T> listener, int type) where T : IEvent
         {
             lock (_localFilters)
             {
@@ -432,7 +432,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
                 if (!filters.TryGetValue(type, out localFilter))
                 {
-                    localFilter = CreateLocalFilter(listener, type);
+                    localFilter = CreateLocalListener(listener, type);
 
                     filters[type] = localFilter;
                 }
@@ -448,10 +448,10 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="listener">Listener.</param>
         /// <param name="type">Event type.</param>
         /// <returns>Created wrapper.</returns>
-        private LocalHandledEventFilter CreateLocalFilter<T>(IEventFilter<T> listener, int type) where T : IEvent
+        private LocalHandledEventFilter CreateLocalListener<T>(IEventListener<T> listener, int type) where T : IEvent
         {
             var result = new LocalHandledEventFilter(
-                stream => InvokeLocalFilter(stream, listener),
+                stream => InvokeLocalListener(stream, listener),
                 unused =>
                 {
                     lock (_localFilters)
@@ -481,6 +481,20 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="listener">The listener.</param>
         /// <returns>Filter invocation result.</returns>
         private bool InvokeLocalFilter<T>(IPortableStream stream, IEventFilter<T> listener) where T : IEvent
+        {
+            var evt = EventReader.Read<T>(Marshaller.StartUnmarshal(stream));
+
+            return listener.Invoke(evt);
+        }
+
+        /// <summary>
+        /// Invokes local filter using data from specified stream.
+        /// </summary>
+        /// <typeparam name="T">Event object type.</typeparam>
+        /// <param name="stream">The stream.</param>
+        /// <param name="listener">The listener.</param>
+        /// <returns>Filter invocation result.</returns>
+        private bool InvokeLocalListener<T>(IPortableStream stream, IEventListener<T> listener) where T : IEvent
         {
             var evt = EventReader.Read<T>(Marshaller.StartUnmarshal(stream));
 

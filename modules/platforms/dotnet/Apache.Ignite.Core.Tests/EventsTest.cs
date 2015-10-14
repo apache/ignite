@@ -861,6 +861,12 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /** <inheritdoc /> */
+        bool IEventListener<T>.Invoke(T evt)
+        {
+            return _invoke(evt);
+        }
+
+        /** <inheritdoc /> */
         public bool Invoke(T evt)
         {
             throw new Exception("Invalid method");
