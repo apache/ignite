@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
         /** <inheritDoc /> */
         public virtual Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
-            IEventFilter<T> localListener = null, IEventFilter<T> remoteListener = null, params int[] types)
+            IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, params int[] types)
             where T : IEvent
         {
             IgniteArgumentCheck.Ensure(bufSize > 0, "bufSize", "should be > 0");
@@ -152,10 +152,10 @@ namespace Apache.Ignite.Core.Impl.Events
                         writer.WriteLong(Ignite.HandleRegistry.Allocate(listener));
                     }
 
-                    writer.WriteBoolean(remoteListener != null);
+                    writer.WriteBoolean(remoteFilter != null);
 
-                    if (remoteListener != null)
-                        writer.Write(new PortableOrSerializableObjectHolder(remoteListener));
+                    if (remoteFilter != null)
+                        writer.Write(new PortableOrSerializableObjectHolder(remoteFilter));
 
                     WriteEventTypes(types, writer);
                 },
@@ -164,10 +164,10 @@ namespace Apache.Ignite.Core.Impl.Events
 
         /** <inheritDoc /> */
         public Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
-            IEventFilter<T> localListener = null, IEventFilter<T> remoteListener = null, IEnumerable<int> types = null) 
+            IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, IEnumerable<int> types = null)
             where T : IEvent
         {
-            return RemoteListen(bufSize, interval, autoUnsubscribe, localListener, remoteListener, TypesToArray(types));
+            return RemoteListen(bufSize, interval, autoUnsubscribe, localListener, remoteFilter, TypesToArray(types));
         }
 
         /** <inheritDoc /> */
@@ -192,25 +192,25 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
-        public virtual T WaitForLocal<T>(IEventFilter<T> listener, params int[] types) where T : IEvent
+        public virtual T WaitForLocal<T>(IEventFilter<T> filter, params int[] types) where T : IEvent
         {
             long hnd = 0;
 
             try
             {
-                return WaitForLocal0(listener, ref hnd, types);
+                return WaitForLocal0(filter, ref hnd, types);
             }
             finally
             {
-                if (listener != null)
+                if (filter != null)
                     Ignite.HandleRegistry.Release(hnd);
             }
         }
 
         /** <inheritDoc /> */
-        public T WaitForLocal<T>(IEventFilter<T> listener, IEnumerable<int> types) where T : IEvent
+        public T WaitForLocal<T>(IEventFilter<T> filter, IEnumerable<int> types) where T : IEvent
         {
-            return WaitForLocal(listener, TypesToArray(types));
+            return WaitForLocal(filter, TypesToArray(types));
         }
 
         /** <inheritDoc /> */
@@ -320,17 +320,17 @@ namespace Apache.Ignite.Core.Impl.Events
         /// Waits for the specified events.
         /// </summary>
         /// <typeparam name="T">Type of events.</typeparam>
-        /// <param name="listener">Optional filtering predicate. Event wait will end as soon as it returns false.</param>
+        /// <param name="filter">Optional filtering predicate. Event wait will end as soon as it returns false.</param>
         /// <param name="handle">The filter handle, if applicable.</param>
         /// <param name="types">Types of the events to wait for. 
         /// If not provided, all events will be passed to the filter.</param>
         /// <returns>Ignite event.</returns>
-        protected T WaitForLocal0<T>(IEventFilter<T> listener, ref long handle, params int[] types) where T : IEvent
+        protected T WaitForLocal0<T>(IEventFilter<T> filter, ref long handle, params int[] types) where T : IEvent
         {
-            if (listener != null)
+            if (filter != null)
                 handle = Ignite.HandleRegistry.Allocate(new LocalEventFilter
                 {
-                    InvokeFunc = stream => InvokeLocalFilter(stream, listener)
+                    InvokeFunc = stream => InvokeLocalFilter(stream, filter)
                 });
 
             var hnd = handle;
@@ -338,7 +338,7 @@ namespace Apache.Ignite.Core.Impl.Events
             return DoOutInOp((int)Op.WaitForLocal,
                 writer =>
                 {
-                    if (listener != null)
+                    if (filter != null)
                     {
                         writer.WriteBoolean(true);
                         writer.WriteLong(hnd);
@@ -484,7 +484,8 @@ namespace Apache.Ignite.Core.Impl.Events
         {
             var evt = EventReader.Read<T>(Marshaller.StartUnmarshal(stream));
 
-            return listener.Invoke(Ignite.GetLocalNode().Id, evt);
+            // No guid in local mode
+            return listener.Invoke(Guid.Empty, evt);
         }
 
         /// <summary>

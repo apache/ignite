@@ -70,12 +70,12 @@ namespace Apache.Ignite.Core.Impl.Events
 
         /** <inheritdoc /> */
         public override Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
-            IEventFilter<T> localListener = null, IEventFilter<T> remoteListener = null, params int[] types)
+            IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, params int[] types)
         {
             _lastAsyncOp.Value = (int) Op.RemoteListen;
             _curFut.Value = null;
 
-            return base.RemoteListen(bufSize, interval, autoUnsubscribe, localListener, remoteListener, types);
+            return base.RemoteListen(bufSize, interval, autoUnsubscribe, localListener, remoteFilter, types);
         }
 
         /** <inheritdoc /> */
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritdoc /> */
-        public override T WaitForLocal<T>(IEventFilter<T> listener, params int[] types)
+        public override T WaitForLocal<T>(IEventFilter<T> filter, params int[] types)
         {
             _lastAsyncOp.Value = (int) Op.WaitForLocal;
 
@@ -96,9 +96,9 @@ namespace Apache.Ignite.Core.Impl.Events
 
             try
             {
-                var result = WaitForLocal0(listener, ref hnd, types);
+                var result = WaitForLocal0(filter, ref hnd, types);
 
-                if (listener != null)
+                if (filter != null)
                 {
                     // Dispose handle as soon as future ends.
                     var fut = GetFuture<T>();

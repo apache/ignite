@@ -383,15 +383,15 @@ namespace Apache.Ignite.Core.Tests
             var expectedType = EventType.JobStarted;
 
             var remoteFilter = portable 
-                ?  (IEventFilter<IEvent>) new RemoteEventPortableListener(expectedType) 
-                :  new RemoteEventListener(expectedType);
+                ?  (IEventFilter<IEvent>) new RemoteEventPortableFilter(expectedType)
+                :  new RemoteEventFilter(expectedType);
 
             var localListener = EventsTestHelper.GetListener();
 
             if (async)
                 events = events.WithAsync();
 
-            var listenId = events.RemoteListen(localListener: localListener, remoteListener: remoteFilter,
+            var listenId = events.RemoteListen(localListener: localListener, remoteFilter: remoteFilter,
                 autoUnsubscribe: autoUnsubscribe);
 
             if (async)
@@ -413,7 +413,7 @@ namespace Apache.Ignite.Core.Tests
             CheckNoEvent();
 
             // Check unsubscription with listener
-            events.RemoteListen(localListener: localListener, remoteListener: remoteFilter,
+            events.RemoteListen(localListener: localListener, remoteFilter: remoteFilter,
                 autoUnsubscribe: autoUnsubscribe);
 
             if (async)
@@ -628,7 +628,7 @@ namespace Apache.Ignite.Core.Tests
                 {
                     TypeConfigurations = new List<PortableTypeConfiguration>
                     {
-                        new PortableTypeConfiguration(typeof (RemoteEventPortableListener))
+                        new PortableTypeConfiguration(typeof (RemoteEventPortableFilter))
                     }
                 }
             };
@@ -790,7 +790,7 @@ namespace Apache.Ignite.Core.Tests
         /// <returns>New instance of event listener.</returns>
         public static IEventFilter<IEvent> GetListener()
         {
-            return new EventListener<IEvent>(Listen);
+            return new EventFilter<IEvent>(Listen);
         }
 
         /// <summary>
@@ -840,7 +840,7 @@ namespace Apache.Ignite.Core.Tests
     /// Test event filter.
     /// </summary>
     [Serializable]
-    public class EventListener<T> : IEventFilter<T> where T : IEvent
+    public class EventFilter<T> : IEventFilter<T> where T : IEvent
     {
         /** */
         private readonly Func<Guid?, T, bool> _invoke;
@@ -849,7 +849,7 @@ namespace Apache.Ignite.Core.Tests
         /// Initializes a new instance of the <see cref="RemoteListenEventFilter"/> class.
         /// </summary>
         /// <param name="invoke">The invoke delegate.</param>
-        public EventListener(Func<Guid?, T, bool> invoke)
+        public EventFilter(Func<Guid?, T, bool> invoke)
         {
             _invoke = invoke;
         }
@@ -871,12 +871,12 @@ namespace Apache.Ignite.Core.Tests
     /// Remote event filter.
     /// </summary>
     [Serializable]
-    public class RemoteEventListener : IEventFilter<IEvent>
+    public class RemoteEventFilter : IEventFilter<IEvent>
     {
         /** */
         private readonly int _type;
 
-        public RemoteEventListener(int type)
+        public RemoteEventFilter(int type)
         {
             _type = type;
         }
@@ -891,16 +891,16 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Portable remote event filter.
     /// </summary>
-    public class RemoteEventPortableListener : IEventFilter<IEvent>, IPortableMarshalAware
+    public class RemoteEventPortableFilter : IEventFilter<IEvent>, IPortableMarshalAware
     {
         /** */
         private int _type;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="RemoteEventPortableListener"/> class.
+        /// Initializes a new instance of the <see cref="RemoteEventPortableFilter"/> class.
         /// </summary>
         /// <param name="type">The event type.</param>
-        public RemoteEventPortableListener(int type)
+        public RemoteEventPortableFilter(int type)
         {
             _type = type;
         }

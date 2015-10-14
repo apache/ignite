@@ -20,17 +20,17 @@ namespace Apache.Ignite.Core.Events
     using System;
 
     /// <summary>
-    /// Represents an event predicate.
+    /// Represents an event filter.
     /// </summary>
     /// <typeparam name="T">Event type.</typeparam>
     public interface IEventFilter<in T> where T : IEvent
     {
         /// <summary>
-        /// Returns a value indicating whether given event passes this predicate,
+        /// Determines whether specified event passes this filtger.
         /// </summary>
-        /// <param name="nodeId">Current node identifier.</param>
+        /// <param name="nodeId">Node identifier.</param>
         /// <param name="evt">Event.</param>
-        /// <returns>Value indicating whether given event passes this predicate.</returns>
+        /// <returns>Value indicating whether specified event passes this filtger.</returns>
         bool Invoke(Guid? nodeId, T evt);
     }
 }

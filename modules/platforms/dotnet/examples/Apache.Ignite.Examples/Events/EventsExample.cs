@@ -76,7 +76,7 @@ namespace Apache.Ignite.Examples.Events
                 Console.WriteLine(">>> Listening for remote events...");
 
                 var localListener = new LocalListener();
-                var remoteFilter = new RemoteListener();
+                var remoteFilter = new RemoteFilter();
 
                 var listenId = ignite.GetEvents().RemoteListen(localListener: localListener,
                     remoteFilter: remoteFilter, types: EventType.JobExecutionAll);

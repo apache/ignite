@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Events
         /// method is called, or the localListener returns false.</param>
         /// <param name="localListener"> Listener callback that is called on local node. If null, these events will 
         /// be handled on remote nodes by passed in remoteFilter.</param>
-        /// <param name="remoteListener">
+        /// <param name="remoteFilter">
         /// Filter callback that is called on remote node. Only events that pass the remote filter will be 
         /// sent to local node. If null, all events of specified types will be sent to local node. 
         /// This remote filter can be used to pre-handle events remotely, before they are passed in to local callback.
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Events
         /// </returns>
         [AsyncSupported]
         Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
-            IEventFilter<T> localListener = null, IEventFilter<T> remoteListener = null, params int[] types) 
+            IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, params int[] types)
             where T : IEvent;
 
         /// <summary>
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Events
         /// method is called, or the localListener returns false.</param>
         /// <param name="localListener"> Listener callback that is called on local node. If null, these events will 
         /// be handled on remote nodes by passed in remoteFilter.</param>
-        /// <param name="remoteListener">
+        /// <param name="remoteFilter">
         /// Filter callback that is called on remote node. Only events that pass the remote filter will be 
         /// sent to local node. If null, all events of specified types will be sent to local node. 
         /// This remote filter can be used to pre-handle events remotely, before they are passed in to local callback.
@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Events
         /// </returns>
         [AsyncSupported]
         Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
-            IEventFilter<T> localListener = null, IEventFilter<T> remoteListener = null, IEnumerable<int> types = null)
+            IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, IEnumerable<int> types = null)
             where T : IEvent;
 
         /// <summary>
@@ -165,23 +165,23 @@ namespace Apache.Ignite.Core.Events
         /// Waits for the specified events.
         /// </summary>
         /// <typeparam name="T">Type of events.</typeparam>
-        /// <param name="listener">Optional filtering predicate. Event wait will end as soon as it returns false.</param>
+        /// <param name="filter">Optional filtering predicate. Event wait will end as soon as it returns false.</param>
         /// <param name="types">Types of the events to wait for. 
         /// If not provided, all events will be passed to the filter.</param>
         /// <returns>Ignite event.</returns>
         [AsyncSupported]
-        T WaitForLocal<T>(IEventFilter<T> listener, params int[] types) where T : IEvent;
+        T WaitForLocal<T>(IEventFilter<T> filter, params int[] types) where T : IEvent;
 
         /// <summary>
         /// Waits for the specified events.
         /// </summary>
         /// <typeparam name="T">Type of events.</typeparam>
-        /// <param name="listener">Optional filtering predicate. Event wait will end as soon as it returns false.</param>
+        /// <param name="filter">Optional filtering predicate. Event wait will end as soon as it returns false.</param>
         /// <param name="types">Types of the events to wait for. 
         /// If not provided, all events will be passed to the filter.</param>
         /// <returns>Ignite event.</returns>
         [AsyncSupported]
-        T WaitForLocal<T>(IEventFilter<T> listener, IEnumerable<int> types) where T : IEvent;
+        T WaitForLocal<T>(IEventFilter<T> filter, IEnumerable<int> types) where T : IEvent;
 
         /// <summary>
         /// Queries local node for events using of specified types.
