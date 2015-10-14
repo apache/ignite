@@ -64,11 +64,6 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
         super(mode);
     }
 
-    /** {@inheritDoc} */
-    @Override public void testMkdirs() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1620");
-    }
-
     /**
      * Creates secondary filesystems.
      * @return IgfsSecondaryFileSystem
