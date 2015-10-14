@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Compute
     /// <see cref="IComputeTask{TA,T,TR}.OnResult"/>
     /// method.
     /// </summary>
-    public interface IComputeJobResult<out T>
+    public interface IComputeJobResult<out TRes>
     {
         /// <summary>
         /// Gets data returned by remote job if it didn't fail. This data is the
@@ -37,13 +37,14 @@ namespace Apache.Ignite.Core.Compute
         /// method for every individual job, but not in 
         /// <see cref="IComputeTask{A,T,R}.Reduce(IList{IComputeJobResult{T}})"/> method. 
         /// </summary>
-        /// <value>Data returned by job.</value>
-        T Data { get; }
+        /// <returns>Data returned by job.</returns>
+        TRes Data { get; }
 
         /// <summary>
         /// Gets local instance of remote job produced this result.
         /// </summary>
-        IComputeJob<T> Job { get; }
+        /// <returns></returns>
+        IComputeJob<TRes> Job { get; }
 
         /// <summary>
         /// Gets exception produced by execution of remote job, or <c>null</c> if no

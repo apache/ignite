@@ -98,72 +98,73 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public T ExecuteJavaTask<T>(string taskName, object taskArg)
+        public TReduceRes ExecuteJavaTask<TReduceRes>(string taskName, object taskArg)
         {
-            return _compute.ExecuteJavaTask<T>(taskName, taskArg);
+            return _compute.ExecuteJavaTask<TReduceRes>(taskName, taskArg);
         }
 
         /** <inheritDoc /> */
-        public TR Execute<TA, T, TR>(IComputeTask<TA, T, TR> task, TA taskArg)
+        public TReduceRes Execute<TArg, TJobRes, TReduceRes>(IComputeTask<TArg, TJobRes, TReduceRes> task, TArg taskArg)
         {
             return _compute.Execute(task, taskArg).Get();
         }
 
         /** <inheritDoc /> */
-        public TR Execute<T, TR>(IComputeTask<T, TR> task)
+        public TJobRes Execute<TArg, TJobRes>(IComputeTask<TArg, TJobRes> task)
         {
             return _compute.Execute(task, null).Get();
         }
 
         /** <inheritDoc /> */
-        public TR Execute<TA, T, TR>(Type taskType, TA taskArg)
+        public TReduceRes Execute<TArg, TJobRes, TReduceRes>(Type taskType, TArg taskArg)
         {
-            return _compute.Execute<TA, T, TR>(taskType, taskArg).Get();
+            return _compute.Execute<TArg, TJobRes, TReduceRes>(taskType, taskArg).Get();
         }
 
-        public TR Execute<T, TR>(Type taskType)
+        public TReduceRes Execute<TArg, TReduceRes>(Type taskType)
         {
-            return _compute.Execute<object, T, TR>(taskType, null).Get();
+            return _compute.Execute<object, TArg, TReduceRes>(taskType, null).Get();
         }
 
         /** <inheritDoc /> */
-        public TR Call<TR>(IComputeFunc<TR> clo)
+        public TJobRes Call<TJobRes>(IComputeFunc<TJobRes> clo)
         {
             return _compute.Execute(clo).Get();
         }
 
         /** <inheritDoc /> */
-        public TR AffinityCall<TR>(string cacheName, object affinityKey, IComputeFunc<TR> clo)
+        public TJobRes AffinityCall<TJobRes>(string cacheName, object affinityKey, IComputeFunc<TJobRes> clo)
         {
             return _compute.AffinityCall(cacheName, affinityKey, clo).Get();
         }
 
         /** <inheritDoc /> */
-        public TR Call<TR>(Func<TR> func)
+        public TJobRes Call<TJobRes>(Func<TJobRes> func)
         {
             return _compute.Execute(func).Get();
         }
 
         /** <inheritDoc /> */
-        public ICollection<TR> Call<TR>(IEnumerable<IComputeFunc<TR>> clos)
+        public ICollection<TJobRes> Call<TJobRes>(IEnumerable<IComputeFunc<TJobRes>> clos)
         {
             return _compute.Execute(clos).Get();
         }
 
         /** <inheritDoc /> */
-        public TR2 Call<TR1, TR2>(IEnumerable<IComputeFunc<TR1>> clos, IComputeReducer<TR1, TR2> rdc)
+        public TReduceRes Call<TJobRes, TReduceRes>(IEnumerable<IComputeFunc<TJobRes>> clos, 
+            IComputeReducer<TJobRes, TReduceRes> reducer)
         {
-            return _compute.Execute(clos, rdc).Get();
+            return _compute.Execute(clos, reducer).Get();
         }
 
         /** <inheritDoc /> */
-        public ICollection<TR> Broadcast<TR>(IComputeFunc<TR> clo)
+        public ICollection<TJobRes> Broadcast<TJobRes>(IComputeFunc<TJobRes> clo)
         {
             return _compute.Broadcast(clo).Get();
         }
 
         /** <inheritDoc /> */
-        public ICollection<TR> Broadcast<T, TR>(IComputeFunc<T, TR> clo, T arg)
+        public ICollection<TJobRes> Broadcast<T, TJobRes>(IComputeFunc<T, TJobRes> clo, T arg)
         {
             return _compute.Broadcast(clo, arg).Get();
         }
@@ -193,19 +194,20 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public TR Apply<T, TR>(IComputeFunc<T, TR> clo, T arg)
+        public TJobRes Apply<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, TArg arg)
         {
             return _compute.Apply(clo, arg).Get();
         }
 
         /** <inheritDoc /> */
-        public ICollection<TR> Apply<T, TR>(IComputeFunc<T, TR> clo, IEnumerable<T> args)
+        public ICollection<TJobRes> Apply<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, IEnumerable<TArg> args)
         {
             return _compute.Apply(clo, args).Get();
         }
 
         /** <inheritDoc /> */
-        public TR2 Apply<T, TR1, TR2>(IComputeFunc<T, TR1> clo, IEnumerable<T> args, IComputeReducer<TR1, TR2> rdc)
+        public TReduceRes Apply<TArg, TJobRes, TReduceRes>(IComputeFunc<TArg, TJobRes> clo, 
+            IEnumerable<TArg> args, IComputeReducer<TJobRes, TReduceRes> rdc)
         {
             return _compute.Apply(clo, args, rdc).Get();
         }
