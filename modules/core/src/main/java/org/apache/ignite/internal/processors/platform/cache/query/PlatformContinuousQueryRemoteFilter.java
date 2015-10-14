@@ -44,6 +44,7 @@ public class PlatformContinuousQueryRemoteFilter implements PlatformContinuousQu
 
     /** Lock for concurrency control. */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
+
     /** Native filter in serialized form. */
     private Object filter;
 
@@ -176,11 +177,13 @@ public class PlatformContinuousQueryRemoteFilter implements PlatformContinuousQu
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(filter);
+        out.writeBoolean(keepPortable);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         filter = in.readObject();
+        keepPortable = in.readBoolean();
 
         assert filter != null;
     }
