@@ -796,7 +796,15 @@ consoleModule.controller('sqlController',
                     else {
                         var tm = new Date();
 
-                        values = _.map(chartHistory, function (history) {
+                        var span = parseInt(paragraph.timeLineSpan);
+
+                        tm.setMinutes(tm.getMinutes() - span);
+
+                        var filteredChartHistory = _.filter(chartHistory, function (history) {
+                            return history.tm > tm;
+                        });
+
+                        values = _.map(filteredChartHistory, function (history) {
                             return {
                                 x: history.tm,
                                 y: _chartNumber(history.rows[0], valCol.value, index++)
