@@ -33,10 +33,9 @@ mixin btn-toolbar-data(btn, kind, tip)
 
 mixin chart-settings(mdl)
     .chart-settings-link.row(ng-show='paragraph.chart')
-        .col-sm-2
-            i.fa.fa-chevron-circle-down
-            a(ng-click='$event.stopPropagation()' bs-popover data-template-url='chart-settings' data-placement='bottom' data-auto-close='1' data-trigger='click') Chart settings
-        .col-sm-3(ng-show='paragraphTimeSpanVisible(paragraph)')
+        i.fa.fa-chevron-circle-down
+        a(ng-click='$event.stopPropagation()' bs-popover data-template-url='chart-settings' data-placement='bottom' data-auto-close='1' data-trigger='click') Chart settings
+        div(ng-show='paragraphTimeSpanVisible(paragraph)')
             label Show
             button.select-manual-caret.btn.btn-default(ng-model='paragraph.timeLineSpan' bs-options='item for item in timeLineSpans' bs-select data-caret-html='<span class="caret"></span>')
             label min

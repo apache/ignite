@@ -1527,6 +1527,11 @@ a {
         font-size: $font-size-base;
         color: $link-color !important;
     }
+
+    div {
+        margin-left: 5px;
+        display: inline-block;
+    }
 }
 
 .chart-settings {
