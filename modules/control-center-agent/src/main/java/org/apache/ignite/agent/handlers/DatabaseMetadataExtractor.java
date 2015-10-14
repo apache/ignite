@@ -95,7 +95,7 @@ public class DatabaseMetadataExtractor {
         try (Connection conn = connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo)) {
             Collection<String> schemas = DbMetadataReader.getInstance().schemas(conn);
 
-            log.log(Level.FINE, "Collected schemas: " + schemas.size());
+            log.log(Level.FINE, "Finished collection of schemas [url=" + jdbcUrl + ", count="+ schemas.size() +"]");
 
             return schemas;
         }
@@ -113,12 +113,13 @@ public class DatabaseMetadataExtractor {
     @Remote
     public Collection<DbTable> metadata(String jdbcDriverJarPath, String jdbcDriverCls, String jdbcUrl,
         Properties jdbcInfo, List<String> schemas, boolean tblsOnly) throws SQLException {
-        log.log(Level.FINE, "Collecting database metadata...");
+        log.log(Level.FINE, "Start collecting database metadata [driver jar=" + jdbcDriverJarPath +
+            ", driver class=" + jdbcDriverCls + ", url=" + jdbcUrl + "]");
 
         try (Connection conn = connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo)) {
             Collection<DbTable> metadata = DbMetadataReader.getInstance().metadata(conn, schemas, tblsOnly);
 
-            log.log(Level.FINE, "Collected metadata: " + metadata.size());
+            log.log(Level.FINE, "Finished collection of metadata [url=" + jdbcUrl + ", count="+ metadata.size() +"]");
 
             return metadata;
         }
