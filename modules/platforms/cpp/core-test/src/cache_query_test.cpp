@@ -720,8 +720,71 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySingle)
 }
 
 /**
-* Test fields query with several entries.
-*/
+ * Test fields query with two simultaneously handled rows.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryTwo)
+{
+    // Test simple query.
+    Cache<int, QueryPerson> cache = GetCache();
+
+    // Test query with two fields of different type.
+    SqlFieldsQuery qry("select age, name from QueryPerson");
+
+    QueryFieldsCursor cursor = cache.Query(qry);
+    CheckEmpty(cursor);
+
+    // Test simple query.
+    cache.Put(1, QueryPerson("A1", 10));
+    cache.Put(2, QueryPerson("A2", 20));
+
+    cursor = cache.Query(qry);
+
+    IgniteError error;
+
+    BOOST_REQUIRE(cursor.HasNext(error));
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    QueryFieldsRow row1 = cursor.GetNext(error);
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    QueryFieldsRow row2 = cursor.GetNext(error);
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    BOOST_REQUIRE(row1.HasNext(error));
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    BOOST_REQUIRE(row2.HasNext(error));
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    int age2 = row2.GetNext<int>(error);
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    BOOST_REQUIRE(age2 == 20);
+
+    int age1 = row1.GetNext<int>(error);
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    BOOST_REQUIRE(age1 == 10);
+
+    std::string name1 = row1.GetNext<std::string>(error);
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    BOOST_REQUIRE(name1 == "A1");
+
+    std::string name2 = row2.GetNext<std::string>(error);
+    BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    BOOST_REQUIRE(name2 == "A2");
+
+    BOOST_REQUIRE(!row1.HasNext());
+    BOOST_REQUIRE(!row2.HasNext());
+
+    CheckEmpty(cursor);
+}
+
+/**
+ * Test fields query with several entries.
+ */
 BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
 {
     // Test simple query.
