@@ -237,15 +237,15 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public TR Apply<T, TR>(IComputeFunc<T, TR> clo, T arg)
+        public TJobRes Apply<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, TArg arg)
         {
             _curFut.Value = Compute.Apply(clo, arg);
 
-            return default(TR);
+            return default(TJobRes);
         }
 
         /** <inheritDoc /> */
-        public ICollection<TR> Apply<T, TR>(IComputeFunc<T, TR> clo, IEnumerable<T> args)
+        public ICollection<TJobRes> Apply<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, IEnumerable<TArg> args)
         {
             _curFut.Value = Compute.Apply(clo, args);
 
@@ -253,11 +253,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public TR2 Apply<T, TR1, TR2>(IComputeFunc<T, TR1> clo, IEnumerable<T> args, IComputeReducer<TR1, TR2> rdc)
+        public TReduceRes Apply<TArg, TJobRes, TReduceRes>(IComputeFunc<TArg, TJobRes> clo, 
+            IEnumerable<TArg> args, IComputeReducer<TJobRes, TReduceRes> rdc)
         {
             _curFut.Value = Compute.Apply(clo, args, rdc);
 
-            return default(TR2);
+            return default(TReduceRes);
         }
     }
 }
