@@ -262,7 +262,7 @@
       "onEnter": "loadMetadataNext()",
       "tip": [
         "Password for connecting to database",
-        "Note, password would not be saved"
+        "Note, password would not be saved in preferences for security reasons"
       ]
     },
     {

@@ -32,12 +32,15 @@ mixin btn-toolbar-data(btn, kind, tip)
     i.btn.btn-default.fa(class=btn ng-click='setResult(paragraph, "#{kind}")' ng-class='{active: resultEq(paragraph, "#{kind}")}' bs-tooltip='' data-title=tip data-trigger='hover' data-placement='bottom')
 
 mixin chart-settings(mdl)
-    .chart-settings-link
-        i.fa.fa-chevron-circle-down
-        a(ng-show='paragraph.chart' ng-click='$event.stopPropagation()' bs-popover data-template-url='chart-settings' data-placement='bottom' data-auto-close='1' data-trigger='click') Chart settings
-        label(style='margin-left: 20px') Show
-        button.select-manual-caret.btn.btn-default(ng-model='paragraph.timeLineSpan' bs-options='item for item in timeLineSpans' bs-select data-caret-html='<span class="caret"></span>')
-        label min
+    .chart-settings-link(ng-show='paragraph.chart')
+        .col-sm-2
+            i.fa.fa-chevron-circle-down
+            a(ng-click='$event.stopPropagation()' bs-popover data-template-url='chart-settings' data-placement='bottom' data-auto-close='1' data-trigger='click') Chart settings
+        .col-sm-3(ng-show='paragraphTimeSpanVisible(paragraph)')
+            label Show
+            button.select-manual-caret.btn.btn-default(ng-model='paragraph.timeLineSpan' bs-options='item for item in timeLineSpans' bs-select data-caret-html='<span class="caret"></span>')
+            label min
+
 block container
     .row
         .col-sm-12(ng-init='noteId = "#{noteId}"')
@@ -154,13 +157,12 @@ block container
                                         .sql-table.ag-bootstrap(ag-grid='paragraph.gridOptions')
                                     div(ng-show='paragraph.chart() && paragraph.nonEmpty()')
                                         div(ng-show='paragraph.queryExecute()')
+                                            +chart-settings
                                             div(ng-hide='paragraph.chartColumnsConfigured()')
-                                                +chart-settings
                                                 .sql-empty-result Cannot display chart. Please configure axis using&nbsp
                                                     b Chart settings
                                             div(ng-show='paragraph.chartColumnsConfigured()')
                                                 div(ng-show='paragraph.timeLineSupported() || !paragraph.chartTimeLineEnabled()')
-                                                    +chart-settings
                                                     div(ng-repeat='chart in paragraph.charts')
                                                         nvd3(options='chart.options' data='chart.data' api='chart.api')
                                                 .sql-empty-result(ng-show='!paragraph.timeLineSupported() && paragraph.chartTimeLineEnabled()') Pie chart does not support 'TIME_LINE' column for X-axis

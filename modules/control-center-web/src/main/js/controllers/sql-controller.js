@@ -840,6 +840,10 @@ consoleModule.controller('sqlController',
         return datum;
     }
 
+    $scope.paragraphTimeSpanVisible = function (paragraph) {
+        return paragraph.timeLineSupported() && paragraph.chartTimeLineEnabled();
+    };
+
     $scope.paragraphTimeLineSpan = function (paragraph) {
       if (paragraph && paragraph.timeLineSpan)
         return paragraph.timeLineSpan.toString();
