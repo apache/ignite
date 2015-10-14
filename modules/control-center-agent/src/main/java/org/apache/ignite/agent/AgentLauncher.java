@@ -70,7 +70,8 @@ public class AgentLauncher {
             propCfg.load(new File(prop).toURI().toURL());
         }
         catch (IOException ignore) {
-            log.log(Level.WARNING, "Failed to load agent property file: '" + prop + "'", ignore);
+            if (!AgentConfiguration.DFLT_CFG_PATH.equals(prop))
+                log.log(Level.WARNING, "Failed to load agent property file: '" + prop + "'", ignore);
         }
 
         cfg.merge(propCfg);
@@ -112,7 +113,7 @@ public class AgentLauncher {
 
             System.out.print("Enter security token: ");
 
-            cfg.token(new String(System.console().readPassword()));
+            cfg.token(System.console().readLine().trim());
         }
 
         if (cfg.testDriveMetadata())

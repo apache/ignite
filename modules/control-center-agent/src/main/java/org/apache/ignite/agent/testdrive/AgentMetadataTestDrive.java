@@ -66,10 +66,11 @@ public class AgentMetadataTestDrive {
 
                 File agentHome = AgentUtils.getAgentHome();
 
-                File sqlScript = new File((agentHome != null) ? new File(agentHome, "test-drive") : new File("test-drive"),
+                File sqlScript = new File(agentHome != null ? new File(agentHome, "test-drive") : new File("test-drive"),
                     "test-drive.sql");
 
                 RunScript.execute(conn, new FileReader(sqlScript));
+
                 log.log(Level.FINE, "TEST-DRIVE: Sample tables created.");
 
                 conn.close();

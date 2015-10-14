@@ -35,6 +35,9 @@ public class AgentConfiguration {
     /** Default Ignite node HTTP port. */
     public static final int DFLT_NODE_PORT = 8080;
 
+    /** Default path to agent property file. */
+    public static final String DFLT_CFG_PATH = "default.properties";
+
     /** Default server URI. */
     private static final String DFLT_SERVER_URI = "wss://localhost:3001";
 
@@ -48,19 +51,19 @@ public class AgentConfiguration {
     /** */
     @Parameter(names = {"-s", "--server-uri"}, description = "URI for connect to Ignite Console via web-socket protocol" +
         "           " +
-        "      Default value: wss://localhost:3001")
+        "      Default value: " + DFLT_SERVER_URI)
     private String srvUri;
 
     /** */
     @Parameter(names = {"-n", "--node-uri"}, description = "URI for connect to Ignite node REST server" +
         "                        " +
-        "      Default value: http://localhost:8080")
+        "      Default value: " + DFLT_NODE_URI)
     private String nodeUri;
 
     /** */
     @Parameter(names = {"-c", "--config"}, description = "Path to agent property file" +
         "                                  " +
-        "      Default value: ./default.properties")
+        "      Default value: " + DFLT_CFG_PATH)
     private String cfgPath;
 
     /** */
@@ -130,7 +133,7 @@ public class AgentConfiguration {
      * @return Configuration path.
      */
     public String configPath() {
-        return cfgPath == null ? "./default.properties" : cfgPath;
+        return cfgPath == null ? DFLT_CFG_PATH : cfgPath;
     }
 
     /**

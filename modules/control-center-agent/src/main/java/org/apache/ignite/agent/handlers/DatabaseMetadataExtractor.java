@@ -89,12 +89,13 @@ public class DatabaseMetadataExtractor {
     @Remote
     public Collection<String> schemas(String jdbcDriverJarPath, String jdbcDriverCls, String jdbcUrl,
         Properties jdbcInfo) throws SQLException {
-        log.log(Level.INFO, "Collecting database schemas...");
+        log.log(Level.FINE, "Start collecting database schemas [driver jar=" + jdbcDriverJarPath +
+            ", driver class=" + jdbcDriverCls + ", url=" + jdbcUrl + "]");
 
         try (Connection conn = connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo)) {
             Collection<String> schemas = DbMetadataReader.getInstance().schemas(conn);
 
-            log.log(Level.INFO, "Collected schemas: " + schemas.size());
+            log.log(Level.FINE, "Collected schemas: " + schemas.size());
 
             return schemas;
         }
@@ -112,12 +113,12 @@ public class DatabaseMetadataExtractor {
     @Remote
     public Collection<DbTable> metadata(String jdbcDriverJarPath, String jdbcDriverCls, String jdbcUrl,
         Properties jdbcInfo, List<String> schemas, boolean tblsOnly) throws SQLException {
-        log.log(Level.INFO, "Collecting database metadata...");
+        log.log(Level.FINE, "Collecting database metadata...");
 
         try (Connection conn = connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo)) {
             Collection<DbTable> metadata = DbMetadataReader.getInstance().metadata(conn, schemas, tblsOnly);
 
-            log.log(Level.INFO, "Collected metadata: " + metadata.size());
+            log.log(Level.FINE, "Collected metadata: " + metadata.size());
 
             return metadata;
         }
@@ -139,7 +140,7 @@ public class DatabaseMetadataExtractor {
     public List<JdbcDriver> availableDrivers() {
         String drvFolder = normalizePath(driversFolder);
 
-        log.log(Level.INFO, "Collecting JDBC drivers in folder: " + drvFolder);
+        log.log(Level.FINE, "Collecting JDBC drivers in folder: " + drvFolder);
 
         if (drvFolder == null) {
             log.log(Level.INFO, "JDBC drivers folder not specified, returning empty list");
@@ -170,7 +171,7 @@ public class DatabaseMetadataExtractor {
 
                         res.add(new JdbcDriver(fileName, jdbcDriverCls));
 
-                        log.log(Level.INFO, "Found: [driver=" + fileName + ", class=" + jdbcDriverCls + "]");
+                        log.log(Level.FINE, "Found: [driver=" + fileName + ", class=" + jdbcDriverCls + "]");
                     }
                 }
                 catch (IOException e) {
@@ -192,15 +193,15 @@ public class DatabaseMetadataExtractor {
         /** */
         private final String jdbcDriverJar;
         /** */
-        private final String jdbcDriverClass;
+        private final String jdbcDriverCls;
 
         /**
          * @param jdbcDriverJar File name of driver jar file.
-         * @param jdbcDriverClass Optional JDBC driver class.
+         * @param jdbcDriverCls Optional JDBC driver class.
          */
-        public JdbcDriver(String jdbcDriverJar, String jdbcDriverClass) {
+        public JdbcDriver(String jdbcDriverJar, String jdbcDriverCls) {
             this.jdbcDriverJar = jdbcDriverJar;
-            this.jdbcDriverClass = jdbcDriverClass;
+            this.jdbcDriverCls = jdbcDriverCls;
         }
     }
 }

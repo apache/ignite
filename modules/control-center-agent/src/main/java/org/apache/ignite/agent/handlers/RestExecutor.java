@@ -23,6 +23,8 @@ import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.codec.Charsets;
 import org.apache.http.Header;
 import org.apache.http.NameValuePair;
@@ -44,6 +46,9 @@ import static org.apache.ignite.agent.AgentConfiguration.DFLT_NODE_PORT;
  * Executor for REST requests.
  */
 public class RestExecutor {
+    /** */
+    private static final Logger log = Logger.getLogger(RestExecutor.class.getName());
+
     /** */
     private final AgentConfiguration cfg;
 
@@ -82,6 +87,9 @@ public class RestExecutor {
     @Remote
     public RestResult executeRest(String path, Map<String, String> params, String mtd, Map<String, String> headers,
         String body) throws IOException, URISyntaxException {
+        log.log(Level.FINE, "Start execute REST command [url=/" + path + ", method=" + mtd +
+            ", parameters=" + params + "]");
+
         URIBuilder builder = new URIBuilder(cfg.nodeUri());
 
         if (builder.getPort() == -1)
