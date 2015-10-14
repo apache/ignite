@@ -508,7 +508,15 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.Throws<InvalidOperationException>(() => cache.Get(3));
 
             int value;
+            
+            Assert.IsTrue(cache.TryGet(1, out value));
+            Assert.AreEqual(1, value);
+
+            Assert.IsTrue(cache.TryGet(2, out value));
+            Assert.AreEqual(2, value);
+
             Assert.IsFalse(cache.TryGet(3, out value));
+            Assert.AreEqual(0, value);
         }
 
         [Test]

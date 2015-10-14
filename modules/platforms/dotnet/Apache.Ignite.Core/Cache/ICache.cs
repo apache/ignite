@@ -206,7 +206,6 @@ namespace Apache.Ignite.Core.Cache
         /// <returns>
         /// true if the cache contains an element with the specified key; otherwise, false.
         /// </returns>
-        [AsyncSupported]
         bool TryGet(TK key, out TV value);
 
         /// <summary>
