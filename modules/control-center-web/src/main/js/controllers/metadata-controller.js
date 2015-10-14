@@ -393,6 +393,8 @@ consoleModule.controller('metadataController', [
                             $common.showInfo('Cache type metadata loaded from database.');
 
                             $scope.panels.activePanels = [0, 1, 2];
+
+                            $scope.ui.showValid = true;
                         })
                         .error(function (errMsg) {
                             $common.showError(errMsg);
@@ -953,6 +955,8 @@ consoleModule.controller('metadataController', [
                                     $scope.metadatas = [];
 
                                     $scope.selectItem(undefined, undefined);
+
+                                    $scope.ui.showValid = true;
                                 })
                                 .error(function (errMsg) {
                                     $common.showError(errMsg);
