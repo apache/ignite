@@ -84,8 +84,8 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="taskName">Java task name</param>
         /// <param name="taskArg">Optional argument of task execution, can be null.</param>
         /// <returns>Task result.</returns>
-        /// <typeparam name="T">Type of task result.</typeparam>
-        T ExecuteJavaTask<T>(string taskName, object taskArg);
+        /// <typeparam name="TRes">Type of task result.</typeparam>
+        TRes ExecuteJavaTask<TRes>(string taskName, object taskArg);
 
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -94,11 +94,11 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="task">Task to execute.</param>
         /// <param name="taskArg">Optional task argument.</param>
         /// <returns>Task result.</returns>
-        /// <typeparam name="TA">Argument type.</typeparam>
-        /// <typeparam name="T">Type of job result.</typeparam>
-        /// <typeparam name="TR">Type of reduce result.</typeparam>
+        /// <typeparam name="TArg">Argument type.</typeparam>
+        /// <typeparam name="TJobRes">Type of job result.</typeparam>
+        /// <typeparam name="TRes">Type of final task result.</typeparam>
         [AsyncSupported]
-        TR Execute<TA, T, TR>(IComputeTask<TA, T, TR> task, TA taskArg);
+        TRes Execute<TArg, TJobRes, TRes>(IComputeTask<TArg, TJobRes, TRes> task, TArg taskArg);
         
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -106,10 +106,10 @@ namespace Apache.Ignite.Core.Compute
         /// </summary>
         /// <param name="task">Task to execute.</param>
         /// <returns>Task result.</returns>
-        /// <typeparam name="T">Type of job result.</typeparam>
-        /// <typeparam name="TR">Type of reduce result.</typeparam>
+        /// <typeparam name="TJobRes">Type of job result.</typeparam>
+        /// <typeparam name="TRes">Type of reduce result.</typeparam>
         [AsyncSupported]
-        TR Execute<T, TR>(IComputeTask<T, TR> task);
+        TRes Execute<TJobRes, TRes>(IComputeTask<TJobRes, TRes> task);
 
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -118,11 +118,11 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="taskType">Task type.</param>
         /// <param name="taskArg">Optional task argument.</param>
         /// <returns>Task result.</returns>
-        /// <typeparam name="TA">Argument type.</typeparam>
-        /// <typeparam name="T">Type of job result.</typeparam>
-        /// <typeparam name="TR">Type of reduce result.</typeparam>
+        /// <typeparam name="TArg">Argument type.</typeparam>
+        /// <typeparam name="TJobRes">Type of job result.</typeparam>
+        /// <typeparam name="TRes">Type of reduce result.</typeparam>
         [AsyncSupported]
-        TR Execute<TA, T, TR>(Type taskType, TA taskArg);
+        TRes Execute<TArg, TJobRes, TRes>(Type taskType, TArg taskArg);
         
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -130,10 +130,10 @@ namespace Apache.Ignite.Core.Compute
         /// </summary>
         /// <param name="taskType">Task type.</param>
         /// <returns>Task result.</returns>
-        /// <typeparam name="T">Type of job result.</typeparam>
-        /// <typeparam name="TR">Type of reduce result.</typeparam>
+        /// <typeparam name="TJobRes">Type of job result.</typeparam>
+        /// <typeparam name="TRes">Type of reduce result.</typeparam>
         [AsyncSupported]
-        TR Execute<T, TR>(Type taskType);
+        TRes Execute<TJobRes, TRes>(Type taskType);
 
         /// <summary>
         /// Executes provided job on a node in this grid projection. The result of the
@@ -141,9 +141,9 @@ namespace Apache.Ignite.Core.Compute
         /// </summary>
         /// <param name="clo">Job to execute.</param>
         /// <returns>Job result for this execution.</returns>
-        /// <typeparam name="TR">Type of job result.</typeparam>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
         [AsyncSupported]
-        TR Call<TR>(IComputeFunc<TR> clo);
+        TRes Call<TRes>(IComputeFunc<TRes> clo);
 
         /// <summary>
         /// Executes given job on the node where data for provided affinity key is located 
@@ -153,29 +153,30 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="affinityKey">Affinity key.</param>
         /// <param name="clo">Job to execute.</param>
         /// <returns>Job result for this execution.</returns>
-        /// <typeparam name="TR">Type of job result.</typeparam>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
         [AsyncSupported]
-        TR AffinityCall<TR>(string cacheName, object affinityKey, IComputeFunc<TR> clo);
+        TRes AffinityCall<TRes>(string cacheName, object affinityKey, IComputeFunc<TRes> clo);
 
         /// <summary>
         /// Executes collection of jobs on nodes within this grid projection.
         /// </summary>
         /// <param name="clos">Collection of jobs to execute.</param>
-        /// <param name="rdc">Reducer to reduce all job results into one individual return value.</param>
+        /// <param name="reducer">Reducer to reduce all job results into one individual return value.</param>
         /// <returns>Reduced job result for this execution.</returns>
-        /// <typeparam name="TR1">Type of job result.</typeparam>
-        /// <typeparam name="TR2">Type of reduced result.</typeparam>
+        /// <typeparam name="TFuncRes">Type of function result.</typeparam>
+        /// <typeparam name="TRes">Type of result after reduce.</typeparam>
         [AsyncSupported]
-        TR2 Call<TR1, TR2>(IEnumerable<IComputeFunc<TR1>> clos, IComputeReducer<TR1, TR2> rdc);
+        TRes Call<TFuncRes, TRes>(IEnumerable<IComputeFunc<TFuncRes>> clos, 
+            IComputeReducer<TFuncRes, TRes> reducer);
         
         /// <summary>
         /// Executes collection of jobs on nodes within this grid projection.
         /// </summary>
         /// <param name="clos">Collection of jobs to execute.</param>
         /// <returns>Collection of job results for this execution.</returns>
-        /// <typeparam name="TR">Type of job result.</typeparam>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
         [AsyncSupported]
-        ICollection<TR> Call<TR>(IEnumerable<IComputeFunc<TR>> clos);
+        ICollection<TRes> Call<TRes>(IEnumerable<IComputeFunc<TRes>> clos);
 
         /// <summary>
         /// Broadcasts given job to all nodes in grid projection. Every participating node will return a job result. 
@@ -183,7 +184,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="clo">Job to broadcast to all projection nodes.</param>
         /// <returns>Collection of results for this execution.</returns>
         [AsyncSupported]
-        ICollection<TR> Broadcast<TR>(IComputeFunc<TR> clo);
+        ICollection<TRes> Broadcast<TRes>(IComputeFunc<TRes> clo);
 
         /// <summary>
         /// Broadcasts given closure job with passed in argument to all nodes in grid projection.
@@ -192,10 +193,10 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="clo">Job to broadcast to all projection nodes.</param>
         /// <param name="arg">Job closure argument.</param>
         /// <returns>Collection of results for this execution.</returns>
-        /// <typeparam name="T">Type of argument.</typeparam>
-        /// <typeparam name="TR">Type of job result.</typeparam>
+        /// <typeparam name="TArg">Type of argument.</typeparam>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
         [AsyncSupported]
-        ICollection<TR> Broadcast<T, TR>(IComputeFunc<T, TR> clo, T arg);
+        ICollection<TRes> Broadcast<TArg, TRes>(IComputeFunc<TArg, TRes> clo, TArg arg);
 
         /// <summary>
         /// Broadcasts given job to all nodes in grid projection.
@@ -234,10 +235,10 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="clo">Job to run.</param>
         /// <param name="arg">Job argument.</param>
         /// <returns>Job result for this execution.</returns>
-        /// <typeparam name="T">Type of argument.</typeparam>
-        /// <typeparam name="TR">Type of job result.</typeparam>
+        /// <typeparam name="TArg">Type of argument.</typeparam>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
         [AsyncSupported]
-        TR Apply<T, TR>(IComputeFunc<T, TR> clo, T arg);
+        TRes Apply<TArg, TRes>(IComputeFunc<TArg, TRes> clo, TArg arg);
 
         /// <summary>
         /// Executes provided closure job on nodes within this grid projection. A new job is executed for
@@ -247,10 +248,10 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="clo">Job to run.</param>
         /// <param name="args">Job arguments.</param>
         /// <returns>Сollection of job results.</returns>
-        /// <typeparam name="T">Type of argument.</typeparam>
-        /// <typeparam name="TR">Type of job result.</typeparam>
+        /// <typeparam name="TArg">Type of argument.</typeparam>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
         [AsyncSupported]
-        ICollection<TR> Apply<T, TR>(IComputeFunc<T, TR> clo, IEnumerable<T> args);
+        ICollection<TRes> Apply<TArg, TRes>(IComputeFunc<TArg, TRes> clo, IEnumerable<TArg> args);
 
         /// <summary>
         /// Executes provided closure job on nodes within this grid projection. A new job is executed for
@@ -262,10 +263,11 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="args">Job arguments.</param>
         /// <param name="rdc">Reducer to reduce all job results into one individual return value.</param>
         /// <returns>Reduced job result for this execution.</returns>
-        /// <typeparam name="T">Type of argument.</typeparam>
-        /// <typeparam name="TR1">Type of job result.</typeparam>
-        /// <typeparam name="TR2">Type of reduced result.</typeparam>
+        /// <typeparam name="TArg">Type of argument.</typeparam>
+        /// <typeparam name="TFuncRes">Type of function result.</typeparam>
+        /// <typeparam name="TRes">Type of result after reduce.</typeparam>
         [AsyncSupported]
-        TR2 Apply<T, TR1, TR2>(IComputeFunc<T, TR1> clo, IEnumerable<T> args, IComputeReducer<TR1, TR2> rdc);
+        TRes Apply<TArg, TFuncRes, TRes>(IComputeFunc<TArg, TFuncRes> clo, IEnumerable<TArg> args, 
+            IComputeReducer<TFuncRes, TRes> rdc);
     }
 }

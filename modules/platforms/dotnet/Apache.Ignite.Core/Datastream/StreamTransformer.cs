@@ -30,19 +30,19 @@ namespace Apache.Ignite.Core.Datastream
     /// </summary>
     /// <typeparam name="TK">Key type.</typeparam>
     /// <typeparam name="TV">Value type.</typeparam>
-    /// <typeparam name="TA">The type of the processor argument.</typeparam>
-    /// <typeparam name="TR">The type of the processor result.</typeparam>
-    public sealed class StreamTransformer<TK, TV, TA, TR> : IStreamReceiver<TK, TV>, 
+    /// <typeparam name="TArg">The type of the processor argument.</typeparam>
+    /// <typeparam name="TRes">The type of the processor result.</typeparam>
+    public sealed class StreamTransformer<TK, TV, TArg, TRes> : IStreamReceiver<TK, TV>, 
         IPortableWriteAware
     {
         /** Entry processor. */
-        private readonly ICacheEntryProcessor<TK, TV, TA, TR> _proc;
+        private readonly ICacheEntryProcessor<TK, TV, TArg, TRes> _proc;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StreamTransformer{K, V, A, R}"/> class.
         /// </summary>
         /// <param name="proc">Entry processor.</param>
-        public StreamTransformer(ICacheEntryProcessor<TK, TV, TA, TR> proc)
+        public StreamTransformer(ICacheEntryProcessor<TK, TV, TArg, TRes> proc)
         {
             IgniteArgumentCheck.NotNull(proc, "proc");
 
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Datastream
             foreach (var entry in entries)
                 keys.Add(entry.Key);
 
-            cache.InvokeAll(keys, _proc, default(TA));
+            cache.InvokeAll(keys, _proc, default(TArg));
         }
 
         /** <inheritdoc /> */

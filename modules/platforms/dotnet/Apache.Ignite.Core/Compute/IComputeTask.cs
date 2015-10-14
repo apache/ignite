@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Compute
     ///         <description>Inject annotated resources into task instance.</description>
     ///     </item>
     ///     <item>
-    ///         <description>Apply <see cref="IComputeTask{A,T,R}.Map(IList{IClusterNode}, TA)"/>.
+    ///         <description>Apply <see cref="IComputeTask{A,T,R}.Map(IList{IClusterNode}, TArg)"/>.
     ///         This method is responsible for splitting business logic into multiple jobs 
     ///         (units of execution) and mapping them to Ignite nodes.</description>
     ///     </item>
@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Compute
     ///     </item>
     ///     <item>
     ///         <description>Once job execution results become available method 
-    ///         <see cref="IComputeTask{A,T,R}.Result(IComputeJobResult{T}, IList{IComputeJobResult{T}})"/>
+    ///         <see cref="IComputeTask{A,T,R}.Result(IComputeJobResult{TJobRes}, IList{IComputeJobResult{TJobRes}})"/>
     ///         will be called for ech received job result. The policy returned by this method will
     ///         determine the way task reacts to every job result.
     ///         <para />
@@ -66,19 +66,19 @@ namespace Apache.Ignite.Core.Compute
     ///     </item>
     ///     <item>
     ///         <description>Once all results are received or 
-    ///         <see cref="IComputeTask{A,T,R}.Result(IComputeJobResult{T}, IList{IComputeJobResult{T}})"/>
+    ///         <see cref="IComputeTask{A,T,R}.Result(IComputeJobResult{TJobRes}, IList{IComputeJobResult{TJobRes}})"/>
     ///         method returned <see cref="ComputeJobResultPolicy.Reduce"/> policy, method 
-    ///         <see cref="IComputeTask{A,T,R}.Reduce(IList{IComputeJobResult{T}})"/>
+    ///         <see cref="IComputeTask{A,T,R}.Reduce(IList{IComputeJobResult{TJobRes}})"/>
     ///         is called to aggregate received results into one final result. Once this method is finished the 
     ///         execution of the Ignite task is complete. This result will be returned to the user through future.
     ///         </description>    
     ///     </item>
     /// </list>
     /// </summary>
-    /// <typeparam name="TA">Argument type.</typeparam>
-    /// <typeparam name="T">Type of job result.</typeparam>
-    /// <typeparam name="TR">Type of reduce result.</typeparam>
-    public interface IComputeTask<in TA, T, out TR>
+    /// <typeparam name="TArg">Argument type.</typeparam>
+    /// <typeparam name="TJobRes">Type of job result.</typeparam>
+    /// <typeparam name="TRes">Type of final task result after reduce.</typeparam>
+    public interface IComputeTask<in TArg, TJobRes, out TRes>
     {
         /// <summary>
         /// This method is called to map or split Ignite task into multiple Ignite jobs. This is the
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Compute
         /// as the one passed into <c>ICompute.Execute()</c> methods.</param>
         /// <returns>Map of Ignite jobs assigned to subgrid node. If <c>null</c> or empty map is returned,
         /// exception will be thrown.</returns>
-        IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, TA arg);
+        IDictionary<IComputeJob<TJobRes>, IClusterNode> Map(IList<IClusterNode> subgrid, TArg arg);
 
         /// <summary>
         /// Asynchronous callback invoked every time a result from remote execution is
@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="rcvd">All previously received results. Note that if task class has
         /// <see cref="ComputeTaskNoResultCacheAttribute"/> attribute, then this list will be empty.</param>
         /// <returns>Result policy that dictates how to process further upcoming job results.</returns>
-        ComputeJobResultPolicy Result(IComputeJobResult<T> res, IList<IComputeJobResult<T>> rcvd);
+        ComputeJobResultPolicy Result(IComputeJobResult<TJobRes> res, IList<IComputeJobResult<TJobRes>> rcvd);
 
         /// <summary>
         /// Reduces (or aggregates) results received so far into one compound result to be returned to 
@@ -118,14 +118,14 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="results">Received job results. Note that if task class has 
         /// <see cref="ComputeTaskNoResultCacheAttribute"/> attribute, then this list will be empty.</param>
         /// <returns>Task result constructed from results of remote executions.</returns>
-        TR Reduce(IList<IComputeJobResult<T>> results);
+        TRes Reduce(IList<IComputeJobResult<TJobRes>> results);
     }
 
     /// <summary>
     /// IComputeTask without an argument.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
-    public interface IComputeTask<T, out TR> : IComputeTask<object, T, TR>
+    public interface IComputeTask<TJobRes, out TReduceRes> : IComputeTask<object, TJobRes, TReduceRes>
     {
         // No-op.
     }

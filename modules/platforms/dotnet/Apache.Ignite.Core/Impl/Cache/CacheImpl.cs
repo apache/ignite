@@ -520,33 +520,33 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritdoc /> */
-        public TR Invoke<TR, TA>(TK key, ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg)
+        public TRes Invoke<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
             IgniteArgumentCheck.NotNull(processor, "processor");
 
             var holder = new CacheEntryProcessorHolder(processor, arg,
-                (e, a) => processor.Process((IMutableCacheEntry<TK, TV>)e, (TA)a), typeof(TK), typeof(TV));
+                (e, a) => processor.Process((IMutableCacheEntry<TK, TV>)e, (TArg)a), typeof(TK), typeof(TV));
 
             return DoOutInOp((int)CacheOp.Invoke, writer =>
             {
                 writer.Write(key);
                 writer.Write(holder);
             },
-            input => GetResultOrThrow<TR>(Unmarshal<object>(input)));
+            input => GetResultOrThrow<TRes>(Unmarshal<object>(input)));
         }
 
         /** <inheritdoc /> */
-        public IDictionary<TK, ICacheEntryProcessorResult<TR>> InvokeAll<TR, TA>(IEnumerable<TK> keys,
-            ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg)
+        public IDictionary<TK, ICacheEntryProcessorResult<TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys,
+            ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
             IgniteArgumentCheck.NotNull(processor, "processor");
 
             var holder = new CacheEntryProcessorHolder(processor, arg,
-                (e, a) => processor.Process((IMutableCacheEntry<TK, TV>)e, (TA)a), typeof(TK), typeof(TV));
+                (e, a) => processor.Process((IMutableCacheEntry<TK, TV>)e, (TArg)a), typeof(TK), typeof(TV));
 
             return DoOutInOp((int)CacheOp.InvokeAll, writer =>
             {
@@ -556,10 +556,10 @@ namespace Apache.Ignite.Core.Impl.Cache
             input =>
             {
                 if (IsAsync)
-                    _invokeAllConverter.Value = (Func<PortableReaderImpl, IDictionary<TK, ICacheEntryProcessorResult<TR>>>)
-                        (reader => ReadInvokeAllResults<TR>(reader.Stream));
+                    _invokeAllConverter.Value = (Func<PortableReaderImpl, IDictionary<TK, ICacheEntryProcessorResult<TRes>>>)
+                        (reader => ReadInvokeAllResults<TRes>(reader.Stream));
 
-                return ReadInvokeAllResults<TR>(input);
+                return ReadInvokeAllResults<TRes>(input);
             });
         }
 
