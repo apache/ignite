@@ -387,7 +387,8 @@ consoleModule.controller('sqlController',
 
                 columnDefs.push({
                     headerName: meta.fieldName,
-                    valueGetter: $common.isJavaBuildInClass(meta.fieldTypeName) ? colValue : 'JSON.stringify(' + colValue + ')'
+                    valueGetter: $common.isJavaBuildInClass(meta.fieldTypeName) ? colValue : 'JSON.stringify(' + colValue + ')',
+                    minWidth: 50
                 });
             }
         });
