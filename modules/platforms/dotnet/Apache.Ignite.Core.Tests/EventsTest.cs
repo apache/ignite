@@ -348,7 +348,7 @@ namespace Apache.Ignite.Core.Tests
 
             // Filter
             waitTask = getWaitTask(() => events.WaitForLocal(
-                new EventFilter<IEvent>((g, e) => e.Type == EventType.TaskReduced)));
+                new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced)));
 
             Assert.IsTrue(waitTask.Wait(timeout));
             Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
@@ -356,13 +356,14 @@ namespace Apache.Ignite.Core.Tests
 
             // Filter & types
             waitTask = getWaitTask(() => events.WaitForLocal(
-                new EventFilter<IEvent>((g, e) => e.Type == EventType.TaskReduced), EventType.TaskReduced));
+                new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced), EventType.TaskReduced));
 
             Assert.IsTrue(waitTask.Wait(timeout));
             Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
             Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
         }
 
+        /*
         /// <summary>
         /// Tests RemoteListen.
         /// </summary>
@@ -426,7 +427,7 @@ namespace Apache.Ignite.Core.Tests
             CheckSend(1, typeof(JobEvent), expectedType);  // one last event
 
             CheckNoEvent();
-        }
+        }*/
 
         /// <summary>
         /// Tests RemoteQuery.
@@ -788,7 +789,7 @@ namespace Apache.Ignite.Core.Tests
         /// Gets the event listener.
         /// </summary>
         /// <returns>New instance of event listener.</returns>
-        public static IEventFilter<IEvent> GetListener()
+        public static IEventListener<IEvent> GetListener()
         {
             return new EventFilter<IEvent>(Listen);
         }
@@ -813,13 +814,12 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Listen method.
         /// </summary>
-        /// <param name="id">Originating node ID.</param>
         /// <param name="evt">Event.</param>
-        private static bool Listen(Guid? id, IEvent evt)
+        private static bool Listen(IEvent evt)
         {
             try
             {
-                LastNodeIds.Push(id);
+                LastNodeIds.Push(evt.Node.Id);
                 ReceivedEvents.Push(evt);
 
                 ReceivedEvent.Signal();
@@ -830,7 +830,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 // When executed on remote nodes, these exceptions will not go to sender, 
                 // so we have to accumulate them.
-                Failures.Push(string.Format("Exception in Listen (msg: {0}, id: {1}): {2}", evt, id, ex));
+                Failures.Push(string.Format("Exception in Listen (msg: {0}, id: {1}): {2}", evt, evt.Node.Id, ex));
                 throw;
             }
         }
@@ -840,28 +840,28 @@ namespace Apache.Ignite.Core.Tests
     /// Test event filter.
     /// </summary>
     [Serializable]
-    public class EventFilter<T> : IEventFilter<T> where T : IEvent
+    public class EventFilter<T> : IEventFilter<T>, IEventListener<T> where T : IEvent
     {
         /** */
-        private readonly Func<Guid?, T, bool> _invoke;
+        private readonly Func<T, bool> _invoke;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RemoteListenEventFilter"/> class.
         /// </summary>
         /// <param name="invoke">The invoke delegate.</param>
-        public EventFilter(Func<Guid?, T, bool> invoke)
+        public EventFilter(Func<T, bool> invoke)
         {
             _invoke = invoke;
         }
 
         /** <inheritdoc /> */
-        bool IEventFilter<T>.Invoke(Guid? nodeId, T evt)
+        bool IEventFilter<T>.Invoke(T evt)
         {
-            return _invoke(nodeId, evt);
+            return _invoke(evt);
         }
 
         /** <inheritdoc /> */
-        public bool Invoke(Guid nodeId, T evt)
+        public bool Invoke(T evt)
         {
             throw new Exception("Invalid method");
         }
@@ -882,7 +882,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /** <inheritdoc /> */
-        public bool Invoke(Guid? nodeId, IEvent evt)
+        public bool Invoke(IEvent evt)
         {
             return evt.Type == _type;
         }
@@ -906,7 +906,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /** <inheritdoc /> */
-        public bool Invoke(Guid? nodeId, IEvent evt)
+        public bool Invoke(IEvent evt)
         {
             return evt.Type == _type;
         }
