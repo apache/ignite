@@ -194,15 +194,15 @@ public class DatabaseMetadataExtractor {
         /** */
         private final String jdbcDriverJar;
         /** */
-        private final String jdbcDriverCls;
+        private final String jdbcDriverClass;
 
         /**
          * @param jdbcDriverJar File name of driver jar file.
-         * @param jdbcDriverCls Optional JDBC driver class.
+         * @param jdbcDriverClass Optional JDBC driver class.
          */
-        public JdbcDriver(String jdbcDriverJar, String jdbcDriverCls) {
+        public JdbcDriver(String jdbcDriverJar, String jdbcDriverClass) {
             this.jdbcDriverJar = jdbcDriverJar;
-            this.jdbcDriverCls = jdbcDriverCls;
+            this.jdbcDriverClass = jdbcDriverClass;
         }
     }
 }
