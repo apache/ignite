@@ -220,7 +220,7 @@
       "items": "jdbcDriverJars",
       "tip": [
         "Select appropriate JAR with JDBC driver",
-        "To add another driver you need to place it into '/drivers' folder of Ignite Web Agent",
+        "To add another driver you need to place it into '/jdbc-drivers' folder of Ignite Web Agent",
         "Refer to Ignite Web Agent README.txt for for more information"
       ]
     },

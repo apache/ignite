@@ -203,7 +203,8 @@ consoleModule.controller('metadataController', [
             };
 
             $scope.selectSchema = function () {
-                $scope.loadMeta.allSchemasSelected = _.every($scope.loadMeta.displayedSchemas, 'use', true);
+                if ($common.isDefined($scope.loadMeta))
+                    $scope.loadMeta.allSchemasSelected = _.every($scope.loadMeta.displayedSchemas, 'use', true);
             };
 
             $scope.selectAllTables = function () {
@@ -215,7 +216,8 @@ consoleModule.controller('metadataController', [
             };
 
             $scope.selectTable = function () {
-                $scope.loadMeta.allTablesSelected = _.every($scope.loadMeta.displayedTables, 'use', true);
+                if ($common.isDefined($scope.loadMeta))
+                    $scope.loadMeta.allTablesSelected = _.every($scope.loadMeta.displayedTables, 'use', true);
             };
 
             $scope.$watch('loadMeta.displayedSchemas', $scope.selectSchema);
@@ -239,7 +241,7 @@ consoleModule.controller('metadataController', [
 
                 function getDrivers(onSuccess, onException) {
                     // Get available JDBC drivers via agent.
-                    $http.post('/agent/drivers', undefined, {timeout: 3000})
+                    $http.post('/agent/drivers', undefined)
                         .success(function (drivers) {
                             onSuccess();
 
@@ -598,8 +600,8 @@ consoleModule.controller('metadataController', [
                 if (containKey)
                     checkOverwrite();
                 else
-                    $confirm.confirm('Imported tables contain tables without primary key.<br/>' +
-                        'You should manually configure key type and key fields for these metadata types.')
+                    $confirm.confirm('Some tables have no primary key.<br/>' +
+                        'You will need to configure key type and key fields for such tables after load complete.')
                         .then(function () { checkOverwrite(); })
             }
 
