@@ -80,7 +80,6 @@ namespace Apache.Ignite.Examples.Events
 
                 var listenId = ignite.GetEvents().RemoteListen(localListener: localListener,
                     remoteFilter: remoteFilter, types: EventType.JobExecutionAll);
-                    remoteListener: remoteFilter, types: EventType.EventsJobExecution);
 
                 if (listenId == null)
                     throw new InvalidOperationException("Subscription failed.");
