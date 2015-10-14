@@ -78,8 +78,8 @@ public class CacheNearDisabledTransactionalWriteReadRestartSelfTest extends Cach
         for (int i = 0; i < keys.length; i++)
             keys[i] = "key-" + k + "-" + i;
 
-        doInTransaction(ignite, new Callable<Boolean>() {
-            @Override public Boolean call() throws Exception {
+        doInTransaction(ignite, new Callable<Void>() {
+            @Override public Void call() throws Exception {
                 Map<String, Long> map = new HashMap<>();
 
                 for (String key : keys) {
@@ -118,7 +118,7 @@ public class CacheNearDisabledTransactionalWriteReadRestartSelfTest extends Cach
                 for (String key : keys)
                     cache.put(key, newVal);
 
-                return true;
+                return null;
             }
         });
     }

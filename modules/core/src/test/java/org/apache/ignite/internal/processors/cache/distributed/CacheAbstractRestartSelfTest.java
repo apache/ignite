@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -38,6 +39,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTest {
     /** */
     private volatile CountDownLatch cacheCheckedLatch = new CountDownLatch(1);
+
+    /** */
+    private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -96,7 +100,14 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
                     while (!stop.get()) {
                         log.info("Start update: " + iter);
 
-                        updateCache(grid, cache);
+                        rwl.readLock().lock();
+
+                        try {
+                            updateCache(grid, cache);
+                        }
+                        finally {
+                            rwl.readLock().unlock();
+                        }
 
                         log.info("End update: " + iter++);
                     }
@@ -147,11 +158,18 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
         try {
             int iter = 0;
 
-            while (System.currentTimeMillis() < endTime && !isDone(updaterFuts) && !restartFut.isDone()) {
+            while (System.currentTimeMillis() < endTime && !isAnyDone(updaterFuts) && !restartFut.isDone()) {
                 try {
                     log.info("Start of cache checking: " + iter);
 
-                    checkCache(grid, cache);
+                    rwl.writeLock().lock();
+
+                    try {
+                        checkCache(grid, cache);
+                    }
+                    finally {
+                        rwl.writeLock().unlock();
+                    }
 
                     log.info("End of cache checking: " + iter++);
                 }
@@ -199,14 +217,14 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
     }
 
     /**
-     * Checks cache.
+     * Checks cache in one thread. All update operations are not executed.
      *
      * @param cache Cache.
      */
     protected abstract void checkCache(IgniteEx grid, IgniteCache cache) throws Exception ;
 
     /**
-     * Updates cache.
+     * Updates cache in many threads.
      *
      * @param grid Grid.
      * @param cache Cache.
@@ -217,12 +235,12 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
      * @param futs Futers.
      * @return {@code True} if all futures are done.
      */
-    private static boolean isDone(ArrayList<IgniteInternalFuture> futs) {
+    private static boolean isAnyDone(ArrayList<IgniteInternalFuture> futs) {
         for (IgniteInternalFuture fut : futs) {
-            if (!fut.isDone())
-                return false;
+            if (fut.isDone())
+                return true;
         }
 
-        return true;
+        return false;
     }
 }
