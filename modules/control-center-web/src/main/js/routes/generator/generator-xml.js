@@ -419,6 +419,20 @@ $generatorXml.clusterDeployment = function (cluster, res) {
     if ($generatorXml.property(res, cluster, 'deploymentMode', null, 'SHARED'))
         res.needEmptyLine = true;
 
+    var p2pEnabled = cluster.peerClassLoadingEnabled;
+
+    if ($commonUtils.isDefined(p2pEnabled)) {
+        $generatorXml.property(res, cluster, 'peerClassLoadingEnabled', null, false);
+
+        if (p2pEnabled) {
+            $generatorXml.property(res, cluster, 'peerClassLoadingMissedResourcesCacheSize');
+            $generatorXml.property(res, cluster, 'peerClassLoadingThreadPoolSize');
+            $generatorXml.listProperty(res, cluster, 'peerClassLoadingLocalClassPathExclude');
+        }
+
+        res.needEmptyLine = true;
+    }
+
     return res;
 };
 
@@ -530,28 +544,6 @@ $generatorXml.clusterMetrics = function (cluster, res) {
     $generatorXml.property(res, cluster, 'metricsUpdateFrequency');
 
     res.needEmptyLine = true;
-
-    return res;
-};
-
-// Generate PeerClassLoading group.
-$generatorXml.clusterP2p = function (cluster, res) {
-    if (!res)
-        res = $generatorCommon.builder();
-
-    var p2pEnabled = cluster.peerClassLoadingEnabled;
-
-    if ($commonUtils.isDefined(p2pEnabled)) {
-        $generatorXml.property(res, cluster, 'peerClassLoadingEnabled', null, false);
-
-        if (p2pEnabled) {
-            $generatorXml.property(res, cluster, 'peerClassLoadingMissedResourcesCacheSize');
-            $generatorXml.property(res, cluster, 'peerClassLoadingThreadPoolSize');
-            $generatorXml.listProperty(res, cluster, 'peerClassLoadingLocalClassPathExclude');
-        }
-
-        res.needEmptyLine = true;
-    }
 
     return res;
 };
@@ -1130,8 +1122,6 @@ $generatorXml.cluster = function (cluster, clientNearCfg) {
         $generatorXml.clusterMarshaller(cluster, res);
 
         $generatorXml.clusterMetrics(cluster, res);
-
-        $generatorXml.clusterP2p(cluster, res);
 
         $generatorXml.clusterSwap(cluster, res);
 

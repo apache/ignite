@@ -549,6 +549,20 @@ $generatorJava.clusterDeployment = function (cluster, res) {
 
     res.needEmptyLine = true;
 
+    var p2pEnabled = cluster.peerClassLoadingEnabled;
+
+    if ($commonUtils.isDefined(p2pEnabled)) {
+        $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingEnabled', null, null, false);
+
+        if (p2pEnabled) {
+            $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingMissedResourcesCacheSize');
+            $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingThreadPoolSize');
+            $generatorJava.multiparamProperty(res, 'cfg', cluster, 'peerClassLoadingLocalClassPathExclude');
+        }
+
+        res.needEmptyLine = true;
+    }
+
     return res;
 };
 
@@ -695,28 +709,6 @@ $generatorJava.clusterMetrics = function (cluster, res) {
     $generatorJava.property(res, 'cfg', cluster, 'metricsUpdateFrequency');
 
     res.needEmptyLine = true;
-
-    return res;
-};
-
-// Generate PeerClassLoading group.
-$generatorJava.clusterP2p = function (cluster, res) {
-    if (!res)
-        res = $generatorCommon.builder();
-
-    var p2pEnabled = cluster.peerClassLoadingEnabled;
-
-    if ($commonUtils.isDefined(p2pEnabled)) {
-        $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingEnabled', null, null, false);
-
-        if (p2pEnabled) {
-            $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingMissedResourcesCacheSize');
-            $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingThreadPoolSize');
-            $generatorJava.multiparamProperty(res, 'cfg', cluster, 'peerClassLoadingLocalClassPathExclude');
-        }
-
-        res.needEmptyLine = true;
-    }
 
     return res;
 };
@@ -1558,8 +1550,6 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
         $generatorJava.clusterMarshaller(cluster, res);
 
         $generatorJava.clusterMetrics(cluster, res);
-
-        $generatorJava.clusterP2p(cluster, res);
 
         $generatorJava.clusterSwap(cluster, res);
 
