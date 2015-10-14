@@ -794,17 +794,7 @@ consoleModule.controller('sqlController',
                             chartData.shift();
                     }
                     else {
-                        var tm = new Date();
-
-                        var span = parseInt(paragraph.timeLineSpan);
-
-                        tm.setMinutes(tm.getMinutes() - span);
-
-                        var filteredChartHistory = _.filter(chartHistory, function (history) {
-                            return history.tm > tm;
-                        });
-
-                        values = _.map(filteredChartHistory, function (history) {
+                        values = _.map(chartHistory, function (history) {
                             return {
                                 x: history.tm,
                                 y: _chartNumber(history.rows[0], valCol.value, index++)
@@ -925,6 +915,14 @@ consoleModule.controller('sqlController',
         }
     };
 
+    function timeAdd(shift) {
+        var t = new Date();
+
+        t.setMinutes(t.getMinutes() + shift);
+
+        return t;
+    }
+
     function _barChart(paragraph) {
         var datum = _chartDatum(paragraph);
 
@@ -958,8 +956,15 @@ consoleModule.controller('sqlController',
         }
         else
             $timeout(function () {
-                if (paragraph.chartTimeLineEnabled())
-                    paragraph.charts[0].api.update();
+                if (paragraph.chartTimeLineEnabled()) {
+                    var tm = timeAdd(-10);
+                    var z = timeAdd(10);
+
+                    paragraph.charts[0].options.chart.xDomain = [tm.getMilliseconds(), z.getMilliseconds()];
+                    paragraph.charts[0].api.updateWithOptions(paragraph.charts[0].options);
+
+                    //paragraph.charts[0].api.update();
+                }
                 else
                     paragraph.charts[0].api.updateWithData(datum);
             });
@@ -1033,8 +1038,10 @@ consoleModule.controller('sqlController',
         }
         else
             $timeout(function () {
-                if (paragraph.chartTimeLineEnabled())
-                    paragraph.charts[0].api.update();
+                if (paragraph.chartTimeLineEnabled()) {
+                    paragraph.charts[0].options.chart.xDomain = [timeAdd(-parseInt(paragraph.timeLineSpan)), timeAdd(1)];
+                    paragraph.charts[0].api.updateWithOptions(paragraph.charts[0].options);
+                }
                 else
                     paragraph.charts[0].api.updateWithData(datum);
             });
