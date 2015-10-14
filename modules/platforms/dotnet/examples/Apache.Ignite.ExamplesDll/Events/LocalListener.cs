@@ -24,7 +24,7 @@ namespace Apache.Ignite.ExamplesDll.Events
     /// <summary>
     /// Local event listener.
     /// </summary>
-    public class LocalListener : IEventFilter<IEvent>
+    public class LocalListener : IEventListener<IEvent>
     {
         /** Сount of received events. */
         private int _eventsReceived;
@@ -40,10 +40,9 @@ namespace Apache.Ignite.ExamplesDll.Events
         /// <summary>
         /// Determines whether specified event passes this filter.
         /// </summary>
-        /// <param name="nodeId">Node identifier.</param>
         /// <param name="evt">Event.</param>
         /// <returns>Value indicating whether specified event passes this filter.</returns>
-        public bool Invoke(Guid? nodeId, IEvent evt)
+        public bool Invoke(IEvent evt)
         {
             Interlocked.Increment(ref _eventsReceived);
 

@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
                     if (localListener != null)
                     {
-                        var listener = new RemoteListenEventFilter(Ignite, (id, e) => localListener.Invoke(id, (T) e));
+                        var listener = new RemoteListenEventFilter(Ignite, (id, e) => localListener.Invoke((T) e));
                         writer.WriteLong(Ignite.HandleRegistry.Allocate(listener));
                     }
 
@@ -234,7 +234,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
-        public void LocalListen<T>(IEventFilter<T> listener, params int[] types) where T : IEvent
+        public void LocalListen<T>(IEventListener<T> listener, params int[] types) where T : IEvent
         {
             IgniteArgumentCheck.NotNull(listener, "listener");
             IgniteArgumentCheck.NotNullOrEmpty(types, "types");
@@ -244,13 +244,13 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
-        public void LocalListen<T>(IEventFilter<T> listener, IEnumerable<int> types) where T : IEvent
+        public void LocalListen<T>(IEventListener<T> listener, IEnumerable<int> types) where T : IEvent
         {
             LocalListen(listener, TypesToArray(types));
         }
 
         /** <inheritDoc /> */
-        public bool StopLocalListen<T>(IEventFilter<T> listener, params int[] types) where T : IEvent
+        public bool StopLocalListen<T>(IEventListener<T> listener, params int[] types) where T : IEvent
         {
             lock (_localFilters)
             {
@@ -271,7 +271,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
-        public bool StopLocalListen<T>(IEventFilter<T> listener, IEnumerable<int> types) where T : IEvent
+        public bool StopLocalListen<T>(IEventListener<T> listener, IEnumerable<int> types) where T : IEvent
         {
             return StopLocalListen(listener, TypesToArray(types));
         }
@@ -484,8 +484,7 @@ namespace Apache.Ignite.Core.Impl.Events
         {
             var evt = EventReader.Read<T>(Marshaller.StartUnmarshal(stream));
 
-            // No guid in local mode
-            return listener.Invoke(Guid.Empty, evt);
+            return listener.Invoke(evt);
         }
 
         /// <summary>
