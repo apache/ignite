@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -152,10 +153,13 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
             ClusterGroup srvs = ignite.cluster().forServers();
 
-            ignite.compute(srvs).withAsync().broadcast(new ThreadDumpPrinterTask(ignite.cluster().localNode().id(), e));
+            IgniteCompute asyncCompute = ignite.compute(srvs).withAsync();
+
+            asyncCompute.broadcast(new ThreadDumpPrinterTask(ignite.cluster().localNode().id(), e));
+            asyncCompute.future().get(10_000);
 
             // Debug info on current client.
-            println("Full thread dump of the current server node below.");
+            println("Full thread dump of the current node below.");
 
             U.dumpThreads(null);
 
