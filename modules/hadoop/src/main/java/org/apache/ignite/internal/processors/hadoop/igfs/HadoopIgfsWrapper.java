@@ -26,10 +26,15 @@ import org.apache.commons.logging.Log;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.IgniteState;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathSummary;
+import static org.apache.ignite.IgniteState.*;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
@@ -353,29 +358,19 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
         // 2. Guess that we are in the same VM.
         boolean skipInProc = parameter(conf, PARAM_IGFS_ENDPOINT_NO_EMBED, authority, false);
 
+        final String igfsName = endpoint.igfs();
+
         if (!skipInProc) {
             IgfsEx igfs = null;
 
-            if (endpoint.grid() == null) {
-                try {
-                    Ignite ignite = G.ignite();
-
-                    igfs = (IgfsEx)ignite.fileSystem(endpoint.igfs());
-                }
-                catch (Exception ignore) {
-                    // No-op.
-                }
-            }
+            if (endpoint.grid() == null)
+                igfs = getIgfsEx(null, igfsName);
             else {
                 for (Ignite ignite : G.allGrids()) {
-                    try {
-                        igfs = (IgfsEx)ignite.fileSystem(endpoint.igfs());
+                    igfs = getIgfsEx(ignite.name(), igfsName);
 
+                    if (igfs != null)
                         break;
-                    }
-                    catch (Exception ignore) {
-                        // No-op.
-                    }
                 }
             }
 
@@ -540,4 +535,39 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                 hadoop.close(force);
         }
     }
+
+    /**
+     * Helper method to find Igfs of the given name in the given Ignite instance.
+     *
+     * @param gridName The name of the grid to check.
+     * @param igfsName The name of Igfs.
+     * @return The file system instance, or null if not found.
+     */
+    private static IgfsEx getIgfsEx(@Nullable String gridName, @Nullable String igfsName) {
+        IgniteState state = Ignition.state(gridName);
+
+        if (state == STARTED) {
+            Ignite ignite;
+
+            try {
+                ignite = Ignition.ignite(gridName);
+            }
+            catch (IgniteIllegalStateException iise) {
+                // May happen if the grid state has changed:
+                return null;
+            }
+
+            assert ignite != null;
+
+            for (IgniteFileSystem fs: ignite.fileSystems()) {
+                assert fs != null;
+
+                if (F.eq(fs.name(), igfsName))
+                    return (IgfsEx)fs;
+            }
+        }
+
+        return null;
+    }
+
 }
