@@ -172,9 +172,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Type: function wrapper. */
         public const byte TypeComputeFuncJob = 81;
 
-        /** Type: continuous query remote filter. */
-        public const byte TypeContinuousQueryRemoteFilterHolder = 82;
-
         /** Type: Compute out func wrapper. */
         public const byte TypeComputeOutFuncWrapper = 83;
 

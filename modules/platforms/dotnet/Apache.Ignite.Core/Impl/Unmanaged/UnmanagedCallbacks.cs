@@ -543,11 +543,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                    var filterHolder = reader.ReadObject<ContinuousQueryFilterHolder>();
+                    var filter0 = reader.ReadObject<object>();
+
+                    var keepPortable = reader.ReadBoolean();
 
                     // 2. Create real filter from it's holder.
                     var filter = (IContinuousQueryFilter) DelegateTypeDescriptor.GetContinuousQueryFilterCtor(
-                        filterHolder.Filter.GetType())(filterHolder.Filter, filterHolder.KeepPortable);
+                        filter0.GetType())(filter0, keepPortable);
 
                     // 3. Inject grid.
                     filter.Inject(_ignite);

@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Globalization;
     using System.Linq;
     using Apache.Ignite.Core.Impl.Cache;
-    using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Compute.Closure;
@@ -512,7 +511,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             AddSystemType(PortableUtils.TypeComputeFuncWrapper, w => new ComputeFuncWrapper(w));
             AddSystemType(PortableUtils.TypeComputeFuncJob, w => new ComputeFuncJob(w));
             AddSystemType(PortableUtils.TypeComputeActionJob, w => new ComputeActionJob(w));
-            AddSystemType(PortableUtils.TypeContinuousQueryRemoteFilterHolder, w => new ContinuousQueryFilterHolder(w));
             AddSystemType(PortableUtils.TypeSerializableHolder, w => new SerializableObjectHolder(w));
             AddSystemType(PortableUtils.TypeCacheEntryProcessorHolder, w => new CacheEntryProcessorHolder(w));
             AddSystemType(PortableUtils.TypeCacheEntryPredicateHolder, w => new CacheEntryFilterHolder(w));

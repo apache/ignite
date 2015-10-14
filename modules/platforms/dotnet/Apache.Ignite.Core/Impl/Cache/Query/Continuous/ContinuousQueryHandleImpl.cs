@@ -108,13 +108,16 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 
             // 3. Write data to stream.
             writer.WriteLong(_hnd);
-            writer.WriteBoolean(qry.Local);
+            writer.WriteBoolean(qry.IsLocal);
             writer.WriteBoolean(_filter != null);
 
-            var filterHolder = _filter == null || qry.Local ? null :
-                new ContinuousQueryFilterHolder(_filter, _keepPortable);
-
-            writer.WriteObject(filterHolder);
+            if (_filter != null && !qry.IsLocal)
+            {
+                writer.WriteObject(_filter);
+                writer.WriteBoolean(_keepPortable);
+            }
+            else
+                writer.WriteObject<object>(null);
 
             writer.WriteInt(qry.BufferSize);
             writer.WriteLong((long)qry.TimeInterval.TotalMilliseconds);
