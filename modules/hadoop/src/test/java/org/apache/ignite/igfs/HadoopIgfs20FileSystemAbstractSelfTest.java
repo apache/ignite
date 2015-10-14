@@ -1124,10 +1124,16 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
         is.close();
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * Accordingly to the specification
+     * org.apache.hadoop.fs.AbstractFileSystem#rename(org.apache.hadoop.fs.Path, org.apache.hadoop.fs.Path, org.apache.hadoop.fs.Options.Rename...)
+     * obeys specification of
+     * org.apache.hadoop.fs.FileContext#rename(org.apache.hadoop.fs.Path, org.apache.hadoop.fs.Path, org.apache.hadoop.fs.Options.Rename...),
+     * which prescribes the rename operation to fail in this case.
+     *
+     * @throws Exception If failed.
+     * */
     public void testRenameDirectoryIfDstPathExists() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-825"); 
-        
         Path fsHome = new Path(primaryFsUri);
         Path srcDir = new Path(fsHome, "/tmp/");
         Path dstDir = new Path(fsHome, "/tmpNew/");
@@ -1142,11 +1148,21 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
 
         os.close();
 
-        fs.rename(srcDir, dstDir);
+        try {
+            fs.rename(srcDir, dstDir);
 
+            fail("FileAlreadyExistsException expected.");
+        }
+        catch (FileAlreadyExistsException faee) {
+            // okay
+        }
+
+        // Check all the files stay unchanged:
         assertPathExists(fs, dstDir);
-        assertPathExists(fs, new Path(fsHome, "/tmpNew/tmp"));
-        assertPathExists(fs, new Path(fsHome, "/tmpNew/tmp/file1"));
+        assertPathExists(fs, new Path(dstDir, "file2"));
+
+        assertPathExists(fs, srcDir);
+        assertPathExists(fs, new Path(srcDir, "file1"));
     }
 
     /** @throws Exception If failed. */
