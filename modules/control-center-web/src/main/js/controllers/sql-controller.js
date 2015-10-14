@@ -377,17 +377,18 @@ consoleModule.controller('sqlController',
     var _rebuildColumns = function (paragraph) {
         var columnDefs = [];
 
-        _.forEach(paragraph.meta, function (meta, idx) {
-            if (paragraph.columnFilter(meta)) {
-                if (_notObjectType(meta.fieldTypeName))
-                    paragraph.chartColumns.push({value: idx, type: meta.fieldTypeName, label: meta.fieldName});
+        _.forEach(paragraph.meta, function (col, idx) {
+            if (paragraph.columnFilter(col)) {
+                if (_notObjectType(col.fieldTypeName))
+                    paragraph.chartColumns.push({value: idx, type: col.fieldTypeName, label: col.fieldName});
 
                 // Index for explain, execute and fieldName for scan.
-                var colValue = 'data[' +  (paragraph.queryArgs.query ? idx : '"' + meta.fieldName + '"') + ']';
+                var colValue = 'data[' +  (paragraph.queryArgs.query ? idx : '"' + col.fieldName + '"') + ']';
 
                 columnDefs.push({
-                    headerName: meta.fieldName,
-                    valueGetter: $common.isJavaBuildInClass(meta.fieldTypeName) ? colValue : 'JSON.stringify(' + colValue + ')',
+                    headerName: col.fieldName,
+                    headerTooltip: _fullColName(col),
+                    valueGetter: $common.isJavaBuildInClass(col.fieldTypeName) ? colValue : 'JSON.stringify(' + colValue + ')',
                     minWidth: 50
                 });
             }
@@ -628,22 +629,24 @@ consoleModule.controller('sqlController',
             });
     };
 
+    var _fullColName = function(col) {
+        var res = [];
+
+        if (col.schemaName)
+            res.push(col.schemaName);
+        if (col.typeName)
+            res.push(col.typeName);
+
+        res.push(col.fieldName);
+
+        return res.join('.');
+    };
+
     var _export = function(fileName, meta, rows) {
         var csvContent = '';
 
         if (meta) {
-            csvContent += meta.map(function (col) {
-                var res = [];
-
-                if (col.schemaName)
-                    res.push(col.schemaName);
-                if (col.typeName)
-                    res.push(col.typeName);
-
-                res.push(col.fieldName);
-
-                return res.join('.');
-            }).join(',') + '\n';
+            csvContent += meta.map(_fullColName).join(',') + '\n';
         }
 
         rows.forEach(function (row) {
