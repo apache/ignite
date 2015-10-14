@@ -117,71 +117,71 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
         
         /** <inheritDoc /> */
-        public T ExecuteJavaTask<T>(string taskName, object taskArg)
+        public TReduceRes ExecuteJavaTask<TReduceRes>(string taskName, object taskArg)
         {
-            _curFut.Value = Compute.ExecuteJavaTaskAsync<T>(taskName, taskArg);
+            _curFut.Value = Compute.ExecuteJavaTaskAsync<TReduceRes>(taskName, taskArg);
 
-            return default(T);
+            return default(TReduceRes);
         }
 
         /** <inheritDoc /> */
-        public TR Execute<TA, T, TR>(IComputeTask<TA, T, TR> task, TA taskArg)
+        public TReduceRes Execute<TArg, TJobRes, TReduceRes>(IComputeTask<TArg, TJobRes, TReduceRes> task, TArg taskArg)
         {
             _curFut.Value = Compute.Execute(task, taskArg);
 
-            return default(TR);
+            return default(TReduceRes);
         }
 
         /** <inheritDoc /> */
-        public TR Execute<T, TR>(IComputeTask<T, TR> task)
+        public TReduceRes Execute<TJobRes, TReduceRes>(IComputeTask<TJobRes, TReduceRes> task)
         {
             _curFut.Value = Compute.Execute(task, null);
 
-            return default(TR);
+            return default(TReduceRes);
         }
 
         /** <inheritDoc /> */
-        public TR Execute<TA, T, TR>(Type taskType, TA taskArg)
+        public TReduceRes Execute<TArg, TJobRes, TReduceRes>(Type taskType, TArg taskArg)
         {
-            _curFut.Value = Compute.Execute<TA, T, TR>(taskType, taskArg);
+            _curFut.Value = Compute.Execute<TArg, TJobRes, TReduceRes>(taskType, taskArg);
 
-            return default(TR);
+            return default(TReduceRes);
         }
 
         /** <inheritDoc /> */
-        public TR Execute<T, TR>(Type taskType)
+        public TReduceRes Execute<TJobRes, TReduceRes>(Type taskType)
         {
-            _curFut.Value = Compute.Execute<object, T, TR>(taskType, null);
+            _curFut.Value = Compute.Execute<object, TJobRes, TReduceRes>(taskType, null);
 
-            return default(TR);
+            return default(TReduceRes);
         }
 
         /** <inheritDoc /> */
-        public TR Call<TR>(IComputeFunc<TR> clo)
+        public TJobRes Call<TJobRes>(IComputeFunc<TJobRes> clo)
         {
             _curFut.Value = Compute.Execute(clo);
 
-            return default(TR);
+            return default(TJobRes);
         }
 
         /** <inheritDoc /> */
-        public TR AffinityCall<TR>(string cacheName, object affinityKey, IComputeFunc<TR> clo)
+        public TJobRes AffinityCall<TJobRes>(string cacheName, object affinityKey, IComputeFunc<TJobRes> clo)
         {
             Compute.AffinityCall(cacheName, affinityKey, clo);
 
-            return default(TR);
+            return default(TJobRes);
         }
 
         /** <inheritDoc /> */
-        public TR Call<TR>(Func<TR> func)
+        public TJobRes Call<TJobRes>(Func<TJobRes> func)
         {
             _curFut.Value = Compute.Execute(func);
 
-            return default(TR);
+            return default(TJobRes);
         }
 
         /** <inheritDoc /> */
-        public ICollection<TR> Call<TR>(IEnumerable<IComputeFunc<TR>> clos)
+        public ICollection<TJobRes> Call<TJobRes>(IEnumerable<IComputeFunc<TJobRes>> clos)
         {
             _curFut.Value = Compute.Execute(clos);
 
@@ -189,15 +189,15 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public TR2 Call<TR1, TR2>(IEnumerable<IComputeFunc<TR1>> clos, IComputeReducer<TR1, TR2> rdc)
+        public TReduceRes Call<TJobRes, TReduceRes>(IEnumerable<IComputeFunc<TJobRes>> clos, IComputeReducer<TJobRes, TReduceRes> reducer)
         {
-            _curFut.Value = Compute.Execute(clos, rdc);
+            _curFut.Value = Compute.Execute(clos, reducer);
 
-            return default(TR2);
+            return default(TReduceRes);
         }
 
         /** <inheritDoc /> */
-        public ICollection<TR> Broadcast<TR>(IComputeFunc<TR> clo)
+        public ICollection<TJobRes> Broadcast<TJobRes>(IComputeFunc<TJobRes> clo)
         {
             _curFut.Value = Compute.Broadcast(clo);
 
@@ -205,7 +205,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public ICollection<TR> Broadcast<T, TR>(IComputeFunc<T, TR> clo, T arg)
+        public ICollection<TJobRes> Broadcast<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, TArg arg)
         {
             _curFut.Value = Compute.Broadcast(clo, arg);
 
@@ -237,15 +237,15 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public TR Apply<T, TR>(IComputeFunc<T, TR> clo, T arg)
+        public TJobRes Apply<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, TArg arg)
         {
             _curFut.Value = Compute.Apply(clo, arg);
 
-            return default(TR);
+            return default(TJobRes);
         }
 
         /** <inheritDoc /> */
-        public ICollection<TR> Apply<T, TR>(IComputeFunc<T, TR> clo, IEnumerable<T> args)
+        public ICollection<TJobRes> Apply<TArg, TJobRes>(IComputeFunc<TArg, TJobRes> clo, IEnumerable<TArg> args)
         {
             _curFut.Value = Compute.Apply(clo, args);
 
@@ -253,11 +253,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public TR2 Apply<T, TR1, TR2>(IComputeFunc<T, TR1> clo, IEnumerable<T> args, IComputeReducer<TR1, TR2> rdc)
+        public TReduceRes Apply<TArg, TJobRes, TReduceRes>(IComputeFunc<TArg, TJobRes> clo, 
+            IEnumerable<TArg> args, IComputeReducer<TJobRes, TReduceRes> rdc)
         {
             _curFut.Value = Compute.Apply(clo, args, rdc);
 
-            return default(TR2);
+            return default(TReduceRes);
         }
     }
 }

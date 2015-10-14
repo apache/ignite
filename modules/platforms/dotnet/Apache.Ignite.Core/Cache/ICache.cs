@@ -451,15 +451,15 @@ namespace Apache.Ignite.Core.Cache
         /// If an entry does not exist for the specified key, an attempt is made to load it (if a loader is configured) 
         /// or a surrogate entry, consisting of the key with a null value is used instead.
         /// </summary>
-        /// <typeparam name="TR">The type of the result.</typeparam>
-        /// <typeparam name="TA">The type of the argument.</typeparam>
+        /// <typeparam name="TArg">The type of the argument.</typeparam>
+        /// <typeparam name="TRes">The type of the result.</typeparam>
         /// <param name="key">The key.</param>
         /// <param name="processor">The processor.</param>
         /// <param name="arg">The argument.</param>
         /// <returns>Result of the processing.</returns>
         /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception>
         [AsyncSupported]
-        TR Invoke<TR, TA>(TK key, ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg);
+        TRes Invoke<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg);
 
         /// <summary>
         /// Invokes an <see cref="ICacheEntryProcessor{K, V, A, R}"/> against a set of keys.
@@ -471,8 +471,8 @@ namespace Apache.Ignite.Core.Cache
         /// Furthermore there is no guarantee implementations will use the same processor instance 
         /// to process each entry, as the case may be in a non-local cache topology.
         /// </summary>
-        /// <typeparam name="TR">The type of the result.</typeparam>
-        /// <typeparam name="TA">The type of the argument.</typeparam>
+        /// <typeparam name="TArg">The type of the argument.</typeparam>
+        /// <typeparam name="TRes">The type of the result.</typeparam>
         /// <param name="keys">The keys.</param>
         /// <param name="processor">The processor.</param>
         /// <param name="arg">The argument.</param>
@@ -483,8 +483,8 @@ namespace Apache.Ignite.Core.Cache
         /// </returns>
         /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception>
         [AsyncSupported]
-        IDictionary<TK, ICacheEntryProcessorResult<TR>> InvokeAll<TR, TA>(IEnumerable<TK> keys,
-            ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg);
+        IDictionary<TK, ICacheEntryProcessorResult<TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys,
+            ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg);
 
         /// <summary>
         /// Creates an <see cref="ICacheLock"/> instance associated with passed key.

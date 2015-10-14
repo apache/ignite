@@ -340,20 +340,20 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public TR Invoke<TR, TA>(TK key, ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg)
+        public TRes Invoke<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
             _cache.Invoke(key, processor, arg);
             
-            return GetResult<TR>();
+            return GetResult<TRes>();
         }
 
         /** <inheritDoc /> */
-        public IDictionary<TK, ICacheEntryProcessorResult<TR>> InvokeAll<TR, TA>(IEnumerable<TK> keys, 
-            ICacheEntryProcessor<TK, TV, TA, TR> processor, TA arg)
+        public IDictionary<TK, ICacheEntryProcessorResult<TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys, 
+            ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
             _cache.InvokeAll(keys, processor, arg);
 
-            return GetResult<IDictionary<TK, ICacheEntryProcessorResult<TR>>>();
+            return GetResult<IDictionary<TK, ICacheEntryProcessorResult<TRes>>>();
         }
 
         /** <inheritDoc /> */
