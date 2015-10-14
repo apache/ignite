@@ -203,7 +203,7 @@ consoleModule.controller('metadataController', [
             };
 
             $scope.selectSchema = function () {
-                $scope.loadMeta.allSchemasSelected = _.every($scope.loadMeta.schemas, 'use', true);
+                $scope.loadMeta.allSchemasSelected = _.every($scope.loadMeta.displayedSchemas, 'use', true);
             };
 
             $scope.selectAllTables = function () {
@@ -215,8 +215,12 @@ consoleModule.controller('metadataController', [
             };
 
             $scope.selectTable = function () {
-                $scope.loadMeta.allTablesSelected = _.every($scope.loadMeta.tables, 'use', true);
+                $scope.loadMeta.allTablesSelected = _.every($scope.loadMeta.displayedTables, 'use', true);
             };
+
+            $scope.$watch('loadMeta.displayedSchemas', $scope.selectSchema);
+
+            $scope.$watch('loadMeta.displayedTables', $scope.selectTable);
 
             // Pre-fetch modal dialogs.
             var loadMetaModal = $modal({scope: $scope, templateUrl: 'metadata/metadata-load', show: false});
@@ -235,7 +239,7 @@ consoleModule.controller('metadataController', [
 
                 function getDrivers(onSuccess, onException) {
                     // Get available JDBC drivers via agent.
-                    $http.post('/agent/drivers')
+                    $http.post('/agent/drivers', undefined, {timeout: 3000})
                         .success(function (drivers) {
                             onSuccess();
 

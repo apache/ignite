@@ -1908,6 +1908,8 @@ consoleModule.controller('agent-download', [
             if ($scope.checkConnection)
                 $window.location = '/';
 
+            $scope.checkConnection = false;
+
             _agentDownloadModal.hide()
         };
 
