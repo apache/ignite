@@ -100,7 +100,6 @@ consoleModule.controller('clustersController', [
             events: {xml: '', java: '', allDefaults: true},
             marshaller: {xml: '', java: '', allDefaults: true},
             metrics: {xml: '', java: '', allDefaults: true},
-            p2p: {xml: '', java: '', allDefaults: true},
             swap: {xml: '', java: '', allDefaults: true},
             time: {xml: '', java: '', allDefaults: true},
             pools: {xml: '', java: '', allDefaults: true},
@@ -261,10 +260,6 @@ consoleModule.controller('clustersController', [
                                 $scope.preview.metrics.xml = $generatorXml.clusterMetrics(val).asString();
                                 $scope.preview.metrics.java = $generatorJava.clusterMetrics(val).asString();
                                 $scope.preview.metrics.allDefaults = $common.isEmptyString($scope.preview.metrics.xml);
-
-                                $scope.preview.p2p.xml = $generatorXml.clusterP2p(val).asString();
-                                $scope.preview.p2p.java = $generatorJava.clusterP2p(val).asString();
-                                $scope.preview.p2p.allDefaults = $common.isEmptyString($scope.preview.p2p.xml);
 
                                 $scope.preview.swap.xml = $generatorXml.clusterSwap(val).asString();
                                 $scope.preview.swap.java = $generatorJava.clusterSwap(val).asString();
