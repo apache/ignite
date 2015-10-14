@@ -44,9 +44,11 @@ public class PlatformContinuousQueryRemoteFilter implements PlatformContinuousQu
 
     /** Lock for concurrency control. */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
-
     /** Native filter in serialized form. */
     private Object filter;
+
+    /** Keep portable flag for the filter. */
+    private boolean keepPortable;
 
     /** Grid hosting the filter. */
     @IgniteInstanceResource
@@ -70,10 +72,11 @@ public class PlatformContinuousQueryRemoteFilter implements PlatformContinuousQu
      *
      * @param filter Serialized native filter.
      */
-    public PlatformContinuousQueryRemoteFilter(Object filter) {
+    public PlatformContinuousQueryRemoteFilter(Object filter, boolean keepPortable) {
         assert filter != null;
 
         this.filter = filter;
+        this.keepPortable = keepPortable;
     }
 
     /** {@inheritDoc} */
@@ -118,6 +121,7 @@ public class PlatformContinuousQueryRemoteFilter implements PlatformContinuousQu
                 PortableRawWriterEx writer = ctx.writer(out);
 
                 writer.writeObject(filter);
+                writer.writeBoolean(keepPortable);
 
                 out.synchronize();
 

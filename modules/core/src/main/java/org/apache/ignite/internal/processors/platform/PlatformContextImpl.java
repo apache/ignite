@@ -406,13 +406,13 @@ public class PlatformContextImpl implements PlatformContext {
 
     /** {@inheritDoc} */
     @Override public PlatformContinuousQuery createContinuousQuery(long ptr, boolean hasFilter,
-        @Nullable Object filter) {
-        return new PlatformContinuousQueryImpl(this, ptr, hasFilter, filter);
+        @Nullable Object filter, boolean keepPortable) {
+        return new PlatformContinuousQueryImpl(this, ptr, hasFilter, filter, keepPortable);
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformContinuousQueryFilter createContinuousQueryFilter(Object filter) {
-        return new PlatformContinuousQueryRemoteFilter(filter);
+    @Override public PlatformContinuousQueryFilter createContinuousQueryFilter(Object filter, boolean keepPortable) {
+        return new PlatformContinuousQueryRemoteFilter(filter, keepPortable);
     }
 
     /** {@inheritDoc} */

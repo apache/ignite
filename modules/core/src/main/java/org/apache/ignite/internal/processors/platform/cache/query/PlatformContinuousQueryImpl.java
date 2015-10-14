@@ -52,6 +52,9 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
     /** Native filter in serialized form. If null, then filter is either not set, or this is local query. */
     protected final Object filter;
 
+    /** Keep portable flag for the filter. */
+    private final boolean keepPortable;
+
     /** Pointer to native counterpart; zero if closed. */
     private long ptr;
 
@@ -72,13 +75,15 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
      * @param hasFilter Whether filter exists.
      * @param filter Filter.
      */
-    public PlatformContinuousQueryImpl(PlatformContext platformCtx, long ptr, boolean hasFilter, Object filter) {
+    public PlatformContinuousQueryImpl(PlatformContext platformCtx, long ptr, boolean hasFilter, Object filter,
+        boolean keepPortable) {
         assert ptr != 0L;
 
         this.platformCtx = platformCtx;
         this.ptr = ptr;
         this.hasFilter = hasFilter;
         this.filter = filter;
+        this.keepPortable = keepPortable;
     }
 
     /**
@@ -230,6 +235,6 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
      * @throws ObjectStreamException If failed.
      */
     Object writeReplace() throws ObjectStreamException {
-        return filter == null ? null : platformCtx.createContinuousQueryFilter(filter);
+        return filter == null ? null : platformCtx.createContinuousQueryFilter(filter, keepPortable);
     }
 }
