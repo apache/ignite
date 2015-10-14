@@ -157,7 +157,8 @@ public interface PlatformContext {
      * @param filter Filter.
      * @return Platform continuous query.
      */
-    public PlatformContinuousQuery createContinuousQuery(long ptr, boolean hasFilter, @Nullable Object filter);
+    public PlatformContinuousQuery createContinuousQuery(long ptr, boolean hasFilter, @Nullable Object filter,
+        boolean keepPortable);
 
     /**
      * Create continuous query filter to be deployed on remote node.
