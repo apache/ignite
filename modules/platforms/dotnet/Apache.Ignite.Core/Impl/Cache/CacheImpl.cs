@@ -340,11 +340,18 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IgniteNullable<TV> TryGet(TK key)
+        public bool TryGet(TK key, out TV value)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOpNullable<TK, TV>((int) CacheOp.Get, key);
+            if (IsAsync)
+                throw new InvalidOperationException("TryGet can't be used in async mode.");
+
+            var res = DoOutInOpNullable<TK, TV>((int) CacheOp.Get, key);
+
+            value = res.HasValue ? res.Value : default(TV);
+
+            return res.HasValue;
         }
 
         /** <inheritDoc /> */

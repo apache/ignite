@@ -208,9 +208,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IgniteNullable<TV> TryGet(TK key)
+        public bool TryGet(TK key, out TV value)
         {
-            return _cache.TryGet(key);
+            return _cache.TryGet(key, out value);
         }
 
         /** <inheritDoc /> */

@@ -200,9 +200,14 @@ namespace Apache.Ignite.Core.Cache
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
         /// </summary>
         /// <param name="key">Key.</param>
-        /// <returns>Value.</returns>
+        /// <param name="value">When this method returns, the value associated with the specified key, 
+        /// if the key is found; otherwise, the default value for the type of the value parameter. 
+        /// This parameter is passed uninitialized.</param>
+        /// <returns>
+        /// true if the cache contains an element with the specified key; otherwise, false.
+        /// </returns>
         [AsyncSupported]
-        IgniteNullable<TV> TryGet(TK key);
+        bool TryGet(TK key, out TV value);
 
         /// <summary>
         /// Retrieves values mapped to the specified keys from cache.

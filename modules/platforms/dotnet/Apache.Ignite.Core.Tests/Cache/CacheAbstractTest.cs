@@ -506,7 +506,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(2, cache.Get(2));
             
             Assert.Throws<InvalidOperationException>(() => cache.Get(3));
-            Assert.IsFalse(cache.TryGet(3).HasValue);
+
+            int value;
+            Assert.IsFalse(cache.TryGet(3, out value));
         }
 
         [Test]
@@ -564,7 +566,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            Assert.AreEqual(false, cache.TryGet(1).HasValue);
+            Assert.AreEqual(false, cache.ContainsKey(1));
 
             var old = cache.GetAndPut(1, 1);
 
@@ -590,7 +592,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(false, cache.GetAndReplace(2, 2).HasValue);
 
-            Assert.AreEqual(false, cache.TryGet(2).HasValue);
+            Assert.AreEqual(false, cache.ContainsKey(2));
 
             Assert.AreEqual(100, cache.Get(1));
 
@@ -612,7 +614,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.IsFalse(cache.GetAndRemove(1).HasValue);
             
-            Assert.IsFalse(cache.TryGet(1).HasValue);
+            Assert.IsFalse(cache.ContainsKey(1));
         }
 
         [Test]
@@ -620,7 +622,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache().WithAsync().WrapAsync();
 
-            Assert.AreEqual(false, cache.TryGet(1).HasValue);
+            Assert.AreEqual(false, cache.ContainsKey(1));
 
             var old = cache.GetAndPut(1, 1);
 
@@ -1096,7 +1098,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 cache.Clear(key);
 
-                Assert.IsFalse(cache.TryGet(key).HasValue);
+                Assert.IsFalse(cache.ContainsKey(key));
                 Assert.Throws<InvalidOperationException>(() => cache.Get(key));
 
                 Assert.Less(cache.GetSize(), i);
@@ -1116,8 +1118,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.ClearAll(keys);
 
-            foreach (var key in keys)
-                Assert.IsFalse(cache.TryGet(key).HasValue);
+            Assert.IsFalse(cache.ContainsKeys(keys));
         }
 
         [Test]
@@ -2480,18 +2481,20 @@ namespace Apache.Ignite.Core.Tests.Cache
             var cache = Cache().WithAsync();
 
             cache.Put(1, 1);
+            
+            int val;
 
             for (int i = 0; i < 10; i++)
             {
                 TestUtils.RunMultiThreaded(() =>
                 {
                     for (int j = 0; j < 1000; j++)
-                        cache.TryGet(1);
+                        cache.TryGet(1, out val);
                 }, 5);
 
                 GC.Collect();
 
-                cache.TryGet(1);
+                cache.TryGet(1, out val);
                 Assert.AreEqual(1, cache.GetFuture<int>().Get());
             }
 
@@ -2861,7 +2864,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             // Remove entry
             Assert.AreEqual(0, cache.Invoke(key, new T {Remove = true}, arg));
-            Assert.AreEqual(false, cache.TryGet(key).HasValue);
+            Assert.AreEqual(false, cache.ContainsKey(key));
 
             // Test exceptions
             AssertThrowsCacheEntryProcessorException(() => cache.Invoke(key, new T {ThrowErr = true}, arg));
