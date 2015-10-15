@@ -464,15 +464,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public object[] ReadArray(string fieldName)
+        public T[] ReadArray<T>(string fieldName)
         {
-            return ReadField(fieldName, r => PortableUtils.ReadArray<object>(r, true));
+            return ReadField(fieldName, r => PortableUtils.ReadArray<T>(r, true));
         }
 
         /** <inheritdoc /> */
-        public object[] ReadArray()
+        public T[] ReadArray<T>()
         {
-            return Read(r => PortableUtils.ReadArray<object>(r, true));
+            return Read(r => PortableUtils.ReadArray<T>(r, true));
         }
 
         /** <inheritdoc /> */

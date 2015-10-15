@@ -259,7 +259,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             else if (elemType == typeof (object))
             {
                 writeAction = GetWriter<object[]>(field, (f, w, o) => w.WriteArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadArray(f));
+                readAction = GetReader(field, (f, r) => r.ReadArray<object>(f));
             }
             else
             {

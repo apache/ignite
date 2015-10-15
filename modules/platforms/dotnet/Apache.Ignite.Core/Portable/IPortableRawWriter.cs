@@ -189,14 +189,12 @@ namespace Apache.Ignite.Core.Portable
 
         /// <summary>
         /// Write object array.
-        /// Only "object[]" arrays can be used for interop with other platforms.
         /// </summary>
         /// <param name="val">Object array.</param>
-        void WriteArray(object[] val);
+        void WriteArray<T>(T[] val);
 
         /// <summary>
         /// Write non-generic collection.
-        /// Only non-generic collections can be used for interop with other platforms.
         /// </summary>
         /// <param name="val">Collection.</param>
         void WriteCollection(ICollection val);

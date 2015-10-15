@@ -935,7 +935,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Object array.</param>
-        public void WriteArray(string fieldName, object[] val)
+        public void WriteArray<T>(string fieldName, T[] val)
         {
             WriteFieldId(fieldName, PU.TypeArray);
 
@@ -956,7 +956,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write object array.
         /// </summary>
         /// <param name="val">Object array.</param>
-        public void WriteArray(object[] val)
+        public void WriteArray<T>(T[] val)
         {
             if (val == null)
                 WriteNullRawField();
