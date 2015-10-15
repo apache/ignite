@@ -88,10 +88,11 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
         ArrayList<IgniteInternalFuture> updaterFuts = new ArrayList<>();
 
         for (int i = 0; i < updatersNumber(); i++) {
-            final int finalI = i;
+            final int threadIdx = i;
+
             IgniteInternalFuture<?> updateFut = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    Thread.currentThread().setName("update-thread-" + finalI);
+                    Thread.currentThread().setName("update-thread-" + threadIdx);
 
                     assertTrue(cacheCheckedLatch.await(30_000, TimeUnit.MILLISECONDS));
 
@@ -199,7 +200,7 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
      * @see #getTestTimeout()
      */
     protected int getTestDuration() {
-        return 5 * 60_000;
+        return 60_000;
     }
 
     /**
