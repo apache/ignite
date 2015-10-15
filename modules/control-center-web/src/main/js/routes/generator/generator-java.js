@@ -201,7 +201,6 @@ $generatorJava.listProperty = function (res, varName, obj, propName, dataType, s
  * @param varName Variable name.
  * @param obj Source object with data.
  * @param propName Property name to take from source object.
- * @param dataType Optional data type.
  * @param setterName Optional setter name.
  */
 $generatorJava.arrayProperty = function (res, varName, obj, propName, setterName) {
@@ -328,7 +327,7 @@ $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVa
                             break;
 
                         case 'bean':
-                            if (bean[propName])
+                            if ($commonUtils.isDefinedAndNotEmpty(bean[propName]))
                                 res.line(beanVarName + '.' + $generatorJava.setterName(propName) + '(new ' + res.importClass(bean[propName]) + '());');
 
                             break;
@@ -1236,6 +1235,7 @@ $generatorJava.clusterCaches = function (caches, res) {
  * @param pkg Package name.
  * @param useConstructor If 'true' then empty and full constructors should be generated.
  * @param includeKeyFields If 'true' then include key fields into value POJO.
+ * @param res Resulting output with generated code.
  */
 $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, includeKeyFields, res) {
     if (!res)
@@ -1435,7 +1435,9 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
 /**
  * Generate source code for type by its metadata.
  *
- * @param caches TODO.
+ * @param caches List of caches to generate POJOs for.
+ * @param useConstructor If 'true' then generate constructors.
+ * @param includeKeyFields If 'true' then include key fields into value POJO.
  */
 $generatorJava.pojos = function (caches, useConstructor, includeKeyFields) {
     var metadataNames = [];

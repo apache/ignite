@@ -193,9 +193,13 @@ $generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBean
 
                             break;
                         case 'bean':
-                            res.startBlock('<property name="' + propName + '">');
-                            res.line('<bean class="' + bean[propName] + '"/>');
-                            res.endBlock('</property>');
+                            if ($commonUtils.isDefinedAndNotEmpty(bean[propName])) {
+                                res.startBlock('<property name="' + propName + '">');
+                                res.line('<bean class="' + bean[propName] + '"/>');
+                                res.endBlock('</property>');
+
+                                hasData = true;
+                            }
 
                             break;
                         default:
