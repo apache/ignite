@@ -20,7 +20,6 @@ package org.apache.ignite.yardstick.cache.failover;
 import java.util.Map;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
 
 /**
@@ -29,7 +28,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
  * Client generates continuous load to the cluster (random get, put, invoke, remove
  * operations).
  */
-public class IgniteAtomicRetriesFailoverBenchmark extends IgniteFailoverAbstractBenchmark<Integer, String> {
+public class IgniteAtomicRetriesBenchmark extends IgniteFailoverAbstractBenchmark<Integer, String> {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         final int key = nextRandom(args.range());
@@ -71,8 +70,8 @@ public class IgniteAtomicRetriesFailoverBenchmark extends IgniteFailoverAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCache<Integer, String> cache() {
-        return ignite().cache("atomic");
+    @Override protected String cacheName() {
+        return "atomic";
     }
 
     /**

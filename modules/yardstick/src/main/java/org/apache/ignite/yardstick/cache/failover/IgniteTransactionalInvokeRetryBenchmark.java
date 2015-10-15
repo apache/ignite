@@ -27,7 +27,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -35,12 +34,10 @@ import org.yardstickframework.BenchmarkConfiguration;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Invoke retry failover benchmark.
- * <p>
- * Each client maintains a local map that it updates together with cache.
- * Client invokes an increment closure for all generated keys and atomically increments value for corresponding
- * keys in the local map. To validate cache contents, all writes from the client are stopped, values in
- * the local map are compared to the values in the cache.
+ * Invoke retry failover benchmark. <p> Each client maintains a local map that it updates together with cache. Client
+ * invokes an increment closure for all generated keys and atomically increments value for corresponding keys in the
+ * local map. To validate cache contents, all writes from the client are stopped, values in the local map are compared
+ * to the values in the cache.
  */
 public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstractBenchmark<String, Long> {
     /** */
@@ -95,7 +92,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                                 }
                             }
 
-                            assert notEqualsCacheVals.size() == notEqualsLocMapVals.size(): "Invalid state " +
+                            assert notEqualsCacheVals.size() == notEqualsLocMapVals.size() : "Invalid state " +
                                 "[cacheMapVals=" + notEqualsCacheVals + ", mapVals=" + notEqualsLocMapVals + "]";
 
                             if (!notEqualsCacheVals.isEmpty()) {
@@ -147,7 +144,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
                         throw (Error)e;
                 }
             }
-        }, "cache-validator");
+        }, "cache-" + cacheName() + "-validator");
 
         thread.setDaemon(true);
 
@@ -192,8 +189,8 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCache<String, Long> cache() {
-        return ignite().cache("atomic");
+    @Override protected String cacheName() {
+        return "tx";
     }
 
     /**
