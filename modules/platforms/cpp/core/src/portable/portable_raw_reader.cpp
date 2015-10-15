@@ -131,5 +131,15 @@ namespace ignite
 
             return PortableStringArrayReader(impl, id, size);
         }
+
+        CollectionType PortableRawReader::ReadCollectionType()
+        {
+            return impl->ReadCollectionType();
+        }
+
+        int32_t PortableRawReader::ReadCollectionSize()
+        {
+            return impl->ReadCollectionSize();
+        }
     }
 }

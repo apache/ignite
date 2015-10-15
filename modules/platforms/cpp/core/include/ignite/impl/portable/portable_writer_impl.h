@@ -440,6 +440,40 @@ namespace ignite
                  * @return Session ID.
                  */
                 int32_t WriteCollection(const char* fieldName, ignite::portable::CollectionType typ);
+
+                /**
+                 * Write values in interval [first, last).
+                 *
+                 * @param first Iterator pointing to the beginning of the interval.
+                 * @param last Iterator pointing to the end of the interval.
+                 * @param typ Collection type.
+                 */
+                template<typename InputIterator>
+                void WriteCollection(InputIterator first, InputIterator last, ignite::portable::CollectionType typ)
+                {
+                    StartContainerSession(true);
+
+                    WriteCollectionWithinSession(first, last, typ);
+                }
+
+                /**
+                 * Write values in interval [first, last).
+                 *
+                 * @param fieldName Field name.
+                 * @param first Iterator pointing to the beginning of the interval.
+                 * @param last Iterator pointing to the end of the interval.
+                 * @param typ Collection type.
+                 */
+                template<typename InputIterator>
+                void WriteCollection(const char* fieldName, InputIterator first, InputIterator last,
+                    ignite::portable::CollectionType typ)
+                {
+                    StartContainerSession(false);
+
+                    WriteFieldIdSkipLength(fieldName, IGNITE_TYPE_COLLECTION);
+
+                    WriteCollectionWithinSession(first, last, typ);
+                }
                 
                 /**
                  * Start map write.
@@ -744,6 +778,27 @@ namespace ignite
                         stream->WriteInt32(1);
                         stream->WriteInt8(IGNITE_HDR_NULL);
                     }
+                }
+
+                /**
+                 * Write values in interval [first, last).
+                 * New session should be started prior to call to this method.
+                 * @param first Iterator pointing to the beginning of the interval.
+                 * @param last Iterator pointing to the end of the interval.
+                 * @param typ Collection type.
+                 */
+                template<typename InputIterator>
+                void WriteCollectionWithinSession(InputIterator first, InputIterator last,
+                    ignite::portable::CollectionType typ)
+                {
+                    stream->WriteInt8(IGNITE_TYPE_COLLECTION);
+                    stream->Position(stream->Position() + 4);
+                    stream->WriteInt8(typ);
+
+                    for (InputIterator i = first; i != last; ++i)
+                        WriteElement(elemId, *i);
+
+                    CommitContainer(elemId);
                 }
 
                 /**
