@@ -71,24 +71,6 @@ namespace Apache.Ignite.Examples.Events
 
                 Console.WriteLine(">>> Received events count: " + listener.EventsReceived);
                 Console.WriteLine();
-
-                // Remote listen example (start standalone nodes for better demonstration)
-                Console.WriteLine(">>> Listening for remote events...");
-
-                var localListener = new LocalListener();
-                var remoteFilter = new RemoteFilter();
-
-                var listenId = ignite.GetEvents().RemoteListen(localListener: localListener,
-                    remoteFilter: remoteFilter, types: EventType.JobExecutionAll);
-
-                if (listenId == null)
-                    throw new InvalidOperationException("Subscription failed.");
-
-                ExecuteTask(ignite);
-
-                ignite.GetEvents().StopRemoteListen(listenId.Value);
-
-                Console.WriteLine(">>> Received events count: " + localListener.EventsReceived);
             }
 
             Console.WriteLine();
