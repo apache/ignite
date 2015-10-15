@@ -29,7 +29,7 @@
 
         <property name="metricsLogFrequency" value="5000"/>
 
-        <property name="failureDetectionTimeout" value="1000"/>
+        <property name="failureDetectionTimeout" value="2000"/>
 
         <property name="cacheConfiguration">
             <list>
