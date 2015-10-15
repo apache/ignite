@@ -30,7 +30,7 @@ mixin chk(mdl, change, tip)
                     .settings-row(ng-repeat='field in metadataDb')
                         +form-row-custom(['col-xs-4 col-sm-3 col-md-3'], ['col-xs-8 col-sm-9 col-md-9'], 'preset')
             .metadata-content(ng-show='loadMeta.action == "schemas"')
-                table.table.metadata(st-table='loadMeta.displayedSchemas' st-safe-src='loadMeta.schemas')
+                table.table.metadata(st-table='loadMeta.displayedSchemas' st-safe-src='loadMeta.schemas' st-set-filter='schemasSearch')
                     thead
                         tr
                             th.header(colspan='2')
@@ -57,7 +57,7 @@ mixin chk(mdl, change, tip)
                     label.required Package:
                     span
                         input.form-control(id='metadataLoadPackage' type="text" ng-model='ui.packageName' placeholder='Package for POJOs generation' bs-tooltip='' data-title='Package that will be used for POJOs generation' data-placement='top' data-trigger='hover')
-                table.table.metadata(st-table='loadMeta.displayedTables' st-safe-src='loadMeta.tables')
+                table.table.metadata(st-table='loadMeta.displayedTables' st-safe-src='loadMeta.tables' st-set-filter='tablesSearch')
                     thead
                         tr
                             th.header(colspan='3')

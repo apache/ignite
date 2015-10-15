@@ -1578,7 +1578,7 @@ consoleModule.filter('cachesSearch', function() {
             var matchString = query.$.toLowerCase();
 
             angular.forEach(array, function (row) {
-                var label = (row.name + ', ' + row.cacheMode + ', ' + atomicityMode).toLowerCase();
+                var label = (row.name + ', ' + row.cacheMode + ', ' + row.atomicityMode).toLowerCase();
 
                 if (label.indexOf(matchString) >= 0)
                     filtredArray.push(row);
@@ -1599,6 +1599,46 @@ consoleModule.filter('metadatasSearch', function() {
 
             angular.forEach(array, function (row) {
                 if (row.valueType.toLowerCase().indexOf(matchString) >= 0)
+                    filtredArray.push(row);
+            });
+
+            return filtredArray;
+        } else
+            return array;
+    }
+});
+
+consoleModule.filter('schemasSearch', function() {
+    return function(array, query) {
+        if (!angular.isUndefined(array) && !angular.isUndefined(query) && !angular.isUndefined(query.$)) {
+            var filtredArray = [];
+
+            var matchString = query.$.toLowerCase();
+
+            angular.forEach(array, function (row) {
+                var label = row.name.toLowerCase();
+
+                if (label.indexOf(matchString) >= 0)
+                    filtredArray.push(row);
+            });
+
+            return filtredArray;
+        } else
+            return array;
+    }
+});
+
+consoleModule.filter('tablesSearch', function() {
+    return function(array, query) {
+        if (!angular.isUndefined(array) && !angular.isUndefined(query) && !angular.isUndefined(query.$)) {
+            var filtredArray = [];
+
+            var matchString = query.$.toLowerCase();
+
+            angular.forEach(array, function (row) {
+                var label = (row.schema + '.' + row.tbl).toLowerCase();
+
+                if (label.indexOf(matchString) >= 0)
                     filtredArray.push(row);
             });
 
