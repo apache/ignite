@@ -204,7 +204,8 @@ consoleModule.controller('metadataController', [
 
             $scope.selectSchema = function () {
                 if ($common.isDefined($scope.loadMeta))
-                    $scope.loadMeta.allSchemasSelected = _.every($scope.loadMeta.displayedSchemas, 'use', true);
+                    $scope.loadMeta.allSchemasSelected = $scope.loadMeta.displayedSchemas.length > 0
+                        && _.every($scope.loadMeta.displayedSchemas, 'use', true);
             };
 
             $scope.selectAllTables = function () {
@@ -217,7 +218,8 @@ consoleModule.controller('metadataController', [
 
             $scope.selectTable = function () {
                 if ($common.isDefined($scope.loadMeta))
-                    $scope.loadMeta.allTablesSelected = _.every($scope.loadMeta.displayedTables, 'use', true);
+                    $scope.loadMeta.allTablesSelected = $scope.loadMeta.displayedTables.length > 0
+                        && _.every($scope.loadMeta.displayedTables, 'use', true);
             };
 
             $scope.$watch('loadMeta.displayedSchemas', $scope.selectSchema);
