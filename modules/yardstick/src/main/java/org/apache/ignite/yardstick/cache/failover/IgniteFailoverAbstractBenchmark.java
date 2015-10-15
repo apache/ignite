@@ -28,8 +28,17 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.mxbean.IgniteMXBean;
@@ -66,8 +75,10 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
                         Thread.sleep(cfg.warmup() * 1000);
 
+                        Ignite ignite = ignite();
+
                         // Read servers configs from cache to local map.
-                        IgniteCache<Integer, BenchmarkConfiguration> srvsCfgsCache = ignite().
+                        IgniteCache<Integer, BenchmarkConfiguration> srvsCfgsCache = ignite.
                             getOrCreateCache(new CacheConfiguration<Integer, BenchmarkConfiguration>().
                                 setName("serversConfigs"));
 
@@ -79,13 +90,13 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
                             srvsCfgs.put(e.getKey(), e.getValue());
                         }
 
-                        assert ignite().cluster().forServers().nodes().size() == srvsCfgs.size();
+                        assert ignite.cluster().forServers().nodes().size() == srvsCfgs.size();
 
                         final int backupsCnt = args.backups();
 
                         assert backupsCnt >= 1 : "Backups: " + backupsCnt;
 
-                        final boolean isDebug = ignite().log().isDebugEnabled();
+                        final boolean isDebug = ignite.log().isDebugEnabled();
 
                         // Main logic.
                         while (!Thread.currentThread().isInterrupted()) {
@@ -99,8 +110,16 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
                             Collections.shuffle(ids);
 
+                            println("Waiting for partitioned map exchage of all nodes");
+
+                            IgniteCompute asyncCompute = ignite.compute().withAsync();
+
+                            asyncCompute.broadcast(new AwaitPartitionMapExchangeTask());
+
+                            asyncCompute.future().get(args.cacheOperationTimeoutMillis());
+
                             println("Start servers restarting [numNodesToRestart=" + numNodesToRestart
-                                + ", shuffledIds = " + ids + "]");
+                                + ", shuffledIds=" + ids + "]");
 
                             for (int i = 0; i < numNodesToRestart; i++) {
                                 Integer id = ids.get(i);
@@ -141,6 +160,63 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
             restarterThread.setDaemon(true);
             restarterThread.start();
+        }
+    }
+
+    /**
+     * Awaits for partitiona map exchage.
+     *
+     * @param ignite Ignite.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("BusyWait")
+    protected static void awaitPartitionMapExchange(Ignite ignite) throws Exception {
+        IgniteLogger log = ignite.log();
+
+        log.info("Waiting for finishing of a partition exchange on node: " + ignite);
+
+        IgniteKernal kernal = (IgniteKernal)ignite;
+
+        while (true) {
+            boolean partitionsExchangeFinished = true;
+
+            for (IgniteInternalCache<?, ?> cache : kernal.cachesx(null)) {
+                log.info("Checking cache: " + cache.name());
+
+                GridCacheAdapter<?, ?> c = kernal.internalCache(cache.name());
+
+                if (!(c instanceof GridDhtCacheAdapter))
+                    break;
+
+                GridDhtCacheAdapter<?, ?> dht = (GridDhtCacheAdapter<?, ?>)c;
+
+                GridDhtPartitionFullMap partMap = dht.topology().partitionMap(true);
+
+                for (Map.Entry<UUID, GridDhtPartitionMap> e : partMap.entrySet()) {
+                    log.info("Checking node: " + e.getKey());
+
+                    for (Map.Entry<Integer, GridDhtPartitionState> e1 : e.getValue().entrySet()) {
+                        if (e1.getValue() != GridDhtPartitionState.OWNING) {
+                            log.info("Undesired state [id=" + e1.getKey() + ", state=" + e1.getValue() + ']');
+
+                            partitionsExchangeFinished = false;
+
+                            break;
+                        }
+                    }
+
+                    if (!partitionsExchangeFinished)
+                        break;
+                }
+
+                if (!partitionsExchangeFinished)
+                    break;
+            }
+
+            if (partitionsExchangeFinished)
+                return;
+
+            Thread.sleep(100);
         }
     }
 
@@ -196,7 +272,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
         /** {@inheritDoc} */
         @Override public void run() {
-            println("Driver finished with exception [driverNodeId=" + id + ", e=" +  e + "]");
+            println("Driver finished with exception [driverNodeId=" + id + ", e=" + e + "]");
             println("Full thread dump of the current server node below.");
 
             U.dumpThreads(null);
@@ -204,6 +280,27 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
             println("");
 
             ((IgniteMXBean)ignite).dumpDebugInfo();
+        }
+    }
+
+    /**
+     */
+    private static class AwaitPartitionMapExchangeTask implements IgniteRunnable {
+        /** */
+        private static final long serialVersionUID = 0;
+
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            try {
+                awaitPartitionMapExchange(ignite);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
         }
     }
 }
