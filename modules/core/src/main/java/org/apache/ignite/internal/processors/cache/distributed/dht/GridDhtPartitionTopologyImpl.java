@@ -563,16 +563,18 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     return null;
 
                 if (!belongs)
-                    throw new GridDhtInvalidPartitionException(p, "Adding entry to evicted partition [part=" + p +
-                        ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
+                    throw new GridDhtInvalidPartitionException(p, "Adding entry to evicted partition " +
+                        "(often may be caused by inconsistent 'key.hashCode()' implementation) " +
+                        "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
 
                 continue;
             }
 
             if (loc == null && create) {
                 if (!belongs)
-                    throw new GridDhtInvalidPartitionException(p, "Creating partition which does not belong [part=" +
-                        p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
+                    throw new GridDhtInvalidPartitionException(p, "Creating partition which does not belong to " +
+                        "local node (often may be caused by inconsistent 'key.hashCode()' implementation) " +
+                        "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
 
                 lock.writeLock().lock();
 
