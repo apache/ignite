@@ -1866,6 +1866,13 @@ consoleModule.directive('onClickFocus', function ($focus) {
 // Navigation bar controller.
 consoleModule.controller('activeLink', [
     '$scope', function ($scope) {
+        $scope.configurationDropdown = [
+            { "text": "Clusters", "href": "/configuration/clusters" },
+            { "text": "Caches", "href": "/configuration/caches" },
+            { "text": "Metadata", "href": "/configuration/metadata" },
+            { "text": "Summary", "href": "/configuration/summary" }
+        ];
+
         $scope.isActive = function (path) {
             return window.location.pathname.substr(0, path.length) == path;
         };
