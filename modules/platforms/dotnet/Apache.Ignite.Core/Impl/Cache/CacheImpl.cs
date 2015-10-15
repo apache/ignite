@@ -340,7 +340,17 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var result = DoOutInOpNullable<TK, TV>((int) CacheOp.Get, key);
 
-            return GetNullableResult(result);
+            if (!IsAsync)
+            {
+                if (!result.Success)
+                    throw new KeyNotFoundException("The given key was not present in the cache.");
+
+                return result.Value;
+            }
+
+            Debug.Assert(!result.Success);
+
+            return default(TV);
         }
 
         /** <inheritDoc /> */
@@ -1007,19 +1017,6 @@ namespace Apache.Ignite.Core.Impl.Cache
             }
 
             return null;
-        }
-
-        /// <summary>
-        /// Gets the nullable result according to async mode.
-        /// </summary>
-        private TV GetNullableResult(CacheResult<TV> result)
-        {
-            if (!IsAsync)
-                return result.Value;
-
-            Debug.Assert(!result.Success);
-
-            return default(TV);
         }
     }
 }

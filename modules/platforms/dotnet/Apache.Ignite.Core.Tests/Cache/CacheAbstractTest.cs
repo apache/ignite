@@ -507,7 +507,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, cache.Get(1));
             Assert.AreEqual(2, cache.Get(2));
             
-            Assert.Throws<InvalidOperationException>(() => cache.Get(3));
+            Assert.Throws<KeyNotFoundException>(() => cache.Get(3));
 
             int value;
             
@@ -532,7 +532,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, cache.Get(1));
             Assert.AreEqual(2, cache.Get(2));
             Assert.IsFalse(cache.ContainsKey(3));
-            Assert.Throws<InvalidOperationException>(() => cache.Get(3));
+            Assert.Throws<KeyNotFoundException>(() => cache.Get(3));
         }
 
         [Test]
@@ -724,7 +724,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache().WithAsync().WrapAsync();
 
-            Assert.Throws<InvalidOperationException>(() => cache.Get(1));
+            Assert.Throws<KeyNotFoundException>(() => cache.Get(1));
             Assert.IsFalse(cache.ContainsKey(1));
 
             Assert.IsTrue(cache.PutIfAbsent(1, 1));
@@ -1109,7 +1109,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 cache.Clear(key);
 
                 Assert.IsFalse(cache.ContainsKey(key));
-                Assert.Throws<InvalidOperationException>(() => cache.Get(key));
+                Assert.Throws<KeyNotFoundException>(() => cache.Get(key));
 
                 Assert.Less(cache.GetSize(), i);
 
@@ -3099,7 +3099,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            Assert.Throws<InvalidOperationException>(() => Console.WriteLine(cache[0]));  // missing key throws
+            Assert.Throws<KeyNotFoundException>(() => Console.WriteLine(cache[0]));  // missing key throws
 
             cache[1] = 5;
 
