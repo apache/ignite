@@ -1210,12 +1210,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     handler.Invoke(this, obj);
                 else
                 {
-                    // Is it a .Net-specific (generic) collection?
-                    var colInfo = PortableCollectionInfo.GetInstance(type);
-
-                    if (colInfo.IsAny)
-                        Write(new CollectionHolder(obj, colInfo.WriteGeneric));
-                    else if (type.IsSerializable)
+                    if (type.IsSerializable)
                         Write(new SerializableObjectHolder(obj));
                     else
                     // We did our best, object cannot be marshalled.
