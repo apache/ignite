@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Events
         /// Attempt to record internal event with this method will cause <see cref="ArgumentException"/> to be thrown.
         /// </summary>
         /// <param name="evt">Locally generated event.</param>
-        /// <exception cref="ArgumentException">If event type is within Ignite reserved range (1 � 1000)</exception>
+        /// <exception cref="ArgumentException">If event type is within Ignite reserved range (1 to 1000)</exception>
         void RecordLocal(IEvent evt);
 
         /// <summary>

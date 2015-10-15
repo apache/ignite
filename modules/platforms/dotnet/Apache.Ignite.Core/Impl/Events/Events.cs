@@ -230,7 +230,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public void RecordLocal(IEvent evt)
         {
-            throw new NotImplementedException("GG-10244");
+            throw new NotImplementedException("IGNITE-1410");
         }
 
         /** <inheritDoc /> */
