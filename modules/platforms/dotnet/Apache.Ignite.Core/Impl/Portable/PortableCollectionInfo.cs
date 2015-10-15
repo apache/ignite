@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private readonly Action<object, PortableWriterImpl> _writeFunc;
 
         /** Generic read func. */
-        private readonly Func<PortableReaderImpl, object, PortableCollectionInfo, object> _readFunc;
+        private readonly Func<PortableReaderImpl, PortableCollectionInfo, object> _readFunc;
         
         /** Constructor func. */
         private readonly Func<object, object> _ctor;
@@ -147,8 +147,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     new[] {true, false, false});
 
             if (readMethod != null)
-                _readFunc = DelegateConverter.CompileFunc<Func<PortableReaderImpl, object, PortableCollectionInfo, object>>(null, readMethod, 
-                    null, new[] {false, true, false, false});
+                _readFunc = DelegateConverter.CompileFunc<Func<PortableReaderImpl, PortableCollectionInfo, object>>(null, readMethod, 
+                    null, new[] {false, false, false});
 
             if (ctorInfo != null)
                 _ctor = DelegateConverter.CompileCtor<Func<object, object>>(ctorInfo, new[] {typeof (int)});
@@ -178,7 +178,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             Debug.Assert(reader != null);
             Debug.Assert(_readFunc != null);
 
-            return _readFunc(reader, null, this);
+            return _readFunc(reader, this);
         }
 
         /// <summary>

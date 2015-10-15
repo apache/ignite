@@ -1229,13 +1229,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Reads generic collection without type information.
         /// </summary>
-        // ReSharper disable once UnusedParameter.Local (for signature compatibility)
         // ReSharper disable once UnusedMember.Local (used by reflection)
-        private static T[] ReadGenericArray<T>(PortableReaderImpl reader, object factory, 
-            PortableCollectionInfo colInfo)
+        private static T[] ReadGenericArray<T>(PortableReaderImpl reader, PortableCollectionInfo colInfo)
         {
             Debug.Assert(reader != null);
-            Debug.Assert(factory == null);
             Debug.Assert(colInfo != null);
 
             int len = reader.Stream.ReadInt();
