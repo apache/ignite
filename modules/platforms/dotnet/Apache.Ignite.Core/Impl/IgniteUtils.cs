@@ -41,15 +41,6 @@ namespace Apache.Ignite.Core.Impl
         /** Environment variable: JAVA_HOME. */
         private const string EnvJavaHome = "JAVA_HOME";
 
-        /** Directory: jre. */
-        private const string DirJre = "jre";
-
-        /** Directory: bin. */
-        private const string DirBin = "bin";
-
-        /** Directory: server. */
-        private const string DirServer = "server";
-
         /** File: jvm.dll. */
         private const string FileJvmDll = "jvm.dll";
 
@@ -78,12 +69,9 @@ namespace Apache.Ignite.Core.Impl
         /// Gets thread local random.
         /// </summary>
         /// <returns>Thread local random.</returns>
-        public static Random ThreadLocalRandom()
+        private static Random ThreadLocalRandom()
         {
-            if (_rnd == null)
-                _rnd = new Random();
-
-            return _rnd;
+            return _rnd ?? (_rnd = new Random());
         }
 
         /// <summary>
@@ -260,16 +248,11 @@ namespace Apache.Ignite.Core.Impl
             var javaHomeDir = Environment.GetEnvironmentVariable(EnvJavaHome);
 
             if (!string.IsNullOrEmpty(javaHomeDir))
-                yield return
-                    new KeyValuePair<string, string>(EnvJavaHome, GetJvmDllPath(Path.Combine(javaHomeDir, DirJre)));
-        }
-
-        /// <summary>
-        /// Gets the JVM DLL path from JRE dir.
-        /// </summary>
-        private static string GetJvmDllPath(string jreDir)
-        {
-            return Path.Combine(jreDir, DirBin, DirServer, FileJvmDll);
+            {
+                foreach (var jvmDllPath in Directory.EnumerateFiles(
+                    javaHomeDir, FileJvmDll, SearchOption.AllDirectories))
+                    yield return new KeyValuePair<string, string>(EnvJavaHome, jvmDllPath);
+            }
         }
 
         /// <summary>
