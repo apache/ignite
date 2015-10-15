@@ -33,14 +33,14 @@ namespace Apache.Ignite.Core.Cache
         private readonly bool _success;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CacheResult{T}"/> struct.
+        /// Initializes a new instance of the <see cref="CacheResult{T}"/> struct with a specified value 
+        /// and sets success flag to true.
         /// </summary>
         /// <param name="value">The value.</param>
-        /// <param name="success">Success flag.</param>
-        public CacheResult(T value, bool success)
+        public CacheResult(T value)
         {
             _value = value;
-            _success = success;
+            _success = true;
         }
 
         /// <summary>

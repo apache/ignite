@@ -1019,10 +1019,11 @@ namespace Apache.Ignite.Core.Impl.Cache
                 case CacheOp.GetAndReplace:
                     return reader =>
                     {
-                        if (reader != null)
-                            return TypeCaster<TResult>.Cast(new CacheResult<TV>(reader.ReadObject<TV>(), true));
+                        var res = reader == null
+                            ? new CacheResult<TV>()
+                            : new CacheResult<TV>(reader.ReadObject<TV>());
 
-                        throw GetKeyNotFoundException();
+                        return TypeCaster<TResult>.Cast(res);
                     };
             }
 
@@ -1048,8 +1049,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             var res = DoOutInOp<T1, object>(type, val);
 
             return res == null
-                ? new CacheResult<TR>(default(TR), false)
-                : new CacheResult<TR>((TR)res, true);
+                ? new CacheResult<TR>()
+                : new CacheResult<TR>((TR)res);
         }
 
         /// <summary>
@@ -1063,8 +1064,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             var res = DoOutInOp<object>(type, outAction);
 
             return res == null
-                ? new CacheResult<TR>(default(TR), false)
-                : new CacheResult<TR>((TR)res, true);
+                ? new CacheResult<TR>()
+                : new CacheResult<TR>((TR)res);
         }
 
         /// <summary>
@@ -1079,8 +1080,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             var res = DoOutInOp<T1, T2, object>(type, val1, val2);
 
             return res == null
-                ? new CacheResult<TR>(default(TR), false)
-                : new CacheResult<TR>((TR)res, true);
+                ? new CacheResult<TR>()
+                : new CacheResult<TR>((TR)res);
         }
     }
 }
