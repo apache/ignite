@@ -490,9 +490,11 @@ namespace Apache.Ignite.Core.Tests.Cache
             int val;
 
             Assert.AreEqual(1, cache.LocalPeek(key1));
+            Assert.Throws<KeyNotFoundException>(() => cache.LocalPeek(-1));
             Assert.IsFalse(cache.TryLocalPeek(-1, out val));
 
             Assert.AreEqual(1, cache.LocalPeek(key1, CachePeekMode.All));
+            Assert.Throws<KeyNotFoundException>(() => cache.LocalPeek(-1, CachePeekMode.All));
             Assert.AreEqual(false, cache.TryLocalPeek(-1, out val, CachePeekMode.All));
         }
 
