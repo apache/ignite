@@ -69,7 +69,7 @@ public class CacheNearDisabledTransactionalWriteReadRestartSelfTest extends Cach
     }
 
     /** {@inheritDoc} */
-    @Override protected void updateCache(IgniteEx ignite, IgniteCache cache) throws Exception {
+    @Override protected void updateCache(IgniteEx ignite, final IgniteCache cache) throws Exception {
         final int k = ThreadLocalRandom.current().nextInt(RANGE);
 
         final String[] keys = new String[KEYS_CNT];
