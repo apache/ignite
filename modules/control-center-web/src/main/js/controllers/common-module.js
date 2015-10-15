@@ -1578,7 +1578,7 @@ consoleModule.filter('cachesSearch', function() {
             var matchString = query.$.toLowerCase();
 
             angular.forEach(array, function (row) {
-                var label = (row.name + ', ' + row.cacheMode + ', ' + atomicityMode).toLowerCase();
+                var label = (row.name + ', ' + row.cacheMode + ', ' + row.atomicityMode).toLowerCase();
 
                 if (label.indexOf(matchString) >= 0)
                     filtredArray.push(row);
