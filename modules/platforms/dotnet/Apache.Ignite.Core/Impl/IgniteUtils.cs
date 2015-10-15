@@ -41,6 +41,12 @@ namespace Apache.Ignite.Core.Impl
         /** Environment variable: JAVA_HOME. */
         private const string EnvJavaHome = "JAVA_HOME";
 
+        /** Directory: jre. */
+        private const string DirJre = "jre";
+
+        /** Directory: bin. */
+        private const string DirBin = "bin";
+
         /** File: jvm.dll. */
         private const string FileJvmDll = "jvm.dll";
 
@@ -71,7 +77,10 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Thread local random.</returns>
         private static Random ThreadLocalRandom()
         {
-            return _rnd ?? (_rnd = new Random());
+            if (_rnd == null)
+                _rnd = new Random();
+
+            return _rnd;
         }
 
         /// <summary>
@@ -249,8 +258,9 @@ namespace Apache.Ignite.Core.Impl
 
             if (!string.IsNullOrEmpty(javaHomeDir))
             {
-                foreach (var jvmDllPath in Directory.EnumerateFiles(
-                    javaHomeDir, FileJvmDll, SearchOption.AllDirectories))
+                var bin = Path.Combine(javaHomeDir, DirJre, DirBin);
+
+                foreach (var jvmDllPath in Directory.EnumerateFiles(bin, FileJvmDll, SearchOption.AllDirectories))
                     yield return new KeyValuePair<string, string>(EnvJavaHome, jvmDllPath);
             }
         }
