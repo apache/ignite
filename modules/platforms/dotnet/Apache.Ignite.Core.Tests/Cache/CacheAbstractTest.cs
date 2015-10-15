@@ -487,11 +487,13 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.Put(key1, 1);
 
+            int val;
+
             Assert.AreEqual(1, cache.LocalPeek(key1));
-            Assert.IsFalse(cache.TryLocalPeek(-1).Success);
+            Assert.IsFalse(cache.TryLocalPeek(-1, out val));
 
             Assert.AreEqual(1, cache.LocalPeek(key1, CachePeekMode.All));
-            Assert.AreEqual(false, cache.TryLocalPeek(-1, CachePeekMode.All).Success);
+            Assert.AreEqual(false, cache.TryLocalPeek(-1, out val, CachePeekMode.All));
         }
 
         [Test]
@@ -1144,7 +1146,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 cache.LocalClear(key);
 
-                Assert.IsFalse(cache.TryLocalPeek(key).Success);
+                int val;
+                Assert.IsFalse(cache.TryLocalPeek(key, out val));
 
                 Assert.Less(cache.GetSize(), i);
 
@@ -1165,8 +1168,10 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalClearAll(keys);
 
+            int val;
+
             foreach (var key in keys)
-                Assert.IsFalse(cache.TryLocalPeek(key).Success);
+                Assert.IsFalse(cache.TryLocalPeek(key, out val));
 
             cache.Clear();
         }
@@ -3268,9 +3273,11 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         private static int PeekInt(ICache<int, int> cache, int key)
         {
-            var val = cache.TryLocalPeek(key, CachePeekMode.Onheap);
+            int val;
 
-            return val.Success ? val.Value : 0;
+            cache.TryLocalPeek(key, out val, CachePeekMode.Onheap);
+
+            return val;
         }
     }
 }

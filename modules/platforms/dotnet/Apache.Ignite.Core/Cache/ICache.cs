@@ -167,9 +167,14 @@ namespace Apache.Ignite.Core.Cache
         /// value depending on the peek modes used.
         /// </summary>
         /// <param name="key">Key.</param>
+        /// <param name="value">When this method returns, the value associated with the specified key, 
+        /// if the key is found; otherwise, the default value for the type of the value parameter. 
+        /// This parameter is passed uninitialized.</param>
         /// <param name="modes">Peek modes.</param>
-        /// <returns>Peeked value.</returns>
-        CacheResult<TV> TryLocalPeek(TK key, params CachePeekMode[] modes);
+        /// <returns>
+        /// true if the cache contains an element with the specified key; otherwise, false.
+        /// </returns>
+        bool TryLocalPeek(TK key, out TV value, params CachePeekMode[] modes);
 
         /// <summary>
         /// Gets or sets a cache value with the specified key.

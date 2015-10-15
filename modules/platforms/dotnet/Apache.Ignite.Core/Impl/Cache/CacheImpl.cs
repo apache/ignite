@@ -299,15 +299,19 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public CacheResult<TV> TryLocalPeek(TK key, params CachePeekMode[] modes)
+        public bool TryLocalPeek(TK key, out TV value, params CachePeekMode[] modes)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOpNullable<TV>((int)CacheOp.Peek, writer =>
+            var res = DoOutInOpNullable<TV>((int)CacheOp.Peek, writer =>
             {
                 writer.Write(key);
                 writer.WriteInt(EncodePeekModes(modes));
             });
+
+            value = res.Success ? res.Value : default(TV);
+
+            return res.Success;
         }
 
         /** <inheritDoc /> */
