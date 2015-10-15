@@ -39,6 +39,14 @@ public class AgentUtils {
     }
 
     /**
+     * @param path Path to normalize.
+     * @return Normalized file path.
+     */
+    public static String normalizePath(String path) {
+        return path != null ? path.replace('\\', '/') : null;
+    }
+
+    /**
      * @return App folder.
      */
     public static File getAgentHome() {
@@ -87,7 +95,7 @@ public class AgentUtils {
         File home = getAgentHome();
 
         if (home != null) {
-            File file = new File(home, path);
+            File file = new File(home, normalizePath(path));
 
             if (file.exists())
                 return file;

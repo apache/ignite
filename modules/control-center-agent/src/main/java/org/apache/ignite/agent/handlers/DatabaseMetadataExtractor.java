@@ -19,6 +19,7 @@ package org.apache.ignite.agent.handlers;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -32,10 +33,11 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.agent.AgentConfiguration;
-import org.apache.ignite.agent.AgentUtils;
 import org.apache.ignite.agent.remote.Remote;
 import org.apache.ignite.schema.parser.DbMetadataReader;
 import org.apache.ignite.schema.parser.DbTable;
+
+import static org.apache.ignite.agent.AgentUtils.resolvePath;
 
 /**
  * Remote API to extract database metadata.
@@ -45,22 +47,13 @@ public class DatabaseMetadataExtractor {
     private static final Logger log = Logger.getLogger(DatabaseMetadataExtractor.class.getName());
 
     /** */
-    private final String driversFolder;
+    private final File driversFolder;
 
     /**
      * @param cfg Config.
      */
     public DatabaseMetadataExtractor(AgentConfiguration cfg) {
-        String driversFolder = cfg.driversFolder();
-
-        if (driversFolder == null) {
-            File agentHome = AgentUtils.getAgentHome();
-
-            if (agentHome != null)
-                driversFolder = new File(agentHome, "jdbc-drivers").getPath();
-        }
-
-        this.driversFolder = driversFolder;
+        driversFolder = resolvePath(cfg.driversFolder() == null ? "jdbc-drivers" : cfg.driversFolder());
     }
 
     /**
@@ -126,30 +119,24 @@ public class DatabaseMetadataExtractor {
     }
 
     /**
-     * @param path Path to normalize.
-     * @return Normalized file path.
-     */
-    private String normalizePath(String path) {
-        return path != null ? path.replace('\\', '/') : null;
-    }
-
-    /**
      * @return Drivers in drivers folder
      * @see AgentConfiguration#driversFolder
      */
     @Remote
     public List<JdbcDriver> availableDrivers() {
-        String drvFolder = normalizePath(driversFolder);
-
-        log.log(Level.FINE, "Collecting JDBC drivers in folder: " + drvFolder);
-
-        if (drvFolder == null) {
+        if (driversFolder == null) {
             log.log(Level.INFO, "JDBC drivers folder not specified, returning empty list");
 
             return Collections.emptyList();
         }
 
-        String[] list = new File(drvFolder).list();
+        log.log(Level.FINE, "Collecting JDBC drivers in folder: " + driversFolder.getPath());
+
+        File[] list = driversFolder.listFiles(new FilenameFilter() {
+            @Override public boolean accept(File dir, String name) {
+                return name.endsWith(".jar");
+            }
+        });
 
         if (list == null) {
             log.log(Level.INFO, "JDBC drivers folder has no files, returning empty list");
@@ -159,28 +146,25 @@ public class DatabaseMetadataExtractor {
 
         List<JdbcDriver> res = new ArrayList<>();
 
-        for (String fileName : list) {
-            if (fileName.endsWith(".jar")) {
-                try {
-                    String spec = normalizePath("jar:file:" + (drvFolder.startsWith("/") ? "" : "/") + drvFolder + '/' + fileName +
-                        "!/META-INF/services/java.sql.Driver");
+        for (File file : list) {
+            try {
+                boolean win = System.getProperty("os.name").contains("win");
 
-                    URL url = new URL(spec);
+                URL url = new URL("jar", null, "file:" + (win ? "/" : "") + file.getPath() + "!/META-INF/services/java.sql.Driver");
 
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
-                        String jdbcDriverCls = reader.readLine();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
+                    String jdbcDriverCls = reader.readLine();
 
-                        res.add(new JdbcDriver(fileName, jdbcDriverCls));
+                    res.add(new JdbcDriver(file.getName(), jdbcDriverCls));
 
-                        log.log(Level.FINE, "Found: [driver=" + fileName + ", class=" + jdbcDriverCls + "]");
-                    }
+                    log.log(Level.FINE, "Found: [driver=" + file + ", class=" + jdbcDriverCls + "]");
                 }
-                catch (IOException e) {
-                    res.add(new JdbcDriver(fileName, null));
+            }
+            catch (IOException e) {
+                res.add(new JdbcDriver(file.getName(), null));
 
-                    log.log(Level.INFO, "Found: [driver=" + fileName + "]");
-                    log.log(Level.INFO, "Failed to detect driver class: " + e.getMessage());
-                }
+                log.log(Level.INFO, "Found: [driver=" + file + "]");
+                log.log(Level.INFO, "Failed to detect driver class: " + e.getMessage());
             }
         }
 
