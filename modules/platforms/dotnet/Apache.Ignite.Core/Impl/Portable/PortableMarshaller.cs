@@ -516,7 +516,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             AddSystemType(PortableUtils.TypeSerializableHolder, w => new SerializableObjectHolder(w));
             AddSystemType(PortableUtils.TypeCacheEntryProcessorHolder, w => new CacheEntryProcessorHolder(w));
             AddSystemType(PortableUtils.TypeCacheEntryPredicateHolder, w => new CacheEntryFilterHolder(w));
-            AddSystemType(PortableUtils.TypeMessageFilterHolder, w => new MessageFilterHolder(w));
+            AddSystemType(PortableUtils.TypeMessageListenerHolder, w => new MessageListenerHolder(w));
             AddSystemType(PortableUtils.TypePortableOrSerializableHolder, w => new PortableOrSerializableObjectHolder(w));
             AddSystemType(PortableUtils.TypeStreamReceiverHolder, w => new StreamReceiverHolder(w));
         }
