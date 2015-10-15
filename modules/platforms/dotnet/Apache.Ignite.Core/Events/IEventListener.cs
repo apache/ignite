@@ -15,28 +15,20 @@
  * limitations under the License.
  */
 
-using System;
-using Apache.Ignite.Core.Events;
-
-namespace Apache.Ignite.ExamplesDll.Events
+namespace Apache.Ignite.Core.Events
 {
     /// <summary>
-    /// Remote event filter.
+    /// Represents an event listener.
     /// </summary>
-    [Serializable]
-    public class RemoteFilter : IEventFilter<IEvent>
+    /// <typeparam name="T">Event type.</typeparam>
+    public interface IEventListener<in T> where T : IEvent
     {
         /// <summary>
-        /// Determines whether specified event passes this filter.
+        /// Invoked when event occurs.
         /// </summary>
-        /// <param name="nodeId">Node identifier.</param>
         /// <param name="evt">Event.</param>
-        /// <returns>Value indicating whether specified event passes this filter.</returns>
-        public bool Invoke(Guid? nodeId, IEvent evt)
-        {
-            Console.WriteLine("Remote filter received event [evt={0}]", evt.Name);
-
-            return evt is JobEvent;
-        }
+        /// <returns>Value indicating whether this listener should be kept subscribed. 
+        /// Returning false unsubscribes this listener from future notifications.</returns>
+        bool Invoke(T evt);
     }
 }

@@ -49,7 +49,6 @@
     <Compile Include="Datagrid\ContinuousQueryFilter.cs" />
     <Compile Include="Datagrid\EmployeeStore.cs" />
     <Compile Include="Events\LocalListener.cs" />
-    <Compile Include="Events\RemoteFilter.cs" />
     <Compile Include="Messaging\LocalListener.cs" />
     <Compile Include="Messaging\RemoteOrderedListener.cs" />
     <Compile Include="Messaging\RemoteUnorderedListener.cs" />

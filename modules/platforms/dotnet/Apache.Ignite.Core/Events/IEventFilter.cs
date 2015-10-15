@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Events
 {
-    using System;
-
     /// <summary>
     /// Represents an event filter.
     /// </summary>
@@ -26,11 +24,10 @@ namespace Apache.Ignite.Core.Events
     public interface IEventFilter<in T> where T : IEvent
     {
         /// <summary>
-        /// Determines whether specified event passes this filtger.
+        /// Determines whether specified event passes this filter.
         /// </summary>
-        /// <param name="nodeId">Node identifier.</param>
         /// <param name="evt">Event.</param>
-        /// <returns>Value indicating whether specified event passes this filtger.</returns>
-        bool Invoke(Guid? nodeId, T evt);
+        /// <returns>Value indicating whether specified event passes this filter.</returns>
+        bool Invoke(T evt);
     }
 }

@@ -132,6 +132,16 @@ namespace ignite
             return PortableStringArrayReader(impl, id, size);
         }
 
+        CollectionType PortableReader::ReadCollectionType(const char* fieldName)
+        {
+            return impl->ReadCollectionType(fieldName);
+        }
+
+        int32_t PortableReader::ReadCollectionSize(const char* fieldName)
+        {
+            return impl->ReadCollectionSize(fieldName);
+        }
+
         PortableRawReader PortableReader::RawReader()
         {
             impl->SetRawMode();
