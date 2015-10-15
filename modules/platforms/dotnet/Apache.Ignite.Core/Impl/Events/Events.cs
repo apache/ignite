@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
                     if (localListener != null)
                     {
-                        var listener = new RemoteListenEventFilter(Ignite, (id, e) => localListener.Invoke((T) e));
+                        var listener = new RemoteListenEventFilter(Ignite, e => localListener.Invoke((T) e));
                         writer.WriteLong(Ignite.HandleRegistry.Allocate(listener));
                     }
 
