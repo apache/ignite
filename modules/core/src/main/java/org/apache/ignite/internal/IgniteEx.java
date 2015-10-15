@@ -20,7 +20,6 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteFileSystem;
-import org.apache.ignite.internal.portable.api.IgnitePortables;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
@@ -141,12 +140,4 @@ public interface IgniteEx extends Ignite {
      * @return Kernal context.
      */
     public GridKernalContext context();
-
-
-    /**
-     * Gets an instance of {@link IgnitePortables} interface.
-     *
-     * @return Instance of {@link IgnitePortables} interface.
-     */
-    public IgnitePortables portables();
 }
