@@ -36,6 +36,7 @@ import org.apache.ignite.client.hadoop.HadoopClientProtocolSelfTest;
 import org.apache.ignite.igfs.Hadoop1OverIgfsDualAsyncTest;
 import org.apache.ignite.igfs.Hadoop1OverIgfsDualSyncTest;
 import org.apache.ignite.igfs.HadoopIgfs20FileSystemLoopbackPrimarySelfTest;
+import org.apache.ignite.igfs.HadoopIgfs20FileSystemShmemPrimarySelfTest;
 import org.apache.ignite.igfs.HadoopIgfsDualAsyncSelfTest;
 import org.apache.ignite.igfs.HadoopIgfsDualSyncSelfTest;
 import org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest;
@@ -95,6 +96,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Hadoop MR Test Suite");
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopIgfs20FileSystemLoopbackPrimarySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopIgfs20FileSystemShmemPrimarySelfTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopIgfsDualSyncSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopIgfsDualAsyncSelfTest.class.getName())));
