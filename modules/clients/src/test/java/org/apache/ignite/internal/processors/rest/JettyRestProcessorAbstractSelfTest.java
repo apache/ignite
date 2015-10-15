@@ -1212,7 +1212,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         params.put("cmd", GridRestCommand.EXECUTE_SCAN_QUERY.key());
         params.put("pageSize", "10");
         params.put("cacheName", "person");
-        params.put("classname", ScanFilter.class.getName());
+        params.put("className", ScanFilter.class.getName());
 
         String ret = content(params);
 
@@ -1236,7 +1236,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         params.put("cmd", GridRestCommand.EXECUTE_SCAN_QUERY.key());
         params.put("pageSize", "10");
         params.put("cacheName", "person");
-        params.put("classname", ScanFilter.class.getName() + 1);
+        params.put("className", ScanFilter.class.getName() + 1);
 
         String ret = content(params);
 
