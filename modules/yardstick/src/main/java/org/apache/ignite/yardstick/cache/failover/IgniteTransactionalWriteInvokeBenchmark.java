@@ -26,7 +26,6 @@ import javax.cache.CacheException;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.transactions.Transaction;
@@ -162,8 +161,8 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCache<String, Long> cache() {
-        return ignite().cache("tx");
+    @Override protected String cacheName() {
+        return "tx";
     }
 
     /**

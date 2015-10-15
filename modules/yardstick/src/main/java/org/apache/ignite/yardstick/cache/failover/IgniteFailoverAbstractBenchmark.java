@@ -45,6 +45,9 @@ import static org.yardstickframework.BenchmarkUtils.println;
  * Ignite benchmark that performs long running failover tasks.
  */
 public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheAbstractBenchmark<K, V> {
+    /** */
+    private static final AtomicBoolean restarterStarted = new AtomicBoolean();
+
     /** Async Cache. */
     protected IgniteCache<K, V> asyncCache;
 
@@ -56,15 +59,16 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
         super.setUp(cfg);
 
         asyncCache = cache.withAsync();
+    }
 
-        if (cfg.memberId() == 0) {
+    /** {@inheritDoc} */
+    @Override public void onWarmupFinished() {
+        if (cfg.memberId() == 0 && restarterStarted.compareAndSet(false, true)) {
             Thread restarterThread = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
-                        println("Servers restarter started. Will start restarting servers after "
-                            + cfg.warmup() + " sec. warmup.");
-
-                        Thread.sleep(cfg.warmup() * 1000);
+                        println("Servers restarter started on driver: "
+                            + IgniteFailoverAbstractBenchmark.this.getClass().getSimpleName());
 
                         // Read servers configs from cache to local map.
                         IgniteCache<Integer, BenchmarkConfiguration> srvsCfgsCache = ignite().
@@ -170,6 +174,16 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
     }
 
     /**
+     * @return Cache name.
+     */
+    protected abstract String cacheName();
+
+    /** {@inheritDoc} */
+    @Override protected IgniteCache<K, V> cache() {
+        return ignite().cache(cacheName());
+    }
+
+    /**
      */
     private static class ThreadDumpPrinterTask implements IgniteRunnable {
         /** */
@@ -196,7 +210,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
         /** {@inheritDoc} */
         @Override public void run() {
-            println("Driver finished with exception [driverNodeId=" + id + ", e=" +  e + "]");
+            println("Driver finished with exception [driverNodeId=" + id + ", e=" + e + "]");
             println("Full thread dump of the current server node below.");
 
             U.dumpThreads(null);

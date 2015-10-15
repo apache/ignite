@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -136,7 +135,7 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCache<String, Long> cache() {
-        return ignite().cache("tx");
+    @Override protected String cacheName() {
+        return "tx";
     }
 }
