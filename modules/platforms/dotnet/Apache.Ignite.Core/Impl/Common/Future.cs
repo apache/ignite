@@ -215,7 +215,21 @@ namespace Apache.Ignite.Core.Impl.Common
         /** <inheritdoc /> */
         public void OnNullResult()
         {
-            OnResult(default(T));
+            if (_converter == null)
+            {
+                OnResult(default(T));
+
+                return;
+            }
+
+            try
+            {
+                OnResult(_converter.Convert(null));
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
         }
 
         /// <summary>

@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             _marsh = marsh;
             _keepPortable = keepPortable;
-            _func = func ?? (reader => reader.ReadObject<T>());
+            _func = func ?? (reader => reader == null ? default(T) : reader.ReadObject<T>());
         }
 
         /// <summary>
