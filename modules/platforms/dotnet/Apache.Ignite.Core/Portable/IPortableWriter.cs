@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Portable
 {
     using System;
     using System.Collections;
-    using System.Collections.Generic;
 
     /// <summary>
     /// Writer for portable objects. 
@@ -224,13 +223,6 @@ namespace Apache.Ignite.Core.Portable
         void WriteArray(string fieldName, object[] val);
 
         /// <summary>
-        /// Write named generic array.
-        /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <param name="val">Object array.</param>
-        void WriteGenericArray<T>(string fieldName, T[] val);
-
-        /// <summary>
         /// Write named collection.
         /// Only non-generic collections can be used for interop with other platforms.
         /// </summary>
@@ -239,25 +231,11 @@ namespace Apache.Ignite.Core.Portable
         void WriteCollection(string fieldName, ICollection val);
 
         /// <summary>
-        /// Write named generic collection.
-        /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <param name="val">Collection.</param>
-        void WriteGenericCollection<T>(string fieldName, ICollection<T> val);
-
-        /// <summary>
         /// Write named dictionary.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Dictionary.</param>
         void WriteDictionary(string fieldName, IDictionary val);
-
-        /// <summary>
-        /// Write named generic dictionary.
-        /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <param name="val">Dictionary.</param>
-        void WriteGenericDictionary<TK, TV>(string fieldName, IDictionary<TK, TV> val);
 
         /// <summary>
         /// Get raw writer. 

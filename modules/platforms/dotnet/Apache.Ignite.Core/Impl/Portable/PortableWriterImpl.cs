@@ -967,20 +967,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
-        /** <inheritdoc /> */
-        public void WriteGenericArray<T>(string fieldName, T[] val)
-        {
-            WriteFieldId(fieldName, PU.TypeGenericCollection);
-
-            Write(val);
-        }
-
-        /** <inheritdoc /> */
-        public void WriteGenericArray<T>(T[] val)
-        {
-            Write(val);
-        }
-
         /// <summary>
         /// Write named collection.
         /// </summary>
@@ -1013,38 +999,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Write named generic collection.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="fieldName">Field name.</param>
-        /// <param name="val">Collection.</param>
-        public void WriteGenericCollection<T>(string fieldName, ICollection<T> val)
-        {
-            WriteFieldId(fieldName, PU.TypeGenericCollection);
-
-            if (val == null)
-                WriteNullField();
-            else
-            {
-                int pos = SkipFieldLength();
-
-                Write(val);
-
-                WriteFieldLength(_stream, pos);
-            }
-        }
-
-        /// <summary>
-        /// Write generic collection.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="val">Collection.</param>
-        public void WriteGenericCollection<T>(ICollection<T> val)
-        {
-            Write(val);
-        }
-
-        /// <summary>
         /// Write named dictionary.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
@@ -1073,36 +1027,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             WriteByte(PU.TypeDictionary);
             PU.WriteDictionary(val, this);
-        }
-
-        /// <summary>
-        /// Write named generic dictionary.
-        /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <param name="val">Dictionary.</param>
-        public void WriteGenericDictionary<TK, TV>(string fieldName, IDictionary<TK, TV> val)
-        {
-            WriteFieldId(fieldName, PU.TypeGenericCollection);
-
-            if (val == null)
-                WriteNullField();
-            else
-            {
-                int pos = SkipFieldLength();
-
-                Write(val);
-
-                WriteFieldLength(_stream, pos);
-            }
-        }
-
-        /// <summary>
-        /// Write generic dictionary.
-        /// </summary>
-        /// <param name="val">Dictionary.</param>
-        public void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val)
-        {
-            Write(val);
         }
 
         /// <summary>

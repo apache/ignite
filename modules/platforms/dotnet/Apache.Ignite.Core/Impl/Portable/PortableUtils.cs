@@ -1211,16 +1211,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         // ReSharper disable once UnusedMember.Local (used by reflection)
         private static ICollection<T> ReadGenericCollection<T>(PortableReaderImpl reader, 
-            PortableGenericCollectionFactory<T> factory, PortableCollectionInfo colInfo)
+            PortableCollectionInfo colInfo)
         {
             Debug.Assert(reader != null);
             Debug.Assert(colInfo != null);
 
             int len = reader.Stream.ReadInt();
 
-            var res = factory != null 
-                ? factory.Invoke(len) 
-                : (ICollection<T>) colInfo.Constructor(len);
+            var res = (ICollection<T>) colInfo.Constructor(len);
 
             for (int i = 0; i < len; i++)
                 res.Add(reader.Deserialize<T>());
@@ -1334,13 +1332,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         // ReSharper disable once UnusedMember.Local (used by reflection)
         private static IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableReaderImpl reader,
-            PortableGenericDictionaryFactory<TK, TV> factory, PortableCollectionInfo colInfo)
+            PortableCollectionInfo colInfo)
         {
             var len = reader.Stream.ReadInt();
 
-            var res = factory != null 
-                ? factory.Invoke(len) 
-                : (IDictionary<TK, TV>) colInfo.Constructor(len);
+            var res = (IDictionary<TK, TV>) colInfo.Constructor(len);
 
             for (int i = 0; i < len; i++)
             {

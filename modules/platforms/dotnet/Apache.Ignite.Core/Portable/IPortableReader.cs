@@ -36,25 +36,11 @@ namespace Apache.Ignite.Core.Portable
     public delegate void PortableCollectionAdder(ICollection col, object elem);
 
     /// <summary>
-    /// Delegate for generic collection creation.
-    /// </summary>
-    /// <param name="size">Collection size.</param>
-    /// <returns>Collection.</returns>
-    public delegate ICollection<T> PortableGenericCollectionFactory<T>(int size);
-
-    /// <summary>
     /// Delegate for dictionary creation.
     /// </summary>
     /// <param name="size">Dictionary size.</param>
     /// <returns>Dictionary.</returns>
     public delegate IDictionary PortableDictionaryFactory(int size);
-
-    /// <summary>
-    /// Delegate for generic collection creation.
-    /// </summary>
-    /// <param name="size">Collection size.</param>
-    /// <returns>Collection.</returns>
-    public delegate IDictionary<TK, TV> PortableGenericDictionaryFactory<TK, TV>(int size);
 
     /// <summary>
     /// Reader for portable objects. 

@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Portable
 {
     using System;
     using System.Collections;
-    using System.Collections.Generic;
 
     /// <summary>
     /// Raw writer for portable objects. 
@@ -196,12 +195,6 @@ namespace Apache.Ignite.Core.Portable
         void WriteArray(object[] val);
 
         /// <summary>
-        /// Write generic array.
-        /// </summary>
-        /// <param name="val">Object array.</param>
-        void WriteGenericArray<T>(T[] val);
-
-        /// <summary>
         /// Write non-generic collection.
         /// Only non-generic collections can be used for interop with other platforms.
         /// </summary>
@@ -209,21 +202,9 @@ namespace Apache.Ignite.Core.Portable
         void WriteCollection(ICollection val);
 
         /// <summary>
-        /// Write generic collection.
-        /// </summary>
-        /// <param name="val">Collection.</param>
-        void WriteGenericCollection<T>(ICollection<T> val);
-
-        /// <summary>
         /// Write dictionary.
         /// </summary>
         /// <param name="val">Dictionary.</param>
         void WriteDictionary(IDictionary val);
-
-        /// <summary>
-        /// Write generic dictionary.
-        /// </summary>
-        /// <param name="val">Dictionary.</param>
-        void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val);
     }
 }
