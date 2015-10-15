@@ -31,52 +31,33 @@
     </properties>
 
     <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-examples</artifactId>
+    <artifactId>ignite-examples-lgpl</artifactId>
     <version>to_be_replaced_by_ignite_version</version>
+    <packaging>pom</packaging>
 
     <dependencies>
         <dependency>
-            <groupId>javax.cache</groupId>
-            <artifactId>cache-api</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-core</artifactId>
+            <artifactId>ignite-examples</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spring</artifactId>
+            <artifactId>ignite-hibernate</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-log4j</artifactId>
+            <artifactId>ignite-schedule</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-indexing</artifactId>
-            <version>to_be_replaced_by_ignite_version</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.code.simple-spring-memcached</groupId>
-            <artifactId>spymemcached</artifactId>
-            <version>2.7.3</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-codec</groupId>
-                    <artifactId>commons-codec</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
+
+    <modules>
+        <module>../examples</module>
+    </modules>
 
     <build>
         <resources>
@@ -136,7 +117,6 @@
                                 <configuration>
                                     <sources>
                                         <source>src/main/java8</source>
-                                        <source>schema-import/src/main/java</source>
                                     </sources>
                                 </configuration>
                             </execution>
@@ -151,51 +131,6 @@
                                         <source>src/test/java8</source>
                                     </sources>
                                 </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>scala</id>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-scalar</artifactId>
-                    <version>to_be_replaced_by_ignite_version</version>
-                </dependency>
-            </dependencies>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>net.alchim31.maven</groupId>
-                        <artifactId>scala-maven-plugin</artifactId>
-                        <version>3.2.0</version>
-                        <configuration>
-                            <jvmArgs>
-                                <jvmArg>-Xms512m</jvmArg>
-                                <jvmArg>-Xmx1024m</jvmArg>
-                            </jvmArgs>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>scala-compile-first</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>add-source</goal>
-                                    <goal>compile</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>scala-test-compile</id>
-                                <phase>process-test-resources</phase>
-                                <goals>
-                                    <goal>testCompile</goal>
-                                </goals>
                             </execution>
                         </executions>
                     </plugin>
