@@ -55,8 +55,6 @@ consoleModule.controller('sqlController',
     // Time line X axis descriptor.
     var TIME_LINE = {value: -1, type: 'java.sql.Date', label: 'TIME_LINE'};
 
-    var chartHistory = [];
-
     // We need max 1800 items to hold history for 30 mins in case of refresh every second.
     var HISTORY_LENGTH = 1800;
 
@@ -140,6 +138,8 @@ consoleModule.controller('sqlController',
             columnDefs: [],
             rowData: null
         }});
+
+        Object.defineProperty(paragraph, 'chartHistory', {value : {history: [], view: []}});
     }
 
     $scope.aceInit = function (paragraph) {
@@ -454,6 +454,13 @@ consoleModule.controller('sqlController',
         return retainedCols;
     }
 
+    function _timeFrame(paragraph) {
+        var right = new Date();
+        var left = new Date();
+
+        return {left: left.setMinutes(right.getMinutes() - parseInt(paragraph.timeLineSpan)), right: right};
+    }
+
     var _processQueryResult = function (paragraph, refreshMode) {
         return function (res) {
             if (res.meta && !refreshMode) {
@@ -510,11 +517,28 @@ consoleModule.controller('sqlController',
             if (!refreshMode)
                 setTimeout(function () { paragraph.gridOptions.api.sizeColumnsToFit(); });
 
-            // Add results to history.
-            chartHistory.push({tm: new Date(), rows: paragraph.rows});
+            var chartHistory = paragraph.chartHistory.history;
+            var chartHistoryView = paragraph.chartHistory.view;
 
-            if (chartHistory.length > HISTORY_LENGTH)
+            var tf = _timeFrame(paragraph);
+
+            var newItem = {tm: tf.right, rows: paragraph.rows};
+
+            // Add results to history and history view.
+            chartHistory.push(newItem);
+            chartHistoryView.push(newItem);
+
+            // Remove from history outdated items.
+            while (chartHistoryView.length > 0 && chartHistoryView[0].tm < tf.left)
+                chartHistoryView.shift();
+
+            // Keep history size no more than max length.
+            while (chartHistory.length > HISTORY_LENGTH)
                 chartHistory.shift();
+
+            // Keep history view size no more than max length.
+            while (chartHistoryView.length > HISTORY_LENGTH)
+                chartHistoryView.shift();
 
             _showLoading(paragraph, false);
 
@@ -782,19 +806,19 @@ consoleModule.controller('sqlController',
 
                     var chartData = _.find(datum, {key: valCol.label});
 
-                    if (chartData) {
-                        var history = _.last(chartHistory);
+                    var chartHistory = _.last(paragraph.chartHistory.view);
 
+                    if (chartData) {
                         chartData.values.push({
-                            x: history.tm,
-                            y: _chartNumber(history.rows[0], valCol.value, index++)
+                            x: chartHistory.tm,
+                            y: _chartNumber(chartHistory.rows[0], valCol.value, index++)
                         });
 
                         if (chartData.length > HISTORY_LENGTH)
                             chartData.shift();
                     }
                     else {
-                        values = _.map(chartHistory, function (history) {
+                        values = _.map(paragraph.chartHistory.view, function (history) {
                             return {
                                 x: history.tm,
                                 y: _chartNumber(history.rows[0], valCol.value, index++)
@@ -879,6 +903,19 @@ consoleModule.controller('sqlController',
     }
 
     $scope.applyChartTimeFrame = function (paragraph) {
+        var chartHistory = paragraph.chartHistory.history;
+        var chartHistoryView = paragraph.chartHistory.view;
+
+        var tf = _timeFrame(paragraph);
+
+        // Time frame is changed, we should update chartHistoryView.
+        chartHistoryView.length = 0;
+
+        _.forEach(chartHistory, function (item) {
+            if (item.tm >= tf.left)
+                chartHistoryView.push(item);
+        });
+
         _chartApplySettings(paragraph, true);
     };
 
@@ -915,27 +952,25 @@ consoleModule.controller('sqlController',
         }
     };
 
-    function _filterDatum(paragraph, datum) {
-        var t = new Date();
+    function _updateCharts(paragraph) {
+        $timeout(function () {
+            _.forEach(paragraph.charts, function (chart) {
+                chart.api.update();
+            });
+        }, 100);
+    }
 
-        t.setMinutes(t.getMinutes() - parseInt(paragraph.timeLineSpan));
-
-        return _.map(datum, function (series) {
-                return {
-                    key: series.key,
-                    values: _.filter(series.values, function (v) {
-                        return v.x > t;
-                    })
-                };
-            }
-        );
+    function _updateChartsWithData(paragraph, datum) {
+        $timeout(function () {
+            if (paragraph.chartTimeLineEnabled())
+                paragraph.charts[0].api.update();
+            else
+                paragraph.charts[0].api.updateWithData(datum);
+        });
     }
 
     function _barChart(paragraph) {
         var datum = _chartDatum(paragraph);
-
-        if (paragraph.chartTimeLineEnabled())
-            datum = _filterDatum(paragraph, datum);
 
         if ($common.isEmptyArray(paragraph.charts)) {
             var options = {
@@ -961,14 +996,10 @@ consoleModule.controller('sqlController',
 
             paragraph.charts = [{options: options, data: datum}];
 
-            $timeout(function () {
-                paragraph.charts[0].api.update();
-            }, 100);
+            _updateCharts(paragraph);
         }
         else
-            $timeout(function () {
-                paragraph.charts[0].api.updateWithData(datum);
-            });
+            _updateChartsWithData(paragraph, datum);
     }
 
     function _pieChart(paragraph) {
@@ -1001,16 +1032,11 @@ consoleModule.controller('sqlController',
             }
         });
 
-        $timeout(function () {
-            paragraph.charts[0].api.update();
-        }, 100);
+        _updateCharts(paragraph);
     }
 
     function _lineChart(paragraph) {
         var datum = _chartDatum(paragraph);
-
-        if (paragraph.chartTimeLineEnabled())
-            datum = _filterDatum(paragraph, datum);
 
         if ($common.isEmptyArray(paragraph.charts)) {
             var options = {
@@ -1036,21 +1062,14 @@ consoleModule.controller('sqlController',
 
             paragraph.charts = [{options: options, data: datum}];
 
-            $timeout(function () {
-                paragraph.charts[0].api.update();
-            }, 100);
+            _updateCharts(paragraph);
         }
         else
-            $timeout(function () {
-                paragraph.charts[0].api.updateWithData(datum);
-            });
+            _updateChartsWithData(paragraph, datum);
     }
 
     function _areaChart(paragraph) {
         var datum = _chartDatum(paragraph);
-
-        if (paragraph.chartTimeLineEnabled())
-            datum = _filterDatum(paragraph, datum);
 
         if ($common.isEmptyArray(paragraph.charts)) {
             var options = {
@@ -1075,14 +1094,10 @@ consoleModule.controller('sqlController',
 
             paragraph.charts = [{options: options, data: datum}];
 
-            $timeout(function () {
-                paragraph.charts[0].api.update();
-            }, 100);
+            _updateCharts(paragraph);
         }
         else
-            $timeout(function () {
-                paragraph.charts[0].api.updateWithData(datum);
-            });
+            _updateChartsWithData(paragraph, datum);
     }
 
     $scope.actionAvailable = function (paragraph, needQuery) {
