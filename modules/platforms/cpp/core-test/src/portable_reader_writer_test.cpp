@@ -572,6 +572,59 @@ void CheckCollection(CollectionType* colType)
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
 }
 
+void CheckCollectionIterators(CollectionType* colType)
+{
+    typedef std::vector<PortableInner> PortableInnerVector;
+    PortableInnerVector writeValues;
+
+    writeValues.push_back(1);
+    writeValues.push_back(0);
+    writeValues.push_back(2);
+
+    TemplatedPortableIdResolver<PortableDummy> idRslvr;
+
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriter writer(&writerImpl);
+
+    out.Position(18);
+
+    if (colType)
+        writer.WriteCollection("field1", writeValues.begin(), writeValues.end(), *colType);
+    else
+        writer.WriteCollection("field1", writeValues.begin(), writeValues.end());
+    
+    writer.WriteInt8("field2", 1);
+
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReader reader(&readerImpl);
+
+    in.Position(18);
+
+    BOOST_REQUIRE(reader.ReadCollectionSize("field1") == writeValues.size());
+
+    CollectionType expectedCollectionType = colType ? *colType : IGNITE_COLLECTION_UNDEFINED;
+    BOOST_REQUIRE(reader.ReadCollectionType("field1") == expectedCollectionType);
+
+    PortableInnerVector readValues;
+    std::back_insert_iterator<PortableInnerVector> readInsertIterator(readValues);
+
+    reader.ReadCollection<PortableInner>("field1", readInsertIterator);
+    
+    BOOST_REQUIRE(readValues.size() == 3);
+
+    BOOST_REQUIRE(readValues[0].GetValue() == writeValues[0].GetValue());
+    BOOST_REQUIRE(readValues[1].GetValue() == writeValues[1].GetValue());
+    BOOST_REQUIRE(readValues[2].GetValue() == writeValues[2].GetValue());
+    
+    BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
+}
+
 void CheckMapEmpty(MapType* mapType)
 {
     TemplatedPortableIdResolver<PortableDummy> idRslvr;
@@ -1696,6 +1749,18 @@ BOOST_AUTO_TEST_CASE(testCollectionTyped)
     CollectionType typ = IGNITE_COLLECTION_CONCURRENT_SKIP_LIST_SET;
 
     CheckCollection(&typ);
+}
+
+BOOST_AUTO_TEST_CASE(TestCollectionIterators)
+{
+    CheckCollectionIterators(NULL);
+}
+
+BOOST_AUTO_TEST_CASE(TestCollectionIteratorsTyped)
+{
+    CollectionType typ = IGNITE_COLLECTION_CONCURRENT_SKIP_LIST_SET;
+
+    CheckCollectionIterators(&typ);
 }
 
 BOOST_AUTO_TEST_CASE(TestMapNull)

@@ -495,6 +495,55 @@ void CheckRawCollection(CollectionType* colType)
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
 
+void CheckRawCollectionIterators(CollectionType* colType)
+{
+    typedef std::vector<PortableInner> PortableInnerVector;
+    
+    PortableInnerVector writeValues;
+    writeValues.push_back(1);
+    writeValues.push_back(0);
+    writeValues.push_back(2);
+
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    PortableWriterImpl writer(&out, NULL);
+    PortableRawWriter rawWriter(&writer);
+
+    if (colType)
+        rawWriter.WriteCollection(writeValues.begin(), writeValues.end(), *colType);
+    else
+        rawWriter.WriteCollection(writeValues.begin(), writeValues.end());
+
+    rawWriter.WriteInt8(1);
+
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+    PortableReaderImpl reader(&in);
+    PortableRawReader rawReader(&reader);
+    
+    int32_t collectionSize = rawReader.ReadCollectionSize();
+    BOOST_REQUIRE(collectionSize == writeValues.size());
+
+    if (colType)
+        BOOST_REQUIRE(rawReader.ReadCollectionType() == *colType);
+    else
+        BOOST_REQUIRE(rawReader.ReadCollectionType() == IGNITE_COLLECTION_UNDEFINED);
+
+    PortableInnerVector readValues(collectionSize);
+    
+    int32_t elementsRead = rawReader.ReadCollection<PortableInner>(readValues.begin());
+
+    BOOST_REQUIRE(elementsRead == 3);
+
+    BOOST_REQUIRE(readValues[0].GetValue() == writeValues[0].GetValue());
+    BOOST_REQUIRE(readValues[1].GetValue() == writeValues[1].GetValue());
+    BOOST_REQUIRE(readValues[2].GetValue() == writeValues[2].GetValue());
+
+    BOOST_REQUIRE(rawReader.ReadInt8() == 1);
+}
+
 void CheckRawMapEmpty(MapType* mapType)
 {
     InteropUnpooledMemory mem(1024);
@@ -1457,11 +1506,23 @@ BOOST_AUTO_TEST_CASE(TestCollection)
     CheckRawCollection(NULL);
 }
 
-BOOST_AUTO_TEST_CASE(testCollectionTyped)
+BOOST_AUTO_TEST_CASE(TestCollectionTyped)
 {
     CollectionType typ = IGNITE_COLLECTION_CONCURRENT_SKIP_LIST_SET;
 
     CheckRawCollection(&typ);
+}
+
+BOOST_AUTO_TEST_CASE(TestCollectionIterators)
+{
+    CheckRawCollectionIterators(NULL);
+}
+
+BOOST_AUTO_TEST_CASE(TestCollectionIteratorsTyped)
+{
+    CollectionType typ = IGNITE_COLLECTION_CONCURRENT_SKIP_LIST_SET;
+
+    CheckRawCollectionIterators(&typ);
 }
 
 BOOST_AUTO_TEST_CASE(TestMapNull)
