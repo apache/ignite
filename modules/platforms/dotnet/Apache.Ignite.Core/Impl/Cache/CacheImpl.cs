@@ -343,7 +343,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (!IsAsync)
             {
                 if (!result.Success)
-                    throw new KeyNotFoundException("The given key was not present in the cache.");
+                    ThrowKeyNotFound();
 
                 return result.Value;
             }
@@ -363,7 +363,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var res = DoOutInOpNullable<TK, TV>((int) CacheOp.Get, key);
 
-            value = res.Success ? res.Value : default(TV);
+            value = res.Value;
 
             return res.Success;
         }
@@ -983,6 +983,17 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             switch (lastAsyncOpId)
             {
+                case CacheOp.Get:
+                    return reader =>
+                    {
+                        var res = reader.ReadObject<object>();
+
+                        if (res == null)
+                            ThrowKeyNotFound();
+
+                        return (TResult) res;
+                    };
+
                 case CacheOp.GetAll:
                     return reader => (TResult)ReadGetAllDictionary(reader);
 
@@ -1017,6 +1028,60 @@ namespace Apache.Ignite.Core.Impl.Cache
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Throws the key not found exception.
+        /// </summary>
+        private static void ThrowKeyNotFound()
+        {
+            throw new KeyNotFoundException("The given key was not present in the cache.");
+        }
+
+        /// <summary>
+        /// Perform simple out-in operation accepting single argument.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="val">Value.</param>
+        /// <returns>Result.</returns>
+        private CacheResult<TR> DoOutInOpNullable<T1, TR>(int type, T1 val)
+        {
+            var res = DoOutInOp<T1, object>(type, val);
+
+            return res == null
+                ? new CacheResult<TR>(default(TR), false)
+                : new CacheResult<TR>((TR)res, true);
+        }
+
+        /// <summary>
+        /// Perform out-in operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="outAction">Out action.</param>
+        /// <returns>Result.</returns>
+        private CacheResult<TR> DoOutInOpNullable<TR>(int type, Action<PortableWriterImpl> outAction)
+        {
+            var res = DoOutInOp<object>(type, outAction);
+
+            return res == null
+                ? new CacheResult<TR>(default(TR), false)
+                : new CacheResult<TR>((TR)res, true);
+        }
+
+        /// <summary>
+        /// Perform simple out-in operation accepting single argument.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="val1">Value.</param>
+        /// <param name="val2">Value.</param>
+        /// <returns>Result.</returns>
+        private CacheResult<TR> DoOutInOpNullable<T1, T2, TR>(int type, T1 val1, T2 val2)
+        {
+            var res = DoOutInOp<T1, T2, object>(type, val1, val2);
+
+            return res == null
+                ? new CacheResult<TR>(default(TR), false)
+                : new CacheResult<TR>((TR)res, true);
         }
     }
 }

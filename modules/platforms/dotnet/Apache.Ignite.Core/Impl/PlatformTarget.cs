@@ -508,52 +508,6 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Perform out-in operation.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <param name="outAction">Out action.</param>
-        /// <returns>Result.</returns>
-        protected CacheResult<TR> DoOutInOpNullable<TR>(int type, Action<PortableWriterImpl> outAction)
-        {
-            var res = DoOutInOp<object>(type, outAction);
-
-            return res == null
-                ? new CacheResult<TR>(default(TR), false)
-                : new CacheResult<TR>((TR) res, true);
-        }
-
-        /// <summary>
-        /// Perform simple out-in operation accepting single argument.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <param name="val1">Value.</param>
-        /// <param name="val2">Value.</param>
-        /// <returns>Result.</returns>
-        protected CacheResult<TR> DoOutInOpNullable<T1, T2, TR>(int type, T1 val1, T2 val2)
-        {
-            var res = DoOutInOp<T1, T2, object>(type, val1, val2);
-
-            return res == null 
-                ? new CacheResult<TR>(default(TR), false) 
-                : new CacheResult<TR>((TR) res, true);
-        }
-
-        /// <summary>
-        /// Perform simple out-in operation accepting single argument.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <param name="val">Value.</param>
-        /// <returns>Result.</returns>
-        protected CacheResult<TR> DoOutInOpNullable<T1, TR>(int type, T1 val)
-        {
-            var res = DoOutInOp<T1, object>(type, val);
-
-            return res == null 
-                ? new CacheResult<TR>(default(TR), false) 
-                : new CacheResult<TR>((TR) res, true);
-        }
-
-        /// <summary>
         /// Perform simple out-in operation accepting single argument.
         /// </summary>
         /// <param name="type">Operation type.</param>
