@@ -384,7 +384,7 @@ namespace Apache.Ignite.Core.Tests
             // to test race conditions during processor init on remote node
             var listenTask = Task.Factory.StartNew(() =>
             {
-                var filter = new MessageFilter();
+                var filter = new MessageListener();
 
                 while (!token.IsCancellationRequested)
                 {
@@ -410,7 +410,7 @@ namespace Apache.Ignite.Core.Tests
         /// Noop message filter.
         /// </summary>
         [Serializable]
-        private class MessageFilter : IMessageFilter<int>
+        private class MessageListener : IMessageListener<int>
         {
             /** <inheritdoc /> */
             public bool Invoke(Guid nodeId, int message)

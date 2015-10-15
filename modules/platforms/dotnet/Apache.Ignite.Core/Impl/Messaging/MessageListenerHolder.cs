@@ -28,11 +28,11 @@ namespace Apache.Ignite.Core.Impl.Messaging
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
-    /// Non-generic portable filter wrapper.
+    /// Non-generic portable message listener wrapper.
     /// </summary>
-    internal class MessageFilterHolder : IPortableWriteAware, IHandle
+    internal class MessageListenerHolder : IPortableWriteAware, IHandle
     {
-        /** Invoker function that takes key and value and invokes wrapped IMessageFilter */
+        /** Invoker function that takes key and value and invokes wrapped IMessageListener */
         private readonly Func<Guid, object, bool> _invoker;
 
         /** Current Ignite instance. */
@@ -42,12 +42,12 @@ namespace Apache.Ignite.Core.Impl.Messaging
         private readonly object _filter;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MessageFilterHolder" /> class.
+        /// Initializes a new instance of the <see cref="MessageListenerHolder" /> class.
         /// </summary>
         /// <param name="grid">Grid.</param>
-        /// <param name="filter">The <see cref="IMessageFilter{T}" /> to wrap.</param>
-        /// <param name="invoker">The invoker func that takes key and value and invokes wrapped IMessageFilter.</param>
-        private MessageFilterHolder(Ignite grid, object filter, Func<Guid, object, bool> invoker)
+        /// <param name="filter">The <see cref="IMessageListener{T}" /> to wrap.</param>
+        /// <param name="invoker">The invoker func that takes key and value and invokes wrapped IMessageListener.</param>
+        private MessageListenerHolder(Ignite grid, object filter, Func<Guid, object, bool> invoker)
         {
             Debug.Assert(filter != null);
             Debug.Assert(invoker != null);
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         }
 
         /// <summary>
-        /// Wrapped <see cref="IMessageFilter{T}" />.
+        /// Wrapped <see cref="IMessageListener{T}" />.
         /// </summary>
         public object Filter
         {
@@ -112,15 +112,15 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// Creates local holder instance.
         /// </summary>
         /// <param name="grid">Ignite instance.</param>
-        /// <param name="filter">Filter.</param>
+        /// <param name="listener">Filter.</param>
         /// <returns>
-        /// New instance of <see cref="MessageFilterHolder" />
+        /// New instance of <see cref="MessageListenerHolder" />
         /// </returns>
-        public static MessageFilterHolder CreateLocal<T>(Ignite grid, IMessageFilter<T> filter)
+        public static MessageListenerHolder CreateLocal<T>(Ignite grid, IMessageListener<T> listener)
         {
-            Debug.Assert(filter != null);
+            Debug.Assert(listener != null);
 
-            return new MessageFilterHolder(grid, filter, (id, msg) => filter.Invoke(id, (T)msg));
+            return new MessageListenerHolder(grid, listener, (id, msg) => listener.Invoke(id, (T)msg));
         }
 
         /// <summary>
@@ -128,14 +128,14 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// </summary>
         /// <param name="grid">Grid.</param>
         /// <param name="memPtr">Memory pointer.</param>
-        /// <returns>Deserialized instance of <see cref="MessageFilterHolder"/></returns>
-        public static MessageFilterHolder CreateRemote(Ignite grid, long memPtr)
+        /// <returns>Deserialized instance of <see cref="MessageListenerHolder"/></returns>
+        public static MessageListenerHolder CreateRemote(Ignite grid, long memPtr)
         {
             Debug.Assert(grid != null);
 
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                return grid.Marshaller.Unmarshal<MessageFilterHolder>(stream);
+                return grid.Marshaller.Unmarshal<MessageListenerHolder>(stream);
             }
         }
 
@@ -144,7 +144,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// </summary>
         private static Func<Guid, object, bool> GetInvoker(object pred)
         {
-            var func = DelegateTypeDescriptor.GetMessageFilter(pred.GetType());
+            var func = DelegateTypeDescriptor.GetMessageListener(pred.GetType());
 
             return (id, msg) => func(pred, id, msg);
         }
@@ -158,10 +158,10 @@ namespace Apache.Ignite.Core.Impl.Messaging
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MessageFilterHolder"/> class.
+        /// Initializes a new instance of the <see cref="MessageListenerHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public MessageFilterHolder(IPortableReader reader)
+        public MessageListenerHolder(IPortableReader reader)
         {
             var reader0 = (PortableReaderImpl)reader.GetRawReader();
 

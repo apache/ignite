@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Events
         /// </returns>
         [AsyncSupported]
         Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
-            IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, params int[] types) 
+            IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, params int[] types)
             where T : IEvent;
 
         /// <summary>

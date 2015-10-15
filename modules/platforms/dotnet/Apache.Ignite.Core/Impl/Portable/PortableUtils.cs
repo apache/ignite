@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         public const byte TypeCacheEntryPredicateHolder = 90;
         
         /** Type: message filter holder. */
-        public const byte TypeMessageFilterHolder = 92;
+        public const byte TypeMessageListenerHolder = 92;
 
         /** Type: message filter holder. */
         public const byte TypePortableOrSerializableHolder = 93;
