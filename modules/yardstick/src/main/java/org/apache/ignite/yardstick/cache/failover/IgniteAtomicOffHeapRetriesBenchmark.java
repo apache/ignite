@@ -26,6 +26,6 @@ package org.apache.ignite.yardstick.cache.failover;
 public class IgniteAtomicOffHeapRetriesBenchmark extends IgniteAtomicRetriesBenchmark {
     /** {@inheritDoc} */
     @Override protected String cacheName() {
-        return "atomic-offheap";
+        return "atomic-offheap-reties";
     }
 }

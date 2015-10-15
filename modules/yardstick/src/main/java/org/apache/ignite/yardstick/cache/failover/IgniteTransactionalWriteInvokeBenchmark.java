@@ -162,7 +162,7 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
 
     /** {@inheritDoc} */
     @Override protected String cacheName() {
-        return "tx";
+        return "tx-write-invoke";
     }
 
     /**

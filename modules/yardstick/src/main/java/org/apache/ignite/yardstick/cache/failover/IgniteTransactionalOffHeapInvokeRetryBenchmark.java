@@ -28,6 +28,6 @@ package org.apache.ignite.yardstick.cache.failover;
 public class IgniteTransactionalOffHeapInvokeRetryBenchmark extends IgniteTransactionalInvokeRetryBenchmark {
     /** {@inheritDoc} */
     @Override protected String cacheName() {
-        return "tx-offheap";
+        return "tx-offheap-invoke-retry";
     }
 }

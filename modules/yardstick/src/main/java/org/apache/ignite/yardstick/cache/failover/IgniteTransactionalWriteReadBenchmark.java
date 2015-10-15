@@ -136,6 +136,6 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
 
     /** {@inheritDoc} */
     @Override protected String cacheName() {
-        return "tx";
+        return "tx-write-read";
     }
 }

@@ -71,7 +71,7 @@ public class IgniteAtomicRetriesBenchmark extends IgniteFailoverAbstractBenchmar
 
     /** {@inheritDoc} */
     @Override protected String cacheName() {
-        return "atomic";
+        return "atomic-reties";
     }
 
     /**

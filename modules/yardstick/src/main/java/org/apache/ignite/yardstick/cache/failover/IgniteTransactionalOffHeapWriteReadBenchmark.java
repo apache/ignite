@@ -27,6 +27,6 @@ package org.apache.ignite.yardstick.cache.failover;
 public class IgniteTransactionalOffHeapWriteReadBenchmark extends IgniteTransactionalWriteReadBenchmark {
     /** {@inheritDoc} */
     @Override protected String cacheName() {
-        return "tx-offheap";
+        return "tx-offheap-write-read";
     }
 }

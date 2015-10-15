@@ -190,7 +190,7 @@ public class IgniteTransactionalInvokeRetryBenchmark extends IgniteFailoverAbstr
 
     /** {@inheritDoc} */
     @Override protected String cacheName() {
-        return "tx";
+        return "tx-invoke-retry";
     }
 
     /**
