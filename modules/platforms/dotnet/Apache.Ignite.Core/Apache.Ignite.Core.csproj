@@ -239,7 +239,7 @@
     <Compile Include="Impl\Memory\PlatformPooledMemory.cs" />
     <Compile Include="Impl\Memory\PlatformRawMemory.cs" />
     <Compile Include="Impl\Memory\PlatformUnpooledMemory.cs" />
-    <Compile Include="Impl\Messaging\MessageFilterHolder.cs" />
+    <Compile Include="Impl\Messaging\MessageListenerHolder.cs" />
     <Compile Include="Impl\Messaging\Messaging.cs" />
     <Compile Include="Impl\Messaging\MessagingAsync.cs" />
     <Compile Include="Impl\NativeMethods.cs" />
@@ -308,7 +308,7 @@
     <Compile Include="Impl\Unmanaged\UnmanagedUtils.cs" />
     <Compile Include="Lifecycle\ILifecycleBean.cs" />
     <Compile Include="Lifecycle\LifecycleEventType.cs" />
-    <Compile Include="Messaging\IMessageFilter.cs" />
+    <Compile Include="Messaging\IMessageListener.cs" />
     <Compile Include="Messaging\IMessaging.cs" />
     <Compile Include="Portable\IPortableBuilder.cs" />
     <Compile Include="Portable\IPortableIdMapper.cs" />

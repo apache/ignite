@@ -113,17 +113,17 @@ namespace Apache.Ignite.Core.Impl.Messaging
         }
 
         /** <inheritdoc /> */
-        public void LocalListen<T>(IMessageFilter<T> filter, object topic = null)
+        public void LocalListen<T>(IMessageListener<T> listener, object topic = null)
         {
-            IgniteArgumentCheck.NotNull(filter, "filter");
+            IgniteArgumentCheck.NotNull(listener, "filter");
 
-            ResourceProcessor.Inject(filter, _ignite);
+            ResourceProcessor.Inject(listener, _ignite);
 
             lock (_funcMap)
             {
-                var key = GetKey(filter, topic);
+                var key = GetKey(listener, topic);
 
-                MessageFilterHolder filter0 = MessageFilterHolder.CreateLocal(_ignite, filter); 
+                MessageListenerHolder filter0 = MessageListenerHolder.CreateLocal(_ignite, listener); 
 
                 var filterHnd = _ignite.HandleRegistry.Allocate(filter0);
 
@@ -155,16 +155,16 @@ namespace Apache.Ignite.Core.Impl.Messaging
         }
 
         /** <inheritdoc /> */
-        public void StopLocalListen<T>(IMessageFilter<T> filter, object topic = null)
+        public void StopLocalListen<T>(IMessageListener<T> listener, object topic = null)
         {
-            IgniteArgumentCheck.NotNull(filter, "filter");
+            IgniteArgumentCheck.NotNull(listener, "filter");
 
             long filterHnd;
             bool removed;
 
             lock (_funcMap)
             {
-                removed = _funcMap.TryRemove(GetKey(filter, topic), out filterHnd);
+                removed = _funcMap.TryRemove(GetKey(listener, topic), out filterHnd);
             }
 
             if (removed)
@@ -178,11 +178,11 @@ namespace Apache.Ignite.Core.Impl.Messaging
         }
 
         /** <inheritdoc /> */
-        public Guid RemoteListen<T>(IMessageFilter<T> filter, object topic = null)
+        public Guid RemoteListen<T>(IMessageListener<T> listener, object topic = null)
         {
-            IgniteArgumentCheck.NotNull(filter, "filter");
+            IgniteArgumentCheck.NotNull(listener, "filter");
 
-            var filter0 = MessageFilterHolder.CreateLocal(_ignite, filter);
+            var filter0 = MessageListenerHolder.CreateLocal(_ignite, listener);
             var filterHnd = _ignite.HandleRegistry.AllocateSafe(filter0);
 
             try

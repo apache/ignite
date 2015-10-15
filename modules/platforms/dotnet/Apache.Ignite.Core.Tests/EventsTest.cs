@@ -383,7 +383,7 @@ namespace Apache.Ignite.Core.Tests
             var expectedType = EventType.JobStarted;
 
             var remoteFilter = portable 
-                ?  (IEventFilter<IEvent>) new RemoteEventPortableFilter(expectedType) 
+                ?  (IEventFilter<IEvent>) new RemoteEventPortableFilter(expectedType)
                 :  new RemoteEventFilter(expectedType);
 
             var localListener = EventsTestHelper.GetListener();
