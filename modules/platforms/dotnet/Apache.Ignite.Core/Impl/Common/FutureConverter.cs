@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         public T Convert(IPortableStream stream)
         {
-            var reader = _marsh.StartUnmarshal(stream, _keepPortable);
+            var reader = stream == null ? null : _marsh.StartUnmarshal(stream, _keepPortable);
 
             return _func(reader);
         }

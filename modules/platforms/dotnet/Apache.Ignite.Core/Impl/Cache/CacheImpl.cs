@@ -291,11 +291,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOp<TV>((int)CacheOp.Peek, writer =>
-            {
-                writer.Write(key);
-                writer.WriteInt(EncodePeekModes(modes));
-            });
+            TV res;
+
+            if (TryLocalPeek(key, out res))
+                return res;
+
+            throw GetKeyNotFoundException();
         }
 
         /** <inheritDoc /> */
@@ -343,7 +344,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (!IsAsync)
             {
                 if (!result.Success)
-                    ThrowKeyNotFound();
+                    throw GetKeyNotFoundException();
 
                 return result.Value;
             }
@@ -986,20 +987,21 @@ namespace Apache.Ignite.Core.Impl.Cache
                 case CacheOp.Get:
                     return reader =>
                     {
-                        var res = reader.ReadObject<object>();
+                        if (reader != null)
+                            return reader.ReadObject<TResult>();
 
-                        if (res == null)
-                            ThrowKeyNotFound();
-
-                        return (TResult) res;
+                        throw GetKeyNotFoundException();
                     };
 
                 case CacheOp.GetAll:
-                    return reader => (TResult)ReadGetAllDictionary(reader);
+                    return reader => reader == null ? default(TResult) : (TResult) ReadGetAllDictionary(reader);
 
                 case CacheOp.Invoke:
                     return reader =>
                     {
+                        if (reader == null)
+                            return default(TResult);
+
                         var hasError = reader.ReadBoolean();
 
                         if (hasError)
@@ -1017,13 +1019,10 @@ namespace Apache.Ignite.Core.Impl.Cache
                 case CacheOp.GetAndReplace:
                     return reader =>
                     {
-                        var res = reader.ReadObject<object>();
+                        if (reader != null)
+                            return TypeCaster<TResult>.Cast(new CacheResult<TV>(reader.ReadObject<TV>(), true));
 
-                        var nullableRes = res == null
-                            ? new CacheResult<TV>(default(TV), false)
-                            : new CacheResult<TV>((TV) res, true);
-
-                        return TypeCaster<TResult>.Cast(nullableRes);
+                        throw GetKeyNotFoundException();
                     };
             }
 
@@ -1033,9 +1032,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Throws the key not found exception.
         /// </summary>
-        private static void ThrowKeyNotFound()
+        private static KeyNotFoundException GetKeyNotFoundException()
         {
-            throw new KeyNotFoundException("The given key was not present in the cache.");
+            return new KeyNotFoundException("The given key was not present in the cache.");
         }
 
         /// <summary>
