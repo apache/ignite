@@ -18,8 +18,10 @@
 package org.apache.ignite.yardstick.cache.failover;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,6 +30,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.yardstickframework.BenchmarkConfiguration;
 
@@ -39,9 +42,9 @@ import static org.yardstickframework.BenchmarkUtils.println;
  * local map. To validate cache contents, all writes from the client are stopped, values in the local map are compared
  * to the values in the cache.
  */
-public class IgniteAtomicInvokeRetryBenchmark extends IgniteFailoverAbstractBenchmark<String, Long> {
+public class IgniteAtomicInvokeRetryBenchmark extends IgniteFailoverAbstractBenchmark<String, Set> {
     /** */
-    private final ConcurrentMap<String, AtomicLong> map = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, AtomicLong> nextValMap = new ConcurrentHashMap<>();
 
     /** */
     private final ReadWriteLock rwl = new ReentrantReadWriteLock(true);
@@ -57,7 +60,7 @@ public class IgniteAtomicInvokeRetryBenchmark extends IgniteFailoverAbstractBenc
             @Override public void run() {
                 try {
                     final int timeout = args.cacheOperationTimeoutMillis();
-                    final int keysCnt = args.keysCount();
+                    final int range = args.range();
 
                     while (!Thread.currentThread().isInterrupted()) {
                         Thread.sleep(args.cacheConsistencyCheckingPeriod() * 1000);
@@ -69,61 +72,54 @@ public class IgniteAtomicInvokeRetryBenchmark extends IgniteFailoverAbstractBenc
 
                             long startTime = U.currentTimeMillis();
 
-                            Map<String, Long> notEqualsCacheVals = new HashMap<>();
-                            Map<String, Long> notEqualsLocMapVals = new HashMap<>();
+                            Map<String, Set> badCacheEntries = new HashMap<>();
 
-                            for (int k = 0; k < args.range(); k++) {
-                                if (k % 10_000 == 0)
-                                    println("Start validation for keys like 'key-" + k + "-*'");
+                            for (Map.Entry<String, AtomicLong> e : nextValMap.entrySet()) {
+                                String key = e.getKey();
 
-                                for (int i = 0; i < keysCnt; i++) {
-                                    String key = "key-" + k + "-" + cfg.memberId() + "-" + i;
+                                asyncCache.get(key);
+                                Set set = asyncCache.<Set>future().get(timeout);
 
-                                    asyncCache.get(key);
-                                    Long cacheVal = asyncCache.<Long>future().get(timeout);
-
-                                    AtomicLong aVal = map.get(key);
-                                    Long mapVal = aVal != null ? aVal.get() : null;
-
-                                    if (!Objects.equals(cacheVal, mapVal)) {
-                                        notEqualsCacheVals.put(key, cacheVal);
-                                        notEqualsLocMapVals.put(key, mapVal);
-                                    }
-                                }
+                                if (set == null || e.getValue() == null || !Objects.equals(e.getValue().get(), (long)set.size()))
+                                    badCacheEntries.put(key, set);
                             }
 
-                            assert notEqualsCacheVals.size() == notEqualsLocMapVals.size() : "Invalid state " +
-                                "[cacheMapVals=" + notEqualsCacheVals + ", mapVals=" + notEqualsLocMapVals + "]";
-
-                            if (!notEqualsCacheVals.isEmpty()) {
+                            if (!badCacheEntries.isEmpty()) {
                                 // Print all usefull information and finish.
-                                for (Map.Entry<String, Long> eLocMap : notEqualsLocMapVals.entrySet()) {
-                                    String key = eLocMap.getKey();
-                                    Long mapVal = eLocMap.getValue();
-                                    Long cacheVal = notEqualsCacheVals.get(key);
+                                for (Map.Entry<String, Set> e : badCacheEntries.entrySet()) {
+                                    String key = e.getKey();
 
-                                    println(cfg, "Got different values [key='" + key
-                                        + "', cacheVal=" + cacheVal + ", localMapVal=" + mapVal + "]");
+                                    println("Got unexpected set size [key='" + key + "', expSize=" + nextValMap.get(key)
+                                        + ", cacheVal=" + e.getValue() + "]");
                                 }
 
-                                println(cfg, "Local driver map contant:\n " + map);
+                                println("Next values map contant:");
+                                for (Map.Entry<String, AtomicLong> e : nextValMap.entrySet())
+                                    println("Map Entry [key=" + e.getKey() + ", val=" + e.getValue() + "]");
 
-                                println(cfg, "Cache content:");
+                                println("Cache content:");
 
-                                for (int k2 = 0; k2 < args.range(); k2++) {
-                                    for (int i2 = 0; i2 < keysCnt; i2++) {
-                                        String key2 = "key-" + k2 + "-" + cfg.memberId() + "-" + i2;
+                                for (int k2 = 0; k2 < range; k2++) {
+                                    String key2 = "key-" + k2;
 
-                                        asyncCache.get(key2);
-                                        Long val = asyncCache.<Long>future().get(timeout);
+                                    asyncCache.get(key2);
+                                    Object val = asyncCache.future().get(timeout);
 
-                                        if (val != null)
-                                            println(cfg, "Entry [key=" + key2 + ", val=" + val + "]");
-                                    }
+                                    if (val != null)
+                                        println("Cache Entry [key=" + key2 + ", val=" + val + "]");
+
                                 }
 
-                                throw new IllegalStateException("Cache and local map are in inconsistent state.");
+                                throw new IllegalStateException("Cache and local map are in inconsistent state " +
+                                    "[badKeys=" + badCacheEntries.keySet() + ']');
                             }
+
+                            println("Clearing all data.");
+
+                            asyncCache.removeAll();
+                            asyncCache.future().get(timeout);
+
+                            nextValMap.clear();
 
                             println("Cache validation successfully finished in "
                                 + (U.currentTimeMillis() - startTime) / 1000 + " sec.");
@@ -155,31 +151,26 @@ public class IgniteAtomicInvokeRetryBenchmark extends IgniteFailoverAbstractBenc
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         final int k = nextRandom(args.range());
 
-        final String[] keys = new String[args.keysCount()];
+        String key = "key-" + k;
 
-        assert keys.length > 0 : "Count of keys: " + keys.length;
+        rwl.readLock().lock();
 
-        for (int i = 0; i < keys.length; i++)
-            keys[i] = "key-" + k + "-" + cfg.memberId() + "-" + i;
+        try {
+            if (ex != null)
+                throw ex;
 
-        for (String key : keys) {
-            rwl.readLock().lock();
+            AtomicLong nextAtomicVal = nextValMap.putIfAbsent(key, new AtomicLong(1));
 
-            try {
-                if (ex != null)
-                    throw ex;
+            Long nextVal = 1L;
 
-                asyncCache.invoke(key, new IncrementCacheEntryProcessor());
-                asyncCache.future().get(args.cacheOperationTimeoutMillis());
+            if (nextAtomicVal != null)
+                nextVal = nextAtomicVal.incrementAndGet();
 
-                AtomicLong prevVal = map.putIfAbsent(key, new AtomicLong(0));
-
-                if (prevVal != null)
-                    prevVal.incrementAndGet();
-            }
-            finally {
-                rwl.readLock().unlock();
-            }
+            asyncCache.invoke(key, new AddInSetEntryProcessor(), nextVal);
+            asyncCache.future().get(args.cacheOperationTimeoutMillis());
+        }
+        finally {
+            rwl.readLock().unlock();
         }
 
         if (ex != null)
@@ -195,18 +186,29 @@ public class IgniteAtomicInvokeRetryBenchmark extends IgniteFailoverAbstractBenc
 
     /**
      */
-    private static class IncrementCacheEntryProcessor implements CacheEntryProcessor<String, Long, Long> {
+    private static class AddInSetEntryProcessor implements CacheEntryProcessor<String, Set, Object> {
         /** */
         private static final long serialVersionUID = 0;
 
         /** {@inheritDoc} */
-        @Override public Long process(MutableEntry<String, Long> entry,
+        @Override public Object process(MutableEntry<String, Set> entry,
             Object... arguments) throws EntryProcessorException {
-            long newVal = entry.getValue() == null ? 0 : entry.getValue() + 1;
+            assert !F.isEmpty(arguments);
 
-            entry.setValue(newVal);
+            Object val = arguments[0];
 
-            return newVal;
+            Set set;
+
+            if (!entry.exists())
+                set = new HashSet<>();
+            else
+                set = entry.getValue();
+
+            set.add(val);
+
+            entry.setValue(set);
+
+            return null;
         }
     }
 }
