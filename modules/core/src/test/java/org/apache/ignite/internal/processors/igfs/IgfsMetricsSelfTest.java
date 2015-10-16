@@ -348,7 +348,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        fs.delete(new IgfsPath("/"), true);
+        fs.format();
 
         m = fs.metrics();
 

@@ -103,11 +103,6 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
         return err;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean allowForStartup() {
-        return true;
-    }
-
     /**
      * @return Keys.
      */

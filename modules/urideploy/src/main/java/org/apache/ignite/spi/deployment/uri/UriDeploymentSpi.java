@@ -80,7 +80,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * SPI tracks all changes of every given URI. This means that if any file is
  * changed or deleted, SPI will re-deploy or delete corresponding tasks.
- * Note that the very first apply to {@link #findResource(String)} findClassLoader(String)}
+ * Note that the very first apply to {@link #findResource(String)}
  * is blocked until SPI finishes scanning all URI's at least once.
  * <p>
  * There are several deployable unit types supported:
@@ -145,10 +145,32 @@ import org.jetbrains.annotations.Nullable;
  * URI 'path' field will be automatically encoded. By default this flag is
  * set to {@code true}.
  * <p>
+ * <h1 class="header">Code Example</h1>
+ * The following example demonstrates how the deployment SPI can be used. It expects that you have a GAR file
+ * in 'home/username/ignite/work/my_deployment/file' folder which contains 'myproject.HelloWorldTask' class.
+ * <pre name="code" class="java">
+ * IgniteConfiguration cfg = new IgniteConfiguration();
+ *
+ * DeploymentSpi deploymentSpi = new UriDeploymentSpi();
+ *
+ * deploymentSpi.setUriList(Arrays.asList("file:///home/username/ignite/work/my_deployment/file"));
+ *
+ * cfg.setDeploymentSpi(deploymentSpi);
+ *
+ * try (Ignite ignite = Ignition.start(cfg)) {
+ *     ignite.compute().execute("myproject.HelloWorldTask", "my args");
+ * }
+ * </pre>
  * <h1 class="header">Configuration</h1>
  * {@code UriDeploymentSpi} has the following optional configuration
  * parameters (there are no mandatory parameters):
  * <ul>
+ * <li>
+ * Array of {@link UriDeploymentScanner}-s which will be used to deploy resources
+ * (see {@link #setScanners(UriDeploymentScanner...)}). If not specified, preconfigured {@link UriDeploymentFileScanner}
+ * and {@link UriDeploymentHttpScanner} are used. You can implement your own scanner
+ * by implementing {@link UriDeploymentScanner} interface.
+ * </li>
  * <li>
  * Temporary directory path where scanned GAR files and directories are
  * copied to (see {@link #setTemporaryDirectoryPath(String) setTemporaryDirectoryPath(String)}).
@@ -163,50 +185,58 @@ import org.jetbrains.annotations.Nullable;
  * </li>
  * </ul>
  * <h1 class="header">Protocols</h1>
- * Following protocols are supported in SPI:
+ * Following protocols are supported by this SPI out of the box:
  * <ul>
  * <li><a href="#file">file://</a> - File protocol</li>
- * <li><a href="#classes">classes://</a> - Custom File protocol.</li>
  * <li><a href="#http">http://</a> - HTTP protocol</li>
  * <li><a href="#http">https://</a> - Secure HTTP protocol</li>
  * </ul>
+ * <strong>Custom Protocols.</strong>
+ * <p>
+ * You can add support for additional protocols if needed. To do this implement UriDeploymentScanner interface and
+ * plug your implementation into the SPI via {@link #setScanners(UriDeploymentScanner...)} method.
+ * <p>
  * In addition to SPI configuration parameters, all necessary configuration
  * parameters for selected URI should be defined in URI. Different protocols
  * have different configuration parameters described below. Parameters are
  * separated by '{@code ;}' character.
  * <p>
- * <a name="file"></a>
  * <h1 class="header">File</h1>
  * For this protocol SPI will scan folder specified by URI on file system and
  * download any GAR files or directories that end with .gar from source
  * directory defined in URI. For file system URI must have scheme equal to {@code file}.
  * <p>
- * Following parameters are supported for FILE protocol:
+ * Following parameters are supported:
  * <table class="doctable">
  *  <tr>
  *      <th>Parameter</th>
  *      <th>Description</th>
  *      <th>Optional</th>
  *      <th>Default</th>
+ *  </tr>
+ *  <tr>
+ *      <td>freq</td>
+ *      <td>Scanning frequency in milliseconds.</td>
+ *      <td>Yes</td>
+ *      <td>{@code 5000} ms specified in {@link UriDeploymentFileScanner#DFLT_SCAN_FREQ}.</td>
  *  </tr>
  * </table>
  * <h2 class="header">File URI Example</h2>
  * The following example will scan {@code 'c:/Program files/ignite/deployment'}
- * folder on local box every {@code '5000'} milliseconds. Note that since path
+ * folder on local box every {@code '1000'} milliseconds. Note that since path
  * has spaces, {@link #setEncodeUri(boolean) setEncodeUri(boolean)} parameter must
  * be set to {@code true} (which is default behavior).
  * <blockquote class="snippet">
- * {@code file://freq=5000@localhost/c:/Program files/ignite/deployment}
+ * {@code file://freq=2000@localhost/c:/Program files/ignite/deployment}
  * </blockquote>
  * <a name="classes"></a>
- * <h1 class="header">Classes</h1>
- * For this protocol SPI will scan folder specified by URI on file system
- * looking for compiled classes that implement {@link org.apache.ignite.compute.ComputeTask} interface.
- * This protocol comes very handy during development, as it allows developer
- * to specify IDE compilation output folder as URI and all task classes
- * in that folder will be deployed automatically.
+ * <h2 class="header">HTTP/HTTPS</h2>
+ * URI deployment scanner tries to read DOM of the html it points to and parses out href attributes of all &lt;a&gt; tags
+ * - this becomes the collection of URLs to GAR files that should be deployed. It's important that HTTP scanner
+ * uses {@code URLConnection.getLastModified()} method to check if there were any changes since last iteration
+ * for each GAR-file before redeploying.
  * <p>
- * Following parameters are supported for CLASSES protocol:
+ * Following parameters are supported:
  * <table class="doctable">
  *  <tr>
  *      <th>Parameter</th>
@@ -214,20 +244,17 @@ import org.jetbrains.annotations.Nullable;
  *      <th>Optional</th>
  *      <th>Default</th>
  *  </tr>
+ *  <tr>
+ *      <td>freq</td>
+ *      <td>Scanning frequency in milliseconds.</td>
+ *      <td>Yes</td>
+ *      <td>{@code 300000} ms specified in {@link UriDeploymentHttpScanner#DFLT_SCAN_FREQ}.</td>
+ *  </tr>
  * </table>
- * <h2 class="header">Classes URI Example</h2>
- * The following example will scan {@code 'c:/Program files/ignite/deployment'}
- * folder on local box every {@code '5000'} milliseconds. Note that since path
- * has spaces, {@link #setEncodeUri(boolean) setEncodeUri(boolean)} parameter must
- * be set to {@code true} (which is default behavior).
- * <blockquote class="snippet">
- * {@code classes://freq=5000@localhost/c:/Program files/ignite/deployment}
- * </blockquote>
- * <a name="http"></a>
  * <h2 class="header">HTTP URI Example</h2>
- * The following example will scan {@code 'ignite/deployment'} folder with
- * on site {@code 'www.mysite.com'} using authentication
- * {@code 'username:password'} every {@code '10000'} milliseconds.
+ * The following example will download the page `www.mysite.com/ignite/deployment`, parse it and download and deploy
+ * all GAR files specified by href attributes of &lt;a&gt; elements on the page using authentication
+ * {@code 'username:password'} every '10000' milliseconds (only new/updated GAR-s).
  * <blockquote class="snippet">
  * {@code http://username:password;freq=10000@www.mysite.com:110/ignite/deployment}
  * </blockquote>
@@ -238,14 +265,9 @@ import org.jetbrains.annotations.Nullable;
  *
  * IgniteConfiguration cfg = new IgniteConfiguration();
  *
- * List&lt;String&gt; uris = new ArrayList&lt;String&gt;(5);
- *
- * uris.add("http://www.site.com/tasks");
- * uris.add("file://freq=20000@localhost/c:/Program files/gg-deployment");
- * uris.add("classes:///c:/Java_Projects/myproject/out");
- *
  * // Set URIs.
- * deploySpi.setUriList(uris);
+ * deploySpi.setUriList(Arrays.asList("http://www.site.com/tasks",
+ *     "file://freq=20000@localhost/c:/Program files/gg-deployment"));
  *
  * // Override temporary directory path.
  * deploySpi.setTemporaryDirectoryPath("c:/tmp/grid");
@@ -254,7 +276,7 @@ import org.jetbrains.annotations.Nullable;
  * cfg.setDeploymentSpi(deploySpi);
  *
  * //  Start grid.
- * G.start(cfg);
+ * Ignition.start(cfg);
  * </pre>
  * <p>
  * <h2 class="header">Spring Example</h2>
@@ -269,7 +291,6 @@ import org.jetbrains.annotations.Nullable;
  *                     &lt;list&gt;
  *                         &lt;value&gt;http://www.site.com/tasks&lt;/value&gt;
  *                         &lt;value&gt;file://freq=20000@localhost/c:/Program files/gg-deployment&lt;/value&gt;
- *                         &lt;value&gt;classes:///c:/Java_Projects/myproject/out&lt;/value&gt;
  *                     &lt;/list&gt;
  *                 &lt;/property&gt;
  *             &lt;/bean&gt;

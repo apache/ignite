@@ -703,6 +703,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     CacheObject val = info.value();
                     KeyCacheObject key = info.key();
 
+                    assert skipVals == (info.value() == null);
+
                     cctx.addResult(map, key, val, skipVals, false, deserializePortable, false);
                 }
                 catch (GridCacheEntryRemovedException ignore) {

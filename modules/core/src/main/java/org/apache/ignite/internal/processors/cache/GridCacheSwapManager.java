@@ -1362,7 +1362,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @param entry Entry bytes.
      * @throws IgniteCheckedException If failed.
      */
-    private void writeToSwap(int part, KeyCacheObject key, byte[] entry) throws IgniteCheckedException {
+    public void writeToSwap(int part, KeyCacheObject key, byte[] entry) throws IgniteCheckedException {
+        assert swapEnabled;
+
         checkIteratorQueue();
 
         swapMgr.write(spaceName,

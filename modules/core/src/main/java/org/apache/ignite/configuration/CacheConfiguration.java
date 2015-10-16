@@ -436,7 +436,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setName(String name) {
-        A.ensure(name == null || !name.isEmpty(), "Name cannot be null or empty.");
+        A.ensure(name == null || !name.isEmpty(), "Name cannot be empty.");
 
         this.name = name;
 

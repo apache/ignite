@@ -32,8 +32,6 @@ import org.apache.ignite.examples.DeploymentExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.DeploymentExamplesSelfTest;
 import org.apache.ignite.examples.EventsExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.EventsExamplesSelfTest;
-import org.apache.ignite.examples.HibernateL2CacheExampleMultiNodeSelfTest;
-import org.apache.ignite.examples.HibernateL2CacheExampleSelfTest;
 import org.apache.ignite.examples.IgfsExamplesSelfTest;
 import org.apache.ignite.examples.LifecycleExamplesSelfTest;
 import org.apache.ignite.examples.MemcacheRestExamplesMultiNodeSelfTest;
@@ -78,7 +76,6 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(SpringBeanExamplesSelfTest.class));
         suite.addTest(new TestSuite(IgfsExamplesSelfTest.class));
         suite.addTest(new TestSuite(CheckpointExamplesSelfTest.class));
-        suite.addTest(new TestSuite(HibernateL2CacheExampleSelfTest.class));
         suite.addTest(new TestSuite(ClusterGroupExampleSelfTest.class));
 
         // Multi-node.
@@ -91,7 +88,6 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(TaskExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(MemcacheRestExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(MonteCarloExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(HibernateL2CacheExampleMultiNodeSelfTest.class));
 
         return suite;
     }
