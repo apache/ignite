@@ -1,0 +1,12 @@
+<persistence keyspace="test1" table="blob_test3">
+    <!-- By default Java standard serialization is going to be used -->
+    <keyPersistence class="java.lang.Integer"
+                    strategy="BLOB"
+                    column="key"/>
+
+    <!-- Kryo serialization specified to be used -->
+    <valuePersistence class="org.apache.ignite.tests.pojos.Person"
+                      strategy="BLOB"
+                      serializer="org.apache.ignite.cache.store.cassandra.utils.serializer.KryoSerializer"
+                      column="value"/>
+</persistence>

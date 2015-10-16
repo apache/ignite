@@ -1,0 +1,4 @@
+<persistence keyspace="test1" table="blob_test2">
+    <keyPersistence class="java.lang.Integer" strategy="PRIMITIVE"/>
+    <valuePersistence strategy="BLOB"/>
+</persistence>

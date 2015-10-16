@@ -1,0 +1,4 @@
+<persistence keyspace="test1" table="pojo_test2">
+    <keyPersistence class="org.apache.ignite.tests.pojos.PersonId" strategy="POJO"/>
+    <valuePersistence class="org.apache.ignite.tests.pojos.Person" strategy="POJO"/>
+</persistence>

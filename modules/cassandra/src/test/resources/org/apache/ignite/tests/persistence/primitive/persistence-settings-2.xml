@@ -1,0 +1,4 @@
+<persistence keyspace="test1" table="primitive_test2">
+    <keyPersistence class="java.lang.String" strategy="PRIMITIVE" column="key"/>
+    <valuePersistence class="java.lang.String" strategy="PRIMITIVE" column="value"/>
+</persistence>
