@@ -33,6 +33,7 @@ consoleModule.controller('metadataController', [
 
             $scope.agentGoal = 'load metadata from database schema';
             $scope.agentTestDriveOption = '--test-drive-metadata';
+            $scope.agentDownloadBackTo = 'Metadata';
 
             $scope.joinTip = $common.joinTip;
             $scope.getModel = $common.getModel;
@@ -63,6 +64,10 @@ consoleModule.controller('metadataController', [
             var INFO_CONNECT_TO_DB = 'Configure connection to database';
             var INFO_SELECT_SCHEMAS = 'Select schemas to load tables from';
             var INFO_SELECT_TABLES = 'Select tables to import as cache type metadata';
+            var LOADING_JDBC_DRIVERS = {text: 'Loading JDBC drivers...'};
+            var LOADING_SCHEMAS = {text: 'Loading schemas...'};
+            var LOADING_TABLES = {text: 'Loading tables...'};
+            var LOADING_METADATA = {text: 'Loading metadata...'};
 
             var previews = [];
 
@@ -246,16 +251,17 @@ consoleModule.controller('metadataController', [
                     tables: [],
                     allTablesSelected: false,
                     button: 'Next',
-                    info: 'Configure connection to database'
+                    info: ''
                 };
 
                 $scope.loadMeta.action = 'drivers';
-
-                loadMetaModal.show();
-
-                $loading.start('loadingMetadataFromDb');
+                $scope.loadMeta.loadingOptions = LOADING_JDBC_DRIVERS;
 
                 $scope.startAgentListening(function (onSuccess, onException) {
+                    loadMetaModal.show();
+
+                    $loading.start('loadingMetadataFromDb');
+
                     // Get available JDBC drivers via agent.
                     if ($scope.loadMeta.action == 'drivers') {
                         $http.post('/agent/drivers')
@@ -275,6 +281,7 @@ consoleModule.controller('metadataController', [
                                         loadMetaModal.$promise.then(function () {
                                             $scope.loadMeta.action = 'connect';
                                             $scope.loadMeta.tables = [];
+                                            $scope.loadMeta.loadingOptions = LOADING_SCHEMAS;
 
                                             $focus('jdbcUrl');
                                         });
@@ -282,13 +289,17 @@ consoleModule.controller('metadataController', [
 
                                     $common.confirmUnsavedChanges($scope.ui.isDirty(), openLoadMetadataModal);
                                 }
-                                else
+                                else {
                                     $common.showError('JDBC drivers not found!');
+
+                                    loadMetaModal.hide();
+                                }
                             })
                             .error(function (errMsg, status) {
                                 onException(errMsg, status);
                             })
                             .finally(function () {
+                                $scope.loadMeta.info = INFO_CONNECT_TO_DB;
                                 $loading.finish('loadingMetadataFromDb');
                             });
                     }
@@ -308,6 +319,7 @@ consoleModule.controller('metadataController', [
                     })
                     .finally(function() {
                         $scope.loadMeta.info = INFO_SELECT_SCHEMAS;
+                        $scope.loadMeta.loadingOptions = LOADING_TABLES;
 
                         $loading.finish('loadingMetadataFromDb');
                     });
@@ -341,6 +353,7 @@ consoleModule.controller('metadataController', [
                     })
                     .finally(function() {
                         $scope.loadMeta.info = INFO_SELECT_TABLES;
+                        $scope.loadMeta.loadingOptions = LOADING_METADATA;
 
                         $loading.finish('loadingMetadataFromDb');
                     });
@@ -647,10 +660,12 @@ consoleModule.controller('metadataController', [
                     $scope.loadMeta.action = 'schemas';
                     $scope.loadMeta.button = 'Next';
                     $scope.loadMeta.info = INFO_SELECT_SCHEMAS;
+                    $scope.loadMeta.loadingOptions = LOADING_TABLES;
                 }
                 else if  ($scope.loadMeta.action == 'schemas') {
                     $scope.loadMeta.action = 'connect';
                     $scope.loadMeta.info = INFO_CONNECT_TO_DB;
+                    $scope.loadMeta.loadingOptions = LOADING_SCHEMAS;
                 }
             };
 

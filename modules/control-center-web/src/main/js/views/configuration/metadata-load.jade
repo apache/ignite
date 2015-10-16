@@ -21,12 +21,11 @@ mixin chk(mdl, change, tip)
 
 .modal.center(role='dialog')
     .modal-dialog
-        .modal-content(dw-loading='loadingMetadataFromDb' dw-loading-options='{text: ""}')
+        .modal-content(dw-loading='loadingMetadataFromDb' dw-loading-options='loadMeta.loadingOptions')
             #errors-container.modal-header.header
                 button.close(ng-click='$hide()' aria-hidden='true') &times;
                 h4.modal-title Load metadata from database
             .metadata-content(ng-show='loadMeta.action == "drivers"' style='margin-bottom: 60px')
-                label.labelField Loading JDBC drivers...
             .metadata-content(ng-show='loadMeta.action == "connect"' style='margin-bottom: 60px')
                 form.form-horizontal(name='loadForm' novalidate)
                     .settings-row(ng-repeat='field in metadataDb')

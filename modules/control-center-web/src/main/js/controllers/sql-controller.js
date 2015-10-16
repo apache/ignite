@@ -24,6 +24,7 @@ consoleModule.controller('sqlController',
 
     $scope.agentGoal = 'execute sql statements';
     $scope.agentTestDriveOption = '--test-drive-sql';
+    $scope.agentDownloadBackTo = 'Configuration';
 
     $scope.joinTip = $common.joinTip;
 
