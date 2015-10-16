@@ -512,6 +512,17 @@ consoleModule.controller('sqlController',
 
             var chartHistory = paragraph.chartHistory;
 
+            // Clear history on query change.
+            if (paragraph.prevQuery != paragraph.query) {
+                paragraph.prevQuery = paragraph.query;
+
+                chartHistory.length = 0;
+
+                _.forEach(paragraph.charts, function (chart) {
+                    chart.data.length = 0;
+                })
+            }
+
             // Add results to history.
             chartHistory.push({tm: new Date(), rows: paragraph.rows});
 
@@ -546,7 +557,14 @@ consoleModule.controller('sqlController',
     $scope.execute = function (paragraph) {
         _saveNotebook();
 
-        paragraph.queryArgs = { type: "QUERY", query: paragraph.query, pageSize: paragraph.pageSize, cacheName: paragraph.cacheName };
+        paragraph.prevQuery = paragraph.queryArgs ? paragraph.queryArgs.query : paragraph.query;
+
+        paragraph.queryArgs = {
+            type: "QUERY",
+            query: paragraph.query,
+            pageSize: paragraph.pageSize,
+            cacheName: paragraph.cacheName
+        };
 
         _showLoading(paragraph, true);
 
@@ -911,14 +929,16 @@ consoleModule.controller('sqlController',
         return d3.time.format('%X')(new Date(d));
     }
 
-    var _xAxisWithLabelFormat = function(values) {
+    var _xAxisWithLabelFormat = function(paragraph) {
         return function (d) {
+            var values = paragraph.charts[0].data[0].values;
+
             var dx = values[d];
 
             if (!dx)
                 return d3.format(',.2f')(d);
 
-            var lbl = values[d]['xLbl'];
+            var lbl = dx.xLbl;
 
             return lbl ? lbl : d3.format(',.2f')(d);
         }
@@ -955,7 +975,7 @@ consoleModule.controller('sqlController',
                     y: _yY,
                     xAxis: {
                         axisLabel: _chartAxisLabel(paragraph.chartKeyCols, 'X'),
-                        tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(datum[0].values),
+                        tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(paragraph),
                         showMaxMin: false
                     },
                     yAxis: {
@@ -1021,7 +1041,7 @@ consoleModule.controller('sqlController',
                     y: _yY,
                     xAxis: {
                         axisLabel: _chartAxisLabel(paragraph.chartKeyCols, 'X'),
-                        tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(datum[0].values),
+                        tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(paragraph),
                         showMaxMin: false
                     },
                     yAxis: {
@@ -1054,7 +1074,7 @@ consoleModule.controller('sqlController',
                     y: _yY,
                     xAxis: {
                         axisLabel:  _chartAxisLabel(paragraph.chartKeyCols, 'X'),
-                        tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(datum[0].values),
+                        tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(paragraph),
                         showMaxMin: false
                     },
                     yAxis: {
