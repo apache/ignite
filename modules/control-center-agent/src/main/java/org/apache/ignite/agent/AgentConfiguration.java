@@ -259,8 +259,19 @@ public class AgentConfiguration {
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        if (tok != null)
-            sb.append("User's security token         : ").append(token()).append('\n');
+        if (tok != null && tok.length() > 0) {
+            sb.append("User's security token         : ");
+
+            if (tok.length() > 4) {
+                sb.append(new String(new char[tok.length() - 4]).replace("\0", "*"));
+
+                sb.append(tok.substring(tok.length() - 4));
+            }
+            else
+                sb.append(new String(new char[tok.length()]).replace("\0", "*"));
+
+            sb.append('\n');
+        }
 
         sb.append("URI to Ignite node REST server: ").append(nodeUri == null ? DFLT_NODE_URI : nodeUri).append('\n');
         sb.append("URI to Ignite Console server  : ").append(srvUri == null ? DFLT_SERVER_URI : srvUri).append('\n');
