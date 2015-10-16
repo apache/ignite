@@ -247,6 +247,12 @@ router.post('/cache/metadata', function (req, res) {
     }
 });
 
+/* Ping client. */
+router.post('/ping', function (req, res) {
+    if (_client(req, res) != null)
+        res.sendStatus(200);
+});
+
 /* Get JDBC drivers list. */
 router.post('/drivers', function (req, res) {
     var client = _client(req, res);

@@ -357,7 +357,7 @@ consoleModule.controller('sqlController',
             });
     }
 
-    $scope.checkNodeConnection(getTopology);
+    $scope.startAgentListening(getTopology);
 
     var _columnFilter = function(paragraph) {
         return paragraph.disabledSystemColumns || paragraph.systemColumns ? _allColumn : _hideColumn;
