@@ -92,6 +92,11 @@ public class DatabaseMetadataExtractor {
 
             return schemas;
         }
+        catch (SQLException e) {
+            log.log(Level.SEVERE, "Failed to collect schemas", e);
+
+            throw e;
+        }
     }
 
     /**
@@ -115,6 +120,11 @@ public class DatabaseMetadataExtractor {
             log.log(Level.FINE, "Finished collection of metadata [url=" + jdbcUrl + ", count="+ metadata.size() +"]");
 
             return metadata;
+        }
+        catch (SQLException e) {
+            log.log(Level.SEVERE, "Failed to collect metadata", e);
+
+            throw e;
         }
     }
 
