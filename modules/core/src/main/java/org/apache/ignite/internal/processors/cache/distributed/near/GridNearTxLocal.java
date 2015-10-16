@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -71,6 +72,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
@@ -216,7 +218,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
     /** {@inheritDoc} */
     @Override protected IgniteInternalFuture<Boolean> addReader(
-        long msgId, 
+        long msgId,
         GridDhtCacheEntry cached,
         IgniteTxEntry entry,
         AffinityTopologyVersion topVer
@@ -284,7 +286,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             return true;
 
         for (int cacheId : activeCacheIds()) {
-            if (cctx.cacheContext(cacheId).config().getWriteSynchronizationMode() == FULL_SYNC)
+            CacheWriteSynchronizationMode mode = cctx.cacheContext(cacheId).config().getWriteSynchronizationMode();
+
+            if (mode == FULL_SYNC || mode == PRIMARY_SYNC)
                 return true;
         }
 
@@ -1143,8 +1147,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
     /** {@inheritDoc} */
     @Override protected GridCacheEntryEx entryEx(
-        GridCacheContext cacheCtx, 
-        IgniteTxKey key, 
+        GridCacheContext cacheCtx,
+        IgniteTxKey key,
         AffinityTopologyVersion topVer
     ) {
         if (cacheCtx.isColocated()) {

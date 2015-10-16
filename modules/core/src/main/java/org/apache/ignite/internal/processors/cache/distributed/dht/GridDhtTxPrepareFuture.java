@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLeanSet;
@@ -575,10 +576,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
             if (tx.commitOnPrepare()) {
                 if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
-                    IgniteInternalFuture<IgniteInternalTx> fut = this.err.get() == null ?
-                        tx.commitAsync() : tx.rollbackAsync();
-
-                    fut.listen(new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
+                    CIX1<IgniteInternalFuture<IgniteInternalTx>> responseClo = new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
                         @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
                             try {
                                 if (replied.compareAndSet(false, true))
@@ -588,7 +586,33 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                 U.error(log, "Failed to send prepare response for transaction: " + tx, e);
                             }
                         }
-                    });
+                    };
+
+                    IgniteInternalFuture<IgniteInternalTx> fut;
+
+                    if (this.err.get() == null) {
+                        try {
+                            fut = tx.commitAsync();
+                        }
+                        catch (RuntimeException | Error e) {
+                            Exception hEx = new IgniteTxHeuristicCheckedException("Commit produced a runtime " +
+                                "exception: " + CU.txString(tx), e);
+
+                            res.error(hEx);
+
+                            tx.systemInvalidate(true);
+
+                            fut = tx.rollbackAsync();
+
+                            fut.listen(responseClo);
+
+                            throw e;
+                        }
+                    }
+                    else
+                        fut = tx.rollbackAsync();
+
+                    fut.listen(responseClo);
                 }
             }
             else {

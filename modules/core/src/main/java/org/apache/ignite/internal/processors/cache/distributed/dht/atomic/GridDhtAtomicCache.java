@@ -1246,7 +1246,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             remap = true;
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
             // an attempt to use cleaned resources.
             U.error(log, "Unexpected exception during cache update", e);
@@ -1254,6 +1254,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             res.addFailedKeys(keys, e);
 
             completionCb.apply(req, res);
+
+            if (e instanceof Error)
+                throw e;
 
             return;
         }

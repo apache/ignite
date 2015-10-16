@@ -276,13 +276,6 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     }
 
     /**
-     * @return {@code True} if commit is synchronous.
-     */
-    private boolean syncCommit() {
-        return tx != null && tx.syncCommit();
-    }
-
-    /**
      * @return {@code True} if rollback is synchronous.
      */
     private boolean syncRollback() {

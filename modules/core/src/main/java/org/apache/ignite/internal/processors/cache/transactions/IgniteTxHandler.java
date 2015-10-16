@@ -413,7 +413,7 @@ public class IgniteTxHandler {
                 req.last(),
                 req.lastBackups());
 
-            if (tx.isRollbackOnly()) {
+            if (tx.isRollbackOnly() && !tx.commitOnPrepare()) {
                 try {
                     tx.rollback();
                 }
@@ -714,6 +714,10 @@ public class IgniteTxHandler {
             }
         }
         catch (Throwable e) {
+            tx.commitError(e);
+
+            tx.systemInvalidate(true);
+
             U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
 
             IgniteInternalFuture<IgniteInternalTx> res = null;

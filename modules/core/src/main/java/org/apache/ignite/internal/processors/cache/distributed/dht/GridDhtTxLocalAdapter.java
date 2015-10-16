@@ -141,20 +141,20 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         int taskNameHash
     ) {
         super(
-            cctx, 
-            xidVer, 
-            implicit, 
-            implicitSingle, 
-            sys, 
-            plc, 
-            concurrency, 
-            isolation, 
-            timeout, 
+            cctx,
+            xidVer,
+            implicit,
+            implicitSingle,
+            sys,
+            plc,
+            concurrency,
+            isolation,
+            timeout,
             invalidate,
             storeEnabled,
             onePhaseCommit,
-            txSize, 
-            subjId, 
+            txSize,
+            subjId,
             taskNameHash
         );
 
@@ -889,7 +889,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /**
      * @return {@code True} if transaction is finished on prepare step.
      */
-    protected final boolean commitOnPrepare() {
+    public final boolean commitOnPrepare() {
         return onePhaseCommit() && !near() && !nearOnOriginatingNode;
     }
 

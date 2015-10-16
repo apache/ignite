@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -222,6 +221,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 this.tx.tmFinish(err == null);
 
             Throwable e = this.err.get();
+
+            if (e == null)
+                e = this.tx.commitError();
 
             if (super.onDone(tx, e != null ? e : err)) {
                 // Always send finish reply.
