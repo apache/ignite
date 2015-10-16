@@ -64,9 +64,14 @@ namespace ignite
                  * @param other Other instance.
                  */
                 SqlFieldsQuery(const SqlFieldsQuery& other) : sql(other.sql), pageSize(other.pageSize), loc(other.loc),
-                    args(other.args)
+                    args()
                 {
-                    // No-op.
+                    args.reserve(other.args.size());
+
+                    for (std::vector<QueryArgumentBase*>::const_iterator i = other.args.begin(); i != other.args.end(); ++i)
+                    {
+                        args.push_back((*i)->Copy());
+                    }
                 }
 
                 /**
@@ -78,10 +83,9 @@ namespace ignite
                 {
                     if (this != &other)
                     {
-                        sql = other.sql;
-                        pageSize = other.pageSize;
-                        loc = other.loc;
-                        args = other.args;
+                        SqlFieldsQuery tmp(other);
+
+                        Swap(tmp);
                     }
 
                     return *this;
@@ -94,6 +98,22 @@ namespace ignite
                 {
                     for (std::vector<QueryArgumentBase*>::iterator it = args.begin(); it != args.end(); ++it)
                         delete *it;
+                }
+
+                /**
+                 * Efficiently swaps contents with another SqlFieldsQuery instance.
+                 *
+                 * @param other Other instance.
+                 */
+                void Swap(SqlFieldsQuery& other)
+                {
+                    if (this != &other)
+                    {
+                        std::swap(sql, other.sql);
+                        std::swap(pageSize, other.pageSize);
+                        std::swap(loc, other.loc);
+                        std::swap(args, other.args);
+                    }
                 }
 
                 /**
