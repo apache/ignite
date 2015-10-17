@@ -51,7 +51,7 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.GridTcpRestProto
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
-import org.apache.ignite.internal.processors.rest.request.RestSqlQueryRequest;
+import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -609,9 +609,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     break;
             }
         }
-    }
-
-    /**
+    }    /**
      * Applies interceptor to a response object.
      * Specially handler {@link Map} and {@link Collection} responses.
      *
@@ -715,10 +713,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             case EXECUTE_SQL_QUERY:
             case EXECUTE_SQL_FIELDS_QUERY:
+            case EXECUTE_SCAN_QUERY:
             case CLOSE_SQL_QUERY:
             case FETCH_SQL_QUERY:
                 perm = SecurityPermission.CACHE_READ;
-                name = ((RestSqlQueryRequest)req).cacheName();
+                name = ((RestQueryRequest)req).cacheName();
 
                 break;
 
@@ -764,6 +763,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             case CACHE_METRICS:
             case CACHE_SIZE:
+            case CACHE_METADATA:
             case TOPOLOGY:
             case NODE:
             case VERSION:
@@ -884,15 +884,13 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         /** Session token id. */
         private final UUID sesId;
-
-        /** Security context. */
-        private volatile SecurityContext secCtx;
-
         /**
          * Time when session is used last time.
          * If this time was set at TIMEDOUT_FLAG, then it should never be changed.
          */
         private final AtomicLong lastTouchTime = new AtomicLong(U.currentTimeMillis());
+        /** Security context. */
+        private volatile SecurityContext secCtx;
 
         /**
          * @param clientId Client ID.

@@ -24,6 +24,7 @@ import java.io.Serializable;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -31,14 +32,24 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
+import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
+import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
@@ -907,6 +918,106 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     }
 
     /**
+     * @param meta Metadata for Ignite cache.
+     * @throws Exception If failed.
+     */
+    private void testMetadata(GridCacheSqlMetadata meta) throws Exception {
+        Map<String, String> params = F.asMap("cmd", GridRestCommand.CACHE_METADATA.key());
+
+        if (meta.cacheName() != null)
+            params.put("cacheName", meta.cacheName());
+
+        String ret = content(params);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        info("Cache metadata result: " + ret);
+
+        jsonEquals(ret, pattern("\\{.+\\}", true));
+
+        Map res = (Map)JSONObject.fromObject(ret).get("response");
+
+        Collection types = (Collection)res.get("types");
+
+        assertNotNull(types);
+        assertEqualsCollections(meta.types(), types);
+
+        Map keyClasses = (Map)res.get("keyClasses");
+
+        assertNotNull(keyClasses);
+        assertTrue(meta.keyClasses().equals(keyClasses));
+
+        Map valClasses = (Map)res.get("valClasses");
+
+        assertNotNull(valClasses);
+        assertTrue(meta.valClasses().equals(valClasses));
+
+        Map fields = (Map)res.get("fields");
+
+        assertNotNull(fields);
+        assertTrue(meta.fields().equals(fields));
+
+        Map indexesByType = (Map)res.get("indexes");
+
+        assertNotNull(indexesByType);
+        assertEquals(meta.indexes().size(), indexesByType.size());
+
+        for (Map.Entry<String, Collection<GridCacheSqlIndexMetadata>> metaIndexes : meta.indexes().entrySet()) {
+            Collection<Map> indexes = (Collection<Map>)indexesByType.get(metaIndexes.getKey());
+
+            assertNotNull(indexes);
+            assertEquals(metaIndexes.getValue().size(), indexes.size());
+
+            for (final GridCacheSqlIndexMetadata metaIdx : metaIndexes.getValue()) {
+                Map idx = F.find(indexes, null, new IgnitePredicate<Map>() {
+                    @Override public boolean apply(Map map) {
+                        return metaIdx.name().equals(map.get("name"));
+                    }
+                });
+
+                assertNotNull(idx);
+
+                assertEqualsCollections(metaIdx.fields(), (Collection)idx.get("fields"));
+                assertEqualsCollections(metaIdx.descendings(), (Collection)idx.get("descendings"));
+                assertEquals(metaIdx.unique(), idx.get("unique"));
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMetadataLocal() throws Exception {
+        GridCacheProcessor cacheProc = grid(0).context().cache();
+
+        for (IgniteInternalCache<?, ?> cache : cacheProc.caches()) {
+            if (CU.isSystemCache(cache.name()))
+                continue;
+
+            GridCacheSqlMetadata meta = F.first(cache.context().queries().sqlMetadata());
+
+            testMetadata(meta);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMetadataRemote() throws Exception {
+        CacheConfiguration<Integer, String> partialCacheCfg = new CacheConfiguration<>("partial");
+
+        partialCacheCfg.setIndexedTypes(Integer.class, String.class);
+        partialCacheCfg.setNodeFilter(new NodeIdFilter(grid(1).localNode().id()));
+
+        IgniteCacheProxy<Integer, String> c = (IgniteCacheProxy<Integer, String>)grid(1).createCache(partialCacheCfg);
+
+        GridCacheSqlMetadata meta = F.first(c.context().queries().sqlMetadata());
+
+        testMetadata(meta);
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testTopology() throws Exception {
@@ -918,6 +1029,23 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         info("Topology command result: " + ret);
 
         jsonEquals(ret, pattern("\\[\\{.+\\}\\]", true));
+
+        JSONObject json = JSONObject.fromObject(ret);
+
+        Collection<Map> nodes = (Collection)json.get("response");
+
+        assertEquals(GRID_CNT, nodes.size());
+
+        for (Map node : nodes) {
+            assertEquals(JSONNull.getInstance(), node.get("attributes"));
+            assertEquals(JSONNull.getInstance(), node.get("metrics"));
+
+            assertEquals("PARTITIONED", node.get("defaultCacheMode"));
+
+            Map caches = (Map)node.get("caches");
+
+            assertEquals(F.asMap("person", "PARTITIONED"), caches);
+        }
     }
 
     /**
@@ -1051,6 +1179,75 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertEquals(2, items.size());
 
         assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryScan() throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SCAN_QUERY.key());
+        params.put("pageSize", "10");
+        params.put("cacheName", "person");
+
+        String ret = content(params);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        JSONObject json = JSONObject.fromObject(ret);
+
+        List items = (List)((Map)json.get("response")).get("items");
+
+        assertEquals(4, items.size());
+
+        assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFilterQueryScan() throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SCAN_QUERY.key());
+        params.put("pageSize", "10");
+        params.put("cacheName", "person");
+        params.put("className", ScanFilter.class.getName());
+
+        String ret = content(params);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        JSONObject json = JSONObject.fromObject(ret);
+
+        List items = (List)((Map)json.get("response")).get("items");
+
+        assertEquals(2, items.size());
+
+        assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIncorrectFilterQueryScan() throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SCAN_QUERY.key());
+        params.put("pageSize", "10");
+        params.put("cacheName", "person");
+        params.put("className", ScanFilter.class.getName() + 1);
+
+        String ret = content(params);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        JSONObject json = JSONObject.fromObject(ret);
+
+        String err = (String)json.get("error");
+
+        assertTrue(err.contains("Failed to find target class"));
     }
 
     /**
@@ -1321,6 +1518,34 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
          */
         public Integer getId() {
             return id;
+        }
+    }
+
+    /**
+     * Test filter for scan query.
+     */
+    public static class ScanFilter implements IgniteBiPredicate<Integer, Person> {
+        /** {@inheritDoc} */
+        @Override public boolean apply(Integer integer, Person person) {
+            return person.salary > 1000;
+        }
+    }
+
+    /** Filter by node ID. */
+    private static class NodeIdFilter implements IgnitePredicate<ClusterNode> {
+        /** */
+        private final UUID nid;
+
+        /**
+         * @param nid Node ID where cache should be started.
+         */
+        NodeIdFilter(UUID nid) {
+            this.nid = nid;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode n) {
+            return n.id().equals(nid);
         }
     }
 }

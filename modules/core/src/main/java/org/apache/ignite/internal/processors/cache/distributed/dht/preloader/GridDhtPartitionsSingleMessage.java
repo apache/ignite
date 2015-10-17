@@ -41,7 +41,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /** Local partitions. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<Integer, GridDhtPartitionMap> parts = new HashMap<>();
+    private Map<Integer, GridDhtPartitionMap> parts;
 
     /** Serialized partitions. */
     private byte[] partsBytes;
@@ -83,6 +83,9 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @param locMap Local partition map.
      */
     public void addLocalPartitionMap(int cacheId, GridDhtPartitionMap locMap) {
+        if (parts == null)
+            parts = new HashMap<>();
+
         parts.put(cacheId, locMap);
     }
 
@@ -98,7 +101,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (parts != null)
+        if (partsBytes == null && parts != null)
             partsBytes = ctx.marshaller().marshal(parts);
     }
 
@@ -106,7 +109,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (partsBytes != null)
+        if (partsBytes != null && parts == null)
             parts = ctx.marshaller().unmarshal(partsBytes, ldr);
     }
 
