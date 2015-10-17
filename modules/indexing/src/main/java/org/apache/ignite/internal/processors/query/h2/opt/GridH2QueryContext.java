@@ -52,6 +52,9 @@ public class GridH2QueryContext {
     /** */
     private UUID[] partsNodes;
 
+    /** */
+    private boolean distributedJoins;
+
     /**
      * @param locNodeId Local node ID.
      * @param nodeId The node who initiated the query.
@@ -60,6 +63,20 @@ public class GridH2QueryContext {
      */
     public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
         key = new Key(locNodeId, nodeId, qryId, type);
+    }
+
+    /**
+     * @param distributedJoins Distributed joins can be run in this query.
+     */
+    public void distributedJoins(boolean distributedJoins) {
+        this.distributedJoins = distributedJoins;
+    }
+
+    /**
+     * @return {@code true} If distributed joins can be run in this query.
+     */
+    public boolean distributedJoins() {
+        return distributedJoins;
     }
 
     /**

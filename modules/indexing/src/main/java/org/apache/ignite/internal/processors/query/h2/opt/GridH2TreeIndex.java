@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -69,8 +68,6 @@ import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-
-import static org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor.QUERY_POOL;
 
 /**
  * Base class for snapshotable tree indexes.
@@ -284,7 +281,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public boolean canFindNext() {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -532,6 +529,11 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public int getPreferedLookupBatchSize() {
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        if (qctx == null || !qctx.distributedJoins())
+            return 0;
+
         return 0; // TODO
     }
 
@@ -582,39 +584,33 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         Collection<ClusterNode> nodes;
 
         if (affKey != null) {
-            if (affKey.getType() == Value.NULL) {
-                // TODO
-            }
+            if (affKey.getType() == Value.NULL)
+                return null;
 
-            ClusterNode node = cctx.affinity().primary(affKey.getObject(), topVer);
+            GridH2QueryContext qctx = GridH2QueryContext.get();
+
+            ClusterNode node;
+
+            if (qctx.partitionsMap() != null) {
+                UUID nodeId = qctx.nodeForPartition(cctx.affinity().partition(affKey.getObject()));
+
+                node = cctx.discovery().node(nodeId);
+            }
+            else
+                node = cctx.affinity().primary(affKey.getObject(), topVer);
 
             if (node == null)
-                throw new CacheException();
+                throw new CacheException(); // TODO retry exception
 
             nodes = Collections.singleton(node);
         }
-        else {
+        else
             nodes = CU.affinityNodes(cctx, topVer);
 
-            if (F.isEmpty(nodes))
-                throw new CacheException();
-        }
+        if (F.isEmpty(nodes))
+            throw new CacheException("Failed to calculate affinity nodes.");
 
         return nodes;
-    }
-
-    private IgniteInternalFuture<GridH2IndexRangeResponse> send(
-        ClusterNode node,
-        GridH2IndexRangeRequest req
-    ) {
-        try {
-            ctx.io().send(node, msgTopic, req, QUERY_POOL);
-        }
-        catch (IgniteCheckedException e) {
-            throw new CacheException(e);
-        }
-
-        return null;
     }
 
     /**
