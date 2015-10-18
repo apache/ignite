@@ -48,13 +48,18 @@ public class GridCacheTwoStepQuery {
     private Set<String> spaces;
 
     /** */
+    private Set<String> tbls;
+
+    /** */
     private boolean collocated;
 
     /**
      * @param spaces All spaces accessed in query.
+     * @param tbls Tables.
      */
-    public GridCacheTwoStepQuery(Set<String> spaces) {
+    public GridCacheTwoStepQuery(Set<String> spaces, Set<String> tbls) {
         this.spaces = spaces;
+        this.tbls = tbls;
     }
 
     /**
@@ -139,6 +144,13 @@ public class GridCacheTwoStepQuery {
      */
     public void spaces(Set<String> spaces) {
         this.spaces = spaces;
+    }
+
+    /**
+     * @return Tables.
+     */
+    public Set<String> tables() {
+        return tbls;
     }
 
     /** {@inheritDoc} */

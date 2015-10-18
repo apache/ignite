@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
@@ -40,8 +41,8 @@ public class GridH2QueryContext {
     /** */
     private final Key key;
 
-    /** */
-    private final ConcurrentMap<Long, Object> idxSnapshots = new ConcurrentHashMap8<>();
+    /** Index snapshots. */
+    private final ConcurrentMap<Long, Object> snapshots = new ConcurrentHashMap8<>();
 
     /** */
     private IndexingQueryFilter filter;
@@ -140,7 +141,10 @@ public class GridH2QueryContext {
     public void putSnapshot(long idxId, Object snapshot) {
         assert snapshot != null;
 
-        if (idxSnapshots.putIfAbsent(idxId, snapshot) != null)
+        if (snapshot instanceof GridReservable && !((GridReservable)snapshot).reserve())
+            throw new GridObjectDestroyedException();
+
+        if (snapshots.putIfAbsent(idxId, snapshot) != null)
             throw new IllegalStateException("Index already snapshoted.");
     }
 
@@ -150,7 +154,7 @@ public class GridH2QueryContext {
      */
     @SuppressWarnings("unchecked")
     public <T> T getSnapshot(long idxId) {
-        return (T)idxSnapshots.get(idxId);
+        return (T)snapshots.get(idxId);
     }
 
     /**
@@ -176,6 +180,8 @@ public class GridH2QueryContext {
     public static void clear(boolean onlyThreadLoc) {
         GridH2QueryContext x = qctx.get();
 
+        assert x != null;
+
         qctx.remove();
 
         if (!onlyThreadLoc && x.key.type != LOCAL)
@@ -196,10 +202,13 @@ public class GridH2QueryContext {
      * @param key Context key.
      */
     private static void doClear(Key key) {
-        GridH2QueryContext qctx0 = qctxs.remove(key);
+        GridH2QueryContext x = qctxs.remove(key);
 
-        if (qctx0 != null) {
-            // TODO close all snapshots
+        if (x != null) {
+            for (Object snapshot : x.snapshots.values()) {
+                if (snapshot instanceof GridReservable)
+                    ((GridReservable)snapshot).release();
+            }
         }
     }
 

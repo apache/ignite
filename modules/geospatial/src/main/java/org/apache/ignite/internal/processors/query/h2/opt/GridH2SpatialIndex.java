@@ -209,7 +209,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Override public void close(Session ses) {
+    @Override public void destroy() {
         Lock l = lock.writeLock();
 
         l.lock();

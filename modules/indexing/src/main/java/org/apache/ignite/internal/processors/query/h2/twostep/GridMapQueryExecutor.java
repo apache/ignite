@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -56,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshalla
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -213,12 +215,16 @@ public class GridMapQueryExecutor {
     private void onCancel(ClusterNode node, GridQueryCancelRequest msg) {
         ConcurrentMap<Long,QueryResults> nodeRess = resultsForNode(node.id());
 
-        QueryResults results = nodeRess.remove(msg.queryRequestId());
+        long qryReqId = msg.queryRequestId();
+
+        QueryResults results = nodeRess.remove(qryReqId);
 
         if (results == null)
             return;
 
         results.cancel();
+
+        GridH2QueryContext.clear(ctx.localNodeId(), node.id(), qryReqId, MAP);
     }
 
     /**
@@ -406,7 +412,7 @@ public class GridMapQueryExecutor {
         List<String> caches = (List<String>)F.concat(true, req.space(), req.extraSpaces());
 
         onQueryRequest0(node, req.requestId(), req.queries(), caches, req.topologyVersion(), null, req.partitions(),
-            req.pageSize(), false);
+            null, req.pageSize(), false);
     }
 
     /**
@@ -418,7 +424,7 @@ public class GridMapQueryExecutor {
         int[] parts = partsMap == null ? null : partsMap.get(ctx.localNodeId());
 
         onQueryRequest0(node, req.requestId(),req.queries(), req.caches(), req.topologyVersion(), partsMap, parts,
-            req.pageSize(), req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS));
+            req.tables(), req.pageSize(), req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS));
     }
 
     /**
@@ -428,7 +434,8 @@ public class GridMapQueryExecutor {
      * @param caches Caches which will be affected by these queries.
      * @param topVer Topology version.
      * @param partsMap Partitions map for unstable topology.
-     * @param parts Partitions for current node.
+     * @param parts Explicit partitions for current node.
+     * @param tbls Tables.
      * @param pageSize Page size.
      * @param distributedJoins Can we expect distributed joins to be ran.
      */
@@ -440,6 +447,7 @@ public class GridMapQueryExecutor {
         AffinityTopologyVersion topVer,
         Map<UUID, int[]> partsMap,
         int[] parts,
+        Collection<String> tbls,
         int pageSize,
         boolean distributedJoins
     ) {
@@ -472,14 +480,33 @@ public class GridMapQueryExecutor {
             if (nodeRess.put(reqId, qr) != null)
                 throw new IllegalStateException();
 
-            GridH2QueryContext.set(
-                new GridH2QueryContext(ctx.localNodeId(), node.id(), reqId, MAP)
-                    .filter(h2.backupFilter(caches, topVer, parts))
-                    .partitionsMap(partsMap));
+            // Prepare query context.
+            GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(), node.id(), reqId, MAP);
+
+            qctx.filter(h2.backupFilter(caches, topVer, parts));
+            qctx.partitionsMap(partsMap);
+            qctx.distributedJoins(distributedJoins);
+
+            List<GridH2Table> snapshotedTbls = null;
+
+            if (distributedJoins && !F.isEmpty(tbls)) {
+                snapshotedTbls = new ArrayList<>(tbls.size());
+
+                for (String identifier : tbls) {
+                    GridH2Table tbl = h2.dataTable(identifier);
+
+                    Objects.requireNonNull(tbl, identifier);
+
+                    tbl.snapshotIndexes(qctx);
+
+                    snapshotedTbls.add(tbl);
+                }
+            }
+
+            GridH2QueryContext.set(qctx);
 
             h2.enforceJoinOrder(true);
 
-            // TODO Prepare snapshots for all the needed tables before the run.
             try {
                 // Run queries.
                 int i = 0;
@@ -524,6 +551,11 @@ public class GridMapQueryExecutor {
                 h2.enforceJoinOrder(false);
 
                 GridH2QueryContext.clear(distributedJoins);
+
+                if (!F.isEmpty(snapshotedTbls)) {
+                    for (GridH2Table dataTbl : snapshotedTbls)
+                        dataTbl.releaseSnapshots();
+                }
             }
         }
         catch (Throwable e) {

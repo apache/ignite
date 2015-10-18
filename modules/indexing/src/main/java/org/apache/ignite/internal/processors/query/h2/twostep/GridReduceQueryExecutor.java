@@ -497,7 +497,7 @@ public class GridReduceQueryExecutor {
                 }
             }
 
-            long qryReqId = reqIdGen.incrementAndGet();
+            final long qryReqId = reqIdGen.incrementAndGet();
 
             QueryRun r = new QueryRun();
 
@@ -587,7 +587,8 @@ public class GridReduceQueryExecutor {
 
                 boolean retry = false;
 
-                boolean oldStyle = oldNodesInTopology();
+                final boolean oldStyle = oldNodesInTopology();
+                final boolean distributedJoins = !qry.collocated();
 
                 if (send(nodes,
                     oldStyle ?
@@ -597,9 +598,10 @@ public class GridReduceQueryExecutor {
                             .topologyVersion(topVer)
                             .pageSize(r.pageSize)
                             .caches(join(space, extraSpaces))
+                            .tables(distributedJoins ? qry.tables() : null)
                             .partitions(convert(partsMap))
                             .queries(mapQrys)
-                            .flags(qry.collocated() ? 0 : GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS),
+                            .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0),
                     oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null)) {
                     awaitAllReplies(r, nodes);
 
@@ -658,7 +660,16 @@ public class GridReduceQueryExecutor {
                     continue;
                 }
 
-                return new GridQueryCacheObjectsIterator(new Iter(res), cctx, keepPortable);
+                final Collection<ClusterNode> finalNodes = nodes;
+
+                return new GridQueryCacheObjectsIterator(new Iter(res), cctx, keepPortable) {
+                    @Override public void close() throws Exception {
+                        super.close();
+
+                        if (!oldStyle && distributedJoins) // Distributed joins require explicit cancel after query end.
+                            send(finalNodes, new GridQueryCancelRequest(qryReqId), null);
+                    }
+                };
             }
             catch (IgniteCheckedException | RuntimeException e) {
                 U.closeQuiet(r.conn);

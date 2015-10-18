@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -73,6 +74,26 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** */
     private byte flags;
+
+    /** */
+    private Collection<String> tbls;
+
+    /**
+     * @param tbls Tables.
+     * @return {@code this}.
+     */
+    public GridH2QueryRequest tables(Collection<String> tbls) {
+        this.tbls = tbls;
+
+        return this;
+    }
+
+    /**
+     * @return Tables.
+     */
+    public Collection<String> tables() {
+        return tbls;
+    }
 
     /**
      * @param reqId Request ID.
@@ -224,7 +245,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 26;
+        return -26;
     }
 
     /** {@inheritDoc} */

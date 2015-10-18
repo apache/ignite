@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -151,11 +150,12 @@ public class GridSqlQuerySplitter {
             params = GridCacheSqlQuery.EMPTY_PARAMS;
 
         Set<String> spaces = new HashSet<>();
+        Set<String> tbls = new HashSet<>();
 
-        GridSqlQuery qry = collectAllSpaces(GridSqlQueryParser.parse(stmt), spaces);
+        GridSqlQuery qry = collectAllTables(GridSqlQueryParser.parse(stmt), spaces, tbls);
 
         // Build resulting two step query.
-        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(spaces);
+        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(spaces, tbls);
 
         // Map query will be direct reference to the original query AST.
         // Thus all the modifications will be performed on the original AST, so we should be careful when
@@ -329,9 +329,6 @@ public class GridSqlQuerySplitter {
         for (int i = rdcExps.length; i < mapExps.size(); i++)  // Add all extra map columns as invisible reduce columns.
             rdcQry.addColumn(column(((GridSqlAlias)mapExps.get(i)).alias()), false);
 
-        // -- FROM + WHERE
-        getEnforcedJoinColumns(mapQry);
-
         // -- GROUP BY
         if (mapQry.groupColumns() != null && !collocated)
             rdcQry.groupColumns(mapQry.groupColumns());
@@ -389,17 +386,6 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     *
-     *
-     * @return
-     */
-    private static Map<GridSqlTable, GridSqlColumn> getEnforcedJoinColumns(GridSqlSelect mapQry) {
-        mapQry.where();
-
-        return null;
-    }
-
-    /**
      * @param cols Columns from SELECT clause.
      * @return Map of columns with types.
      */
@@ -433,24 +419,25 @@ public class GridSqlQuerySplitter {
     /**
      * @param qry Query.
      * @param spaces Space names.
+     * @param tbls Tables.
      * @return Query.
      */
-    private static GridSqlQuery collectAllSpaces(GridSqlQuery qry, Set<String> spaces) {
+    private static GridSqlQuery collectAllTables(GridSqlQuery qry, Set<String> spaces, Set<String> tbls) {
         if (qry instanceof GridSqlUnion) {
             GridSqlUnion union = (GridSqlUnion)qry;
 
-            collectAllSpaces(union.left(), spaces);
-            collectAllSpaces(union.right(), spaces);
+            collectAllTables(union.left(), spaces, tbls);
+            collectAllTables(union.right(), spaces, tbls);
         }
         else {
             GridSqlSelect select = (GridSqlSelect)qry;
 
-            collectAllSpacesInFrom(select.from(), spaces);
+            collectAllTablesInFrom(select.from(), spaces, tbls);
 
             for (GridSqlElement el : select.columns(false))
-                collectAllSpacesInSubqueries(el, spaces);
+                collectAllTablesInSubqueries(el, spaces, tbls);
 
-            collectAllSpacesInSubqueries(select.where(), spaces);
+            collectAllTablesInSubqueries(select.where(), spaces, tbls);
         }
 
         return qry;
@@ -459,18 +446,24 @@ public class GridSqlQuerySplitter {
     /**
      * @param from From element.
      * @param spaces Space names.
+     * @param tbls Tables.
      */
-    private static void collectAllSpacesInFrom(GridSqlElement from, final Set<String> spaces) {
+    private static void collectAllTablesInFrom(GridSqlElement from, final Set<String> spaces, final Set<String> tbls) {
         findTablesInFrom(from, new IgnitePredicate<GridSqlElement>() {
             @Override public boolean apply(GridSqlElement el) {
                 if (el instanceof GridSqlTable) {
-                    String schema = ((GridSqlTable)el).schema();
+                    GridSqlTable tbl = (GridSqlTable)el;
 
-                    if (schema != null)
+                    String schema = tbl.schema();
+
+                    if (schema != null && spaces != null)
                         spaces.add(IgniteH2Indexing.space(schema));
+
+                    if (tbls != null)
+                        tbls.add(tbl.dataTable().identifier());
                 }
                 else if (el instanceof GridSqlSubquery)
-                    collectAllSpaces(((GridSqlSubquery)el).select(), spaces);
+                    collectAllTables(((GridSqlSubquery)el).select(), spaces, tbls);
 
                 return false;
             }
@@ -514,8 +507,9 @@ public class GridSqlQuerySplitter {
      * Searches spaces in subqueries in SELECT and WHERE clauses.
      * @param el Element.
      * @param spaces Space names.
+     * @param tbls Tables.
      */
-    private static void collectAllSpacesInSubqueries(GridSqlElement el, Set<String> spaces) {
+    private static void collectAllTablesInSubqueries(GridSqlElement el, Set<String> spaces, Set<String> tbls) {
         if (el == null)
             return;
 
@@ -523,10 +517,10 @@ public class GridSqlQuerySplitter {
 
         if (el instanceof GridSqlOperation || el instanceof GridSqlFunction) {
             for (GridSqlElement child : el)
-                collectAllSpacesInSubqueries(child, spaces);
+                collectAllTablesInSubqueries(child, spaces, tbls);
         }
         else if (el instanceof GridSqlSubquery)
-            collectAllSpaces(((GridSqlSubquery)el).select(), spaces);
+            collectAllTables(((GridSqlSubquery)el).select(), spaces, tbls);
     }
 
     /**

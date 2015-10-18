@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
@@ -60,7 +59,7 @@ import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.VA
 /**
  * Lucene fulltext index.
  */
-public class GridLuceneIndex implements Closeable {
+public class GridLuceneIndex implements AutoCloseable {
     /** Field name for string representation of value. */
     public static final String VAL_STR_FIELD_NAME = "_gg_val_str__";
 

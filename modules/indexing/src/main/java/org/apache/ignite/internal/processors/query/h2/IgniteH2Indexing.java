@@ -269,6 +269,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private volatile GridKernalContext ctx;
 
+    /** */
+    private final ConcurrentMap<String, GridH2Table> dataTables = new ConcurrentHashMap8<>();
+
     /**
      * @return Kernal context.
      */
@@ -619,7 +622,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             U.closeQuiet(tbl.luceneIdx);
 
         tbl.schema.tbls.remove(tbl.name());
-        tbl.schema.h2Tbls.remove(tbl.tbl.getName());
     }
 
     /** {@inheritDoc} */
@@ -959,7 +961,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         PreparedStatement stmt;
 
-        enforceJoinOrder(qry.isEnforceJoinOrder());
+        boolean enforceJoinOrder = qry.isEnforceJoinOrder();
+
+        if (enforceJoinOrder)
+            enforceJoinOrder(true);
 
         try {
             stmt = c.prepareStatement(sqlQry);
@@ -968,7 +973,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new CacheException("Failed to parse query: " + sqlQry, e);
         }
         finally {
-            enforceJoinOrder(false);
+            if (enforceJoinOrder)
+                enforceJoinOrder(false);
         }
 
         GridCacheTwoStepQuery twoStepQry;
@@ -1182,7 +1188,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridH2RowDescriptor desc = new RowDescriptor(tbl.type(), schema);
 
-        GridH2Table.Engine.createTable(conn, sql.toString(), desc, tbl, tbl.schema.spaceName);
+        GridH2Table res = GridH2Table.Engine.createTable(conn, sql.toString(), desc, tbl, tbl.schema.spaceName);
+
+        if (dataTables.putIfAbsent(res.identifier(), res) != null)
+            throw new IllegalStateException("Table already exists: " + res.identifier());
+    }
+
+    /**
+     * @param identifier Table identifier.
+     * @return Data table.
+     */
+    public GridH2Table dataTable(String identifier) {
+        return dataTables.get(identifier);
     }
 
     /**
@@ -1545,6 +1562,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to drop schema on cache stop (will ignore): " + U.maskName(ccfg.getName()), e);
             }
+
+            rmv.onDrop();
         }
     }
 
@@ -1625,25 +1644,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         rdcQryExec.onDisconnected(reconnectFut);
-    }
-
-    /**
-     * @param schema Schema name.
-     * @param tblName Table name.
-     * @return Table.
-     */
-    public GridH2Table table(String schema, String tblName) {
-        Schema s = schemas.get(schema);
-
-        if (s == null)
-            throw new CacheException("Failed to find schema: \"" + schema + "\"");
-
-        GridH2Table tbl = s.h2Tbls.get(tblName);
-
-        if (tbl == null)
-            throw new CacheException("Failed to find table: [schema=" + schema + ", tblName=" + tblName +"]");
-
-        return tbl;
     }
 
     /**
@@ -2192,7 +2192,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Database schema object.
      */
-    private static class Schema {
+    private class Schema {
         /** */
         private final String spaceName;
 
@@ -2201,9 +2201,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         /** */
         private final ConcurrentMap<String, TableDescriptor> tbls = new ConcurrentHashMap8<>();
-
-        /** */
-        private final ConcurrentMap<String, GridH2Table> h2Tbls = new ConcurrentHashMap8<>();
 
         /** Cache for deserialized offheap rows. */
         private final CacheLongKeyLIRS<GridH2KeyValueRowOffheap> rowCache;
@@ -2243,8 +2240,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         public void add(TableDescriptor tbl) {
             if (tbls.putIfAbsent(tbl.name(), tbl) != null)
                 throw new IllegalStateException("Table already registered: " + tbl.name());
-
-            h2Tbls.put(tbl.tbl.getName(), tbl.tbl);
         }
 
         /**
@@ -2252,6 +2247,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          */
         public boolean escapeAll() {
             return ccfg.isSqlEscapeAll();
+        }
+
+        /**
+         * Called after the schema was dropped.
+         */
+        public void onDrop() {
+            for (TableDescriptor tblDesc : tbls.values()) {
+                GridH2Table tbl = tblDesc.tbl;
+
+                dataTables.remove(tbl.identifier(), tbl);
+
+                tbl.destroy();
+            }
         }
     }
 

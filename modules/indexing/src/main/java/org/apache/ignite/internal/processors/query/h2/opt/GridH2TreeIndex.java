@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.io.Closeable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -212,11 +211,11 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     }
 
     /** {@inheritDoc} */
-    @Override public void close(Session ses) {
+    @Override public void destroy() {
         assert threadLocalSnapshot() == null;
 
-        if (tree instanceof Closeable)
-            U.closeQuiet((Closeable)tree);
+        if (tree instanceof AutoCloseable)
+            U.closeQuiet((AutoCloseable)tree);
 
         if (msgLsnr != null)
             ctx.io().removeMessageListener(msgTopic, msgLsnr);
