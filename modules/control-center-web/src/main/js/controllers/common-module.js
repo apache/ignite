@@ -1517,6 +1517,9 @@ consoleModule.service('ngCopy', ['$window', '$common', function ($window, $commo
             element.bind('click', function () {
                 ngCopy(attrs.ngClickCopy);
             });
+
+            if (!document.queryCommandSupported('copy'))
+                element.hide();
         }
     }
 }]);
