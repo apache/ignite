@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Portable.Metadata;
-    using Apache.Ignite.Core.Impl.Portable.Structure;
     using Apache.Ignite.Core.Portable;
 
     using PU = PortableUtils;
@@ -61,17 +60,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Current raw position. */
         private long _curRawPos;
 
-        /** Current type structure. */
-        private PortableStructure _curStruct;
-
-        /** Current type structure path index. */
-        private int _curStructPath;
-
-        /** Current type structure action index. */
-        private int _curStructAction;
-
-        /** Current type structure updates. */
-        private List<PortableStructureUpdate> _curStructUpdates; 
+        /** Current type structure tracker, */
+        private PortableStructureTracker _curStruct;
         
         /** Whether we are currently detaching an object. */
         private bool _detaching;
@@ -1204,10 +1194,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 IPortableIdMapper oldMapper = _curMapper;
                 long oldRawPos = _curRawPos;
                 
-                PortableStructure oldStruct = _curStruct;
-                int oldStructPath = _curStructPath;
-                int oldStructAction = _curStructAction;
-                var oldStructUpdates = _curStructUpdates;
+                var oldStruct = _curStruct;
 
                 // Push new frame.
                 _curTypeId = desc.TypeId;
@@ -1215,10 +1202,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 _curMapper = desc.Mapper;
                 _curRawPos = 0;
 
-                _curStruct = desc.TypeStructure;
-                _curStructPath = 0;
-                _curStructAction = 0;
-                _curStructUpdates = null;
+                _curStruct = new PortableStructureTracker(desc);
 
                 // Write object fields.
                 desc.Serializer.WritePortable(obj, this);
@@ -1234,23 +1218,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _stream.WriteInt(pos + 14, len);
 
                 // Apply structure updates if any.
-                if (_curStructUpdates != null)
-                {
-                    desc.UpdateStructure(_curStruct, _curStructPath, _curStructUpdates);
-
-                    IPortableMetadataHandler metaHnd = _marsh.GetMetadataHandler(desc);
-
-                    if (metaHnd != null)
-                    {
-                        foreach (var u in _curStructUpdates)
-                            metaHnd.OnFieldWrite(u.FieldId, u.FieldName, u.FieldType);
-
-                        IDictionary<string, int> meta = metaHnd.OnObjectWriteFinished();
-
-                        if (meta != null)
-                            SaveMetadata(_curTypeId, desc.TypeName, desc.AffinityKeyFieldName, meta);
-                    }
-                }
+                _curStruct.Update(this);
 
                 // Restore old frame.
                 _curTypeId = oldTypeId;
@@ -1259,9 +1227,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 _curRawPos = oldRawPos;
 
                 _curStruct = oldStruct;
-                _curStructPath = oldStructPath;
-                _curStructAction = oldStructAction;
-                _curStructUpdates = oldStructUpdates;
             }
             else
             {
@@ -1518,42 +1483,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_curRawPos != 0)
                 throw new PortableException("Cannot write named fields after raw data is written.");
 
-            // TODO: Encapsulate and reuse this logic
-            // Initial throughput of modified PortableWriteBenchmark (read+write, Address only) is ~600k on home PC
-            int action = _curStructAction++;
-
-            int fieldId;
-
-            if (_curStructUpdates == null)
-            {
-                fieldId = _curStruct.GetFieldId(fieldName, fieldTypeId, ref _curStructPath, action);
-
-                if (fieldId == 0)
-                    fieldId = GetNewFieldId(fieldName, fieldTypeId, action);
-            }
-            else
-                fieldId = GetNewFieldId(fieldName, fieldTypeId, action);
-
-            _stream.WriteInt(fieldId);
-        }
-
-        /// <summary>
-        /// Get ID for the new field and save structure update.
-        /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <param name="fieldTypeId">Field type ID.</param>
-        /// <param name="action">Action index.</param>
-        /// <returns>Field ID.</returns>
-        private int GetNewFieldId(string fieldName, byte fieldTypeId, int action)
-        {
-            int fieldId = PU.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
-
-            if (_curStructUpdates == null)
-                _curStructUpdates = new List<PortableStructureUpdate>();
-
-            _curStructUpdates.Add(new PortableStructureUpdate(fieldName, fieldId, fieldTypeId, action));
-
-            return fieldId;
+            // TODO: Initial throughput of modified PortableWriteBenchmark (read+write, Address only) is ~600k on home PC
+            _stream.WriteInt(_curStruct.GetFieldId(fieldName, fieldTypeId));
         }
 
         /// <summary>

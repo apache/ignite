@@ -31,82 +31,52 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Type.
         /// </summary>
-        Type Type
-        {
-            get;
-        }
+        Type Type { get; }
 
         /// <summary>
         /// Type ID.
         /// </summary>
-        int TypeId
-        {
-            get;
-        }
+        int TypeId { get; }
 
         /// <summary>
         /// Type name.
         /// </summary>
-        string TypeName
-        {
-            get;
-        }
+        string TypeName { get; }
 
         /// <summary>
         /// User type flag.
         /// </summary>
-        bool UserType
-        {
-            get;
-        }
+        bool UserType { get; }
 
         /// <summary>
         /// Metadata enabled flag.
         /// </summary>
-        bool MetadataEnabled
-        {
-            get;
-        }
+        bool MetadataEnabled { get; }
 
         /// <summary>
         /// Whether to cache deserialized value in IPortableObject
         /// </summary>
-        bool KeepDeserialized
-        {
-            get;
-        }
+        bool KeepDeserialized { get; }
 
         /// <summary>
         /// Name converter.
         /// </summary>
-        IPortableNameMapper NameConverter
-        {
-            get;
-        }
+        IPortableNameMapper NameConverter { get; }   // TODO: Rename
 
         /// <summary>
         /// Mapper.
         /// </summary>
-        IPortableIdMapper Mapper
-        {
-            get;
-        }
+        IPortableIdMapper Mapper { get; }  // TODO: Rename
 
         /// <summary>
         /// Serializer.
         /// </summary>
-        IPortableSerializer Serializer
-        {
-            get;
-        }
+        IPortableSerializer Serializer { get; }
 
         /// <summary>
         /// Affinity key field name.
         /// </summary>
-        string AffinityKeyFieldName
-        {
-            get;
-        }
+        string AffinityKeyFieldName { get; }
 
         /// <summary>
         /// Type structure.
