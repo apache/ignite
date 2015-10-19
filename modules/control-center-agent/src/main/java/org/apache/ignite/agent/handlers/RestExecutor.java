@@ -19,6 +19,7 @@ package org.apache.ignite.agent.handlers;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -156,6 +157,11 @@ public class RestExecutor {
             }
 
             return new RestResult(resp.getStatusLine().getStatusCode(), new String(out.toByteArray(), charset));
+        }
+        catch (ConnectException e) {
+            log.log(Level.FINE, "Failed connect to node and execute REST command [uri=" + builder.build() + "]");
+
+            return new RestResult(404, "Failed connect to node and execute REST command.");
         }
     }
 

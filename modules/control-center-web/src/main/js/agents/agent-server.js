@@ -63,12 +63,10 @@ AgentServer.prototype.runCommand = function(cmd, callback) {
         }
 
         if (code !== 200) {
-            if (code === 401) {
-                callback.call(null, "Authentication failed. Status code 401.");
-            }
-            else {
-                callback.call(null, "Request failed. Status code " + code);
-            }
+            if (code === 401)
+                callback.call(null, "Authentication failed. Status code: 401.");
+            else
+                callback.call(null, (message ? message : "Request failed.") +  " Status code: " + code);
 
             return;
         }

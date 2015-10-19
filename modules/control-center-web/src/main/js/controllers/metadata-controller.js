@@ -33,7 +33,6 @@ consoleModule.controller('metadataController', [
 
             $scope.agentGoal = 'load metadata from database schema';
             $scope.agentTestDriveOption = '--test-drive-metadata';
-            $scope.agentDownloadBackTo = 'Metadata';
 
             $scope.joinTip = $common.joinTip;
             $scope.getModel = $common.getModel;
@@ -257,7 +256,7 @@ consoleModule.controller('metadataController', [
                 $scope.loadMeta.action = 'drivers';
                 $scope.loadMeta.loadingOptions = LOADING_JDBC_DRIVERS;
 
-                $scope.startAgentListening(function (onSuccess, onException) {
+                $scope.awaitAgent(function (result, onSuccess, onException) {
                     loadMetaModal.show();
 
                     $loading.start('loadingMetadataFromDb');
@@ -303,7 +302,7 @@ consoleModule.controller('metadataController', [
                                 $loading.finish('loadingMetadataFromDb');
                             });
                     }
-                }, true, '/configuration/metadata');
+                });
             };
 
             function _loadSchemas() {
