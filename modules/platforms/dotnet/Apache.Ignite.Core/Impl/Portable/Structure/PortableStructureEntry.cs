@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
             if (!ReferenceEquals(_name, name) && !name.Equals(_name))
                 return false;
 
-            ValidateType(type);
+            //ValidateType(type);
 
             return true;
         }
