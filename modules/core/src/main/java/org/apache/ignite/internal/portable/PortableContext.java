@@ -547,7 +547,6 @@ public class PortableContext implements Externalizable {
 
         try {
             registered = marshCtx.registerClass(typeId, cls);
-
         }
         catch (IgniteCheckedException e) {
             throw new PortableException("Failed to register class.", e);
@@ -891,10 +890,10 @@ public class PortableContext implements Externalizable {
 
         int idx = clsName.lastIndexOf('$');
 
-        String typeName;
-
-        if (idx >= 0) {
-            typeName = clsName.substring(idx + 1);
+        if (idx == clsName.length() - 1)
+            idx = -1;
+        else if (idx >= 0) {
+            String typeName = clsName.substring(idx + 1);
 
             try {
                 Integer.parseInt(typeName);
