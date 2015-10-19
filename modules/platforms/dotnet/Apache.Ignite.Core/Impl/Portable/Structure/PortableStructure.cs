@@ -307,11 +307,12 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
                 if (_fieldTypes.TryGetValue(update.FieldName, out expType))
                 {
                     // This is an old field.
-                    if (expType != update.FieldType)
-                    {
-                        throw new PortableException("Field type mismatch detected [fieldName=" + update.FieldName +
-                            ", expectedType=" + expType + ", actualType=" + update.FieldType + ']');
-                    }
+                    // TODO:
+                    //if (expType != update.FieldType)
+                    //{
+                    //    throw new PortableException("Field type mismatch detected [fieldName=" + update.FieldName +
+                    //        ", expectedType=" + expType + ", actualType=" + update.FieldType + ']');
+                    //}
                 }
                 else
                     // This is a new field.
