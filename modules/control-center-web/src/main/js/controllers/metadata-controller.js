@@ -389,7 +389,7 @@ consoleModule.controller('metadataController', [
                 return javaName.charAt(0).toLocaleLowerCase() + javaName.slice(1);
             }
 
-            $scope.ui.packageName = $scope.user.email.replace('@', '.').split('.').reverse().join('.');
+            $scope.ui.packageName = $scope.user.email.replace('@', '.').split('.').reverse().join('.') + '.model';
 
             function _saveBatch(batch) {
                 if (batch && batch.length > 0) {
