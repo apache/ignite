@@ -341,6 +341,8 @@ consoleModule.controller('sqlController',
                         $scope.notebook.expandedParagraphs.splice(panel_idx, 1);
 
                     $scope.notebook.paragraphs.splice(paragraph_idx, 1);
+
+                    _saveNotebook();
             });
     };
 
