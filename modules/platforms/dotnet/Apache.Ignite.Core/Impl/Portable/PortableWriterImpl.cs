@@ -1218,7 +1218,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _stream.WriteInt(pos + 14, len);
 
                 // Apply structure updates if any.
-                _curStruct.Update(this);
+                _curStruct.UpdateStructureAndMeta(this);
 
                 // Restore old frame.
                 _curTypeId = oldTypeId;

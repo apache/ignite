@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Portable
 {
     using System.Collections.Generic;
-    using Apache.Ignite.Core.Impl.Portable.Metadata;
     using Apache.Ignite.Core.Impl.Portable.Structure;
 
     /// <summary>
@@ -51,6 +50,52 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
+        /// Gets the field ID.
+        /// </summary>
+        public int GetFieldId(string fieldName, byte fieldTypeId)
+        {
+            int action = _curStructAction++;
+
+            if (_curStructUpdates == null)
+            {
+                var fieldId = _desc.TypeStructure.GetFieldId(fieldName, fieldTypeId, ref _curStructPath, action);
+
+                if (fieldId != 0)
+                    return fieldId;
+            }
+                
+            return GetNewFieldId(fieldName, fieldTypeId, action);
+
+        }
+
+        /// <summary>
+        /// Updates the type structure and metadata for the specified writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        public void UpdateStructureAndMeta(PortableWriterImpl writer)
+        {
+            if (_curStructUpdates != null)
+            {
+                _desc.UpdateStructure(_desc.TypeStructure, _curStructPath, _curStructUpdates);
+
+                var marsh = writer.Marshaller;
+
+                var metaHnd = marsh.GetMetadataHandler(_desc);
+
+                if (metaHnd != null)
+                {
+                    foreach (var u in _curStructUpdates)
+                        metaHnd.OnFieldWrite(u.FieldId, u.FieldName, u.FieldType);
+
+                    var meta = metaHnd.OnObjectWriteFinished();
+
+                    if (meta != null)
+                        writer.SaveMetadata(_desc.TypeId, _desc.TypeName, _desc.AffinityKeyFieldName, meta);
+                }
+            }
+        }
+
+        /// <summary>
         /// Get ID for the new field and save structure update.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
@@ -69,47 +114,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             _curStructUpdates.Add(new PortableStructureUpdate(fieldName, fieldId, fieldTypeId, action));
 
             return fieldId;
-        }
-
-        public int GetFieldId(string fieldName, byte fieldTypeId)
-        {
-            int action = _curStructAction++;
-
-            if (_curStructUpdates == null)
-            {
-                var fieldId = _desc.TypeStructure.GetFieldId(fieldName, fieldTypeId, ref _curStructPath, action);
-
-                if (fieldId != 0)
-                    return fieldId;
-            }
-                
-            return GetNewFieldId(fieldName, fieldTypeId, action);
-
-        }
-
-        public void Update(PortableWriterImpl writer)
-        {
-            if (_curStructUpdates != null)
-            {
-                // TODO: Wtf?
-                _desc.UpdateStructure(_desc.TypeStructure, _curStructPath, _curStructUpdates);
-
-                var marsh = writer.Marshaller;
-
-                IPortableMetadataHandler metaHnd = marsh.GetMetadataHandler(_desc);
-
-                if (metaHnd != null)
-                {
-                    foreach (var u in _curStructUpdates)
-                        metaHnd.OnFieldWrite(u.FieldId, u.FieldName, u.FieldType);
-
-                    IDictionary<string, int> meta = metaHnd.OnObjectWriteFinished();
-
-                    if (meta != null)
-                        writer.SaveMetadata(_desc.TypeId, _desc.TypeName, _desc.AffinityKeyFieldName, meta);
-                }
-            }
-
         }
     }
 }
