@@ -1582,7 +1582,7 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
 
             res.startBlock('public static void main(String[] args) throws IgniteException {');
             res.startBlock('try (Ignite ignite = Ignition.start(ConfigurationFactory.createConfiguration())) {');
-            res.line('System.out.println(" Write some code here...");');
+            res.line('System.out.println("Write some code here...");');
             res.endBlock('}');
             res.endBlock('}');
 
