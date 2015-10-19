@@ -134,6 +134,10 @@ consoleModule.controller('sqlController',
             return this.result != 'pie';
         };
 
+        paragraph.refreshExecuting = function () {
+            return paragraph.rate && paragraph.rate.stopTime
+        };
+
         Object.defineProperty(paragraph, 'gridOptions', { value: {
             enableColResize: true,
             columnDefs: [],
@@ -171,7 +175,13 @@ consoleModule.controller('sqlController',
             });
     };
 
+    $scope.goToConfiguration = function () {
+        $window.location = '/';
+    };
+
     var loadNotebook = function () {
+        $loading.start('loadingNotebookScreen');
+
         $http.post('/notebooks/get', {noteId: $scope.noteId})
             .success(function (notebook) {
                 $scope.notebook = notebook;
@@ -187,10 +197,13 @@ consoleModule.controller('sqlController',
                 if (!notebook.paragraphs || notebook.paragraphs.length == 0)
                     $scope.addParagraph();
 
-                _setActiveCache();
+                $scope.startAgentListening(getTopology);
             })
-            .error(function (errMsg) {
-                $common.showError(errMsg);
+            .error(function () {
+                $scope.notebook = undefined;
+            })
+            .finally(function () {
+                $loading.finish('loadingNotebookScreen');
             });
     };
 
@@ -332,6 +345,8 @@ consoleModule.controller('sqlController',
                         $scope.notebook.expandedParagraphs.splice(panel_idx, 1);
 
                     $scope.notebook.paragraphs.splice(paragraph_idx, 1);
+
+                    _saveNotebook();
             });
     };
 
@@ -357,8 +372,6 @@ consoleModule.controller('sqlController',
                 onException(err, status);
             });
     }
-
-    $scope.startAgentListening(getTopology);
 
     var _columnFilter = function(paragraph) {
         return paragraph.disabledSystemColumns || paragraph.systemColumns ? _allColumn : _hideColumn;
