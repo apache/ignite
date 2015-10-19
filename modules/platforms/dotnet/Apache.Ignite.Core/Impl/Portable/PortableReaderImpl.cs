@@ -53,12 +53,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Current raw data offset. */
         private int _curRawOffset;
 
-        /** Current converter. */
-        private IPortableNameMapper _curConverter;
-
-        /** Current mapper. */
-        private IPortableIdMapper _curMapper;
-
         /** Current raw flag. */
         private bool _curRaw;
 
@@ -67,6 +61,10 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Portable read mode. */
         private PortableMode _mode;
+        
+        /** Current type descriptor. */
+        private IPortableTypeDescriptor _curDesc;
+
 
         /// <summary>
         /// Constructor.
@@ -449,7 +447,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_curRaw)
                 throw new PortableException("Cannot read named fields after raw data is read.");
 
-            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
+            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curDesc.NameConverter, _curDesc.Mapper);
 
             if (SeekField(fieldId))
                 return Deserialize<T>();
@@ -740,16 +738,14 @@ namespace Apache.Ignite.Core.Impl.Portable
                     int oldTypeId = _curTypeId;
                     int oldPos = _curPos;
                     int oldRawOffset = _curRawOffset;
-                    IPortableNameMapper oldConverter = _curConverter;
-                    IPortableIdMapper oldMapper = _curMapper;
+                    var oldDesc = _curDesc;
                     bool oldRaw = _curRaw;
 
                     // Set new frame.
                     _curTypeId = typeId;
                     _curPos = pos;
                     _curRawOffset = rawOffset;
-                    _curConverter = desc.NameConverter;
-                    _curMapper = desc.Mapper;
+                    _curDesc = desc;
                     _curRaw = false;
 
                     // Read object.
@@ -781,8 +777,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _curTypeId = oldTypeId;
                     _curPos = oldPos;
                     _curRawOffset = oldRawOffset;
-                    _curConverter = oldConverter;
-                    _curMapper = oldMapper;
+                    _curDesc = oldDesc;
                     _curRaw = oldRaw;
 
                     var wrappedSerializable = obj as SerializableObjectHolder;
@@ -945,7 +940,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_curRaw)
                 throw new PortableException("Cannot read named fields after raw data is read.");
 
-            var fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
+            var fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curDesc.NameConverter, _curDesc.Mapper);
 
             if (!SeekField(fieldId))
                 return false;
