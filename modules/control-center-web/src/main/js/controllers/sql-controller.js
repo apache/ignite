@@ -953,12 +953,19 @@ consoleModule.controller('sqlController',
         }, 100);
     }
 
-    function _updateChartsWithData(paragraph, datum) {
+    function _updateChartsWithData(paragraph, newDatum) {
         $timeout(function () {
-            if (paragraph.chartTimeLineEnabled())
-                paragraph.charts[0].api.update();
-            else
-                paragraph.charts[0].api.updateWithData(datum);
+            if (!paragraph.chartTimeLineEnabled()) {
+                var chartDatum = paragraph.charts[0].data;
+
+                chartDatum.length = 0;
+
+                _.forEach(newDatum, function (series) {
+                    chartDatum.push(series);
+                })
+            }
+
+            paragraph.charts[0].api.update();
         });
     }
 
