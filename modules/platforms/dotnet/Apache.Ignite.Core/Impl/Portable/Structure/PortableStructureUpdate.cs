@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
     /// <summary>
     /// Portable type structure update descriptor.
     /// </summary>
-    internal class PortableStructureUpdate
+    internal struct PortableStructureUpdate
     {
         /** Field name. */
         private readonly string _fieldName;

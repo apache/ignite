@@ -50,6 +50,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
+        /// Gets the type descriptor.
+        /// </summary>
+        public IPortableTypeDescriptor Descriptor
+        {
+            get { return _desc; }
+        }
+
+        /// <summary>
         /// Gets the field ID.
         /// </summary>
         public int GetFieldId(string fieldName, byte fieldTypeId)
@@ -65,6 +73,15 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             return GetNewFieldId(fieldName, fieldTypeId, _curStructAction);
+        }
+
+        /// <summary>
+        /// Updates the type structure.
+        /// </summary>
+        public void UpdateStructure()
+        {
+            if (_curStructUpdates != null)
+                _desc.UpdateStructure(_desc.TypeStructure, _curStructPath, _curStructUpdates);
         }
 
         /// <summary>

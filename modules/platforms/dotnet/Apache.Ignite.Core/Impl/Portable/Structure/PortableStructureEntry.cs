@@ -86,11 +86,12 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         /// <param name="type">Expected type.</param>
         public void ValidateType(byte type)
         {
-            if (_type != type)
-            {
-                throw new PortableException("Field type mismatch detected [fieldName=" + _name +
-                    ", expectedType=" + _type + ", actualType=" + type + ']');
-            }
+            // TODO: Do we really need this?
+            //if (_type != type)
+            //{
+            //    throw new PortableException("Field type mismatch detected [fieldName=" + _name +
+            //        ", expectedType=" + _type + ", actualType=" + type + ']');
+            //}
         }
 
         /// <summary>
