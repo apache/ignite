@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests.Portable
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Portable;
@@ -784,6 +785,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             obj.PString = "abc";
             obj.PGuid = Guid.NewGuid();
             obj.PnGuid = Guid.NewGuid();
+            obj.IgniteGuid = new IgniteGuid(Guid.NewGuid(), 123);
             
             //CheckPrimitiveFieldsSerialization(marsh, obj);
 
@@ -1485,8 +1487,6 @@ namespace Apache.Ignite.Core.Tests.Portable
 
         public class PrimitiveFieldType 
         {
-            private Guid _pGuid;
-
             public bool PBool { get; set; }
 
             public sbyte PSbyte { get; set; }
@@ -1513,13 +1513,11 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             public string PString { get; set; }
 
-            public Guid PGuid
-            {
-                get { return _pGuid; }
-                set { _pGuid = value; }
-            }
+            public Guid PGuid { get; set; }
 
             public Guid? PnGuid { get; set; }
+
+            public IgniteGuid IgniteGuid { get; set; }
 
             /** <inheritdoc /> */
             public override bool Equals(object obj)
@@ -1543,8 +1541,9 @@ namespace Apache.Ignite.Core.Tests.Portable
                         PChar == that.PChar &&
                         PFloat == that.PFloat &&
                         PDouble == that.PDouble &&
-                        (PString == null && that.PString == null || PString != null && PString.Equals(that.PString)) &&
-                        _pGuid.Equals(that._pGuid) &&
+                        (string.Equals(PString, that.PString)) &&
+                        PGuid.Equals(that.PGuid) &&
+                        IgniteGuid.Equals(that.IgniteGuid) &&
                         (PnGuid == null && that.PnGuid == null || PnGuid != null && PnGuid.Equals(that.PnGuid));
                 }
                 return false;
@@ -1583,6 +1582,8 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteString("string", PString);
                 writer.WriteGuid("guid", PGuid);
                 writer.WriteGuid("nguid", PnGuid);
+
+                writer.WriteObject("iguid", IgniteGuid);
             }
 
             public unsafe void ReadPortable(IPortableReader reader)
@@ -1610,6 +1611,8 @@ namespace Apache.Ignite.Core.Tests.Portable
                 PString = reader.ReadString("string");
                 PGuid = reader.ReadObject<Guid>("guid");
                 PnGuid = reader.ReadGuid("nguid");
+
+                IgniteGuid = reader.ReadObject<IgniteGuid>("iguid");
             }
         }
 
@@ -1641,6 +1644,8 @@ namespace Apache.Ignite.Core.Tests.Portable
                 rawWriter.WriteString(PString);
                 rawWriter.WriteGuid(PGuid);
                 rawWriter.WriteGuid(PnGuid);
+
+                rawWriter.WriteObject(IgniteGuid);
             }
 
             public unsafe void ReadPortable(IPortableReader reader)
@@ -1670,6 +1675,8 @@ namespace Apache.Ignite.Core.Tests.Portable
                 PString = rawReader.ReadString();
                 PGuid = rawReader.ReadGuid().Value;
                 PnGuid = rawReader.ReadGuid();
+
+                IgniteGuid = rawReader.ReadObject<IgniteGuid>();
             }
         }
 
