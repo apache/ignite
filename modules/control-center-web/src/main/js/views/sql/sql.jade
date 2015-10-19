@@ -45,135 +45,140 @@ mixin chart-settings(mdl)
 block container
     .row
         .col-sm-12(ng-init='noteId = "#{noteId}"')
-            .docs-content(ng-controller='sqlController' )
-                div(bs-affix)
-                    .docs-header.notebook-header
-                        h1.col-sm-6(ng-hide='notebook.edit')
-                            label {{notebook.name}}
-                            .btn-group
-                                +btn-toolbar('fa-pencil', 'notebook.edit = true;notebook.editName = notebook.name', 'Rename notebook')
-                                +btn-toolbar('fa-trash', 'removeNotebook()', 'Remove notebook')
-                        h1.col-sm-6(ng-show='notebook.edit')
-                            input.sql-name-input(ng-model='notebook.editName' required on-enter='renameNotebook(notebook.editName)' on-escape='notebook.edit = false;')
-                            i.tipLabel.fa.fa-floppy-o(ng-show='notebook.editName' ng-click='renameNotebook(notebook.editName)' bs-tooltip data-title='Save notebook name' data-trigger='hover')
-                        .pull-right
-                            +btn-toolbar('fa-plus', 'addParagraph()', 'Add new query')
-                .block-callout-parent
-                    table
-                        tbody
-                            tr
-                                td.block-callout-left(width='50%')
-                                    i.fa.fa-check-square.block-callout-header-left
-                                    label.block-callout-header-left With SQL Notebook you can:
-                                    ul
-                                        li Create any number of queries
-                                        li Execute and explain SQL queries
-                                        li Execute scan queries
-                                        li View data in tabular form and as charts
-                                td.block-callout-right(width='50%')
-                                    i.fa.fa-check-square.block-callout-header-right
-                                    label.block-callout-header-right To execute SQL you need:
-                                    ul
-                                        li Start Apache Ignite Cluster with caches
-                                        li Populate caches with data
-                                        li Start Apache Ignite Web Agent
-                                        li Create query, enter some SQL and execute it
-                hr
-                .docs-body.paragraphs
-                    .panel-group(bs-collapse ng-model='notebook.expandedParagraphs' data-allow-multiple='true' data-start-collapsed='false')
-                        .panel.panel-default(ng-repeat='paragraph in notebook.paragraphs')
-                            .panel-heading(bs-collapse-toggle)
-                                div(ng-hide='paragraph.edit')
-                                    a {{paragraph.name}}
+            .docs-content(ng-controller='sqlController' dw-loading='loadingNotebookScreen' dw-loading-options='{text: "Loading notebook screen...", className: "page-loading-overlay"}')
+                div(ng-if='!notebook' style='text-align: center')
+                    h2 Failed to load notebook
+                    label.col-sm-12 Notebook not accessible any more. Go back to configuration or open to another notebook.
+                    button.h3.btn.btn-primary(ng-click='goToConfiguration()') Back to configuration
+                div(ng-if='notebook')
+                    div(bs-affix)
+                        .docs-header.notebook-header
+                            h1.col-sm-6(ng-hide='notebook.edit')
+                                label {{notebook.name}}
+                                .btn-group
+                                    +btn-toolbar('fa-pencil', 'notebook.edit = true;notebook.editName = notebook.name', 'Rename notebook')
+                                    +btn-toolbar('fa-trash', 'removeNotebook()', 'Remove notebook')
+                            h1.col-sm-6(ng-show='notebook.edit')
+                                input.sql-name-input(ng-model='notebook.editName' required on-enter='renameNotebook(notebook.editName)' on-escape='notebook.edit = false;')
+                                i.tipLabel.fa.fa-floppy-o(ng-show='notebook.editName' ng-click='renameNotebook(notebook.editName)' bs-tooltip data-title='Save notebook name' data-trigger='hover')
+                            .pull-right
+                                +btn-toolbar('fa-plus', 'addParagraph()', 'Add new query')
+                    .block-callout-parent
+                        table
+                            tbody
+                                tr
+                                    td.block-callout-left(width='50%')
+                                        i.fa.fa-check-square.block-callout-header-left
+                                        label.block-callout-header-left With SQL Notebook you can:
+                                        ul
+                                            li Create any number of queries
+                                            li Execute and explain SQL queries
+                                            li Execute scan queries
+                                            li View data in tabular form and as charts
+                                    td.block-callout-right(width='50%')
+                                        i.fa.fa-check-square.block-callout-header-right
+                                        label.block-callout-header-right To execute SQL you need:
+                                        ul
+                                            li Start Apache Ignite Cluster with caches
+                                            li Populate caches with data
+                                            li Start Apache Ignite Web Agent
+                                            li Create query, enter some SQL and execute it
+                    hr
+                    .docs-body.paragraphs
+                        .panel-group(bs-collapse ng-model='notebook.expandedParagraphs' data-allow-multiple='true' data-start-collapsed='false')
+                            .panel.panel-default(ng-repeat='paragraph in notebook.paragraphs')
+                                .panel-heading(bs-collapse-toggle)
+                                    div(ng-hide='paragraph.edit')
+                                        a {{paragraph.name}}
 
-                                    .btn-group(ng-hide='notebook.paragraphs.length > 1')
-                                        +btn-toolbar('fa-pencil', 'paragraph.edit = true; paragraph.editName = paragraph.name; $event.stopPropagation();', 'Rename query')
+                                        .btn-group(ng-hide='notebook.paragraphs.length > 1')
+                                            +btn-toolbar('fa-pencil', 'paragraph.edit = true; paragraph.editName = paragraph.name; $event.stopPropagation();', 'Rename query')
 
-                                    .btn-group(ng-show='notebook.paragraphs.length > 1' ng-click='$event.stopPropagation();')
-                                        +btn-toolbar('fa-pencil', 'paragraph.edit = true; paragraph.editName = paragraph.name;', 'Rename query')
-                                        +btn-toolbar('fa-remove', 'removeParagraph(paragraph)', 'Remove query')
+                                        .btn-group(ng-show='notebook.paragraphs.length > 1' ng-click='$event.stopPropagation();')
+                                            +btn-toolbar('fa-pencil', 'paragraph.edit = true; paragraph.editName = paragraph.name;', 'Rename query')
+                                            +btn-toolbar('fa-remove', 'removeParagraph(paragraph)', 'Remove query')
 
-                                    .pull-right
-                                        .btn-group(ng-model='paragraph.result' ng-click='$event.stopPropagation()' style='float: right')
-                                            +btn-toolbar-data('fa-table', 'table', 'Show data in tabular form.')
-                                            +btn-toolbar-data('fa-bar-chart', 'bar', 'Show bar chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
-                                            +btn-toolbar-data('fa-pie-chart', 'pie', 'Show pie chart.<br/>By default first column - pie labels, second column - pie values.<br/>In case of one column it will be treated as pie values.')
-                                            +btn-toolbar-data('fa-line-chart', 'line', 'Show line chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
-                                            +btn-toolbar-data('fa-area-chart', 'area', 'Show area chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
-                                div(ng-show='paragraph.edit')
-                                    input.sql-name-input(ng-model='paragraph.editName' required ng-click='$event.stopPropagation();' on-enter='renameParagraph(paragraph, paragraph.editName)' on-escape='paragraph.edit = false')
-                                    i.tipLabel.fa.fa-floppy-o(ng-show='paragraph.editName' ng-click='renameParagraph(paragraph, paragraph.editName); $event.stopPropagation();' bs-tooltip data-title='Save paragraph name' data-trigger='hover')
-                            .panel-collapse(role='tabpanel' bs-collapse-target)
-                                .col-sm-12(ng-show='paragraph.editor')
-                                    .col-xs-8.col-sm-9(style='border-right: 1px solid #eee')
-                                        .sql-editor(ui-ace='{onLoad: aceInit(paragraph), theme: "chrome", mode: "sql", require: ["ace/ext/language_tools"],' +
-                                            'advanced: {enableSnippets: false, enableBasicAutocompletion: true, enableLiveAutocompletion: true}}'
-                                        ng-model='paragraph.query')
-                                    .col-xs-4.col-sm-3
-                                        div(ng-show='caches.length > 0' style='padding: 5px 10px' st-table='displayedCaches' st-safe-src='caches')
-                                            lable.labelField.labelFormField Caches:
-                                            .input-tip
-                                                input.form-control(type='text' st-search placeholder='Filter caches...')
-                                            table.links
-                                                tbody.scrollable-y(style='max-height: 15em;display:block;' ng-model='paragraph.cacheName' bs-radio-group)
-                                                    tr(ng-repeat='cache in displayedCaches track by cache.name')
-                                                        td(style='width: 100%')
-                                                            input.labelField(type='radio' value='{{cache.name}}')
-                                                            a(bs-popover data-template-url='cache-metadata', data-placement='bottom', data-trigger='click') {{cache.name}}
-                                        .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
-                                            label Wrong caches filter
-                                        .empty-caches(ng-show='caches.length == 0')
-                                            label No caches
-                                .col-sm-12
-                                    hr(style='margin: 0')
-                                .col-sm-12
-                                    .details-row
-                                        a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='actionAvailable(paragraph, true) ? explain(paragraph) : ""' data-placement='bottom' bs-tooltip data-title='{{actionTooltip(paragraph, "explain", true)}}') Explain
-                                        a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='actionAvailable(paragraph, true) ? execute(paragraph) : ""' data-placement='bottom' bs-tooltip data-title='{{actionTooltip(paragraph, "execute", true)}}') Execute
-                                        a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, false)' ng-click='actionAvailable(paragraph, false) ? scan(paragraph): ""' data-placement='bottom' bs-tooltip data-title='{{actionTooltip(paragraph, "execute scan", false)}}') Scan
                                         .pull-right
-                                            labelHide System columns:
-                                            a.btn.btn-default.fa.fa-bars.tipLabel(ng-class='{"btn-info": paragraph.systemColumns}' ng-click='toggleSystemColumns(paragraph)' ng-disabled='paragraph.disabledSystemColumns' bs-tooltip data-title='Show "_KEY", "_VAL" columns')
-                                            label.tipLabel Refresh rate:
-                                            button.btn.btn-default.fa.fa-clock-o.tipLabel(ng-class='{"btn-info": paragraph.rate && paragraph.rate.installed}' bs-popover data-template-url='rate' data-placement='left' data-auto-close='1' data-trigger='click') {{rateAsString(paragraph)}}
-                                            label.tipLabel Page size:
-                                            button.select-toggle.fieldButton.btn.btn-default(ng-model='paragraph.pageSize' bs-options='item for item in pageSizes' bs-select bs-tooltip data-title='Max number of rows to show in query result as one page')
-                                .col-sm-12(ng-show='paragraph.errMsg')
-                                    hr(style='margin-top: 0; margin-bottom: 10px')
-                                    .sql-error-result(ng-show='paragraph.errMsg') Error: {{paragraph.errMsg}}
-                                .col-sm-12(ng-show='!paragraph.errMsg && paragraph.result != "none"')
-                                    hr(style='margin-top: 0; margin-bottom: 10px')
-                                    .sql-empty-result(ng-show='!paragraph.nonEmpty()') Result set is empty
-                                    div(ng-show='paragraph.table() && paragraph.nonEmpty()')
-                                        .sql-table-total
-                                            label Page #&nbsp;
-                                            b {{paragraph.page}}&nbsp;&nbsp;&nbsp;
-                                            label Results so far:&nbsp;
-                                            b {{paragraph.rows.length + paragraph.total}}
+                                            .btn-group(ng-model='paragraph.result' ng-click='$event.stopPropagation()' style='float: right')
+                                                +btn-toolbar-data('fa-table', 'table', 'Show data in tabular form.')
+                                                +btn-toolbar-data('fa-bar-chart', 'bar', 'Show bar chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
+                                                +btn-toolbar-data('fa-pie-chart', 'pie', 'Show pie chart.<br/>By default first column - pie labels, second column - pie values.<br/>In case of one column it will be treated as pie values.')
+                                                +btn-toolbar-data('fa-line-chart', 'line', 'Show line chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
+                                                +btn-toolbar-data('fa-area-chart', 'area', 'Show area chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
+                                    div(ng-show='paragraph.edit')
+                                        input.sql-name-input(ng-model='paragraph.editName' required ng-click='$event.stopPropagation();' on-enter='renameParagraph(paragraph, paragraph.editName)' on-escape='paragraph.edit = false')
+                                        i.tipLabel.fa.fa-floppy-o(ng-show='paragraph.editName' ng-click='renameParagraph(paragraph, paragraph.editName); $event.stopPropagation();' bs-tooltip data-title='Save paragraph name' data-trigger='hover')
+                                .panel-collapse(role='tabpanel' bs-collapse-target)
+                                    .col-sm-12(ng-show='paragraph.editor')
+                                        .col-xs-8.col-sm-9(style='border-right: 1px solid #eee')
+                                            .sql-editor(ui-ace='{onLoad: aceInit(paragraph), theme: "chrome", mode: "sql", require: ["ace/ext/language_tools"],' +
+                                                'advanced: {enableSnippets: false, enableBasicAutocompletion: true, enableLiveAutocompletion: true}}'
+                                            ng-model='paragraph.query')
+                                        .col-xs-4.col-sm-3
+                                            div(ng-show='caches.length > 0' style='padding: 5px 10px' st-table='displayedCaches' st-safe-src='caches')
+                                                lable.labelField.labelFormField Caches:
+                                                .input-tip
+                                                    input.form-control(type='text' st-search placeholder='Filter caches...')
+                                                table.links
+                                                    tbody.scrollable-y(style='max-height: 15em;display:block;' ng-model='paragraph.cacheName' bs-radio-group)
+                                                        tr(ng-repeat='cache in displayedCaches track by cache.name')
+                                                            td(style='width: 100%')
+                                                                input.labelField(type='radio' value='{{cache.name}}')
+                                                                a(bs-popover data-template-url='cache-metadata', data-placement='bottom', data-trigger='click') {{cache.name}}
+                                            .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
+                                                label Wrong caches filter
+                                            .empty-caches(ng-show='caches.length == 0')
+                                                label No caches
+                                    .col-sm-12
+                                        hr(style='margin: 0')
+                                    .col-sm-12
+                                        .details-row
+                                            a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='actionAvailable(paragraph, true) ? explain(paragraph) : ""' data-placement='bottom' bs-tooltip data-title='{{actionTooltip(paragraph, "explain", true)}}') Explain
+                                            a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='actionAvailable(paragraph, true) ? execute(paragraph) : ""' data-placement='bottom' bs-tooltip data-title='{{actionTooltip(paragraph, "execute", true)}}') Execute
+                                            a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, false)' ng-click='actionAvailable(paragraph, false) ? scan(paragraph): ""' data-placement='bottom' bs-tooltip data-title='{{actionTooltip(paragraph, "execute scan", false)}}') Scan
                                             .pull-right
-                                                .btn-group(ng-disabled='paragraph.loading')
-                                                    button.btn.btn-primary.fieldButton(ng-click='exportPage(paragraph)' bs-tooltip data-title='{{actionTooltip(paragraph, "export", false)}}') Export
-                                                    button.btn.btn-primary(id='export-item-dropdown' data-toggle='dropdown' data-container='body' bs-dropdown='exportDropdown' data-placement='bottom-right')
-                                                        span.caret
-                                        .sql-table.ag-bootstrap(ag-grid='paragraph.gridOptions')
-                                    div(ng-show='paragraph.chart() && paragraph.nonEmpty()')
-                                        div(ng-show='paragraph.queryExecute()')
-                                            +chart-settings
-                                            div(ng-hide='paragraph.chartColumnsConfigured()')
-                                                .sql-empty-result Cannot display chart. Please configure axis using&nbsp
-                                                    b Chart settings
-                                            div(ng-show='paragraph.chartColumnsConfigured()')
-                                                div(ng-show='paragraph.timeLineSupported() || !paragraph.chartTimeLineEnabled()')
-                                                    div(ng-repeat='chart in paragraph.charts')
-                                                        nvd3(options='chart.options' data='chart.data' api='chart.api')
-                                                .sql-empty-result(ng-show='!paragraph.timeLineSupported() && paragraph.chartTimeLineEnabled()') Pie chart does not support 'TIME_LINE' column for X-axis
-                                        .sql-empty-result(ng-hide='paragraph.queryExecute()')
-                                            | Charts do not support&nbsp
-                                            b Explain
-                                            | &nbspand&nbsp
-                                            b Scan
-                                            | &nbspquery
-                                    div(ng-show='paragraph.queryId && (paragraph.table() || paragraph.chart() && paragraph.queryExecute())')
-                                        hr(style='margin-top: 0; margin-bottom: 5px')
-                                        i.fa.fa-chevron-circle-right(style='float: right;margin-right: 10px;' ng-click='nextPage(paragraph)')
-                                        a(style='float: right; margin-bottom: 5px;margin-right: 5px;' ng-click='nextPage(paragraph)') Next
+                                                labelHide System columns:
+                                                a.btn.btn-default.fa.fa-bars.tipLabel(ng-class='{"btn-info": paragraph.systemColumns}' ng-click='toggleSystemColumns(paragraph)' ng-disabled='paragraph.disabledSystemColumns' bs-tooltip data-title='Show "_KEY", "_VAL" columns')
+                                                label.tipLabel Refresh rate:
+                                                button.btn.btn-default.fa.fa-clock-o.tipLabel(ng-class='{"btn-info": paragraph.rate && paragraph.rate.installed}' bs-popover data-template-url='rate' data-placement='left' data-auto-close='1' data-trigger='click') {{rateAsString(paragraph)}}
+                                                label.tipLabel Page size:
+                                                button.select-toggle.fieldButton.btn.btn-default(ng-model='paragraph.pageSize' bs-options='item for item in pageSizes' bs-select bs-tooltip data-title='Max number of rows to show in query result as one page')
+                                    .col-sm-12(ng-show='paragraph.errMsg')
+                                        hr(style='margin-top: 0; margin-bottom: 10px')
+                                        .sql-error-result(ng-show='paragraph.errMsg') Error: {{paragraph.errMsg}}
+                                    .col-sm-12(ng-show='!paragraph.errMsg && paragraph.result != "none"')
+                                        hr(style='margin-top: 0; margin-bottom: 10px')
+                                        .sql-empty-result(ng-show='!paragraph.nonEmpty()') Result set is empty
+                                        div(ng-show='paragraph.table() && paragraph.nonEmpty()')
+                                            .sql-table-total
+                                                label Page #&nbsp;
+                                                b {{paragraph.page}}&nbsp;&nbsp;&nbsp;
+                                                label Results so far:&nbsp;
+                                                b {{paragraph.rows.length + paragraph.total}}
+                                                .pull-right
+                                                    .btn-group(ng-disabled='paragraph.loading')
+                                                        button.btn.btn-primary.fieldButton(ng-click='exportPage(paragraph)' bs-tooltip data-title='{{actionTooltip(paragraph, "export", false)}}') Export
+                                                        button.btn.btn-primary(id='export-item-dropdown' data-toggle='dropdown' data-container='body' bs-dropdown='exportDropdown' data-placement='bottom-right')
+                                                            span.caret
+                                            .sql-table.ag-bootstrap(ag-grid='paragraph.gridOptions')
+                                        div(ng-show='paragraph.chart() && paragraph.nonEmpty()')
+                                            div(ng-show='paragraph.queryExecute()')
+                                                +chart-settings
+                                                div(ng-hide='paragraph.chartColumnsConfigured()')
+                                                    .sql-empty-result Cannot display chart. Please configure axis using&nbsp
+                                                        b Chart settings
+                                                div(ng-show='paragraph.chartColumnsConfigured()')
+                                                    div(ng-show='paragraph.timeLineSupported() || !paragraph.chartTimeLineEnabled()')
+                                                        div(ng-repeat='chart in paragraph.charts')
+                                                            nvd3(options='chart.options' data='chart.data' api='chart.api')
+                                                    .sql-empty-result(ng-show='!paragraph.timeLineSupported() && paragraph.chartTimeLineEnabled()') Pie chart does not support 'TIME_LINE' column for X-axis
+                                            .sql-empty-result(ng-hide='paragraph.queryExecute()')
+                                                | Charts do not support&nbsp
+                                                b Explain
+                                                | &nbspand&nbsp
+                                                b Scan
+                                                | &nbspquery
+                                        div(ng-show='paragraph.queryId && (paragraph.table() || paragraph.chart() && paragraph.queryExecute())')
+                                            hr(style='margin-top: 0; margin-bottom: 5px')
+                                            i.fa.fa-chevron-circle-right(style='float: right;margin-right: 10px;' ng-click='nextPage(paragraph)')
+                                            a(style='float: right; margin-bottom: 5px;margin-right: 5px;' ng-click='nextPage(paragraph)') Next

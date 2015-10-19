@@ -171,7 +171,13 @@ consoleModule.controller('sqlController',
             });
     };
 
+    $scope.goToConfiguration = function () {
+        $window.location = '/';
+    };
+
     var loadNotebook = function () {
+        $loading.start('loadingNotebookScreen');
+
         $http.post('/notebooks/get', {noteId: $scope.noteId})
             .success(function (notebook) {
                 $scope.notebook = notebook;
@@ -187,10 +193,13 @@ consoleModule.controller('sqlController',
                 if (!notebook.paragraphs || notebook.paragraphs.length == 0)
                     $scope.addParagraph();
 
-                _setActiveCache();
+                $scope.startAgentListening(getTopology);
             })
-            .error(function (errMsg) {
-                $common.showError(errMsg);
+            .error(function () {
+                $scope.notebook = undefined;
+            })
+            .finally(function () {
+                $loading.finish('loadingNotebookScreen');
             });
     };
 
@@ -357,8 +366,6 @@ consoleModule.controller('sqlController',
                 onException(err, status);
             });
     }
-
-    $scope.startAgentListening(getTopology);
 
     var _columnFilter = function(paragraph) {
         return paragraph.disabledSystemColumns || paragraph.systemColumns ? _allColumn : _hideColumn;
