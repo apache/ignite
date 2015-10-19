@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         private readonly int _id;
 
         /** Field type. */
-        private readonly byte _type;
+        //private readonly byte _type;
         
         /// <summary>
         /// Constructor for jump table entry.
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
 
             _name = null;
             _id = jumpTblIdx;
-            _type = 0;
+            //_type = 0;
         }
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
 
             _name = name;
             _id = id;
-            _type = type;
+            //_type = type;
         }
 
         /// <summary>
