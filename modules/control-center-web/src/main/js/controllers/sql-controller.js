@@ -134,6 +134,10 @@ consoleModule.controller('sqlController',
             return this.result != 'pie';
         };
 
+        paragraph.refreshExecuting = function () {
+            return paragraph.rate && paragraph.rate.stopTime
+        };
+
         Object.defineProperty(paragraph, 'gridOptions', { value: {
             enableColResize: true,
             columnDefs: [],

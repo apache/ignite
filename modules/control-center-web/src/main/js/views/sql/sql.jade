@@ -171,14 +171,14 @@ block container
                                                     div(ng-show='paragraph.timeLineSupported() || !paragraph.chartTimeLineEnabled()')
                                                         div(ng-repeat='chart in paragraph.charts')
                                                             nvd3(options='chart.options' data='chart.data' api='chart.api')
-                                                    .sql-empty-result(ng-show='!paragraph.timeLineSupported() && paragraph.chartTimeLineEnabled()') Pie chart does not support 'TIME_LINE' column for X-axis
+                                                    .sql-empty-result(ng-show='!paragraph.timeLineSupported() && paragraph.chartTimeLineEnabled()') Pie chart does not support 'TIME_LINE' column for X-axis. Please use another column for X-axis or switch to another chart.
                                             .sql-empty-result(ng-hide='paragraph.queryExecute()')
                                                 | Charts do not support&nbsp
                                                 b Explain
                                                 | &nbspand&nbsp
                                                 b Scan
                                                 | &nbspquery
-                                        div(ng-show='paragraph.queryId && (paragraph.table() || paragraph.chart() && paragraph.queryExecute())')
+                                        div(ng-show='paragraph.queryId && !paragraph.refreshExecuting() && (paragraph.table() || paragraph.chart() && paragraph.queryExecute() && (paragraph.timeLineSupported() || !paragraph.chartTimeLineEnabled()))')
                                             hr(style='margin-top: 0; margin-bottom: 5px')
                                             i.fa.fa-chevron-circle-right(style='float: right;margin-right: 10px;' ng-click='nextPage(paragraph)')
                                             a(style='float: right; margin-bottom: 5px;margin-right: 5px;' ng-click='nextPage(paragraph)') Next
