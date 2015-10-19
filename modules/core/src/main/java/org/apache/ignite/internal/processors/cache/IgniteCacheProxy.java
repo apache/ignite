@@ -1311,7 +1311,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         try {
             if (isAsync())
-                setFuture(delegate.clearAsync(keys));
+                setFuture(delegate.clearAllAsync(keys));
             else
                 delegate.clearAll(keys);
         }
