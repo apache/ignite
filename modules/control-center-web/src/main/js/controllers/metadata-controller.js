@@ -539,7 +539,7 @@ consoleModule.controller('metadataController', [
                                     groups.push(
                                         {name: indexName, fields: _.map(fields, function (fieldName) {
                                             return {
-                                                name: fieldName,
+                                                name: toJavaName(fieldName),
                                                 className: colType(fieldName),
                                                 direction: index[fieldName]
                                             };

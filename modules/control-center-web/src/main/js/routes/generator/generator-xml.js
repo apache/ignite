@@ -880,7 +880,7 @@ $generatorXml.metadataGroups = function (res, meta) {
                 res.startBlock('<map>');
 
                 _.forEach(fields, function (field) {
-                    res.startBlock('<entry key="' + field.name + '">');
+                    res.startBlock('<entry key="' + field.name.toUpperCase() + '">');
 
                     res.startBlock('<bean class="org.apache.ignite.lang.IgniteBiTuple">');
                     res.line('<constructor-arg value="' + $dataStructures.fullClassName(field.className) + '"/>');

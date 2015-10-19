@@ -998,7 +998,7 @@ $generatorJava.metadataQueryFields = function (res, meta, fieldProperty) {
         $generatorJava.declareVariable(res, $generatorJava.needNewVariable(res, fieldProperty), fieldProperty, 'java.util.Map', 'java.util.LinkedHashMap', 'java.lang.String', 'java.lang.Class<?>');
 
         _.forEach(fields, function (field) {
-            res.line(fieldProperty + '.put("' + field.name.toUpperCase() + '", ' + res.importClass(field.className) + '.class);');
+            res.line(fieldProperty + '.put("' + field.name + '", ' + res.importClass(field.className) + '.class);');
         });
 
         res.needEmptyLine = true;
@@ -1532,11 +1532,11 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
             res.line('/**');
             res.line(' * ' + $generatorCommon.mainComment());
             res.line(' */');
-            res.startBlock('public class IgniteConfigurationFactory {');
+            res.startBlock('public class ConfigurationFactory {');
             res.line('/**');
             res.line(' * Configure grid.');
             res.line(' */');
-            res.startBlock('public IgniteConfiguration createConfiguration() {');
+            res.startBlock('public static IgniteConfiguration createConfiguration() {');
         }
 
         $generatorJava.clusterGeneral(cluster, clientNearCfg, res);
@@ -1566,8 +1566,26 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
         $generatorJava.clusterSsl(cluster, res);
 
         if (javaClass) {
+            res.importClass('org.apache.ignite.Ignite');
+            res.importClass('org.apache.ignite.IgniteException');
+            res.importClass('org.apache.ignite.Ignition');
+
             res.line('return cfg;');
             res.endBlock('}');
+
+            res.line('/**');
+            res.line('* Sample usage of ConfigurationFactory.');
+            res.line('*');
+            res.line('* @param args Command line arguments, none required.');
+            res.line('* @throws IgniteException If example execution failed.');
+            res.line('*/');
+
+            res.startBlock('public static void main(String[] args) throws IgniteException {');
+            res.startBlock('try (Ignite ignite = Ignition.start(ConfigurationFactory.createConfiguration())) {');
+            res.line('System.out.println(" Write some code here...");');
+            res.endBlock('}');
+            res.endBlock('}');
+
             res.endBlock('}');
 
             return res.generateImports() + '\n\n' + res.asString();

@@ -29,6 +29,7 @@ $generatorProperties = {};
  * Generate properties file with properties stubs for stores data sources.
  *
  * @param cluster Configuration to process.
+ * @param res Resulting output with generated properties.
  * @returns {string} Generated content.
  */
 $generatorProperties.dataSourcesProperties = function (cluster, res) {

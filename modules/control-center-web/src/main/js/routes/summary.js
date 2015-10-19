@@ -23,6 +23,8 @@ var $generatorXml = require('./generator/generator-xml');
 var $generatorJava = require('./generator/generator-java');
 var $generatorDocker = require('./generator/generator-docker');
 var $generatorProperties = require('./generator/generator-properties');
+var $generatorPom = require('./generator/generator-pom');
+var $generatorReadme = require('./generator/generator-readme');
 
 // GET template for summary tabs.
 router.get('/summary-tabs', function (req, res) {
@@ -61,11 +63,15 @@ router.post('/download', function (req, res) {
         }
 
         if (builder)
-            zip.file('secret.properties', builder.asString());
+            zip.file('src/main/resources/secret.properties', builder.asString());
 
-        zip.file(cluster.name + '.xml', $generatorXml.cluster(cluster, clientNearConfiguration));
-        zip.file(cluster.name + '.snippet.java', $generatorJava.cluster(cluster, false, clientNearConfiguration));
-        zip.file('ConfigurationFactory.java', $generatorJava.cluster(cluster, true, clientNearConfiguration));
+        var srcPath = 'src/main/java/';
+
+        zip.file('config/' + cluster.name + '.xml', $generatorXml.cluster(cluster, clientNearConfiguration));
+        zip.file(srcPath + 'ConfigurationFactory.java', $generatorJava.cluster(cluster, true, clientNearConfiguration));
+        zip.file('pom.xml', $generatorPom.pom('1.5.0').asString());
+
+        zip.file('README.txt', $generatorReadme.readme().asString());
 
         $generatorJava.pojos(cluster.caches, req.body.useConstructor, req.body.includeKeyFields);
 
@@ -75,9 +81,9 @@ router.post('/download', function (req, res) {
             var meta = metadatas[metaIx];
 
             if (meta.keyClass)
-                zip.file(meta.keyType.replace(/\./g, '/') + '.java', meta.keyClass);
+                zip.file(srcPath + meta.keyType.replace(/\./g, '/') + '.java', meta.keyClass);
 
-            zip.file(meta.valueType.replace(/\./g, '/') + '.java', meta.valueClass);
+            zip.file(srcPath + meta.valueType.replace(/\./g, '/') + '.java', meta.valueClass);
         }
 
         var buffer = zip.generate({type:"nodebuffer"});
