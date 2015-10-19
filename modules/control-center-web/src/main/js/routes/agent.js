@@ -98,7 +98,9 @@ router.post('/topology', function (req, res) {
                 return cache.name;
             }));
         }, function (err) {
-            res.status(500).send(err);
+            var mStatusCode = /.*Status code:\s+(\d+)(?:\s|$)/g.exec(err);
+
+            res.status(mStatusCode[1] ? mStatusCode[1] : 500).send(err);
         });
     }
 });

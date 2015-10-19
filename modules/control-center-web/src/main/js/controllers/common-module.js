@@ -1942,8 +1942,6 @@ consoleModule.controller('agent-download', [
         // Pre-fetch modal dialogs.
         var _agentDownloadModal = $modal({scope: $scope, templateUrl: '/agent/download', show: false, backdrop: 'static'});
 
-        _agentDownloadModal.skipDialogShowing = false;
-
         var _agentDownloadHide = _agentDownloadModal.hide;
 
         /**
@@ -1952,19 +1950,17 @@ consoleModule.controller('agent-download', [
         _agentDownloadModal.hide = function () {
             $common.hideAlert();
 
-            _agentDownloadModal.skipDialogShowing = true;
-
             _agentDownloadHide();
         };
 
         /**
          * Close dialog and go by specified link.
          */
-        $scope.goHome = function () {
-            if ($window.location == _agentDownloadModal.homeLink)
+        $scope.goBack = function () {
+            if ($window.location == _agentDownloadModal.backLink)
                 $window.location.reload();
             else
-                $window.location = _agentDownloadModal.homeLink;
+                $window.location = _agentDownloadModal.backLink;
 
             $scope.checkConnection = false;
 
@@ -1991,27 +1987,26 @@ consoleModule.controller('agent-download', [
          * @param status Error code.
          */
         var _handleException = function (errMsg, status) {
-            if (_agentDownloadModal.skipDialogShowing)
-                _agentDownloadModal.skipDialogShowing = false;
+            if (_agentDownloadModal.skipSingleError)
+                _agentDownloadModal.skipSingleError = false;
             else if (!_agentDownloadModal.$isShown)
                 _agentDownloadModal.$promise.then(_agentDownloadModal.show);
 
-            if (status != 503)
+            $scope.nodeFailedConnection = status == 404;
+
+            if (status == 500)
                 $common.showError(errMsg, 'top-right', 'body', true);
         };
 
         /**
          * Start interval to agent listening.
-         *
-         * @param skipFirst If <code>true</code> first invoke will be missed.
          */
-        function _startInterval(skipFirst) {
+        function _startInterval() {
             _agentDownloadModal.updatePromise = $interval(function () {
                 _tryWithAgent();
             }, 5000, 0, false);
 
-            if (!skipFirst)
-                _tryWithAgent();
+            _tryWithAgent();
         }
 
         /**
@@ -2025,16 +2020,16 @@ consoleModule.controller('agent-download', [
          * Try to access agent and execute specified function.
          */
         function _tryWithAgent() {
-            $http.post('/agent/ping', undefined, {timeout: 3000})
-                .success(function () {
-                    _agentDownloadModal.skipDialogShowing = true;
+            $http.post(_agentDownloadModal.checkUrl, undefined, {timeout: 3000})
+                .success(function (result) {
+                    _agentDownloadModal.skipSingleError = true;
 
                     _agentDownloadModal.hide();
 
-                    if (_agentDownloadModal.simpleExecution)
+                    if (_agentDownloadModal.awaitFirstSuccess)
                         _stopInterval();
 
-                    _agentDownloadModal.checkFn(_agentDownloadModal.hide, _handleException);
+                    _agentDownloadModal.checkFn(result, _agentDownloadModal.hide, _handleException);
                 })
                 .error(function (errMsg, status) {
                     _handleException(errMsg, status);
@@ -2042,20 +2037,42 @@ consoleModule.controller('agent-download', [
         }
 
         /**
-         * Start listening of agent by ping.
+         * Start awaiting agent start using ping.
          *
          * @param checkFn Function to execute by timer when agent available.
-         * @param simpleExecution When <code>true</code> checkFn will invoke to first success only.
-         * @param homeLink Link to move on "Back to configuration" button click.
          */
-        $scope.startAgentListening = function (checkFn, simpleExecution, homeLink) {
-            _agentDownloadModal.skipDialogShowing = false;
+        $scope.awaitAgent = function (checkFn) {
+            _agentDownloadModal.skipSingleError = false;
+
+            _agentDownloadModal.checkUrl = '/agent/ping';
 
             _agentDownloadModal.checkFn = checkFn;
 
-            _agentDownloadModal.simpleExecution = simpleExecution;
+            // Stop refresh after first success.
+            _agentDownloadModal.awaitFirstSuccess = true;
 
-            _agentDownloadModal.homeLink = homeLink || '/';
+            _agentDownloadModal.backLink = '/configuration/metadata';
+
+            $scope.agentDownloadBackTo = 'Metadata';
+
+            _startInterval();
+        };
+
+        /**
+         * Start listening topology from node.
+         *
+         * @param checkFn Function to execute by timer when agent available.
+         */
+        $scope.startTopologyListening = function (checkFn) {
+            _agentDownloadModal.skipSingleError = false;
+
+            _agentDownloadModal.checkUrl = '/agent/topology';
+
+            _agentDownloadModal.checkFn = checkFn;
+
+            _agentDownloadModal.backLink = '/';
+
+            $scope.agentDownloadBackTo = 'Configuration';
 
             _startInterval();
         };

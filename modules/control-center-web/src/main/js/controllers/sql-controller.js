@@ -24,7 +24,6 @@ consoleModule.controller('sqlController',
 
     $scope.agentGoal = 'execute sql statements';
     $scope.agentTestDriveOption = '--test-drive-sql';
-    $scope.agentDownloadBackTo = 'Configuration';
 
     $scope.joinTip = $common.joinTip;
 
@@ -197,7 +196,7 @@ consoleModule.controller('sqlController',
                 if (!notebook.paragraphs || notebook.paragraphs.length == 0)
                     $scope.addParagraph();
 
-                $scope.startAgentListening(getTopology);
+                $scope.startTopologyListening(getTopology);
             })
             .error(function () {
                 $scope.notebook = undefined;
@@ -350,27 +349,21 @@ consoleModule.controller('sqlController',
             });
     };
 
-    function getTopology(onSuccess, onException) {
-        $http.post('/agent/topology')
-            .success(function (caches) {
-                onSuccess();
+    function getTopology(caches, onSuccess) {
+        onSuccess();
 
-                var oldCaches = $scope.caches;
+        var oldCaches = $scope.caches;
 
-                $scope.caches = _.sortBy(caches, 'name');
+        $scope.caches = _.sortBy(caches, 'name');
 
-                _.forEach(caches, function (cache) {
-                    var old = _.find(oldCaches, { name: cache.name });
+        _.forEach(caches, function (cache) {
+            var old = _.find(oldCaches, { name: cache.name });
 
-                    if (old && old.metadata)
-                        cache.metadata = old.metadata;
-                });
+            if (old && old.metadata)
+                cache.metadata = old.metadata;
+        });
 
-                _setActiveCache();
-            })
-            .error(function (err, status) {
-                onException(err, status);
-            });
+        _setActiveCache();
     }
 
     var _columnFilter = function(paragraph) {
