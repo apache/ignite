@@ -54,18 +54,17 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public int GetFieldId(string fieldName, byte fieldTypeId)
         {
-            int action = _curStructAction++;
+            _curStructAction++;
 
             if (_curStructUpdates == null)
             {
-                var fieldId = _desc.TypeStructure.GetFieldId(fieldName, fieldTypeId, ref _curStructPath, action);
+                var fieldId = _desc.TypeStructure.GetFieldId(fieldName, fieldTypeId, ref _curStructPath, _curStructAction);
 
                 if (fieldId != 0)
                     return fieldId;
             }
-                
-            return GetNewFieldId(fieldName, fieldTypeId, action);
 
+            return GetNewFieldId(fieldName, fieldTypeId, _curStructAction);
         }
 
         /// <summary>
