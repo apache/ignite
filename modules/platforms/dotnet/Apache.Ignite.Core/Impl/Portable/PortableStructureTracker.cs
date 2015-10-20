@@ -50,18 +50,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Gets the type descriptor.
-        /// </summary>
-        public IPortableTypeDescriptor Descriptor
-        {
-            get { return _desc; }
-        }
-
-        /// <summary>
         /// Gets the field ID.
         /// </summary>
         public int GetFieldId(string fieldName, byte fieldTypeId)
         {
+            // TODO
+            //return PortableUtils.FieldId(_desc.TypeId, fieldName, _desc.NameConverter, _desc.Mapper);
+
             _curStructAction++;
 
             if (_curStructUpdates == null)

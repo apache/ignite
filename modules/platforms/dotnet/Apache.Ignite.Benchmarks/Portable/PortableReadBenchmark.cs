@@ -39,6 +39,10 @@ namespace Apache.Ignite.Benchmarks.Portable
         /** Memory chunk. */
         private readonly IPlatformMemory _mem;
 
+        /** Pre-allocated address. */
+        private readonly Address _address = BenchmarkUtils.GetRandomAddress();
+
+
         /** Pre-allocated model. */
         private readonly TestModel _model = new TestModel
         {
@@ -86,7 +90,7 @@ namespace Apache.Ignite.Benchmarks.Portable
 
             var stream = _mem.GetStream();
 
-            _marsh.StartMarshal(stream).Write(_model);
+            _marsh.StartMarshal(stream).Write(_address);
 
             stream.SynchronizeOutput();
         }
@@ -106,9 +110,9 @@ namespace Apache.Ignite.Benchmarks.Portable
         /// <param name="state">State.</param>
         private void ReadTestModel(BenchmarkState state)
         {
-            var model = _marsh.StartUnmarshal(_mem.GetStream()).ReadObject<TestModel>();
+            var model = _marsh.StartUnmarshal(_mem.GetStream()).ReadObject<Address>();
 
-            if (model.Byte != 5)
+            if (model.FlatNumber != _address.FlatNumber)
                 throw new InvalidOperationException();
         }
     }
