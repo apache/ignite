@@ -17,6 +17,8 @@
 
 // For server side we should load required libraries.
 if (typeof window === 'undefined') {
+    _ = require('lodash');
+
     $generatorCommon = require('./generator-common');
 }
 
@@ -26,23 +28,40 @@ $generatorPom = {};
 /**
  * Generate pom.xml.
  *
- * @param res Resulting output with generated pom.
+ * @param caches Collection of caches to take info about used JDBC dialects.
  * @param igniteVersion Ignite version for Ignite dependencies.
+ * @param res Resulting output with generated pom.
  * @returns {string} Generated content.
  */
-$generatorPom.pom = function (igniteVersion, res) {
+$generatorPom.pom = function (caches, igniteVersion, res) {
     if (!res)
         res = $generatorCommon.builder();
+
+    var dialect = {};
+
+    _.forEach(caches, function (cache) {
+        if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind == 'CacheJdbcPojoStoreFactory') {
+            if (cache.cacheStoreFactory.CacheJdbcPojoStoreFactory) {
+                dialect[cache.cacheStoreFactory.CacheJdbcPojoStoreFactory.dialect] = true;
+            }
+        }
+    });
 
     function addProperty(tag, val) {
         res.line('<' + tag + '>' + val + '</' + tag + '>');
     }
 
-    function addDependency(groupId, artifactId, version) {
+    function addDependency(groupId, artifactId, version, jar) {
         res.startBlock('<dependency>');
         addProperty('groupId', groupId);
         addProperty('artifactId', artifactId);
         addProperty('version', version);
+
+        if (jar) {
+            addProperty('scope', 'system');
+            addProperty('systemPath', '${project.basedir}/jdbc-drivers/' + jar);
+        }
+
         res.endBlock('</dependency>');
     }
 
@@ -81,10 +100,30 @@ $generatorPom.pom = function (igniteVersion, res) {
     res.needEmptyLine = true;
 
     res.startBlock('<dependencies>');
+
     addDependency('org.apache.ignite', 'ignite-core', igniteVersion);
     addDependency('org.apache.ignite', 'ignite-spring', igniteVersion);
     addDependency('org.apache.ignite', 'ignite-indexing', igniteVersion);
     addDependency('org.apache.ignite', 'ignite-rest-http', igniteVersion);
+
+    if (dialect.MySQL)
+        addDependency('mysql', 'mysql-connector-java', '5.1.37');
+
+    if (dialect.PosgreSQL)
+        addDependency('org.postgresql', 'postgresql', '9.4-1204-jdbc42');
+
+    if (dialect.H2)
+        addDependency('com.h2database', 'h2', '1.3.175');
+
+    if (dialect.Oracle)
+        addDependency('oracle', 'jdbc', '11.2', 'ojdbc6.jar');
+
+    if (dialect.DB2)
+        addDependency('ibm', 'jdbc', '4.19.26', 'db2jcc4.jar');
+
+    if (dialect.SQLServer)
+        addDependency('microsoft', 'jdbc', '4.1', 'sqljdbc41.jar');
+
     res.endBlock('</dependencies>');
 
     res.needEmptyLine = true;

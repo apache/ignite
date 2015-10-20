@@ -69,9 +69,10 @@ router.post('/download', function (req, res) {
 
         zip.file('config/' + cluster.name + '.xml', $generatorXml.cluster(cluster, clientNearConfiguration));
         zip.file(srcPath + 'ConfigurationFactory.java', $generatorJava.cluster(cluster, true, clientNearConfiguration));
-        zip.file('pom.xml', $generatorPom.pom('1.5.0').asString());
+        zip.file('pom.xml', $generatorPom.pom(cluster.caches, '1.5.0').asString());
 
         zip.file('README.txt', $generatorReadme.readme().asString());
+        zip.file('jdbc-drivers/README.txt', 'Copy proprietary JDBC drivers to this folder.');
 
         $generatorJava.pojos(cluster.caches, req.body.useConstructor, req.body.includeKeyFields);
 

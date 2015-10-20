@@ -878,18 +878,18 @@ $generatorJava.cacheStore = function (cache, varName, res) {
 
                     switch (storeFactory.dialect) {
                         case 'DB2':
-                            res.line(dsVarName + '.setServerName(_SERVER_NAME_);');
-                            res.line(dsVarName + '.setPortNumber(_PORT_NUMBER_);');
-                            res.line(dsVarName + '.setDatabaseName(_DATABASE_NAME_);');
-                            res.line(dsVarName + '.setDriverType(_DRIVER_TYPE_);');
+                            res.line(dsVarName + '.setServerName("_SERVER_NAME_");');
+                            res.line('// ' + dsVarName + '.setPortNumber("_PORT_NUMBER_"); // 50000 by default');
+                            res.line(dsVarName + '.setDatabaseName("_DATABASE_NAME_");');
+                            res.line('// ' + dsVarName + '.setDriverType(_DRIVER_TYPE_); // 4 by default');
                             break;
 
                         default:
-                            res.line(dsVarName + '.setURL(_URL_);');
+                            res.line(dsVarName + '.setURL("_URL_");');
                     }
 
-                    res.line(dsVarName + '.setUsername(_User_Name_);');
-                    res.line(dsVarName + '.setPassword(_Password_);');
+                    res.line(dsVarName + '.setUser("_USER_NAME_");');
+                    res.line(dsVarName + '.setPassword("_PASSWORD_");');
                 }
             }
 
@@ -1535,8 +1535,11 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
             res.startBlock('public class ConfigurationFactory {');
             res.line('/**');
             res.line(' * Configure grid.');
+            res.line(' *');
+            res.line(' * @return Ignite configuration.');
+            res.line(' * @throws Exception If failed to construct Ignite configuration instance.');
             res.line(' */');
-            res.startBlock('public static IgniteConfiguration createConfiguration() {');
+            res.startBlock('public static IgniteConfiguration createConfiguration() throws Exception {');
         }
 
         $generatorJava.clusterGeneral(cluster, clientNearCfg, res);
@@ -1567,20 +1570,19 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
 
         if (javaClass) {
             res.importClass('org.apache.ignite.Ignite');
-            res.importClass('org.apache.ignite.IgniteException');
             res.importClass('org.apache.ignite.Ignition');
 
             res.line('return cfg;');
             res.endBlock('}');
 
             res.line('/**');
-            res.line('* Sample usage of ConfigurationFactory.');
-            res.line('*');
-            res.line('* @param args Command line arguments, none required.');
-            res.line('* @throws IgniteException If example execution failed.');
-            res.line('*/');
+            res.line(' * Sample usage of ConfigurationFactory.');
+            res.line(' *');
+            res.line(' * @param args Command line arguments, none required.');
+            res.line(' * @throws Exception If sample execution failed.');
+            res.line(' */');
 
-            res.startBlock('public static void main(String[] args) throws IgniteException {');
+            res.startBlock('public static void main(String[] args) throws Exception {');
             res.startBlock('try (Ignite ignite = Ignition.start(ConfigurationFactory.createConfiguration())) {');
             res.line('System.out.println("Write some code here...");');
             res.endBlock('}');
