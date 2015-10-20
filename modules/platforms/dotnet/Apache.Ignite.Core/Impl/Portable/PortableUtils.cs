@@ -1542,16 +1542,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             if (val == null)
                 return 0;
+
             int hash = 0;
 
-            for (int i = 0; i < val.Length; i++)
+            foreach (char c in val)
             {
-                char c = val[i];
-
-                if ('A' <= c && c <= 'Z')
-                    c = (char)(c | 0x20);
-
-                hash = 31 * hash + c;
+                unchecked
+                {
+                    hash = 31*hash + ('A' <= c && c <= 'Z' ? c | 0x20 : c);
+                }
             }
 
             return hash;
