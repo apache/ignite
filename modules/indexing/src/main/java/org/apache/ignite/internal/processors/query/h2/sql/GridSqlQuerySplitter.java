@@ -329,6 +329,12 @@ public class GridSqlQuerySplitter {
         for (int i = rdcExps.length; i < mapExps.size(); i++)  // Add all extra map columns as invisible reduce columns.
             rdcQry.addColumn(column(((GridSqlAlias)mapExps.get(i)).alias()), false);
 
+        // -- FROM
+        findAffinityColumnConditions(mapQry.from());
+
+        // -- WHERE
+        findAffinityColumnConditions(mapQry.where());
+
         // -- GROUP BY
         if (mapQry.groupColumns() != null && !collocated)
             rdcQry.groupColumns(mapQry.groupColumns());
