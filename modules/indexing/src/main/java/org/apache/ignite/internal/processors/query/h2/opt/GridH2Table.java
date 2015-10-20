@@ -26,11 +26,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.h2.api.TableEngine;
@@ -82,7 +83,10 @@ public class GridH2Table extends TableBase {
     private final Set<Session> sessions = Collections.newSetFromMap(new ConcurrentHashMap8<Session,Boolean>());
 
     /** */
-    private volatile Object[] actualSnapshot;
+    private final AtomicReference<Object[]> actualSnapshot = new AtomicReference<>();
+
+    /** In case when all the indexes do not support snapshots. */
+    private volatile boolean neverDropSnapshot;
 
     /** */
     private IndexColumn affKeyCol;
@@ -234,7 +238,7 @@ public class GridH2Table extends TableBase {
 
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
-        if (qctx == null || !qctx.distributedJoins())
+        if (qctx == null || !qctx.hasIndexSnapshots())
             snapshotIndexes(null); // For back compatibility or queries outside of Ignite context.
 
         return false;
@@ -249,11 +253,16 @@ public class GridH2Table extends TableBase {
 
         Lock l;
 
-        for (long waitTime = 100;; waitTime *= 2) { // Increase wait time to avoid starvation.
-            snapshots = actualSnapshot;
+        // Try to reuse existing snapshots outside of the lock.
+        for (long waitTime = 25;; waitTime *= 2) { // Increase wait time to avoid starvation.
+            snapshots = actualSnapshot.get();
 
-            if (snapshots != null) // Reuse existing snapshot without locking.
-                return doSnapshotIndexes(snapshots, qctx);
+            if (snapshots != null) { // Reuse existing snapshot without locking.
+                snapshots = doSnapshotIndexes(snapshots, qctx);
+
+                if (snapshots != null)
+                    return snapshots; // Reused successfully.
+            }
 
             l = lock(true, waitTime);
 
@@ -261,28 +270,24 @@ public class GridH2Table extends TableBase {
                 break;
         }
 
-        boolean snapshoted = false;
-
         try {
-            snapshots = actualSnapshot; // Try again inside of the lock.
+            // Try again inside of the lock.
+            snapshots = actualSnapshot.get();
 
-            if (snapshots == null) {
+            if (snapshots != null) // Try reusing.
+                snapshots = doSnapshotIndexes(snapshots, qctx);
+
+            if (snapshots == null) { // Reuse failed, produce new snapshots.
                 snapshots = doSnapshotIndexes(null, qctx);
 
-                if (desc == null || desc.memory() == null) // This optimization is disabled for off-heap index.
-                    actualSnapshot = snapshots;
+                assert snapshots != null;
 
-                snapshoted = true;
+                actualSnapshot.set(snapshots);
             }
         }
         finally {
             l.unlock();
         }
-
-        assert snapshots != null;
-
-        if (!snapshoted)
-            doSnapshotIndexes(snapshots, qctx);
 
         return snapshots;
     }
@@ -307,7 +312,7 @@ public class GridH2Table extends TableBase {
                 return null;
         }
         catch (InterruptedException e) {
-            throw new IgniteException("Thread got interrupted while trying to acquire table lock.", e);
+            throw new IgniteInterruptedException("Thread got interrupted while trying to acquire table lock.", e);
         }
 
         if (destroyed) {
@@ -328,11 +333,37 @@ public class GridH2Table extends TableBase {
      */
     @SuppressWarnings("unchecked")
     private Object[] doSnapshotIndexes(Object[] snapshots, GridH2QueryContext qctx) {
-        if (snapshots == null)
+        if (snapshots == null) // Nothing to reuse, create new snapshots.
             snapshots = new Object[idxs.size() - 1];
 
-        for (int i = 1, len = idxs.size(); i < len; i++)  // Take snapshots on all except first which is scan.
-            snapshots[i - 1] = index(i).takeSnapshot(snapshots[i - 1], qctx);
+        boolean neverDrop = true;
+
+        // Take snapshots on all except first which is scan.
+        for (int i = 1, len = idxs.size(); i < len; i++) {
+            Object s = snapshots[i - 1];
+
+            boolean reuseExisting = s != null;
+
+            s = index(i).takeSnapshot(s, qctx);
+
+            if (reuseExisting && s == null) { // Existing snapshot was invalidated before we were able to reserve it.
+                // Release already taken snapshots.
+                for (int j = 1; j < i; j++)
+                    index(j).releaseSnapshot();
+
+                // Drop invalidated snapshot.
+                actualSnapshot.compareAndSet(snapshots, null);
+
+                return null;
+            }
+
+            snapshots[i - 1] = s;
+
+            neverDrop &= (s == null);
+        }
+
+        if (neverDrop)
+            neverDropSnapshot = true;
 
         return snapshots;
     }
@@ -366,7 +397,7 @@ public class GridH2Table extends TableBase {
 
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
-        if (qctx == null || !qctx.distributedJoins())
+        if (qctx == null || !qctx.hasIndexSnapshots())
             releaseSnapshots(); // For back compatibility or queries outside of Ignite context.
     }
 
@@ -495,7 +526,8 @@ public class GridH2Table extends TableBase {
             }
 
             // The snapshot is not actual after update.
-            actualSnapshot = null;
+            if (!neverDropSnapshot)
+                actualSnapshot.set(null);
 
             return true;
         }
@@ -537,13 +569,10 @@ public class GridH2Table extends TableBase {
      * Rebuilds all indexes of this table.
      */
     public void rebuildIndexes() {
-        GridUnsafeMemory memory = desc == null ? null : desc.memory();
-
         Lock l = lock(true, Long.MAX_VALUE);
 
         try {
-            if (memory == null && actualSnapshot == null)
-                actualSnapshot = snapshotIndexes(null); // Allow read access while we are rebuilding indexes.
+            snapshotIndexes(null); // Allow read access while we are rebuilding indexes.
 
             for (int i = 1, len = idxs.size(); i < len; i++) {
                 GridH2IndexBase newIdx = index(i).rebuild();
@@ -554,13 +583,13 @@ public class GridH2Table extends TableBase {
                     idxs.set(0, new ScanIndex(newIdx));
             }
         }
-        catch (InterruptedException ignored) {
-            // No-op.
+        catch (InterruptedException e) {
+            throw new IgniteInterruptedException(e);
         }
         finally {
-            l.unlock();
+            releaseSnapshots();
 
-            actualSnapshot = null;
+            l.unlock();
         }
     }
 

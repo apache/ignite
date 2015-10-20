@@ -47,6 +47,7 @@ import org.h2.table.Table;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.h2.value.ValueGeometry;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
 
@@ -117,6 +118,11 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     private void checkClosed() {
         if (closed)
             throw DbException.throwInternalError();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override protected Object doTakeSnapshot() {
+        return null; // TODO We do not support snapshots, but probably this is possible.
     }
 
     /** {@inheritDoc} */

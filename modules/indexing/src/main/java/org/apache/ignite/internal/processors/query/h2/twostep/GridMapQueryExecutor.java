@@ -489,7 +489,7 @@ public class GridMapQueryExecutor {
 
             List<GridH2Table> snapshotedTbls = null;
 
-            if (distributedJoins && !F.isEmpty(tbls)) {
+            if (!F.isEmpty(tbls)) {
                 snapshotedTbls = new ArrayList<>(tbls.size());
 
                 for (String identifier : tbls) {

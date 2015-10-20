@@ -599,7 +599,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                 node = cctx.affinity().primary(affKey.getObject(), topVer);
 
             if (node == null)
-                throw new CacheException(); // TODO retry exception
+                throw new GridH2RetryException();
 
             nodes = Collections.singleton(node);
         }

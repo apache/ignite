@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -42,7 +43,7 @@ public class GridH2QueryContext {
     private final Key key;
 
     /** Index snapshots. */
-    private final ConcurrentMap<Long, Object> snapshots = new ConcurrentHashMap8<>();
+    private Map<Long, Object> snapshots;
 
     /** */
     private IndexingQueryFilter filter;
@@ -140,11 +141,15 @@ public class GridH2QueryContext {
      */
     public void putSnapshot(long idxId, Object snapshot) {
         assert snapshot != null;
+        assert get() == null : "snapshot indexes before setting query context";
 
         if (snapshot instanceof GridReservable && !((GridReservable)snapshot).reserve())
-            throw new GridObjectDestroyedException();
+            throw new IllegalStateException("Must be already reserved before.");
 
-        if (snapshots.putIfAbsent(idxId, snapshot) != null)
+        if (snapshots == null)
+            snapshots = new HashMap<>();
+
+        if (snapshots.put(idxId, snapshot) != null)
             throw new IllegalStateException("Index already snapshoted.");
     }
 
@@ -155,6 +160,13 @@ public class GridH2QueryContext {
     @SuppressWarnings("unchecked")
     public <T> T getSnapshot(long idxId) {
         return (T)snapshots.get(idxId);
+    }
+
+    /**
+     * @return If indexes were snapshotted before query execution.
+     */
+    public boolean hasIndexSnapshots() {
+        return snapshots != null;
     }
 
     /**

@@ -5,6 +5,6 @@ import org.apache.ignite.IgniteException;
 /**
  * Internal exception.
  */
-public class GridObjectDestroyedException extends IgniteException {
+public class GridH2RetryException extends IgniteException {
     // No-op.
 }

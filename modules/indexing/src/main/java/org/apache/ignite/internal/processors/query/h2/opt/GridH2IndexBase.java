@@ -100,7 +100,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         if (s != null) {
             if (s instanceof GridReservable && !((GridReservable)s).reserve())
-                throw new GridObjectDestroyedException();
+                return null;
 
             snapshot.set(s);
 
@@ -113,11 +113,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
     /**
      * Takes and returns actual snapshot or {@code null} if snapshots are not supported.
-     * By default index does not support snapshots.
+     *
+     * @return Snapshot or {@code null}.
      */
-    @Nullable protected Object doTakeSnapshot() {
-        return null;
-    }
+    @Nullable protected abstract Object doTakeSnapshot();
 
     /**
      * @return Thread local snapshot.
