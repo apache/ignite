@@ -702,7 +702,7 @@ consoleModule.controller('metadataController', [
                             $scope.ui.groups = data.metadata;
 
                             if ($common.getQueryVariable('new'))
-                                $scope.createItem();
+                                $scope.createItem($common.getQueryVariable('id'));
                             else {
                                 var lastSelectedMetadata = angular.fromJson(sessionStorage.lastSelectedMetadata);
 
@@ -809,12 +809,15 @@ consoleModule.controller('metadataController', [
                     : 'New metadata';
             };
 
-            function prepareNewItem() {
-                return {space: $scope.spaces[0]._id, caches: []};
+            function prepareNewItem(cacheId) {
+                return {
+                    space: $scope.spaces[0]._id,
+                    caches: cacheId && _.find($scope.caches, {value: cacheId}) ? [cacheId] : []
+                };
             }
 
             // Add new metadata.
-            $scope.createItem = function () {
+            $scope.createItem = function (cacheId) {
                 $table.tableReset();
 
                 $timeout(function () {
@@ -822,7 +825,7 @@ consoleModule.controller('metadataController', [
                     $common.ensureActivePanel($scope.panels, 'general', 'keyType');
                 });
 
-                $scope.selectItem(undefined, prepareNewItem());
+                $scope.selectItem(undefined, prepareNewItem(cacheId));
             };
 
             // Check metadata logical consistency.

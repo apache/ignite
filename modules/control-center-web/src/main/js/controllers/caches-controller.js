@@ -254,7 +254,7 @@ consoleModule.controller('cachesController', [
                             $scope.ui.addGroups(data.general, data.advanced);
 
                             if ($common.getQueryVariable('new'))
-                                $scope.createItem();
+                                $scope.createItem($common.getQueryVariable('id'));
                             else {
                                 var lastSelectedCache = angular.fromJson(sessionStorage.lastSelectedCache);
 
@@ -386,27 +386,27 @@ consoleModule.controller('cachesController', [
                     'Selected cache: ' + $scope.backupItem.name : 'New cache';
             };
 
-            function prepareNewItem() {
+            function prepareNewItem(id) {
                 return {
                     space: $scope.spaces[0]._id,
                     cacheMode: 'PARTITIONED',
                     atomicityMode: 'ATOMIC',
                     readFromBackup: true,
                     copyOnRead: true,
-                    clusters: [],
-                    metadatas: []
+                    clusters: id && _.find($scope.clusters, {value: id}) ? [id] : [],
+                    metadatas: id && _.find($scope.metadatas, {value: id}) ? [id] : []
                 }
             }
 
             // Add new cache.
-            $scope.createItem = function () {
+            $scope.createItem = function (id) {
                 $table.tableReset();
 
                 $timeout(function () {
                     $common.ensureActivePanel($scope.panels, 'general', 'cacheName');
                 });
 
-                $scope.selectItem(undefined, prepareNewItem());
+                $scope.selectItem(undefined, prepareNewItem(id));
             };
 
             // Check cache logical consistency.

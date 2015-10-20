@@ -194,7 +194,7 @@ consoleModule.controller('clustersController', [
                         $scope.ui.addGroups(data.general, data.advanced);
 
                         if ($common.getQueryVariable('new'))
-                            $scope.createItem();
+                            $scope.createItem($common.getQueryVariable('id'));
                         else {
                             var lastSelectedCluster = angular.fromJson(sessionStorage.lastSelectedCluster);
 
@@ -327,27 +327,27 @@ consoleModule.controller('clustersController', [
                 'Selected cluster: ' + $scope.backupItem.name : 'New cluster';
         };
 
-        function prepareNewItem() {
+        function prepareNewItem(cacheId) {
             var newItem = {
                 discovery: {kind: 'Multicast', Vm: {addresses: ['127.0.0.1:47500..47510']}, Multicast: {}},
                 deploymentMode: 'SHARED'
             };
 
-            newItem.caches = [];
+            newItem.caches = cacheId && _.find($scope.caches, {value: cacheId}) ? [cacheId] : [];
             newItem.space = $scope.spaces[0]._id;
 
             return newItem;
         }
 
         // Add new cluster.
-        $scope.createItem = function () {
+        $scope.createItem = function(cacheId) {
             $table.tableReset();
 
             $timeout(function () {
                 $common.ensureActivePanel($scope.panels, "general", 'clusterName');
             });
 
-            $scope.selectItem(undefined, prepareNewItem());
+            $scope.selectItem(undefined, prepareNewItem(cacheId));
         };
 
         $scope.indexOfCache = function (cacheId) {
