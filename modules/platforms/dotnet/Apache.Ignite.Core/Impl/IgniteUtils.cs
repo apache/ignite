@@ -47,6 +47,9 @@ namespace Apache.Ignite.Core.Impl
         /** Directory: bin. */
         private const string DirBin = "bin";
 
+        /** Directory: server. */
+        private const string DirServer = "server";
+
         /** File: jvm.dll. */
         private const string FileJvmDll = "jvm.dll";
 
@@ -257,12 +260,16 @@ namespace Apache.Ignite.Core.Impl
             var javaHomeDir = Environment.GetEnvironmentVariable(EnvJavaHome);
 
             if (!string.IsNullOrEmpty(javaHomeDir))
-            {
-                var bin = Path.Combine(javaHomeDir, DirJre, DirBin);
+                yield return
+                    new KeyValuePair<string, string>(EnvJavaHome, GetJvmDllPath(Path.Combine(javaHomeDir, DirJre)));
+        }
 
-                foreach (var jvmDllPath in Directory.EnumerateFiles(bin, FileJvmDll, SearchOption.AllDirectories))
-                    yield return new KeyValuePair<string, string>(EnvJavaHome, jvmDllPath);
-            }
+        /// <summary>
+        /// Gets the JVM DLL path from JRE dir.
+        /// </summary>
+        private static string GetJvmDllPath(string jreDir)
+        {
+            return Path.Combine(jreDir, DirBin, DirServer, FileJvmDll);
         }
 
         /// <summary>
