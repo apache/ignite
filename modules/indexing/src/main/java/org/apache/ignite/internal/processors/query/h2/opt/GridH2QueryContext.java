@@ -22,7 +22,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -43,6 +45,7 @@ public class GridH2QueryContext {
     private final Key key;
 
     /** Index snapshots. */
+    @GridToStringInclude
     private Map<Long, Object> snapshots;
 
     /** */
@@ -68,6 +71,13 @@ public class GridH2QueryContext {
      */
     public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
         key = new Key(locNodeId, nodeId, qryId, type);
+    }
+
+    /**
+     * @return Type.
+     */
+    public GridH2QueryType type() {
+        return key.type;
     }
 
     /**
@@ -222,7 +232,7 @@ public class GridH2QueryContext {
     private static void doClear(Key key) {
         GridH2QueryContext x = qctxs.remove(key);
 
-        if (x != null) {
+        if (x != null && !F.isEmpty(x.snapshots)) {
             for (Object snapshot : x.snapshots.values()) {
                 if (snapshot instanceof GridReservable)
                     ((GridReservable)snapshot).release();
@@ -291,21 +301,26 @@ public class GridH2QueryContext {
         return this;
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridH2QueryContext.class, this);
+    }
+
     /**
      * Unique key for the query context.
      */
     private static class Key {
         /** */
-        final UUID locNodeId;
+        private final UUID locNodeId;
 
         /** */
-        final UUID nodeId;
+        private final UUID nodeId;
 
         /** */
-        final long qryId;
+        private final long qryId;
 
         /** */
-        final GridH2QueryType type;
+        private final GridH2QueryType type;
 
         /**
          * @param locNodeId Local node ID.
@@ -347,6 +362,11 @@ public class GridH2QueryContext {
             result = 31 * result + type.hashCode();
 
             return result;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Key.class, this);
         }
     }
 }

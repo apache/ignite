@@ -59,6 +59,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.VAL_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 
 /**
  * H2 Table implementation.
@@ -86,7 +87,7 @@ public class GridH2Table extends TableBase {
     private final AtomicReference<Object[]> actualSnapshot = new AtomicReference<>();
 
     /** In case when all the indexes do not support snapshots. */
-    private volatile boolean neverDropSnapshot;
+    private volatile boolean noSnapshots;
 
     /** */
     private IndexColumn affKeyCol;
@@ -234,14 +235,26 @@ public class GridH2Table extends TableBase {
         if (ses != null) {
             if (!sessions.add(ses))
                 return false;
+
+            ses.addLock(this);
         }
 
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        if (qctx == null || !qctx.hasIndexSnapshots())
-            snapshotIndexes(null); // For back compatibility or queries outside of Ignite context.
+        if (snapshotInLock())
+            snapshotIndexes(null);
 
         return false;
+    }
+
+    /**
+     * @return {@code true} If we must snapshot and release index snapshots in {@link #lock(Session, boolean, boolean)}
+     * and {@link #unlock(Session)} methods.
+     */
+    private static boolean snapshotInLock() {
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        return qctx == null || // Outside of Ignite query context.
+            qctx.type() != MAP || // LOCAL and REDUCE queries.
+            (qctx.type() == MAP && !qctx.hasIndexSnapshots()); // Backward compatibility.
     }
 
     /**
@@ -258,6 +271,9 @@ public class GridH2Table extends TableBase {
             snapshots = actualSnapshot.get();
 
             if (snapshots != null) { // Reuse existing snapshot without locking.
+                if (noSnapshots)
+                    return snapshots; // Return fake snapshots.
+
                 snapshots = doSnapshotIndexes(snapshots, qctx);
 
                 if (snapshots != null)
@@ -336,7 +352,7 @@ public class GridH2Table extends TableBase {
         if (snapshots == null) // Nothing to reuse, create new snapshots.
             snapshots = new Object[idxs.size() - 1];
 
-        boolean neverDrop = true;
+        boolean noSnapshots0 = true;
 
         // Take snapshots on all except first which is scan.
         for (int i = 1, len = idxs.size(); i < len; i++) {
@@ -359,11 +375,11 @@ public class GridH2Table extends TableBase {
 
             snapshots[i - 1] = s;
 
-            neverDrop &= (s == null);
+            noSnapshots0 &= (s == null);
         }
 
-        if (neverDrop)
-            neverDropSnapshot = true;
+        if (noSnapshots0)
+            noSnapshots = true;
 
         return snapshots;
     }
@@ -380,6 +396,8 @@ public class GridH2Table extends TableBase {
         Lock l = lock(true, Long.MAX_VALUE);
 
         try {
+            assert sessions.isEmpty() : sessions;
+
             destroyed = true;
 
             for (int i = 1, len = idxs.size(); i < len; i++)
@@ -395,10 +413,8 @@ public class GridH2Table extends TableBase {
         if (ses != null && !sessions.remove(ses))
             return;
 
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        if (qctx == null || !qctx.hasIndexSnapshots())
-            releaseSnapshots(); // For back compatibility or queries outside of Ignite context.
+        if (snapshotInLock())
+            releaseSnapshots();
     }
 
     /**
@@ -526,7 +542,7 @@ public class GridH2Table extends TableBase {
             }
 
             // The snapshot is not actual after update.
-            if (!neverDropSnapshot)
+            if (!noSnapshots)
                 actualSnapshot.set(null);
 
             return true;
