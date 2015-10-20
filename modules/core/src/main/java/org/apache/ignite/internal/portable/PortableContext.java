@@ -890,7 +890,7 @@ public class PortableContext implements Externalizable {
 
         int idx = clsName.lastIndexOf('$');
 
-        if (idx == clsName.length() - 1)
+        if (idx == clsName.length() - 1) // This is regular (not inner) class name that ends with '$'.
             idx = -1;
         else if (idx >= 0) {
             String typeName = clsName.substring(idx + 1);
