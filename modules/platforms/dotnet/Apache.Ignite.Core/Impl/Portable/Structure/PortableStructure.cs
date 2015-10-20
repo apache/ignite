@@ -21,8 +21,6 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
     using System.Collections.Generic;
     using System.Diagnostics;
 
-    using Apache.Ignite.Core.Portable;
-
     /// <summary>
     /// Portable type structure. Cache field IDs and metadata to improve marshalling performance.
     /// Every object write contains a set of field writes. Every unique ordered set of written fields
@@ -48,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         private readonly PortableStructureJumpTable[] _jumps;
 
         /** Field types. */
-        private readonly ISet<string> _fieldNames;
+        private readonly HashSet<string> _fieldNames;
 
         /// <summary>
         /// Constructor.
@@ -57,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         /// <param name="jumps">Jumps.</param>
         /// <param name="fieldNames">Field names.</param>
         private PortableStructure(PortableStructureEntry[][] paths,
-            PortableStructureJumpTable[] jumps, ISet<string> fieldNames)
+            PortableStructureJumpTable[] jumps, HashSet<string> fieldNames)
         {
             _paths = paths;
             _jumps = jumps;
