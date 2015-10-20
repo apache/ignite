@@ -54,9 +54,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public int GetFieldId(string fieldName, byte fieldTypeId)
         {
-            // TODO
-            //return PortableUtils.FieldId(_desc.TypeId, fieldName, _desc.NameConverter, _desc.Mapper);
-
             _curStructAction++;
 
             if (_curStructUpdates == null)
