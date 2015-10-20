@@ -30,9 +30,6 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         /** Field ID. */
         private readonly int _id;
 
-        /** Field type. */
-        //private readonly byte _type;
-        
         /// <summary>
         /// Constructor for jump table entry.
         /// </summary>

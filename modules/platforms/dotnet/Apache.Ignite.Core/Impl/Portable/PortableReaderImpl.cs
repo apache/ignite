@@ -447,10 +447,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_curRaw)
                 throw new PortableException("Cannot read named fields after raw data is read.");
 
-            //int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curStruct.Descriptor.NameConverter, _curDesc.Mapper);
-
-            //  TODO: Do we need TypeId?
-            int fieldId = _curStruct.GetFieldId(fieldName, 0);
+            int fieldId = _curStruct.GetFieldId(fieldName);
 
             if (SeekField(fieldId))
                 return Deserialize<T>();
@@ -945,8 +942,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_curRaw)
                 throw new PortableException("Cannot read named fields after raw data is read.");
 
-            //var fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curDesc.NameConverter, _curDesc.Mapper);
-            var fieldId = _curStruct.GetFieldId(fieldName, 0);  // TODO: type id
+            var fieldId = _curStruct.GetFieldId(fieldName);
 
             if (!SeekField(fieldId))
                 return false;

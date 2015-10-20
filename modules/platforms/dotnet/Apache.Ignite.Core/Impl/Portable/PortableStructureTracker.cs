@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Gets the field ID.
         /// </summary>
-        public int GetFieldId(string fieldName, byte fieldTypeId)
+        public int GetFieldId(string fieldName, byte fieldTypeId = 0)
         {
             _curStructAction++;
 
