@@ -248,7 +248,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
                     throw new PortableException("Object is not portable: [class=" + cls + ']');
             }
 
-            obj = replace;
+            marshal(replace, detached);
+
+            return;
         }
 
         typeId = desc.typeId();
