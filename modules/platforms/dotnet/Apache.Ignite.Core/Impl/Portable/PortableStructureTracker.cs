@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (_curStructUpdates == null)
             {
-                var fieldId = _desc.TypeStructure.GetFieldId(fieldName, fieldTypeId, ref _curStructPath, _curStructAction);
+                var fieldId = _desc.TypeStructure.GetFieldId(fieldName, ref _curStructPath, _curStructAction);
 
                 if (fieldId != 0)
                     return fieldId;

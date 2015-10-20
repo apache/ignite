@@ -66,11 +66,10 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         /// Gets field ID if possible.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
-        /// <param name="fieldType">Field type.</param>
         /// <param name="pathIdx">Path index, changes during jumps.</param>
         /// <param name="actionIdx">Action index.</param>
         /// <returns>Field ID or zero in case there are no matching path.</returns>
-        public int GetFieldId(string fieldName, byte fieldType, ref int pathIdx, int actionIdx)
+        public int GetFieldId(string fieldName, ref int pathIdx, int actionIdx)
         {
             Debug.Assert(pathIdx <= _paths.Length);
 
@@ -82,7 +81,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
                 // Get entry matching the action index.
                 PortableStructureEntry entry = path[actionIdx];
 
-                if (entry.IsExpected(fieldName, fieldType))
+                if (entry.IsExpected(fieldName))
                     // Entry matches our expectations, return.
                     return entry.Id;
                 

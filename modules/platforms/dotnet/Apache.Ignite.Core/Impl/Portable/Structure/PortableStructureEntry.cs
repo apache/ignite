@@ -62,12 +62,14 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         /// Check whether current field entry matches passed arguments.
         /// </summary>
         /// <param name="name">Field name.</param>
-        /// <param name="type">Field type.</param>
         /// <returns>True if expected.</returns>
-        public bool IsExpected(string name, byte type)
+        public bool IsExpected(string name)
         {
             // Perform reference equality check first because field name is a literal in most cases.
-            return ReferenceEquals(_name, name) || name.Equals(_name);
+            if (ReferenceEquals(_name, name)) 
+                return true;
+
+            return name.Equals(_name);
         }
 
         /// <summary>
