@@ -90,7 +90,8 @@ namespace Apache.Ignite.Benchmarks.Portable
 
             var stream = _mem.GetStream();
 
-            _marsh.StartMarshal(stream).Write(_model);
+            //_marsh.StartMarshal(stream).Write(_model);
+            _marsh.StartMarshal(stream).Write(_address);
 
             stream.SynchronizeOutput();
         }
@@ -110,10 +111,16 @@ namespace Apache.Ignite.Benchmarks.Portable
         /// <param name="state">State.</param>
         private void ReadTestModel(BenchmarkState state)
         {
-            var model = _marsh.StartUnmarshal(_mem.GetStream()).ReadObject<TestModel>();
+            //var model = _marsh.StartUnmarshal(_mem.GetStream()).ReadObject<TestModel>();
 
-            if (model.Byte != _model.Byte)
+            //if (model.Byte != _model.Byte)
+            //    throw new InvalidOperationException();
+
+            var model = _marsh.StartUnmarshal(_mem.GetStream()).ReadObject<Address>();
+
+            if (model.FlatNumber != _address.FlatNumber)
                 throw new InvalidOperationException();
+
         }
     }
 }
