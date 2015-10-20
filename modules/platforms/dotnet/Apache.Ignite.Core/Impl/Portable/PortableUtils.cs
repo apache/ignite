@@ -1549,7 +1549,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 unchecked
                 {
-                    hash = 31*hash + ('A' <= c && c <= 'Z' ? c | 0x20 : c);
+                    hash = 31 * hash + ('A' <= c && c <= 'Z' ? c | 0x20 : c);
                 }
             }
 
