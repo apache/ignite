@@ -1545,12 +1545,10 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             int hash = 0;
 
-            foreach (char c in val)
+            unchecked
             {
-                unchecked
-                {
-                    hash = 31 * hash + ('A' <= c && c <= 'Z' ? c | 0x20 : c);
-                }
+                foreach (var c in val)
+                    hash = 31*hash + ('A' <= c && c <= 'Z' ? c | 0x20 : c);
             }
 
             return hash;
