@@ -77,11 +77,6 @@ class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLik
     }
 
     /** */
-    def testScalarScheduleCallableExample() {
-        ScalarScheduleExample.main(EMPTY_ARGS)
-    }
-
-    /** */
     def testScalarTaskExample() {
         ScalarTaskExample.main(EMPTY_ARGS)
     }
