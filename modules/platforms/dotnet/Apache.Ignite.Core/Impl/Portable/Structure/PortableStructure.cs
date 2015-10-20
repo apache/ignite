@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         public static PortableStructure CreateEmpty()
         {
             return new PortableStructure(new[] { new PortableStructureEntry[0] }, 
-                new PortableStructureJumpTable[1], new Dictionary<string, byte>());
+                new PortableStructureJumpTable[1], new HashSet<string>());
         }
 
         /** Entries. */
@@ -48,20 +48,20 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         private readonly PortableStructureJumpTable[] _jumps;
 
         /** Field types. */
-        private readonly IDictionary<string, byte> _fieldTypes; 
+        private readonly ISet<string> _fieldNames;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="paths">Paths.</param>
         /// <param name="jumps">Jumps.</param>
-        /// <param name="fieldTypes">Field types.</param>
+        /// <param name="fieldNames">Field names.</param>
         private PortableStructure(PortableStructureEntry[][] paths,
-            PortableStructureJumpTable[] jumps, IDictionary<string, byte> fieldTypes)
+            PortableStructureJumpTable[] jumps, ISet<string> fieldNames)
         {
             _paths = paths;
             _jumps = jumps;
-            _fieldTypes = fieldTypes;
+            _fieldNames = fieldNames;
         }
 
         /// <summary>
@@ -87,7 +87,8 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
                 if (entry.IsExpected(fieldName, fieldType))
                     // Entry matches our expectations, return.
                     return entry.Id;
-                else if (entry.IsJumpTable)
+                
+                if (entry.IsJumpTable)
                 {
                     // Entry is a pointer to a jump table.
                     Debug.Assert(entry.Id < _jumps.Length);
@@ -102,8 +103,6 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
                     Debug.Assert(pathIdx0 < _paths.Length);
 
                     entry = _paths[pathIdx0][actionIdx];
-
-                    entry.ValidateType(fieldType);
 
                     pathIdx = pathIdx0;
 
@@ -153,7 +152,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
 
                     ApplyUpdatesToPath(newPaths[0], updates);
 
-                    res = new PortableStructure(newPaths, _jumps, res._fieldTypes);
+                    res = new PortableStructure(newPaths, _jumps, res._fieldNames);
                 }
                 else
                 {
@@ -172,7 +171,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
 
                         ApplyUpdatesToPath(newPaths[pathIdx], updates);
 
-                        res = new PortableStructure(newPaths, _jumps, res._fieldTypes);
+                        res = new PortableStructure(newPaths, _jumps, res._fieldNames);
                     }
                     else if (startEntry.IsJumpTable)
                     {
@@ -192,7 +191,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
                         newJumps[startEntry.Id] = 
                             newJumps[startEntry.Id].CopyAndAdd(firstUpdate.FieldName, newPathIdx);
 
-                        res = new PortableStructure(newPaths, newJumps, res._fieldTypes);
+                        res = new PortableStructure(newPaths, newJumps, res._fieldNames);
                     }
                     else
                     {
@@ -230,7 +229,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
                         // Apply updates to the new path.
                         ApplyUpdatesToPath(newPaths[newPaths.Length - 1], updates);
 
-                        res = new PortableStructure(newPaths, newJumps, res._fieldTypes);
+                        res = new PortableStructure(newPaths, newJumps, res._fieldNames);
                     }
 
                 }
@@ -288,7 +287,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
             IEnumerable<PortableStructureUpdate> updates)
         {
             foreach (var u in updates)
-                path[u.Index] = new PortableStructureEntry(u.FieldName, u.FieldId, u.FieldType);
+                path[u.Index] = new PortableStructureEntry(u.FieldName, u.FieldId);
         }
 
         /// <summary>
@@ -298,37 +297,24 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         /// <returns>Type structure with applied updates.</returns>
         private PortableStructure MergeFieldTypes(IList<PortableStructureUpdate> updates)
         {
-            IDictionary<string, byte> newFieldTypes = new Dictionary<string, byte>(_fieldTypes);
+            var newFieldNames = new HashSet<string>(_fieldNames);
 
-            foreach (PortableStructureUpdate update in updates)
+            foreach (var update in updates)
             {
-                byte expType;
-
-                if (_fieldTypes.TryGetValue(update.FieldName, out expType))
-                {
-                    // This is an old field.
-                    // TODO:
-                    //if (expType != update.FieldType)
-                    //{
-                    //    throw new PortableException("Field type mismatch detected [fieldName=" + update.FieldName +
-                    //        ", expectedType=" + expType + ", actualType=" + update.FieldType + ']');
-                    //}
-                }
-                else
-                    // This is a new field.
-                    newFieldTypes[update.FieldName] = update.FieldType;
+                if (!_fieldNames.Contains(update.FieldName))
+                    newFieldNames.Add(update.FieldName);
             }
 
-            return newFieldTypes.Count == _fieldTypes.Count ? 
-                this : new PortableStructure(_paths, _jumps, newFieldTypes);
+            return newFieldNames.Count == _fieldNames.Count ?
+                this : new PortableStructure(_paths, _jumps, newFieldNames);
         }
 
         /// <summary>
-        /// Recorded field types.
+        /// Recorded field names.
         /// </summary>
-        internal IDictionary<string, byte> FieldTypes
+        internal ISet<string> FieldNames
         {
-            get { return _fieldTypes; }
+            get { return _fieldNames; }
         } 
     }
 }

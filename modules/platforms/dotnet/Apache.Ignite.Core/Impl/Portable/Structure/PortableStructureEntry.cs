@@ -19,8 +19,6 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
 {
     using System.Diagnostics;
 
-    using Apache.Ignite.Core.Portable;
-
     /// <summary>
     /// Portable type structure entry. Might be either a normal field, a reference to jump table, or an empty entry.
     /// </summary>
@@ -45,7 +43,6 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
 
             _name = null;
             _id = jumpTblIdx;
-            //_type = 0;
         }
 
         /// <summary>
@@ -53,14 +50,12 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         /// </summary>
         /// <param name="name">Field name.</param>
         /// <param name="id">Field ID.</param>
-        /// <param name="type">Field type.</param>
-        public PortableStructureEntry(string name, int id, byte type)
+        public PortableStructureEntry(string name, int id)
         {
             Debug.Assert(name != null);
 
             _name = name;
             _id = id;
-            //_type = type;
         }
 
         /// <summary>
@@ -72,26 +67,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         public bool IsExpected(string name, byte type)
         {
             // Perform reference equality check first because field name is a literal in most cases.
-            if (!ReferenceEquals(_name, name) && !name.Equals(_name))
-                return false;
-
-            //ValidateType(type);
-
-            return true;
-        }
-
-        /// <summary>
-        /// Validate field type.
-        /// </summary>
-        /// <param name="type">Expected type.</param>
-        public void ValidateType(byte type)
-        {
-            // TODO: Do we really need this?
-            //if (_type != type)
-            //{
-            //    throw new PortableException("Field type mismatch detected [fieldName=" + _name +
-            //        ", expectedType=" + _type + ", actualType=" + type + ']');
-            //}
+            return ReferenceEquals(_name, name) || name.Equals(_name);
         }
 
         /// <summary>

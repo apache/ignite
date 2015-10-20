@@ -19,9 +19,9 @@ namespace Apache.Ignite.Core.Tests.Portable
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.Structure;
     using Apache.Ignite.Core.Portable;
     using NUnit.Framework;
 
@@ -80,26 +80,15 @@ namespace Apache.Ignite.Core.Tests.Portable
                 Console.WriteLine();
 
                 // 4. Ensure that all fields are recorded.
-                IPortableTypeDescriptor desc = marsh.GetDescriptor(typeof (BranchedType));
+                var desc = marsh.GetDescriptor(typeof (BranchedType));
 
-                PortableStructure typeStruct = desc.TypeStructure;
-
-                IDictionary<string, byte> fields = typeStruct.FieldTypes;
-
-                Assert.IsTrue(fields.Count == 8);
-
-                Assert.IsTrue(fields.ContainsKey("mode"));
-                Assert.IsTrue(fields.ContainsKey("f2"));
-                Assert.IsTrue(fields.ContainsKey("f3"));
-                Assert.IsTrue(fields.ContainsKey("f4"));
-                Assert.IsTrue(fields.ContainsKey("f5"));
-                Assert.IsTrue(fields.ContainsKey("f6"));
-                Assert.IsTrue(fields.ContainsKey("f7"));
-                Assert.IsTrue(fields.ContainsKey("f8"));
+                CollectionAssert.AreEquivalent(new[] {"mode", "f2", "f3", "f4", "f5", "f6", "f7", "f8"},
+                    desc.TypeStructure.FieldNames);
             }
         }
     }
 
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public class BranchedType : IPortableMarshalAware
     {
         public int mode;
