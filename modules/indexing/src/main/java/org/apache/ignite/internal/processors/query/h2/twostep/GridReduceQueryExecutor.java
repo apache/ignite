@@ -587,7 +587,7 @@ public class GridReduceQueryExecutor {
 
                 boolean retry = false;
 
-                final boolean oldStyle = oldNodesInTopology();
+                final boolean oldStyle = true; oldNodesInTopology(); // TODO =
                 final boolean distributedJoins = !qry.collocated();
 
                 if (send(nodes,
