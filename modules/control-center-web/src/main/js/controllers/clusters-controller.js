@@ -363,11 +363,23 @@ consoleModule.controller('clustersController', [
 
             var c = item.communication;
 
-            if ($common.isDefined(c) && !$common.isEmptyString(c.listener) && !$common.isValidJavaClass('Communication listener', c.listener, false, 'comListener', false, $scope.panels, 'communication'))
-                return false;
+            if ($common.isDefined(c)) {
+                if (!$common.isEmptyString(c.listener) && !$common.isValidJavaClass('Communication listener', c.listener, false, 'comListener', false, $scope.panels, 'communication'))
+                    return false;
 
-            if ($common.isDefined(c) && !$common.isEmptyString(c.addressResolver) && !$common.isValidJavaClass('Address resolver', c.addressResolver, false, 'comAddressResolver', false, $scope.panels, 'communication'))
-                return false;
+                if (!$common.isEmptyString(c.addressResolver) && !$common.isValidJavaClass('Address resolver', c.addressResolver, false, 'comAddressResolver', false, $scope.panels, 'communication'))
+                    return false;
+
+                if ($common.isDefined(c.unacknowledgedMessagesBufferSize)) {
+                    if ($common.isDefined(c.messageQueueLimit))
+                        if (c.unacknowledgedMessagesBufferSize < 5 * c.messageQueueLimit)
+                            return showPopoverMessage($scope.panels, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * message queue limit');
+
+                    if ($common.isDefined(c.ackSendThreshold))
+                        if (c.unacknowledgedMessagesBufferSize < 5 * c.ackSendThreshold)
+                            return showPopoverMessage($scope.panels, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * ack send threshold');
+                }
+            }
 
             var d = item.discovery;
 
