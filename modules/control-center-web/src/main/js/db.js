@@ -219,6 +219,37 @@ CacheSchema.plugin(deepPopulate, {
 // Define Cache model.
 exports.Cache = mongoose.model('Cache', CacheSchema);
 
+var IgfsSchema = new Schema({
+    space: {type: ObjectId, ref: 'Space'},
+    name: String,
+    blockSize: Number,
+    streamBufferSize: Number,
+    dataCacheName: String,
+    metaCacheName: String,
+    defaultMode: {type: String, enum: ['PRIMARY', 'PROXY', 'DUAL_SYNC', 'DUAL_ASYNC']},
+    dualModeMaxPendingPutsSize: Number,
+    //dualModePutExec = cfg.getDualModePutExecutorService();
+    dualModePutExecutorServiceShutdown: Boolean,
+    fragmentizerConcurrentFiles: Number,
+    fragmentizerEnabled: Boolean,
+    fragmentizerThrottlingBlockLength: Number,
+    fragmentizerThrottlingDelay: Number,
+    ipcEndpointConfiguration: {},
+    ipcEndpointEnabled: Boolean,
+    maxSpaceSize: Number,
+    maximumTaskRangeLength: Number,
+    managementPort: Number,
+    pathModes: [{path: String, mode: {type: String, enum: ['PRIMARY', 'PROXY', 'DUAL_SYNC', 'DUAL_ASYNC']}}],
+    perNodeBatchSize: Number,
+    perNodeParallelBatchCount: Number,
+    prefetchBlocks: Number,
+    sequentialReadsBeforePrefetch: Number,
+    trashPurgeTimeout: Number
+});
+
+// Define IGFS model.
+exports.Igfs = mongoose.model('Igfs', IgfsSchema);
+
 // Define Cluster schema.
 var ClusterSchema = new Schema({
     space: {type: ObjectId, ref: 'Space'},
@@ -295,6 +326,7 @@ var ClusterSchema = new Schema({
     deploymentMode: {type: String, enum: ['PRIVATE', 'ISOLATED', 'SHARED', 'CONTINUOUS']},
     discoveryStartupDelay: Number,
     igfsThreadPoolSize: Number,
+    igfs: [{type: ObjectId, ref: 'Igfs'}],
     includeEventTypes: [{
         type: String, enum: ['EVTS_CHECKPOINT', 'EVTS_DEPLOYMENT', 'EVTS_ERROR', 'EVTS_DISCOVERY',
             'EVTS_JOB_EXECUTION', 'EVTS_TASK_EXECUTION', 'EVTS_CACHE', 'EVTS_CACHE_REBALANCE', 'EVTS_CACHE_LIFECYCLE',

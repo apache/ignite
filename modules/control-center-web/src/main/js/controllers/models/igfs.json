@@ -1,0 +1,154 @@
+{
+  "screenTip": {
+    "workflowTitle": "On This Screen:",
+    "workflowContent": [
+      "Configure IGFS file systems",
+      "more-info"
+    ],
+    "whatsNextTitle": "Next Steps:",
+    "whatsNextContent": [
+      "Continue to <a href='/configuration/summary'>Summary</a>",
+      "Back to <a href='/configuration/clusters'>Clusters</a>"
+    ]
+  },
+  "moreInfo": {
+    "title": "IGFS screen",
+    "content": [
+      "Manage you IGFS file systems on current screen.",
+      "IGFS can be assigned to specified <a href='/configuration/clusters'>clusters</a>.",
+      "Generated cluster with IGFS available on <a href='/configuration/summary'>summary</a> screen."
+    ]
+  },
+  "general": [
+    {
+      "label": "General",
+      "group": "general",
+      "tip": [
+        "IGFS properties"
+      ],
+      "fields": [
+        {
+          "label": "Name",
+          "id": "igfsName",
+          "type": "text",
+          "model": "name",
+          "required": true,
+          "placeholder": "Input name"
+        },
+        {
+          "label": "Block size",
+          "id": "BlockSize",
+          "type": "number",
+          "model": "blockSize",
+          "placeholder": "65536",
+          "tip": [
+            "File's data block size (bytes)"
+          ]
+        },
+        {
+          "label": "Stream buffer size",
+          "id": "streamBufferSize",
+          "type": "number",
+          "model": "streamBufferSize"
+        },
+        {
+          "label": "DefaultMode"
+        },
+        {
+          "label": "MaxSpaceSize"
+        },
+        {
+          "label": "MaximumTaskRangeLength"
+        },
+        {
+          "label": "ManagementPort"
+        },
+        {
+          "label": "PathModes"
+        },
+        {
+          "label": "PerNodeBatchSize"
+        },
+        {
+          "label": "PerNodeParallelBatchCount"
+        },
+        {
+          "label": "PrefetchBlocks"
+        },
+        {
+          "label": "SequentialReadsBeforePrefetch"
+        },
+        {
+          "label": "TrashPurgeTimeout"
+        }
+      ]
+    }
+  ],
+  "advanced": [
+    {
+      "label": "IPC",
+      "group": "ipc",
+      "tip": [
+        "TODO"
+      ],
+      "fields": [
+        {
+          "label": "isIpcEndpointEnabled",
+          "type": "check",
+          "model": "ipcEndpointEnabled"
+        },
+        {
+          "label": "IpcEndpointConfiguration"
+        }
+      ]
+    },
+    {
+      "label": "Fragmentizer",
+      "group": "fragmentizer",
+      "tip": [
+        "Fragmentizer settings"
+      ],
+      "fields": [
+        {
+          "label": "Fragmentizer enabled",
+          "id": "fragmentizerEnabled",
+          "type": "check",
+          "model": "fragmentizerEnabled"
+        },
+        {
+          "label": "Fragmentizer concurrent files",
+          "id": "fragmentizerConcurrentFiles",
+          "type": "check",
+          "model": "fragmentizerConcurrentFiles"
+        },
+        {
+          "label": "FragmentizerThrottlingBlockLength"
+        },
+        {
+          "label": "FragmentizerThrottlingDelay"
+        }
+      ]
+    },
+    {
+      "label": "Dual mode",
+      "group": "dualMode",
+      "tip": [
+        "TODO"
+      ],
+      "fields": [
+        {
+          "label": "DualModeMaxPendingPutsSize"
+        },
+        {
+          "label": "DualModePutExecutorService"
+        },
+        {
+          "label": "DualModePutExecutorServiceShutdown"
+        }
+      ]
+    },
+    {
+      "label": "Miscellaneous"
+    }
+  ]
+}

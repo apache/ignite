@@ -13,9 +13,9 @@
     ]
   },
   "moreInfo": {
-    "title": "Clusters page",
-    "content": ["Manage you clusters on current page.",
-      "Generated clusters configuration available on <a href='/configuration/summary'>summary</a> page."]
+    "title": "Clusters screen",
+    "content": ["Manage you clusters on current screen.",
+      "Generated clusters configuration available on <a href='/configuration/summary'>summary</a> screen."]
   },
   "general": [
     {
@@ -1027,6 +1027,31 @@
             "Array of event types, which will be recorded by GridEventStorageManager#record(Event)",
             "Note, that either the include event types or the exclude event types can be established"
           ]
+        }
+      ]
+    },
+    {
+      "label": "IGFS",
+      "group": "igfs",
+      "tip": [
+        "IGFS (Ignite In-Memory File System) configurations"
+      ],
+      "fields": [
+        {
+          "label": "IGFS",
+          "id": "igfs",
+          "type": "dropdown-multiple",
+          "model": "igfs",
+          "placeholder": "Choose IGFS",
+          "placeholderEmpty": "No IGFS configured",
+          "items": "igfs",
+          "tip": [
+            "Select IGFS to start in cluster or add a new IGFS"
+          ],
+          "addLink": {
+            "label": "Add cache(s)",
+            "ref": "/configuration/igfs?new"
+          }
         }
       ]
     },

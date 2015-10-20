@@ -15,12 +15,12 @@
     ]
   },
   "moreInfo": {
-    "title": "Summary page",
-    "content": ["Generated cluster's configuration showed on this page.",
+    "title": "Summary screen",
+    "content": ["Generated cluster's configuration showed on this screen.",
       "Configurations available in XML, Java and Dockerfile format for Server and Client mode.",
       "Database table POJO classes for cluster's metadatas available on \"POJO\" tab.",
       "Use \"Download\" button to receive configurations in ZIP file.",
-      "Go back to change configuration on <a href='/configuration/clusters'>clusters</a>, <a href='/configuration/caches'>caches</a> or <a href='/configuration/metadata'>metadata</a> pages."
+      "Go back to change configuration on <a href='/configuration/clusters'>clusters</a>, <a href='/configuration/caches'>caches</a> or <a href='/configuration/metadata'>metadata</a> screen."
     ]
   },
   "clientFields": [

@@ -1870,10 +1870,11 @@ consoleModule.directive('onClickFocus', function ($focus) {
 consoleModule.controller('activeLink', [
     '$scope', function ($scope) {
         $scope.configurationDropdown = [
-            { "text": "Clusters", "href": "/configuration/clusters" },
-            { "text": "Caches", "href": "/configuration/caches" },
-            { "text": "Metadata", "href": "/configuration/metadata" },
-            { "text": "Summary", "href": "/configuration/summary" }
+            {"text": "Clusters", "href": "/configuration/clusters"},
+            {"text": "Caches", "href": "/configuration/caches"},
+            {"text": "Metadata", "href": "/configuration/metadata"},
+            {"text": "IGFS", "href": "/configuration/igfs"},
+            {"text": "Summary", "href": "/configuration/summary"}
         ];
 
         $scope.isActive = function (path) {
