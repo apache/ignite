@@ -96,9 +96,6 @@ public class AgentSqlTestDrive {
     /** Counter for threads in pool. */
     private static final AtomicInteger THREAD_CNT = new AtomicInteger(0);
 
-    /** */
-    private static ScheduledExecutorService cachePool;
-
     /**
      * Configure cacheEmployee.
      *
@@ -399,70 +396,64 @@ public class AgentSqlTestDrive {
 
         populateCacheCar(ignite, CAR_CACHE_NAME);
 
-        if (cachePool != null)
-            cachePool.shutdownNow();
+        ScheduledExecutorService cachePool = newScheduledThreadPool(2, "test-drive-sql-load-cache-tasks");
 
-        cachePool = newScheduledThreadPool(2, "test-drive-sql-load-cache-tasks");
+        cachePool.scheduleWithFixedDelay(new Runnable() {
+            @Override public void run() {
+                try {
+                    IgniteCache<EmployeeKey, Employee> cache = ignite.cache(EMPLOYEE_CACHE_NAME);
 
-        if (cachePool != null) {
-            cachePool.scheduleWithFixedDelay(new Runnable() {
-                @Override public void run() {
-                    try {
-                        IgniteCache<EmployeeKey, Employee> cache = ignite.cache(EMPLOYEE_CACHE_NAME);
+                    if (cache != null)
+                        for (int i = 0; i < n; i++) {
+                            Integer employeeId = rnd.nextInt(EMPL_CNT);
 
-                        if (cache != null)
-                            for (int i = 0; i < n; i++) {
-                                Integer employeeId = rnd.nextInt(EMPL_CNT);
+                            Integer mgrId = (i == 0 || rnd.nextBoolean()) ? null : rnd.nextInt(employeeId);
 
-                                Integer mgrId = (i == 0 || rnd.nextBoolean()) ? null : rnd.nextInt(employeeId);
+                            double r = rnd.nextDouble();
 
-                                double r = rnd.nextDouble();
+                            cache.put(new EmployeeKey(employeeId),
+                                new Employee(employeeId, "first name " + (i + 1), "last name " + (i + 1),
+                                    "email " + (i + 1), "phone number " + (i + 1),
+                                    new java.sql.Date((long)(r * diff)), "job " + (i + 1),
+                                    round(r * 5000, 2), mgrId, rnd.nextInt(DEP_CNT)));
 
-                                cache.put(new EmployeeKey(employeeId),
-                                    new Employee(employeeId, "first name " + (i + 1), "last name " + (i + 1),
-                                        "email " + (i + 1), "phone number " + (i + 1),
-                                        new java.sql.Date((long)(r * diff)), "job " + (i + 1),
-                                        round(r * 5000, 2) , mgrId, rnd.nextInt(DEP_CNT)));
-
-                                if (rnd.nextBoolean())
-                                    cache.remove(new EmployeeKey(rnd.nextInt(EMPL_CNT)));
-                            }
-                    }
-                    catch (IllegalStateException ignored) {
-                    }
-                    catch (Throwable e) {
-                        if (!e.getMessage().contains("cache is stopped"))
-                            ignite.log().error("Cache write task execution error", e);
-                    }
+                            if (rnd.nextBoolean())
+                                cache.remove(new EmployeeKey(rnd.nextInt(EMPL_CNT)));
+                        }
                 }
-            }, 10, 3, TimeUnit.SECONDS);
-
-            cachePool.scheduleWithFixedDelay(new Runnable() {
-                @Override public void run() {
-                    try {
-                        IgniteCache<CarKey, Car> cache = ignite.cache(CAR_CACHE_NAME);
-
-                        if (cache != null)
-                            for (int i = 0; i < n; i++) {
-                                Integer carId = rnd.nextInt(CAR_CNT);
-
-                                cache.put(new CarKey(carId), new Car(carId, rnd.nextInt(PARK_CNT), "Car " + (i + 1)));
-
-                                if (rnd.nextBoolean())
-                                    cache.remove(new CarKey(rnd.nextInt(CAR_CNT)));
-                            }
-                    }
-                    catch (IllegalStateException ignored) {
-                    }
-                    catch (Throwable e) {
-                        if (!e.getMessage().contains("cache is stopped"))
-                            ignite.log().error("Cache write task execution error", e);
-                    }
+                catch (IllegalStateException ignored) {
                 }
-            }, 10, 3, TimeUnit.SECONDS);
-        }
+                catch (Throwable e) {
+                    if (!e.getMessage().contains("cache is stopped"))
+                        ignite.log().error("Cache write task execution error", e);
+                }
+            }
+        }, 10, 3, TimeUnit.SECONDS);
+
+        cachePool.scheduleWithFixedDelay(new Runnable() {
+            @Override public void run() {
+                try {
+                    IgniteCache<CarKey, Car> cache = ignite.cache(CAR_CACHE_NAME);
+
+                    if (cache != null)
+                        for (int i = 0; i < n; i++) {
+                            Integer carId = rnd.nextInt(CAR_CNT);
+
+                            cache.put(new CarKey(carId), new Car(carId, rnd.nextInt(PARK_CNT), "Car " + (i + 1)));
+
+                            if (rnd.nextBoolean())
+                                cache.remove(new CarKey(rnd.nextInt(CAR_CNT)));
+                        }
+                }
+                catch (IllegalStateException ignored) {
+                }
+                catch (Throwable e) {
+                    if (!e.getMessage().contains("cache is stopped"))
+                        ignite.log().error("Cache write task execution error", e);
+                }
+            }
+        }, 10, 3, TimeUnit.SECONDS);
     }
-
 
     /**
      * Start ignite node with cacheEmployee and populate it with data.
