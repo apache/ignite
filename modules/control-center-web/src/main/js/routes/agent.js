@@ -239,7 +239,7 @@ router.post('/cache/metadata', function (req, res) {
                 if (indexes.length > 0)
                     columns = columns.concat({type: 'indexes', name: 'Indexes', fullName: typeName + '.indexes', children: indexes });
 
-                return {type: 'type', name: typeName, fullName: req.body.cacheName + '.' +typeName,  children: columns };
+                return {type: 'type', name: typeName, fullName: '"' + req.body.cacheName + '".' +typeName,  children: columns };
             });
 
             res.json(tables);

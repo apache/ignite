@@ -1125,7 +1125,7 @@ consoleModule.controller('sqlController',
     };
 
     $scope.dblclickMetadata = function (paragraph, node) {
-        paragraph.ace.insert(node.name);
+        paragraph.ace.insert(node.type == 'type' ? node.fullName : node.name);
         var position = paragraph.ace.selection.getCursor();
 
         paragraph.query = paragraph.ace.getValue();
