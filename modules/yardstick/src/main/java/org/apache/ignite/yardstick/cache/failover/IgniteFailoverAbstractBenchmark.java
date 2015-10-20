@@ -228,6 +228,15 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
     @Override public void onException(Throwable e) {
         // Proceess only the first exception to prevent a multiple printing of a full thread dump.
         if (firtsExProcessed.compareAndSet(false, true)) {
+            // Debug info on current client.
+            println("Full thread dump of the current node below.");
+
+            U.dumpThreads(null);
+
+            println("");
+
+            ((IgniteMXBean)ignite()).dumpDebugInfo();
+
             // Debug info on servers.
             Ignite ignite = ignite();
 
@@ -237,15 +246,6 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
             asyncCompute.broadcast(new ThreadDumpPrinterTask(ignite.cluster().localNode().id(), e));
             asyncCompute.future().get(10_000);
-
-            // Debug info on current client.
-            println("Full thread dump of the current node below.");
-
-            U.dumpThreads(null);
-
-            println("");
-
-            ((IgniteMXBean)ignite()).dumpDebugInfo();
         }
     }
 
