@@ -313,13 +313,13 @@ namespace Apache.Ignite.Core.Tests
             {
                 using (var serv = Ignition.Start(servCfg))  // start server-mode ignite first
                 {
-                    Assert.IsFalse(serv.Cluster.LocalNode.IsClient);
+                    Assert.IsFalse(serv.GetCluster().GetLocalNode().IsClient);
 
                     Ignition.ClientMode = true;
 
                     using (var grid = Ignition.Start(clientCfg))
                     {
-                        Assert.IsTrue(grid.Cluster.LocalNode.IsClient);
+                        Assert.IsTrue(grid.GetCluster().GetLocalNode().IsClient);
 
                         UseIgnite(grid);
                     }

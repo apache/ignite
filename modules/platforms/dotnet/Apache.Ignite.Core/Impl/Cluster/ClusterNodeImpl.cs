@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IDictionary<string, object> GetAttributes()
         {
-            get { return _attrs; }
+            return _attrs;
         }
 
         /** <inheritDoc /> */
