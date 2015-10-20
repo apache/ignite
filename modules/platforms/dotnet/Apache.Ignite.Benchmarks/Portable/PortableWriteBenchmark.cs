@@ -19,7 +19,6 @@ namespace Apache.Ignite.Benchmarks.Portable
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using Apache.Ignite.Benchmarks.Model;
     using Apache.Ignite.Core.Impl.Memory;
@@ -91,7 +90,7 @@ namespace Apache.Ignite.Benchmarks.Portable
         protected override void GetDescriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
             descs.Add(BenchmarkOperationDescriptor.Create("WriteAddress", WriteAddress, 1));
-            //descs.Add(BenchmarkOperationDescriptor.Create("WriteTestModel", WriteTestModel, 1));
+            descs.Add(BenchmarkOperationDescriptor.Create("WriteTestModel", WriteTestModel, 1));
         }
 
         /// <summary>
@@ -107,11 +106,6 @@ namespace Apache.Ignite.Benchmarks.Portable
                 var stream = mem.GetStream();
 
                 _marsh.StartMarshal(stream).Write(_address);
-
-                stream.SynchronizeOutput();
-                stream.Seek(0, SeekOrigin.Begin);
-
-                _marsh.StartUnmarshal(stream).ReadObject<Address>();
             }
             finally
             {
