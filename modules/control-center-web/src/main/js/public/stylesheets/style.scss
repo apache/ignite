@@ -479,10 +479,24 @@ button.form-control {
         line-height: 44px;
         height: 44px;
         margin: 0;
-    }
 
-    .btn-group {
-        margin: -5px 0 0 10px;
+        label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .btn-group {
+            float: right;
+            line-height: $line-height-base;
+            top: 0.4em;
+            margin-left: 5px;
+        }
+
+        > i.btn {
+            float: right;
+            line-height: 44px;
+        }
     }
 
     input {

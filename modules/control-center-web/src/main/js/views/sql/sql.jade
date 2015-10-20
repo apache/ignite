@@ -54,13 +54,15 @@ block container
                     div(bs-affix)
                         .docs-header.notebook-header
                             h1.col-sm-6(ng-hide='notebook.edit')
-                                label {{notebook.name}}
                                 .btn-group
                                     +btn-toolbar('fa-pencil', 'notebook.edit = true;notebook.editName = notebook.name', 'Rename notebook')
                                     +btn-toolbar('fa-trash', 'removeNotebook()', 'Remove notebook')
+                                .input-tip
+                                    label {{notebook.name}}
                             h1.col-sm-6(ng-show='notebook.edit')
-                                input.sql-name-input(ng-model='notebook.editName' required on-enter='renameNotebook(notebook.editName)' on-escape='notebook.edit = false;')
-                                i.tipLabel.fa.fa-floppy-o(ng-show='notebook.editName' ng-click='renameNotebook(notebook.editName)' bs-tooltip data-title='Save notebook name' data-trigger='hover')
+                                i.btn.fa.fa-floppy-o(ng-show='notebook.editName' ng-click='renameNotebook(notebook.editName)' bs-tooltip data-title='Save notebook name' data-trigger='hover')
+                                .input-tip
+                                    input.form-control(ng-model='notebook.editName' required on-enter='renameNotebook(notebook.editName)' on-escape='notebook.edit = false;')
                             .pull-right
                                 +btn-toolbar('fa-plus', 'addParagraph()', 'Add new query')
                     .block-callout-parent
