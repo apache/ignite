@@ -1483,7 +1483,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_curRawPos != 0)
                 throw new PortableException("Cannot write named fields after raw data is written.");
 
-            // TODO: Initial throughput of modified PortableWriteBenchmark (read+write, Address only) is ~600k on home PC
             _stream.WriteInt(_curStruct.GetFieldId(fieldName, fieldTypeId));
         }
 
