@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private readonly CacheImpl<TK, TV> _cache;
 
         /** */
-        private readonly ThreadLocal<int> _lastAsyncOp = new ThreadLocal<int>(() => PlatformTarget.OpNone);
+        private readonly ThreadLocal<CacheOp> _lastAsyncOp = new ThreadLocal<CacheOp>(() => CacheOp.None);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheProxyImpl{K, V}"/> class.
@@ -185,6 +185,19 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public bool TryLocalPeek(TK key, out TV value, params CachePeekMode[] modes)
+        {
+            return _cache.TryLocalPeek(key, out value, modes);
+        }
+
+        /** <inheritDoc /> */
+        public TV this[TK key]
+        {
+            get { return _cache[key]; }
+            set { _cache[key] = value; }
+        }
+
+        /** <inheritDoc /> */
         public TV Get(TK key)
         {
             var result = _cache.Get(key);
@@ -192,6 +205,12 @@ namespace Apache.Ignite.Core.Impl.Cache
             SetLastAsyncOp(CacheOp.Get);
 
             return result;
+        }
+
+        /** <inheritDoc /> */
+        public bool TryGet(TK key, out TV value)
+        {
+            return _cache.TryGet(key, out value);
         }
 
         /** <inheritDoc /> */
@@ -213,7 +232,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public TV GetAndPut(TK key, TV val)
+        public CacheResult<TV> GetAndPut(TK key, TV val)
         {
             var result = _cache.GetAndPut(key, val);
 
@@ -223,7 +242,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public TV GetAndReplace(TK key, TV val)
+        public CacheResult<TV> GetAndReplace(TK key, TV val)
         {
             var result = _cache.GetAndReplace(key, val);
 
@@ -233,7 +252,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public TV GetAndRemove(TK key)
+        public CacheResult<TV> GetAndRemove(TK key)
         {
             var result = _cache.GetAndRemove(key);
 
@@ -253,7 +272,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public TV GetAndPutIfAbsent(TK key, TV val)
+        public CacheResult<TV> GetAndPutIfAbsent(TK key, TV val)
         {
             var result = _cache.GetAndPutIfAbsent(key, val);
 
@@ -484,7 +503,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private void SetLastAsyncOp(CacheOp opId)
         {
             if (IsAsync)
-                _lastAsyncOp.Value = (int) opId;
+                _lastAsyncOp.Value = opId;
         }
 
         /// <summary>
@@ -494,7 +513,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private void ClearLastAsyncOp()
         {
             if (IsAsync)
-                _lastAsyncOp.Value = PlatformTarget.OpNone;
+                _lastAsyncOp.Value = CacheOp.None;
         }
     }
 }
