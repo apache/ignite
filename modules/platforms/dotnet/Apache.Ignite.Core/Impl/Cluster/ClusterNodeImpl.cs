@@ -179,6 +179,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
             return oldMetrics;
         }
 
+        /** <inheritDoc /> */
         public bool IsClient
         {
             get { return _isClient; }
