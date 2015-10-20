@@ -57,6 +57,9 @@ public class GridH2QueryContext {
     /** */
     private boolean distributedJoins;
 
+    /** */
+    private int pageSize;
+
     /**
      * @param locNodeId Local node ID.
      * @param nodeId The node who initiated the query.
@@ -69,9 +72,12 @@ public class GridH2QueryContext {
 
     /**
      * @param distributedJoins Distributed joins can be run in this query.
+     * @return {@code this}.
      */
-    public void distributedJoins(boolean distributedJoins) {
+    public GridH2QueryContext distributedJoins(boolean distributedJoins) {
         this.distributedJoins = distributedJoins;
+
+        return this;
     }
 
     /**
@@ -264,6 +270,23 @@ public class GridH2QueryContext {
      */
     public GridH2QueryContext filter(IndexingQueryFilter filter) {
         this.filter = filter;
+
+        return this;
+    }
+
+    /**
+     * @return Page size.
+     */
+    public int pageSize() {
+        return pageSize;
+    }
+
+    /**
+     * @param pageSize Page size.
+     * @return {@code this}.
+     */
+    public GridH2QueryContext pageSize(int pageSize) {
+        this.pageSize = pageSize;
 
         return this;
     }

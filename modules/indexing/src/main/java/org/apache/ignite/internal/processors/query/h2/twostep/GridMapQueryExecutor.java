@@ -481,11 +481,11 @@ public class GridMapQueryExecutor {
                 throw new IllegalStateException();
 
             // Prepare query context.
-            GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(), node.id(), reqId, MAP);
-
-            qctx.filter(h2.backupFilter(caches, topVer, parts));
-            qctx.partitionsMap(partsMap);
-            qctx.distributedJoins(distributedJoins);
+            GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(), node.id(), reqId, MAP)
+                .filter(h2.backupFilter(caches, topVer, parts))
+                .partitionsMap(partsMap)
+                .distributedJoins(distributedJoins)
+                .pageSize(pageSize);
 
             List<GridH2Table> snapshotedTbls = null;
 

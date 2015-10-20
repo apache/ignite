@@ -533,7 +533,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         if (qctx == null || !qctx.distributedJoins())
             return 0;
 
-        return 0; // TODO
+        return qctx.pageSize();
     }
 
     /** {@inheritDoc} */

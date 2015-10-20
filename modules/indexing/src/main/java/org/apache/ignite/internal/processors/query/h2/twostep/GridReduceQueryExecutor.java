@@ -499,7 +499,7 @@ public class GridReduceQueryExecutor {
 
             final long qryReqId = reqIdGen.incrementAndGet();
 
-            QueryRun r = new QueryRun();
+            final QueryRun r = new QueryRun();
 
             r.pageSize = qry.pageSize() <= 0 ? GridCacheTwoStepQuery.DFLT_PAGE_SIZE : qry.pageSize();
 
@@ -602,7 +602,8 @@ public class GridReduceQueryExecutor {
                             .partitions(convert(partsMap))
                             .queries(mapQrys)
                             .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0),
-                    oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null)) {
+                    oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null))
+                {
                     awaitAllReplies(r, nodes);
 
                     Object state = r.state.get();
@@ -633,7 +634,8 @@ public class GridReduceQueryExecutor {
                 if (!retry) {
                     UUID locNodeId = ctx.localNodeId();
 
-                    GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE));
+                    GridH2QueryContext.set(
+                        new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE).pageSize(r.pageSize));
 
                     try {
                         if (qry.explain())
@@ -646,11 +648,6 @@ public class GridReduceQueryExecutor {
                     finally {
                         GridH2QueryContext.clear(false);
                     }
-                }
-
-                for (GridMergeTable tbl : r.tbls) {
-                    if (!tbl.getScanIndex(null).fetchedAll()) // We have to explicitly cancel queries on remote nodes.
-                        send(nodes, new GridQueryCancelRequest(qryReqId), null);
                 }
 
                 if (retry) {
@@ -666,7 +663,7 @@ public class GridReduceQueryExecutor {
                     @Override public void close() throws Exception {
                         super.close();
 
-                        if (!oldStyle && distributedJoins) // Distributed joins require explicit cancel after query end.
+                        if (distributedJoins || !allTablesFetched(r.tbls))
                             send(finalNodes, new GridQueryCancelRequest(qryReqId), null);
                     }
                 };
@@ -697,6 +694,19 @@ public class GridReduceQueryExecutor {
                     fakeTable(null, i).innerTable(null); // Drop all merge tables.
             }
         }
+    }
+
+    /**
+     * @param tbls Merge tables.
+     * @return {@code true} If all remote data was fetched.
+     */
+    private static boolean allTablesFetched(Collection<GridMergeTable> tbls) {
+        for (GridMergeTable tbl : tbls) {
+            if (!tbl.getScanIndex(null).fetchedAll())
+                return false;
+        }
+
+        return true;
     }
 
     /**
