@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -34,6 +35,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
@@ -41,14 +43,13 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
@@ -63,13 +64,6 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
  * Query adapter.
  */
 public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
-    /** Is local node predicate. */
-    private static final IgnitePredicate<ClusterNode> IS_LOC_NODE = new IgnitePredicate<ClusterNode>() {
-        @Override public boolean apply(ClusterNode n) {
-            return n.isLocal();
-        }
-    };
-
     /** */
     private final GridCacheContext<?, ?> cctx;
 
@@ -446,7 +440,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-        if (nodes.isEmpty())
+        if (nodes.isEmpty() && (type != SCAN || part == null))
             return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), new ClusterGroupEmptyCheckedException());
 
         if (log.isDebugEnabled())
@@ -477,8 +471,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         if (type == SQL_FIELDS || type == SPI)
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryFieldsLocal(bean) :
                 qryMgr.queryFieldsDistributed(bean, nodes));
-        else if (type == SCAN && part != null && nodes.size() > 1)
-            return new CacheQueryFallbackFuture<>(nodes, part, bean, qryMgr, cctx);
+        else if (type == SCAN && part != null && !cctx.isLocal())
+            return new CacheQueryFallbackFuture<>(part, bean, qryMgr, cctx);
         else
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
     }
@@ -581,37 +575,48 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         /** Partition. */
         private final int part;
 
+        /** Flag indicating that a first item has been returned to a user. */
+        private boolean firstItemReturned;
+
         /**
-         * @param nodes Backups.
          * @param part Partition.
          * @param bean Bean.
          * @param qryMgr Query manager.
          * @param cctx Cache context.
          */
-        public CacheQueryFallbackFuture(Collection<ClusterNode> nodes, int part, GridCacheQueryBean bean,
+        private CacheQueryFallbackFuture(int part, GridCacheQueryBean bean,
             GridCacheQueryManager qryMgr, GridCacheContext cctx) {
-            this.nodes = fallbacks(nodes);
             this.bean = bean;
             this.qryMgr = qryMgr;
             this.cctx = cctx;
             this.part = part;
 
+            nodes = fallbacks(cctx.discovery().topologyVersionEx());
+
             init();
         }
 
         /**
-         * @param nodes Nodes.
+         * @param topVer Topology version.
          * @return Nodes for query execution.
          */
-        private Queue<ClusterNode> fallbacks(Collection<ClusterNode> nodes) {
-            Queue<ClusterNode> fallbacks = new LinkedList<>();
+        private Queue<ClusterNode> fallbacks(AffinityTopologyVersion topVer) {
+            Deque<ClusterNode> fallbacks = new LinkedList<>();
+            Collection<ClusterNode> owners = new HashSet<>();
 
-            ClusterNode node = F.first(F.view(nodes, IS_LOC_NODE));
+            for (ClusterNode node : cctx.topology().owners(part, topVer)) {
+                if (node.isLocal())
+                    fallbacks.addFirst(node);
+                else
+                    fallbacks.add(node);
 
-            if (node != null)
-                fallbacks.add(node);
+                owners.add(node);
+            }
 
-            fallbacks.addAll(node != null ? F.view(nodes, F.not(IS_LOC_NODE)) : nodes);
+            for (ClusterNode node : cctx.topology().moving(part)) {
+                if (!owners.contains(node))
+                    fallbacks.add(node);
+            }
 
             return fallbacks;
         }
@@ -623,53 +628,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         private void init() {
             final ClusterNode node = nodes.poll();
 
-            GridCacheQueryFutureAdapter<?, ?, R> fut0 = (GridCacheQueryFutureAdapter<?, ?, R>)(node.isLocal() ?
+            fut = (GridCacheQueryFutureAdapter<?, ?, R>)(node.isLocal() ?
                 qryMgr.queryLocal(bean) :
                 qryMgr.queryDistributed(bean, Collections.singleton(node)));
-
-            fut0.listen(new IgniteInClosure<IgniteInternalFuture<Collection<R>>>() {
-                @Override public void apply(IgniteInternalFuture<Collection<R>> fut) {
-                    try {
-                        onDone(fut.get());
-                    }
-                    catch (IgniteClientDisconnectedCheckedException e) {
-                        onDone(e);
-                    }
-                    catch (IgniteCheckedException e) {
-                        if (e.hasCause(GridDhtUnreservedPartitionException.class)) {
-                            unreservedTopVer = ((GridDhtUnreservedPartitionException)e.getCause()).topologyVersion();
-
-                            assert unreservedTopVer != null;
-                        }
-
-                        if (F.isEmpty(nodes)) {
-                            final AffinityTopologyVersion topVer = unreservedTopVer;
-
-                            if (topVer != null && --unreservedNodesRetryCnt > 0) {
-                                cctx.affinity().affinityReadyFuture(topVer).listen(
-                                    new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                                        @Override public void apply(
-                                            IgniteInternalFuture<AffinityTopologyVersion> future) {
-
-                                            nodes = fallbacks(cctx.topology().owners(part, topVer));
-
-                                            // Race is impossible here because query retries are executed one by one.
-                                            unreservedTopVer = null;
-
-                                            init();
-                                        }
-                                    });
-                            }
-                            else
-                                onDone(e);
-                        }
-                        else
-                            init();
-                    }
-                }
-            });
-
-            fut = fut0;
         }
 
         /** {@inheritDoc} */
@@ -683,8 +644,81 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         }
 
         /** {@inheritDoc} */
+        @Override public Collection<R> get() throws IgniteCheckedException {
+            assert false;
+
+            return super.get();
+        }
+
+        /** {@inheritDoc} */
         @Override public R next() {
-            return fut.next();
+            if (firstItemReturned)
+                return fut.next();
+
+            while (true) {
+                try {
+                    fut.awaitFirstPage();
+
+                    firstItemReturned = true;
+
+                    return fut.next();
+                }
+                catch (IgniteClientDisconnectedCheckedException e) {
+                    throw CU.convertToCacheException(e);
+                }
+                catch (IgniteCheckedException e) {
+                    retryIfPossible(e);
+                }
+            }
+        }
+
+        /**
+         * @param e Exception for query run.
+         */
+        private void retryIfPossible(IgniteCheckedException e) {
+            try {
+                IgniteInternalFuture<?> retryFut;
+
+                if (e.hasCause(GridDhtUnreservedPartitionException.class)) {
+                    AffinityTopologyVersion waitVer = ((GridDhtUnreservedPartitionException)e.getCause()).topologyVersion();
+
+                    assert waitVer != null;
+
+                    retryFut = cctx.affinity().affinityReadyFuture(waitVer);
+                }
+                else if (e.hasCause(ClusterTopologyCheckedException.class)) {
+                    ClusterTopologyCheckedException topEx = X.cause(e, ClusterTopologyCheckedException.class);
+
+                    retryFut = topEx.retryReadyFuture();
+                }
+                else if (e.hasCause(ClusterGroupEmptyCheckedException.class)) {
+                    ClusterGroupEmptyCheckedException ex = X.cause(e, ClusterGroupEmptyCheckedException.class);
+
+                    retryFut = ex.retryReadyFuture();
+                }
+                else
+                    throw CU.convertToCacheException(e);
+
+                if (F.isEmpty(nodes)) {
+                    if (--unreservedNodesRetryCnt > 0) {
+                        if (retryFut != null)
+                            retryFut.get();
+
+                        nodes = fallbacks(unreservedTopVer == null ? cctx.discovery().topologyVersionEx() : unreservedTopVer);
+
+                        unreservedTopVer = null;
+
+                        init();
+                    }
+                    else
+                        throw CU.convertToCacheException(e);
+                }
+                else
+                    init();
+            }
+            catch (IgniteCheckedException ex) {
+                throw CU.convertToCacheException(ex);
+            }
         }
     }
 }

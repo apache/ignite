@@ -28,7 +28,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class GridCacheColocatedTxExceptionSelfTest extends IgniteTxExceptionAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-257");
     }
 

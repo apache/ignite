@@ -34,5 +34,5 @@ public interface GridOffHeapEvictListener {
     /**
      * @return {@code True} if entry selected for eviction should be immediately removed.
      */
-    public boolean removedEvicted();
+    public boolean removeEvicted();
 }

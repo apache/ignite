@@ -63,7 +63,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     /** Implicit transaction with one key flag. */
     private boolean implicitSingleTx;
 
-    /** One phase commit flag. */
+    /** Flag is kept for backward compatibility. */
     private boolean onePhaseCommit;
 
     /** Array of mapped DHT versions for this entry. */
@@ -217,20 +217,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      */
     public boolean implicitSingleTx() {
         return implicitSingleTx;
-    }
-
-    /**
-     * @return One phase commit flag.
-     */
-    public boolean onePhaseCommit() {
-        return onePhaseCommit;
-    }
-
-    /**
-     * @param onePhaseCommit One phase commit flag.
-     */
-    public void onePhaseCommit(boolean onePhaseCommit) {
-        this.onePhaseCommit = onePhaseCommit;
     }
 
     /**

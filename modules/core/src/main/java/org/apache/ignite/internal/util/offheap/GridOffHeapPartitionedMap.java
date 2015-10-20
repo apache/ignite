@@ -113,6 +113,7 @@ public interface GridOffHeapPartitionedMap {
 
     /**
      * Removes value from off-heap map without returning it.
+     *
      * @param part Partition.
      * @param hash Hash.
      * @param keyBytes Key bytes.

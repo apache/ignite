@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -36,6 +37,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -81,7 +83,11 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
 
         cfg.setMarshaller(new JdkMarshaller());
 
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
+        FileSwapSpaceSpi swap = new FileSwapSpaceSpi();
+
+        swap.setWriteBufferSize(1);
+
+        cfg.setSwapSpaceSpi(swap);
 
         CacheConfiguration repCacheCfg = defaultCacheConfiguration();
 
@@ -197,7 +203,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      * @throws Exception If failed.
      */
-    private void checkP2PUndeploy(String cacheName) throws Exception {
+    private void checkP2PUndeploy(final String cacheName) throws Exception {
         assert !F.isEmpty(cacheName);
 
         ClassLoader ldr = getExternalClassLoader();
@@ -206,7 +212,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
 
         try {
             Ignite ignite1 = startGrid(1);
-            IgniteKernal grid2 = (IgniteKernal)startGrid(2);
+            final IgniteKernal grid2 = (IgniteKernal)startGrid(2);
 
             IgniteCache<Integer, Object> cache1 = ignite1.cache(cacheName);
             IgniteCache<Integer, Object> cache2 = grid2.cache(cacheName);
@@ -233,18 +239,24 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
 
             cache2.localEvict(ImmutableSet.of(2, 3, 4));
 
-            long swapSize = size(cacheName, grid2);
-
-            info("Swap size: " + swapSize);
-
-            assert swapSize > 0;
+            //Wait until entries stored to disk.
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    try {
+                        return size(cacheName, grid2) > 0;
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new AssertionError(e);
+                    }
+                }
+            }, 5000);
 
             stopGrid(1);
 
             assert waitCacheEmpty(cache2, 10000);
 
             for (int i = 0; i < 3; i++) {
-                swapSize = size(cacheName, grid2);
+                long swapSize = size(cacheName, grid2);
 
                 if (swapSize > 0) {
                     if (i < 2) {

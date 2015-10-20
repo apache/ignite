@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,11 +36,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
+import javax.cache.configuration.FactoryBuilder;
 import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
 import javax.cache.event.CacheEntryCreatedListener;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryExpiredListener;
 import javax.cache.event.CacheEntryListener;
+import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryRemovedListener;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
@@ -355,6 +361,34 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         finally {
             stopGrid(gridCount());
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSerialization() throws Exception {
+        if (cacheMode() == LOCAL)
+            return;
+
+        AtomicBoolean serialized = new AtomicBoolean();
+
+        NonSerializableListener lsnr = new NonSerializableListener(serialized);
+
+        jcache(0).registerCacheEntryListener(new MutableCacheEntryListenerConfiguration<>(
+            FactoryBuilder.factoryOf(lsnr),
+            null,
+            true,
+            false
+        ));
+
+        try {
+            startGrid(gridCount());
+        }
+        finally {
+            stopGrid(gridCount());
+        }
+
+        assertFalse(serialized.get());
     }
 
     /**
@@ -1190,4 +1224,33 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         }
     }
 
+    /**
+     */
+    public static class NonSerializableListener implements CacheEntryCreatedListener<Object, Object>, Externalizable {
+        /** */
+        private final AtomicBoolean serialized;
+
+        /**
+         * @param serialized Serialized flag.
+         */
+        public NonSerializableListener(AtomicBoolean serialized) {
+            this.serialized = serialized;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCreated(Iterable<CacheEntryEvent<? extends Object, ? extends Object>> evts)
+            throws CacheEntryListenerException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            serialized.set(true);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            // No-op.
+        }
+    }
 }

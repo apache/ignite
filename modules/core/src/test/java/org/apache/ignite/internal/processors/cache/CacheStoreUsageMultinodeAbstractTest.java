@@ -26,6 +26,7 @@ import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.store.CacheStore;
@@ -104,6 +105,7 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicityMode());
+        ccfg.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY);
         ccfg.setBackups(1);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
@@ -220,10 +222,16 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
 
         Transaction tx = tc != null ? ignite.transactions().txStart(tc, REPEATABLE_READ) : null;
 
-        cache.put(key, key);
+        try {
+            cache.put(key, key);
 
-        if (tx != null)
-            tx.commit();
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
 
         boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override

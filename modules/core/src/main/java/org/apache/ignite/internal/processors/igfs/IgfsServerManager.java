@@ -163,7 +163,8 @@ public class IgfsServerManager extends IgfsManager {
          * Constructor.
          */
         private BindWorker() {
-            super(igfsCtx.kernalContext().gridName(), "bind-worker", igfsCtx.kernalContext().log());
+            super(igfsCtx.kernalContext().gridName(), "bind-worker",
+                igfsCtx.kernalContext().log(IgfsServerManager.class));
         }
 
         /**

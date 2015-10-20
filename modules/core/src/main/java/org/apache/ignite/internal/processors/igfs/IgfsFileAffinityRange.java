@@ -274,7 +274,6 @@ public class IgfsFileAffinityRange implements Message, Externalizable {
                 writer.incrementState();
 
             case 1:
-                // The field 'done' was removed, but its writing preserved for compatibility reasons.
                 if (!writer.writeBoolean("done", done))
                     return false;
 
@@ -320,7 +319,6 @@ public class IgfsFileAffinityRange implements Message, Externalizable {
                 reader.incrementState();
 
             case 1:
-                // field 'done' was removed, but reading preserved for compatibility reasons.
                 done = reader.readBoolean("done");
 
                 if (!reader.isLastRead())

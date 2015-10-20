@@ -306,7 +306,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     ) {
         if (CU.affinityNodes(cctx, topVer).isEmpty()) {
             onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
-                "(all partition nodes left the grid)."));
+                "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + cctx.name() + ']'));
 
             return;
         }

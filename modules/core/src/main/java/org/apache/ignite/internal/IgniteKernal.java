@@ -716,8 +716,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         this.cfg = cfg;
 
-        log = (GridLoggerProxy)cfg.getGridLogger().getLogger(getClass().getName() +
-            (gridName != null ? '%' + gridName : ""));
+        log = (GridLoggerProxy)cfg.getGridLogger().getLogger(
+            getClass().getName() + (gridName != null ? '%' + gridName : ""));
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
@@ -1810,8 +1810,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 notifyLifecycleBeansEx(LifecycleEventType.BEFORE_NODE_STOP);
             }
 
-            GridCacheProcessor cacheProcessor = ctx.cache();
-
             List<GridComponent> comps = ctx.components();
 
             ctx.marshallerContext().onKernalStop();
@@ -1859,11 +1857,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     // Preserve interrupt status & ignore.
                     // Note that interrupted flag is cleared.
                     interrupted = true;
-                }
-                finally {
-                    // Cleanup even on successful acquire.
-                    if (cacheProcessor != null)
-                        cacheProcessor.cancelUserOperations();
                 }
             }
 
@@ -2251,7 +2244,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public IgniteLogger log() {
-        return log;
+        return cfg.getGridLogger();
     }
 
     /** {@inheritDoc} */

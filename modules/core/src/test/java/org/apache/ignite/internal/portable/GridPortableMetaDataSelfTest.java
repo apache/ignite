@@ -148,6 +148,8 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoConfiguration() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1377");
+
         portables().toPortable(new TestObject3());
 
         assertNotNull(portables().metadata(TestObject3.class));

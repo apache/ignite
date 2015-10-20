@@ -147,6 +147,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     private ExchangeFutureSet exchFuts = new ExchangeFutureSet();
 
+    /** */
+    private volatile IgniteCheckedException stopErr;
+
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
@@ -381,7 +384,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().removeHandler(0, GridDhtPartitionsFullMessage.class);
         cctx.io().removeHandler(0, GridDhtPartitionsSingleRequest.class);
 
-        IgniteCheckedException err = cctx.kernalContext().clientDisconnected() ?
+        stopErr = cctx.kernalContext().clientDisconnected() ?
             new IgniteClientDisconnectedCheckedException(cctx.kernalContext().cluster().clientReconnectFuture(),
                 "Client node disconnected: " + cctx.gridName()) :
             new IgniteInterruptedCheckedException("Node is stopping: " + cctx.gridName());
@@ -391,11 +394,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         if (exchFuts0 != null) {
             for (GridDhtPartitionsExchangeFuture f : exchFuts.values())
-                f.onDone(err);
+                f.onDone(stopErr);
         }
 
         for (AffinityReadyFuture f : readyFuts.values())
-            f.onDone(err);
+            f.onDone(stopErr);
+
+        for (GridDhtPartitionsExchangeFuture f : pendingExchangeFuts)
+            f.onDone(stopErr);
+
+        if (locExchFut != null)
+            locExchFut.onDone(stopErr);
 
         U.cancel(exchWorker);
 
@@ -519,6 +528,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             fut.onDone(topVer);
         }
+        else if (stopErr != null)
+            fut.onDone(stopErr);
 
         return fut;
     }
@@ -791,6 +802,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (discoEvt != null)
             fut.onEvent(exchId, discoEvt);
 
+        if (stopErr != null)
+            fut.onDone(stopErr);
+
         return fut;
     }
 
@@ -799,12 +813,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param err Error.
      */
     public void onExchangeDone(GridDhtPartitionsExchangeFuture exchFut, @Nullable Throwable err) {
+        AffinityTopologyVersion topVer = exchFut.topologyVersion();
+
+        if (log.isDebugEnabled())
+            log.debug("Exchange done [topVer=" + topVer + ", fut=" + exchFut + ", err=" + err + ']');
+
         if (err == null) {
-            AffinityTopologyVersion topVer = exchFut.topologyVersion();
-
-            if (log.isDebugEnabled())
-                log.debug("Exchange done [topVer=" + topVer + ", fut=" + exchFut + ']');
-
             while (true) {
                 AffinityTopologyVersion readyVer = readyTopVer.get();
 
@@ -825,8 +839,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             }
         }
-        else if (log.isDebugEnabled())
-            log.debug("Exchange done with error [fut=" + exchFut + ", err=" + err + ']');
+        else {
+            for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
+                if (entry.getKey().compareTo(topVer) <= 0) {
+                    if (log.isDebugEnabled())
+                        log.debug("Completing created topology ready future with error " +
+                            "[ver=" + topVer + ", fut=" + entry.getValue() + ']');
+
+                    entry.getValue().onDone(err);
+                }
+            }
+        }
 
         ExchangeFutureSet exchFuts0 = exchFuts;
 

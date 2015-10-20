@@ -142,7 +142,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         this.atomicView = atomicView;
         this.name = name;
 
-        log = ctx.gridConfig().getGridLogger().getLogger(getClass());
+        log = ctx.logger(getClass());
     }
 
     /** {@inheritDoc} */

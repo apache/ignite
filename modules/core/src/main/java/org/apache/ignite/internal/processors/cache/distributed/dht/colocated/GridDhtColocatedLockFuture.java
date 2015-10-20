@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -56,6 +57,7 @@ import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -523,7 +525,22 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtColocatedLockFuture.class, this, "inTx", inTx(), "super", super.toString());
+        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
+            @Override public String apply(IgniteInternalFuture<?> f) {
+                if (isMini(f)) {
+                    MiniFuture m = (MiniFuture)f;
+
+                    return "[node=" + m.node().id() + ", loc=" + m.node().isLocal() + ", done=" + f.isDone() + "]";
+                }
+                else
+                    return "[loc=true, done=" + f.isDone() + "]";
+            }
+        });
+
+        return S.toString(GridDhtColocatedLockFuture.class, this,
+            "innerFuts", futs,
+            "inTx", inTx(),
+            "super", super.toString());
     }
 
     /**
@@ -547,6 +564,14 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         // Obtain the topology version to use.
         AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
 
+        // If there is another system transaction in progress, use it's topology version to prevent deadlock.
+        if (topVer == null && tx != null && tx.system()) {
+            IgniteInternalTx tx0 = cctx.tm().anyActiveThreadTx(tx);
+
+            if (tx0 != null)
+                topVer = tx0.topologyVersionSnapshot();
+        }
+
         if (topVer != null && tx != null)
             tx.topologyVersion(topVer);
 
@@ -556,9 +581,10 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         if (topVer != null) {
             for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()){
                 if (fut.topologyVersion().equals(topVer)){
-                    if (!fut.isCacheTopologyValid(cctx)) {
-                        onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
-                            cctx.name()));
+                    Throwable err = fut.validateCache(cctx);
+
+                    if (err != null) {
+                        onDone(err);
 
                         return;
                     }
@@ -603,9 +629,10 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
-                if (!fut.isCacheTopologyValid(cctx)) {
-                    onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
-                        cctx.name()));
+                Throwable err = fut.validateCache(cctx);
+
+                if (err != null) {
+                    onDone(err);
 
                     return;
                 }
@@ -634,9 +661,14 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             }
             else {
                 fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
+                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                         try {
+                            fut.get();
+
                             mapOnTopology(remap, c);
+                        }
+                        catch (IgniteCheckedException e) {
+                            onDone(e);
                         }
                         finally {
                             cctx.shared().txContextReset();
@@ -1318,7 +1350,12 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                         affFut.listen(new CI1<IgniteInternalFuture<?>>() {
                             @Override public void apply(IgniteInternalFuture<?> fut) {
                                 try {
+                                    fut.get();
+
                                     remap();
+                                }
+                                catch (IgniteCheckedException e) {
+                                    onDone(e);
                                 }
                                 finally {
                                     cctx.shared().txContextReset();
