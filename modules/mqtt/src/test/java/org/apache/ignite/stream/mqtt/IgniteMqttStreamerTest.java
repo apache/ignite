@@ -105,6 +105,10 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         super(true);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Before @SuppressWarnings("unchecked")
     public void beforeTest() throws Exception {
         grid().<Integer, String>getOrCreateCache(defaultCacheConfiguration());
@@ -123,7 +127,9 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
 
         PolicyMap policyMap = new PolicyMap();
         PolicyEntry policy = new PolicyEntry();
+
         policy.setQueuePrefetch(1);
+
         broker.setDestinationPolicy(policyMap);
         broker.getDestinationPolicy().setDefaultEntry(policy);
         broker.setSchedulerSupport(false);
@@ -138,13 +144,19 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
 
         // create the client and connect
         client = new MqttClient(brokerUrl, UUID.randomUUID().toString(), new MemoryPersistence());
+
         client.connect();
 
         // create mqtt streamer
         dataStreamer = grid().dataStreamer(null);
+
         streamer = createMqttStreamer(dataStreamer);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @After
     public void afterTest() throws Exception {
         try {
@@ -160,7 +172,6 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
 
         broker.stop();
         broker.deleteAllMessages();
-
     }
 
     /**
@@ -327,7 +338,9 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         broker.stop();
         broker.start(true);
         broker.waitUntilStarted();
+
         Thread.sleep(2000);
+
         client.connect();
 
         // let's ensure we have 2 connections: Ignite and our test
@@ -370,14 +383,17 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         // now shutdown the broker, wait 2 seconds and start it again
         broker.stop();
         broker.start(true);
+
         broker.waitUntilStarted();
+
         client.connect();
 
         // lets send messages and ensure they are not received, because our retrier desisted
         sendMessages(Arrays.asList(SINGLE_TOPIC_NAME), 50, 50, false);
-        Thread.sleep(3000);
-        assertNull(grid().cache(null).get(50));
 
+        Thread.sleep(3000);
+
+        assertNull(grid().cache(null).get(50));
     }
 
     /**
@@ -422,8 +438,8 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         catch (Exception e) {
             return;
         }
-        fail("Expected an exception reporting invalid parameters");
 
+        fail("Expected an exception reporting invalid parameters");
     }
 
     /**
@@ -449,28 +465,34 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     private void sendMessages(final List<String> topics, int fromIdx, int count, boolean singleMessage) throws MqttException {
         if (singleMessage) {
             final List<StringBuilder> sbs = new ArrayList<>(topics.size());
+
             // initialize String Builders for each topic
             F.forEach(topics, new IgniteInClosure<String>() {
                 @Override public void apply(String s) {
                     sbs.add(new StringBuilder());
                 }
             });
+
             // fill String Builders for each topic
             F.forEach(F.range(fromIdx, fromIdx + count), new IgniteInClosure<Integer>() {
                 @Override public void apply(Integer integer) {
                     sbs.get(integer % topics.size()).append(integer.toString() + "," + TEST_DATA.get(integer) + "\n");
                 }
             });
+
             // send each buffer out
             for (int i = 0; i < topics.size(); i++) {
                 MqttMessage msg = new MqttMessage(sbs.get(i).toString().getBytes());
+
                 client.publish(topics.get(i % topics.size()), msg);
             }
         }
         else {
             for (int i = fromIdx; i < fromIdx + count; i++) {
                 byte[] payload = (i + "," + TEST_DATA.get(i)).getBytes();
+
                 MqttMessage msg = new MqttMessage(payload);
+
                 client.publish(topics.get(i % topics.size()), msg);
             }
         }
@@ -487,6 +509,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         @SuppressWarnings("serial") IgniteBiPredicate<UUID, CacheEvent> callback = new IgniteBiPredicate<UUID, CacheEvent>() {
             @Override public boolean apply(UUID uuid, CacheEvent evt) {
                 latch.countDown();
+
                 return true;
             }
         };
@@ -522,6 +545,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         return new StreamSingleTupleExtractor<MqttMessage, Integer, String>() {
             @Override public Map.Entry<Integer, String> extract(MqttMessage msg) {
                 List<String> s = Splitter.on(",").splitToList(new String(msg.getPayload()));
+
                 return new GridMapEntry<>(Integer.parseInt(s.get(0)), s.get(1));
             }
         };
@@ -539,12 +563,15 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
                     .omitEmptyStrings()
                     .withKeyValueSeparator(",")
                     .split(new String(msg.getPayload()));
+
                 final Map<Integer, String> answer = new HashMap<>();
+
                 F.forEach(map.keySet(), new IgniteInClosure<String>() {
                     @Override public void apply(String s) {
                         answer.put(Integer.parseInt(s), map.get(s));
                     }
                 });
+
                 return answer;
             }
         };
