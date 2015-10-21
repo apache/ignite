@@ -36,6 +36,11 @@ public class GridCachePartitionedNodeRestartTest extends GridCacheAbstractNodeRe
 
         c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
 
+        return c;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setName(CACHE_NAME);
@@ -49,9 +54,7 @@ public class GridCachePartitionedNodeRestartTest extends GridCacheAbstractNodeRe
         cc.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cc.setBackups(backups);
 
-        c.setCacheConfiguration(cc);
-
-        return c;
+        return cc;
     }
 
     /** {@inheritDoc} */

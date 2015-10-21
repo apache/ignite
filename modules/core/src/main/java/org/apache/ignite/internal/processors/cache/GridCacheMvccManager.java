@@ -120,6 +120,9 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     @SuppressWarnings( {"FieldAccessedSynchronizedAndUnsynchronized"})
     private IgniteLogger exchLog;
 
+    /** */
+    private volatile boolean stopping;
+
     /** Lock callback. */
     @GridToStringExclude
     private final GridCacheMvccCallback cb = new GridCacheMvccCallback() {
@@ -325,8 +328,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /**
      * Cancels all client futures.
      */
-    public void cancelClientFutures() {
-        cancelClientFutures(new IgniteCheckedException("Operation has been cancelled (node is stopping)."));
+    public void onStop() {
+        stopping = true;
+
+        cancelClientFutures(stopError());
     }
 
     /** {@inheritDoc} */
@@ -362,6 +367,13 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @return Node stop exception.
+     */
+    private IgniteCheckedException stopError() {
+        return new IgniteCheckedException("Operation has been cancelled (node is stopping).");
+    }
+
+    /**
      * @param from From version.
      * @return To version.
      */
@@ -379,14 +391,14 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /**
      * @param futVer Future ID.
      * @param fut Future.
+     * @return {@code False} if future was forcibly completed with error.
      */
-    public void addAtomicFuture(GridCacheVersion futVer, GridCacheAtomicFuture<?> fut) {
+    public boolean addAtomicFuture(GridCacheVersion futVer, GridCacheAtomicFuture<?> fut) {
         IgniteInternalFuture<?> old = atomicFuts.put(futVer, fut);
 
         assert old == null : "Old future is not null [futVer=" + futVer + ", fut=" + fut + ", old=" + old + ']';
 
-        if (cctx.kernalContext().clientDisconnected())
-            ((GridFutureAdapter)fut).onDone(disconnectedError(null));
+        return onFutureAdded(fut);
     }
 
     /**
@@ -507,12 +519,30 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                 fut.onNodeLeft(n.id());
         }
 
-        if (cctx.kernalContext().clientDisconnected())
-            ((GridFutureAdapter)fut).onDone(disconnectedError(null));
-
         // Just in case if future was completed before it was added.
         if (fut.isDone())
             removeFuture(fut);
+        else
+            onFutureAdded(fut);
+
+        return true;
+    }
+
+    /**
+     * @param fut Future.
+     * @return {@code False} if future was forcibly completed with error.
+     */
+    private boolean onFutureAdded(IgniteInternalFuture<?> fut) {
+        if (stopping) {
+            ((GridFutureAdapter)fut).onDone(stopError());
+
+            return false;
+        }
+        else if (cctx.kernalContext().clientDisconnected()) {
+            ((GridFutureAdapter)fut).onDone(disconnectedError(null));
+
+            return false;
+        }
 
         return true;
     }
@@ -678,8 +708,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return {@code True} if added.
      */
     public boolean addLocal(GridCacheMvccCandidate cand) {
-        assert cand.key() != null;
-        assert cand.local();
+        assert cand.key() != null : cand;
+        assert cand.local() : cand;
 
         if (cand.dhtLocal() && dhtLocCands.add(cand)) {
             if (log.isDebugEnabled())
@@ -697,8 +727,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return {@code True} if removed.
      */
     public boolean removeLocal(GridCacheMvccCandidate cand) {
-        assert cand.key() != null;
-        assert cand.local();
+        assert cand.key() != null : cand;
+        assert cand.local() : cand;
 
         if (cand.dhtLocal() && dhtLocCands.remove(cand)) {
             if (log.isDebugEnabled())
@@ -805,7 +835,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param threadId Thread id. If -1, all threads will be checked.
      * @return {@code True} if locked by any or given thread (depending on {@code threadId} value).
      */
-    public boolean isLockedByThread(KeyCacheObject key, long threadId) {
+    public boolean isLockedByThread(IgniteTxKey key, long threadId) {
         if (threadId < 0) {
             for (GridCacheExplicitLockSpan span : pendingExplicit.values()) {
                 GridCacheMvccCandidate cand = span.candidate(key, null);
@@ -833,7 +863,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param key Key.
      * @param threadId Thread id.
      */
-    public void markExplicitOwner(KeyCacheObject key, long threadId) {
+    public void markExplicitOwner(IgniteTxKey key, long threadId) {
         assert threadId > 0;
 
         GridCacheExplicitLockSpan span = pendingExplicit.get(threadId);
@@ -851,7 +881,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Candidate.
      */
     public GridCacheMvccCandidate removeExplicitLock(long threadId,
-        KeyCacheObject key,
+        IgniteTxKey key,
         @Nullable GridCacheVersion ver)
     {
         assert threadId > 0;
@@ -877,7 +907,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Last added explicit lock candidate for given thread id and key or {@code null} if
      *      no such candidate.
      */
-    @Nullable public GridCacheMvccCandidate explicitLock(long threadId, KeyCacheObject key) {
+    @Nullable public GridCacheMvccCandidate explicitLock(long threadId, IgniteTxKey key) {
         if (threadId < 0)
             return explicitLock(key, null);
         else {
@@ -894,7 +924,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param ver Version.
      * @return Lock candidate that satisfies given criteria or {@code null} if no such candidate.
      */
-    @Nullable public GridCacheMvccCandidate explicitLock(KeyCacheObject key, @Nullable GridCacheVersion ver) {
+    @Nullable public GridCacheMvccCandidate explicitLock(IgniteTxKey key, @Nullable GridCacheVersion ver) {
         for (GridCacheExplicitLockSpan span : pendingExplicit.values()) {
             GridCacheMvccCandidate cand = span.candidate(key, ver);
 
@@ -999,45 +1029,40 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
     /**
      * @param keys Key for which locks should be released.
+     * @param cacheId Cache ID.
      * @param topVer Topology version.
      * @return Future that signals when all locks for given keys are released.
      */
     @SuppressWarnings("unchecked")
-    public IgniteInternalFuture<?> finishKeys(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
+    public IgniteInternalFuture<?> finishKeys(Collection<KeyCacheObject> keys,
+        final int cacheId,
+        AffinityTopologyVersion topVer) {
         if (!(keys instanceof Set))
             keys = new HashSet<>(keys);
 
         final Collection<KeyCacheObject> keys0 = keys;
 
-        return finishLocks(new P1<KeyCacheObject>() {
-            @Override public boolean apply(KeyCacheObject key) {
-                return keys0.contains(key);
+        return finishLocks(new P1<GridDistributedCacheEntry>() {
+            @Override public boolean apply(GridDistributedCacheEntry e) {
+                return e.context().cacheId() == cacheId && keys0.contains(e.key());
             }
         }, topVer);
     }
 
     /**
-     * @param keyFilter Key filter.
+     * @param filter Entry filter.
      * @param topVer Topology version.
      * @return Future that signals when all locks for given partitions will be released.
      */
-    private IgniteInternalFuture<?> finishLocks(@Nullable final IgnitePredicate<KeyCacheObject> keyFilter, AffinityTopologyVersion topVer) {
+    private IgniteInternalFuture<?> finishLocks(@Nullable final IgnitePredicate<GridDistributedCacheEntry> filter,
+        AffinityTopologyVersion topVer) {
         assert topVer.topologyVersion() != 0;
 
         if (topVer.equals(AffinityTopologyVersion.NONE))
             return new GridFinishedFuture();
 
-        final FinishLockFuture finishFut = new FinishLockFuture(
-            keyFilter == null ?
-                locked() :
-                F.view(locked(),
-                    new P1<GridDistributedCacheEntry>() {
-                        @Override public boolean apply(GridDistributedCacheEntry e) {
-                            return F.isAll(e.key(), keyFilter);
-                        }
-                    }
-                ),
-            topVer);
+        final FinishLockFuture finishFut =
+            new FinishLockFuture(filter == null ? locked() : F.view(locked(), filter), topVer);
 
         finishFuts.add(finishFut);
 

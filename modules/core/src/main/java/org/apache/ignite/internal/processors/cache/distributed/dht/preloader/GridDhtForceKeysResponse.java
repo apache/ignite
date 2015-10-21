@@ -98,16 +98,9 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
         this.err = err;
     }
 
-    /**
-     * @return Error, if any.
-     */
-    public IgniteCheckedException error() {
-        return err;
-    }
-
     /** {@inheritDoc} */
-    @Override public boolean allowForStartup() {
-        return true;
+    @Override public IgniteCheckedException error() {
+        return err;
     }
 
     /**

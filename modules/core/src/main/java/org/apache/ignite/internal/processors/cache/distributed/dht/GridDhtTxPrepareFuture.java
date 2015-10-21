@@ -318,7 +318,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     private void onEntriesLocked() {
         ret = new GridCacheReturn(null, tx.localResult(), null, true);
 
-        for (IgniteTxEntry txEntry : tx.optimisticLockEntries()) {
+        for (IgniteTxEntry writeEntry : writes) {
+            IgniteTxEntry txEntry = tx.entry(writeEntry.txKey());
+
+            assert txEntry != null : writeEntry;
+
             GridCacheContext cacheCtx = txEntry.context();
 
             GridCacheEntryEx cached = txEntry.cached();
@@ -842,7 +846,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         IgniteTxEntry e,
         Map<Integer, Collection<KeyCacheObject>> map
     ) {
-        if (retVal || !F.isEmpty(e.entryProcessors())) {
+        if (retVal || !F.isEmpty(e.entryProcessors()) || !F.isEmpty(e.filters())) {
             if (map == null)
                 map = new HashMap<>();
 

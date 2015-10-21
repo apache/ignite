@@ -29,12 +29,12 @@ import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableIdMapper;
-import org.apache.ignite.portable.PortableObject;
-import org.apache.ignite.portable.PortableProtocolVersion;
-import org.apache.ignite.portable.PortableSerializer;
-import org.apache.ignite.portable.PortableTypeConfiguration;
+import org.apache.ignite.internal.portable.api.PortableException;
+import org.apache.ignite.internal.portable.api.PortableIdMapper;
+import org.apache.ignite.internal.portable.api.PortableObject;
+import org.apache.ignite.internal.portable.api.PortableProtocolVersion;
+import org.apache.ignite.internal.portable.api.PortableSerializer;
+import org.apache.ignite.internal.portable.api.PortableTypeConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -336,7 +336,7 @@ public class PortableMarshaller extends AbstractMarshaller {
 
     /** {@inheritDoc} */
     @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
         byte[] arr = new byte[4096];
         int cnt;
@@ -345,11 +345,11 @@ public class PortableMarshaller extends AbstractMarshaller {
         // returns number of bytes remaining.
         try {
             while ((cnt = in.read(arr)) != -1)
-                buffer.write(arr, 0, cnt);
+                buf.write(arr, 0, cnt);
 
-            buffer.flush();
+            buf.flush();
 
-            return impl.deserialize(buffer.toByteArray(), clsLdr);
+            return impl.deserialize(buf.toByteArray(), clsLdr);
         }
         catch (IOException e) {
             throw new PortableException("Failed to unmarshal the object from InputStream", e);

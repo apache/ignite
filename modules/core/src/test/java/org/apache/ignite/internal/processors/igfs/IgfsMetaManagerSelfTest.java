@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsPath;
@@ -46,7 +45,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.ROOT_ID;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsInherited;
-import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  * {@link IgfsMetaManager} test case.
@@ -143,19 +141,20 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
     public void testUpdateProperties() throws Exception {
         assertEmpty(mgr.directoryListing(ROOT_ID));
 
-        IgfsFileInfo dir = new IgfsFileInfo(true, null);
-        IgfsFileInfo file = new IgfsFileInfo(new IgfsFileInfo(400, null, false, null), 1);
+        assertTrue(mgr.mkdirs(new IgfsPath("/dir"), IgfsImpl.DFLT_DIR_META));
+        assertNotNull(mgr.create(new IgfsPath("/file"), false, false, null, 400, null, false, null));
 
-        assertNull(mgr.putIfAbsent(ROOT_ID, "dir", dir));
-        assertNull(mgr.putIfAbsent(ROOT_ID, "file", file));
+        IgfsListingEntry dirEntry = mgr.directoryListing(ROOT_ID).get("dir");
+        assertNotNull(dirEntry);
+        assertTrue(dirEntry.isDirectory());
+        IgfsFileInfo dir = mgr.info(dirEntry.fileId());
 
-        assertEquals(F.asMap("dir", new IgfsListingEntry(dir), "file", new IgfsListingEntry(file)),
-            mgr.directoryListing(ROOT_ID));
+        IgfsListingEntry fileEntry = mgr.directoryListing(ROOT_ID).get("file");
+        assertNotNull(fileEntry);
+        assertTrue(!fileEntry.isDirectory());
+        IgfsFileInfo file = mgr.info(fileEntry.fileId());
 
-        //IgfsFileInfo tmp = mgr.info(dir.id());
-
-        assertEquals(dir, mgr.info(dir.id()));
-        assertEquals(file, mgr.info(file.id()));
+        assertEquals(2, mgr.directoryListing(ROOT_ID).size());
 
         for (IgniteBiTuple<IgniteUuid, String> tup: Arrays.asList(F.t(dir.id(), "dir"), F.t(file.id(), "file"))) {
             IgniteUuid fileId = tup.get1();
@@ -169,36 +168,61 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
 
             IgfsFileInfo info = mgr.info(fileId);
 
-            assertNull("Expects empty properties are not stored: " + info, getFieldValue(info, "props"));
-            assertEquals("Expects empty properties are not stored: " + info, Collections.<String, String>emptyMap(),
-                info.properties());
+            assertNull("Unexpected stored properties: " + info, info.properties().get(key1));
+            assertNull("Unexpected stored properties: " + info, info.properties().get(key2));
 
             info = mgr.updateProperties(ROOT_ID, fileId, fileName, F.asMap(key1, "1"));
 
-            assertEquals("Unexpected stored properties: " + info, F.asMap(key1, "1"), info.properties());
+            assertEquals("Unexpected stored properties: " + info, "1", info.properties().get(key1));
 
             info = mgr.updateProperties(ROOT_ID, fileId, fileName, F.asMap(key2, "2"));
 
-            assertEquals("Unexpected stored properties: " + info, F.asMap(key1, "1", key2, "2"), info.properties());
+           // assertEquals("Unexpected stored properties: " + info, F.asMap(key1, "1", key2, "2"), info.properties());
+            assertEquals("Unexpected stored properties: " + info, "1", info.properties().get(key1));
+            assertEquals("Unexpected stored properties: " + info, "2", info.properties().get(key2));
 
             info = mgr.updateProperties(ROOT_ID, fileId, fileName, F.<String, String>asMap(key1, null));
 
-            assertEquals("Unexpected stored properties: " + info, F.asMap(key2, "2"), info.properties());
+            assertEquals("Unexpected stored properties: " + info, "2", info.properties().get(key2));
 
             info = mgr.updateProperties(ROOT_ID, fileId, fileName, F.<String, String>asMap(key2, null));
 
-            assertNull("Expects empty properties are not stored: " + info, getFieldValue(info, "props"));
-            assertEquals("Expects empty properties are not stored: " + info, Collections.<String, String>emptyMap(),
-                info.properties());
+            assertNull("Unexpected stored properties: " + info, info.properties().get(key1));
+            assertNull("Unexpected stored properties: " + info, info.properties().get(key2));
 
             assertNull(mgr.updateProperties(ROOT_ID, fileId, "not_exists", F.<String, String>asMap(key2, null)));
         }
 
-        mgr.removeIfEmpty(ROOT_ID, "dir", dir.id(), new IgfsPath("/dir"), true);
-        mgr.removeIfEmpty(ROOT_ID, "file", file.id(), new IgfsPath("/file"), true);
+        mgr.softDelete(new IgfsPath("/dir"), true);
+        mgr.softDelete(new IgfsPath("/file"), false);
 
         assertNull(mgr.updateProperties(ROOT_ID, dir.id(), "dir", F.asMap("p", "7")));
         assertNull(mgr.updateProperties(ROOT_ID, file.id(), "file", F.asMap("q", "8")));
+    }
+
+    private IgfsFileInfo mkdirsAndGetInfo(String path) throws IgniteCheckedException {
+        IgfsPath p = path(path);
+
+        mgr.mkdirs(p, IgfsImpl.DFLT_DIR_META);
+
+        IgniteUuid id = mgr.fileId(p);
+
+        IgfsFileInfo info = mgr.info(id);
+
+        assert info.isDirectory();
+
+        return info;
+    }
+
+    private IgfsFileInfo createFileAndGetInfo(String path) throws IgniteCheckedException {
+        IgfsPath p = path(path);
+
+        IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = mgr.create(p, false, false, null, 400, null, false, null);
+
+        assert t2 != null;
+        assert !t2.get1().isDirectory();
+
+        return t2.get1();
     }
 
     /**
@@ -208,39 +232,35 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
      */
     public void testStructure() throws Exception {
         IgfsFileInfo rootInfo = new IgfsFileInfo();
+
         // Test empty structure.
         assertEmpty(mgr.directoryListing(ROOT_ID));
         assertEquals(rootInfo, mgr.info(ROOT_ID));
         assertEquals(F.asMap(ROOT_ID, rootInfo), mgr.infos(Arrays.asList(ROOT_ID)));
 
-        IgfsFileInfo a = new IgfsFileInfo(true, null);
-        IgfsFileInfo b = new IgfsFileInfo(true, null);
-        IgfsFileInfo f1 = new IgfsFileInfo(400, null, false, null);
-        IgfsFileInfo f2 = new IgfsFileInfo(new IgfsFileInfo(400, null, false, null), 0);
-        IgfsFileInfo f3 = new IgfsFileInfo(new IgfsFileInfo(400, null, false, null), 200000L);
+        // Directories:
+        IgfsFileInfo a = mkdirsAndGetInfo("/a");
+        IgfsFileInfo b = mkdirsAndGetInfo("/a/b");
+        IgfsFileInfo k = mkdirsAndGetInfo("/a/b/k");
+        IgfsFileInfo z = mkdirsAndGetInfo("/a/k");
 
-        // Validate 'add file' operation.
-        assertNull(mgr.putIfAbsent(ROOT_ID, "a", a));
-        assertNull(mgr.putIfAbsent(ROOT_ID, "f1", f1));
-        assertNull(mgr.putIfAbsent(a.id(), "b", b));
-        assertNull(mgr.putIfAbsent(a.id(), "f2", f2));
-        assertNull(mgr.putIfAbsent(b.id(), "f3", f3));
-
-        assertEquals(b.id(), mgr.putIfAbsent(a.id(), "b", f3));
-        expectsPutIfAbsentFail(a.id(), "c", f3, "Failed to add file details into cache");
+        // Files:
+        IgfsFileInfo f1 = createFileAndGetInfo("/f1");
+        IgfsFileInfo f2 = createFileAndGetInfo("/a/f2");
+        IgfsFileInfo f3 = createFileAndGetInfo("/a/b/f3");
 
         assertEquals(F.asMap("a", new IgfsListingEntry(a), "f1", new IgfsListingEntry(f1)),
             mgr.directoryListing(ROOT_ID));
 
-        assertEquals(F.asMap("b", new IgfsListingEntry(b), "f2", new IgfsListingEntry(f2)),
+        assertEquals(F.asMap("b", new IgfsListingEntry(b), "f2", new IgfsListingEntry(f2), "k", new IgfsListingEntry(z)),
             mgr.directoryListing(a.id()));
 
-        assertEquals(F.asMap("f3", new IgfsListingEntry(f3)), mgr.directoryListing(b.id()));
+        assertEquals(F.asMap("f3", new IgfsListingEntry(f3),
+            "k", new IgfsListingEntry(k)), mgr.directoryListing(b.id()));
 
         // Validate empty files listings.
-        for (IgfsFileInfo info : Arrays.asList(f1, f2, f3)) {
+        for (IgfsFileInfo info : Arrays.asList(f1, f2, f3))
             assertEmpty(mgr.directoryListing(info.id()));
-        }
 
         // Validate 'file info' operations.
         for (IgfsFileInfo info : Arrays.asList(rootInfo, a, b, f1, f2, f3)) {
@@ -279,78 +299,56 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEquals(Arrays.asList(ROOT_ID, a.id(), b.id(), null), mgr.fileIds(new IgfsPath("/a/b/f6")));
         assertEquals(Arrays.asList(ROOT_ID, null, null, null, null), mgr.fileIds(new IgfsPath("/f7/a/b/f6")));
 
-        // Validate 'rename' operation.
-        final IgniteUuid rndId = IgniteUuid.randomUuid();
-
         // One of participated files does not exist in cache.
-        expectsRenameFail(ROOT_ID, "b", rndId, "b2", rndId, "Failed to lock source directory (not found?)");
-        expectsRenameFail(b.id(), "b", rndId, "b2", rndId, "Failed to lock source directory (not found?)");
-        expectsRenameFail(ROOT_ID, "b", ROOT_ID, "b2", rndId, "Failed to lock destination directory (not found?)");
-        expectsRenameFail(b.id(), "b", ROOT_ID, "b2", rndId, "Failed to lock destination directory (not found?)");
-        expectsRenameFail(rndId, "b", ROOT_ID, "b2", ROOT_ID, "Failed to lock target file (not found?)");
-        expectsRenameFail(rndId, "b", b.id(), "b2", b.id(), "Failed to lock target file (not found?)");
+        expectsRenameFail("/b8", "/b2", "Failed to perform move because some path component was not found.");
 
-        // Target file ID differ from the file ID resolved from the source directory for source file name.
-        expectsRenameFail(b.id(), "a", ROOT_ID, "q", ROOT_ID, "Failed to remove file name from the source directory");
-        expectsRenameFail(f1.id(), "a", ROOT_ID, "q", ROOT_ID, "Failed to remove file name from the source directory");
-        expectsRenameFail(f2.id(), "a", ROOT_ID, "q", ROOT_ID, "Failed to remove file name from the source directory");
-        expectsRenameFail(f3.id(), "a", ROOT_ID, "q", ROOT_ID, "Failed to remove file name from the source directory");
+        expectsRenameFail("/a", "/b/b8", "Failed to perform move because some path component was not found.");
 
-        // Invalid source file name (not found).
-        expectsRenameFail(a.id(), "u1", ROOT_ID, "q", ROOT_ID, "Failed to remove file name from the source");
-        expectsRenameFail(a.id(), "u2", ROOT_ID, "q", ROOT_ID, "Failed to remove file name from the source");
-        expectsRenameFail(a.id(), "u3", ROOT_ID, "q", ROOT_ID, "Failed to remove file name from the source");
+        expectsRenameFail("/a/f2", "/a/b/f3", "Failed to perform move because destination points to existing file");
 
-        // Invalid destination file - already exists.
-        expectsRenameFail(a.id(), "a", ROOT_ID, "f1", ROOT_ID, "Failed to add file name into the destination");
-        expectsRenameFail(f2.id(), "f2", a.id(), "f1", ROOT_ID, "Failed to add file name into the destination");
-        expectsRenameFail(f3.id(), "f3", b.id(), "f1", ROOT_ID, "Failed to add file name into the destination");
-        expectsRenameFail(b.id(), "b", a.id(), "f2", a.id(), "Failed to add file name into the destination");
+        expectsRenameFail("/a/k", "/a/b/", "Failed to perform move because destination already " +
+            "contains entry with the same name existing file");
+
+        mgr.delete(a.id(), "k", k.id());
+        mgr.delete(b.id(), "k", z.id());
 
         System.out.println("/: " + mgr.directoryListing(ROOT_ID));
         System.out.println("a: " + mgr.directoryListing(a.id()));
         System.out.println("b: " + mgr.directoryListing(b.id()));
         System.out.println("f3: " + mgr.directoryListing(f3.id()));
 
-        mgr.move(a.id(), "a", ROOT_ID, "a2", ROOT_ID);
-        mgr.move(b.id(), "b", a.id(), "b2", a.id());
+        mgr.move(path("/a"), path("/a2"));
+        mgr.move(path("/a2/b"), path("/a2/b2"));
 
         assertNotNull(mgr.info(b.id()));
 
-        mgr.move(f3.id(), "f3", b.id(), "f3-2", a.id());
+        mgr.move(path("/a2/b2/f3"), path("/a2/b2/f3-2"));
 
         assertNotNull(mgr.info(b.id()));
 
-        mgr.move(f3.id(), "f3-2", a.id(), "f3", b.id());
-        mgr.move(b.id(), "b2", a.id(), "b", a.id());
-        mgr.move(a.id(), "a2", ROOT_ID, "a", ROOT_ID);
+        mgr.move(path("/a2/b2/f3-2"), path("/a2/b2/f3"));
 
-        // Validate 'remove' operation.
-        for (int i = 0; i < 100; i++) {
-            // One of participants doesn't exist.
-            assertNull(mgr.removeIfEmpty(ROOT_ID, "a", IgniteUuid.randomUuid(), new IgfsPath("/a"), true));
-            assertNull(mgr.removeIfEmpty(IgniteUuid.randomUuid(), "a", IgniteUuid.randomUuid(),
-                new IgfsPath("/" + IgniteUuid.randomUuid() + "/a"), true));
-        }
+        mgr.move(path("/a2/b2"), path("/a2/b"));
 
-        expectsRemoveFail(ROOT_ID, "a", a.id(), new IgfsPath("/a"),
-            "Failed to remove file (directory is not empty)");
-        expectsRemoveFail(a.id(), "b", b.id(), new IgfsPath("/a/b"),
-            "Failed to remove file (directory is not empty)");
-        assertNull(mgr.removeIfEmpty(ROOT_ID, "a", f1.id(), new IgfsPath("/a"), true));
-        assertNull(mgr.removeIfEmpty(a.id(), "b", f1.id(), new IgfsPath("/a/b"), true));
+        mgr.move(path("/a2"), path("/a"));
 
-        assertEquals(f3, mgr.removeIfEmpty(b.id(), "f3", f3.id(), new IgfsPath("/a/b/f3"), true));
+        IgniteUuid del = mgr.softDelete(path("/a/b/f3"), false);
+
+        assertEquals(f3.id(), del);
 
         assertEquals(F.asMap("a", new IgfsListingEntry(a), "f1", new IgfsListingEntry(f1)),
-            mgr.directoryListing(ROOT_ID));
+                mgr.directoryListing(ROOT_ID));
 
-        assertEquals(F.asMap("b", new IgfsListingEntry(b), "f2", new IgfsListingEntry(f2)),
+        assertEquals(
+            F.asMap("b", new IgfsListingEntry(b),
+                "f2", new IgfsListingEntry(f2)),
             mgr.directoryListing(a.id()));
 
         assertEmpty(mgr.directoryListing(b.id()));
 
-        assertEquals(b, mgr.removeIfEmpty(a.id(), "b", b.id(), new IgfsPath("/a/b"), true));
+        //assertEquals(b, mgr.removeIfEmpty(a.id(), "b", b.id(), new IgfsPath("/a/b"), true));
+        del = mgr.softDelete(path("/a/b"), false);
+        assertEquals(b.id(), del);
 
         assertEquals(F.asMap("a", new IgfsListingEntry(a), "f1", new IgfsListingEntry(f1)),
             mgr.directoryListing(ROOT_ID));
@@ -370,7 +368,8 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEquals(f2.id(), newF2.id());
         assertNotSame(f2, newF2);
 
-        assertEquals(newF2, mgr.removeIfEmpty(a.id(), "f2", f2.id(), new IgfsPath("/a/f2"), true));
+        del = mgr.softDelete(path("/a/f2"), false);
+        assertEquals(f2.id(), del);
 
         assertEquals(F.asMap("a", new IgfsListingEntry(a), "f1", new IgfsListingEntry(f1)),
             mgr.directoryListing(ROOT_ID));
@@ -378,18 +377,30 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEmpty(mgr.directoryListing(a.id()));
         assertEmpty(mgr.directoryListing(b.id()));
 
-        assertEquals(f1, mgr.removeIfEmpty(ROOT_ID, "f1", f1.id(), new IgfsPath("/f1"), true));
+        del = mgr.softDelete(path("/f1"), false);
+        assertEquals(f1.id(), del);
 
         assertEquals(F.asMap("a", new IgfsListingEntry(a)), mgr.directoryListing(ROOT_ID));
 
         assertEmpty(mgr.directoryListing(a.id()));
         assertEmpty(mgr.directoryListing(b.id()));
 
-        assertEquals(a, mgr.removeIfEmpty(ROOT_ID, "a", a.id(), new IgfsPath("/a"), true));
+        del = mgr.softDelete(path("/a"), false);
+        assertEquals(a.id(), del);
 
         assertEmpty(mgr.directoryListing(ROOT_ID));
         assertEmpty(mgr.directoryListing(a.id()));
         assertEmpty(mgr.directoryListing(b.id()));
+    }
+
+    /**
+     * Utility method to make IgfsPath.
+     *
+     * @param p The String path.
+     * @return The IgfsPath object.
+     */
+    private static IgfsPath path(String p) {
+        return new IgfsPath(p);
     }
 
     /**
@@ -411,75 +422,26 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
     private void expectsUpdatePropertiesFail(@Nullable final IgniteUuid fileId, @Nullable final Map<String, String> props,
         Class<? extends Throwable> cls, @Nullable String msg) {
         assertThrows(log, new Callable() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 return mgr.updateProperties(null, fileId, "file", props);
             }
         }, cls, msg);
     }
 
     /**
-     * Test expected failures for 'add file' operation.
-     *
-     * @param parentId Parent file ID.
-     * @param fileName New file name in the parent's listing.
-     * @param fileInfo New file initial details.
-     * @param msg Failure message if expected exception was not thrown.
-     */
-    private void expectsPutIfAbsentFail(final IgniteUuid parentId, final String fileName, final IgfsFileInfo fileInfo,
-        @Nullable String msg) {
-        Throwable err = assertThrows(log, new Callable() {
-            @Override public Object call() throws Exception {
-                return mgr.putIfAbsent(parentId, fileName, fileInfo);
-            }
-        }, IgniteCheckedException.class, msg);
-
-        assertTrue("Unexpected cause: " + err.getCause(), err.getCause() instanceof IgfsException);
-    }
-
-    /**
      * Test expected failures for 'move file' operation.
      *
-     * @param fileId File ID to rename.
-     * @param srcFileName Original file name in the parent's listing.
-     * @param srcParentId Source parent directory ID.
-     * @param destFileName New file name in the parent's listing after renaming.
-     * @param destParentId Destination parent directory ID.
      * @param msg Failure message if expected exception was not thrown.
      */
-    private void expectsRenameFail(final IgniteUuid fileId, final String srcFileName, final IgniteUuid srcParentId,
-        final String destFileName, final IgniteUuid destParentId, @Nullable String msg) {
+    private void expectsRenameFail(final String src, final String dst, @Nullable String msg) {
         Throwable err = assertThrowsInherited(log, new Callable() {
-            @Override
-            public Object call() throws Exception {
-                mgr.move(fileId, srcFileName, srcParentId, destFileName, destParentId);
+            @Override public Object call() throws Exception {
+                mgr.move(new IgfsPath(src), new IgfsPath(dst));
 
                 return null;
             }
-        }, IgniteCheckedException.class, msg);
+        }, IgfsException.class, msg);
 
-        assertTrue("Unexpected cause: " + err.getCause(), err.getCause() instanceof IgfsException);
-    }
-
-    /**
-     * Test expected failures for 'remove file' operation.
-     *
-     * @param parentId Parent file ID to remove file from.
-     * @param fileName File name in the parent's listing.
-     * @param fileId File ID to remove.
-     * @param path Removed file path.
-     * @param msg Failure message if expected exception was not thrown.
-     */
-    private void expectsRemoveFail(final IgniteUuid parentId, final String fileName, final IgniteUuid fileId,
-        final IgfsPath path, @Nullable String msg) {
-        Throwable err = assertThrows(log, new Callable() {
-            @Nullable @Override public Object call() throws Exception {
-                mgr.removeIfEmpty(parentId, fileName, fileId, path, true);
-
-                return null;
-            }
-        }, IgniteCheckedException.class, msg);
-
-        assertTrue("Unexpected cause: " + err.getCause(), err.getCause() instanceof IgfsDirectoryNotEmptyException);
+        assertTrue("Unexpected cause: " + err, err instanceof IgfsException);
     }
 }

@@ -60,6 +60,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.failover.FailoverContext;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -100,6 +101,9 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
     /** Backups count. */
     private int backups;
+
+    /** */
+    private GridTestUtils.TestMemoryMode memMode = GridTestUtils.TestMemoryMode.HEAP;
 
     /** Filter to include only worker nodes. */
     private static final IgnitePredicate<ClusterNode> workerNodesFilter = new PN() {
@@ -200,6 +204,60 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
      */
     public void testPutAllFailoverColocatedNearDisabledTwoBackups() throws Exception {
         checkPutAllFailoverColocated(false, 5, 2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllFailoverColocatedNearEnabledTwoBackupsSwap() throws Exception {
+        memMode = GridTestUtils.TestMemoryMode.SWAP;
+
+        checkPutAllFailoverColocated(true, 5, 2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllFailoverColocatedTwoBackupsSwap() throws Exception {
+        memMode = GridTestUtils.TestMemoryMode.SWAP;
+
+        checkPutAllFailoverColocated(false, 5, 2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllFailoverColocatedNearEnabledTwoBackupsOffheapTiered() throws Exception {
+        memMode = GridTestUtils.TestMemoryMode.OFFHEAP_TIERED;
+
+        checkPutAllFailoverColocated(true, 5, 2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllFailoverColocatedNearEnabledTwoBackupsOffheapTieredSwap() throws Exception {
+        memMode = GridTestUtils.TestMemoryMode.OFFHEAP_TIERED_SWAP;
+
+        checkPutAllFailoverColocated(true, 5, 2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllFailoverColocatedNearEnabledTwoBackupsOffheapEvict() throws Exception {
+        memMode = GridTestUtils.TestMemoryMode.OFFHEAP_EVICT;
+
+        checkPutAllFailoverColocated(true, 5, 2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllFailoverColocatedNearEnabledTwoBackupsOffheapEvictSwap() throws Exception {
+        memMode = GridTestUtils.TestMemoryMode.OFFHEAP_EVICT_SWAP;
+
+        checkPutAllFailoverColocated(true, 5, 2);
     }
 
     /** {@inheritDoc} */
@@ -695,6 +753,8 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
 
             cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+
+            GridTestUtils.setMemoryMode(cfg, cacheCfg, memMode, 1000, 10 * 1024);
 
             cfg.setCacheConfiguration(cacheCfg);
         }

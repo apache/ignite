@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -49,6 +50,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMemoryMode;
@@ -75,6 +77,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -117,48 +120,37 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /** */
     public static final CacheEntryProcessor<String, Integer, String> ERR_PROCESSOR =
         new CacheEntryProcessor<String, Integer, String>() {
+            /** */
+            private static final long serialVersionUID = 0L;
+
             @Override public String process(MutableEntry<String, Integer> e, Object... args) {
                 throw new RuntimeException("Failed!");
             }
         };
 
     /** Increment processor for invoke operations. */
-    public static final EntryProcessor<String, Integer, String> INCR_PROCESSOR = new EntryProcessor<String, Integer, String>() {
-        @Override public String process(MutableEntry<String, Integer> e, Object... args) {
-            assertNotNull(e.getKey());
-
-            Integer old = e.getValue();
-
-            e.setValue(old == null ? 1 : old + 1);
-
-            return String.valueOf(old);
-        }
-    };
+    public static final EntryProcessor<String, Integer, String> INCR_PROCESSOR = new IncrementEntryProcessor();
 
     /** Increment processor for invoke operations with IgniteEntryProcessor. */
     public static final CacheEntryProcessor<String, Integer, String> INCR_IGNITE_PROCESSOR =
         new CacheEntryProcessor<String, Integer, String>() {
+            /** */
+            private static final long serialVersionUID = 0L;
+
             @Override public String process(MutableEntry<String, Integer> e, Object... args) {
                 return INCR_PROCESSOR.process(e, args);
             }
         };
 
     /** Increment processor for invoke operations. */
-    public static final EntryProcessor<String, Integer, String> RMV_PROCESSOR = new EntryProcessor<String, Integer, String>() {
-        @Override public String process(MutableEntry<String, Integer> e, Object... args) {
-            assertNotNull(e.getKey());
-
-            Integer old = e.getValue();
-
-            e.remove();
-
-            return String.valueOf(old);
-        }
-    };
+    public static final EntryProcessor<String, Integer, String> RMV_PROCESSOR = new RemoveEntryProcessor();
 
     /** Increment processor for invoke operations with IgniteEntryProcessor. */
     public static final CacheEntryProcessor<String, Integer, String> RMV_IGNITE_PROCESSOR =
         new CacheEntryProcessor<String, Integer, String>() {
+            /** */
+            private static final long serialVersionUID = 0L;
+
             @Override public String process(MutableEntry<String, Integer> e, Object... args) {
                 return RMV_PROCESSOR.process(e, args);
             }
@@ -346,21 +338,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert jcache(i).localSize() != 0 || F.isEmpty(keysCol);
         }
 
-        for (int i = 0; i < gridCount(); i++) {
-            executeOnLocalOrRemoteJvm(i, new TestIgniteIdxRunnable() {
-                @Override public void run(int idx) throws Exception {
-                    GridCacheContext<String, Integer> ctx = context(idx);
-
-                    int sum = 0;
-
-                    for (String key : map.keySet())
-                        if (ctx.affinity().localNode(key, new AffinityTopologyVersion(ctx.discovery().topologyVersion())))
-                            sum++;
-
-                    assertEquals("Incorrect key size on cache #" + idx, sum, jcache(idx).localSize(ALL));
-                }
-            });
-        }
+        for (int i = 0; i < gridCount(); i++)
+            executeOnLocalOrRemoteJvm(i, new CheckCacheSizeTask(map));
 
         for (int i = 0; i < gridCount(); i++) {
             Collection<String> keysCol = mapped.get(grid(i).localNode());
@@ -1350,13 +1329,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertEquals((Integer)3, cache.get("k1"));
 
-        EntryProcessor<String, Integer, Integer> c = new EntryProcessor<String, Integer, Integer>() {
-            @Override public Integer process(MutableEntry<String, Integer> e, Object... args) {
-                e.remove();
-
-                return null;
-            }
-        };
+        EntryProcessor<String, Integer, Integer> c = new RemoveAndReturnNullEntryProcessor();
 
         assertNull(cache.invoke("k1", c));
         assertNull(cache.get("k1"));
@@ -1364,11 +1337,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++)
             assertNull(jcache(i).localPeek("k1", ONHEAP));
 
-        final EntryProcessor<String, Integer, Integer> errProcessor = new EntryProcessor<String, Integer, Integer>() {
-            @Override public Integer process(MutableEntry<String, Integer> e, Object... args) {
-                throw new EntryProcessorException("Test entry processor exception.");
-            }
-        };
+        final EntryProcessor<String, Integer, Integer> errProcessor = new FailedEntryProcessor();
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -2001,7 +1970,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertFalse(cacheAsync.<Boolean>future().get());
         }
 
-        cache.localEvict(Arrays.asList("key2"));
+        cache.localEvict(Collections.singletonList("key2"));
 
         // Same checks inside tx.
         Transaction tx = inTx ? transactions().txStart() : null;
@@ -2357,27 +2326,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             for (int i = 0; i < cnt; i++)
                 cache.remove(String.valueOf(i));
 
-            for (int g = 0; g < gridCount(); g++) {
-                executeOnLocalOrRemoteJvm(g, new TestIgniteIdxRunnable() {
-                    @Override public void run(int idx) throws Exception {
-                        for (int i = 0; i < cnt; i++) {
-                            String key = String.valueOf(i);
-
-                            GridCacheContext<String, Integer> cctx = context(idx);
-
-                            GridCacheEntryEx entry = cctx.isNear() ? cctx.near().dht().peekEx(key) :
-                                cctx.cache().peekEx(key);
-
-                            if (grid(idx).affinity(null).mapKeyToPrimaryAndBackups(key).contains(grid(idx).localNode())) {
-                                assertNotNull(entry);
-                                assertTrue(entry.deleted());
-                            }
-                            else
-                                assertNull(entry);
-                        }
-                    }
-                });
-            }
+            for (int g = 0; g < gridCount(); g++)
+                executeOnLocalOrRemoteJvm(g, new CheckEntriesDeletedTask(cnt));
         }
     }
 
@@ -2587,8 +2537,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         c.add(null);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
+            @Override public Void call() throws Exception {
                 cache.removeAll(c);
 
                 return null;
@@ -2725,7 +2674,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testRemoveAfterClear() throws Exception {
         IgniteEx ignite = grid(0);
 
-        boolean affNode = ((IgniteKernal)ignite).context().cache().internalCache(null).context().affinityNode();
+        boolean affNode = ignite.context().cache().internalCache(null).context().affinityNode();
 
         if (!affNode) {
             if (gridCount() < 2)
@@ -2763,13 +2712,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assertTrue(grid0.cache(null).localSize() == 0);
         }
-    }
-
-    /**
-     *
-     */
-    private void xxx() {
-        System.out.printf("");
     }
 
     /**
@@ -2825,7 +2767,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             try {
                 cache.clear();
 
-                assertEquals(vals.get(first), cache.localPeek(first, ONHEAP));
+                GridCacheContext<String, Integer> cctx = context(0);
+
+                GridCacheEntryEx entry = cctx.isNear() ? cctx.near().dht().peekEx(first) :
+                    cctx.cache().peekEx(first);
+
+                assertNotNull(entry);
             }
             finally {
                 lock.unlock();
@@ -3592,26 +3539,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             info("Local keys (primary + backup): " + locKeys);
         }
 
-        for (int i = 0; i < gridCount(); i++) {
-            grid(i).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    info("Received event: " + evt);
-
-                    switch (evt.type()) {
-                        case EVT_CACHE_OBJECT_SWAPPED:
-                            swapEvts.incrementAndGet();
-
-                            break;
-                        case EVT_CACHE_OBJECT_UNSWAPPED:
-                            unswapEvts.incrementAndGet();
-
-                            break;
-                    }
-
-                    return true;
-                }
-            }, EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
-        }
+        for (int i = 0; i < gridCount(); i++)
+            grid(i).events().localListen(
+                new SwapEvtsLocalListener(swapEvts, unswapEvts), EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
 
         cache.localEvict(F.asList(k2, k3));
 
@@ -3929,7 +3859,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 map.put(entry.getKey(), entry.getValue());
         }
 
-        assert map != null;
         assert map.size() == 2;
         assert map.get("key1") == 1;
         assert map.get("key2") == 2;
@@ -3946,32 +3875,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (nearEnabled())
             assertEquals(keys.size(), jcache().localSize(CachePeekMode.ALL));
         else {
-            for (int i = 0; i < gridCount(); i++) {
-                executeOnLocalOrRemoteJvm(i, new TestIgniteIdxRunnable() {
-                    @Override public void run(int idx) throws Exception {
-                        GridCacheContext<String, Integer> ctx = context(idx);
-
-                        if (ctx.cache().configuration().getMemoryMode() == OFFHEAP_TIERED)
-                            return;
-
-                        int size = 0;
-
-                        for (String key : keys) {
-                            if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx())) {
-                                GridCacheEntryEx e =
-                                    ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
-
-                                assert e != null : "Entry is null [idx=" + idx + ", key=" + key + ", ctx=" + ctx + ']';
-                                assert !e.deleted() : "Entry is deleted: " + e;
-
-                                size++;
-                            }
-                        }
-
-                        assertEquals("Incorrect size on cache #" + idx, size, jcache(idx).localSize(ALL));
-                    }
-                });
-            }
+            for (int i = 0; i < gridCount(); i++)
+                executeOnLocalOrRemoteJvm(i, new CheckEntriesTask(keys));
         }
     }
 
@@ -3984,21 +3889,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertEquals("Invalid key size: " + jcache().localSize(ALL),
                 keys.size(), jcache().localSize(ALL));
         else {
-            for (int i = 0; i < gridCount(); i++) {
-                executeOnLocalOrRemoteJvm(i, new TestIgniteIdxRunnable() {
-                    @Override public void run(int idx) throws Exception {
-                        GridCacheContext<String, Integer> ctx = context(idx);
-
-                        int size = 0;
-
-                        for (String key : keys)
-                            if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
-                                size++;
-
-                        assertEquals("Incorrect key size on cache #" + idx, size, jcache(idx).localSize(ALL));
-                    }
-                });
-            }
+            for (int i = 0; i < gridCount(); i++)
+                executeOnLocalOrRemoteJvm(i, new CheckKeySizeTask(keys));
         }
     }
 
@@ -4056,27 +3948,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is primary.
      */
-    protected List<String> primaryKeysForCache(final IgniteCache<String, Integer> cache, final int cnt, final int startFrom) {
-        return executeOnLocalOrRemoteJvm(cache, new TestCacheCallable<String, Integer, List<String>>() {
-            @Override public List<String> call(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
-                List<String> found = new ArrayList<>();
-
-                Affinity<Object> affinity = ignite.affinity(cache.getName());
-
-                for (int i = startFrom; i < startFrom + 100_000; i++) {
-                    String key = "key" + i;
-
-                    if (affinity.isPrimary(ignite.cluster().localNode(), key)) {
-                        found.add(key);
-
-                        if (found.size() == cnt)
-                            return found;
-                    }
-                }
-
-                throw new IgniteException("Unable to find " + cnt + " keys as primary for cache.");
-            }
-        });
+    protected List<String> primaryKeysForCache(IgniteCache<String, Integer> cache, int cnt, int startFrom) {
+        return executeOnLocalOrRemoteJvm(cache, new CheckPrimaryKeysTask(startFrom, cnt));
     }
 
     /**
@@ -4267,18 +4140,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * Checks iterators are cleared.
      */
     private void checkIteratorsCleared() {
-        for (int j = 0; j < gridCount(); j++) {
-            executeOnLocalOrRemoteJvm(j, new TestIgniteIdxRunnable() {
-                @Override public void run(int idx) throws Exception {
-                    GridCacheQueryManager queries = context(idx).queries();
-
-                    Map map = GridTestUtils.getFieldValue(queries, GridCacheQueryManager.class, "qryIters");
-
-                    for (Object obj : map.values())
-                        assertEquals("Iterators not removed for grid " + idx, 0, ((Map)obj).size());
-                }
-            });
-        }
+        for (int j = 0; j < gridCount(); j++)
+            executeOnLocalOrRemoteJvm(j, new CheckIteratorTask());
     }
 
     /**
@@ -5220,5 +5083,281 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         /** */
         ONE_BY_ONE
+    }
+
+    /**
+     *
+     */
+    private static class RemoveEntryProcessor implements EntryProcessor<String, Integer, String>, Serializable {
+        /** {@inheritDoc} */
+        @Override public String process(MutableEntry<String, Integer> e, Object... args) {
+            assertNotNull(e.getKey());
+
+            Integer old = e.getValue();
+
+            e.remove();
+
+            return String.valueOf(old);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class IncrementEntryProcessor implements EntryProcessor<String, Integer, String>, Serializable {
+        /** {@inheritDoc} */
+        @Override public String process(MutableEntry<String, Integer> e, Object... args) {
+            assertNotNull(e.getKey());
+
+            Integer old = e.getValue();
+
+            e.setValue(old == null ? 1 : old + 1);
+
+            return String.valueOf(old);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class CheckEntriesTask extends TestIgniteIdxRunnable {
+        /** Keys. */
+        private final Collection<String> keys;
+
+        /**
+         * @param keys Keys.
+         */
+        public CheckEntriesTask(Collection<String> keys) {
+            this.keys = keys;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run(int idx) throws Exception {
+            GridCacheContext<String, Integer> ctx = ((IgniteKernal)ignite).<String, Integer>internalCache().context();
+
+            if (ctx.cache().configuration().getMemoryMode() == OFFHEAP_TIERED)
+                return;
+
+            int size = 0;
+
+            for (String key : keys) {
+                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx())) {
+                    GridCacheEntryEx e =
+                        ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
+
+                    assert e != null : "Entry is null [idx=" + idx + ", key=" + key + ", ctx=" + ctx + ']';
+                    assert !e.deleted() : "Entry is deleted: " + e;
+
+                    size++;
+                }
+            }
+
+            assertEquals("Incorrect size on cache #" + idx, size, ignite.cache(ctx.name()).localSize(ALL));
+        }
+    }
+
+    /**
+     *
+     */
+    private static class CheckCacheSizeTask extends TestIgniteIdxRunnable {
+        private final Map<String, Integer> map;
+
+        /**
+         * @param map Map.
+         */
+        public CheckCacheSizeTask(Map<String, Integer> map) {
+            this.map = map;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run(int idx) throws Exception {
+            GridCacheContext<String, Integer> ctx = ((IgniteKernal)ignite).<String, Integer>internalCache().context();
+
+            int size = 0;
+
+            for (String key : map.keySet())
+                if (ctx.affinity().localNode(key, new AffinityTopologyVersion(ctx.discovery().topologyVersion())))
+                    size++;
+
+            assertEquals("Incorrect key size on cache #" + idx, size, ignite.cache(ctx.name()).localSize(ALL));
+        }
+    }
+
+    /**
+     *
+     */
+    private static class CheckPrimaryKeysTask implements TestCacheCallable<String, Integer, List<String>> {
+        /** Start from. */
+        private final int startFrom;
+
+        /** Count. */
+        private final int cnt;
+
+        /**
+         * @param startFrom Start from.
+         * @param cnt Count.
+         */
+        public CheckPrimaryKeysTask(int startFrom, int cnt) {
+            this.startFrom = startFrom;
+            this.cnt = cnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<String> call(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+            List<String> found = new ArrayList<>();
+
+            Affinity<Object> affinity = ignite.affinity(cache.getName());
+
+            for (int i = startFrom; i < startFrom + 100_000; i++) {
+                String key = "key" + i;
+
+                if (affinity.isPrimary(ignite.cluster().localNode(), key)) {
+                    found.add(key);
+
+                    if (found.size() == cnt)
+                        return found;
+                }
+            }
+
+            throw new IgniteException("Unable to find " + cnt + " keys as primary for cache.");
+        }
+    }
+
+    /**
+     *
+     */
+    private static class CheckIteratorTask extends TestIgniteIdxCallable<Void> {
+        /**
+         * @param idx Index.
+         */
+        @Override public Void call(int idx) throws Exception {
+            GridCacheContext<String, Integer> ctx = ((IgniteKernal)ignite).<String, Integer>internalCache().context();
+            GridCacheQueryManager queries = ctx.queries();
+
+            Map map = GridTestUtils.getFieldValue(queries, GridCacheQueryManager.class, "qryIters");
+
+            for (Object obj : map.values())
+                assertEquals("Iterators not removed for grid " + idx, 0, ((Map)obj).size());
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class RemoveAndReturnNullEntryProcessor implements
+        EntryProcessor<String, Integer, Integer>, Serializable {
+
+        /** {@inheritDoc} */
+        @Override public Integer process(MutableEntry<String, Integer> e, Object... args) {
+            e.remove();
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class SwapEvtsLocalListener implements IgnitePredicate<Event> {
+        @LoggerResource
+        private IgniteLogger log;
+
+        /** Swap events. */
+        private final AtomicInteger swapEvts;
+
+        /** Unswap events. */
+        private final AtomicInteger unswapEvts;
+
+        /**
+         * @param swapEvts Swap events.
+         * @param unswapEvts Unswap events.
+         */
+        public SwapEvtsLocalListener(AtomicInteger swapEvts, AtomicInteger unswapEvts) {
+            this.swapEvts = swapEvts;
+            this.unswapEvts = unswapEvts;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(Event evt) {
+            log.info("Received event: " + evt);
+
+            switch (evt.type()) {
+                case EVT_CACHE_OBJECT_SWAPPED:
+                    swapEvts.incrementAndGet();
+
+                    break;
+                case EVT_CACHE_OBJECT_UNSWAPPED:
+                    unswapEvts.incrementAndGet();
+
+                    break;
+            }
+
+            return true;
+        }
+    }
+
+    private static class CheckEntriesDeletedTask extends TestIgniteIdxRunnable {
+        private final int cnt;
+
+        public CheckEntriesDeletedTask(int cnt) {
+            this.cnt = cnt;
+        }
+
+        @Override public void run(int idx) throws Exception {
+            for (int i = 0; i < cnt; i++) {
+                String key = String.valueOf(i);
+
+                GridCacheContext<String, Integer> ctx = ((IgniteKernal)ignite).<String, Integer>internalCache().context();
+
+                GridCacheEntryEx entry = ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
+
+                if (ignite.affinity(null).mapKeyToPrimaryAndBackups(key).contains(((IgniteKernal)ignite).localNode())) {
+                    assertNotNull(entry);
+                    assertTrue(entry.deleted());
+                }
+                else
+                    assertNull(entry);
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private static class CheckKeySizeTask extends TestIgniteIdxRunnable {
+        /** Keys. */
+        private final Collection<String> keys;
+
+        /**
+         * @param keys Keys.
+         */
+        public CheckKeySizeTask(Collection<String> keys) {
+            this.keys = keys;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run(int idx) throws Exception {
+            GridCacheContext<String, Integer> ctx = ((IgniteKernal)ignite).<String, Integer>internalCache().context();
+
+            int size = 0;
+
+            for (String key : keys)
+                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
+                    size++;
+
+            assertEquals("Incorrect key size on cache #" + idx, size, ignite.cache(null).localSize(ALL));
+        }
+    }
+
+    /**
+     *
+     */
+    private static class FailedEntryProcessor implements EntryProcessor<String, Integer, Integer>, Serializable {
+        /** {@inheritDoc} */
+        @Override public Integer process(MutableEntry<String, Integer> e, Object... args) {
+            throw new EntryProcessorException("Test entry processor exception.");
+        }
     }
 }

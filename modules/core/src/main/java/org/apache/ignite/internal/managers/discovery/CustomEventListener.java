@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
 /**
  * Listener interface.
@@ -26,6 +27,7 @@ public interface CustomEventListener<T extends DiscoveryCustomMessage> {
     /**
      * @param snd Sender.
      * @param msg Message.
+     * @param topVer Current topology version.
      */
-    public void onCustomEvent(ClusterNode snd, T msg);
+    public void onCustomEvent(ClusterNode snd, T msg, AffinityTopologyVersion topVer);
 }

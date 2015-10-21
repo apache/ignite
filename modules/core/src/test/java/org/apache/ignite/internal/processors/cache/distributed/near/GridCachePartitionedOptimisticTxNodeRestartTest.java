@@ -44,6 +44,11 @@ public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAb
 
         c.getTransactionConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
 
+        return c;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setName(CACHE_NAME);
@@ -57,9 +62,7 @@ public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAb
 
         cc.setNearConfiguration(nearEnabled() ? new NearCacheConfiguration() : null);
 
-        c.setCacheConfiguration(cc);
-
-        return c;
+        return cc;
     }
 
     /**

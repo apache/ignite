@@ -73,6 +73,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -1471,6 +1472,8 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (!isMultiJvmObject(ignite))
             try {
+                job.setIgnite(ignite);
+
                 return job.call(idx);
             }
             catch (Exception e) {
@@ -1532,11 +1535,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         IgniteProcessProxy proxy = (IgniteProcessProxy)ignite;
 
-        return proxy.remoteCompute().call(new IgniteCallable<R>() {
-            @Override public R call() throws Exception {
-                return job.call(idx);
-            }
-        });
+        return proxy.remoteCompute().call(new ExecuteRemotelyTask<>(job, idx));
     }
 
     /**
@@ -1546,15 +1545,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param job Job.
      */
     public static <R> R executeRemotely(IgniteProcessProxy proxy, final TestIgniteCallable<R> job) {
-        final UUID id = proxy.getId();
-
-        return proxy.remoteCompute().call(new IgniteCallable<R>() {
-            @Override public R call() throws Exception {
-                Ignite ignite = Ignition.ignite(id);
-
-                return job.call(ignite);
-            }
-        });
+        return proxy.remoteCompute().call(new TestRemoteTask<>(proxy.getId(), job));
     }
 
     /**
@@ -1571,6 +1562,8 @@ public abstract class GridAbstractTest extends TestCase {
         final String cacheName = cache.getName();
 
         return proxy.remoteCompute().call(new IgniteCallable<R>() {
+            private static final long serialVersionUID = -3868429485920845137L;
+
             @Override public R call() throws Exception {
                 Ignite ignite = Ignition.ignite(id);
                 IgniteCache<K,V> cache = ignite.cache(cacheName);
@@ -1745,6 +1738,22 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @param name Name.
+     * @param remote Remote.
+     * @param thisRemote This remote.
+     */
+    public static IgniteEx grid(String name, boolean remote, boolean thisRemote) {
+        if (!remote)
+            return (IgniteEx)G.ignite(name);
+        else {
+            if (thisRemote)
+                return IgniteNodeRunner.startedInstance();
+            else
+                return IgniteProcessProxy.ignite(name);
+        }
+    }
+
+    /**
      *
      */
     private static interface WriteReplaceOwner {
@@ -1777,6 +1786,67 @@ public abstract class GridAbstractTest extends TestCase {
             assert res != null;
 
             return res;
+        }
+    }
+
+    /**
+     * Remote computation task.
+     */
+    private static class TestRemoteTask<R> implements IgniteCallable<R> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Node ID. */
+        private final UUID id;
+
+        /** Job. */
+        private final TestIgniteCallable<R> job;
+
+        /**
+         * @param id Id.
+         * @param job Job.
+         */
+        public TestRemoteTask(UUID id, TestIgniteCallable<R> job) {
+            this.id = id;
+            this.job = job;
+        }
+
+        /** {@inheritDoc} */
+        @Override public R call() throws Exception {
+            Ignite ignite = Ignition.ignite(id);
+
+            return job.call(ignite);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ExecuteRemotelyTask<R> implements IgniteCallable<R> {
+        /** Ignite. */
+        @IgniteInstanceResource
+        protected Ignite ignite;
+
+        /** Job. */
+        private final TestIgniteIdxCallable<R> job;
+
+        /** Index. */
+        private final int idx;
+
+        /**
+         * @param job Job.
+         * @param idx Index.
+         */
+        public ExecuteRemotelyTask(TestIgniteIdxCallable<R> job, int idx) {
+            this.job = job;
+            this.idx = idx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public R call() throws Exception {
+            job.setIgnite(ignite);
+
+            return job.call(idx);
         }
     }
 
@@ -1923,17 +1993,27 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /** */
-    public static interface TestIgniteIdxCallable<R> extends Serializable {
+    public static abstract class TestIgniteIdxCallable<R> implements Serializable {
+        @IgniteInstanceResource
+        protected Ignite ignite;
+
+        /**
+         * @param ignite Ignite.
+         */
+        public void setIgnite(Ignite ignite) {
+            this.ignite = ignite;
+        }
+
         /**
          * @param idx Grid index.
          */
-        R call(int idx) throws Exception;
+        protected abstract R call(int idx) throws Exception;
     }
 
     /** */
-    public abstract static class TestIgniteIdxRunnable implements TestIgniteIdxCallable<Object> {
+    public abstract static class TestIgniteIdxRunnable extends TestIgniteIdxCallable<Void> {
         /** {@inheritDoc} */
-        @Override public Object call(int idx) throws Exception {
+        @Override public Void call(int idx) throws Exception {
             run(idx);
 
             return null;

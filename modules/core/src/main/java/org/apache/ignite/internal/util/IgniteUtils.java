@@ -119,6 +119,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -9285,5 +9286,20 @@ public abstract class IgniteUtils {
         }
 
         return hasShmem;
+    }
+
+    /**
+     * @param lock Lock.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    public static void writeLock(ReadWriteLock lock) throws IgniteInterruptedCheckedException {
+        try {
+            lock.writeLock().lockInterruptibly();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedCheckedException(e);
+        }
     }
 }

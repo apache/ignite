@@ -30,7 +30,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -47,6 +46,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryFilter;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -97,6 +97,9 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** Whether to skip primary check for REPLICATED cache. */
     private transient boolean skipPrimaryCheck;
 
+    /** */
+    private transient int cacheId;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -145,6 +148,8 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         this.ignoreExpired = ignoreExpired;
         this.taskHash = taskHash;
         this.skipPrimaryCheck = skipPrimaryCheck;
+
+        cacheId = CU.cacheId(cacheName);
     }
 
     /** {@inheritDoc} */
@@ -228,13 +233,10 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                         locLsnr.onUpdated(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt));
                     else {
                         try {
-                            ClusterNode node = ctx.discovery().node(nodeId);
-
-                            if (ctx.config().isPeerClassLoadingEnabled() && node != null) {
+                            if (ctx.config().isPeerClassLoadingEnabled() && ctx.discovery().node(nodeId) != null) {
                                 evt.entry().prepareMarshal(cctx);
 
-                                GridCacheDeploymentManager depMgr =
-                                    ctx.cache().internalCache(cacheName).context().deploy();
+                                GridCacheDeploymentManager depMgr = cctx.deploy();
 
                                 depMgr.prepare(evt.entry());
                             }
@@ -314,7 +316,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert routineId != null;
         assert ctx != null;
 
-        GridCacheAdapter<K, V> cache = ctx.cache().<K, V>internalCache(cacheName);
+        GridCacheAdapter<K, V> cache = ctx.cache().internalCache(cacheName);
 
         if (cache != null)
             cache.context().continuousQueries().unregisterListener(internal, routineId);
@@ -457,6 +459,8 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         sync = in.readBoolean();
         ignoreExpired = in.readBoolean();
         taskHash = in.readInt();
+
+        cacheId = CU.cacheId(cacheName);
     }
 
     /**
@@ -466,9 +470,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     private GridCacheContext<K, V> cacheContext(GridKernalContext ctx) {
         assert ctx != null;
 
-        GridCacheAdapter<K, V> cache = ctx.cache().internalCache(cacheName);
-
-        return cache == null ? null : cache.context();
+        return ctx.cache().<K, V>context().cacheContext(cacheId);
     }
 
     /**

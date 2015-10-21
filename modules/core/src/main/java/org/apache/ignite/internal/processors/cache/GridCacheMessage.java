@@ -77,19 +77,19 @@ public abstract class GridCacheMessage implements Message {
     protected int cacheId;
 
     /**
+     * @return Error, if any.
+     */
+    @Nullable public Throwable error() {
+        return null;
+    }
+
+    /**
      * Gets next ID for indexed message ID.
      *
      * @return Message ID.
      */
     public static int nextIndexId() {
         return msgIdx.getAndIncrement();
-    }
-
-    /**
-     * @return {@code True} if this message is preloader message.
-     */
-    public boolean allowForStartup() {
-        return false;
     }
 
     /**

@@ -185,7 +185,7 @@ public class GridUnsafeMap implements GridOffHeapMap {
             }
         };
 
-        rmvEvicted = evictLsnr == null || evictLsnr.removedEvicted();
+        rmvEvicted = evictLsnr == null || evictLsnr.removeEvicted();
     }
 
     /**
@@ -232,7 +232,7 @@ public class GridUnsafeMap implements GridOffHeapMap {
 
         init(initCap, size);
 
-        rmvEvicted = evictLsnr == null || evictLsnr.removedEvicted();
+        rmvEvicted = evictLsnr == null || evictLsnr.removeEvicted();
     }
 
     /**

@@ -300,7 +300,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         try {
-            fs.delete(new Path("/"), true);
+            HadoopIgfsUtils.clear(fs);
         }
         catch (Exception ignore) {
             // No-op.
@@ -783,7 +783,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         Path root = new Path(fsHome, "/");
 
-        assertTrue(fs.delete(root, true));
+        assertFalse(fs.delete(root, true));
+        assertTrue(fs.delete(new Path("/someDir1"), true));
 
         assertPathDoesNotExist(fs, someDir3);
         assertPathDoesNotExist(fs, new Path(fsHome, "/someDir1/someDir2"));
@@ -1095,7 +1096,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         os.close();
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
+        GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return fs.append(new Path(fsHome, dir), 1024);
             }

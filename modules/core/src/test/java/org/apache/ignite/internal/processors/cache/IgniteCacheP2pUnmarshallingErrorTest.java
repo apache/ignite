@@ -27,6 +27,7 @@ import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.X;
@@ -74,6 +75,12 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
             cfg.setClientMode(true);
 
             cfg.setCacheConfiguration();
+        }
+
+        if (getTestGridName(10).equals(gridName)) {
+
+            CacheConfiguration cc = cfg.getCacheConfiguration()[0];
+            cc.setRebalanceDelay(-1);
         }
 
         return cfg;

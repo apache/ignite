@@ -199,7 +199,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
         try {
             final Ignite ignite = ignite(0);
 
-            final IgniteCache<Object, Object> cache = ignite.cache(null);
+            final IgniteCache<Object, Object> cache = ignite.cache(null).withNoRetries();
 
             final int key = generateKey(ignite, backup);
 

@@ -50,7 +50,7 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable {
     private static final char SLASH_CHAR = '/';
 
     /** The directory separator. */
-    private static final String SLASH = "/";
+    public static final String SLASH = "/";
 
     /** URI representing this path. Should never change after object creation or de-serialization. */
     private String path;

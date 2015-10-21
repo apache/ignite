@@ -97,16 +97,15 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
     /**
      * Sets update error.
-     * @param err
+     *
+     * @param err Error.
      */
     public void onError(IgniteCheckedException err){
         this.err = err;
     }
 
-    /**
-     * @return Gets update error.
-     */
-    public IgniteCheckedException error() {
+    /** {@inheritDoc} */
+    @Override public IgniteCheckedException error() {
         return err;
     }
 
@@ -154,8 +153,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
         nearEvicted.add(key);
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

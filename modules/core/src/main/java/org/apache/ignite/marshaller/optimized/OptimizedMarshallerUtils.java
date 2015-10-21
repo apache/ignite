@@ -42,6 +42,10 @@ class OptimizedMarshallerUtils {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
+    /** Use default {@code serialVersionUid} for {@link Serializable} classes. */
+    private static final boolean USE_DFLT_SUID =
+        Boolean.valueOf(System.getProperty("ignite.marsh.optimized.useDefaultSUID", Boolean.TRUE.toString()));
+
     /** */
     static final long HASH_SET_MAP_OFF;
 
@@ -283,7 +287,7 @@ class OptimizedMarshallerUtils {
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     static short computeSerialVersionUid(Class cls, List<Field> fields) throws IOException {
-        if (Serializable.class.isAssignableFrom(cls) && !Enum.class.isAssignableFrom(cls))
+        if (USE_DFLT_SUID && Serializable.class.isAssignableFrom(cls) && !Enum.class.isAssignableFrom(cls))
             return (short)ObjectStreamClass.lookup(cls).getSerialVersionUID();
 
         MessageDigest md;

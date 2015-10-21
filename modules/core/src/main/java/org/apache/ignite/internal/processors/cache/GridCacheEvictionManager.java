@@ -1943,7 +1943,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                     lock.readLock().unlock();
                 }
 
-                if (res.error())
+                if (res.evictError())
                     // Complete future, since there was a class loading error on at least one node.
                     complete(false);
                 else
@@ -1985,14 +1985,14 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
                 boolean err = F.forAny(resMap.values(), new P1<GridCacheEvictionResponse>() {
                     @Override public boolean apply(GridCacheEvictionResponse res) {
-                        return res.error();
+                        return res.evictError();
                     }
                 });
 
                 if (err) {
                     Collection<UUID> ids = F.view(resMap.keySet(), new P1<UUID>() {
                         @Override public boolean apply(UUID e) {
-                            return resMap.get(e).error();
+                            return resMap.get(e).evictError();
                         }
                     });
 
