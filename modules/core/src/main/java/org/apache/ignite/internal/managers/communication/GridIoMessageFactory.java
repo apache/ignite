@@ -103,9 +103,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
-import org.apache.ignite.internal.processors.igfs.IgfsAckMessage;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
-import org.apache.ignite.internal.processors.igfs.IgfsBlocksMessage;
 import org.apache.ignite.internal.processors.igfs.IgfsDeleteMessage;
 import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
 import org.apache.ignite.internal.processors.igfs.IgfsFragmentizerRequest;
@@ -474,18 +472,8 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 64:
-                msg = new IgfsAckMessage();
-
-                break;
-
             case 65:
                 msg = new IgfsBlockKey();
-
-                break;
-
-            case 66:
-                msg = new IgfsBlocksMessage();
 
                 break;
 

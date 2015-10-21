@@ -54,8 +54,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
-import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
@@ -65,16 +63,12 @@ import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadabl
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -87,10 +81,6 @@ import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -136,9 +126,6 @@ public class IgfsDataManager extends IgfsManager {
 
     /** Request ID counter for write messages. */
     private AtomicLong reqIdCtr = new AtomicLong();
-
-    /** IGFS communication topic. */
-    private Object topic;
 
     /** Async file delete worker. */
     private AsyncDeleteWorker delWorker;
@@ -187,32 +174,6 @@ public class IgfsDataManager extends IgfsManager {
         dataCacheStartLatch = new CountDownLatch(1);
 
         String igfsName = igfsCtx.configuration().getName();
-
-        topic = F.isEmpty(igfsName) ? TOPIC_IGFS : TOPIC_IGFS.topic(igfsName);
-
-        igfsCtx.kernalContext().io().addMessageListener(topic, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
-                if (msg instanceof IgfsBlocksMessage)
-                    processBlocksMessage(nodeId, (IgfsBlocksMessage)msg);
-                else if (msg instanceof IgfsAckMessage)
-                    processAckMessage(nodeId, (IgfsAckMessage)msg);
-            }
-        });
-
-        igfsCtx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(Event evt) {
-                assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
-
-                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
-
-                if (igfsCtx.igfsNode(discoEvt.eventNode())) {
-                    for (WriteCompletionFuture future : pendingWrites.values()) {
-                        future.onError(discoEvt.eventNode().id(),
-                            new ClusterTopologyCheckedException("Node left grid before write completed: " + evt.node().id()));
-                    }
-                }
-            }
-        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         igfsSvc = igfsCtx.kernalContext().getIgfsExecutorService();
 
@@ -1010,44 +971,19 @@ public class IgfsDataManager extends IgfsManager {
 
         final UUID nodeId = node.id();
 
-        if (!node.isLocal()) {
-            final IgfsBlocksMessage msg = new IgfsBlocksMessage(fileId, batchId, blocks);
+        storeBlocksAsync(blocks).listen(new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> fut) {
+                try {
+                    fut.get();
 
-            callIgfsLocalSafe(new GridPlainCallable<Object>() {
-                @Override @Nullable public Object call() throws Exception {
-                    try {
-                        igfsCtx.send(nodeId, topic, msg, SYSTEM_POOL);
-                    } catch (IgniteCheckedException e) {
-                        completionFut.onError(nodeId, e);
-                    }
-
-                    return null;
+                    completionFut.onWriteAck(nodeId, batchId);
                 }
-            });
-        }
-        else {
-            callIgfsLocalSafe(new GridPlainCallable<Object>() {
-                @Override
-                @Nullable
-                public Object call() throws Exception {
-                    storeBlocksAsync(blocks).listen(new CI1<IgniteInternalFuture<?>>() {
-                        @Override
-                        public void apply(IgniteInternalFuture<?> fut) {
-                            try {
-                                fut.get();
-
-                                completionFut.onWriteAck(nodeId, batchId);
-                            }
-                            catch (IgniteCheckedException e) {
-                                completionFut.onError(nodeId, e);
-                            }
-                        }
-                    });
-
-                    return null;
+                catch (IgniteCheckedException e) {
+                    completionFut.onError(nodeId, e);
                 }
-            });
-        }
+            }
+        });
+
     }
 
     /**
@@ -1224,6 +1160,8 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
+     * Puts the blocks passed in to the data cache.
+     *
      * @param blocks Blocks to write.
      * @return Future that will be completed after put is done.
      */
@@ -1255,66 +1193,6 @@ public class IgfsDataManager extends IgfsManager {
         }
 
         return dataCachePrj.putAllAsync(blocks);
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param blocksMsg Write request message.
-     */
-    private void processBlocksMessage(final UUID nodeId, final IgfsBlocksMessage blocksMsg) {
-        storeBlocksAsync(blocksMsg.blocks()).listen(new CI1<IgniteInternalFuture<?>>() {
-            @Override public void apply(IgniteInternalFuture<?> fut) {
-                IgniteCheckedException err = null;
-
-                try {
-                    fut.get();
-                }
-                catch (IgniteCheckedException e) {
-                    err = e;
-                }
-
-                try {
-                    // Send reply back to node.
-                    igfsCtx.send(nodeId, topic, new IgfsAckMessage(blocksMsg.fileId(), blocksMsg.id(), err),
-                        SYSTEM_POOL);
-                }
-                catch (IgniteCheckedException e) {
-                    U.warn(log, "Failed to send batch acknowledgement (did node leave the grid?) [nodeId=" + nodeId +
-                        ", fileId=" + blocksMsg.fileId() + ", batchId=" + blocksMsg.id() + ']', e);
-                }
-            }
-        });
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param ackMsg Write acknowledgement message.
-     */
-    private void processAckMessage(UUID nodeId, IgfsAckMessage ackMsg) {
-        try {
-            ackMsg.finishUnmarshal(igfsCtx.kernalContext().config().getMarshaller(), null);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to unmarshal message (will ignore): " + ackMsg, e);
-
-            return;
-        }
-
-        IgniteUuid fileId = ackMsg.fileId();
-
-        WriteCompletionFuture fut = pendingWrites.get(fileId);
-
-        if (fut != null) {
-            if (ackMsg.error() != null)
-                fut.onError(nodeId, ackMsg.error());
-            else
-                fut.onWriteAck(nodeId, ackMsg.id());
-        }
-        else {
-            if (log.isDebugEnabled())
-                log.debug("Received write acknowledgement for non-existent write future (most likely future was " +
-                    "failed) [nodeId=" + nodeId + ", fileId=" + fileId + ']');
-        }
     }
 
     /**
@@ -1372,7 +1250,7 @@ public class IgfsDataManager extends IgfsManager {
          * @throws IgniteCheckedException If failed.
          * @return Data remainder if {@code flush} flag is {@code false}.
          */
-        @Nullable public byte[] storeDataBlocks(
+        @Nullable public final byte[] storeDataBlocks(
             IgfsFileInfo fileInfo,
             long reservedLen,
             @Nullable byte[] remainder,
@@ -1760,6 +1638,7 @@ public class IgfsDataManager extends IgfsManager {
 
     /**
      * Future that is completed when all participating
+     * parts of the file are written.
      */
     private class WriteCompletionFuture extends GridFutureAdapter<Boolean> {
         /** */
