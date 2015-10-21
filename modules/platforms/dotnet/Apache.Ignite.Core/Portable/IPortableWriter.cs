@@ -222,14 +222,26 @@ namespace Apache.Ignite.Core.Portable
         void WriteArray<T>(string fieldName, T[] val);
 
         /// <summary>
-        /// Write named collection.
+        /// Writes a named collection in interoperable form.
+        /// 
+        /// Use this method to communicate with other platforms 
+        /// or with nodes that need to read collection elements in portable form.
+        /// 
+        /// When there is no need for portables or interoperability, please use <see cref="WriteObject{T}" />,
+        /// which will properly preserve generic collection type.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Collection.</param>
         void WriteCollection(string fieldName, ICollection val);
 
         /// <summary>
-        /// Write named dictionary.
+        /// Writes a named dictionary in interoperable form.
+        /// 
+        /// Use this method to communicate with other platforms 
+        /// or with nodes that need to read dictionary elements in portable form.
+        /// 
+        /// When there is no need for portables or interoperability, please use <see cref="WriteObject{T}" />,
+        /// which will properly preserve generic dictionary type.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Dictionary.</param>

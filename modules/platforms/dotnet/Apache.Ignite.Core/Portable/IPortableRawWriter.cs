@@ -194,13 +194,25 @@ namespace Apache.Ignite.Core.Portable
         void WriteArray<T>(T[] val);
 
         /// <summary>
-        /// Write non-generic collection.
+        /// Writes a collection in interoperable form.
+        /// 
+        /// Use this method to communicate with other platforms 
+        /// or with nodes that need to read collection elements in portable form.
+        /// 
+        /// When there is no need for portables or interoperability, please use <see cref="WriteObject{T}" />,
+        /// which will properly preserve generic collection type.
         /// </summary>
         /// <param name="val">Collection.</param>
         void WriteCollection(ICollection val);
 
         /// <summary>
-        /// Write dictionary.
+        /// Writes a dictionary in interoperable form.
+        /// 
+        /// Use this method to communicate with other platforms 
+        /// or with nodes that need to read dictionary elements in portable form.
+        /// 
+        /// When there is no need for portables or interoperability, please use <see cref="WriteObject{T}" />,
+        /// which will properly preserve generic dictionary type.
         /// </summary>
         /// <param name="val">Dictionary.</param>
         void WriteDictionary(IDictionary val);
