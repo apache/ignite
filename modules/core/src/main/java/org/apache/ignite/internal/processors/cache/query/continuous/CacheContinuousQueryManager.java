@@ -65,7 +65,6 @@ import static javax.cache.event.EventType.EXPIRED;
 import static javax.cache.event.EventType.REMOVED;
 import static javax.cache.event.EventType.UPDATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
-import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 
 /**
@@ -86,8 +85,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
     /** */
     private static final long BACKUP_ACK_FREQ = 5000;
-
-    public static final boolean SUPER_DEBUG = false;
 
     /** Listeners. */
     private final ConcurrentMap<UUID, CacheContinuousQueryListener> lsnrs = new ConcurrentHashMap8<>();

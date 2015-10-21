@@ -32,6 +32,9 @@ public class GridCacheUpdateTxResult {
     @GridToStringInclude
     private final CacheObject oldVal;
 
+    /** Partition idx. */
+    private long partIdx;
+
     /**
      * Constructor.
      *
@@ -41,6 +44,31 @@ public class GridCacheUpdateTxResult {
     GridCacheUpdateTxResult(boolean success, @Nullable CacheObject oldVal) {
         this.success = success;
         this.oldVal = oldVal;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param success Success flag.
+     * @param oldVal Old value (if any),
+     */
+    GridCacheUpdateTxResult(boolean success, @Nullable CacheObject oldVal, long partIdx) {
+        this.success = success;
+        this.oldVal = oldVal;
+        this.partIdx = partIdx;
+    }
+
+    /**
+     * Sets partition idx.
+     *
+     * @param partIdx Partition idx.
+     */
+    public void partIdx(long partIdx) {
+        this.partIdx = partIdx;
+    }
+
+    public long partIdx() {
+        return partIdx;
     }
 
     /**

@@ -479,7 +479,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable GridCacheVersion drVer,
         UUID subjId,
         String taskName,
-        @Nullable GridCacheVersion dhtVer)
+        @Nullable GridCacheVersion dhtVer,
+        @Nullable Long updateIdx)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         return new GridCacheUpdateTxResult(true, rawPut(val, ttl));
     }
@@ -553,7 +554,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable GridCacheVersion drVer,
         UUID subjId,
         String taskName,
-        @Nullable GridCacheVersion dhtVer
+        @Nullable GridCacheVersion dhtVer,
+        @Nullable Long updatePartIdx
         ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         obsoleteVer = ver;
 

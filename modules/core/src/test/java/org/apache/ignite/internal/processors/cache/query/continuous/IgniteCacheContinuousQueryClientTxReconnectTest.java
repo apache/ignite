@@ -18,22 +18,15 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  *
  */
-public class CacheContinuousQueryFailoverAtomicTest extends CacheContinuousQueryFailoverAbstractTest {
+public class IgniteCacheContinuousQueryClientTxReconnectTest extends IgniteCacheContinuousQueryClientReconnectTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
+    @Override protected CacheAtomicityMode atomicMode() {
+        return TRANSACTIONAL;
     }
 }

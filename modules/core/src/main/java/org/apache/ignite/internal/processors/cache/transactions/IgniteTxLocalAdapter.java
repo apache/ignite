@@ -1025,7 +1025,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             cached.isNear() ? null : explicitVer,
                                             CU.subjectId(this, cctx),
                                             resolveTaskName(),
-                                            dhtVer);
+                                            dhtVer,
+                                            null);
+
+                                        if (updRes.success())
+                                            txEntry.partIdx(updRes.partIdx());
 
                                         if (nearCached != null && updRes.success()) {
                                             nearCached.innerSet(
@@ -1045,7 +1049,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                                 null,
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
-                                                dhtVer);
+                                                dhtVer,
+                                                null);
                                         }
                                     }
                                     else if (op == DELETE) {
@@ -1063,7 +1068,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             cached.isNear() ? null : explicitVer,
                                             CU.subjectId(this, cctx),
                                             resolveTaskName(),
-                                            dhtVer);
+                                            dhtVer,
+                                            null);
+
+                                        if (updRes.success())
+                                            txEntry.partIdx(updRes.partIdx());
 
                                         if (nearCached != null && updRes.success()) {
                                             nearCached.innerRemove(
@@ -1080,7 +1089,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                                 null,
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
-                                                dhtVer);
+                                                dhtVer,
+                                                null);
                                         }
                                     }
                                     else if (op == RELOAD) {

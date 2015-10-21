@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -55,6 +56,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -84,6 +86,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -297,7 +300,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         IgniteCache<Object, Object> srvCache = igniteSrv.cache(null);
 
-        List<Integer> keys = testKeys(srvCache, 1);
+        List<Integer> keys = testKeys(srvCache, 3);
 
         int keyCnt = keys.size();
 
@@ -371,6 +374,9 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testLeftPrimaryAndBackupNodes() throws Exception {
+        if (cacheMode() == REPLICATED)
+            return;
+
         this.backups = 1;
 
         final int SRV_NODES = 3;
@@ -485,7 +491,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
                 return qryClient.cluster().nodes().size() == (SRV_NODES + 1 /** client node */)
                     - 1 /** Primary node */ - backups;
             }
-        }, 10000L);
+        }, 5000L);
 
         for (; keyIter < keys.size(); keyIter++) {
             int key = keys.get(keyIter);
@@ -560,7 +566,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         final List<T3<Object, Object, Object>> expEvts = new ArrayList<>();
 
-        for (int i = 0; i < SRV_NODES - 1; i++) {
+        for (int i = 0; i < (atomicityMode() == CacheAtomicityMode.ATOMIC ? SRV_NODES - 1 : SRV_NODES - 2); i++) {
             log.info("Stop iteration: " + i);
 
             TestCommunicationSpi spi = (TestCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
@@ -654,7 +660,8 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
      * @throws Exception If failed.
      */
     private void checkBackupQueue(int backups, boolean updateFromClient) throws Exception {
-        this.backups = backups;
+        this.backups = atomicityMode() == CacheAtomicityMode.ATOMIC ? backups :
+            backups < 2 ? 2 : backups;
 
         final int SRV_NODES = 4;
 
@@ -667,9 +674,6 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
         client = false;
 
         IgniteCache<Object, Object> qryClientCache = qryClient.cache(null);
-
-        if (cacheMode() != REPLICATED)
-            assertEquals(backups, qryClientCache.getConfiguration(CacheConfiguration.class).getBackups());
 
         Affinity<Object> aff = qryClient.affinity(null);
 
@@ -687,7 +691,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         List<T3<Object, Object, Object>> expEvts = new ArrayList<>();
 
-        for (int i = 0; i < SRV_NODES - 1; i++) {
+        for (int i = 0; i < (atomicityMode() == CacheAtomicityMode.ATOMIC ? SRV_NODES - 1 : SRV_NODES - 2); i++) {
             log.info("Stop iteration: " + i);
 
             TestCommunicationSpi spi = (TestCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
@@ -709,6 +713,39 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                 T2<Object, Object> t = updates.get(key);
 
+                if (updateFromClient) {
+                    if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL) {
+                        try (Transaction tx = qryClient.transactions().txStart()) {
+                            qryClientCache.put(key, key);
+
+                            tx.commit();
+                        }
+                        catch (CacheException | ClusterTopologyException e) {
+                            log.warning("Failed put. [Key=" + key + ", val=" + key + "]");
+
+                            continue;
+                        }
+                    }
+                    else
+                        qryClientCache.put(key, key);
+                }
+                else {
+                    if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL) {
+                        try (Transaction tx = ignite.transactions().txStart()) {
+                            cache.put(key, key);
+
+                            tx.commit();
+                        }
+                        catch (CacheException | ClusterTopologyException e) {
+                            log.warning("Failed put. [Key=" + key + ", val=" + key + "]");
+
+                            continue;
+                        }
+                    }
+                    else
+                        cache.put(key, key);
+                }
+
                 if (t == null) {
                     updates.put(key, new T2<>((Object)key, null));
 
@@ -719,11 +756,6 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                     expEvts.add(new T3<>((Object)key, (Object)key, (Object)key));
                 }
-
-                if (updateFromClient)
-                    qryClientCache.put(key, key);
-                else
-                    cache.put(key, key);
 
                 if (first) {
                     spi.skipMsg = true;
@@ -747,7 +779,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
             checkEvents(expEvts, lsnr);
         }
 
-        for (int i = 0; i < SRV_NODES - 1; i++) {
+        for (int i = 0; i < (atomicityMode() == CacheAtomicityMode.ATOMIC ? SRV_NODES - 1 : SRV_NODES - 2); i++) {
             log.info("Start iteration: " + i);
 
             Ignite ignite = startGrid(i);
@@ -782,7 +814,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
                     cache.put(key, key);
             }
 
-            if (!latch.await(5, SECONDS)) {
+            if (!latch.await(10, SECONDS)) {
                 Set<Integer> keys0 = new HashSet<>(keys);
 
                 keys0.removeAll(lsnr.keys);
@@ -824,7 +856,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
      */
     private void checkEvents(final List<T3<Object, Object, Object>> expEvts, final CacheEventListener2 lsnr,
         boolean lostAllow) throws Exception {
-        boolean b = GridTestUtils.waitForCondition(new PA() {
+        GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
                 return expEvts.size() == lsnr.size();
             }
@@ -910,7 +942,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
             for (T3<Object, Object, Object> e : lostEvents)
                 log.error("Lost event: " + e);
 
-            assertTrue("Lose events, see log for details.", false);
+            fail("Lose events, see log for details.");
         }
 
         log.error("Lost event cnt: " + lostEvents.size());
@@ -1155,17 +1187,19 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testFailover() throws Exception {
+        this.backups = 2;
+
         final int SRV_NODES = 4;
 
         startGridsMultiThreaded(SRV_NODES);
 
         client = true;
 
-        Ignite qryClient = startGrid(SRV_NODES);
+        final Ignite qryCln = startGrid(SRV_NODES);
 
         client = false;
 
-        IgniteCache<Object, Object> qryClientCache = qryClient.cache(null);
+        final IgniteCache<Object, Object> qryClnCache = qryCln.cache(null);
 
         final CacheEventListener2 lsnr = new CacheEventListener2();
 
@@ -1173,7 +1207,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         qry.setLocalListener(lsnr);
 
-        QueryCursor<?> cur = qryClientCache.query(qry);
+        QueryCursor<?> cur = qryClnCache.query(qry);
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -1194,7 +1228,12 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                     log.info("Stop node: " + idx);
 
-                    stopGrid(idx);
+                    try {
+                        stopGrid(idx);
+                    }
+                    catch (Exception e) {
+                        log.warning("Failed to stop nodes.", e);
+                    }
 
                     CountDownLatch latch = new CountDownLatch(1);
 
@@ -1216,9 +1255,9 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
         final Map<Integer, List<T2<Integer, Integer>>> expEvts = new HashMap<>();
 
         try {
-            long stopTime = System.currentTimeMillis() + 1 * 60_000;
+            long stopTime = System.currentTimeMillis() + 60_000;
 
-            final int PARTS = qryClient.affinity(null).partitions();
+            final int PARTS = qryCln.affinity(null).partitions();
 
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -1234,17 +1273,51 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
                     val = val + 1;
 
                 if (processorPut && prevVal != null) {
-                    qryClientCache.invoke(key, new CacheEntryProcessor<Object, Object, Void>() {
-                        @Override public Void process(MutableEntry<Object, Object> entry,
-                            Object... arguments) throws EntryProcessorException {
-                            entry.setValue(arguments[0]);
+                    if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL) {
+                        try (Transaction tx = qryCln.transactions().txStart()) {
+                            qryClnCache.invoke(key, new CacheEntryProcessor<Object, Object, Void>() {
+                                @Override public Void process(MutableEntry<Object, Object> e,
+                                    Object... arg) throws EntryProcessorException {
+                                    e.setValue(arg[0]);
 
-                            return null;
+                                    return null;
+                                }
+                            }, val);
+
+                            tx.commit();
                         }
-                    }, val);
+                        catch (CacheException | ClusterTopologyException e) {
+                            log.warning("Failed put. [Key=" + key + ", val=" + val + "]");
+
+                            continue;
+                        }
+                    }
+                    else
+                        qryClnCache.invoke(key, new CacheEntryProcessor<Object, Object, Void>() {
+                            @Override public Void process(MutableEntry<Object, Object> e,
+                                Object... arg) throws EntryProcessorException {
+                                e.setValue(arg[0]);
+
+                                return null;
+                            }
+                        }, val);
                 }
-                else
-                    qryClientCache.put(key, val);
+                else {
+                    if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL) {
+                        try (Transaction tx = qryCln.transactions().txStart()) {
+                            qryClnCache.put(key, val);
+
+                            tx.commit();
+                        }
+                        catch (CacheException | ClusterTopologyException e) {
+                            log.warning("Failed put. [Key=" + key + ", val=" + val + "]");
+
+                            continue;
+                        }
+                    }
+                    else
+                        qryClnCache.put(key, val);
+                }
 
                 processorPut = !processorPut;
 
@@ -1306,11 +1379,14 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         restartFut.get();
 
-        boolean check = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return checkEvents(false, expEvts, lsnr);
-            }
-        }, 10_000);
+        boolean check = true;
+
+        if (!expEvts.isEmpty())
+            check = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return checkEvents(false, expEvts, lsnr);
+                }
+            }, 10_000);
 
         if (!check)
             assertTrue(checkEvents(true, expEvts, lsnr));
@@ -1324,6 +1400,8 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testFailoverFilter() throws Exception {
+        this.backups = 2;
+
         final int SRV_NODES = 4;
 
         startGridsMultiThreaded(SRV_NODES);
@@ -1385,7 +1463,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
         final Map<Integer, List<T2<Integer, Integer>>> expEvts = new HashMap<>();
 
         try {
-            long stopTime = System.currentTimeMillis() + 1 * 60_000;
+            long stopTime = System.currentTimeMillis() + 60_000;
 
             final int PARTS = qryClient.affinity(null).partitions();
 
@@ -1510,15 +1588,15 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testFailoverStartStopOneBackup() throws Exception {
-        failoverStartStopFilter(1);
+    public void testFailoverStartStopBackup() throws Exception {
+        failoverStartStopFilter(atomicityMode() == CacheAtomicityMode.ATOMIC ? 1 : 2);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testStartStop() throws Exception {
-        this.backups = 0;
+    public void testStartStop() throws Exception {
+        this.backups = 2;
 
         final int SRV_NODES = 4;
 
@@ -1532,6 +1610,8 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         IgniteCache<Object, Object> qryClnCache = qryClient.cache(null);
 
+        Affinity<Object> aff = qryClient.affinity(null);
+
         final CacheEventListener2 lsnr = new CacheEventListener2();
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
@@ -1542,18 +1622,18 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         QueryCursor<?> cur = qryClnCache.query(qry);
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 20; i++) {
             final int idx = i % (SRV_NODES - 1);
 
             log.info("Stop node: " + idx);
 
             stopGrid(idx);
 
-            Thread.sleep(200);
+            awaitPartitionMapExchange();
 
             List<T3<Object, Object, Object>> afterRestEvents = new ArrayList<>();
 
-            for (int j = 0; j < 10; j++) {
+            for (int j = 0; j < aff.partitions(); j++) {
                 Integer oldVal = (Integer)qryClnCache.get(j);
 
                 qryClnCache.put(j, i);
@@ -1646,7 +1726,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
         final List<T3<Object, Object, Object>> expEvtsLsnr = new ArrayList<>();
 
         try {
-            long stopTime = System.currentTimeMillis() + 60_000;
+            long stopTime = System.currentTimeMillis() + 10_000;
 
             // Start new filter each 5 sec.
             long startFilterTime = System.currentTimeMillis() + 5_000;
@@ -1785,13 +1865,11 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
             dinLsnr.evts.clear();
             dinLsnr.vals.clear();
-
-            dinQry.close();
         }
 
         List<T3<Object, Object, Object>> afterRestEvents = new ArrayList<>();
 
-        for (int i = 0; i < 1024; i++) {
+        for (int i = 0; i < qryClient.affinity(null).partitions(); i++) {
             Integer oldVal = (Integer)qryClnCache.get(i);
 
             qryClnCache.put(i, i);
@@ -1801,12 +1879,13 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         checkEvents(new ArrayList<>(afterRestEvents), lsnr, false);
 
-        //checkEvents(new ArrayList<>(afterRestEvents), dinLsnr, false);
-
         cur.close();
 
-        if (dinQry != null)
+        if (dinQry != null) {
+            checkEvents(new ArrayList<>(afterRestEvents), dinLsnr, false);
+
             dinQry.close();
+        }
 
         assertFalse("Unexpected error during test, see log for details.", err);
     }
@@ -1815,6 +1894,8 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testMultiThreaded() throws Exception {
+        this.backups = 2;
+
         final int SRV_NODES = 3;
 
         startGridsMultiThreaded(SRV_NODES);
@@ -1957,8 +2038,24 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
                         T2<Integer, Integer> expEvt = exp.get(i);
                         CacheEntryEvent<?, ?> rcvdEvt = rcvdEvts.get(i);
 
-                        assertEquals(key, rcvdEvt.getKey());
-                        assertEquals(expEvt.get1(), rcvdEvt.getValue());
+                        if (pass) {
+                            assertEquals(key, rcvdEvt.getKey());
+                            assertEquals(expEvt.get1(), rcvdEvt.getValue());
+                        }
+                        else {
+                            if (!key.equals(rcvdEvt.getKey()) || !expEvt.get1().equals(rcvdEvt.getValue()))
+                                log.warning("Missed events. [key=" + key + ", actKey=" + rcvdEvt.getKey()
+                                    + ", expVal=" + expEvt.get1() + ", actVal=" + rcvdEvt.getValue() + "]");
+                        }
+                    }
+
+                    if (!pass) {
+                        for (int i = cnt; i < exp.size(); i++) {
+                            T2<Integer, Integer> val = exp.get(i);
+
+                            log.warning("Missed events. [key=" + key + ", expVal=" + val.get1()
+                                + ", prevVal=" + val.get2() + "]");
+                        }
                     }
                 }
             }
@@ -2168,7 +2265,8 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
             if (msg0 instanceof GridContinuousMessage) {
                 if (skipMsg) {
-                    log.info("Skip continuous message: " + msg0);
+                    if (log.isDebugEnabled())
+                        log.debug("Skip continuous message: " + msg0);
 
                     return;
                 }
@@ -2176,7 +2274,8 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
                     AtomicBoolean sndFirstOnly = this.sndFirstOnly;
 
                     if (sndFirstOnly != null && !sndFirstOnly.compareAndSet(false, true)) {
-                        log.info("Skip continuous message: " + msg0);
+                        if (log.isDebugEnabled())
+                            log.debug("Skip continuous message: " + msg0);
 
                         return;
                     }

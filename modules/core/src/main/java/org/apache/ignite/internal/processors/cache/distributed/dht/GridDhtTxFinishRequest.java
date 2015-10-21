@@ -26,6 +26,7 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -65,6 +66,11 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
     /** Check comitted flag. */
     private boolean checkCommitted;
+
+    /** Partition update counter. */
+    @GridToStringInclude
+    @GridDirectCollection(Long.class)
+    private GridLongList partUpdateCnt;
 
     /** One phase commit write version. */
     private GridCacheVersion writeVer;
@@ -160,6 +166,74 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         this.sysInvalidate = sysInvalidate;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+    }
+
+    /**
+     * @param nearNodeId Near node ID.
+     * @param futId Future ID.
+     * @param miniId Mini future ID.
+     * @param topVer Topology version.
+     * @param xidVer Transaction ID.
+     * @param threadId Thread ID.
+     * @param commitVer Commit version.
+     * @param isolation Transaction isolation.
+     * @param commit Commit flag.
+     * @param invalidate Invalidate flag.
+     * @param sys System flag.
+     * @param sysInvalidate System invalidation flag.
+     * @param syncCommit Synchronous commit flag.
+     * @param syncRollback Synchronous rollback flag.
+     * @param baseVer Base version.
+     * @param committedVers Committed versions.
+     * @param rolledbackVers Rolled back versions.
+     * @param pendingVers Pending versions.
+     * @param txSize Expected transaction size.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash.
+     * @param updateIdxs Partition update idxs.
+     */
+    public GridDhtTxFinishRequest(
+        UUID nearNodeId,
+        IgniteUuid futId,
+        IgniteUuid miniId,
+        @NotNull AffinityTopologyVersion topVer,
+        GridCacheVersion xidVer,
+        GridCacheVersion commitVer,
+        long threadId,
+        TransactionIsolation isolation,
+        boolean commit,
+        boolean invalidate,
+        boolean sys,
+        byte plc,
+        boolean sysInvalidate,
+        boolean syncCommit,
+        boolean syncRollback,
+        GridCacheVersion baseVer,
+        Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers,
+        Collection<GridCacheVersion> pendingVers,
+        int txSize,
+        @Nullable UUID subjId,
+        int taskNameHash,
+        Collection<Long> updateIdxs
+    ) {
+        this(nearNodeId, futId, miniId, topVer, xidVer, commitVer, threadId, isolation, commit, invalidate, sys, plc,
+            sysInvalidate, syncCommit, syncRollback, baseVer, committedVers, rolledbackVers, pendingVers, txSize,
+            subjId, taskNameHash);
+
+        if (updateIdxs != null && !updateIdxs.isEmpty()) {
+            partUpdateCnt = new GridLongList(updateIdxs.size());
+
+            for (Long idx : updateIdxs)
+                partUpdateCnt.add(idx);
+        }
+    }
+
+    /**
+     * @return Partition update counters.
+     */
+    public GridLongList partUpdateCounters(){
+        return partUpdateCnt;
     }
 
     /**
@@ -329,6 +403,11 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 writer.incrementState();
 
+            case 28:
+                if (!writer.writeMessage("partUpdateCnt", partUpdateCnt))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -429,6 +508,14 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
+            case 28:
+                partUpdateCnt = reader.readMessage("partUpdateCnt");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDhtTxFinishRequest.class);
@@ -441,6 +528,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 28;
+        return 29;
     }
 }

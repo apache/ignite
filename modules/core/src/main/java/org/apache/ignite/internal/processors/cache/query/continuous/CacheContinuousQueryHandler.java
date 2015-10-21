@@ -316,10 +316,8 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                                 }
                             }
                             else {
-                                locLsnr.onUpdated(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt));
-
-                                if (!skipPrimaryCheck)
-                                    sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
+                                if (!entry.filtered())
+                                    locLsnr.onUpdated(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt));
                             }
                         }
                         else {
@@ -560,13 +558,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 rec = oldRec;
         }
 
-        Collection<CacheContinuousQueryEntry> entries = rec.collectEntries(e);
-
-        if (CacheContinuousQueryManager.SUPER_DEBUG)
-            ctx.log(getClass()).error("Fire the following event for partition : " + e.partition() +
-                " Entries: " + Arrays.toString(entries.toArray()));
-
-        return entries;
+        return rec.collectEntries(e);
     }
 
     /**
@@ -608,9 +600,6 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             synchronized (pendingEnts) {
                 // Received first event.
                 if (lastFiredEvt == INIT_VALUE) {
-                    if (CacheContinuousQueryManager.SUPER_DEBUG)
-                        log.error("First event. " + entry);
-
                     lastFiredEvt = entry.updateIndex();
 
                     firedEvents.add(new T2<>(lastFiredEvt, entry));
@@ -624,28 +613,17 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
                     lastFiredEvt = 1;
 
-                    if (CacheContinuousQueryManager.SUPER_DEBUG)
-                        log.error("Lost partition. Start from 1. Entry: " + entry);
-
                     firedEvents.add(new T2<>(lastFiredEvt, entry));
 
                     return F.asList(entry);
                 }
 
                 // Check duplicate.
-                if (entry.updateIndex() > lastFiredEvt) {
-                    if (CacheContinuousQueryManager.SUPER_DEBUG)
-                        log.error("Put message to pending queue. Counter value: " + lastFiredEvt + " Entry: " + entry);
-
+                if (entry.updateIndex() > lastFiredEvt)
                     pendingEnts.put(entry.updateIndex(), entry);
-                }
                 else {
                     if (log.isDebugEnabled())
                         log.debug("Skip duplicate continuous query message: " + entry);
-
-                    if (CacheContinuousQueryManager.SUPER_DEBUG)
-                        log.error("Received duplicate. Counter value: " + lastFiredEvt + " Entry: " + entry
-                            + ", Proceed message " + Arrays.toString(firedEvents.toArray()));
 
                     return Collections.emptyList();
                 }
