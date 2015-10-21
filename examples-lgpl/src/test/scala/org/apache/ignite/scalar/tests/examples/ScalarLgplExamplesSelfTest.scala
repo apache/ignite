@@ -15,8 +15,22 @@
  *  limitations under the License.
  */
 
+package org.apache.ignite.scalar.tests.examples
+
+import org.apache.ignite.scalar.examples._
+import org.apache.ignite.scalar.scalar
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest
+import org.scalatest.junit.JUnitSuiteLike
+
 /**
- * <!-- Package description. -->
- * Demonstrates data ignite cache usage.
+ * Scalar examples self test.
  */
-package org.apache.ignite.examples.java8.datagrid;
+class ScalarLgplExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLike {
+    /** */
+    private def EMPTY_ARGS = Array.empty[String]
+
+    /** */
+    def testScalarScheduleCallableExample() {
+        ScalarScheduleExample.main(EMPTY_ARGS)
+    }
+}

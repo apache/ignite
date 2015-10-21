@@ -15,8 +15,19 @@
  *  limitations under the License.
  */
 
+package org.apache.ignite.scalar.tests.examples
+
 /**
- * <!-- Package description. -->
- * Demonstrates using of blocking and non-blocking queues and atomic data structures.
+ * Scalar examples multi-node self test.
  */
-package org.apache.ignite.examples.java8.datastructures;
+class ScalarLgplExamplesMultiNodeSelfTest extends ScalarExamplesSelfTest {
+    /** */
+    protected override def beforeTest() {
+        startRemoteNodes()
+    }
+
+    /** */
+    protected override def getTestTimeout: Long = {
+        10 * 60 * 1000
+    }
+}
