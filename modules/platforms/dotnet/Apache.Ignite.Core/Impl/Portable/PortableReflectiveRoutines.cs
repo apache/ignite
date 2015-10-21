@@ -266,12 +266,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             else
             {
-                // TODO:
-
-                //writeAction = GetWriter(field, MthdWriteObjArray, elemType);
-                //readAction = GetReader(field, MthdReadObjArray, elemType);
-                writeAction = GetWriter(field, MthdWriteObj);
-                readAction = GetReader(field, MthdReadObj);
+                writeAction = GetWriter(field, MthdWriteObjArray, elemType);
+                readAction = GetReader(field, MthdReadObjArray, elemType);
             }  
         }
 
