@@ -36,22 +36,22 @@ namespace config
     const std::string CmdIgniteHome = ToLower("-IgniteHome=");
     
     /** Command line argument: Spring config URL. */
-    const std::string CmdSpringCfgUrl = ToLower("SpringConfigUrl=");
+    const std::string CmdSpringCfgUrl = ToLower("-SpringConfigUrl=");
 
     /** Command line argument: Path to JVM library. */
-    const std::string CmdJvmLib = ToLower("JvmLibPath=");
+    const std::string CmdJvmLib = ToLower("-JvmLibPath=");
 
     /** Command line argument: JVM classpath. */
-    const std::string CmdJvmClasspath = ToLower("JvmClasspath=");
+    const std::string CmdJvmClasspath = ToLower("-JvmClasspath=");
 
     /** Command line argument: JVM option prefix. */
-    const std::string CmdJvmOpt = ToLower("J");
+    const std::string CmdJvmOpt = ToLower("-J");
 
     /** Command line argument: JvmInitialMemoryMB. */
-    const std::string CmdJvmMinMem = ToLower("JvmInitialMemoryMB=");
+    const std::string CmdJvmMinMem = ToLower("-JvmInitialMemoryMB=");
 
     /** Command line argument: JvmMaxMemoryMB. */
-    const std::string CmdJvmMaxMem = ToLower("JvmMaxMemoryMB=");
+    const std::string CmdJvmMaxMem = ToLower("-JvmMaxMemoryMB=");
 
     /**
      * Convert configuration to arguments.
@@ -117,6 +117,11 @@ namespace config
                 cfg.jvmMaxMem = ParseInt(arg.substr(CmdJvmMaxMem.size()));
             else if (argLow.find(CmdJvmOpt) == 0)
                 jvmOpts.push_back(arg.substr(CmdJvmOpt.size()));
+            else
+            {
+                std::cout << "WARNING: unknown argument \"" << arg << "\"."
+                          << "Type --help for the list of supported arguments." << std::endl;
+            }
         }
 
         if (!jvmOpts.empty())
