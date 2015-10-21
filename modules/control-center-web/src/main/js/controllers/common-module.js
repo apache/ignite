@@ -2032,7 +2032,7 @@ consoleModule.controller('agent-download', [
          * Try to access agent and execute specified function.
          */
         function _tryWithAgent() {
-            $http.post(_agentDownloadModal.checkUrl, undefined, {timeout: 3000})
+            $http.post(_agentDownloadModal.checkUrl, undefined, {timeout: 5000})
                 .success(function (result) {
                     _agentDownloadModal.skipSingleError = true;
 
