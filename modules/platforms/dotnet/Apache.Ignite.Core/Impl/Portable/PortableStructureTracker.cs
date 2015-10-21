@@ -56,31 +56,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Gets the field id, but does not update structure cache.
-        /// </summary>
-        public int GetFieldIdNoCache(string fieldName)
-        {
-            _curStructAction++;
-
-            if (_curStructUpdates == null)
-            {
-                var fieldId = _portStruct.GetFieldId(fieldName, 0, ref _curStructPath,
-                    _curStructAction);
-
-                if (fieldId != 0)
-                    return fieldId;
-            }
-
-            return PortableUtils.FieldId(_desc.TypeId, fieldName, _desc.NameConverter, _desc.Mapper);
-        }
-
-        /// <summary>
         /// Gets the field ID.
         /// </summary>
-        public int GetFieldId(string fieldName, byte fieldTypeId)
+        public int GetFieldId(string fieldName, byte fieldTypeId = 0)
         {
-            Debug.Assert(fieldTypeId > 0);
-
             _curStructAction++;
 
             if (_curStructUpdates == null)
