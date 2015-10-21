@@ -268,8 +268,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             // TODO: handle generic array properly
-            // TODO: Bring back non-generic collection type detection
-            // TODO: Cover PortableReflective with more tests
         }
 
         /// <summary>
