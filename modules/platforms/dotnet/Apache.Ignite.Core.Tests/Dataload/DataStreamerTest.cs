@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 // Removal.
                 ldr.RemoveData(1);
                 ldr.Flush();
-                Assert.IsNull(_cache.Get(1));
+                Assert.IsFalse(_cache.ContainsKey(1));
 
                 // Mixed.
                 ldr.AddData(5, 5);                
@@ -159,7 +159,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.Flush();
 
                 for (int i = 2; i < 5; i++)
-                    Assert.IsNull(_cache.Get(i));
+                    Assert.IsFalse(_cache.ContainsKey(i));
 
                 for (int i = 5; i < 13; i++)
                     Assert.AreEqual(i, _cache.Get(i));
@@ -257,7 +257,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 fut.Get();
 
-                Assert.IsNull(_cache.Get(1));
+                Assert.IsFalse(_cache.ContainsKey(1));
             }
         }
 

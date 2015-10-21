@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using Apache.Ignite.Core.Cache;
@@ -124,22 +125,22 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Gets and resets future for previous asynchronous operation.
         /// </summary>
-        /// <param name="lastAsyncOpId">The last async op id.</param>
+        /// <param name="lastAsyncOp">The last async op id.</param>
         /// <returns>
         /// Future for previous asynchronous operation.
         /// </returns>
         /// <exception cref="System.InvalidOperationException">Asynchronous mode is disabled</exception>
-        internal IFuture<TResult> GetFuture<TResult>(int lastAsyncOpId)
+        internal IFuture<TResult> GetFuture<TResult>(CacheOp lastAsyncOp) 
         {
             if (!_flagAsync)
                 throw IgniteUtils.GetAsyncModeDisabledException();
 
-            var converter = GetFutureResultConverter<TResult>(lastAsyncOpId);
+            var converter = GetFutureResultConverter<TResult>(lastAsyncOp);
 
             _invokeAllConverter.Value = null;
 
-            return GetFuture((futId, futTypeId) => UU.TargetListenFutureForOperation(Target, futId, futTypeId, lastAsyncOpId), 
-                _flagKeepPortable, converter);
+            return GetFuture((futId, futTypeId) => UU.TargetListenFutureForOperation(Target, futId, futTypeId, 
+                (int) lastAsyncOp), _flagKeepPortable, converter);
         }
 
         /** <inheritDoc /> */
@@ -290,11 +291,47 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOp<TV>((int)CacheOp.Peek, writer =>
+            TV res;
+
+            if (TryLocalPeek(key, out res))
+                return res;
+
+            throw GetKeyNotFoundException();
+        }
+
+        /** <inheritDoc /> */
+        public bool TryLocalPeek(TK key, out TV value, params CachePeekMode[] modes)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+
+            var res = DoOutInOpNullable<TV>((int)CacheOp.Peek, writer =>
             {
                 writer.Write(key);
                 writer.WriteInt(EncodePeekModes(modes));
             });
+
+            value = res.Success ? res.Value : default(TV);
+
+            return res.Success;
+        }
+
+        /** <inheritDoc /> */
+        public TV this[TK key]
+        {
+            get
+            {
+                if (IsAsync)
+                    throw new InvalidOperationException("Indexer can't be used in async mode.");
+
+                return Get(key);
+            }
+            set
+            {
+                if (IsAsync)
+                    throw new InvalidOperationException("Indexer can't be used in async mode.");
+
+                Put(key, value);
+            }
         }
 
         /** <inheritDoc /> */
@@ -302,7 +339,34 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOp<TK, TV>((int)CacheOp.Get, key);
+            var result = DoOutInOpNullable<TK, TV>((int) CacheOp.Get, key);
+
+            if (!IsAsync)
+            {
+                if (!result.Success)
+                    throw GetKeyNotFoundException();
+
+                return result.Value;
+            }
+
+            Debug.Assert(!result.Success);
+
+            return default(TV);
+        }
+
+        /** <inheritDoc /> */
+        public bool TryGet(TK key, out TV value)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+
+            if (IsAsync)
+                throw new InvalidOperationException("TryGet can't be used in async mode.");
+
+            var res = DoOutInOpNullable<TK, TV>((int) CacheOp.Get, key);
+
+            value = res.Value;
+
+            return res.Success;
         }
 
         /** <inheritDoc /> */
@@ -331,31 +395,31 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public TV GetAndPut(TK key, TV val)
+        public CacheResult<TV> GetAndPut(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOp<TK, TV, TV>((int)CacheOp.GetAndPut, key, val);
+            return DoOutInOpNullable<TK, TV, TV>((int)CacheOp.GetAndPut, key, val);
         }
 
         /** <inheritDoc /> */
-        public TV GetAndReplace(TK key, TV val)
+        public CacheResult<TV> GetAndReplace(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOp<TK, TV, TV>((int)CacheOp.GetAndReplace, key, val);
+            return DoOutInOpNullable<TK, TV, TV>((int)CacheOp.GetAndReplace, key, val);
         }
 
         /** <inheritDoc /> */
-        public TV GetAndRemove(TK key)
+        public CacheResult<TV> GetAndRemove(TK key)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOp<TK, TV>((int)CacheOp.GetAndRemove, key);
+            return DoOutInOpNullable<TK, TV>((int)CacheOp.GetAndRemove, key);
         }
 
         /** <inheritdoc /> */
@@ -369,13 +433,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritdoc /> */
-        public TV GetAndPutIfAbsent(TK key, TV val)
+        public CacheResult<TV> GetAndPutIfAbsent(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOp<TK, TV, TV>((int)CacheOp.GetAndPutIfAbsent, key, val);
+            return DoOutInOpNullable<TK, TV, TV>((int)CacheOp.GetAndPutIfAbsent, key, val);
         }
 
         /** <inheritdoc /> */
@@ -916,26 +980,108 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <typeparam name="TResult">The type of the future result.</typeparam>
         /// <param name="lastAsyncOpId">The last op id.</param>
         /// <returns>Future result converter.</returns>
-        private Func<PortableReaderImpl, TResult> GetFutureResultConverter<TResult>(int lastAsyncOpId)
+        private Func<PortableReaderImpl, TResult> GetFutureResultConverter<TResult>(CacheOp lastAsyncOpId)
         {
-            if (lastAsyncOpId == (int) CacheOp.GetAll)
-                return reader => (TResult)ReadGetAllDictionary(reader);
-            
-            if (lastAsyncOpId == (int)CacheOp.Invoke)
-                return reader =>
-                {
-                    var hasError = reader.ReadBoolean();
+            switch (lastAsyncOpId)
+            {
+                case CacheOp.Get:
+                    return reader =>
+                    {
+                        if (reader != null)
+                            return reader.ReadObject<TResult>();
 
-                    if (hasError)
-                        throw ReadException(reader.Stream);
+                        throw GetKeyNotFoundException();
+                    };
 
-                    return reader.ReadObject<TResult>();
-                };
+                case CacheOp.GetAll:
+                    return reader => reader == null ? default(TResult) : (TResult) ReadGetAllDictionary(reader);
 
-            if (lastAsyncOpId == (int) CacheOp.InvokeAll)
-                return _invokeAllConverter.Value as Func<PortableReaderImpl, TResult>;
+                case CacheOp.Invoke:
+                    return reader =>
+                    {
+                        if (reader == null)
+                            return default(TResult);
+
+                        var hasError = reader.ReadBoolean();
+
+                        if (hasError)
+                            throw ReadException(reader.Stream);
+
+                        return reader.ReadObject<TResult>();
+                    };
+
+                case CacheOp.InvokeAll:
+                    return _invokeAllConverter.Value as Func<PortableReaderImpl, TResult>;
+
+                case CacheOp.GetAndPut:
+                case CacheOp.GetAndPutIfAbsent:
+                case CacheOp.GetAndRemove:
+                case CacheOp.GetAndReplace:
+                    return reader =>
+                    {
+                        var res = reader == null
+                            ? new CacheResult<TV>()
+                            : new CacheResult<TV>(reader.ReadObject<TV>());
+
+                        return TypeCaster<TResult>.Cast(res);
+                    };
+            }
 
             return null;
+        }
+
+        /// <summary>
+        /// Throws the key not found exception.
+        /// </summary>
+        private static KeyNotFoundException GetKeyNotFoundException()
+        {
+            return new KeyNotFoundException("The given key was not present in the cache.");
+        }
+
+        /// <summary>
+        /// Perform simple out-in operation accepting single argument.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="val">Value.</param>
+        /// <returns>Result.</returns>
+        private CacheResult<TR> DoOutInOpNullable<T1, TR>(int type, T1 val)
+        {
+            var res = DoOutInOp<T1, object>(type, val);
+
+            return res == null
+                ? new CacheResult<TR>()
+                : new CacheResult<TR>((TR)res);
+        }
+
+        /// <summary>
+        /// Perform out-in operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="outAction">Out action.</param>
+        /// <returns>Result.</returns>
+        private CacheResult<TR> DoOutInOpNullable<TR>(int type, Action<PortableWriterImpl> outAction)
+        {
+            var res = DoOutInOp<object>(type, outAction);
+
+            return res == null
+                ? new CacheResult<TR>()
+                : new CacheResult<TR>((TR)res);
+        }
+
+        /// <summary>
+        /// Perform simple out-in operation accepting single argument.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="val1">Value.</param>
+        /// <param name="val2">Value.</param>
+        /// <returns>Result.</returns>
+        private CacheResult<TR> DoOutInOpNullable<T1, T2, TR>(int type, T1 val1, T2 val2)
+        {
+            var res = DoOutInOp<T1, T2, object>(type, val1, val2);
+
+            return res == null
+                ? new CacheResult<TR>()
+                : new CacheResult<TR>((TR)res);
         }
     }
 }

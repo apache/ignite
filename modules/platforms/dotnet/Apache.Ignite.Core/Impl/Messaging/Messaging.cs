@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         }
 
         /** <inheritdoc /> */
-        public void Send(IEnumerable messages, object topic = null)
+        public void SendAll(IEnumerable messages, object topic = null)
         {
             IgniteArgumentCheck.NotNull(messages, "messages");
 
