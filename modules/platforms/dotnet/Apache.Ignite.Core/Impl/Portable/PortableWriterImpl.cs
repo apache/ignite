@@ -933,6 +933,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named object array.
         /// </summary>
+        /// <typeparam name="T">Element type.</typeparam>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Object array.</param>
         public void WriteArray<T>(string fieldName, T[] val)
@@ -955,6 +956,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write object array.
         /// </summary>
+        /// <typeparam name="T">Element type.</typeparam>
         /// <param name="val">Object array.</param>
         public void WriteArray<T>(T[] val)
         {
