@@ -265,7 +265,10 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 writeAction = GetWriter(field, MthdWriteObj);
                 readAction = GetReader(field, MthdReadObj);
-            }  
+            }
+
+            // TODO: handle generic array properly
+            // TODO: Bring back non-generic collection type detection
         }
 
         /// <summary>
