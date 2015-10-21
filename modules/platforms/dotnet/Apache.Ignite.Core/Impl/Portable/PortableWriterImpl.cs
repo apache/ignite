@@ -1202,7 +1202,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 _curMapper = desc.Mapper;
                 _curRawPos = 0;
 
-                _curStruct = new PortableStructureTracker(desc);
+                _curStruct = new PortableStructureTracker(desc, desc.WriterTypeStructure);
 
                 // Write object fields.
                 desc.Serializer.WritePortable(obj, this);
@@ -1218,7 +1218,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _stream.WriteInt(pos + 14, len);
 
                 // Apply structure updates if any.
-                _curStruct.UpdateStructureAndMeta(this);
+                _curStruct.UpdateWriterStructure(this);
 
                 // Restore old frame.
                 _curTypeId = oldTypeId;

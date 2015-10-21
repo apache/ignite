@@ -749,7 +749,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _curTypeId = typeId;
                     _curPos = pos;
                     _curRawOffset = rawOffset;
-                    _curStruct = new PortableStructureTracker(desc);
+                    _curStruct = new PortableStructureTracker(desc, desc.ReaderTypeStructure);
                     _curRaw = false;
 
                     // Read object.
@@ -777,7 +777,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         desc.Serializer.ReadPortable(obj, this);
                     }
 
-                    _curStruct.UpdateStructure();
+                    _curStruct.UpdateReaderStructure();
 
                     // Restore old frame.
                     _curTypeId = oldTypeId;

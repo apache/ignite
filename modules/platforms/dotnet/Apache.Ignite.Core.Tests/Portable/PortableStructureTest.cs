@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 var desc = marsh.GetDescriptor(typeof (BranchedType));
 
                 CollectionAssert.AreEquivalent(new[] {"mode", "f2", "f3", "f4", "f5", "f6", "f7", "f8"},
-                    desc.TypeStructure.FieldTypes.Keys);
+                    desc.WriterTypeStructure.FieldTypes.Keys);
             }
         }
     }

@@ -29,6 +29,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Current type structure. */
         private readonly IPortableTypeDescriptor _desc;
 
+        /** Struct. */
+        private readonly PortableStructure _portStruct;
+
         /** Current type structure path index. */
         private int _curStructPath;
 
@@ -39,12 +42,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         private List<PortableStructureUpdate> _curStructUpdates;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PortableStructureTracker"/> class.
+        /// Initializes a new instance of the <see cref="PortableStructureTracker" /> class.
         /// </summary>
         /// <param name="desc">The desc.</param>
-        public PortableStructureTracker(IPortableTypeDescriptor desc)
+        /// <param name="portStruct">The structure to work with.</param>
+        public PortableStructureTracker(IPortableTypeDescriptor desc, PortableStructure portStruct)
         {
             _desc = desc;
+            _portStruct = portStruct;
             _curStructPath = 0;
             _curStructAction = 0;
             _curStructUpdates = null;
@@ -59,7 +64,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (_curStructUpdates == null)
             {
-                var fieldId = _desc.TypeStructure.GetFieldId(fieldName, 0, ref _curStructPath,
+                var fieldId = _portStruct.GetFieldId(fieldName, 0, ref _curStructPath,
                     _curStructAction);
 
                 if (fieldId != 0)
@@ -80,7 +85,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (_curStructUpdates == null)
             {
-                var fieldId = _desc.TypeStructure.GetFieldId(fieldName, fieldTypeId, ref _curStructPath,
+                var fieldId = _portStruct.GetFieldId(fieldName, fieldTypeId, ref _curStructPath,
                     _curStructAction);
 
                 if (fieldId != 0)
@@ -93,21 +98,21 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Updates the type structure.
         /// </summary>
-        public void UpdateStructure()
+        public void UpdateReaderStructure()
         {
             if (_curStructUpdates != null)
-                _desc.UpdateStructure(_desc.TypeStructure, _curStructPath, _curStructUpdates);
+                _desc.UpdateReadStructure(_desc.ReaderTypeStructure, _curStructPath, _curStructUpdates);
         }
 
         /// <summary>
         /// Updates the type structure and metadata for the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        public void UpdateStructureAndMeta(PortableWriterImpl writer)
+        public void UpdateWriterStructure(PortableWriterImpl writer)
         {
             if (_curStructUpdates != null)
             {
-                _desc.UpdateStructure(_desc.TypeStructure, _curStructPath, _curStructUpdates);
+                _desc.UpdateWriteStructure(_desc.WriterTypeStructure, _curStructPath, _curStructUpdates);
 
                 var marsh = writer.Marshaller;
 
