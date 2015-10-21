@@ -1997,14 +1997,15 @@ consoleModule.controller('agent-download', [
          *
          * @param errMsg Error message.
          * @param status Error code.
+         * @param timedOut True if request timedOut.
          */
-        var _handleException = function (errMsg, status) {
+        var _handleException = function (errMsg, status, timedOut) {
             if (_agentDownloadModal.skipSingleError)
                 _agentDownloadModal.skipSingleError = false;
             else if (!_agentDownloadModal.$isShown)
                 _agentDownloadModal.$promise.then(_agentDownloadModal.show);
 
-            $scope.nodeFailedConnection = status == 404;
+            $scope.nodeFailedConnection = status == 404 || timedOut;
 
             if (status == 500)
                 $common.showError(errMsg, 'top-right', 'body', true);
@@ -2032,7 +2033,14 @@ consoleModule.controller('agent-download', [
          * Try to access agent and execute specified function.
          */
         function _tryWithAgent() {
-            $http.post(_agentDownloadModal.checkUrl, undefined, {timeout: 5000})
+            var timeout = 3000,
+                timedOut = false;
+
+            setTimeout(function () {
+                timedOut = true;
+            }, timeout);
+
+            $http.post(_agentDownloadModal.checkUrl, undefined, {timeout: timeout})
                 .success(function (result) {
                     _agentDownloadModal.skipSingleError = true;
 
@@ -2044,7 +2052,7 @@ consoleModule.controller('agent-download', [
                     _agentDownloadModal.checkFn(result, _agentDownloadModal.hide, _handleException);
                 })
                 .error(function (errMsg, status) {
-                    _handleException(errMsg, status);
+                    _handleException(errMsg, status, timedOut);
                 });
         }
 
