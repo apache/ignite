@@ -1185,23 +1185,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /**
-         * <summary>Write generic collection.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         */
-        // ReSharper disable once UnusedMember.Local (Used by reflection)
-        private static void WriteGenericCollection<T>(ICollection<T> val, PortableWriterImpl ctx)
-        {
-            Debug.Assert(val != null);
-            Debug.Assert(ctx != null);
-
-            ctx.Stream.WriteInt(val.Count);
-
-            foreach (T elem in val)
-                ctx.Write(elem);
-        }
-
-        /**
          * <summary>Write dictionary.</summary>
          * <param name="val">Value.</param>
          * <param name="ctx">Write context.</param>
@@ -1261,23 +1244,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             return res;
-        }
-
-        /**
-         * <summary>Write generic dictionary.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         */
-        // ReSharper disable once UnusedMember.Local (used by reflection)
-        private static void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val, PortableWriterImpl ctx)
-        {
-            ctx.Stream.WriteInt(val.Count);
-
-            foreach (var entry in val)
-            {
-                ctx.Write(entry.Key);
-                ctx.Write(entry.Value);
-            }
         }
 
         /**
