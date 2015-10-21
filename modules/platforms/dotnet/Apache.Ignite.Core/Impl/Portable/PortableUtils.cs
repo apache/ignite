@@ -1211,7 +1211,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         // ReSharper disable once UnusedMember.Local (used by reflection)
         private static ICollection<T> ReadGenericCollection<T>(PortableReaderImpl reader, 
-            PortableCollectionInfo colInfo)
+            PortableArrayInfo colInfo)
         {
             Debug.Assert(reader != null);
             Debug.Assert(colInfo != null);
@@ -1230,7 +1230,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Reads generic collection without type information.
         /// </summary>
         // ReSharper disable once UnusedMember.Local (used by reflection)
-        private static T[] ReadGenericArray<T>(PortableReaderImpl reader, PortableCollectionInfo colInfo)
+        private static T[] ReadGenericArray<T>(PortableReaderImpl reader, PortableArrayInfo colInfo)
         {
             Debug.Assert(reader != null);
             Debug.Assert(colInfo != null);
@@ -1329,7 +1329,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         // ReSharper disable once UnusedMember.Local (used by reflection)
         private static IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableReaderImpl reader,
-            PortableCollectionInfo colInfo)
+            PortableArrayInfo colInfo)
         {
             var len = reader.Stream.ReadInt();
 

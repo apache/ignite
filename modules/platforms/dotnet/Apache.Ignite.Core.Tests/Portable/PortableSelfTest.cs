@@ -1535,6 +1535,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             public TestEnum[] PEnumArray { get; set; }
         }
 
+        [Serializable]
         public class PrimitiveFieldType 
         {
             public bool PBool { get; set; }

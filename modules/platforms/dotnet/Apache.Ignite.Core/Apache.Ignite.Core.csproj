@@ -258,7 +258,7 @@
     <Compile Include="Impl\Portable\Metadata\PortableMetadataImpl.cs" />
     <Compile Include="Impl\Portable\PortableBuilderField.cs" />
     <Compile Include="Impl\Portable\PortableBuilderImpl.cs" />
-    <Compile Include="Impl\Portable\PortableCollectionInfo.cs" />
+    <Compile Include="Impl\Portable\PortableArrayInfo.cs" />
     <Compile Include="Impl\Portable\PortableFullTypeDescriptor.cs" />
     <Compile Include="Impl\Portable\PortableHandleDictionary.cs" />
     <Compile Include="Impl\Portable\PortableMarshalAwareSerializer.cs" />

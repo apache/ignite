@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Diagnostics;
-    using System.Linq;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Portable;
 
@@ -60,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var colType = ReadType(r);
 
-            var colInfo = PortableCollectionInfo.GetInstance(colType);
+            var colInfo = PortableArrayInfo.GetInstance(colType);
 
             _collection = colInfo.ReadGeneric(r);
         }
@@ -95,31 +94,10 @@ namespace Apache.Ignite.Core.Impl.Portable
             Debug.Assert(type != null);
             Debug.Assert(writer != null);
 
-            type = ReplaceTypesRecursive(type, typeof (IPortableBuilder), typeof (IPortableObject));
-            type = ReplaceTypesRecursive(type, typeof (PortableUserObject), typeof (object));
-
             var typeName = type.AssemblyQualifiedName;
 
             writer.WriteInt(PortableUtils.GetStringHashCode(typeName));
             writer.WriteString(typeName);
-        }
-
-        /// <summary>
-        /// Replaces type with another type in a generic of any depth.
-        /// </summary>
-        private static Type ReplaceTypesRecursive(Type type, Type target, Type replacement)
-        {
-            if (type == target)
-                return replacement;
-
-            if (!type.IsGenericType)
-                return type;
-
-            var def = type.GetGenericTypeDefinition();
-
-            var args = type.GetGenericArguments().Select(x => ReplaceTypesRecursive(x, target, replacement)).ToArray();
-
-            return def.MakeGenericType(args);
         }
 
         /// <summary>

@@ -819,16 +819,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     throw new NotSupportedException(
                         string.Format("PortableBuilder does not support arrays of '{0}'. Please use object array.",
                             elementType));
-
-                return;
             }
-
-            var colInfo = PortableCollectionInfo.GetInstance(type);
-
-            if (colInfo.IsAny)
-                throw new NotSupportedException(
-                    string.Format("PortableBuilder does not support generic collections: '{0}'. " +
-                                  "Please use non-generic counterpart.", type));
         }
 
         /// <summary>
