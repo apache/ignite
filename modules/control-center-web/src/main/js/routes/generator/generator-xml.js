@@ -1088,6 +1088,15 @@ $generatorXml.clusterCaches = function(caches, res) {
     return res;
 };
 
+$generatorXml.igfs = function(igfs, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    res.line('TODO IGFS XML generation');
+
+    return res;
+};
+
 // Generate cluster config.
 $generatorXml.cluster = function (cluster, clientNearCfg) {
     if (cluster) {

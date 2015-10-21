@@ -1041,10 +1041,10 @@
           "label": "IGFS",
           "id": "igfs",
           "type": "dropdown-multiple",
-          "model": "igfs",
+          "model": "igfss",
           "placeholder": "Choose IGFS",
           "placeholderEmpty": "No IGFS configured",
-          "items": "igfs",
+          "items": "igfss",
           "tip": [
             "Select IGFS to start in cluster or add a new IGFS"
           ],

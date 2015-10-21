@@ -1517,6 +1517,15 @@ $generatorJava.clusterSsl = function(cluster, res) {
     return res;
 };
 
+$generatorJava.igfs = function(igfs, varName, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    res.line('TODO IGFS java code generation');
+
+    return res;
+};
+
 /**
  * Function to generate java code for cluster configuration.
  *
