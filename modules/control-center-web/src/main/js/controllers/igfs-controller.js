@@ -33,6 +33,7 @@ consoleModule.controller('igfsController', [
             $scope.javaBuildInClasses = $common.javaBuildInClasses;
             $scope.compactJavaName = $common.compactJavaName;
             $scope.saveBtnTipText = $common.saveBtnTipText;
+            $scope.panelExpanded = $common.panelExpanded;
 
             $scope.tableVisibleRow = $table.tableVisibleRow;
             $scope.tableReset = $table.tableReset;

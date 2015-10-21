@@ -61,9 +61,11 @@ block content
             a(href='clusters') here.
         +main-table('Clusters:', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}')
         div(ng-show='selectedItem && tableVisibleRow(displayedRows, selectedItem)' role='tab' method='post' action='summary/download')
-            .padding-dflt(bs-collapse data-start-collapsed='false')
+            .padding-dflt(bs-collapse ng-init='serverExpanded=0' ng-model='serverExpanded')
                 .panel.panel-default
-                    form.panel-heading(role='tab' method='post' action='summary/download' bs-collapse-toggle) Server
+                    form.panel-heading(role='tab' method='post' action='summary/download' bs-collapse-toggle)
+                        i.tipLabel.fa(ng-class='serverExpanded == 0 ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+                        label Server
                         input(type='hidden' name='_id' value='{{selectedItem._id}}')
                         input(type='hidden' name='os' value='{{os}}')
                         input(type='hidden' name='javaClass' value='{{javaClassServer}}')
@@ -98,9 +100,11 @@ block content
                                     .col-xs-5.col-sm-4
                                         input#os.form-control(type='text' ng-model='configServer.os' placeholder='debian:8' data-min-length='0' data-html='1' data-auto-select='true' bs-typeahead retain-selection bs-options='os for os in oss')
                                 div(ui-ace='{ onLoad: aceInit, mode: "dockerfile" }' ng-model='dockerServer')
-            .padding-dflt(bs-collapse data-start-collapsed='false')
+            .padding-dflt(bs-collapse ng-init='clientExpanded=0' ng-model='clientExpanded')
                 .panel.panel-default
-                    form.panel-heading(role='tab' method='post' action='summary/download' bs-collapse-toggle) Client
+                    form.panel-heading(role='tab' method='post' action='summary/download' bs-collapse-toggle)
+                        i.tipLabel.fa(ng-class='clientExpanded == 0 ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+                        label Client
                         input(type='hidden' name='_id' value='{{selectedItem._id}}')
                         input(type='hidden' name='javaClass' value='{{javaClassClient}}')
                         input(type='hidden' name='clientNearConfiguration' value='{{backupItem}}')
