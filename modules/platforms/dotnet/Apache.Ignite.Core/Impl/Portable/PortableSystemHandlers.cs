@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Collections;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -48,12 +47,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Read handlers. */
         private static readonly IPortableSystemReader[] ReadHandlers = new IPortableSystemReader[255];
         
-        /** Write handler: collection. */
-        public static readonly PortableSystemWriteDelegate WriteHndCollection = WriteCollection;
-
-        /** Write handler: dictionary. */
-        public static readonly PortableSystemWriteDelegate WriteHndDictionary = WriteDictionary;
-
         /// <summary>
         /// Initializes the <see cref="PortableSystemHandlers"/> class.
         /// </summary>
@@ -237,6 +230,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (elemType == typeof (object))
                     return WriteArray;
             }
+
             if (type.IsEnum)
                 // We know how to write enums.
                 return WriteEnum;
@@ -568,26 +562,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             ctx.Stream.WriteByte(PortableUtils.TypeArray);
 
             PortableUtils.WriteArray((Array)obj, ctx);
-        }
-
-        /**
-         * <summary>Write collection.</summary>
-         */
-        private static void WriteCollection(PortableWriterImpl ctx, object obj)
-        {
-            ctx.Stream.WriteByte(PortableUtils.TypeCollection);
-
-            PortableUtils.WriteCollection((ICollection)obj, ctx);
-        }
-
-        /**
-         * <summary>Write dictionary.</summary>
-         */
-        private static void WriteDictionary(PortableWriterImpl ctx, object obj)
-        {
-            ctx.Stream.WriteByte(PortableUtils.TypeDictionary);
-
-            PortableUtils.WriteDictionary((IDictionary)obj, ctx);
         }
 
         /**
