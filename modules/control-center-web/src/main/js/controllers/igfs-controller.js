@@ -70,6 +70,8 @@ consoleModule.controller('igfsController', [
 
             $scope.igfsModes = $common.mkOptions(['PRIMARY', 'PROXY', 'DUAL_SYNC', 'DUAL_ASYNC']);
 
+            $scope.ipcTypes = $common.mkOptions(['SHMEM', 'TCP']);
+
             $scope.toggleExpanded = function () {
                 $scope.ui.expanded = !$scope.ui.expanded;
 
@@ -210,7 +212,8 @@ consoleModule.controller('igfsController', [
             function prepareNewItem() {
                 return {
                     space: $scope.spaces[0]._id,
-                    mode: 'PRIMARY'
+                    ipcEndpointEnabled: true,
+                    fragmentizerEnabled: true
                 }
             }
 
@@ -229,6 +232,9 @@ consoleModule.controller('igfsController', [
             function validate(item) {
                 if ($common.isEmptyString(item.name))
                     return showPopoverMessage($scope.panels, 'general', 'igfsName', 'Name should not be empty');
+
+                if (!$common.isEmptyString(item.dualModePutExecutorService) && !$common.isValidJavaClass('Put executor service', item.dualModePutExecutorService, false, 'dualModePutExecutorService', false, $scope.panels, 'dualMode'))
+                    return false;
 
                 return true;
             }
