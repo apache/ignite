@@ -881,10 +881,17 @@ namespace Apache.Ignite.Core.Tests.Portable
                     new PortableTypeConfiguration(typeof (InnerObjectType))
                 }
             });
+            
+            var obj = new CollectionsType
+            {
+                Hashtable = new Hashtable {{1, 2}, {3, 4}},
+                LinkedList = new LinkedList<int>(new[] {1, 2, 3}),
+                SortedDict = new SortedDictionary<string, int> {{"1", 2}},
+                Dict = new Dictionary<int, string> {{1, "2"}},
+                Arr = new[] {new InnerObjectType()}
+            };
 
-            CollectionsType obj = new CollectionsType();
-
-            ArrayList list = new ArrayList
+            var list = new ArrayList
             {
                 true,
                 (byte) 1,
