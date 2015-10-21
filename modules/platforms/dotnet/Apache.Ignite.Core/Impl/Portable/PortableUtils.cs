@@ -1002,6 +1002,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static unsafe void WriteGuid(Guid val, IPortableStream stream)
         {
+            // TODO: This may be not valid due to Guid being non-sequential and non-packed
             var jguid = new JavaGuid(val);
 
             var ptr = &jguid;
@@ -1024,6 +1025,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var dotnetGuid = new GuidAccessor(jguid);
 
+            // TODO: This may be not valid due to Guid being non-sequential and non-packed
             return *(Guid*) (&dotnetGuid);
         }
 
@@ -2161,6 +2163,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 var l = val.CBA;
 
+                // TODO: This is not valid in Big Endian mode
                 ABC = ((l >> 32) & 0x00000000FFFFFFFF) | ((l << 48) & 0xFFFF000000000000) |
                       ((l << 16) & 0x0000FFFF00000000);
 
@@ -2190,9 +2193,11 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 var l = accessor.ABC;
 
+                // TODO: This is not valid in Big Endian mode
                 CBA = ((l << 32) & 0xFFFFFFFF00000000) | ((l >> 48) & 0x000000000000FFFF) |
                       ((l >> 16) & 0x00000000FFFF0000);
 
+                // This is valid in any endianness
                 KJIHGED = ReverseByteOrder(accessor.DEGHIJK);
             }
         }
