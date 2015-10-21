@@ -132,9 +132,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Type: collection. */
         public const byte TypeCollection = 24;
 
-        /** Type: collection (with element type information). */
-        public const byte TypeGenericCollection = 96;
-
         /** Type: map. */
         public const byte TypeDictionary = 25;
 
@@ -249,22 +246,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Default poratble marshaller. */
         private static readonly PortableMarshaller Marsh = new PortableMarshaller(null);
-
-        /** Method: WriteGenericCollection. */
-        public static readonly MethodInfo MtdhWriteGenericCollection =
-            typeof(PortableUtils).GetMethod("WriteGenericCollection", _bindFlagsStatic);
-
-        /** Method: ReadGenericCollection0. */
-        public static readonly MethodInfo MtdhReadGenericCollection =
-            typeof(PortableUtils).GetMethod("ReadGenericCollection", _bindFlagsStatic);
-
-        /** Method: WriteGenericDictionary. */
-        public static readonly MethodInfo MtdhWriteGenericDictionary =
-            typeof(PortableUtils).GetMethod("WriteGenericDictionary", _bindFlagsStatic);
-
-        /** Method: ReadGenericDictionary. */
-        public static readonly MethodInfo MtdhReadGenericDictionary =
-            typeof(PortableUtils).GetMethod("ReadGenericDictionary", _bindFlagsStatic);
 
         /** Method: ReadArray. */
         public static readonly MethodInfo MtdhReadArray =
@@ -1206,45 +1187,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 ctx.Write(elem);
         }
 
-        /// <summary>
-        /// Reads generic collection without type information.
-        /// </summary>
-        // ReSharper disable once UnusedMember.Local (used by reflection)
-        private static ICollection<T> ReadGenericCollection<T>(PortableReaderImpl reader, 
-            PortableArrayInfo colInfo)
-        {
-            Debug.Assert(reader != null);
-            Debug.Assert(colInfo != null);
-
-            int len = reader.Stream.ReadInt();
-
-            var res = (ICollection<T>) colInfo.Constructor(len);
-
-            for (int i = 0; i < len; i++)
-                res.Add(reader.Deserialize<T>());
-
-            return res;
-        }
-
-        /// <summary>
-        /// Reads generic collection without type information.
-        /// </summary>
-        // ReSharper disable once UnusedMember.Local (used by reflection)
-        private static T[] ReadGenericArray<T>(PortableReaderImpl reader, PortableArrayInfo colInfo)
-        {
-            Debug.Assert(reader != null);
-            Debug.Assert(colInfo != null);
-
-            int len = reader.Stream.ReadInt();
-
-            var res = (T[]) colInfo.Constructor(len);
-
-            for (int i = 0; i < len; i++)
-                res[i] = reader.Deserialize<T>();
-
-            return res;
-        }
-
         /**
          * <summary>Write dictionary.</summary>
          * <param name="val">Value.</param>
@@ -1322,28 +1264,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 ctx.Write(entry.Key);
                 ctx.Write(entry.Value);
             }
-        }
-
-        /// <summary>
-        /// Reads the generic dictionary.
-        /// </summary>
-        // ReSharper disable once UnusedMember.Local (used by reflection)
-        private static IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableReaderImpl reader,
-            PortableArrayInfo colInfo)
-        {
-            var len = reader.Stream.ReadInt();
-
-            var res = (IDictionary<TK, TV>) colInfo.Constructor(len);
-
-            for (int i = 0; i < len; i++)
-            {
-                var key = reader.Deserialize<TK>();
-                var val = reader.Deserialize<TV>();
-
-                res[key] = val;
-            }
-
-            return res;
         }
 
         /**

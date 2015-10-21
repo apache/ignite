@@ -236,11 +236,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Object array.
                 if (elemType == typeof (object))
                     return WriteArray;
-
-                // Generic array (.NET specific)
-                var arrInfo = PortableArrayInfo.GetInstance(type);
-                    
-                return (writer, o) => writer.Write(new CollectionHolder(o, arrInfo.WriteGeneric));
             }
             if (type.IsEnum)
                 // We know how to write enums.

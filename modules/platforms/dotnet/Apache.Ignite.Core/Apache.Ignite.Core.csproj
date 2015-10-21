@@ -244,7 +244,6 @@
     <Compile Include="Impl\Messaging\Messaging.cs" />
     <Compile Include="Impl\Messaging\MessagingAsync.cs" />
     <Compile Include="Impl\NativeMethods.cs" />
-    <Compile Include="Impl\Portable\CollectionHolder.cs" />
     <Compile Include="Impl\Portable\IO\IPortableStream.cs" />
     <Compile Include="Impl\Portable\IO\PortableAbstractStream.cs" />
     <Compile Include="Impl\Portable\IO\PortableHeapStream.cs" />
@@ -258,7 +257,6 @@
     <Compile Include="Impl\Portable\Metadata\PortableMetadataImpl.cs" />
     <Compile Include="Impl\Portable\PortableBuilderField.cs" />
     <Compile Include="Impl\Portable\PortableBuilderImpl.cs" />
-    <Compile Include="Impl\Portable\PortableArrayInfo.cs" />
     <Compile Include="Impl\Portable\PortableFullTypeDescriptor.cs" />
     <Compile Include="Impl\Portable\PortableHandleDictionary.cs" />
     <Compile Include="Impl\Portable\PortableMarshalAwareSerializer.cs" />

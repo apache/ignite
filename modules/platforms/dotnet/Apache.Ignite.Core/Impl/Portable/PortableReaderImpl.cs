@@ -744,10 +744,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                     if (wrappedSerializable != null) 
                         return (T) wrappedSerializable.Item;
 
-                    var wrappedCollection = obj as CollectionHolder;
+                    //var wrappedCollection = obj as CollectionHolder;
 
-                    if (wrappedCollection != null)
-                        return (T) wrappedCollection.Collection;
+                    //if (wrappedCollection != null)
+                    //    return (T) wrappedCollection.Collection;
                     
                     return (T) obj;
                 }
