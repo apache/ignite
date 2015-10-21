@@ -19,6 +19,8 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
 {
     using System.Diagnostics;
 
+    using Apache.Ignite.Core.Portable;
+
     /// <summary>
     /// Portable type structure entry. Might be either a normal field, a reference to jump table, or an empty entry.
     /// </summary>
@@ -30,6 +32,9 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         /** Field ID. */
         private readonly int _id;
 
+        /** Field type. */
+        private readonly byte _type;
+
         /// <summary>
         /// Constructor for jump table entry.
         /// </summary>
@@ -40,6 +45,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
 
             _name = null;
             _id = jumpTblIdx;
+            _type = 0;
         }
 
         /// <summary>
@@ -47,26 +53,44 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         /// </summary>
         /// <param name="name">Field name.</param>
         /// <param name="id">Field ID.</param>
-        public PortableStructureEntry(string name, int id)
+        /// <param name="type">Field type.</param>
+        public PortableStructureEntry(string name, int id, byte type)
         {
             Debug.Assert(name != null);
 
             _name = name;
             _id = id;
+            _type = type;
         }
 
         /// <summary>
         /// Check whether current field entry matches passed arguments.
         /// </summary>
         /// <param name="name">Field name.</param>
+        /// <param name="type">Field type.</param>
         /// <returns>True if expected.</returns>
-        public bool IsExpected(string name)
+        public bool IsExpected(string name, byte type)
         {
             // Perform reference equality check first because field name is a literal in most cases.
-            if (ReferenceEquals(_name, name)) 
-                return true;
+            if (!ReferenceEquals(_name, name) && !name.Equals(_name))
+                return false;
 
-            return name.Equals(_name);
+            ValidateType(type);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Validate field type.
+        /// </summary>
+        /// <param name="type">Expected type.</param>
+        public void ValidateType(byte type)
+        {
+            if (_type != type)
+            {
+                throw new PortableException("Field type mismatch detected [fieldName=" + _name +
+                    ", expectedType=" + _type + ", actualType=" + type + ']');
+            }
         }
 
         /// <summary>
