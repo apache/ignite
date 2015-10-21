@@ -164,14 +164,7 @@ public class PortableObjectOffheapImpl extends PortableObjectEx implements Exter
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T deserialize() throws PortableException {
-        // TODO: IGNITE-1272 - Deserialize with proper class loader.
-        PortableReaderExImpl reader = new PortableReaderExImpl(
-            ctx,
-            new PortableOffheapInputStream(ptr, size, false),
-            start,
-            null);
-
-        return (T)reader.deserialize();
+        return (T)deserializeValue();
     }
 
     /** {@inheritDoc} */
@@ -186,9 +179,14 @@ public class PortableObjectOffheapImpl extends PortableObjectEx implements Exter
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isPlatformType() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
-        return (T)this;
+        return (T)deserializeValue();
     }
 
     /** {@inheritDoc} */
@@ -239,5 +237,19 @@ public class PortableObjectOffheapImpl extends PortableObjectEx implements Exter
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         throw new UnsupportedOperationException(); // To make sure it is not marshalled.
+    }
+
+    /**
+     * @return Deserialized value.
+     */
+    private Object deserializeValue() {
+        // TODO: IGNITE-1272 - Deserialize with proper class loader.
+        PortableReaderExImpl reader = new PortableReaderExImpl(
+            ctx,
+            new PortableOffheapInputStream(ptr, size, false),
+            start,
+            null);
+
+        return reader.deserialize();
     }
 }

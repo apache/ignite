@@ -51,6 +51,15 @@ public interface CacheObject extends Message {
     public byte type();
 
     /**
+     * Gets flag indicating whether object value is a platform type. Platform types will be automatically
+     * deserialized on public API cache operations regardless whether
+     * {@link org.apache.ignite.IgniteCache#withKeepPortable()} is used or not.
+     *
+     * @return Platform type flag.
+     */
+    public boolean isPlatformType();
+
+    /**
      * Prepares cache object for cache (e.g. copies user-provided object if needed).
      *
      * @param ctx Cache context.

@@ -572,15 +572,39 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     if (op == CREATE || op == UPDATE) {
                                         // Invalidate only for near nodes (backups cannot be invalidated).
                                         if (isSystemInvalidate() || (isInvalidate() && cacheCtx.isNear()))
-                                            cached.innerRemove(this, eventNodeId(), nodeId, false, false, true, true,
-                                                topVer, null, replicate ? DR_BACKUP : DR_NONE,
-                                                near() ? null : explicitVer, CU.subjectId(this, cctx),
+                                            cached.innerRemove(
+                                                this,
+                                                eventNodeId(),
+                                                nodeId,
+                                                false,
+                                                false,
+                                                true,
+                                                true,
+                                                txEntry.keepBinary(),
+                                                topVer,
+                                                null,
+                                                replicate ? DR_BACKUP : DR_NONE,
+                                                near() ? null : explicitVer,
+                                                CU.subjectId(this, cctx),
                                                 resolveTaskName());
                                         else {
-                                            cached.innerSet(this, eventNodeId(), nodeId, val, false, false,
-                                                txEntry.ttl(), true, true, topVer, null,
-                                                replicate ? DR_BACKUP : DR_NONE, txEntry.conflictExpireTime(),
-                                                near() ? null : explicitVer, CU.subjectId(this, cctx),
+                                            cached.innerSet(
+                                                this,
+                                                eventNodeId(),
+                                                nodeId,
+                                                val,
+                                                false,
+                                                false,
+                                                txEntry.ttl(),
+                                                true,
+                                                true,
+                                                txEntry.keepBinary(),
+                                                topVer,
+                                                null,
+                                                replicate ? DR_BACKUP : DR_NONE,
+                                                txEntry.conflictExpireTime(),
+                                                near() ? null : explicitVer,
+                                                CU.subjectId(this, cctx),
                                                 resolveTaskName());
 
                                             // Keep near entry up to date.
@@ -597,9 +621,21 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         }
                                     }
                                     else if (op == DELETE) {
-                                        cached.innerRemove(this, eventNodeId(), nodeId, false, false, true, true,
-                                            topVer, null, replicate ? DR_BACKUP : DR_NONE,
-                                            near() ? null : explicitVer, CU.subjectId(this, cctx), resolveTaskName());
+                                        cached.innerRemove(
+                                            this,
+                                            eventNodeId(),
+                                            nodeId,
+                                            false,
+                                            false,
+                                            true,
+                                            true,
+                                            txEntry.keepBinary(),
+                                            topVer,
+                                            null,
+                                            replicate ? DR_BACKUP : DR_NONE,
+                                            near() ? null : explicitVer,
+                                            CU.subjectId(this, cctx),
+                                            resolveTaskName());
 
                                         // Keep near entry up to date.
                                         if (nearCached != null)

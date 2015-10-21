@@ -99,6 +99,11 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isPlatformType() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean internal() {
         return false;
     }
@@ -106,7 +111,12 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
-        return (T)this;
+        Object obj0 = obj;
+
+        if (obj0 == null || cpy)
+            obj0 = deserializeValue();
+
+        return (T)obj0;
     }
 
     /** {@inheritDoc} */
@@ -262,21 +272,11 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
     @Nullable @Override public <T> T deserialize() throws PortableException {
         Object obj0 = obj;
 
-        if (obj0 == null) {
-            // TODO: IGNITE-1272 - Deserialize with proper class loader.
-            PortableReaderExImpl reader = new PortableReaderExImpl(ctx, arr, start, null);
-
-            obj0 = reader.deserialize();
-
-            PortableClassDescriptor desc = reader.descriptor();
-
-            assert desc != null;
-
-            if (desc.keepDeserialized())
-                obj = obj0;
-        }
+        if (obj0 == null)
+            obj0 = deserializeValue();
 
         return (T)obj0;
+
     }
 
     /** {@inheritDoc} */
@@ -387,5 +387,25 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 3;
+    }
+
+    /**
+     * Runs value deserialization regardless of whether obj already has the deserialized value.
+     * Will set obj if descriptor is configured to keep deserialized values.
+     */
+    private Object deserializeValue() {
+        // TODO: IGNITE-1272 - Deserialize with proper class loader.
+        PortableReaderExImpl reader = new PortableReaderExImpl(ctx, arr, start, null);
+
+        Object obj0 = reader.deserialize();
+
+        PortableClassDescriptor desc = reader.descriptor();
+
+        assert desc != null;
+
+//        if (desc.keepDeserialized())
+//            obj = obj0;
+
+        return obj0;
     }
 }

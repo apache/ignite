@@ -381,7 +381,10 @@ public abstract class GridCachePortableObjectsAbstractSelfTest extends GridCommo
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             cacheAsync.get(i);
+
             TestObject obj = cacheAsync.<TestObject>future().get();
+
+            assertNotNull(obj);
 
             assertEquals(i, obj.val);
         }

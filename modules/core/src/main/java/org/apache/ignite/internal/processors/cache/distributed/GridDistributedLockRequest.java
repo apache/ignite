@@ -39,6 +39,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.KEEP_BINARY_FLAG_MASK;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.SKIP_STORE_FLAG_MASK;
 
 /**
@@ -238,6 +239,17 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      */
     public boolean skipStore() {
         return (flags & SKIP_STORE_FLAG_MASK) == 1;
+    }
+
+    public void keepBinary(boolean keepBinary) {
+        flags = keepBinary ? (byte)(flags | KEEP_BINARY_FLAG_MASK) : (byte)(flags & ~KEEP_BINARY_FLAG_MASK);
+    }
+
+    /**
+     * @return Keep portable.
+     */
+    public boolean keepBinary() {
+        return (flags & KEEP_BINARY_FLAG_MASK) != 0;
     }
 
     /**

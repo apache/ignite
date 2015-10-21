@@ -377,8 +377,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                              for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
                                 try {
-                                    CacheInvokeEntry<Object, Object> invokeEntry =
-                                        new CacheInvokeEntry<>(txEntry.context(), key, val, txEntry.cached().version());
+                                    CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(
+                                        txEntry.context(), key, val, txEntry.cached().version(), txEntry.keepBinary());
 
                                     EntryProcessor<Object, Object, Object> processor = t.get1();
 

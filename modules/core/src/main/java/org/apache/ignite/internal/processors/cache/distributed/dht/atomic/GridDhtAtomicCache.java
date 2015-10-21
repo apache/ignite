@@ -836,6 +836,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             subjId,
             taskNameHash,
             opCtx != null && opCtx.skipStore(),
+            opCtx != null && opCtx.isKeepPortable(),
             opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
             waitTopFut);
 
@@ -901,6 +902,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             subjId,
             taskNameHash,
             opCtx != null && opCtx.skipStore(),
+            opCtx != null && opCtx.isKeepPortable(),
             opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
             true);
 
@@ -1397,7 +1399,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     Object updatedVal = null;
 
                     CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(ctx, entry.key(), old,
-                        entry.version());
+                        entry.version(), req.keepBinary());
 
                     CacheObject updated;
 
@@ -1426,7 +1428,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (updated == null) {
                         if (intercept) {
-                            CacheLazyEntry e = new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(), old, oldVal);
+                            CacheLazyEntry e = new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(), old, oldVal, req.keepBinary());
 
                             IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(e);
 
@@ -1472,7 +1474,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
                     else {
                         if (intercept) {
-                            CacheLazyEntry e = new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(), old, oldVal);
+                            CacheLazyEntry e = new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(), old, oldVal, req.keepBinary());
 
                             Object val = ctx.config().getInterceptor().onBeforePut(e, updatedVal);
 
@@ -1544,7 +1546,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null);
 
                         Object val = ctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(ctx, entry.key(),
-                            old),
+                            old, req.keepBinary()),
                             updated.value(ctx.cacheObjectContext(), false));
 
                         if (val == null)
@@ -1582,7 +1584,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null);
 
                         IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
-                            .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), old));
+                            .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), old, req.keepBinary()));
 
                         if (ctx.cancelRemove(interceptorRes))
                             continue;
@@ -1768,6 +1770,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     primary && writeThrough() && !req.skipStore(),
                     !req.skipStore(),
                     req.returnValue(),
+                    req.keepBinary(),
                     expiry,
                     true,
                     true,
@@ -2037,6 +2040,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         /*write-through*/false,
                         /*read-through*/false,
                         /*retval*/false,
+                        req.keepBinary(),
                         expiry,
                         /*event*/true,
                         /*metrics*/true,
@@ -2061,14 +2065,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             ctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(
                                 ctx,
                                 entry.key(),
-                                updRes.newValue()));
+                                updRes.newValue(),
+                                req.keepBinary()));
                         }
                         else {
                             assert op == DELETE : op;
 
                             // Old value should be already loaded for 'CacheInterceptor.onBeforeRemove'.
                             ctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(ctx, entry.key(),
-                                updRes.oldValue()));
+                                updRes.oldValue(), req.keepBinary()));
                         }
                     }
 
@@ -2368,6 +2373,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             req.subjectId(),
             req.taskNameHash(),
             req.skipStore(),
+            req.keepBinary(),
             MAX_RETRIES,
             true);
 
@@ -2517,6 +2523,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             /*write-through*/false,
                             /*read-through*/false,
                             /*retval*/false,
+                            req.keepPortable(),
                             /*expiry policy*/null,
                             /*event*/true,
                             /*metrics*/true,

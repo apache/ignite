@@ -80,6 +80,11 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isPlatformType() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
         return this;
     }

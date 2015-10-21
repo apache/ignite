@@ -153,7 +153,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             invalidate,
             storeEnabled,
             onePhaseCommit,
-            txSize, 
+            txSize,
             subjId, 
             taskNameHash
         );
@@ -613,7 +613,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         final boolean read,
         final boolean needRetVal,
         long accessTtl,
-        boolean skipStore
+        boolean skipStore,
+        boolean keepBinary
     ) {
         try {
             checkValid();
@@ -681,7 +682,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                         -1L,
                         -1L,
                         null,
-                        skipStore);
+                        skipStore,
+                        keepBinary);
 
                     if (read)
                         txEntry.ttl(accessTtl);

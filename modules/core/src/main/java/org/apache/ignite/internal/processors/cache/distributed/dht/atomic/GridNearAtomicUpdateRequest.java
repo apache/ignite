@@ -151,6 +151,9 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /** */
     private boolean clientReq;
 
+    /** Keep portable flag. */
+    private boolean keepBinary;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -196,6 +199,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         @Nullable UUID subjId,
         int taskNameHash,
         boolean skipStore,
+        boolean keepBinary,
         boolean clientReq
     ) {
         assert futVer != null;
@@ -217,6 +221,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.skipStore = skipStore;
+        this.keepBinary = keepBinary;
         this.clientReq = clientReq;
 
         keys = new ArrayList<>();
@@ -330,6 +335,13 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
      */
     public boolean skipStore() {
         return skipStore;
+    }
+
+    /**
+     * @return Keep portable flag.
+     */
+    public boolean keepBinary() {
+        return keepBinary;
     }
 
     /**

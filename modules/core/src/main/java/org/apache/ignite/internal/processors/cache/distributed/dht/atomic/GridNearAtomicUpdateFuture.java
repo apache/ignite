@@ -138,6 +138,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     /** Skip store flag. */
     private final boolean skipStore;
 
+    /** */
+    private final boolean keepBinary;
+
     /** Wait for topology future flag. */
     private final boolean waitTopFut;
 
@@ -184,6 +187,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         UUID subjId,
         int taskNameHash,
         boolean skipStore,
+        boolean keepBinary,
         int remapCnt,
         boolean waitTopFut
     ) {
@@ -209,6 +213,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.skipStore = skipStore;
+        this.keepBinary = keepBinary;
         this.waitTopFut = waitTopFut;
 
         if (log == null)
@@ -1048,6 +1053,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                             subjId,
                             taskNameHash,
                             skipStore,
+                            keepBinary,
                             cctx.kernalContext().clientNode());
 
                         pendingMappings.put(nodeId, mapped);
@@ -1140,6 +1146,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 subjId,
                 taskNameHash,
                 skipStore,
+                keepBinary,
                 cctx.kernalContext().clientNode());
 
             req.addUpdateEntry(cacheKey,

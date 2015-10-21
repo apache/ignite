@@ -139,6 +139,9 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     /** Task name hash. */
     private int taskNameHash;
 
+    /** Keep portable flag. */
+    private boolean keepPortable;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -413,6 +416,13 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
      */
     public KeyCacheObject nearKey(int idx) {
         return nearKeys.get(idx);
+    }
+
+    /**
+     * @return Keep portable flag.
+     */
+    public boolean keepPortable() {
+        return keepPortable;
     }
 
     /**

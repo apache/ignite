@@ -214,8 +214,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             timeout,
             invalidate,
             storeEnabled, 
-            onePhaseCommit, 
-            txSize, 
+            onePhaseCommit,
+            txSize,
             subjId, 
             taskNameHash
         );
@@ -634,8 +634,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                             if (intercept) {
                                 Object interceptorVal = cacheCtx.config().getInterceptor()
-                                    .onBeforePut(new CacheLazyEntry(cacheCtx, key, e.cached().rawGetOrUnmarshal(true)),
-                                        CU.value(val, cacheCtx, false));
+                                    .onBeforePut(new CacheLazyEntry(cacheCtx, key, e.cached().rawGetOrUnmarshal(true),
+                                        e.keepBinary()), CU.value(val, cacheCtx, false));
 
                                 if (interceptorVal == null)
                                     continue;
@@ -679,7 +679,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                             if (intercept) {
                                 IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor().onBeforeRemove(
-                                    new CacheLazyEntry(cacheCtx, key, e.cached().rawGetOrUnmarshal(true)));
+                                    new CacheLazyEntry(cacheCtx, key, e.cached().rawGetOrUnmarshal(true), e.keepBinary()));
 
                                 if (cacheCtx.cancelRemove(t))
                                     continue;
@@ -924,6 +924,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             txEntry.ttl(),
                                             evt,
                                             metrics,
+                                            txEntry.keepBinary(),
                                             topVer,
                                             null,
                                             cached.detached() ? DR_NONE : drType,
@@ -943,6 +944,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                                 txEntry.ttl(),
                                                 false,
                                                 metrics,
+                                                txEntry.keepBinary(),
                                                 topVer,
                                                 CU.empty0(),
                                                 DR_NONE,
@@ -960,6 +962,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             false,
                                             evt,
                                             metrics,
+                                            txEntry.keepBinary(),
                                             topVer,
                                             null,
                                             cached.detached()  ? DR_NONE : drType,
@@ -976,6 +979,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                                 false,
                                                 false,
                                                 metrics,
+                                                txEntry.keepBinary(),
                                                 topVer,
                                                 CU.empty0(),
                                                 DR_NONE,
@@ -1412,7 +1416,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 -1L,
                                 -1L,
                                 null,
-                                skipStore);
+                                skipStore,
+                                keepCacheObjects);
 
                             // As optimization, mark as checked immediately
                             // for non-pessimistic if value is not null.
@@ -1445,7 +1450,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 -1L,
                                 -1L,
                                 null,
-                                skipStore);
+                                skipStore,
+                                keepCacheObjects);
 
                             // Mark as checked immediately for non-pessimistic.
                             if (val != null && !pessimistic())
@@ -2112,7 +2118,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         Collection<KeyCacheObject> enlisted,
         @Nullable Map<KeyCacheObject, GridCacheDrInfo> drPutMap,
         @Nullable Map<KeyCacheObject, GridCacheVersion> drRmvMap,
-        boolean skipStore
+        boolean skipStore,
+        boolean keepBinary
     ) {
         assert cached == null || keys.size() == 1;
         assert cached == null || F.first(keys).equals(cached.key());
@@ -2261,7 +2268,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                         -1L,
                                         -1L,
                                         null,
-                                        skipStore);
+                                        skipStore,
+                                        keepBinary);
 
                                     txEntry.markValid();
                                 }
@@ -2286,7 +2294,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 drTtl,
                                 drExpireTime,
                                 drVer,
-                                skipStore);
+                                skipStore,
+                                keepBinary);
 
                             if (!implicit() && readCommitted() && !cacheCtx.offheapTiered())
                                 cacheCtx.evicts().touch(entry, topologyVersion());
@@ -2392,7 +2401,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             drTtl,
                             drExpireTime,
                             drVer,
-                            skipStore);
+                            skipStore,
+                            keepBinary);
 
                         enlisted.add(cacheKey);
 
@@ -2675,7 +2685,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
                 CacheInvokeEntry<Object, Object> invokeEntry =
-                    new CacheInvokeEntry(txEntry.context(), txEntry.key(), key0, cacheVal, val0, ver);
+                    new CacheInvokeEntry(txEntry.context(), txEntry.key(), key0, cacheVal, val0, ver,
+                        txEntry.keepBinary());
 
                 EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
 
@@ -2819,7 +2830,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 enlisted,
                 drMap,
                 null,
-                opCtx != null && opCtx.skipStore());
+                opCtx != null && opCtx.skipStore(),
+                opCtx != null && opCtx.isKeepPortable());
 
             if (pessimistic()) {
                 // Loose all skipped.
@@ -3048,7 +3060,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 enlisted,
                 null,
                 drMap,
-                opCtx != null && opCtx.skipStore()
+                opCtx != null && opCtx.skipStore(),
+                opCtx != null && opCtx.isKeepPortable()
             );
 
             if (log.isDebugEnabled())
@@ -3296,7 +3309,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         long drTtl,
         long drExpireTime,
         @Nullable GridCacheVersion drVer,
-        boolean skipStore) {
+        boolean skipStore,
+        boolean keepBinary
+    ) {
         assert invokeArgs == null || op == TRANSFORM;
 
         IgniteTxKey key = entry.txKey();
@@ -3366,7 +3381,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 entry,
                 filter,
                 drVer,
-                skipStore);
+                skipStore,
+                keepBinary);
 
             txEntry.conflictExpireTime(drExpireTime);
 

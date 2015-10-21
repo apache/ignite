@@ -54,6 +54,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.KEEP_BINARY_FLAG_MASK;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.SKIP_STORE_FLAG_MASK;
 
 /**
@@ -172,6 +173,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * Additional flags.
      * GridCacheUtils.SKIP_STORE_FLAG_MASK - for skipStore flag value.
+     * GridCacheUtils.KEEP_BINARY_FLAG_MASK - for withKeepBinary flag.
      */
     private byte flags;
 
@@ -203,7 +205,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         long conflictExpireTime,
         GridCacheEntryEx entry,
         @Nullable GridCacheVersion conflictVer,
-        boolean skipStore) {
+        boolean skipStore,
+        boolean keepBinary
+    ) {
         assert ctx != null;
         assert tx != null;
         assert op != null;
@@ -218,6 +222,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         this.conflictVer = conflictVer;
 
         skipStore(skipStore);
+        keepBinary(keepBinary);
 
         key = entry.key();
 
@@ -249,7 +254,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         GridCacheEntryEx entry,
         CacheEntryPredicate[] filters,
         GridCacheVersion conflictVer,
-        boolean skipStore) {
+        boolean skipStore,
+        boolean keepBinary
+    ) {
         assert ctx != null;
         assert tx != null;
         assert op != null;
@@ -264,6 +271,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         this.conflictVer = conflictVer;
 
         skipStore(skipStore);
+        keepBinary(keepBinary);
 
         if (entryProcessor != null)
             addEntryProcessor(entryProcessor, invokeArgs);
@@ -426,14 +434,50 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param skipStore Skip store flag.
      */
     public void skipStore(boolean skipStore){
-        flags = skipStore ? (byte)(flags | SKIP_STORE_FLAG_MASK) : (byte)(flags & ~SKIP_STORE_FLAG_MASK);
+        setFlag(skipStore, SKIP_STORE_FLAG_MASK);
     }
 
     /**
      * @return Skip store flag.
      */
     public boolean skipStore() {
-        return (flags & SKIP_STORE_FLAG_MASK) == 1;
+        return isFlag(SKIP_STORE_FLAG_MASK);
+    }
+
+    /**
+     * Sets keep binary flag value.
+     *
+     * @param keepBinary Keep binary flag value.
+     */
+    public void keepBinary(boolean keepBinary) {
+        setFlag(keepBinary, KEEP_BINARY_FLAG_MASK);
+    }
+
+    /**
+     * @return Keep binary flag value.
+     */
+    public boolean keepBinary() {
+        return isFlag(KEEP_BINARY_FLAG_MASK);
+    }
+
+    /**
+     * Sets flag mask.
+     *
+     * @param flag Set or clear.
+     * @param mask Mask.
+     */
+    private void setFlag(boolean flag, int mask) {
+        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
+    }
+
+    /**
+     * Reads flag mask.
+     *
+     * @param mask Mask to read.
+     * @return Flag value.
+     */
+    private boolean isFlag(int mask) {
+        return (flags & mask) != 0;
     }
 
     /**
@@ -606,7 +650,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : entryProcessors()) {
             try {
                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(ctx, key, keyVal, cacheVal, val,
-                    ver);
+                    ver, keepBinary());
 
                 EntryProcessor processor = t.get1();
 

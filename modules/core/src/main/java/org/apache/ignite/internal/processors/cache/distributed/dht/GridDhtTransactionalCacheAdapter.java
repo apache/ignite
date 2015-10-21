@@ -256,7 +256,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 null,
                                 null,
                                 req.accessTtl(),
-                                req.skipStore());
+                                req.skipStore(),
+                                req.keepBinary());
                         }
 
                         entry = entryExx(key, req.topologyVersion());
@@ -915,7 +916,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req.txRead(),
                     req.needReturnValue(),
                     req.accessTtl(),
-                    req.skipStore());
+                    req.skipStore(),
+                    req.keepBinary());
 
                 final GridDhtTxLocal t = tx;
 

@@ -47,6 +47,11 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isPlatformType() {
+        return true; // TODO not true.
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
         cpy = cpy && needCopy(ctx);
@@ -70,8 +75,8 @@ public class CacheObjectImpl extends CacheObjectAdapter {
 
             Object val = ctx.processor().unmarshal(ctx, valBytes, ctx.kernalContext().config().getClassLoader());
 
-            if (ctx.storeValue())
-                this.val = val;
+//            if (ctx.storeValue())
+//                this.val = val;
 
             return (T)val;
         }
@@ -100,8 +105,8 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert val != null || valBytes != null;
 
-        if (val == null && ctx.storeValue())
-            val = ctx.processor().unmarshal(ctx, valBytes, ldr);
+//        if (val == null && ctx.storeValue())
+//            val = ctx.processor().unmarshal(ctx, valBytes, ldr);
     }
 
     /** {@inheritDoc} */
