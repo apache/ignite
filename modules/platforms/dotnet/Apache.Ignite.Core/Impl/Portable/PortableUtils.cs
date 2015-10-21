@@ -1280,17 +1280,20 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             byte colType = ctx.Stream.ReadByte();
 
+            IDictionary res;
+
             if (factory == null)
             {
                 if (colType == MapSortedMap)
-                    factory = l => new SortedDictionary<object, object>();
+                    res = new SortedDictionary<object, object>();
                 else if (colType == MapConcurrentHashMap)
-                    factory = l => new ConcurrentDictionary<object, object>(Environment.ProcessorCount, l);
+                    res = new ConcurrentDictionary<object, object>(Environment.ProcessorCount, len);
                 else
-                    factory = l => new Hashtable(l);
+                    res = new Hashtable(len);
             }
+            else
+                res = factory.Invoke(len);
 
-            var res = factory.Invoke(len);
 
             for (int i = 0; i < len; i++)
             {
