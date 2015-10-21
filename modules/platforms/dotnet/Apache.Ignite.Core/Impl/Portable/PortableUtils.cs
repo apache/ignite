@@ -1193,15 +1193,15 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 // Need to detect factory automatically.
                 if (colType == CollectionLinkedList)
-                    factory = PortableSystemHandlers.CreateLinkedList;
+                    factory = l => new LinkedList<object>();
                 else if (colType == CollectionSortedSet)
-                    factory = PortableSystemHandlers.CreateSortedSet;
+                    factory = l => new SortedSet<object>();
                 else
-                    factory = PortableSystemHandlers.CreateArrayList;
+                    factory = l => new ArrayList(l);
             }
 
             if (adder == null)
-                adder = PortableSystemHandlers.AddToArrayList;
+                adder = (col, elem) => { ((ArrayList) col).Add(elem); };
 
             var res = factory.Invoke(len);
 
@@ -1278,11 +1278,11 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (factory == null)
             {
                 if (colType == MapSortedMap)
-                    factory = PortableSystemHandlers.CreateSortedDictionary;
+                    factory = l => new SortedDictionary<object, object>();
                 else if (colType == MapConcurrentHashMap)
-                    factory = PortableSystemHandlers.CreateConcurrentDictionary;
+                    factory = l => new ConcurrentDictionary<object, object>(Environment.ProcessorCount, l);
                 else
-                    factory = PortableSystemHandlers.CreateHashtable;
+                    factory = l => new Hashtable(l);
             }
 
             var res = factory.Invoke(len);

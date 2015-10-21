@@ -681,74 +681,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /**
-         * <summary>Create new ArrayList.</summary>
-         * <param name="len">Length.</param>
-         * <returns>ArrayList.</returns>
-         */
-        public static ICollection CreateArrayList(int len)
-        {
-            return new ArrayList(len);
-        }
-
-        /**
          * <summary>Add element to array list.</summary>
          * <param name="col">Array list.</param>
          * <param name="elem">Element.</param>
          */
-        public static void AddToArrayList(ICollection col, object elem)
-        {
-            ((ArrayList) col).Add(elem);
-        }
 
-        /**
-         * <summary>Create new LinkedList.</summary>
-         * <param name="len">Length.</param>
-         * <returns>LinkedList.</returns>
-         */
-        public static ICollection CreateLinkedList(int len)
-        {
-            return new LinkedList<object>();
-        }
-
-        /**
-         * <summary>Create new SortedSet.</summary>
-         * <param name="len">Length.</param>
-         * <returns>SortedSet.</returns>
-         */
-        public static ICollection CreateSortedSet(int len)
-        {
-            return new SortedSet<object>();
-        }
-
-        /**
-         * <summary>Create new Hashtable.</summary>
-         * <param name="len">Length.</param>
-         * <returns>Hashtable.</returns>
-         */
-        public static IDictionary CreateHashtable(int len)
-        {
-            return new Hashtable(len);
-        }
-
-        /**
-         * <summary>Create new SortedDictionary.</summary>
-         * <param name="len">Length.</param>
-         * <returns>SortedDictionary.</returns>
-         */
-        public static IDictionary CreateSortedDictionary(int len)
-        {
-            return new SortedDictionary<object, object>();
-        }
-
-        /**
-         * <summary>Create new ConcurrentDictionary.</summary>
-         * <param name="len">Length.</param>
-         * <returns>ConcurrentDictionary.</returns>
-         */
-        public static IDictionary CreateConcurrentDictionary(int len)
-        {
-            return new ConcurrentDictionary<object, object>(Environment.ProcessorCount, len);
-        }
 
         /**
          * <summary>Read delegate.</summary>
