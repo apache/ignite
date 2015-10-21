@@ -1308,6 +1308,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
+        [Serializable]
         public class InnerObjectType
         {
             public int PInt1 { get; set; }
