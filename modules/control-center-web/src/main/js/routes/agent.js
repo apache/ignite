@@ -26,7 +26,7 @@ function _client(req, res) {
     var client = agentManager.getAgentManager().findClient(req.currentUserId());
 
     if (!client) {
-        res.status(503).send('Client not found');
+        res.status(503).send('Connection to Ignite Web Agent is not established');
 
         return null;
     }
