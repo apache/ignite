@@ -32,7 +32,6 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -40,6 +39,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -121,9 +121,6 @@ public class IgfsDataManager extends IgfsManager {
     /** Affinity key generator. */
     private AtomicLong affKeyGen = new AtomicLong();
 
-    /** IGFS executor service. */
-    private ExecutorService igfsSvc;
-
     /** Request ID counter for write messages. */
     private AtomicLong reqIdCtr = new AtomicLong();
 
@@ -174,8 +171,6 @@ public class IgfsDataManager extends IgfsManager {
         dataCacheStartLatch = new CountDownLatch(1);
 
         String igfsName = igfsCtx.configuration().getName();
-
-        igfsSvc = igfsCtx.kernalContext().getIgfsExecutorService();
 
         trashPurgeTimeout = igfsCtx.configuration().getTrashPurgeTimeout();
 
@@ -1077,28 +1072,6 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
-     * Executes callable in IGFS executor service. If execution rejected, callable will be executed
-     * in caller thread.
-     *
-     * @param c Callable to execute.
-     */
-    private <T> void callIgfsLocalSafe(Callable<T> c) {
-        try {
-            igfsSvc.submit(c);
-        }
-        catch (RejectedExecutionException ignored) {
-            // This exception will happen if network speed is too low and data comes faster
-            // than we can send it to remote nodes.
-            try {
-                c.call();
-            }
-            catch (Exception e) {
-                log.warning("Failed to execute IGFS callable: " + c, e);
-            }
-        }
-    }
-
-    /**
      * Put data block read from the secondary file system to the cache.
      *
      * @param key Key.
@@ -1647,8 +1620,8 @@ public class IgfsDataManager extends IgfsManager {
         /** File id to remove future from map. */
         private final IgniteUuid fileId;
 
-        /** Pending acks. */
-        private final ConcurrentMap<Long, UUID> ackMap = new ConcurrentHashMap8<>();
+        /** Non-completed blocks count. It may both increase and decrease. */
+        private final AtomicInteger completedBlocksCnt = new AtomicInteger(0);
 
         /** Lock for map-related conditions. */
         private final Lock lock = new ReentrantLock();
@@ -1677,7 +1650,7 @@ public class IgfsDataManager extends IgfsManager {
             lock.lock();
 
             try {
-                while (!ackMap.isEmpty())
+                while (completedBlocksCnt.get() > 0)
                     U.await(allAcksRcvCond);
             }
             finally {
@@ -1704,27 +1677,8 @@ public class IgfsDataManager extends IgfsManager {
          * @param batchId Assigned batch ID.
          */
         private void onWriteRequest(UUID nodeId, long batchId) {
-            if (!isDone()) {
-                UUID pushedOut = ackMap.putIfAbsent(batchId, nodeId);
-
-                assert pushedOut == null;
-            }
-        }
-
-        /**
-         * Answers if there are some batches for the specified node we're currently waiting acks for.
-         *
-         * @param nodeId The node Id.
-         * @return If there are acks awaited from this node.
-         */
-        private boolean hasPendingAcks(UUID nodeId) {
-            assert nodeId != null;
-
-            for (Map.Entry<Long, UUID> e : ackMap.entrySet())
-                if (nodeId.equals(e.getValue()))
-                    return true;
-
-            return false;
+            if (!isDone())
+                completedBlocksCnt.incrementAndGet();
         }
 
         /**
@@ -1734,18 +1688,13 @@ public class IgfsDataManager extends IgfsManager {
          * @param e Caught exception.
          */
         private void onError(UUID nodeId, IgniteCheckedException e) {
-            // If waiting for ack from this node.
-            if (hasPendingAcks(nodeId)) {
-                ackMap.clear();
+            signalNoAcks();
 
-                signalNoAcks();
-
-                if (e.hasCause(IgfsOutOfSpaceException.class))
-                    onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " + nodeId, e));
-                else
-                    onDone(new IgniteCheckedException(
-                        "Failed to wait for write completion (write failed on node): " + nodeId, e));
-            }
+            if (e.hasCause(IgfsOutOfSpaceException.class))
+                onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " + nodeId, e));
+            else
+                onDone(new IgniteCheckedException(
+                    "Failed to wait for write completion (write failed on node): " + nodeId, e));
         }
 
         /**
@@ -1756,12 +1705,12 @@ public class IgfsDataManager extends IgfsManager {
          */
         private void onWriteAck(UUID nodeId, long batchId) {
             if (!isDone()) {
-                boolean rmv = ackMap.remove(batchId, nodeId);
+                int afterAck = completedBlocksCnt.decrementAndGet();
 
-                assert rmv : "Received acknowledgement message for not registered batch [nodeId=" +
+                assert afterAck >= 0 : "Received acknowledgement message for not registered batch [nodeId=" +
                     nodeId + ", batchId=" + batchId + ']';
 
-                if (ackMap.isEmpty()) {
+                if (afterAck == 0) {
                     signalNoAcks();
 
                     if (awaitingLast)
@@ -1793,7 +1742,7 @@ public class IgfsDataManager extends IgfsManager {
             if (log.isDebugEnabled())
                 log.debug("Marked write completion future as awaiting last ack: " + fileId);
 
-            if (ackMap.isEmpty())
+            if (completedBlocksCnt.get() == 0)
                 onDone(true);
         }
     }
