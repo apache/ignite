@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Portable.Metadata;
+    using Apache.Ignite.Core.Impl.Portable.Structure;
     using Apache.Ignite.Core.Portable;
 
     using PU = PortableUtils;

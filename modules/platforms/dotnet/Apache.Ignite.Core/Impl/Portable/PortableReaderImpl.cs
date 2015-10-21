@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Portable.Structure;
     using Apache.Ignite.Core.Portable;
 
     /// <summary>

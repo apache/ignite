@@ -270,7 +270,7 @@
     <Compile Include="Impl\Portable\PortableReflectiveRoutines.cs" />
     <Compile Include="Impl\Portable\PortableReflectiveSerializer.cs" />
     <Compile Include="Impl\Portable\PortablesImpl.cs" />
-    <Compile Include="Impl\Portable\PortableStructureTracker.cs" />
+    <Compile Include="Impl\Portable\Structure\PortableStructureTracker.cs" />
     <Compile Include="Impl\Portable\PortableSurrogateTypeDescriptor.cs" />
     <Compile Include="Impl\Portable\PortableSystemHandlers.cs" />
     <Compile Include="Impl\Portable\PortableSystemTypeSerializer.cs" />
