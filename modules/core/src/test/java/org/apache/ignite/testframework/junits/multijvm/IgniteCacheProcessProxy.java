@@ -423,6 +423,11 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
+    /** {@inheritDoc} */
+    @Override public <K1, V1> IgniteCache<K1, V1> withKeepPortable() {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
     /**
      *
      */

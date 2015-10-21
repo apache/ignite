@@ -51,6 +51,7 @@ import javax.cache.configuration.MutableConfiguration;
 import javax.cache.expiry.ExpiryPolicy;
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.HashSet;
 
 /**
  * This class defines grid cache configuration. This configuration is passed to
