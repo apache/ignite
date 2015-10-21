@@ -63,39 +63,68 @@
       ],
       "fields": [
         {
-          "label": "isIpcEndpointEnabled",
+          "label": "Enabled",
           "type": "check",
-          "model": "ipcEndpointEnabled"
+          "model": "ipcEndpointEnabled",
+          "tip": [
+            "IPC endpoint enabled flag"
+          ]
         },
         {
           "label": "Type",
           "type": "dropdown",
           "path": "ipcEndpointConfiguration",
-          "model": "type"
+          "model": "type",
+          "placeholder": "TCP",
+          "items": "ipcTypes",
+          "hide": "!backupItem.ipcEndpointEnabled",
+          "tip": [
+            "IPC endpoint configuration"
+          ]
         },
         {
           "label": "Host",
           "type": "text",
           "path": "ipcEndpointConfiguration",
-          "model": "host"
+          "model": "host",
+          "placeholder": "127.0.0.1",
+          "hide": "!backupItem.ipcEndpointEnabled",
+          "tip": [
+            "Host"
+          ]
         },
         {
           "label": "Port",
           "type": "number",
           "path": "ipcEndpointConfiguration",
-          "model": "port"
+          "model": "port",
+          "placeholder": 10500,
+          "hide": "!backupItem.ipcEndpointEnabled",
+          "tip": [
+            "Port"
+          ]
         },
         {
           "label": "Memory size",
           "type": "number",
           "path": "ipcEndpointConfiguration",
-          "model": "memorySize"
+          "model": "memorySize",
+          "placeholder": 262144,
+          "hide": "!backupItem.ipcEndpointEnabled",
+          "tip": [
+            "Shared memory size in bytes allocated for endpoint communication"
+          ]
         },
         {
           "label": "Token directory",
           "type": "text",
           "path": "ipcEndpointConfiguration",
-          "model": "tokenDirectoryPath"
+          "model": "tokenDirectoryPath",
+          "placeholder": "ipc/shmem",
+          "hide": "!backupItem.ipcEndpointEnabled",
+          "tip": [
+            "Directory where shared memory tokens are stored"
+          ]
         }
       ]
     },
@@ -107,22 +136,47 @@
       ],
       "fields": [
         {
-          "label": "Fragmentizer enabled",
+          "label": "Enabled",
           "id": "fragmentizerEnabled",
           "type": "check",
-          "model": "fragmentizerEnabled"
+          "model": "fragmentizerEnabled",
+          "placeholder": 0,
+          "tip": [
+            "Fragmentizer enabled flag"
+          ]
         },
         {
-          "label": "Fragmentizer concurrent files",
+          "label": "Concurrent files",
           "id": "fragmentizerConcurrentFiles",
-          "type": "check",
-          "model": "fragmentizerConcurrentFiles"
+          "type": "number",
+          "model": "fragmentizerConcurrentFiles",
+          "placeholder": 0,
+          "hide": "!backupItem.fragmentizerEnabled",
+          "tip": [
+            "Number of files to process concurrently by fragmentizer"
+          ]
         },
         {
-          "label": "FragmentizerThrottlingBlockLength"
+          "label": "Throttling block length",
+          "id": "fragmentizerThrottlingBlockLength",
+          "type": "number",
+          "model": "fragmentizerThrottlingBlockLength",
+          "placeholder": 16777216,
+          "hide": "!backupItem.fragmentizerEnabled",
+          "tip": [
+            "Length of file chunk to transmit before throttling is delayed"
+          ]
         },
         {
-          "label": "FragmentizerThrottlingDelay"
+          "label": "Throttling delay",
+          "id": "fragmentizerThrottlingDelay",
+          "type": "number",
+          "model": "fragmentizerThrottlingDelay",
+          "placeholder": 200,
+          "hide": "!backupItem.fragmentizerEnabled",
+          "tip": [
+            "Delay in milliseconds for which fragmentizer is paused"
+          ]
         }
       ]
     },
@@ -130,17 +184,37 @@
       "label": "Dual mode",
       "group": "dualMode",
       "tip": [
-        "TODO"
+        "Dual mode settings"
       ],
       "fields": [
         {
-          "label": "DualModeMaxPendingPutsSize"
+          "label": "Maximum pending puts size",
+          "id": "dualModeMaxPendingPutsSize",
+          "type": "number",
+          "model": "dualModeMaxPendingPutsSize",
+          "placeholder": 0,
+          "tip": [
+            "Maximum amount of pending data read from the secondary file system and waiting to be written to data cache",
+            "0 or negative value stands for unlimited size"
+          ]
         },
         {
-          "label": "DualModePutExecutorService"
+          "label": "Put executor service",
+          "id": "dualModePutExecutorService",
+          "type": "text",
+          "model": "dualModePutExecutorService",
+          "tip": [
+            "DUAL mode put operation executor service"
+          ]
         },
         {
-          "label": "DualModePutExecutorServiceShutdown"
+          "label": "Put executor service shutdown",
+          "id": "dualModePutExecutorServiceShutdown",
+          "type": "check",
+          "model": "dualModePutExecutorServiceShutdown",
+          "tip": [
+            "DUAL mode put operation executor service shutdown flag"
+          ]
         }
       ]
     },
@@ -151,10 +225,10 @@
       "fields": [
         {
           "label": "Block size",
-          "id": "BlockSize",
+          "id": "blockSize",
           "type": "number",
           "model": "blockSize",
-          "placeholder": "65536",
+          "placeholder": 65536,
           "tip": [
             "File's data block size (bytes)"
           ]
@@ -163,37 +237,109 @@
           "label": "Stream buffer size",
           "id": "streamBufferSize",
           "type": "number",
-          "model": "streamBufferSize"
+          "model": "streamBufferSize",
+          "placeholder": 65536,
+          "tip": [
+            "Read/write buffers size for IGFS stream operations"
+          ]
         },
         {
-          "label": "DefaultMode"
+          "label": "IGFS mode",
+          "id": "defaultMode",
+          "type": "dropdown",
+          "model": "defaultMode",
+          "placeholder": "DUAL_ASYNC",
+          "items": "igfsModes",
+          "tip": [
+            "Mode to specify how IGFS interacts with Hadoop file system"
+          ]
         },
         {
-          "label": "MaxSpaceSize"
+          "label": "Maximum space size",
+          "id": "maxSpaceSize",
+          "type": "number",
+          "model": "maxSpaceSize",
+          "tip": [
+            "Maximum space available for data cache to store file system entries"
+          ]
         },
         {
-          "label": "MaximumTaskRangeLength"
+          "label": "Maximum task range length",
+          "id": "maximumTaskRangeLength",
+          "type": "number",
+          "model": "maximumTaskRangeLength",
+          "tip": [
+            "Maximum default range size of a file being split during IGFS task execution"
+          ]
         },
         {
-          "label": "ManagementPort"
+          "label": "Management port",
+          "id": "managementPort",
+          "type": "number",
+          "model": "managementPort",
+          "placeholder": 11400,
+          "tip": [
+            "Port number for management endpoint"
+          ]
         },
         {
-          "label": "PathModes"
+          "label": "Path modes",
+          "id": "pathModes",
+          "type": "number",
+          "model": "pathModes",
+          "tip": [
+            "Map of path prefixes to IGFS modes used for them"
+          ]
         },
         {
-          "label": "PerNodeBatchSize"
+          "label": "Per node batch size",
+          "id": "perNodeBatchSize",
+          "type": "number",
+          "model": "perNodeBatchSize",
+          "placeholder": 100,
+          "tip": [
+            "Number of file blocks collected on local node before sending batch to remote node"
+          ]
         },
         {
-          "label": "PerNodeParallelBatchCount"
+          "label": "Per node parallel batch count",
+          "id": "perNodeParallelBatchCount",
+          "type": "number",
+          "model": "perNodeParallelBatchCount",
+          "placeholder": 8,
+          "tip": [
+            "Number of file block batches that can be concurrently sent to remote node"
+          ]
         },
         {
-          "label": "PrefetchBlocks"
+          "label": "Prefetch blocks",
+          "id": "prefetchBlocks",
+          "type": "number",
+          "model": "prefetchBlocks",
+          "placeholder": 0,
+          "tip": [
+            "Number of pre-fetched blocks if specific file's chunk is requested"
+          ]
         },
         {
-          "label": "SequentialReadsBeforePrefetch"
+          "label": "Sequential reads before prefetch",
+          "id": "sequentialReadsBeforePrefetch",
+          "type": "number",
+          "model": "sequentialReadsBeforePrefetch",
+          "placeholder": 0,
+          "tip": [
+            "Amount of sequential block reads before prefetch is triggered"
+          ]
         },
         {
-          "label": "TrashPurgeTimeout"
+          "label": "Trash purge timeout",
+          "id": "trashPurgeTimeout",
+          "type": "number",
+          "model": "trashPurgeTimeout",
+          "placeholder": 1000,
+          "tip": [
+            "Maximum timeout awaiting for trash purging in case data cache oversize is detected"
+          ]
         }
       ]
     }
