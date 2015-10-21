@@ -1337,6 +1337,8 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             public ArrayList Col2 { get; set; }
 
+            //public Hashtable Dict { get; set; }
+
             /** <inheritdoc /> */
             public override bool Equals(object obj)
             {
