@@ -1134,7 +1134,25 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static void WriteCollection(ICollection val, PortableWriterImpl ctx)
         {
-            byte colType = val.GetType() == typeof(ArrayList) ? CollectionArrayList : CollectionCustom;
+            var valType = val.GetType();
+            
+            byte colType;
+
+            if (valType.IsGenericType)
+            {
+                var genType = valType.GetGenericTypeDefinition();
+
+                if (genType == typeof (List<>))
+                    colType = CollectionArrayList;
+                else if (genType == typeof (LinkedList<>))
+                    colType = CollectionLinkedList;
+                else if (genType == typeof (SortedSet<>))
+                    colType = CollectionSortedSet;
+                else
+                    colType = CollectionCustom;
+            }
+            else
+                colType = valType == typeof (ArrayList) ? CollectionArrayList : CollectionCustom;
 
             WriteCollection(val, ctx, colType);
         }
@@ -1165,19 +1183,27 @@ namespace Apache.Ignite.Core.Impl.Portable
         public static ICollection ReadCollection(PortableReaderImpl ctx,
             PortableCollectionFactory factory, PortableCollectionAdder adder)
         {
-            if (factory == null)
-                factory = PortableSystemHandlers.CreateArrayList;
-
-            if (adder == null)
-                adder = PortableSystemHandlers.AddToArrayList;
-
             IPortableStream stream = ctx.Stream;
 
             int len = stream.ReadInt();
 
-            ctx.Stream.Seek(1, SeekOrigin.Current);
+            byte colType = ctx.Stream.ReadByte();
 
-            ICollection res = factory.Invoke(len);
+            if (factory == null)
+            {
+                // Need to detect factory automatically.
+                if (colType == CollectionLinkedList)
+                    factory = PortableSystemHandlers.CreateLinkedList;
+                else if (colType == CollectionSortedSet)
+                    factory = PortableSystemHandlers.CreateSortedSet;
+                else
+                    factory = PortableSystemHandlers.CreateArrayList;
+            }
+
+            if (adder == null)
+                adder = PortableSystemHandlers.AddToArrayList;
+
+            var res = factory.Invoke(len);
 
             for (int i = 0; i < len; i++)
                 adder.Invoke(res, ctx.Deserialize<object>());

@@ -701,33 +701,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /**
-         * <summary>Create new List.</summary>
-         * <param name="len">Length.</param>
-         * <returns>List.</returns>
-         */
-        public static ICollection<T> CreateList<T>(int len)
-        {
-            return new List<T>(len);
-        }
-
-        /**
          * <summary>Create new LinkedList.</summary>
          * <param name="len">Length.</param>
          * <returns>LinkedList.</returns>
          */
-        public static ICollection<T> CreateLinkedList<T>(int len)
+        public static ICollection CreateLinkedList(int len)
         {
-            return new LinkedList<T>();
-        }
-
-        /**
-         * <summary>Create new HashSet.</summary>
-         * <param name="len">Length.</param>
-         * <returns>HashSet.</returns>
-         */
-        public static ICollection<T> CreateHashSet<T>(int len)
-        {
-            return new HashSet<T>();
+            return new LinkedList<object>();
         }
 
         /**
@@ -735,9 +715,9 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="len">Length.</param>
          * <returns>SortedSet.</returns>
          */
-        public static ICollection<T> CreateSortedSet<T>(int len)
+        public static ICollection CreateSortedSet(int len)
         {
-            return new SortedSet<T>();
+            return new SortedSet<object>();
         }
 
         /**
