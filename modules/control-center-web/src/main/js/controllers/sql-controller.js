@@ -520,7 +520,9 @@ consoleModule.controller('sqlController',
             var chartHistory = paragraph.chartHistory;
 
             // Clear history on query change.
-            if (paragraph.prevQuery != paragraph.query) {
+            var queryChanged = paragraph.prevQuery != paragraph.query;
+
+            if (queryChanged) {
                 paragraph.prevQuery = paragraph.query;
 
                 chartHistory.length = 0;
@@ -542,7 +544,7 @@ consoleModule.controller('sqlController',
             if (paragraph.result == 'none' || paragraph.queryArgs.type != "QUERY")
                 paragraph.result = 'table';
             else if (paragraph.chart())
-                _chartApplySettings(paragraph);
+                _chartApplySettings(paragraph, queryChanged);
         }
     };
 
