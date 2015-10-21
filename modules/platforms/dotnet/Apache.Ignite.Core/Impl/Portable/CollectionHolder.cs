@@ -95,27 +95,13 @@ namespace Apache.Ignite.Core.Impl.Portable
             Debug.Assert(type != null);
             Debug.Assert(writer != null);
 
-            type = ReplaceTypesRecursive(type, typeof(IPortableBuilder), typeof(IPortableObject));
-            type = ReplaceTypesRecursive(type, typeof(PortableUserObject), typeof(object));
+            type = ReplaceTypesRecursive(type, typeof (IPortableBuilder), typeof (IPortableObject));
+            type = ReplaceTypesRecursive(type, typeof (PortableUserObject), typeof (object));
 
-            var desc = writer.Marshaller.GetDescriptor(type);
+            var typeName = type.AssemblyQualifiedName;
 
-            if (desc != null)
-            {
-                writer.WriteBoolean(true);  // known type
-
-                writer.WriteBoolean(desc.UserType);
-                writer.WriteInt(desc.TypeId);
-            }
-            else
-            {
-                writer.WriteBoolean(false);  // unknown type
-
-                var typeName = type.AssemblyQualifiedName;
-
-                writer.WriteInt(PortableUtils.GetStringHashCode(typeName));
-                writer.WriteString(typeName);
-            }
+            writer.WriteInt(PortableUtils.GetStringHashCode(typeName));
+            writer.WriteString(typeName);
         }
 
         /// <summary>
@@ -144,18 +130,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         private static Type ReadType(PortableReaderImpl reader)
         {
             Debug.Assert(reader != null);
-
-            var hasDesc = reader.ReadBoolean();
-
-            if (hasDesc)
-            {
-                var userType = reader.ReadBoolean();
-                var typeId = reader.ReadInt();
-
-                var desc = reader.Marshaller.GetDescriptor(userType, typeId);
-
-                return desc.Type;
-            }
 
             var typeNameHash = reader.ReadInt();
             var typeName = reader.ReadString();

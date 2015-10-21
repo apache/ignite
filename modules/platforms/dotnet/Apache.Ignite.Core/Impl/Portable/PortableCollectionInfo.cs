@@ -56,24 +56,25 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (type.IsArray)
                 return GetGenericArrayInfo(type);
 
-            if (type.IsGenericType)
-            {
-                if (type.GetGenericTypeDefinition() == PortableUtils.TypGenericDictionary)
-                    return GetGenericDictionaryInfo(type, type);
+            // TODO: Support only arrays because we can guarantee correctness. Don't bother with other collections.
+            //if (type.IsGenericType)
+            //{
+            //    if (type.GetGenericTypeDefinition() == PortableUtils.TypGenericDictionary)
+            //        return GetGenericDictionaryInfo(type, type);
 
-                var genTyp = type.GetInterface(PortableUtils.TypGenericDictionary.FullName);
+            //    var genTyp = type.GetInterface(PortableUtils.TypGenericDictionary.FullName);
 
-                if (genTyp != null)
-                    return GetGenericDictionaryInfo(type, genTyp);
+            //    if (genTyp != null)
+            //        return GetGenericDictionaryInfo(type, genTyp);
 
-                if (type.GetGenericTypeDefinition() == PortableUtils.TypGenericCollection)
-                    return GetGenericCollectionInfo(type, type);
+            //    if (type.GetGenericTypeDefinition() == PortableUtils.TypGenericCollection)
+            //        return GetGenericCollectionInfo(type, type);
 
-                genTyp = type.GetInterface(PortableUtils.TypGenericCollection.FullName);
+            //    genTyp = type.GetInterface(PortableUtils.TypGenericCollection.FullName);
 
-                if (genTyp != null)
-                    return GetGenericCollectionInfo(type, genTyp);
-            }
+            //    if (genTyp != null)
+            //        return GetGenericCollectionInfo(type, genTyp);
+            //}
 
             return None;
         }
