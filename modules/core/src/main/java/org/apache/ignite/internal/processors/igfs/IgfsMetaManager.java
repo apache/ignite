@@ -526,7 +526,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return New file info with lock set, or null if the info passed in is already locked.
      * @throws IgniteCheckedException In case lock is already set on that file.
      */
-    private static @Nullable IgfsFileInfo lockInfo(IgfsFileInfo info, boolean isDeleteLock) {
+    private @Nullable IgfsFileInfo lockInfo(IgfsFileInfo info, boolean isDeleteLock) {
          assert info != null;
 
          if (info.lockId() != null)
@@ -537,12 +537,16 @@ public class IgfsMetaManager extends IgfsManager {
 
     /**
      * Gets a new lock id.
+     * The returned Id #globalId() method will return the Id of the node which locked the file.
      *
      * @param isDeleteLock if this is special delete lock.
      * @return The new lock id.
      */
-    private static IgniteUuid composeLockId(boolean isDeleteLock) {
-        return isDeleteLock ? DELETE_LOCK_ID : IgniteUuid.randomUuid();
+    private IgniteUuid composeLockId(boolean isDeleteLock) {
+        if (isDeleteLock)
+            return DELETE_LOCK_ID;
+
+        return IgniteUuid.fromUuid(locNode.id());
     }
 
     /**
