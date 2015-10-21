@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
@@ -86,8 +87,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
                 if (entry.IsExpected(fieldName, fieldType))
                     // Entry matches our expectations, return.
                     return entry.Id;
-                
-                if (entry.IsJumpTable)
+                else if (entry.IsJumpTable)
                 {
                     // Entry is a pointer to a jump table.
                     Debug.Assert(entry.Id < _jumps.Length);

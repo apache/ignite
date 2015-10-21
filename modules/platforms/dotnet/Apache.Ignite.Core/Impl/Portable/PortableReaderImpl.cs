@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Portable read mode. */
         private PortableMode _mode;
-        
+
         /** Current type structure tracker. */
         private PortableStructureTracker _curStruct;
 
