@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// </summary>
     internal enum CacheOp
     {
+        None = 0,
         Clear = 1,
         ClearAll = 2,
         ContainsKey = 3,

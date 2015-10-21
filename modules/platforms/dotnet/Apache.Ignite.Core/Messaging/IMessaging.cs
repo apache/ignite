@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Messaging
         /// </summary>
         /// <param name="messages">Messages to send.</param>
         /// <param name="topic">Topic to send to, null for default topic.</param>
-        void Send(IEnumerable messages, object topic = null);
+        void SendAll(IEnumerable messages, object topic = null);
 
         /// <summary>
         /// Sends a message with specified topic to the nodes in the underlying cluster group.

@@ -447,7 +447,7 @@ namespace Apache.Ignite.Core.Tests
 
             // Multiple messages (receive order is undefined)
             MessagingTestHelper.ClearReceived(messages.Count * expectedRepeat);
-            msg.Send(messages, topic);
+            msg.SendAll(messages, topic);
             MessagingTestHelper.VerifyReceive(cluster, messages, m => m.OrderBy(x => x), expectedRepeat);
 
             // Multiple messages, ordered
@@ -468,7 +468,7 @@ namespace Apache.Ignite.Core.Tests
             // this will result in an exception in case of a message
             MessagingTestHelper.ClearReceived(0);
 
-            (grid ?? _grid1).GetMessaging().Send(NextMessage(), topic);
+            (grid ?? _grid1).GetMessaging().SendAll(NextMessage(), topic);
 
             Thread.Sleep(MessagingTestHelper.MessageTimeout);
 

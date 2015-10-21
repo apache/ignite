@@ -221,6 +221,7 @@ public class PlatformContextImpl implements PlatformContext {
             w.writeLong(node.order());
             w.writeBoolean(node.isLocal());
             w.writeBoolean(node.isDaemon());
+            w.writeBoolean(node.isClient());
             writeClusterMetrics(w, node.metrics());
 
             out.synchronize();
