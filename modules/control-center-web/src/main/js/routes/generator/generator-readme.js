@@ -49,7 +49,7 @@ $generatorReadme.readme = function (res) {
     res.needEmptyLine = true;
 
     res.line('Note, in case of using proprietary JDBC drivers (Oracle, IBM DB2, Microsoft SQL Server)');
-    res.line('you should download them and copy into /jdbc-drivers folder.');
+    res.line('you should download them and copy into ./jdbc-drivers folder.');
 
     return res;
 };
