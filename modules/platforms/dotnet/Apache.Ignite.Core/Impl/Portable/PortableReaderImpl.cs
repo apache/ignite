@@ -447,7 +447,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_curRaw)
                 throw new PortableException("Cannot read named fields after raw data is read.");
 
-            int fieldId = _curStruct.GetFieldId(fieldName);
+            int fieldId = _curStruct.GetFieldIdNoCache(fieldName);
 
             if (SeekField(fieldId))
                 return Deserialize<T>();
@@ -946,7 +946,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_curRaw)
                 throw new PortableException("Cannot read named fields after raw data is read.");
 
-            var fieldId = _curStruct.GetFieldId(fieldName);
+            var fieldId = _curStruct.GetFieldIdNoCache(fieldName);
 
             if (!SeekField(fieldId))
                 return false;
