@@ -324,6 +324,18 @@ namespace Apache.Ignite.Core.Impl.Portable
                 writeAction = GetWriter<object>(field, (f, w, o) => w.WriteEnum(f, o), true);
                 readAction = GetReader(field, MthdReadEnum);
             }
+            else if (genericDef == PortableUtils.TypGenericDictionary ||
+                type.GetInterface(PortableUtils.TypGenericDictionary.FullName) != null)
+            {
+                writeAction = GetWriter(field, MthdWriteGenericDictionary, type.GetGenericArguments());
+                readAction = GetReader(field, MthdReadGenericDictionary, type.GetGenericArguments());
+            }
+            else if (genericDef == PortableUtils.TypGenericCollection ||
+                type.GetInterface(PortableUtils.TypGenericCollection.FullName) != null)
+            {
+                writeAction = GetWriter(field, MthdWriteGenericCollection, type.GetGenericArguments());
+                readAction = GetReader(field, MthdReadGenericCollection, type.GetGenericArguments());
+            }
             else if (type == PortableUtils.TypDictionary || type.GetInterface(PortableUtils.TypDictionary.FullName) != null)
             {
                 writeAction = GetWriter<IDictionary>(field, (f, w, o) => w.WriteDictionary(f, o));
