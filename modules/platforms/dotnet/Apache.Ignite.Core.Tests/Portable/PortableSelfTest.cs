@@ -1337,7 +1337,15 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             public ArrayList Col2 { get; set; }
 
-            //public Hashtable Dict { get; set; }
+            public Hashtable Hashtable { get; set; }
+
+            public Dictionary<int, string> Dict { get; set; }
+
+            public InnerObjectType[] Arr { get; set; }
+
+            public SortedDictionary<string, int> SortedDict { get; set; }
+
+            public LinkedList<int> LinkedList { get; set; }
 
             /** <inheritdoc /> */
             public override bool Equals(object obj)
@@ -1347,24 +1355,25 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 var that = obj as CollectionsType;
 
-                return that != null && CompareCollections(Col1, that.Col1) && CompareCollections(Col2, that.Col2);
+                return that != null 
+                    && CompareCollections(Col1, that.Col1) 
+                    && CompareCollections(Col2, that.Col2)
+                    && CompareCollections(Hashtable, that.Hashtable)
+                    && CompareCollections(Dict, that.Dict)
+                    && CompareCollections(Arr, that.Arr)
+                    && CompareCollections(SortedDict, that.SortedDict)
+                    && CompareCollections(LinkedList, that.LinkedList);
             }
 
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
-                int res = Col1 != null ? Col1.GetHashCode() : 0;
+                int res = 0;
 
-                res = 31 * res + (Col2 != null ? Col2.GetHashCode() : 0);
+                foreach (var col in new object[] {Col1, Col2, Hashtable, Dict, Arr, SortedDict, LinkedList})
+                    res = 31*res + (col != null ? col.GetHashCode() : 0);
 
                 return res;
-            }
-
-            /** <inheritdoc /> */
-            public override string ToString()
-            {
-                return "CollectoinsType[col1=" + CollectionAsString(Col1) + 
-                    ", col2=" + CollectionAsString(Col2) + ']'; 
             }
         }
 
