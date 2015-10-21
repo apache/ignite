@@ -873,40 +873,35 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestCollectionsReflective()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs =
-                new List<PortableTypeConfiguration>();
-
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(CollectionsType)));
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(InnerObjectType)));
-
-            PortableConfiguration cfg = new PortableConfiguration();
-
-            cfg.TypeConfigurations = typeCfgs;
-
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            var marsh = new PortableMarshaller(new PortableConfiguration
+            {
+                TypeConfigurations = new List<PortableTypeConfiguration>
+                {
+                    new PortableTypeConfiguration(typeof (CollectionsType)),
+                    new PortableTypeConfiguration(typeof (InnerObjectType))
+                }
+            });
 
             CollectionsType obj = new CollectionsType();
 
-            ArrayList list = new ArrayList();
-
-            list.Add(true);
-            list.Add((byte)1);
-            list.Add((short)2);
-            list.Add('a');
-            list.Add(3);
-            list.Add((long)4);
-            list.Add((float)5);
-            list.Add((double)6);
-
-            list.Add("string");
-            list.Add(Guid.NewGuid());
-
-            InnerObjectType innerObj = new InnerObjectType();
-
-            innerObj.PInt1 = 1;
-            innerObj.PInt2 = 2;
-            
-            list.Add(innerObj);
+            ArrayList list = new ArrayList
+            {
+                true,
+                (byte) 1,
+                (short) 2,
+                'a',
+                3,
+                (long) 4,
+                (float) 5,
+                (double) 6,
+                "string",
+                Guid.NewGuid(),
+                new InnerObjectType
+                {
+                    PInt1 = 1,
+                    PInt2 = 2
+                }
+            };
 
             obj.Col1 = list;
 
@@ -1348,13 +1343,9 @@ namespace Apache.Ignite.Core.Tests.Portable
                 if (this == obj)
                     return true;
 
-                if (obj != null && obj is CollectionsType)
-                {
-                    CollectionsType that = (CollectionsType)obj;
+                var that = obj as CollectionsType;
 
-                    return CompareCollections(Col1, that.Col1) && CompareCollections(Col2, that.Col2);
-                }
-                return false;
+                return that != null && CompareCollections(Col1, that.Col1) && CompareCollections(Col2, that.Col2);
             }
 
             /** <inheritdoc /> */
