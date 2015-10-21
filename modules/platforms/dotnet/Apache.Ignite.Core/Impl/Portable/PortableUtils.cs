@@ -231,12 +231,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Dictionary type. */
         public static readonly Type TypDictionary = typeof(IDictionary);
 
-        /** Generic collection type. */
-        public static readonly Type TypGenericCollection = typeof(ICollection<>);
-
-        /** Generic dictionary type. */
-        public static readonly Type TypGenericDictionary = typeof(IDictionary<,>);
-
         /** Ticks for Java epoch. */
         private static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
         
@@ -250,10 +244,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Method: ReadArray. */
         public static readonly MethodInfo MtdhReadArray =
             typeof(PortableUtils).GetMethod("ReadArray", _bindFlagsStatic);
-
-        /** Method: ReadGenericArray. */
-        public static readonly MethodInfo MtdhReadGenericArray =
-            typeof(PortableUtils).GetMethod("ReadGenericArray", _bindFlagsStatic);
 
         /** Cached UTF8 encoding. */
         private static readonly Encoding Utf8 = Encoding.UTF8;
