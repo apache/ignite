@@ -1191,23 +1191,24 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             byte colType = ctx.Stream.ReadByte();
 
+            ICollection res;
+
             if (factory == null)
             {
-                // Need to detect factory automatically.
                 if (colType == CollectionLinkedList)
-                    factory = l => new LinkedList<object>();
+                    res = new LinkedList<object>();
                 else if (colType == CollectionSortedSet)
-                    factory = l => new SortedSet<object>();
+                    res = new SortedSet<object>();
                 else if (colType == CollectionConcurrentBag)
-                    factory = l => new ConcurrentBag<object>();
+                    res = new ConcurrentBag<object>();
                 else
-                    factory = l => new ArrayList(l);
+                    res = new ArrayList(len);
             }
+            else
+                res = factory.Invoke(len);
 
             if (adder == null)
                 adder = (col, elem) => { ((ArrayList) col).Add(elem); };
-
-            var res = factory.Invoke(len);
 
             for (int i = 0; i < len; i++)
                 adder.Invoke(res, ctx.Deserialize<object>());
