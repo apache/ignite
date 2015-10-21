@@ -464,8 +464,9 @@ mixin main-table(title, rows, focusId, click, rowTemplate)
 
 mixin groups(groups, dataSource)
     .panel.panel-default(ng-repeat='group in #{groups}' ng-click='triggerDigest=true' ng-hide='{{group.hide}}')
-        .panel-heading(bs-collapse-toggle ng-click='hidePopover()') {{::group.label}}
-            label(id='{{::group.group + "-title"}}')
+        .panel-heading(bs-collapse-toggle ng-click='hidePopover()')
+            i.tipLabel.fa(ng-class='panelExpanded(panels, "{{group.group}}") ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+            label(id='{{::group.group + "-title"}}') {{::group.label}}
             i.tipLabel.fa.fa-question-circle(ng-if='group.tip' bs-tooltip='joinTip(group.tip)')
             i.tipLabel.fa.fa-question-circle.blank(ng-if='!group.tip')
             i.pull-right.fa.fa-undo(ng-show='group.dirty' ng-click='resetItem(group.group); $event.stopPropagation()' bs-tooltip data-title='Undo unsaved changes')

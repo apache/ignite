@@ -724,6 +724,17 @@ consoleModule.service('$common', [
             ensureActivePanel: function (panels, id, focusId) {
                 ensureActivePanel(panels, id, focusId);
             },
+            panelExpanded: function (panels, id) {
+                if (panels && panels.activePanels && panels.activePanels.length > 0) {
+                    var idx = _.findIndex($('div.panel-collapse'), function(pnl) {
+                        return pnl.id == id;
+                    });
+
+                    return idx >= 0 && _.includes(panels.activePanels, idx);
+                }
+
+                return false;
+            },
             showPopoverMessage: function (panels, panelId, id, message) {
                 return showPopoverMessage(panels, panelId, id, message)
             },

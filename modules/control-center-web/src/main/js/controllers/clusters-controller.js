@@ -32,6 +32,7 @@ consoleModule.controller('clustersController', [
         $scope.getModel = $common.getModel;
         $scope.compactJavaName = $common.compactJavaName;
         $scope.saveBtnTipText = $common.saveBtnTipText;
+        $scope.panelExpanded = $common.panelExpanded;
 
         $scope.tableVisibleRow = $table.tableVisibleRow;
         $scope.tableReset = $table.tableReset;
