@@ -643,6 +643,13 @@ consoleModule.controller('sqlController',
 
                 paragraph.rows = res.rows;
 
+                if (paragraph.chart()) {
+                    if (paragraph.result == 'pie')
+                        _updatePieChartsWithData(paragraph, _pieChartDatum(paragraph));
+                    else
+                        _updateChartsWithData(paragraph, _chartDatum(paragraph));
+                }
+
                 paragraph.gridOptions.api.setRowData(res.rows);
 
                 _showLoading(paragraph, false);
@@ -972,6 +979,27 @@ consoleModule.controller('sqlController',
             }
 
             paragraph.charts[0].api.update();
+        });
+    }
+
+    function _updatePieChartsWithData(paragraph, newDatum) {
+        $timeout(function () {
+            _.forEach(paragraph.charts, function (chart) {
+                var chartDatum = chart.data;
+
+                chartDatum.length = 0;
+
+                _.forEach(newDatum, function (series) {
+                    if (chart.options.title.text == series.key)
+                        _.forEach(series.values, function (v) {
+                            chartDatum.push(v);
+                        });
+                });
+            });
+
+            _.forEach(paragraph.charts, function (chart) {
+                chart.api.update();
+            });
         });
     }
 
