@@ -53,6 +53,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         private static readonly MethodInfo MthdReadEnumArray =
             typeof(IPortableReader).GetMethod("ReadEnumArray", new[] { typeof(string) });
 
+        /** Method: read array. */
+        private static readonly MethodInfo MthdReadObjArray =
+            typeof(IPortableReader).GetMethod("ReadArray", new[] { typeof(string) });
+
         /** Method: read object. */
         private static readonly MethodInfo MthdReadObj=
             typeof(IPortableReader).GetMethod("ReadObject", new[] { typeof(string) });
@@ -60,6 +64,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Method: write enum array. */
         private static readonly MethodInfo MthdWriteEnumArray =
             typeof(IPortableWriter).GetMethod("WriteEnumArray");
+
+        /** Method: write array. */
+        private static readonly MethodInfo MthdWriteObjArray =
+            typeof(IPortableWriter).GetMethod("WriteArray");
 
         /** Method: read object. */
         private static readonly MethodInfo MthdWriteObj =
@@ -256,16 +264,11 @@ namespace Apache.Ignite.Core.Impl.Portable
                 writeAction = GetWriter(field, MthdWriteEnumArray, elemType);
                 readAction = GetReader(field, MthdReadEnumArray, elemType);
             }
-            else if (elemType == typeof (object))
-            {
-                writeAction = GetWriter<object[]>(field, (f, w, o) => w.WriteArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadArray<object>(f));
-            }
             else
             {
-                writeAction = GetWriter(field, MthdWriteObj);
-                readAction = GetReader(field, MthdReadObj);
-            }
+                writeAction = GetWriter(field, MthdWriteObjArray, elemType);
+                readAction = GetReader(field, MthdReadObjArray, elemType);
+            }  
 
             // TODO: handle generic array properly
         }
