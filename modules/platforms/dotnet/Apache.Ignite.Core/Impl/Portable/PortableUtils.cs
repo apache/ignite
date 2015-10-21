@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Collections;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -1191,7 +1192,25 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static void WriteDictionary(IDictionary val, PortableWriterImpl ctx)
         {
-            byte dictType = val.GetType() == typeof(Hashtable) ? MapHashMap : MapCustom;
+            var valType = val.GetType();
+
+            byte dictType;
+
+            if (valType.IsGenericType)
+            {
+                var genType = valType.GetGenericTypeDefinition();
+
+                if (genType == typeof (Dictionary<,>))
+                    dictType = MapHashMap;
+                else if (genType == typeof (SortedDictionary<,>))
+                    dictType = MapSortedMap;
+                else if (genType == typeof (ConcurrentDictionary<,>))
+                    dictType = MapConcurrentHashMap;
+                else
+                    dictType = MapCustom;
+            }
+            else
+                dictType = valType == typeof (Hashtable) ? MapHashMap : MapCustom;
 
             WriteDictionary(val, ctx, dictType);
         }
@@ -1224,16 +1243,23 @@ namespace Apache.Ignite.Core.Impl.Portable
         public static IDictionary ReadDictionary(PortableReaderImpl ctx,
             PortableDictionaryFactory factory)
         {
-            if (factory == null)
-                factory = PortableSystemHandlers.CreateHashtable;
-
             IPortableStream stream = ctx.Stream;
 
             int len = stream.ReadInt();
 
-            ctx.Stream.Seek(1, SeekOrigin.Current);
+            byte colType = ctx.Stream.ReadByte();
 
-            IDictionary res = factory.Invoke(len);
+            if (factory == null)
+            {
+                if (colType == MapSortedMap)
+                    factory = PortableSystemHandlers.CreateSortedDictionary;
+                else if (colType == MapConcurrentHashMap)
+                    factory = PortableSystemHandlers.CreateConcurrentDictionary;
+                else
+                    factory = PortableSystemHandlers.CreateHashtable;
+            }
+
+            var res = factory.Invoke(len);
 
             for (int i = 0; i < len; i++)
             {

@@ -751,23 +751,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /**
-         * <summary>Create new Dictionary.</summary>
-         * <param name="len">Length.</param>
-         * <returns>Dictionary.</returns>
-         */
-        public static IDictionary<TK, TV> CreateDictionary<TK, TV>(int len)
-        {
-            return new Dictionary<TK, TV>(len);
-        }
-
-        /**
          * <summary>Create new SortedDictionary.</summary>
          * <param name="len">Length.</param>
          * <returns>SortedDictionary.</returns>
          */
-        public static IDictionary<TK, TV> CreateSortedDictionary<TK, TV>(int len)
+        public static IDictionary CreateSortedDictionary(int len)
         {
-            return new SortedDictionary<TK, TV>();
+            return new SortedDictionary<object, object>();
         }
 
         /**
@@ -775,11 +765,10 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="len">Length.</param>
          * <returns>ConcurrentDictionary.</returns>
          */
-        public static IDictionary<TK, TV> CreateConcurrentDictionary<TK, TV>(int len)
+        public static IDictionary CreateConcurrentDictionary(int len)
         {
-            return new ConcurrentDictionary<TK, TV>(Environment.ProcessorCount, len);
+            return new ConcurrentDictionary<object, object>(Environment.ProcessorCount, len);
         }
-
 
         /**
          * <summary>Read delegate.</summary>
