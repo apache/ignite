@@ -1148,6 +1148,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     colType = CollectionLinkedList;
                 else if (genType == typeof (SortedSet<>))
                     colType = CollectionSortedSet;
+                else if (genType == typeof (ConcurrentBag<>))
+                    colType = CollectionConcurrentBag;
                 else
                     colType = CollectionCustom;
             }
@@ -1196,6 +1198,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     factory = l => new LinkedList<object>();
                 else if (colType == CollectionSortedSet)
                     factory = l => new SortedSet<object>();
+                else if (colType == CollectionConcurrentBag)
+                    factory = l => new ConcurrentBag<object>();
                 else
                     factory = l => new ArrayList(l);
             }
