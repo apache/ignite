@@ -179,9 +179,15 @@ consoleModule.controller('clustersController', [
         $http.post('clusters/list')
             .success(function (data) {
                 $scope.spaces = data.spaces;
+
                 $scope.clusters = data.clusters;
+
                 $scope.caches = _.map(data.caches, function (cache) {
                     return {value: cache._id, label: cache.name, cache: cache};
+                });
+
+                $scope.igfss = _.map(data.igfss, function (igfs) {
+                    return {value: igfs._id, label: igfs.name, igfs: igfs};
                 });
 
                 // Load page descriptor.

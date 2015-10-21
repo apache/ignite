@@ -222,19 +222,26 @@ exports.Cache = mongoose.model('Cache', CacheSchema);
 var IgfsSchema = new Schema({
     space: {type: ObjectId, ref: 'Space'},
     name: String,
+    clusters: [{type: ObjectId, ref: 'Cluster'}],
     blockSize: Number,
     streamBufferSize: Number,
     dataCacheName: String,
     metaCacheName: String,
     defaultMode: {type: String, enum: ['PRIMARY', 'PROXY', 'DUAL_SYNC', 'DUAL_ASYNC']},
     dualModeMaxPendingPutsSize: Number,
-    //dualModePutExec = cfg.getDualModePutExecutorService();
+    dualModePutExecutorService: String,
     dualModePutExecutorServiceShutdown: Boolean,
     fragmentizerConcurrentFiles: Number,
     fragmentizerEnabled: Boolean,
     fragmentizerThrottlingBlockLength: Number,
     fragmentizerThrottlingDelay: Number,
-    ipcEndpointConfiguration: {},
+    ipcEndpointConfiguration: {
+        type: {type: String, enum: ['SHMEM', 'TCP']},
+        host: String,
+        port: Number,
+        memorySize: Number,
+        tokenDirectoryPath: String
+    },
     ipcEndpointEnabled: Boolean,
     maxSpaceSize: Number,
     maximumTaskRangeLength: Number,
@@ -326,7 +333,7 @@ var ClusterSchema = new Schema({
     deploymentMode: {type: String, enum: ['PRIVATE', 'ISOLATED', 'SHARED', 'CONTINUOUS']},
     discoveryStartupDelay: Number,
     igfsThreadPoolSize: Number,
-    igfs: [{type: ObjectId, ref: 'Igfs'}],
+    igfss: [{type: ObjectId, ref: 'Igfs'}],
     includeEventTypes: [{
         type: String, enum: ['EVTS_CHECKPOINT', 'EVTS_DEPLOYMENT', 'EVTS_ERROR', 'EVTS_DISCOVERY',
             'EVTS_JOB_EXECUTION', 'EVTS_TASK_EXECUTION', 'EVTS_CACHE', 'EVTS_CACHE_REBALANCE', 'EVTS_CACHE_LIFECYCLE',

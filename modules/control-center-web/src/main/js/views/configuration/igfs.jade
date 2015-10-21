@@ -29,11 +29,11 @@ block content
             div(ng-show='ui.ready')
                 +block-callout('{{screenTip.workflowTitle}}', 'screenTip.workflowContent', '{{screenTip.whatsNextTitle}}', 'screenTip.whatsNextContent')
                 hr
-                +main-table('IGFS:', 'igfs', 'igfsName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}')
+                +main-table('IGFS:', 'igfss', 'igfsName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}')
                 .padding-top-dflt(bs-affix)
-                    .panel-tip-container(data-placement='bottom' bs-tooltip data-title='Create new caches')
+                    .panel-tip-container(data-placement='bottom' bs-tooltip data-title='Create new IGFS')
                         button.btn.btn-primary(id='new-item' ng-click='createItem()') Add IGFS
-                    +save-remove-buttons('igfs')
+                    +save-remove-buttons('IGFS')
                     hr
                 form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate unsaved-warning-form)
                     .panel-group(bs-collapse ng-model='panels.activePanels' data-allow-multiple='true' ng-click='triggerDigest = true')
@@ -43,4 +43,4 @@ block content
                             +groups('advanced', 'backupItem')
                     +advanced-options
                     .section(ng-show='ui.expanded')
-                        +save-remove-buttons('igfs')
+                        +save-remove-buttons('IGFS')

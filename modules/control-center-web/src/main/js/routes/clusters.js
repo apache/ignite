@@ -43,20 +43,31 @@ router.post('/list', function (req, res) {
             // Get all caches for spaces.
             db.Cache.find({space: {$in: space_ids}}).sort('name').deepPopulate('metadatas').exec(function (err, caches) {
                 if (db.processed(err, res)) {
-                    // Get all clusters for spaces.
-                    db.Cluster.find({space: {$in: space_ids}}).sort('name').exec(function (err, clusters) {
-                        if (db.processed(err, res)) {
-                            // Remove deleted caches.
-                            _.forEach(clusters, function (cluster) {
-                                cluster.caches = _.filter(cluster.caches, function (cacheId) {
-                                    return _.findIndex(caches, function (cache) {
-                                            return cache._id.equals(cacheId);
-                                        }) >= 0;
-                                });
-                            });
+                    // Get all IGFSs for spaces.
+                    db.Igfs.find({space: {$in: space_ids}}).sort('name').exec(function (err, igfss) {
+                        if (db.processed(err, res))
+                        // Get all clusters for spaces.
+                            db.Cluster.find({space: {$in: space_ids}}).sort('name').exec(function (err, clusters) {
+                                if (db.processed(err, res)) {
+                                    _.forEach(clusters, function (cluster) {
+                                        // Remove deleted caches.
+                                        cluster.caches = _.filter(cluster.caches, function (cacheId) {
+                                            return _.findIndex(caches, function (cache) {
+                                                    return cache._id.equals(cacheId);
+                                                }) >= 0;
+                                        });
 
-                            res.json({spaces: spaces, caches: caches, clusters: clusters});
-                        }
+                                        // Remove deleted IGFS.
+                                        cluster.igfss = _.filter(cluster.igfss, function (igfsId) {
+                                            return _.findIndex(igfss, function (igfs) {
+                                                    return igfs._id.equals(igfsId);
+                                                }) >= 0;
+                                        });
+                                    });
+
+                                    res.json({spaces: spaces, caches: caches, igfss: igfss, clusters: clusters});
+                                }
+                            });
                     });
                 }
             });

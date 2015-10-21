@@ -36,50 +36,20 @@
           "placeholder": "Input name"
         },
         {
-          "label": "Block size",
-          "id": "BlockSize",
-          "type": "number",
-          "model": "blockSize",
-          "placeholder": "65536",
+          "label": "Clusters",
+          "id": "clusters",
+          "type": "dropdown-multiple",
+          "model": "clusters",
+          "placeholder": "Choose clusters",
+          "placeholderEmpty": "No clusters configured",
+          "items": "clusters",
           "tip": [
-            "File's data block size (bytes)"
-          ]
-        },
-        {
-          "label": "Stream buffer size",
-          "id": "streamBufferSize",
-          "type": "number",
-          "model": "streamBufferSize"
-        },
-        {
-          "label": "DefaultMode"
-        },
-        {
-          "label": "MaxSpaceSize"
-        },
-        {
-          "label": "MaximumTaskRangeLength"
-        },
-        {
-          "label": "ManagementPort"
-        },
-        {
-          "label": "PathModes"
-        },
-        {
-          "label": "PerNodeBatchSize"
-        },
-        {
-          "label": "PerNodeParallelBatchCount"
-        },
-        {
-          "label": "PrefetchBlocks"
-        },
-        {
-          "label": "SequentialReadsBeforePrefetch"
-        },
-        {
-          "label": "TrashPurgeTimeout"
+            "Associate clusters with the current IGFS"
+          ],
+          "addLink": {
+            "label": "Add cluster(s)",
+            "ref": "/configuration/clusters?new"
+          }
         }
       ]
     }
@@ -89,7 +59,7 @@
       "label": "IPC",
       "group": "ipc",
       "tip": [
-        "TODO"
+        "IGFS Inter-process communication properties"
       ],
       "fields": [
         {
@@ -98,7 +68,34 @@
           "model": "ipcEndpointEnabled"
         },
         {
-          "label": "IpcEndpointConfiguration"
+          "label": "Type",
+          "type": "dropdown",
+          "path": "ipcEndpointConfiguration",
+          "model": "type"
+        },
+        {
+          "label": "Host",
+          "type": "text",
+          "path": "ipcEndpointConfiguration",
+          "model": "host"
+        },
+        {
+          "label": "Port",
+          "type": "number",
+          "path": "ipcEndpointConfiguration",
+          "model": "port"
+        },
+        {
+          "label": "Memory size",
+          "type": "number",
+          "path": "ipcEndpointConfiguration",
+          "model": "memorySize"
+        },
+        {
+          "label": "Token directory",
+          "type": "text",
+          "path": "ipcEndpointConfiguration",
+          "model": "tokenDirectoryPath"
         }
       ]
     },
@@ -148,7 +145,57 @@
       ]
     },
     {
-      "label": "Miscellaneous"
+      "label": "Miscellaneous",
+      "group": "misc",
+      "tip": [],
+      "fields": [
+        {
+          "label": "Block size",
+          "id": "BlockSize",
+          "type": "number",
+          "model": "blockSize",
+          "placeholder": "65536",
+          "tip": [
+            "File's data block size (bytes)"
+          ]
+        },
+        {
+          "label": "Stream buffer size",
+          "id": "streamBufferSize",
+          "type": "number",
+          "model": "streamBufferSize"
+        },
+        {
+          "label": "DefaultMode"
+        },
+        {
+          "label": "MaxSpaceSize"
+        },
+        {
+          "label": "MaximumTaskRangeLength"
+        },
+        {
+          "label": "ManagementPort"
+        },
+        {
+          "label": "PathModes"
+        },
+        {
+          "label": "PerNodeBatchSize"
+        },
+        {
+          "label": "PerNodeParallelBatchCount"
+        },
+        {
+          "label": "PrefetchBlocks"
+        },
+        {
+          "label": "SequentialReadsBeforePrefetch"
+        },
+        {
+          "label": "TrashPurgeTimeout"
+        }
+      ]
     }
   ]
 }
