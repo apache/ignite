@@ -208,15 +208,13 @@ namespace Apache.Ignite.Core.Portable
         T[] ReadArray<T>();
 
         /// <summary>
-        /// Read non-generic collection.
-        /// Only non-generic collections can be used for interop with other platforms.
+        /// Read collection.
         /// </summary>
         /// <returns>Collection.</returns>
         ICollection ReadCollection();
 
         /// <summary>
-        /// Read non-generic collection.
-        /// Only non-generic collections can be used for interop with other platforms.
+        /// Read collection.
         /// </summary>
         /// <param name="factory">Factory.</param>
         /// <param name="adder">Adder.</param>

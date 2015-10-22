@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Portable
 {
     using System;
     using System.Collections;
-    using System.Collections.Generic;
 
     /// <summary>
     /// Delegate for collection creation.
