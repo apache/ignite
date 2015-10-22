@@ -33,10 +33,10 @@
     "jade": "~1.11.0",
     "jszip": "^2.5.0",
     "lodash": "3.10.1",
-    "mongoose": "^4.1.10",
+    "mongoose": "^4.1.12",
     "mongoose-deep-populate": "2.0.2",
     "nconf": "^0.8.2",
-    "node-sass-middleware": "0.9.6",
+    "node-sass-middleware": "0.9.7",
     "nodemailer": "1.8.0",
     "passport": "^0.3.0",
     "passport-local": "^1.0.0",
@@ -48,6 +48,6 @@
     "morgan": "~1.6.1",
     "supertest": "^1.1.0",
     "mocha": "~2.3.3",
-    "should": "~7.1.0"
+    "should": "~7.1.1"
   }
 }
