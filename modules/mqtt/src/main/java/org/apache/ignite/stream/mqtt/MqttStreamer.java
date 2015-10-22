@@ -74,10 +74,8 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
  * {@link #setConnectOptions(MqttConnectOptions)} setter.
  *
  * @see <a href="https://github.com/rholder/guava-retrying">guava-retrying library</a>
- *
  */
 public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> implements MqttCallback {
-
     /** Logger. */
     private IgniteLogger log;
 
@@ -96,8 +94,10 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
     /** The topics to subscribe to, if many. */
     private List<String> topics;
 
-    /** The qualities of service to use for multiple topic subscriptions. If specified, it must contain the same
-     *  number of elements as {@link #topics}. */
+    /**
+     * The qualities of service to use for multiple topic subscriptions. If specified, it must contain the same
+     * number of elements as {@link #topics}.
+     */
     private List<Integer> qualitiesOfService;
 
     /** The MQTT client ID (optional). */
@@ -118,8 +118,10 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
     /** If disconnecting forcibly, the timeout. */
     private Integer disconnectForciblyTimeout;
 
-    /** The strategy to determine how long to wait between retry attempts. By default, this streamer uses a
-     *  Fibonacci-based strategy. */
+    /**
+     * The strategy to determine how long to wait between retry attempts. By default, this streamer uses a
+     * Fibonacci-based strategy.
+     */
     private WaitStrategy retryWaitStrategy = WaitStrategies.fibonacciWait();
 
     /** The strategy to determine when to stop retrying to (re-)connect. By default, we never stop. */
@@ -149,7 +151,7 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
         if (!stopped)
             throw new IgniteException("Attempted to start an already started MQTT Streamer");
 
-        // for simplicity, if these are null initialize to empty lists
+        // For simplicity, if these are null initialize to empty lists.
         topics = topics == null ? new ArrayList<String>() : topics;
 
         qualitiesOfService = qualitiesOfService == null ? new ArrayList<Integer>() : qualitiesOfService;
@@ -157,45 +159,47 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
         try {
             Map<String, Object> logValues = new HashMap<>();
 
-            // parameter validations
+            // Parameter validations.
             A.notNull(getStreamer(), "streamer");
             A.notNull(getIgnite(), "ignite");
-            A.ensure(!(getSingleTupleExtractor() == null && getMultipleTupleExtractor() == null), "tuple extractor missing");
-            A.ensure(getSingleTupleExtractor() == null || getMultipleTupleExtractor() == null, "cannot provide " +
-                "both single and multiple tuple extractor");
+            A.ensure(!(getSingleTupleExtractor() == null && getMultipleTupleExtractor() == null),
+                "tuple extractor missing");
+            A.ensure(getSingleTupleExtractor() == null || getMultipleTupleExtractor() == null,
+                "cannot provide both single and multiple tuple extractor");
             A.notNullOrEmpty(brokerUrl, "broker URL");
 
-            // if the client ID is empty, generate one
+            // If the client ID is empty, generate one.
             if (clientId == null || clientId.length() == 0)
                 clientId = MqttClient.generateClientId();
 
-            // if we have both a single topic and a list of topics (but the list of topic is not of
-            // size 1 and == topic, as this would be a case of re-initialization), fail
+            // If we have both a single topic and a list of topics (but the list of topic is not of
+            // size 1 and == topic, as this would be a case of re-initialization), fail.
             if (topic != null && topic.length() > 0 && !topics.isEmpty() &&
                 topics.size() != 1 && !topics.get(0).equals(topic))
-                throw new IllegalArgumentException("Cannot specify both a single topic and a list at the same time");
+                throw new IllegalArgumentException("Cannot specify both a single topic and a list at the same time.");
 
-            // same as above but for QoS
+            // Same as above but for QoS.
             if (qualityOfService != null && !qualitiesOfService.isEmpty() && qualitiesOfService.size() != 1 &&
                 !qualitiesOfService.get(0).equals(qualityOfService))
-                throw new IllegalArgumentException("Cannot specify both a single QoS and a list at the same time");
+                throw new IllegalArgumentException("Cannot specify both a single QoS and a list at the same time.");
 
-            // Paho API requires disconnect timeout if providing a quiesce timeout and disconnecting forcibly
+            // Paho API requires disconnect timeout if providing a quiesce timeout and disconnecting forcibly.
             if (disconnectForcibly && disconnectQuiesceTimeout != null)
                 A.notNull(disconnectForciblyTimeout, "disconnect timeout cannot be null when disconnecting forcibly " +
                     "with quiesce");
 
-            // if we have multiple topics
+            // If we have multiple topics.
             if (!topics.isEmpty()) {
                 for (String t : topics)
                     A.notNullOrEmpty(t, "topic in list of topics");
 
-                A.ensure(qualitiesOfService.isEmpty() || qualitiesOfService.size() == topics.size(), "qualities of " +
-                    "service must be either empty or have the same size as topics list");
+                A.ensure(qualitiesOfService.isEmpty() || qualitiesOfService.size() == topics.size(),
+                    "qualities of service must be either empty or have the same size as topics list");
 
                 logValues.put("topics", topics);
             }
-            else {  // just the single topic
+            else {
+                // Just the single topic.
                 topics.add(topic);
 
                 if (qualityOfService != null)
@@ -204,29 +208,29 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
                 logValues.put("topic", topic);
             }
 
-            // finish building log values
+            // Finish building log values.
             logValues.put("brokerUrl", brokerUrl);
             logValues.put("clientId", clientId);
 
-            // cache log values
+            // Cache log values.
             cachedLogValues = "[" + Joiner.on(", ").withKeyValueSeparator("=").join(logValues) + "]";
 
-            // create logger
+            // Create logger.
             log = getIgnite().log();
 
-            // create the mqtt client
+            // Create the MQTT client.
             if (persistence == null)
                 client = new MqttClient(brokerUrl, clientId);
             else
                 client = new MqttClient(brokerUrl, clientId, persistence);
 
-            // set this as a callback
+            // Set this as a callback.
             client.setCallback(this);
 
-            // set stopped to false, as the connection will start async
+            // Set stopped to false, as the connection will start async.
             stopped = false;
 
-            // build retrier
+            // Build retrier.
             Retryer<Boolean> retrier = RetryerBuilder.<Boolean>newBuilder()
                 .retryIfResult(new Predicate<Boolean>() {
                     @Override public boolean apply(Boolean connected) {
@@ -238,29 +242,29 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
                 .withStopStrategy(retryStopStrategy)
                 .build();
 
-            // create the connection retrier
+            // Create the connection retrier.
             connectionRetrier = new MqttConnectionRetrier(retrier);
 
             log.info("Starting MQTT Streamer " + cachedLogValues);
 
-            // connect
+            // Connect.
             connectionRetrier.connect();
-
         }
-        catch (Throwable t) {
-            throw new IgniteException("Exception while initializing MqttStreamer", t);
+        catch (Exception e) {
+            throw new IgniteException("Failed to initialize MQTT Streamer.", e);
         }
-
     }
 
     /**
      * Stops streamer.
+     *
+     * @throws IgniteException If failed.
      */
     public void stop() throws IgniteException {
         if (stopped)
-            throw new IgniteException("Attempted to stop an already stopped MQTT Streamer");
+            throw new IgniteException("Failed to stop MQTT Streamer (already stopped).");
 
-        // stop the retrier
+        // Stop the retrier.
         connectionRetrier.stop();
 
         try {
@@ -273,23 +277,22 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
 
                 else
                     client.disconnectForcibly(disconnectQuiesceTimeout, disconnectForciblyTimeout);
-
-            } else {
+            }
+            else {
                 if (disconnectQuiesceTimeout == null)
                     client.disconnect();
 
                 else
                     client.disconnect(disconnectQuiesceTimeout);
-
             }
 
             client.close();
+
             connected = false;
             stopped = true;
-
         }
-        catch (Throwable t) {
-            throw new IgniteException("Exception while stopping MqttStreamer", t);
+        catch (Exception e) {
+            throw new IgniteException("Failed to stop Exception while stopping MQTT Streamer.", e);
         }
     }
 
@@ -502,9 +505,9 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
     }
 
     /**
-     * Sets whether to disconnect forcibly or not when shutting down. By default, it's <tt>false</tt>.
+     * Sets whether to disconnect forcibly or not when shutting down. By default, it's {@code false}.
      *
-     * @param disconnectForcibly Whether to disconnect forcibly or not. By default, it's <tt>false</tt>.
+     * @param disconnectForcibly Whether to disconnect forcibly or not. By default, it's {@code false}.
      */
     public void setDisconnectForcibly(boolean disconnectForcibly) {
         this.disconnectForcibly = disconnectForcibly;
@@ -593,7 +596,7 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
     }
 
     /**
-     * Sets whether to block the start() method until connected for the first time. By default, it's <tt>false</tt>.
+     * Sets whether to block the start() method until connected for the first time. By default, it's {@code false}.
      *
      * @param blockUntilConnected Whether to block or not.
      */
@@ -601,6 +604,11 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
         this.blockUntilConnected = blockUntilConnected;
     }
 
+    /**
+     * Gets whether to block the start() method until connected for the first time. By default, it's {@code false}.
+     *
+     * @return {@code true} if should connect synchronously in start.
+     */
     public boolean isBlockUntilConnected() {
         return blockUntilConnected;
     }
@@ -608,7 +616,7 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
     /**
      * Returns whether this streamer is stopped.
      *
-     * @return <tt>true</tt> if stopped; <tt>false</tt> if not.
+     * @return {@code true} if stopped; {@code false} if not.
      */
     public boolean isStopped() {
         return stopped;
@@ -617,7 +625,7 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
     /**
      * Returns whether this streamer is connected.
      *
-     * @return <tt>true</tt> if connected; <tt>false</tt> if not.
+     * @return {@code true} if connected; {@code false} if not.
      */
     public boolean isConnected() {
         return connected;
@@ -628,15 +636,15 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
      * the (re-)connections.
      */
     private class MqttConnectionRetrier {
-
         /** The guava-retrying retrier object. */
         private final Retryer<Boolean> retrier;
 
         /** Single-threaded pool. */
-        private ExecutorService executor = Executors.newSingleThreadExecutor();
+        private ExecutorService exec = Executors.newSingleThreadExecutor();
 
         /**
          * Constructor.
+         *
          * @param retrier The retryier object.
          */
         public MqttConnectionRetrier(Retryer<Boolean> retrier) {
@@ -649,21 +657,21 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
         public void connect() {
             Callable<Boolean> callable = retrier.wrap(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
-                    // if we're already connected, return immediately
+                    // If we're already connected, return immediately.
                     if (connected)
                         return true;
 
                     if (stopped)
                         return false;
 
-                    // connect to broker
+                    // Connect to broker.
                     if (connectOptions == null)
                         client.connect();
                     else
                         client.connect(connectOptions);
 
-                    // always use the multiple topics variant of the mqtt client; even if the user specified a single
-                    // topic and/or QoS, the initialization code would have placed it inside the 1..n structures
+                    // Always use the multiple topics variant of the mqtt client; even if the user specified a single
+                    // topic and/or QoS, the initialization code would have placed it inside the 1..n structures.
                     if (qualitiesOfService.isEmpty())
                         client.subscribe(topics.toArray(new String[0]));
 
@@ -679,11 +687,12 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
                     log.info("MQTT Streamer (re-)connected and subscribed " + cachedLogValues);
 
                     connected = true;
-                    return connected;
+
+                    return true;
                 }
             });
 
-            Future<Boolean> result = executor.submit(callable);
+            Future<Boolean> result = exec.submit(callable);
 
             if (blockUntilConnected) {
                 try {
@@ -699,9 +708,7 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
          * Stops this connection utility class by shutting down the thread pool.
          */
         public void stop() {
-            executor.shutdownNow();
+            exec.shutdownNow();
         }
-
     }
-
 }
