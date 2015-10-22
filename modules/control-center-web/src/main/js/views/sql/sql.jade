@@ -88,7 +88,7 @@ block container
                     hr
                     .docs-body.paragraphs
                         .panel-group(bs-collapse ng-model='notebook.expandedParagraphs' data-allow-multiple='true' data-start-collapsed='false')
-                            .panel.panel-default(ng-repeat='paragraph in notebook.paragraphs')
+                            .panel.panel-default(id='paragraph-{{paragraph.id}}' ng-repeat='paragraph in notebook.paragraphs')
                                 .panel-heading(bs-collapse-toggle)
                                     div(ng-hide='paragraph.edit')
                                         i.tipLabel.fa(ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
