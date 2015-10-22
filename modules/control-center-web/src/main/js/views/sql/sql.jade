@@ -51,7 +51,7 @@ block container
                     label.col-sm-12 Notebook not accessible any more. Go back to configuration or open to another notebook.
                     button.h3.btn.btn-primary(ng-click='goToConfiguration()') Back to configuration
                 div(ng-if='notebook')
-                    div(bs-affix)
+                    .row(bs-affix)
                         .docs-header.notebook-header
                             h1.col-sm-6(ng-hide='notebook.edit')
                                 label(style='max-width: calc(100% - 60px)') {{notebook.name}}
@@ -62,8 +62,9 @@ block container
                                 i.btn.fa.fa-floppy-o(ng-show='notebook.editName' ng-click='renameNotebook(notebook.editName)' bs-tooltip data-title='Save notebook name' data-trigger='hover')
                                 .input-tip
                                     input.form-control(ng-model='notebook.editName' required on-enter='renameNotebook(notebook.editName)' on-escape='notebook.edit = false;')
-                            .pull-right
-                                +btn-toolbar('fa-plus', 'addParagraph()', 'Add new query')
+                            h1.pull-right
+                                .btn-group
+                                    +btn-toolbar('fa-plus', 'addParagraph()', 'Add new query')
                     .block-callout-parent
                         table
                             tbody

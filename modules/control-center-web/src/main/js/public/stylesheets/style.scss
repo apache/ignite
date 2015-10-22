@@ -146,7 +146,7 @@ ul.navbar-nav, .sidebar-nav {
 
 .theme-line ul.dropdown-menu {
     min-width: 120px;
-    max-width: 500px;
+    max-width: 280px;
     max-height: 20em;
     overflow: auto;
     overflow-x: hidden;
@@ -471,14 +471,11 @@ button.form-control {
 .theme-line .notebook-header {
     border-color: $gray-lighter;
 
-    line-height: 44px;
-    height: 44px;
-
     h1 {
         padding: 0;
-        line-height: 44px;
-        height: 44px;
         margin: 0;
+
+        height: 40px;
 
         label {
             overflow: hidden;
@@ -487,19 +484,18 @@ button.form-control {
         }
 
         .btn-group {
-            margin-left: 5px;
             margin-top: -5px;
+            margin-left: 5px;
         }
 
         > i.btn {
             float: right;
-            line-height: 44px;
+            line-height: 40px;
         }
     }
 
     input {
         font-size: 22px;
-        line-height: 44px;
         height: 44px;
     }
 }

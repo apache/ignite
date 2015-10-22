@@ -32,7 +32,7 @@ header#header.header
                         span.caret
                 //+header-item('/monitoring', '/monitoring', 'Monitoring')
                 li(ng-controller='notebooks')
-                    a.dropdown-toggle(ng-hide='$root.notebooks.length == 0' ng-class='{active: isActive("/sql")}' data-toggle='dropdown' bs-dropdown='notebookDropdown' data-placement='bottom-right') SQL
+                    a.dropdown-toggle(ng-hide='$root.notebooks.length == 0' ng-class='{active: isActive("/sql")}' data-toggle='dropdown' bs-dropdown='notebookDropdown' data-placement='bottom-left') SQL
                         span.caret
                     a(ng-hide='$root.notebooks.length > 0' ng-click='inputNotebookName()') SQL
                 //+header-item('/deploy', '/deploy', 'Deploy')

@@ -309,7 +309,14 @@ consoleModule.controller('metadataController', [
             function _loadSchemas() {
                 $loading.start('loadingMetadataFromDb');
 
-                $http.post('/agent/schemas', $scope.preset)
+                var preset = angular.copy($scope.preset);
+
+                if (preset.jdbcUrl == 'jdbc:h2:mem:test-drive-db') {
+                    preset.user = 'sa';
+                    preset.password = '';
+                }
+
+                $http.post('/agent/schemas', preset)
                     .success(function (schemas) {
                         $scope.loadMeta.schemas = _.map(schemas, function (schema) { return {use: false, name: schema}});
                         $scope.loadMeta.action = 'schemas';

@@ -271,7 +271,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
     - var fieldCommon = {'ng-model': fieldMdl, 'ng-required': 'field.required || required(field)'};
     - var fieldRequiredClass = '{true: "required"}[field.required || required(field)]'
     - var fieldHide = '{{field.hide}}'
-    - var fieldDisabled = '{{field.disabled}}'
+    - var fieldDisabled = {'ng-disabled': '{{field.disabled}}'}
     - var dropdownPlaceholder = {'ng-class': '{placeholder: !' + fieldMdl + ' || ' + fieldMdl + '.length == 0}'}
 
     div(ng-switch='field.type')
@@ -279,7 +279,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
             label {{::field.label}}
         div.checkbox(ng-switch-when='check' ng-hide=fieldHide)
             label(id='{{::field.id}}')
-                input(type='checkbox' ng-disabled=fieldDisabled)&attributes(fieldCommon)
+                input(type='checkbox')&attributes(fieldCommon)&attributes(fieldDisabled)
                 | {{::field.label}}
             +tipLabel('field.tip')
         div(ng-switch-when='text' ng-hide=fieldHide)
@@ -287,7 +287,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
             div(class=fieldClasses)
                 +tipField('field.tip')
                 .input-tip
-                    input.form-control(id='{{::field.id}}' type='text' ng-disabled=fieldDisabled placeholder='{{::field.placeholder}}' ng-focus='tableReset()')&attributes(fieldCommon)
+                    input.form-control(id='{{::field.id}}' type='text' placeholder='{{::field.placeholder}}' ng-focus='tableReset()')&attributes(fieldCommon)&attributes(fieldDisabled)
         div(ng-switch-when='typeahead' ng-hide=fieldHide)
             label(class=lblClasses ng-class=fieldRequiredClass) {{::field.label}}:
             div(class=fieldClasses)
@@ -299,13 +299,13 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
             div(class=fieldClasses)
                 +tipField('field.tip')
                 .input-tip
-                    input.form-control(id='{{::field.id}}' type='password' placeholder='{{::field.placeholder}}' on-enter='{{::field.onEnter}}')&attributes(fieldCommon)
+                    input.form-control(id='{{::field.id}}' type='password' placeholder='{{::field.placeholder}}' on-enter='{{::field.onEnter}}')&attributes(fieldCommon)&attributes(fieldDisabled)
         div(ng-switch-when='number' ng-hide=fieldHide)
             label(class=lblClasses ng-class=fieldRequiredClass) {{::field.label}}:
             div(class=fieldClasses)
                 +tipField('field.tip')
                 .input-tip
-                    input.form-control(id='{{::field.id}}' name='{{field.model}}' type='number' ng-disabled=fieldDisabled placeholder='{{::field.placeholder}}' ng-focus='tableReset()' min='{{field.min ? field.min : 0}}' max='{{field.max ? field.max : Number.MAX_VALUE}}')&attributes(fieldCommon)
+                    input.form-control(id='{{::field.id}}' name='{{field.model}}' type='number' placeholder='{{::field.placeholder}}' ng-focus='tableReset()' min='{{field.min ? field.min : 0}}' max='{{field.max ? field.max : Number.MAX_VALUE}}')&attributes(fieldCommon)&attributes(fieldDisabled)
                     +ico-exclamation('{{field.model}}', 'min', 'Value is less than allowable minimum.')
                     +ico-exclamation('{{field.model}}', 'max', 'Value is more than allowable maximum.')
                     +ico-exclamation('{{field.model}}', 'number', 'Invalid value. Only numbers allowed.')
@@ -314,7 +314,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
             div(class=fieldClasses)
                 +tipField('field.tip')
                 .input-tip
-                    button.select-toggle.form-control(id='{{::field.id}}' bs-select ng-disabled=fieldDisabled data-placeholder='{{::field.placeholder}}' bs-options='item.value as item.label for item in {{field.items}}' ng-attr-data-container='{{::field.container}}' tabindex='0')&attributes(fieldCommon)&attributes(dropdownPlaceholder)
+                    button.select-toggle.form-control(id='{{::field.id}}' bs-select data-placeholder='{{::field.placeholder}}' bs-options='item.value as item.label for item in {{field.items}}' ng-attr-data-container='{{::field.container}}' tabindex='0')&attributes(fieldCommon)&attributes(dropdownPlaceholder)&attributes(fieldDisabled)
         div(ng-switch-when='dropdown-multiple' ng-hide=fieldHide)
             dic(class=lblClasses)
                 label(ng-class=fieldRequiredClass) {{::field.label}}:
@@ -330,7 +330,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
             div(class=fieldClasses)
                 +tipField('field.tip')
                 .input-tip
-                    button.select-toggle.form-control(id='{{::field.id}}' bs-select ng-disabled=fieldDisabled data-placeholder='{{::field.placeholder}}' bs-options='item.value as item.label for item in {{field.items}}' tabindex='0')&attributes(fieldCommon)&attributes(dropdownPlaceholder)
+                    button.select-toggle.form-control(id='{{::field.id}}' bs-select data-placeholder='{{::field.placeholder}}' bs-options='item.value as item.label for item in {{field.items}}' tabindex='0')&attributes(fieldCommon)&attributes(dropdownPlaceholder)&attributes(fieldDisabled)
             a.customize(ng-if='#{fieldMdl} && field.settings && field.details[#{fieldMdl}].fields.length > 0' ng-click='#{expanded} = !#{expanded}') {{#{expanded} ? 'Hide settings' : 'Show settings'}}
             .col-sm-12.panel-details(ng-show='(#{expanded} || !field.settings) && #{fieldMdl}')
                 .details-row(ng-repeat='detail in field.details[#{fieldMdl}].fields')
@@ -507,9 +507,9 @@ mixin save-remove-buttons(objectName)
 
     div(ng-show='tableVisibleRow(displayedRows, selectedItem)' style='display: inline-block;')
         .panel-tip-container(ng-hide='!backupItem || backupItem._id')
-            a.btn.btn-primary(ng-disabled='!ui.isDirty()' ng-click='ui.isDirty() ? saveItem() : ""' bs-tooltip='' data-title='{{saveBtnTipText(ui.isDirty(), "#{objectName}")}}' data-placement='bottom' data-trigger='hover') Save
+            a.btn.btn-primary(ng-disabled='!ui.isDirty()' ng-click='ui.isDirty() ? saveItem() : ""' bs-tooltip data-title='{{saveBtnTipText(ui.isDirty(), "#{objectName}")}}' data-placement='bottom' data-trigger='hover') Save
         .panel-tip-container(ng-show='backupItem._id')
-            a.btn.btn-primary(id='save-item' ng-disabled='!ui.isDirty()' ng-click='ui.isDirty() ? saveItem() : ""' bs-tooltip='' data-title='{{saveBtnTipText(ui.isDirty(), "#{objectName}")}}' data-placement='bottom' data-trigger='hover') Save
+            a.btn.btn-primary(id='save-item' ng-disabled='!ui.isDirty()' ng-click='ui.isDirty() ? saveItem() : ""' bs-tooltip data-title='{{saveBtnTipText(ui.isDirty(), "#{objectName}")}}' data-placement='bottom' data-trigger='hover') Save
         .panel-tip-container(ng-show='backupItem._id')
             a.btn.btn-primary(id='clone-item' ng-click='cloneItem()' bs-tooltip=cloneTip data-placement='bottom' data-trigger='hover') Clone
         .btn-group.panel-tip-container(ng-show='backupItem._id')
