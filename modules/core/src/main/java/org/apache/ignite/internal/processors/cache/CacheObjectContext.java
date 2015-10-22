@@ -222,7 +222,7 @@ public class CacheObjectContext {
             CacheObject co = (CacheObject)o;
 
             if (!keepPortable || co.isPlatformType())
-                return unwrapPortable(co.value(this, false), keepPortable);
+                return unwrapPortable(co.value(this, true), keepPortable);
         }
 
         return o;

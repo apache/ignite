@@ -811,9 +811,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             else
                 cacheVal = localCachePeek0(cacheKey, modes.heap, modes.offheap, modes.swap, plc);
 
-            Object val = CU.value(cacheVal, ctx, true);
-
-            val = ctx.unwrapPortableIfNeeded(val, ctx.keepPortable());
+            Object val = ctx.unwrapPortableIfNeeded(cacheVal, ctx.keepPortable());
 
             return (V)val;
         }

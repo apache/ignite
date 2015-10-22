@@ -165,6 +165,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         long start = statsEnabled ? System.nanoTime() : 0L;
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         boolean res = (Boolean)updateAllInternal(UPDATE,
             Collections.singleton(key),
             Collections.singleton(val),
@@ -175,7 +177,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             filter,
             ctx.writeThrough(),
             ctx.readThrough(),
-            ctx.operationContextPerCall().isKeepPortable());
+            opCtx != null && opCtx.isKeepPortable());
 
         if (statsEnabled)
             metrics0().addPutTimeNanos(System.nanoTime() - start);
@@ -404,6 +406,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         A.notNull(key, "key");
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         Boolean rmv = (Boolean)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
@@ -414,7 +418,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             CU.empty0(),
             ctx.writeThrough(),
             ctx.readThrough(),
-            ctx.operationContextPerCall().isKeepPortable());
+            opCtx != null && opCtx.isKeepPortable());
 
         if (statsEnabled && rmv)
             metrics0().addRemoveTimeNanos(System.nanoTime() - start);
