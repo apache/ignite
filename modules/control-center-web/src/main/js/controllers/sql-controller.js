@@ -55,6 +55,9 @@ consoleModule.controller('sqlController',
     // Time line X axis descriptor.
     var TIME_LINE = {value: -1, type: 'java.sql.Date', label: 'TIME_LINE'};
 
+    // Row index X axis descriptor.
+    var ROW_IDX = {value: -2, type: 'java.lang.Integer', label: 'ROW_IDX'};
+
     // We need max 1800 items to hold history for 30 mins in case of refresh every second.
     var HISTORY_LENGTH = 1800;
 
@@ -83,7 +86,7 @@ consoleModule.controller('sqlController',
     };
 
     $scope.chartAcceptValColumn = function(paragraph, item) {
-        var accepted = _.findIndex(paragraph.chartValCols, item) < 0 && item != TIME_LINE && _numberType(item.type);
+        var accepted = _.findIndex(paragraph.chartValCols, item) < 0 && item.value >= 0 && _numberType(item.type);
 
         if (accepted) {
             paragraph.chartValCols.push(item);
@@ -381,6 +384,12 @@ consoleModule.controller('sqlController',
         return _.contains(_numberClasses, cls);
     };
 
+    var _intClasses = ['java.lang.Byte', 'java.lang.Integer', 'java.lang.Long', 'java.lang.Short'];
+
+    function _intType(cls) {
+        return _.contains(_intClasses, cls);
+    }
+
     var _rebuildColumns = function (paragraph) {
         var columnDefs = [];
 
@@ -403,14 +412,16 @@ consoleModule.controller('sqlController',
 
         paragraph.gridOptions.api.setColumnDefs(columnDefs);
 
-        if (paragraph.chartColumns.length > 0)
+        if (paragraph.chartColumns.length > 0) {
             paragraph.chartColumns.push(TIME_LINE);
+            paragraph.chartColumns.push(ROW_IDX);
+        }
 
         // We could accept onl not object columns for X axis.
-        paragraph.chartKeyCols = _retainColumns(paragraph.chartColumns, paragraph.chartKeyCols, _notObjectType);
+        paragraph.chartKeyCols = _retainColumns(paragraph.chartColumns, paragraph.chartKeyCols, _notObjectType, true);
 
         // We could accept only numeric columns for Y axis.
-        paragraph.chartValCols = _retainColumns(paragraph.chartColumns, paragraph.chartValCols, _numberType, paragraph.chartKeyCols[0]);
+        paragraph.chartValCols = _retainColumns(paragraph.chartColumns, paragraph.chartValCols, _numberType, false);
     };
 
     $scope.toggleSystemColumns = function (paragraph) {
@@ -430,32 +441,30 @@ consoleModule.controller('sqlController',
         });
     };
 
-    function _retainColumns(allCols, curCols, acceptableType, dfltCol) {
+    function _retainColumns(allCols, curCols, acceptableType, xAxis) {
         var retainedCols = [];
 
-        var allColsLen = allCols.length;
+        var availableCols = xAxis ? allCols : _.filter(allCols, function (col) {
+            return col.value >= 0;
+        });
 
-        if (allColsLen > 0) {
+        if (availableCols.length > 0) {
             curCols.forEach(function (curCol) {
-                var col = _.find(allCols, {label: curCol.label});
+                var col = _.find(availableCols, {label: curCol.label});
 
                 if (col && acceptableType(col.type))
                     retainedCols.push(col);
             });
 
-            if ($common.isEmptyArray(retainedCols))
-                for (idx = 0; idx < allColsLen; idx++) {
-                    var col = allCols[idx];
+            // If nothing was restored, add first acceptable column.
+            if ($common.isEmptyArray(retainedCols)) {
+                var col = _.find(availableCols, function (col) {
+                    return acceptableType(col.type);
+                });
 
-                    if (acceptableType(col.type) && col != dfltCol) {
-                        retainedCols.push(col);
-
-                        break;
-                    }
-                }
-
-            if ($common.isEmptyArray(retainedCols) && dfltCol && acceptableType(dfltCol.type))
-                retainedCols.push(dfltCol);
+                if (col)
+                    retainedCols.push(col);
+            }
         }
 
         return retainedCols;
@@ -791,9 +800,8 @@ consoleModule.controller('sqlController',
     };
 
     function _chartNumber(arr, idx, dflt) {
-        if (arr && arr.length > idx && _.isNumber(arr[idx])) {
+        if (idx >= 0 && arr && arr.length > idx && _.isNumber(arr[idx]))
             return arr[idx];
-        }
 
         return dflt;
     }
@@ -949,14 +957,16 @@ consoleModule.controller('sqlController',
         return function (d) {
             var values = paragraph.charts[0].data[0].values;
 
+            var fmt = _intType(paragraph.chartKeyCols[0].type) ? 'd' : ',.2f';
+
             var dx = values[d];
 
             if (!dx)
-                return d3.format(',.2f')(d);
+                return d3.format(fmt)(d);
 
             var lbl = dx.xLbl;
 
-            return lbl ? lbl : d3.format(',.2f')(d);
+            return lbl ? lbl : d3.format(fmt)(d);
         }
     };
 
