@@ -259,8 +259,8 @@ public class GridNioRecoveryDescriptor {
      */
     public void connected() {
         synchronized (this) {
-            assert reserved;
-            assert !connected;
+            assert reserved : this;
+            assert !connected : this;
 
             connected = true;
 

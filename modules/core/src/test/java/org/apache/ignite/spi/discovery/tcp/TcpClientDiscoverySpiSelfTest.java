@@ -1074,6 +1074,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testJoinError() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1624");
+
         startServerNodes(1);
 
         Ignite ignite = G.ignite("server-0");

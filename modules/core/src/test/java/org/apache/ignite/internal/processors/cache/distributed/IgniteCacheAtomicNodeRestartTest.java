@@ -30,4 +30,12 @@ public class IgniteCacheAtomicNodeRestartTest extends GridCachePartitionedNodeRe
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
+
+    @Override public void testRestartWithPutFourNodesNoBackups() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1587");
+    }
+
+    @Override public void testRestartWithPutFourNodesOneBackupsOffheapTiered() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1587");
+    }
 }

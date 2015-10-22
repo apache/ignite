@@ -90,11 +90,6 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean allowForStartup() {
-        return true;
-    }
-
     /**
      * @param keys Collection of keys.
      */

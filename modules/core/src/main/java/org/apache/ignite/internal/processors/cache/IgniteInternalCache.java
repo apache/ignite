@@ -925,8 +925,12 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Note that this operation is local as it merely clears
      * entries from local cache. It does not remove entries from
      * remote caches or from underlying persistent storage.
+     *
+     * @param srv Whether to clear server cache.
+     * @param near Whether to clear near cache.
+     * @param readers Whether to clear readers.
      */
-    public void clearLocally();
+    public void clearLocally(boolean srv, boolean near, boolean readers);
 
     /**
      * Clears an entry from this cache and swap storage only if the entry
@@ -958,8 +962,11 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * remote caches or from underlying persistent storage.
      *
      * @param keys Keys to clearLocally.
+     * @param srv Whether to clear server cache.
+     * @param near Whether to clear near cache.
+     * @param readers Whether to clear readers.
      */
-    public void clearLocallyAll(Set<? extends K> keys);
+    public void clearLocallyAll(Set<? extends K> keys, boolean srv, boolean near, boolean readers);
 
     /**
      * Clears key on all nodes that store it's data. That is, caches are cleared on remote
@@ -976,7 +983,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Clears keys on all nodes that store it's data. That is, caches are cleared on remote
-     * nodes and local node, as opposed to {@link IgniteInternalCache#clearLocallyAll(Set)} method which only
+     * nodes and local node, as opposed to {@link IgniteInternalCache#clearLocallyAll(Set, boolean, boolean, boolean)} method which only
      * clears local node's cache.
      * <p>
      * Ignite will make the best attempt to clear caches on all nodes. If some caches
@@ -989,7 +996,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Clears cache on all nodes that store it's data. That is, caches are cleared on remote
-     * nodes and local node, as opposed to {@link IgniteInternalCache#clearLocally()} method which only
+     * nodes and local node, as opposed to {@link IgniteInternalCache#clearLocally(boolean, boolean, boolean)} method which only
      * clears local node's cache.
      * <p>
      * Ignite will make the best attempt to clear caches on all nodes. If some caches
@@ -1015,7 +1022,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param keys Keys to clear.
      * @return Clear future.
      */
-    public IgniteInternalFuture<?> clearAsync(Set<? extends K> keys);
+    public IgniteInternalFuture<?> clearAllAsync(Set<? extends K> keys);
 
     /**
      * Removes given key mapping from cache. If cache previously contained value for the given key,

@@ -21,10 +21,15 @@ import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsException;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
@@ -157,5 +162,23 @@ public class IgfsUtils {
 
         throw new IgniteCheckedException("Failed to perform operation since max number of attempts " +
             "exceeded. [maxAttempts=" + MAX_CACHE_TX_RETRIES + ']');
+    }
+
+
+    /**
+     * Sends a series of event.
+     *
+     * @param path The path of the created file.
+     * @param type The type of event to send.
+     */
+    public static void sendEvents(GridKernalContext kernalCtx, IgfsPath path, int type) {
+        assert kernalCtx != null;
+        assert path != null;
+
+        GridEventStorageManager evts = kernalCtx.event();
+        ClusterNode locNode = kernalCtx.discovery().localNode();
+
+        if (evts.isRecordable(type))
+            evts.record(new IgfsEvent(path, locNode, type));
     }
 }

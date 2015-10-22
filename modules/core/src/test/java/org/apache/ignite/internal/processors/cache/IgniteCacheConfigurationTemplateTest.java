@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheExistsException;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
@@ -362,6 +363,36 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
         evt = evtLatch.await(3000, TimeUnit.MILLISECONDS);
 
         assertTrue(evt);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTemplateCleanup() throws Exception {
+        startGridsMultiThreaded(3);
+
+        try {
+            CacheConfiguration ccfg = new CacheConfiguration("affTemplate-*");
+
+            ccfg.setAffinity(new RendezvousAffinityFunction());
+
+            ignite(0).addCacheConfiguration(ccfg);
+
+            ignite(0).getOrCreateCache("affTemplate-1");
+
+            IgniteCache<Object, Object> cache = ignite(0).getOrCreateCache("affTemplate-2");
+
+            ignite(0).destroyCache("affTemplate-1");
+
+            startGrid(3);
+
+            cache.put(1, 1);
+
+            assertEquals(1, cache.get(1));
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**

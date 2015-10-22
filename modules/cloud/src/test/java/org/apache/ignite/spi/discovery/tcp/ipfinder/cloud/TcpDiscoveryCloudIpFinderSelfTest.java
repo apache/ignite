@@ -68,6 +68,8 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
      * @throws Exception If any error occurs.
      */
     public void testGoogleComputeEngine() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1585");
+
         testCloudProvider("google-compute-engine");
     }
 

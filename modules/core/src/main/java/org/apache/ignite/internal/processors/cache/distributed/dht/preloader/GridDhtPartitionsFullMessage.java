@@ -43,7 +43,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /** */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<Integer, GridDhtPartitionFullMap> parts = new HashMap<>();
+    private Map<Integer, GridDhtPartitionFullMap> parts;
 
     /** */
     private byte[] partsBytes;
@@ -68,7 +68,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         @NotNull AffinityTopologyVersion topVer) {
         super(id, lastVer);
 
-        assert parts != null;
         assert id == null || topVer.equals(id.topologyVersion());
 
         this.topVer = topVer;
@@ -86,6 +85,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @param fullMap Full partitions map.
      */
     public void addFullPartitionsMap(int cacheId, GridDhtPartitionFullMap fullMap) {
+        if (parts == null)
+            parts = new HashMap<>();
+
         if (!parts.containsKey(cacheId))
             parts.put(cacheId, fullMap);
     }
@@ -95,7 +97,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (parts != null)
+        if (parts != null && partsBytes == null)
             partsBytes = ctx.marshaller().marshal(parts);
     }
 
@@ -117,7 +119,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (partsBytes != null)
+        if (partsBytes != null && parts == null)
             parts = ctx.marshaller().unmarshal(partsBytes, ldr);
     }
 

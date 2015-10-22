@@ -293,10 +293,12 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      * @throws IgniteCheckedException If failed to add entry due to external locking.
      */
     @Nullable private GridCacheMvccCandidate addEntry(GridDistributedCacheEntry entry) throws IgniteCheckedException {
-        GridCacheMvccCandidate cand = cctx.mvcc().explicitLock(threadId, entry.key());
+        IgniteTxKey txKey = entry.txKey();
+
+        GridCacheMvccCandidate cand = cctx.mvcc().explicitLock(threadId, txKey);
 
         if (inTx()) {
-            IgniteTxEntry txEntry = tx.entry(entry.txKey());
+            IgniteTxEntry txEntry = tx.entry(txKey);
 
             txEntry.cached(entry);
 
@@ -317,7 +319,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     lockVer,
                     timeout,
                     true,
-                    tx.entry(entry.txKey()).locked(),
+                    tx.entry(txKey).locked(),
                     inTx(),
                     inTx() && tx.implicitSingle(),
                     false,
@@ -596,7 +598,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             // Continue mapping on the same topology version as it was before.
             this.topVer.compareAndSet(null, topVer);
 
-            map(keys, false);
+            map(keys, false, true);
 
             markInitialized();
 
@@ -652,7 +654,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     this.topVer.compareAndSet(null, topVer);
                 }
 
-                map(keys, remap);
+                map(keys, remap, false);
 
                 if (c != null)
                     c.run();
@@ -689,8 +691,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      *
      * @param keys Keys.
      * @param remap Remap flag.
+     * @param topLocked {@code True} if thread already acquired lock preventing topology change.
      */
-    private void map(Collection<KeyCacheObject> keys, boolean remap) {
+    private void map(Collection<KeyCacheObject> keys, boolean remap, boolean topLocked) {
         try {
             AffinityTopologyVersion topVer = this.topVer.get();
 
@@ -817,7 +820,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                     boolean clientFirst = false;
 
                                     if (first) {
-                                        clientFirst = clientNode && (tx == null || !tx.hasRemoteLocks());
+                                        clientFirst = clientNode &&
+                                            !topLocked &&
+                                            (tx == null || !tx.hasRemoteLocks());
 
                                         first = false;
                                     }
@@ -1045,7 +1050,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     }
                     else {
                         for (KeyCacheObject key : keys)
-                            cctx.mvcc().markExplicitOwner(key, threadId);
+                            cctx.mvcc().markExplicitOwner(cctx.txKey(key), threadId);
                     }
 
                     try {
@@ -1084,7 +1089,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             if (!cctx.affinity().primary(cctx.localNode(), key, topVer)) {
                 // Remove explicit locks added so far.
                 for (KeyCacheObject k : keys)
-                    cctx.mvcc().removeExplicitLock(threadId, k, lockVer);
+                    cctx.mvcc().removeExplicitLock(threadId, cctx.txKey(k), lockVer);
 
                 return false;
             }
@@ -1409,7 +1414,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                 log.debug("Processed response for entry [res=" + res + ", entry=" + entry + ']');
                         }
                         else
-                            cctx.mvcc().markExplicitOwner(k, threadId);
+                            cctx.mvcc().markExplicitOwner(cctx.txKey(k), threadId);
 
                         if (retval && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
                             cctx.events().addEvent(cctx.affinity().partition(k),
@@ -1448,7 +1453,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             undoLocks(false, false);
 
             for (KeyCacheObject key : GridDhtColocatedLockFuture.this.keys)
-                cctx.mvcc().removeExplicitLock(threadId, key, lockVer);
+                cctx.mvcc().removeExplicitLock(threadId, cctx.txKey(key), lockVer);
 
             mapOnTopology(true, new Runnable() {
                 @Override public void run() {
