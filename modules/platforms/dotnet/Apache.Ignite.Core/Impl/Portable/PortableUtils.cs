@@ -1017,7 +1017,14 @@ namespace Apache.Ignite.Core.Impl.Portable
             // Check that bitwise conversion returns correct result
             var guid = Guid.NewGuid();
 
-            // TODO:
+            var bytes = guid.ToByteArray();
+
+            var bytes0 = (byte*) &guid;
+
+            for (var i = 0; i < bytes.Length; i++)
+                if (bytes[i] != bytes0[i])
+                    return false;
+
             return true;
         }
 
