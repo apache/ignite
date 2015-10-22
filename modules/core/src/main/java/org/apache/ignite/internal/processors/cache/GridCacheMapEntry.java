@@ -1893,7 +1893,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             null,
                             null,
                             false,
-                            updateIdx0);
+                            updateIdx0 == null ? 0 : updateIdx0);
                     }
                     // Will update something.
                     else {
@@ -2060,7 +2060,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         null,
                         null,
                         false,
-                        -1);
+                        updateIdx0 == null ? 0 : updateIdx0);
                 }
             }
 
@@ -2209,7 +2209,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             null,
                             null,
                             false,
-                            updateIdx0);
+                            updateIdx0 == null ? 0 : updateIdx0);
                     else if (interceptorVal != updated0) {
                         updated0 = cctx.unwrapTemporary(interceptorVal);
 
@@ -2291,7 +2291,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             null,
                             null,
                             false,
-                            updateIdx0);
+                            updateIdx0 == null ? 0 : updateIdx0);
                 }
 
                 if (writeThrough)
