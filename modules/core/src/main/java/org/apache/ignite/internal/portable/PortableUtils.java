@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.internal.portable.builder.PortableLazyValue;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableObject;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
+
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Collection;
@@ -33,11 +40,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import org.apache.ignite.internal.portable.builder.PortableLazyValue;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.portable.PortableObject;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN_ARR;
@@ -64,6 +66,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
@@ -465,5 +468,15 @@ public class PortableUtils {
             return new ConcurrentSkipListSet<>(((ConcurrentSkipListSet<Object>)set).comparator());
 
         return U.newHashSet(set.size());
+    }
+
+    /**
+     * Check protocol version.
+     *
+     * @param protoVer Protocol version.
+     */
+    public static void checkProtocolVersion(byte protoVer) {
+        if (PROTO_VER != protoVer)
+            throw new PortableException("Unsupported protocol version: " + protoVer);
     }
 }

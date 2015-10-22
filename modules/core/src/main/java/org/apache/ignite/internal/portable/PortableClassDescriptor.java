@@ -653,6 +653,7 @@ public class PortableClassDescriptor {
         int pos = writer.position();
 
         writer.doWriteByte(GridPortableMarshaller.OBJ);
+        writer.doWriteByte(GridPortableMarshaller.PROTO_VER);
         writer.doWriteBoolean(userType);
         writer.doWriteInt(registered ? typeId : GridPortableMarshaller.UNREGISTERED_TYPE_ID);
         writer.doWriteInt(obj instanceof CacheObjectImpl ? 0 : obj.hashCode());

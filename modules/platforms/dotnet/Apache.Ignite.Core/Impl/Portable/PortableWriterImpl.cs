@@ -1191,6 +1191,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 // Write header.
                 _stream.WriteByte(PU.HdrFull);
+                _stream.WriteByte(PU.ProtoVer);
                 _stream.WriteBool(desc.UserType);
                 _stream.WriteInt(desc.TypeId);
                 _stream.WriteInt(obj.GetHashCode());
@@ -1226,12 +1227,12 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Calculate and write length.
                 int len = _stream.Position - pos;
 
-                _stream.WriteInt(pos + 10, len);
-
+                _stream.WriteInt(pos + PU.OffsetLen, len);
+                
                 if (_curRawPos != 0)
-                    _stream.WriteInt(pos + 14, (int)(_curRawPos - pos));
+                    _stream.WriteInt(pos + PU.OffsetRaw, (int)(_curRawPos - pos));
                 else
-                    _stream.WriteInt(pos + 14, len);
+                    _stream.WriteInt(pos + PU.OffsetRaw, len);
 
                 // Apply structure updates if any.
                 if (_curStructUpdates != null)

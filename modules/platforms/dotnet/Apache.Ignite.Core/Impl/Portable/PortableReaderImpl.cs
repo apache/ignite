@@ -672,7 +672,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (!doDetach)
                     return GetPortableUserObject(pos, pos, Stream.Array());
                 
-                Stream.Seek(pos + 10, SeekOrigin.Begin);
+                Stream.Seek(pos + PortableUtils.OffsetLen, SeekOrigin.Begin);
 
                 var len = Stream.ReadInt();
 
@@ -692,6 +692,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         [SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals", MessageId = "hashCode")]
         private T ReadFullObject<T>(int pos)
         {
+            // Validate protocol version.
+            PortableUtils.ValidateProtocolVersion(Stream);
+
             // Read header.
             bool userType = Stream.ReadBool();
             int typeId = Stream.ReadInt();
@@ -883,7 +886,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             // This method is expected to be called when stream pointer is set either before
             // the field or on raw data offset.
-            int start = _curPos + 18;
+            int start = _curPos + PortableUtils.FullHdrLen;
             int end = _curPos + _curRawOffset;
 
             int initial = Stream.Position;
@@ -1005,7 +1008,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="bytes">Bytes.</param>
         private PortableUserObject GetPortableUserObject(int pos, int offs, byte[] bytes)
         {
-            Stream.Seek(pos + 2, SeekOrigin.Begin);
+            Stream.Seek(pos + PortableUtils.OffsetTypeId, SeekOrigin.Begin);
 
             var id = Stream.ReadInt();
 

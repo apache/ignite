@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Runtime.Serialization.Formatters.Binary;
+    using System.Security.Policy;
     using System.Text;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -48,9 +49,24 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Header of object in fully serialized form. */
         public const byte HdrFull = 103;
-        
+
+        /** Protocol versnion. */
+        public const byte ProtoVer = 1;
+
         /** Full header length. */
-        public const int FullHdrLen = 18;
+        public const int FullHdrLen = 19;
+
+        /** Offset: hash code. */
+        public const int OffsetTypeId = 3;
+
+        /** Offset: hash code. */
+        public const int OffsetHashCode = 7;
+
+        /** Offset: length. */
+        public const int OffsetLen = 11;
+
+        /** Offset: raw data offset. */
+        public const int OffsetRaw = 15;
 
         /** Type: object. */
         public const byte TypeObject = HdrFull;
@@ -1763,7 +1779,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static IDictionary<int, int> ObjectFields(IPortableStream stream, int typeId, int rawDataOffset)
         {
-            int endPos = stream.Position + rawDataOffset - 18;
+            int endPos = stream.Position + rawDataOffset - FullHdrLen;
 
             // First loop detects amount of fields in the object.
             int retPos = stream.Position;
@@ -2009,6 +2025,18 @@ namespace Apache.Ignite.Core.Impl.Portable
                 err = ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
 
             return null;
+        }
+
+        /// <summary>
+        /// Validate protocol version.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        public static void ValidateProtocolVersion(IPortableStream stream)
+        {
+            byte ver = stream.ReadByte();
+
+            if (ver != ProtoVer)
+                throw new PortableException("Unsupported protocol version: " + ver);
         }
 
         /**

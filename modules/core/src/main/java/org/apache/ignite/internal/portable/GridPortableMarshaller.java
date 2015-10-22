@@ -186,23 +186,29 @@ public class GridPortableMarshaller {
     /** */
     public static final int UNREGISTERED_TYPE_ID = 0;
 
-    /** */
-    public static final int TYPE_ID_POS = 2;
+    /** Protocol version. */
+    public static final byte PROTO_VER = 1;
+
+    /** Protocol version position. */
+    public static final int PROTO_VER_POS = 1;
 
     /** */
-    public static final int HASH_CODE_POS = 6;
+    public static final int TYPE_ID_POS = 3;
 
     /** */
-    public static final int TOTAL_LEN_POS = 10;
+    public static final int HASH_CODE_POS = 7;
 
     /** */
-    public static final byte RAW_DATA_OFF_POS = 14;
+    public static final int TOTAL_LEN_POS = 11;
 
     /** */
-    public static final int CLS_NAME_POS = 18;
+    public static final byte RAW_DATA_OFF_POS = 15;
 
     /** */
-    public static final byte DFLT_HDR_LEN = 18;
+    public static final int CLS_NAME_POS = 19;
+
+    /** */
+    public static final byte DFLT_HDR_LEN = 19;
 
     /** */
     private final PortableContext ctx;

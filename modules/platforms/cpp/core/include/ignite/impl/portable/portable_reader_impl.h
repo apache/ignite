@@ -747,22 +747,34 @@ namespace ignite
                     }
                     else
                     {
-                        bool usrType = stream->ReadBool();
-                        int32_t typeId = stream->ReadInt32();
-                        int32_t hashCode = stream->ReadInt32();
-                        int32_t len = stream->ReadInt32();
-                        int32_t rawOff = stream->ReadInt32();
+                        if (hdr != IGNITE_HDR_FULL) {
+                            IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_PORTABLE, "Unexpected header during deserialization: ", hdr);
+                        }
+                        else {
+                            int8_t protoVer = stream->ReadInt8();
 
-                        ignite::portable::PortableType<T> type;
-                        TemplatedPortableIdResolver<T> idRslvr(type);
-                        PortableReaderImpl readerImpl(stream, &idRslvr, pos, usrType, typeId, hashCode, len, rawOff);
-                        ignite::portable::PortableReader reader(&readerImpl);
+                            if (protoVer != IGNITE_PROTO_VER) {
+                                IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_PORTABLE, "Unsupported portable protocol version: ", protoVer);
+                            }
+                            else {
+                                bool usrType = stream->ReadBool();
+                                int32_t typeId = stream->ReadInt32();
+                                int32_t hashCode = stream->ReadInt32();
+                                int32_t len = stream->ReadInt32();
+                                int32_t rawOff = stream->ReadInt32();
 
-                        T val = type.Read(reader);
+                                ignite::portable::PortableType<T> type;
+                                TemplatedPortableIdResolver<T> idRslvr(type);
+                                PortableReaderImpl readerImpl(stream, &idRslvr, pos, usrType, typeId, hashCode, len, rawOff);
+                                ignite::portable::PortableReader reader(&readerImpl);
 
-                        stream->Position(pos + len);
+                                T val = type.Read(reader);
 
-                        return val;
+                                stream->Position(pos + len);
+
+                                return val;
+                            }
+                        }
                     }
                 }
 
