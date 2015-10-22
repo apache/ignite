@@ -2163,10 +2163,14 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 var l = val.CBA;
 
-                // TODO: This is not valid in Big Endian mode
-                ABC = ((l >> 32) & 0x00000000FFFFFFFF) | ((l << 48) & 0xFFFF000000000000) |
-                      ((l << 16) & 0x0000FFFF00000000);
+                if (BitConverter.IsLittleEndian)
+                    ABC = ((l >> 32) & 0x00000000FFFFFFFF) | ((l << 48) & 0xFFFF000000000000) |
+                          ((l << 16) & 0x0000FFFF00000000);
+                else
+                    ABC = ((l << 32) & 0xFFFFFFFF00000000) | ((l >> 48) & 0x000000000000FFFF) |
+                          ((l >> 16) & 0x00000000FFFF0000);
 
+                // This is valid in any endianness (symmetrical)
                 DEGHIJK = ReverseByteOrder(val.KJIHGED);
             }
         }
@@ -2193,11 +2197,14 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 var l = accessor.ABC;
 
-                // TODO: This is not valid in Big Endian mode
-                CBA = ((l << 32) & 0xFFFFFFFF00000000) | ((l >> 48) & 0x000000000000FFFF) |
-                      ((l >> 16) & 0x00000000FFFF0000);
+                if (BitConverter.IsLittleEndian)
+                    CBA = ((l << 32) & 0xFFFFFFFF00000000) | ((l >> 48) & 0x000000000000FFFF) |
+                          ((l >> 16) & 0x00000000FFFF0000);
+                else
+                    CBA = ((l >> 32) & 0x00000000FFFFFFFF) | ((l << 48) & 0xFFFF000000000000) |
+                          ((l << 16) & 0x0000FFFF00000000);
 
-                // This is valid in any endianness
+                // This is valid in any endianness (symmetrical)
                 KJIHGED = ReverseByteOrder(accessor.DEGHIJK);
             }
         }
