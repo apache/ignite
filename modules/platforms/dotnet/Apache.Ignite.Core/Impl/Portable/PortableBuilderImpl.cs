@@ -37,10 +37,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Cached dictionary with no values. */
         private static readonly IDictionary<int, object> EmptyVals = new Dictionary<int, object>();
-
-        /** Offset: length. */
-        private const int OffsetLen = 10;
-
+        
         /** Portables. */
         private readonly PortablesImpl _portables;
 
@@ -390,6 +387,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             else if (inHdr == PortableUtils.HdrFull)
             {
+                PortableUtils.ValidateProtocolVersion(inStream);
+
                 byte inUsrFlag = inStream.ReadByte();
                 int inTypeId = inStream.ReadInt();
                 int inHash = inStream.ReadInt();
@@ -410,6 +409,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     {
                         // New object, write in full form.
                         outStream.WriteByte(PortableUtils.HdrFull);
+                        outStream.WriteByte(PortableUtils.ProtoVer);
                         outStream.WriteByte(inUsrFlag);
                         outStream.WriteInt(inTypeId);
                         outStream.WriteInt(changeHash ? hash : inHash);
@@ -494,7 +494,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         // Write length and raw data offset.
                         int outResPos = outStream.Position;
 
-                        outStream.Seek(outStartPos + OffsetLen, SeekOrigin.Begin);
+                        outStream.Seek(outStartPos + PortableUtils.OffsetLen, SeekOrigin.Begin);
 
                         outStream.WriteInt(outResPos - outStartPos); // Length.
                         outStream.WriteInt(rawPos - outStartPos); // Raw offset.

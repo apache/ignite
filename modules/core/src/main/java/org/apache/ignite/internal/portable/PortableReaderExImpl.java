@@ -45,6 +45,7 @@ import org.apache.ignite.internal.util.GridEnumCache;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.portable.PortableException;
 import org.apache.ignite.portable.PortableInvalidClassException;
 import org.apache.ignite.portable.PortableObject;
@@ -196,6 +197,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (!skipObjByte)
             // skip obj type byte
             rawOff++;
+
+        // Validate protocol version.
+        PortableUtils.checkProtocolVersion(doReadByte(true));
 
         // skip user flag
         rawOff += 1;
@@ -1737,6 +1741,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 return unmarshal(false);
 
             case OBJ:
+                PortableUtils.checkProtocolVersion(doReadByte(raw));
+
                 PortableObjectEx po;
 
                 if (detach) {
@@ -2143,6 +2149,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
                 assert typeId != UNREGISTERED_TYPE_ID;
 
+                PortableUtils.checkProtocolVersion(doReadByte(true));
+
                 boolean userType = doReadBoolean(true);
 
                 // Skip typeId and hash code.
@@ -2362,9 +2370,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         boolean dateObj = in.readByte() == DATE;
 
         if (!dateObj) {
-            in.position(start + 2);
+            in.position(start + GridPortableMarshaller.TYPE_ID_POS);
 
-            int typeId = in.readInt(start + 2);
+            int typeId = in.readInt(start + GridPortableMarshaller.TYPE_ID_POS);
 
             return ctx.isUseTimestamp(typeId);
         }

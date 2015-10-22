@@ -124,6 +124,14 @@ class PortableBuilderReader {
 
     /**
      * @param pos Position in the source array.
+     * @return Read byte value.
+     */
+    public byte readByteAbsolute(int pos) {
+        return PRIM.readByte(arr, pos);
+    }
+
+    /**
+     * @param pos Position in the source array.
      * @return Read int value.
      */
     public int readIntAbsolute(int pos) {

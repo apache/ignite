@@ -99,7 +99,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             /** {@inheritDoc} */
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
-                AffinityTopologyVersion topVer, 
+                AffinityTopologyVersion topVer,
                 KeyCacheObject key,
                 int hash,
                 CacheObject val,
@@ -450,16 +450,15 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean clearLocally0(K key, @Nullable CacheEntryPredicate[] filter) {
-        return super.clearLocally0(key, filter) | dht().clearLocally0(key, filter);
+    @Override public boolean clearLocally(K key) {
+        return super.clearLocally(key) | dht().clearLocally(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void clearLocally0(Collection<? extends K> keys,
-        @Nullable CacheEntryPredicate[] filter) {
-        super.clearLocally0(keys, filter);
+    @Override public void clearLocallyAll(Set<? extends K> keys, boolean srv, boolean near, boolean readers) {
+        super.clearLocallyAll(keys, srv, near, readers);
 
-        dht().clearLocally0(keys, filter);
+        dht().clearLocallyAll(keys, srv, near, readers);
     }
 
     /** {@inheritDoc} */
@@ -532,13 +531,13 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally() {
+    @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally(boolean srv, boolean near, boolean readers) {
         assert configuration().getNearConfiguration() != null;
 
         if (ctx.affinityNode()) {
             GridCacheVersion obsoleteVer = ctx.versions().next();
 
-            List<GridCacheClearAllRunnable<K, V>> dhtJobs = dht().splitClearLocally();
+            List<GridCacheClearAllRunnable<K, V>> dhtJobs = dht().splitClearLocally(srv, near, readers);
 
             List<GridCacheClearAllRunnable<K, V>> res = new ArrayList<>(dhtJobs.size());
 
@@ -548,7 +547,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             return res;
         }
         else
-            return super.splitClearLocally();
+            return super.splitClearLocally(srv, near, readers);
     }
 
     /**

@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteCollectionAbstractTest;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -47,11 +48,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteCollectionAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-80");
-    }
-
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
@@ -127,13 +123,21 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
 
                     Thread.currentThread().setName("createQueue-" + idx0);
 
-                    Ignite ignite = startGrid(idx0);
+                    final Ignite ignite = startGrid(idx0);
 
                     UUID locNodeId = ignite.cluster().localNode().id();
 
                     info("Started grid: " + locNodeId);
 
                     info("Creating queue: " + locNodeId);
+
+                    GridTestUtils.runMultiThreaded(new Callable<Void>() {
+                        @Override public Void call() throws Exception {
+                            ignite.queue("queue", 1, config(true));
+
+                            return null;
+                        }
+                    }, 10, "create-queue-" + ignite.name());
 
                     IgniteQueue<String> q = ignite.queue("queue", 1, config(true));
 

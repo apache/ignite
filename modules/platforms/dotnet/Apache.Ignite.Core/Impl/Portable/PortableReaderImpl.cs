@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Portable.Structure;
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
@@ -53,12 +54,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Current raw data offset. */
         private int _curRawOffset;
 
-        /** Current converter. */
-        private IPortableNameMapper _curConverter;
-
-        /** Current mapper. */
-        private IPortableIdMapper _curMapper;
-
         /** Current raw flag. */
         private bool _curRaw;
 
@@ -67,6 +62,10 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Portable read mode. */
         private PortableMode _mode;
+
+        /** Current type structure tracker. */
+        private PortableStructureTracker _curStruct;
+
 
         /// <summary>
         /// Constructor.
@@ -449,7 +448,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_curRaw)
                 throw new PortableException("Cannot read named fields after raw data is read.");
 
-            int fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
+            int fieldId = _curStruct.GetFieldId(fieldName);
 
             if (SeekField(fieldId))
                 return Deserialize<T>();
@@ -622,7 +621,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (!doDetach)
                     return GetPortableUserObject(pos, pos, Stream.Array());
                 
-                Stream.Seek(pos + 10, SeekOrigin.Begin);
+                Stream.Seek(pos + PortableUtils.OffsetLen, SeekOrigin.Begin);
 
                 var len = Stream.ReadInt();
 
@@ -642,6 +641,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         [SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals", MessageId = "hashCode")]
         private T ReadFullObject<T>(int pos)
         {
+            // Validate protocol version.
+            PortableUtils.ValidateProtocolVersion(Stream);
+
             // Read header.
             bool userType = Stream.ReadBool();
             int typeId = Stream.ReadInt();
@@ -694,16 +696,14 @@ namespace Apache.Ignite.Core.Impl.Portable
                     int oldTypeId = _curTypeId;
                     int oldPos = _curPos;
                     int oldRawOffset = _curRawOffset;
-                    IPortableNameMapper oldConverter = _curConverter;
-                    IPortableIdMapper oldMapper = _curMapper;
+                    var oldStruct = _curStruct;
                     bool oldRaw = _curRaw;
 
                     // Set new frame.
                     _curTypeId = typeId;
                     _curPos = pos;
                     _curRawOffset = rawOffset;
-                    _curConverter = desc.NameConverter;
-                    _curMapper = desc.Mapper;
+                    _curStruct = new PortableStructureTracker(desc, desc.ReaderTypeStructure);
                     _curRaw = false;
 
                     // Read object.
@@ -731,12 +731,13 @@ namespace Apache.Ignite.Core.Impl.Portable
                         desc.Serializer.ReadPortable(obj, this);
                     }
 
+                    _curStruct.UpdateReaderStructure();
+
                     // Restore old frame.
                     _curTypeId = oldTypeId;
                     _curPos = oldPos;
                     _curRawOffset = oldRawOffset;
-                    _curConverter = oldConverter;
-                    _curMapper = oldMapper;
+                    _curStruct = oldStruct;
                     _curRaw = oldRaw;
 
                     var wrappedSerializable = obj as SerializableObjectHolder;
@@ -833,7 +834,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             // This method is expected to be called when stream pointer is set either before
             // the field or on raw data offset.
-            int start = _curPos + 18;
+            int start = _curPos + PortableUtils.FullHdrLen;
             int end = _curPos + _curRawOffset;
 
             int initial = Stream.Position;
@@ -899,7 +900,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_curRaw)
                 throw new PortableException("Cannot read named fields after raw data is read.");
 
-            var fieldId = PortableUtils.FieldId(_curTypeId, fieldName, _curConverter, _curMapper);
+            var fieldId = _curStruct.GetFieldId(fieldName);
 
             if (!SeekField(fieldId))
                 return false;
@@ -955,7 +956,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="bytes">Bytes.</param>
         private PortableUserObject GetPortableUserObject(int pos, int offs, byte[] bytes)
         {
-            Stream.Seek(pos + 2, SeekOrigin.Begin);
+            Stream.Seek(pos + PortableUtils.OffsetTypeId, SeekOrigin.Begin);
 
             var id = Stream.ReadInt();
 

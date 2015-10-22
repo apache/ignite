@@ -21,9 +21,11 @@ import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache start/stop request.
@@ -69,6 +71,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private transient boolean exchangeNeeded;
 
+    /** */
+    private transient AffinityTopologyVersion cacheFutTopVer;
+
     /**
      * Constructor creates cache stop request.
      *
@@ -85,6 +90,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public boolean exchangeNeeded() {
         return exchangeNeeded;
+    }
+
+    /**
+     * @param cacheFutTopVer Ready topology version when dynamic cache future should be completed.
+     */
+    public void cacheFutureTopologyVersion(AffinityTopologyVersion cacheFutTopVer) {
+        this.cacheFutTopVer = cacheFutTopVer;
+    }
+
+    /**
+     * @return Ready topology version when dynamic cache future should be completed.
+     */
+    @Nullable public AffinityTopologyVersion cacheFutureTopologyVersion() {
+        return cacheFutTopVer;
     }
 
     /**

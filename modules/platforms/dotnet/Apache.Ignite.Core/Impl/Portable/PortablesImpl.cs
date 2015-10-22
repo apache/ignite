@@ -167,6 +167,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             PortableHeapStream stream = new PortableHeapStream(18);
 
             stream.WriteByte(PortableUtils.HdrFull);
+            stream.WriteByte(PortableUtils.ProtoVer);
             stream.WriteBool(true);
             stream.WriteInt(desc.TypeId);
             stream.WriteInt(0); // Hash.

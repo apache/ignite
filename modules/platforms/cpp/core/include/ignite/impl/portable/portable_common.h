@@ -35,8 +35,17 @@ namespace ignite
             /** Header: fulle form. */
             const int8_t IGNITE_HDR_FULL = 103;
 
+            /** Portable protocol version.  */
+            const int8_t IGNITE_PROTO_VER = 1;
+
             /** Full header length. */
-            const int32_t IGNITE_FULL_HDR_LEN = 18;
+            const int32_t IGNITE_FULL_HDR_LEN = 19;
+
+            /** Header offset: length. */
+            const int32_t IGNITE_OFFSET_LEN = 11;
+
+            /** Header offset: raw offset. */
+            const int32_t IGNITE_OFFSET_RAW = 15;
 
             /** Type: object. */
             const int8_t IGNITE_TYPE_OBJECT = IGNITE_HDR_FULL;

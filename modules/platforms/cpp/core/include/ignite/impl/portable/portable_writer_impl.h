@@ -608,6 +608,7 @@ namespace ignite
                         int32_t pos = stream->Position();
 
                         stream->WriteInt8(IGNITE_HDR_FULL);
+                        stream->WriteInt8(IGNITE_PROTO_VER);
                         stream->WriteBool(true);
                         stream->WriteInt32(idRslvr.GetTypeId());
                         stream->WriteInt32(type.GetHashCode(obj));
@@ -618,8 +619,8 @@ namespace ignite
 
                         int32_t len = stream->Position() - pos;
 
-                        stream->WriteInt32(pos + 10, len);
-                        stream->WriteInt32(pos + 14, writerImpl.GetRawPosition() - pos);
+                        stream->WriteInt32(pos + IGNITE_OFFSET_LEN, len);
+                        stream->WriteInt32(pos + IGNITE_OFFSET_RAW, writerImpl.GetRawPosition() - pos);
 
                         if (metaMgr)
                             metaMgr->SubmitHandler(type.GetTypeName(), idRslvr.GetTypeId(), metaHnd.Get());
