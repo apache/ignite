@@ -448,14 +448,14 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         final IgfsPath path = new IgfsPath("/file");
 
         // This write is expected to be successful.
-        IgfsOutputStream os = igfs(0).create(path, false);
-        os.write(chunk(BLOCK_SIZE - 1));
-        os.close();
+        try (IgfsOutputStream os = igfs(0).create(path, false)) {
+            os.write(chunk(BLOCK_SIZE - 1));
+        }
 
         // This write must be successful as well.
-        os = igfs(0).append(path, false);
-        os.write(chunk(1));
-        os.close();
+        try (IgfsOutputStream os = igfs(0).append(path, false)) {
+            os.write(chunk(1));
+        }
 
         // This write must fail w/ exception.
         GridTestUtils.assertThrows(log(), new Callable<Object>() {

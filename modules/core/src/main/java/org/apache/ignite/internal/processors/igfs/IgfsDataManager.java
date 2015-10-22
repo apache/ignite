@@ -993,37 +993,6 @@ public class IgfsDataManager extends IgfsManager {
      */
     private void processPartialBlockWrite(IgniteUuid fileId, IgfsBlockKey colocatedKey, int startOff,
         byte[] data) throws IgniteCheckedException {
-        if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax()) {
-            try {
-                igfs.awaitDeletesAsync().get(trashPurgeTimeout);
-            }
-            catch (IgniteFutureTimeoutCheckedException ignore) {
-                // Ignore.
-            }
-
-            // Additional size check.
-            if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax()) {
-                final WriteCompletionFuture completionFut = pendingWrites.get(fileId);
-
-                if (completionFut == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Missing completion future for file write request (most likely exception occurred " +
-                            "which will be thrown upon stream close) [fileId=" + fileId + ']');
-
-                    return;
-                }
-
-                IgfsOutOfSpaceException e = new IgfsOutOfSpaceException("Failed to write data block " +
-                    "(IGFS maximum data size exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
-                    ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']');
-
-                completionFut.onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " +
-                    igfsCtx.kernalContext().localNodeId(), e));
-
-                return;
-            }
-        }
-
         // No affinity key present, just concat and return.
         if (colocatedKey.affinityKey() == null) {
             dataCachePrj.invoke(colocatedKey, new UpdateProcessor(startOff, data));
@@ -1141,29 +1110,6 @@ public class IgfsDataManager extends IgfsManager {
     @SuppressWarnings("unchecked")
     private IgniteInternalFuture<?> storeBlocksAsync(Map<IgfsBlockKey, byte[]> blocks) {
         assert !blocks.isEmpty();
-
-        if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax()) {
-            try {
-                try {
-                    igfs.awaitDeletesAsync().get(trashPurgeTimeout);
-                }
-                catch (IgniteFutureTimeoutCheckedException ignore) {
-                    // Ignore.
-                }
-
-                // Additional size check.
-                if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax())
-                    return new GridFinishedFuture<Object>(
-                        new IgfsOutOfSpaceException("Failed to write data block (IGFS maximum data size " +
-                            "exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
-                            ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']'));
-
-            }
-            catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(new IgniteCheckedException("Failed to store data " +
-                    "block due to unexpected exception.", e));
-            }
-        }
 
         return dataCachePrj.putAllAsync(blocks);
     }
@@ -1660,6 +1606,8 @@ public class IgfsDataManager extends IgfsManager {
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
+            assert completedBlocksCnt.get() == 0;
+
             if (!isDone()) {
                 pendingWrites.remove(fileId, this);
 
@@ -1677,6 +1625,8 @@ public class IgfsDataManager extends IgfsManager {
          * @param batchId Assigned batch ID.
          */
         private void onWriteRequest(UUID nodeId, long batchId) {
+            assert !awaitingLast; // Writing is finished, we should not receive more write requests.
+
             if (!isDone())
                 completedBlocksCnt.incrementAndGet();
         }
@@ -1688,6 +1638,8 @@ public class IgfsDataManager extends IgfsManager {
          * @param e Caught exception.
          */
         private void onError(UUID nodeId, IgniteCheckedException e) {
+            completedBlocksCnt.set(0);
+
             signalNoAcks();
 
             if (e.hasCause(IgfsOutOfSpaceException.class))
