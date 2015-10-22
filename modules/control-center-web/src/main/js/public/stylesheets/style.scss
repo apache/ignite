@@ -487,10 +487,8 @@ button.form-control {
         }
 
         .btn-group {
-            float: right;
-            line-height: $line-height-base;
-            top: 0.4em;
             margin-left: 5px;
+            margin-top: -5px;
         }
 
         > i.btn {
