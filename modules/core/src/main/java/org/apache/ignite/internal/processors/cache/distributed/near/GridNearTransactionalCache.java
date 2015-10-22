@@ -138,8 +138,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         final boolean skipStore = opCtx != null && opCtx.skipStore();
 
-        final boolean keepBinary = opCtx != null && opCtx.isKeepPortable();
-
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
                 @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx) {
@@ -148,7 +146,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         entry,
                         deserializePortable,
                         skipVals,
-                        keepBinary,
+                        false,
                         skipStore);
                 }
             });
