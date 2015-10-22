@@ -93,13 +93,6 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
-     * @return {@code True} if this message is preloader message.
-     */
-    public boolean allowForStartup() {
-        return false;
-    }
-
-    /**
      * @return {@code True} if this message is partition exchange message.
      */
     public boolean partitionExchangeMessage() {

@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -170,11 +172,26 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     }
 
     /**
-     * Test tries to provoke scenario when client sends reconnect message before router failure detected.
-     *
      * @throws Exception If failed.
      */
-    public void _testClientReconnectOnCoordinatorRouterFail() throws Exception {
+    public void testClientReconnectOnCoordinatorRouterFail1() throws Exception {
+        clientReconnectOnCoordinatorRouterFail(1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientReconnectOnCoordinatorRouterFail2() throws Exception {
+        clientReconnectOnCoordinatorRouterFail(2);
+    }
+
+    /**
+     * Test tries to provoke scenario when client sends reconnect message before router failure detected.
+     *
+     * @param srvNodes Number of additional server nodes.
+     * @throws Exception If failed.
+     */
+    public void clientReconnectOnCoordinatorRouterFail(int srvNodes) throws Exception {
         startServerNodes(1);
 
         Ignite srv = G.ignite("server-0");
@@ -189,24 +206,28 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             Collections.singleton("localhost:" + srvNode.discoveryPort() + ".." + (srvNode.discoveryPort() + 1)));
 
         failureThreshold = 1000L;
-        netTimeout = 500L;
+        netTimeout = 1000L;
 
         startClientNodes(1); // Client should connect to coordinator.
 
         failureThreshold = 10_000L;
         netTimeout = 5000L;
 
-        for (int i = 0; i < 2; i++) {
+        List<String> nodes = new ArrayList<>();
+
+        for (int i = 0; i < srvNodes; i++) {
             Ignite g = startGrid("server-" + srvIdx.getAndIncrement());
+
+            nodes.add(g.name());
 
             srvNodeIds.add(g.cluster().localNode().id());
         }
 
-        checkNodes(3, 1);
+        checkNodes(1 + srvNodes, 1);
 
-        final CountDownLatch latch = new CountDownLatch(3);
+        nodes.add("client-0");
 
-        String nodes[] = {"server-1", "server-2", "client-0"};
+        final CountDownLatch latch = new CountDownLatch(nodes.size());
 
         final AtomicBoolean err = new AtomicBoolean();
 

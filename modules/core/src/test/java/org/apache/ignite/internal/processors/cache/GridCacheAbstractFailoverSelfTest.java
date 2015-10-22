@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -85,6 +86,8 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         discoSpi.setNetworkTimeout(60_000);
         discoSpi.setHeartbeatFrequency(30_000);
         discoSpi.setReconnectCount(2);
+
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         return cfg;
     }

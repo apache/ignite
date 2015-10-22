@@ -27,7 +27,6 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -45,7 +44,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     private long updateSeq;
 
     /** Partition. */
-    @GridToStringInclude
     @GridDirectCollection(int.class)
     private Collection<Integer> parts;
 
@@ -97,11 +95,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
      */
     public GridDhtPartitionDemandMessage() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean allowForStartup() {
-        return true;
     }
 
     /**
