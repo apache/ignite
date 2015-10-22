@@ -54,11 +54,10 @@ block container
                     div(bs-affix)
                         .docs-header.notebook-header
                             h1.col-sm-6(ng-hide='notebook.edit')
+                                label(style='max-width: calc(100% - 60px)') {{notebook.name}}
                                 .btn-group
                                     +btn-toolbar('fa-pencil', 'notebook.edit = true;notebook.editName = notebook.name', 'Rename notebook')
                                     +btn-toolbar('fa-trash', 'removeNotebook()', 'Remove notebook')
-                                .input-tip
-                                    label {{notebook.name}}
                             h1.col-sm-6(ng-show='notebook.edit')
                                 i.btn.fa.fa-floppy-o(ng-show='notebook.editName' ng-click='renameNotebook(notebook.editName)' bs-tooltip data-title='Save notebook name' data-trigger='hover')
                                 .input-tip
