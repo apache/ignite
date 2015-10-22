@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         private readonly PortableStructureJumpTable[] _jumps;
 
         /** Field types. */
-        private readonly IDictionary<string, byte> _fieldTypes; 
+        private readonly IDictionary<string, byte> _fieldTypes;
 
         /// <summary>
         /// Constructor.
@@ -318,7 +318,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
                     newFieldTypes[update.FieldName] = update.FieldType;
             }
 
-            return newFieldTypes.Count == _fieldTypes.Count ? 
+            return newFieldTypes.Count == _fieldTypes.Count ?
                 this : new PortableStructure(_paths, _jumps, newFieldTypes);
         }
 

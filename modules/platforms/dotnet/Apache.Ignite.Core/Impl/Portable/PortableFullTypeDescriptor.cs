@@ -59,7 +59,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         private readonly string _affKeyFieldName;
 
         /** Type structure. */
-        private volatile PortableStructure _typeStruct = PortableStructure.CreateEmpty();
+        private volatile PortableStructure _writerTypeStruct = PortableStructure.CreateEmpty();
+
+        /** Type structure. */
+        private volatile PortableStructure _readerTypeStructure = PortableStructure.CreateEmpty();
 
         /// <summary>
         /// Constructor.
@@ -179,18 +182,34 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public PortableStructure TypeStructure
+        public PortableStructure WriterTypeStructure
         {
-            get { return _typeStruct; }
+            get { return _writerTypeStruct; }
         }
 
         /** <inheritDoc /> */
-        public void UpdateStructure(PortableStructure exp, int pathIdx, 
+        public PortableStructure ReaderTypeStructure
+        {
+            get { return _readerTypeStructure; }
+        }
+
+        /** <inheritDoc /> */
+        public void UpdateWriteStructure(PortableStructure exp, int pathIdx, 
             IList<PortableStructureUpdate> updates)
         {
             lock (this)
             {
-                _typeStruct = _typeStruct.Merge(exp, pathIdx, updates);
+                _writerTypeStruct = _writerTypeStruct.Merge(exp, pathIdx, updates);
+            }
+        }
+
+        /** <inheritDoc /> */
+        public void UpdateReadStructure(PortableStructure exp, int pathIdx, 
+            IList<PortableStructureUpdate> updates)
+        {
+            lock (this)
+            {
+                _readerTypeStructure = _readerTypeStructure.Merge(exp, pathIdx, updates);
             }
         }
     }
