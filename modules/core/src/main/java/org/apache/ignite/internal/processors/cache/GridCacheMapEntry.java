@@ -1156,7 +1156,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * In case this is IGFS data cache, checks if there is some available space to wite data.
+     * In case this is IGFS data cache, checks if there is some available space to write data.
      * If there is no space available, throws {@link IgfsOutOfSpaceException}.
      *
      * @throws IgniteCheckedException On error.
@@ -1186,10 +1186,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 long trashPurgeTimeout = fs.configuration().getTrashPurgeTimeout();
 
-                IgfsEx igfs = ((IgfsEx)fs);
-
+                // Await some space to free due to garbage deletion:
                 try {
-                    igfs.awaitDeletesAsync().get(trashPurgeTimeout);
+                    ((IgfsEx)fs).awaitDeletesAsync().get(trashPurgeTimeout);
                 }
                 catch (IgniteFutureTimeoutCheckedException ignore) {
                     // Ignore.
