@@ -33,6 +33,6 @@
                 label Y axis (accept only numeric columns)
                 ul.chart-settings-columns-list(dnd-list='paragraph.chartValCols' dnd-drop='chartAcceptValColumn(paragraph, item)')
                     li(ng-repeat='col in paragraph.chartValCols track by $index')
-                        .btn.btn-success.btn-chart-column {{col.label}}
+                        .btn.btn-success.btn-chart-column(ng-style='chartColor($index)') {{col.label}}
                             i.fa.fa-close(ng-click='chartRemoveValColumn(paragraph, $index)')
 
