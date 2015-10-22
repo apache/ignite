@@ -891,12 +891,20 @@ consoleModule.controller('sqlController',
                     }
                 }
                 else {
+                    index = paragraph.total;
+
                     values = _.map(paragraph.rows, function (row) {
-                        return {
-                            x: _chartNumber(row, paragraph.chartKeyCols[0].value, index),
-                            xLbl: _chartLabel(row, paragraph.chartKeyCols[0].value, undefined),
-                            y: _chartNumber(row, valCol.value, index++)
-                        }
+                        var xCol = paragraph.chartKeyCols[0].value;
+
+                        var v = {
+                            x: _chartNumber(row, xCol, index),
+                            xLbl: _chartLabel(row, xCol, undefined),
+                            y: _chartNumber(row, valCol.value, index)
+                        };
+
+                        index++;
+
+                        return v;
                     });
 
                     datum.push({key: valCol.label, values: values});
@@ -912,13 +920,19 @@ consoleModule.controller('sqlController',
 
         if (paragraph.chartColumnsConfigured() && !paragraph.chartTimeLineEnabled()) {
             paragraph.chartValCols.forEach(function (valCol) {
-                var index = 0;
+                var index = paragraph.total;
 
                 var values = _.map(paragraph.rows, function (row) {
-                    return {
-                        x: row[paragraph.chartKeyCols[0].value],
-                        y: _chartNumber(row, valCol.value, index++)
-                    }
+                    var xCol = paragraph.chartKeyCols[0].value;
+
+                    var v = {
+                        x: xCol < 0 ? index : row[xCol],
+                        y: _chartNumber(row, valCol, index)
+                    };
+
+                    index++;
+
+                    return v;
                 });
 
                 datum.push({key: valCol.label, values: values});
