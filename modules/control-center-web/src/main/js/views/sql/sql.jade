@@ -91,6 +91,7 @@ block container
                             .panel.panel-default(ng-repeat='paragraph in notebook.paragraphs')
                                 .panel-heading(bs-collapse-toggle)
                                     div(ng-hide='paragraph.edit')
+                                        i.tipLabel.fa(ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
                                         a {{paragraph.name}}
 
                                         .btn-group(ng-hide='notebook.paragraphs.length > 1')
@@ -100,14 +101,15 @@ block container
                                             +btn-toolbar('fa-pencil', 'paragraph.edit = true; paragraph.editName = paragraph.name;', 'Rename query')
                                             +btn-toolbar('fa-remove', 'removeParagraph(paragraph)', 'Remove query')
 
-                                        .pull-right
-                                            .btn-group(ng-model='paragraph.result' ng-click='$event.stopPropagation()' style='float: right')
-                                                +btn-toolbar-data('fa-table', 'table', 'Show data in tabular form.')
-                                                +btn-toolbar-data('fa-bar-chart', 'bar', 'Show bar chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
-                                                +btn-toolbar-data('fa-pie-chart', 'pie', 'Show pie chart.<br/>By default first column - pie labels, second column - pie values.<br/>In case of one column it will be treated as pie values.')
-                                                +btn-toolbar-data('fa-line-chart', 'line', 'Show line chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
-                                                +btn-toolbar-data('fa-area-chart', 'area', 'Show area chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
+                                        .pull-right.btn-group(ng-model='paragraph.result' ng-click='$event.stopPropagation()' style='float: right')
+                                            +btn-toolbar-data('fa-table', 'table', 'Show data in tabular form.')
+                                            +btn-toolbar-data('fa-bar-chart', 'bar', 'Show bar chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
+                                            +btn-toolbar-data('fa-pie-chart', 'pie', 'Show pie chart.<br/>By default first column - pie labels, second column - pie values.<br/>In case of one column it will be treated as pie values.')
+                                            +btn-toolbar-data('fa-line-chart', 'line', 'Show line chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
+                                            +btn-toolbar-data('fa-area-chart', 'area', 'Show area chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
+
                                     div(ng-show='paragraph.edit')
+                                        i.tipLabel.fa(ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
                                         input.sql-name-input(ng-model='paragraph.editName' required ng-click='$event.stopPropagation();' on-enter='renameParagraph(paragraph, paragraph.editName)' on-escape='paragraph.edit = false')
                                         i.tipLabel.fa.fa-floppy-o(ng-show='paragraph.editName' ng-click='renameParagraph(paragraph, paragraph.editName); $event.stopPropagation();' bs-tooltip data-title='Save paragraph name' data-trigger='hover')
                                 .panel-collapse(role='tabpanel' bs-collapse-target)

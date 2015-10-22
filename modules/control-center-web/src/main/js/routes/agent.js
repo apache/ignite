@@ -73,7 +73,7 @@ router.get('/download/zip', function (req, res) {
 
         zip.file(agentFld + '/default.properties', prop.join('\n'));
 
-        var buffer = zip.generate({type:"nodebuffer"});
+        var buffer = zip.generate({type:"nodebuffer", platform: "UNIX"});
 
         // Set the archive name.
         res.attachment(agentZip);

@@ -352,6 +352,18 @@ consoleModule.controller('sqlController',
             });
     };
 
+    $scope.paragraphExpanded = function(paragraph) {
+        var paragraph_idx = _.findIndex($scope.notebook.paragraphs, function (item) {
+            return paragraph == item;
+        });
+
+        var panel_idx = _.findIndex($scope.notebook.expandedParagraphs, function (item) {
+            return paragraph_idx == item;
+        });
+
+        return panel_idx >= 0;
+    };
+
     function getTopology(caches, onSuccess) {
         onSuccess();
 
