@@ -249,6 +249,7 @@
       "label": "User",
       "id": "user",
       "type": "text",
+      "disabled": "preset.jdbcUrl == 'jdbc:h2:mem:test-drive-db'",
       "model": "user",
       "tip": [
         "User name for connecting to database"
@@ -258,6 +259,7 @@
       "label": "Password",
       "id": "password",
       "type": "password",
+      "disabled": "preset.jdbcUrl == 'jdbc:h2:mem:test-drive-db'",
       "model": "password",
       "onEnter": "loadMetadataNext()",
       "tip": [
