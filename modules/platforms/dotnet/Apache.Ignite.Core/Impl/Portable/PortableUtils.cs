@@ -995,27 +995,87 @@ namespace Apache.Ignite.Core.Impl.Portable
             return vals;
         }
 
-        /**
-         * <summary>Write GUID.</summary>
-         * <param name="val">GUID.</param>
-         * <param name="stream">Stream.</param>
-         */
-        public static unsafe void WriteGuid(Guid val, IPortableStream stream)
+        private static readonly bool IsGuidSequentialPacked = GetIsGuidSequentialPacked();
+
+        public static readonly Action<Guid, IPortableStream> WriteGuid = IsGuidSequentialPacked
+            ? (Action<Guid, IPortableStream>) WriteGuidBitwise
+            : WriteGuidBytewise;
+
+        public static readonly Func<IPortableStream, Guid?> ReadGuid = ReadGuidBitwise;
+
+
+        private static unsafe bool GetIsGuidSequentialPacked()
         {
-            // TODO: This may be not valid due to Guid being non-sequential and non-packed
+            return false;
+
+            // Check that bitwise conversion returns correct result
+            var guid = Guid.NewGuid();
+
+            var jguid = new JavaGuid(guid);
+
+            var accessor = new GuidAccessor(jguid);
+
+            var res = *(Guid*) (&accessor);
+
+            return guid == res;
+        }
+
+
+        /// <summary>
+        /// Writes a guid with bitwise conversion, assuming that <see cref="Guid"/> 
+        /// is laid out in memory sequentially and without gaps between fields.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        /// <param name="stream">The stream.</param>
+        private static unsafe void WriteGuidBitwise(Guid val, IPortableStream stream)
+        {
             var jguid = new JavaGuid(val);
 
             var ptr = &jguid;
 
             stream.Write((byte*) ptr, 16);
         }
-        
-        /**
-         * <summary>Read GUID.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>GUID</returns>
-         */
-        public static unsafe Guid? ReadGuid(IPortableStream stream)
+
+        /// <summary>
+        /// Writes a guid byte by byte.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        /// <param name="stream">The stream.</param>
+        private static unsafe void WriteGuidBytewise(Guid val, IPortableStream stream)
+        {
+            var bytes = val.ToByteArray();
+            byte* jBytes = stackalloc byte[16];
+
+            jBytes[0] = bytes[6]; // c1
+            jBytes[1] = bytes[7]; // c2
+
+            jBytes[2] = bytes[4]; // b1
+            jBytes[3] = bytes[5]; // b2
+
+            jBytes[4] = bytes[0]; // a1
+            jBytes[5] = bytes[1]; // a2
+            jBytes[6] = bytes[2]; // a3
+            jBytes[7] = bytes[3]; // a4
+
+            jBytes[8] = bytes[15]; // k
+            jBytes[9] = bytes[14]; // j
+            jBytes[10] = bytes[13]; // i
+            jBytes[11] = bytes[12]; // h
+            jBytes[12] = bytes[11]; // g
+            jBytes[13] = bytes[10]; // f
+            jBytes[14] = bytes[9]; // e
+            jBytes[15] = bytes[8]; // d
+            
+            stream.Write(jBytes, 16);
+        }
+
+        /// <summary>
+        /// Reads a guid with bitwise conversion, assuming that <see cref="Guid"/> 
+        /// is laid out in memory sequentially and without gaps between fields.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <returns>Guid.</returns>
+        private static unsafe Guid? ReadGuidBitwise(IPortableStream stream)
         {
             JavaGuid jguid;
 
@@ -1025,7 +1085,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var dotnetGuid = new GuidAccessor(jguid);
 
-            // TODO: This may be not valid due to Guid being non-sequential and non-packed
             return *(Guid*) (&dotnetGuid);
         }
 
@@ -2153,7 +2212,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private struct GuidAccessor
         {
             public readonly ulong ABC;
-            public readonly ulong DEGHIJK;
+            public readonly ulong DEFGHIJK;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="GuidAccessor"/> struct.
@@ -2171,18 +2230,18 @@ namespace Apache.Ignite.Core.Impl.Portable
                           ((l >> 16) & 0x00000000FFFF0000);
 
                 // This is valid in any endianness (symmetrical)
-                DEGHIJK = ReverseByteOrder(val.KJIHGED);
+                DEFGHIJK = ReverseByteOrder(val.KJIHGFED);
             }
         }
 
         /// <summary>
         /// Struct with Java-style Guid memory layout.
         /// </summary>
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Explicit)]
         private struct JavaGuid
         {
-            public readonly ulong CBA;
-            public readonly ulong KJIHGED;
+            [FieldOffset(0)] public readonly ulong CBA;
+            [FieldOffset(8)] public readonly ulong KJIHGFED;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="JavaGuid"/> struct.
@@ -2190,9 +2249,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// <param name="val">The value.</param>
             public unsafe JavaGuid(Guid val)
             {
-                // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _g, _h, _i, _j, _k.
+                // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _f, _g, _h, _i, _j, _k.
                 // And _a, _b and _c are always in little endian format irrespective of system configuration.
-                // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _e, _d.
+                // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _f, _e, _d.
                 var accessor = *((GuidAccessor*)&val);
 
                 var l = accessor.ABC;
@@ -2205,7 +2264,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                           ((l << 16) & 0x0000FFFF00000000);
 
                 // This is valid in any endianness (symmetrical)
-                KJIHGED = ReverseByteOrder(accessor.DEGHIJK);
+                KJIHGFED = ReverseByteOrder(accessor.DEFGHIJK);
             }
         }
     }
