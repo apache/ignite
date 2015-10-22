@@ -311,6 +311,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         private static readonly CopyOnWriteConcurrentDictionary<Type, Func<PortableReaderImpl, bool, object>>
             ArrayReaders = new CopyOnWriteConcurrentDictionary<Type, Func<PortableReaderImpl, bool, object>>();
 
+        /** Flag indicating whether Guid struct is sequential and packed in current runtime. */
+        private static readonly bool IsGuidSequentialPacked = GetIsGuidSequentialPacked();
+
+        /** Guid writer. */
+        public static readonly Action<Guid, IPortableStream> WriteGuid = IsGuidSequentialPacked
+            ? (Action<Guid, IPortableStream>)WriteGuidBitwise
+            : WriteGuidBytewise;
+
+        /** Guid reader. */
+        public static readonly Func<IPortableStream, Guid?> ReadGuid = IsGuidSequentialPacked
+            ? (Func<IPortableStream, Guid?>)ReadGuidBitwise
+            : ReadGuidBytewise;
+
         /// <summary>
         /// Default marshaller.
         /// </summary>
@@ -995,31 +1008,18 @@ namespace Apache.Ignite.Core.Impl.Portable
             return vals;
         }
 
-        private static readonly bool IsGuidSequentialPacked = GetIsGuidSequentialPacked();
-
-        public static readonly Action<Guid, IPortableStream> WriteGuid = IsGuidSequentialPacked
-            ? (Action<Guid, IPortableStream>) WriteGuidBitwise
-            : WriteGuidBytewise;
-
-        public static readonly Func<IPortableStream, Guid?> ReadGuid = ReadGuidBitwise;
-
-
+        /// <summary>
+        /// Gets a value indicating whether <see cref="Guid"/> fields are stored sequentially in memory.
+        /// </summary>
+        /// <returns></returns>
         private static unsafe bool GetIsGuidSequentialPacked()
         {
-            return false;
-
             // Check that bitwise conversion returns correct result
             var guid = Guid.NewGuid();
 
-            var jguid = new JavaGuid(guid);
-
-            var accessor = new GuidAccessor(jguid);
-
-            var res = *(Guid*) (&accessor);
-
-            return guid == res;
+            // TODO:
+            return true;
         }
-
 
         /// <summary>
         /// Writes a guid with bitwise conversion, assuming that <see cref="Guid"/> 
@@ -1086,6 +1086,42 @@ namespace Apache.Ignite.Core.Impl.Portable
             var dotnetGuid = new GuidAccessor(jguid);
 
             return *(Guid*) (&dotnetGuid);
+        }
+
+        /// <summary>
+        /// Reads a guid byte by byte.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <returns>Guid.</returns>
+        private static unsafe Guid? ReadGuidBytewise(IPortableStream stream)
+        {
+            byte* jBytes = stackalloc byte[16];
+
+            stream.Read(jBytes, 16);
+
+            var bytes = new byte[16];
+
+            bytes[0] = jBytes[4]; // a1
+            bytes[1] = jBytes[5]; // a2
+            bytes[2] = jBytes[6]; // a3
+            bytes[3] = jBytes[7]; // a4
+
+            bytes[4] = jBytes[2]; // b1
+            bytes[5] = jBytes[3]; // b2
+
+            bytes[6] = jBytes[0]; // c1
+            bytes[7] = jBytes[1]; // c2
+
+            bytes[8] = jBytes[15]; // d
+            bytes[9] = jBytes[14]; // e
+            bytes[10] = jBytes[13]; // f
+            bytes[11] = jBytes[12]; // g
+            bytes[12] = jBytes[11]; // h
+            bytes[13] = jBytes[10]; // i
+            bytes[14] = jBytes[9]; // j
+            bytes[15] = jBytes[8]; // k
+
+            return new Guid(bytes);
         }
 
         /// <summary>
@@ -2242,6 +2278,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             [FieldOffset(0)] public readonly ulong CBA;
             [FieldOffset(8)] public readonly ulong KJIHGFED;
+            [FieldOffset(0)] public unsafe fixed byte Bytes [16];
 
             /// <summary>
             /// Initializes a new instance of the <see cref="JavaGuid"/> struct.
