@@ -40,7 +40,6 @@ using System.Runtime.InteropServices;
 
 #if !EXCLUDE_INTERNALS_VISIBLE_TO
 
-[assembly: InternalsVisibleTo("Apache.Ignite")]
 [assembly: InternalsVisibleTo("Apache.Ignite.Core.Tests")]
 [assembly: InternalsVisibleTo("Apache.Ignite.Benchmarks")]
 
