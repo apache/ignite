@@ -241,7 +241,7 @@
       "model": "jdbcUrl",
       "placeholder": "JDBC URL",
       "tip": [
-        "JDBC URL for connecting to database.",
+        "JDBC URL for connecting to database",
         "Refer to your database documentation for details"
       ]
     },
