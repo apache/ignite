@@ -32,7 +32,6 @@ import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.portable.PortableException;
 import org.apache.ignite.portable.PortableIdMapper;
 import org.apache.ignite.portable.PortableObject;
-import org.apache.ignite.portable.PortableProtocolVersion;
 import org.apache.ignite.portable.PortableSerializer;
 import org.apache.ignite.portable.PortableTypeConfiguration;
 import org.jetbrains.annotations.Nullable;
@@ -77,9 +76,6 @@ import org.jetbrains.annotations.Nullable;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public class PortableMarshaller extends AbstractMarshaller {
-    /** Default portable protocol version. */
-    public static final PortableProtocolVersion DFLT_PORTABLE_PROTO_VER = PortableProtocolVersion.VER_1_4_0;
-
     /** Class names. */
     private Collection<String> clsNames;
 
@@ -103,9 +99,6 @@ public class PortableMarshaller extends AbstractMarshaller {
 
     /** Keep deserialized flag. */
     private boolean keepDeserialized = true;
-
-    /** Protocol version. */
-    private PortableProtocolVersion protoVer = DFLT_PORTABLE_PROTO_VER;
 
     /** */
     private GridPortableMarshaller impl;
@@ -265,31 +258,6 @@ public class PortableMarshaller extends AbstractMarshaller {
      */
     public void setKeepDeserialized(boolean keepDeserialized) {
         this.keepDeserialized = keepDeserialized;
-    }
-
-    /**
-     * Gets portable protocol version.
-     * <p>
-     * Defaults to {@link #DFLT_PORTABLE_PROTO_VER}.
-     *
-     * @return Portable protocol version.
-     */
-    public PortableProtocolVersion getProtocolVersion() {
-        return protoVer;
-    }
-
-    /**
-     * Sets portable protocol version.
-     * <p>
-     * Defaults to {@link #DFLT_PORTABLE_PROTO_VER}.
-     *
-     * @param protoVer Portable protocol version.
-     */
-    public void setProtocolVersion(PortableProtocolVersion protoVer) {
-        if (protoVer == null)
-            throw new IllegalArgumentException("Wrong portable protocol version: " + protoVer);
-
-        this.protoVer = protoVer;
     }
 
     /**
