@@ -305,7 +305,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
             div(class=fieldClasses)
                 +tipField('field.tip')
                 .input-tip
-                    input.form-control(id='{{::field.id}}' name='{{field.model}}' type='number' ng-disabled=fieldDisabled placeholder='{{::field.placeholder}}' ng-focus='tableReset()' min='{{field.min ? field.min : 0}}' max='{{field.max ? field.max : Number.MAX_VALUE}}')&attributes(fieldCommon)
+                    input.form-control(id='{{::field.id}}' name='{{field.model}}' type='number' placeholder='{{::field.placeholder}}' ng-focus='tableReset()' min='{{field.min ? field.min : 0}}' max='{{field.max ? field.max : Number.MAX_VALUE}}')&attributes(fieldCommon)&attributes(fieldDisabled)
                     +ico-exclamation('{{field.model}}', 'min', 'Value is less than allowable minimum.')
                     +ico-exclamation('{{field.model}}', 'max', 'Value is more than allowable maximum.')
                     +ico-exclamation('{{field.model}}', 'number', 'Invalid value. Only numbers allowed.')
