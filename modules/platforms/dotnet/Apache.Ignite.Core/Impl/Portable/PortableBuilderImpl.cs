@@ -154,8 +154,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public IPortableBuilder SetField<T>(string name, T val)
         {
-            ThrowIfGenericCollection(val, typeof (T));
-
             return SetField0(name, new PortableBuilderField(typeof(T), val));
         }
 
@@ -799,27 +797,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             outStream.WriteInt(len);
 
             TransferBytes(inStream, outStream, elemSize * len);
-        }
-
-        /// <summary>
-        /// Throws an error if builder field value is a generic collection.
-        /// </summary>
-        private static void ThrowIfGenericCollection(object value, Type type)
-        {
-            type = value == null ? type : value.GetType();
-
-            if (TypeIds.ContainsKey(type))
-                return;  // Skip primitives and arrays of primitives
-
-            if (type.IsArray)
-            {
-                var elementType = type.GetElementType();
-
-                if (elementType != typeof (object) && !elementType.IsEnum)
-                    throw new NotSupportedException(
-                        string.Format("PortableBuilder does not support arrays of '{0}'. Please use object array.",
-                            elementType));
-            }
         }
 
         /// <summary>
