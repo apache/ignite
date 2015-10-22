@@ -540,7 +540,6 @@ public class PortableContext implements Externalizable {
 
         try {
             registered = marshCtx.registerClass(typeId, cls);
-
         }
         catch (IgniteCheckedException e) {
             throw new PortableException("Failed to register class.", e);
@@ -884,10 +883,11 @@ public class PortableContext implements Externalizable {
 
         int idx = clsName.lastIndexOf('$');
 
-        String typeName;
-
-        if (idx >= 0) {
-            typeName = clsName.substring(idx + 1);
+        if (idx == clsName.length() - 1)
+            // This is a regular (not inner) class name that ends with '$'. Common use case for Scala classes.
+            idx = -1;
+        else if (idx >= 0) {
+            String typeName = clsName.substring(idx + 1);
 
             try {
                 Integer.parseInt(typeName);
@@ -960,6 +960,9 @@ public class PortableContext implements Externalizable {
         }
     }
 
+    /**
+     * Basic class ID mapper.
+     */
     private static class BasicClassIdMapper implements PortableIdMapper {
         /** {@inheritDoc} */
         @Override public int typeId(String clsName) {
@@ -1114,6 +1117,10 @@ public class PortableContext implements Externalizable {
         /** Whether the following type is registered in a cache or not */
         private final boolean registered;
 
+        /**
+         * @param id Id.
+         * @param registered Registered.
+         */
         public Type(int id, boolean registered) {
             this.id = id;
             this.registered = registered;

@@ -186,7 +186,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 IPortableStream stream = new PortableHeapStream(_data);
 
-                stream.Seek(_offset + 14, SeekOrigin.Begin);
+                stream.Seek(_offset + PortableUtils.OffsetRaw, SeekOrigin.Begin);
 
                 int rawDataOffset = stream.ReadInt();
 
@@ -256,12 +256,12 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     // 4. Check if objects have the same raw data.
                     IPortableStream stream = new PortableHeapStream(_data);
-                    stream.Seek(_offset + 10, SeekOrigin.Begin);
+                    stream.Seek(_offset + PortableUtils.OffsetLen, SeekOrigin.Begin);
                     int len = stream.ReadInt();
                     int rawOffset = stream.ReadInt();
 
                     IPortableStream thatStream = new PortableHeapStream(that._data);
-                    thatStream.Seek(_offset + 10, SeekOrigin.Begin);
+                    thatStream.Seek(_offset + PortableUtils.OffsetLen, SeekOrigin.Begin);
                     int thatLen = thatStream.ReadInt();
                     int thatRawOffset = thatStream.ReadInt();
 

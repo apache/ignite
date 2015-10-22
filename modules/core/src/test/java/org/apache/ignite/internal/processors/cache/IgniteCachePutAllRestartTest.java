@@ -163,11 +163,11 @@ public class IgniteCachePutAllRestartTest extends GridCommonAbstractTest {
 
             info("Running iteration on the node [idx=" + node + ", nodeId=" + ignite.cluster().localNode().id() + ']');
 
+            final IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
+
             IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     Thread.currentThread().setName("put-thread");
-
-                    IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
 
                     Random rnd = new Random();
 

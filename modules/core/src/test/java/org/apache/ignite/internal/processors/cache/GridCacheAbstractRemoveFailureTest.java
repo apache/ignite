@@ -41,6 +41,7 @@ import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -91,6 +92,8 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
             cfg.setClientMode(true);
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
+
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         return cfg;
     }
@@ -365,12 +368,12 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
 
         U.sleep(random(START_DELAY.get1(), START_DELAY.get2()));
 
-        if (stop.get())
-            return;
-
         log.info("Restarting node " + idx);
 
         startGrid(idx);
+
+        if (stop.get())
+            return;
 
         U.sleep(1000);
     }

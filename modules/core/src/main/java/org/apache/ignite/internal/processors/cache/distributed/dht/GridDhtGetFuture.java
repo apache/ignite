@@ -447,8 +447,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
                             if (v == null)
                                 it.remove();
-                            else if (!skipVals)
-                                info.value((CacheObject)v);
+                            else
+                                info.value(skipVals ? null : (CacheObject)v);
                         }
 
                         return infos;

@@ -937,11 +937,11 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public void clearLocally() {
+    @Override public void clearLocally(boolean srv, boolean near, boolean readers) {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
-            delegate.clearLocally();
+            delegate.clearLocally(srv, near, readers);
         }
         finally {
             gate.leave(prev);
@@ -985,11 +985,11 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> clearAsync(Set<? extends K> keys) {
+    @Override public IgniteInternalFuture<?> clearAllAsync(Set<? extends K> keys) {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
-            return delegate.clearAsync(keys);
+            return delegate.clearAllAsync(keys);
         }
         finally {
             gate.leave(prev);
@@ -1009,11 +1009,11 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public void clearLocallyAll(Set<? extends K> keys) {
+    @Override public void clearLocallyAll(Set<? extends K> keys, boolean srv, boolean near, boolean readers) {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
-            delegate.clearLocallyAll(keys);
+            delegate.clearLocallyAll(keys, srv, near, readers);
         }
         finally {
             gate.leave(prev);

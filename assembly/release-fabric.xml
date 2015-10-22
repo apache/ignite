@@ -77,6 +77,12 @@
             <outputDirectory>/examples</outputDirectory>
             <destName>pom.xml</destName>
         </file>
+
+        <file>
+            <source>examples/schema-import/pom-standalone.xml</source>
+            <outputDirectory>/examples/schema-import</outputDirectory>
+            <destName>pom.xml</destName>
+        </file>
     </files>
 
     <fileSets>
@@ -174,7 +180,9 @@
             <includes>
                 <include>rest/**</include>
                 <include>memcached/**</include>
-                <include>schema-import/**</include>
+                <include>schema-import/src/**</include>
+                <include>schema-import/bin/**</include>
+                <include>schema-import/README.txt</include>
                 <include>README.txt</include>
             </includes>
         </fileSet>

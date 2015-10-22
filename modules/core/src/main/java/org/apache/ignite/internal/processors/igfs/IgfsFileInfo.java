@@ -124,6 +124,16 @@ public final class IgfsFileInfo implements Externalizable {
     }
 
     /**
+     * Consturcts directory with random ID, provided listing and properties.
+     *
+     * @param listing Listing.
+     * @param props The properties to set for the new directory.
+     */
+    IgfsFileInfo(@Nullable Map<String, IgfsListingEntry> listing, @Nullable Map<String,String> props) {
+        this(true/*dir*/, null, 0, 0, null, listing, props, null, false, System.currentTimeMillis(), false);
+    }
+
+    /**
      * Constructs file info.
      *
      * @param blockSize Block size.
@@ -194,7 +204,7 @@ public final class IgfsFileInfo implements Externalizable {
      * @param evictExclude Evict exclude flag.
      */
     IgfsFileInfo(int blockSize, long len, boolean evictExclude, @Nullable Map<String, String> props) {
-        this(blockSize == 0, // NB The contract is: (blockSize == null) <=> isDirectory()
+        this(blockSize == 0, // NB The contract is: (blockSize == 0) <=> isDirectory()
             null, blockSize, len, null, null, props, null, true, System.currentTimeMillis(), evictExclude);
     }
 
@@ -216,7 +226,7 @@ public final class IgfsFileInfo implements Externalizable {
      * @param listing New directory listing.
      * @param old Old file info.
      */
-    IgfsFileInfo(Map<String, IgfsListingEntry> listing, IgfsFileInfo old) {
+    IgfsFileInfo(@Nullable Map<String, IgfsListingEntry> listing, IgfsFileInfo old) {
         this(old.isDirectory(), old.id, old.blockSize, old.len, old.affKey, listing, old.props, old.fileMap(),
             old.lockId, false, old.accessTime, old.modificationTime, old.evictExclude());
     }
@@ -495,6 +505,7 @@ public final class IgfsFileInfo implements Externalizable {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         id = U.readGridUuid(in);
         blockSize = in.readInt();

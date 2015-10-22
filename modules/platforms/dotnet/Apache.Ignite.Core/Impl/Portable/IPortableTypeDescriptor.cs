@@ -109,16 +109,29 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Type structure.
+        /// Write type structure.
         /// </summary>
-        PortableStructure TypeStructure { get; }
+        PortableStructure WriterTypeStructure { get; }
 
         /// <summary>
-        /// Update type structure.
+        /// Read type structure.
+        /// </summary>
+        PortableStructure ReaderTypeStructure { get; }
+
+        /// <summary>
+        /// Update write type structure.
         /// </summary>
         /// <param name="exp">Expected type structure.</param>
         /// <param name="pathIdx">Path index.</param>
         /// <param name="updates">Recorded updates.</param>
-        void UpdateStructure(PortableStructure exp, int pathIdx, IList<PortableStructureUpdate> updates);
+        void UpdateWriteStructure(PortableStructure exp, int pathIdx, IList<PortableStructureUpdate> updates);
+
+        /// <summary>
+        /// Update read type structure.
+        /// </summary>
+        /// <param name="exp">Expected type structure.</param>
+        /// <param name="pathIdx">Path index.</param>
+        /// <param name="updates">Recorded updates.</param>
+        void UpdateReadStructure(PortableStructure exp, int pathIdx, IList<PortableStructureUpdate> updates);
     }
 }
