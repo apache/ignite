@@ -311,18 +311,16 @@ namespace Apache.Ignite.Core.Impl.Portable
         private static readonly CopyOnWriteConcurrentDictionary<Type, Func<PortableReaderImpl, bool, object>>
             ArrayReaders = new CopyOnWriteConcurrentDictionary<Type, Func<PortableReaderImpl, bool, object>>();
 
-        /** Flag indicating whether Guid struct is sequential and packed in current runtime. */
-        private static readonly bool IsGuidSequentialPacked = GetIsGuidSequentialPacked();
+        /** Flag indicating whether Guid struct is sequential in current runtime. */
+        private static readonly bool IsGuidSequential = GetIsGuidSequential();
 
         /** Guid writer. */
-        public static readonly Action<Guid, IPortableStream> WriteGuid = IsGuidSequentialPacked
-            ? (Action<Guid, IPortableStream>)WriteGuidBitwise
-            : WriteGuidBytewise;
+        public static readonly Action<Guid, IPortableStream> WriteGuid = IsGuidSequential
+            ? (Action<Guid, IPortableStream>) WriteGuidBitwise : WriteGuidBytewise;
 
         /** Guid reader. */
-        public static readonly Func<IPortableStream, Guid?> ReadGuid = IsGuidSequentialPacked
-            ? (Func<IPortableStream, Guid?>)ReadGuidBitwise
-            : ReadGuidBytewise;
+        public static readonly Func<IPortableStream, Guid?> ReadGuid = IsGuidSequential
+            ? (Func<IPortableStream, Guid?>) ReadGuidBitwise : ReadGuidBytewise;
 
         /// <summary>
         /// Default marshaller.
@@ -1012,7 +1010,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Gets a value indicating whether <see cref="Guid"/> fields are stored sequentially in memory.
         /// </summary>
         /// <returns></returns>
-        private static unsafe bool GetIsGuidSequentialPacked()
+        private static unsafe bool GetIsGuidSequential()
         {
             // Check that bitwise conversion returns correct result
             var guid = Guid.NewGuid();
