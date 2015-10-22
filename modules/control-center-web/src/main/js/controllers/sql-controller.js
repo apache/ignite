@@ -67,8 +67,10 @@ consoleModule.controller('sqlController',
         '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5', '#aec7e8', '#c49c94', '#f7b6d2', '#c7c7c7', '#dbdb8d', '#9edae5'
     ];
 
+    var MAX_VAL_COLS = CHART_COLORS.length;
+
     $scope.chartColor = function(index) {
-        return {"background-color": CHART_COLORS[index]};
+        return {"color": "white", "background-color": CHART_COLORS[index]};
     };
 
     $scope.chartRemoveKeyColumn = function (paragraph, index) {
@@ -96,10 +98,15 @@ consoleModule.controller('sqlController',
     };
 
     $scope.chartAcceptValColumn = function(paragraph, item) {
-        var accepted = _.findIndex(paragraph.chartValCols, item) < 0 && item.value >= 0 && _numberType(item.type);
+        var valCols = paragraph.chartValCols;
+
+        var accepted = _.findIndex(valCols, item) < 0 && item.value >= 0 && _numberType(item.type);
 
         if (accepted) {
-            paragraph.chartValCols.push(item);
+            if (valCols.length == MAX_VAL_COLS - 1)
+                valCols.shift();
+
+            valCols.push(item);
 
             _chartApplySettings(paragraph, true);
         }
