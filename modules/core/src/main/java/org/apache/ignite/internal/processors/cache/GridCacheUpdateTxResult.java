@@ -59,14 +59,8 @@ public class GridCacheUpdateTxResult {
     }
 
     /**
-     * Sets partition idx.
-     *
-     * @param partIdx Partition idx.
+     * @return Partition idx.
      */
-    public void partIdx(long partIdx) {
-        this.partIdx = partIdx;
-    }
-
     public long partIdx() {
         return partIdx;
     }

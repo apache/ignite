@@ -38,9 +38,7 @@ interface CacheContinuousQueryListener<K, V> {
      * @param primary Primary flag.
      * @param recordIgniteEvt Whether to record event.
      */
-    public void onEntryUpdated(CacheContinuousQueryEvent<K, V> evt,
-        boolean primary,
-        boolean recordIgniteEvt);
+    public void onEntryUpdated(CacheContinuousQueryEvent<K, V> evt, boolean primary, boolean recordIgniteEvt);
 
     /**
      * Listener unregistered callback.

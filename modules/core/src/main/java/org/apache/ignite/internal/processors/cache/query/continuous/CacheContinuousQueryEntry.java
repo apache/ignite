@@ -143,6 +143,13 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /**
+     * @return Cache ID.
+     */
+    int cacheId() {
+        return cacheId;
+    }
+
+    /**
      * @return Event type.
      */
     EventType eventType() {

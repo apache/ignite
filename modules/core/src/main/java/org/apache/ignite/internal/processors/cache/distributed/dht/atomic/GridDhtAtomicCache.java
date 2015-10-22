@@ -1808,10 +1808,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         else if (conflictCtx.isMerge())
                             newConflictVer = null; // Conflict version is discarded in case of merge.
 
+                        EntryProcessor<Object, Object, Object> entryProcessor = null;
+
                         if (!readersOnly) {
                             dhtFut.addWriteEntry(entry,
                                 updRes.newValue(),
-                                op == TRANSFORM ? req.entryProcessor(i) : null,
+                                entryProcessor,
                                 updRes.newTtl(),
                                 updRes.conflictExpireTime(),
                                 newConflictVer,
@@ -1824,6 +1826,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             dhtFut.addNearWriteEntries(filteredReaders,
                                 entry,
                                 updRes.newValue(),
+                                entryProcessor,
                                 updRes.newTtl(),
                                 updRes.conflictExpireTime());
                     }
@@ -2094,10 +2097,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
 
                     if (dhtFut != null) {
+                        EntryProcessor<Object, Object, Object> entryProcessor =
+                            entryProcessorMap == null ? null : entryProcessorMap.get(entry.key());
+
                         if (!batchRes.readersOnly())
                             dhtFut.addWriteEntry(entry,
                                 writeVal,
-                                entryProcessorMap == null ? null : entryProcessorMap.get(entry.key()),
+                                entryProcessor,
                                 updRes.newTtl(),
                                 CU.EXPIRE_TIME_CALCULATE,
                                 null,
@@ -2109,6 +2115,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             dhtFut.addNearWriteEntries(filteredReaders,
                                 entry,
                                 writeVal,
+                                entryProcessor,
                                 updRes.newTtl(),
                                 CU.EXPIRE_TIME_CALCULATE);
                     }
@@ -2513,6 +2520,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         CacheObject val = req.value(i);
                         CacheObject prevVal = req.previousValue(i);
+
                         EntryProcessor<Object, Object, Object> entryProcessor = req.entryProcessor(i);
                         Long updateIdx = req.updateIdx(i);
 

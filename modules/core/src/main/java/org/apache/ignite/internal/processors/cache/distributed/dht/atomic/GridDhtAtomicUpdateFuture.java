@@ -133,9 +133,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         boolean topLocked = updateReq.topologyLocked() || (updateReq.fastMap() && !updateReq.clientRequest());
 
         waitForExchange = !topLocked;
-
-        // We can send entry processor instead of value to backup if updates are ordered.
-        forceTransformBackups = updateReq.operation() == GridCacheOperation.TRANSFORM;
     }
 
     /** {@inheritDoc} */
@@ -266,12 +263,14 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
      * @param readers Entry readers.
      * @param entry Entry.
      * @param val Value.
+     * @param entryProcessor Entry processor..
      * @param ttl TTL for near cache update (optional).
      * @param expireTime Expire time for near cache update (optional).
      */
     public void addNearWriteEntries(Iterable<UUID> readers,
         GridDhtCacheEntry entry,
         @Nullable CacheObject val,
+        EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
         long expireTime) {
         CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
@@ -313,6 +312,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
             updateReq.addNearWriteValue(entry.key(),
                 val,
+                entryProcessor,
                 ttl,
                 expireTime);
         }

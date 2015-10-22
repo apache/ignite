@@ -229,7 +229,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             topReadyFut = exchFut;
 
-            rebalancedTopVer = AffinityTopologyVersion.NONE;;
+            rebalancedTopVer = AffinityTopologyVersion.NONE;
         }
         finally {
             lock.writeLock().unlock();
@@ -1339,13 +1339,13 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public void printMemoryStats(int threshold) {
-        X.println(">>> Cache partition topology stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
+        X.println(">>>  Cache partition topology stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
 
         for (GridDhtLocalPartition part : locParts.values()) {
             int size = part.size();
 
             if (size >= threshold)
-                X.println(">>> Local partition [part=" + part.id() + ", size=" + size + ']');
+                X.println(">>>   Local partition [part=" + part.id() + ", size=" + size + ']');
         }
     }
 

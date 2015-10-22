@@ -183,7 +183,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     {
         assert e != null;
         assert key != null;
-        assert Thread.holdsLock(e) : e;
 
         boolean internal = e.isInternal() || !e.context().userCache();
 
@@ -661,7 +660,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             CacheEntryEventFilter fltr = null;
 
             if (cfg.getCacheEntryEventFilterFactory() != null) {
-                fltr = (CacheEntryEventFilter) cfg.getCacheEntryEventFilterFactory().create();
+                fltr = (CacheEntryEventFilter)cfg.getCacheEntryEventFilterFactory().create();
 
                 if (!(fltr instanceof Serializable))
                     throw new IgniteCheckedException("Cache entry event filter must implement java.io.Serializable: "

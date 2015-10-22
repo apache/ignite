@@ -361,7 +361,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             expireTime,
                             null,
                             false,
-                            /*intercept*/false,
+                            intercept,
                             req.subjectId(),
                             taskName,
                             null,

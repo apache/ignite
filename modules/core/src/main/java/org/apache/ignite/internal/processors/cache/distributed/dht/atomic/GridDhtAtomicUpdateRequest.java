@@ -298,21 +298,36 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     /**
      * @param key Key to add.
      * @param val Value, {@code null} if should be removed.
+     * @param entryProcessor Entry processor.
      * @param ttl TTL.
      * @param expireTime Expire time.
      */
     public void addNearWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
+        EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
         long expireTime)
     {
         if (nearKeys == null) {
             nearKeys = new ArrayList<>();
-            nearVals = new ArrayList<>();
+
+            if (forceTransformBackups) {
+                nearEntryProcessors = new ArrayList<>();
+                nearEntryProcessorsBytes = new ArrayList<>();
+            }
+            else
+                nearVals = new ArrayList<>();
         }
 
         nearKeys.add(key);
-        nearVals.add(val);
+
+        if (forceTransformBackups) {
+            assert entryProcessor != null;
+
+            nearEntryProcessors.add(entryProcessor);
+        }
+        else
+            nearVals.add(val);
 
         if (ttl >= 0) {
             if (nearTtls == null) {
