@@ -229,7 +229,7 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        return PRIM.readInt(arr, start + 2);
+        return PRIM.readInt(arr, start + GridPortableMarshaller.TYPE_ID_POS);
     }
 
     /** {@inheritDoc} */
@@ -286,7 +286,7 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return PRIM.readInt(arr, start + 6);
+        return PRIM.readInt(arr, start + GridPortableMarshaller.HASH_CODE_POS);
     }
 
     /** {@inheritDoc} */

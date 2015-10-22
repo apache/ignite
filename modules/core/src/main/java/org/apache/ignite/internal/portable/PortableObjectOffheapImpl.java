@@ -87,7 +87,7 @@ public class PortableObjectOffheapImpl extends PortableObjectEx implements Exter
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        return UNSAFE.getInt(ptr + start + 2);
+        return UNSAFE.getInt(ptr + start + GridPortableMarshaller.TYPE_ID_POS);
     }
 
     /** {@inheritDoc} */
@@ -97,7 +97,7 @@ public class PortableObjectOffheapImpl extends PortableObjectEx implements Exter
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return UNSAFE.getInt(ptr + start + 6);
+        return UNSAFE.getInt(ptr + start + GridPortableMarshaller.HASH_CODE_POS);
     }
 
     /** {@inheritDoc} */

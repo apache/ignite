@@ -77,7 +77,6 @@
         <module>modules/jms11</module>
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
-        <module>modules/platform</module>
     </modules>
 
     <profiles>
@@ -373,11 +372,6 @@
 
                                         <chmod dir="${basedir}/target/release-package" perm="755" includes="**/*.sh" />
 
-                                        <!-- hotfix according to https://issues.apache.org/jira/browse/IGNITE-1399. Remove at 1.5 -->
-                                        <move todir="${basedir}/target/temp/release-package/libs/optional/ignite-platform" failonerror="false">
-                                            <fileset dir="${basedir}/target/release-package/libs/optional/ignite-platform" />
-                                        </move>
-
                                         <zip destfile="${basedir}/target/bin/${ignite.zip.pattern}.zip" encoding="UTF-8">
                                             <zipfileset dir="${basedir}/target/release-package" prefix="${ignite.zip.pattern}" filemode="755">
                                                 <include name="**/*.sh" />
@@ -394,11 +388,6 @@
                                                 <exclude name="**/missing" />
                                             </zipfileset>
                                         </zip>
-
-                                        <!-- hotfix according to https://issues.apache.org/jira/browse/IGNITE-1399. Remove at 1.5 -->
-                                        <move todir="${basedir}/target/release-package/libs/optional/ignite-platform" failonerror="false">
-                                            <fileset dir="${basedir}/target/temp/release-package/libs/optional/ignite-platform" />
-                                        </move>
                                     </target>
                                 </configuration>
                             </execution>

@@ -40,6 +40,8 @@ import org.apache.ignite.portable.*;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLS_NAME_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DFLT_HDR_LEN;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.HASH_CODE_POS;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.RAW_DATA_OFF_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TOTAL_LEN_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TYPE_ID_POS;
@@ -137,6 +139,10 @@ public class PortableBuilderImpl implements PortableBuilder {
         this.reader = reader;
         this.start = start;
 
+        byte ver = reader.readByteAbsolute(start + PROTO_VER_POS);
+
+        PortableUtils.checkProtocolVersion(ver);
+
         int typeId = reader.readIntAbsolute(start + TYPE_ID_POS);
         ctx = reader.portableContext();
         hashCode = reader.readIntAbsolute(start + HASH_CODE_POS);
@@ -194,6 +200,7 @@ public class PortableBuilderImpl implements PortableBuilder {
      */
     void serializeTo(PortableWriterExImpl writer, PortableBuilderSerializer serializer) {
         writer.doWriteByte(GridPortableMarshaller.OBJ);
+        writer.doWriteByte(PROTO_VER);
         writer.doWriteBoolean(true);
         writer.doWriteInt(registeredType ? typeId : UNREGISTERED_TYPE_ID);
         writer.doWriteInt(hashCode);
