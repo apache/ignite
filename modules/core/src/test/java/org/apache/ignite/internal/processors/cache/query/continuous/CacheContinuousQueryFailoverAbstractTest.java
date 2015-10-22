@@ -1564,11 +1564,15 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         restartFut.get();
 
-        boolean check = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return checkEvents(false, expEvts, lsnr);
-            }
-        }, 10_000);
+        boolean check = true;
+
+        if (!expEvts.isEmpty()) {
+            check = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return checkEvents(false, expEvts, lsnr);
+                }
+            }, 10_000);
+        }
 
         if (!check)
             assertTrue(checkEvents(true, expEvts, lsnr));

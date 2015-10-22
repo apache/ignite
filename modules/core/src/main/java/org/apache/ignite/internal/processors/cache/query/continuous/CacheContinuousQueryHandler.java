@@ -63,7 +63,6 @@ import org.apache.ignite.internal.processors.platform.cache.query.PlatformContin
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -576,8 +575,6 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         /** */
         private final Map<Long, CacheContinuousQueryEntry> pendingEnts = new TreeMap<>();
 
-        private List<T2<Long, CacheContinuousQueryEntry>> firedEvents = new ArrayList<>();
-
         /**
          * @param log Logger.
          */
@@ -601,8 +598,6 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 if (lastFiredEvt == INIT_VALUE) {
                     lastFiredEvt = entry.updateIndex();
 
-                    firedEvents.add(new T2<>(lastFiredEvt, entry));
-
                     return F.asList(entry);
                 }
 
@@ -611,8 +606,6 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                     pendingEnts.clear();
 
                     lastFiredEvt = 1;
-
-                    firedEvents.add(new T2<>(lastFiredEvt, entry));
 
                     return F.asList(entry);
                 }
@@ -642,8 +635,6 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                         ++lastFiredEvt;
 
                         entries.add(e.getValue());
-
-                        firedEvents.add(new T2<>(e.getKey(), e.getValue()));
 
                         iter.remove();
                     }
