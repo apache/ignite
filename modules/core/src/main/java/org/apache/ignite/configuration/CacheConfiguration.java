@@ -2231,7 +2231,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             if (desc == null)
                 desc = addIndex(idxName, SORTED);
 
-            desc.addField(field, orderNum, descending);
+            if (!F.eq(_VAL, field))
+                desc.addField(field, orderNum, descending);
         }
 
         /**

@@ -205,20 +205,28 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             U.classForName(meta.getKeyType(), Object.class));
 
                     TypeId typeId;
+                    TypeId altTypeId = null;
 
                     if (valCls == null || ctx.cacheObjects().isPortableEnabled(ccfg)) {
                         processPortableMeta(meta, desc);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
+
+                        if (valCls != null)
+                            altTypeId = new TypeId(ccfg.getName(), valCls);
                     }
                     else {
                         processClassMeta(meta, desc);
 
                         typeId = new TypeId(ccfg.getName(), valCls);
+                        altTypeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
                     }
 
                     addTypeByName(ccfg, desc);
                     types.put(typeId, desc);
+
+                    if (altTypeId != null)
+                        types.put(altTypeId, desc);
 
                     desc.registered(idx.registerType(ccfg.getName(), desc));
                 }
