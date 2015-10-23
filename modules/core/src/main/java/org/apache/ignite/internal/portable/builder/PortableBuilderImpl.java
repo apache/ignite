@@ -389,7 +389,7 @@ public class PortableBuilderImpl implements PortableBuilder {
             }
         }
 
-        writer.writeRawOffsetIfNeeded();
+        writer.rawWriter();
 
         if (reader != null) {
             int rawOff = reader.readIntAbsolute(start + RAW_DATA_OFF_POS);
@@ -399,6 +399,7 @@ public class PortableBuilderImpl implements PortableBuilder {
                 writer.write(reader.array(), rawOff, len - rawOff);
         }
 
+        writer.writeRawOffsetIfNeeded();
         writer.writeLength();
     }
 
