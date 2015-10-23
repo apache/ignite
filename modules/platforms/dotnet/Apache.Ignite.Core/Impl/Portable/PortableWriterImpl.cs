@@ -951,6 +951,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Object array.</param>
         public void WriteArray<T>(T[] val)
         {
+            WriteArrayInternal(val);
+        }
+
+        /// <summary>
+        /// Write object array.
+        /// </summary>
+        /// <param name="val">Object array.</param>
+        public void WriteArrayInternal(Array val)
+        {
             if (val == null)
                 WriteNullRawField();
             else

@@ -63,7 +63,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         
         /** Current context. */
         private Context _ctx;
-        
+
+        /** Write array action. */
+        private readonly Action<PortableWriterImpl, object> _writeArrayAction = (w, o) =>
+            w.WriteArrayInternal((Array) o);
+
         /// <summary>
         /// Static initializer.
         /// </summary>
@@ -162,8 +166,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public IPortableBuilder SetArrayField<T>(string fieldName, T[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (T[]), val, (w, o) =>
-                w.WriteArray((T[]) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (T[]), val, _writeArrayAction));
         }
  
         /** <inheritDoc /> */
@@ -465,7 +468,16 @@ namespace Apache.Ignite.Core.Impl.Portable
             // TODO: Arrays, Collections, Dates can be written differently.
             // TODO: Current tests do not cover this!
 
-            _parent._cache[pos] = new PortableBuilderField(typeof(T), val);
+            Action<PortableWriterImpl, object> writeAction = null;
+
+            switch (header)
+            {
+                case PortableUtils.TypeArray:
+                    writeAction = _writeArrayAction;
+                    break;
+            }
+
+            _parent._cache[pos] = new PortableBuilderField(typeof(T), val, writeAction);
         }
 
         /// <summary>
@@ -492,7 +504,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="desc">Portable type descriptor.</param>
         /// <param name="hashCode">Hash code.</param>
         /// <param name="vals">Values.</param>
-        internal void Mutate(
+        private void Mutate(
             PortableHeapStream inStream,
             PortableHeapStream outStream,
             IPortableTypeDescriptor desc,
