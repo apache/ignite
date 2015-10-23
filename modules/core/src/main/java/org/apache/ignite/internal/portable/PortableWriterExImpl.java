@@ -107,8 +107,8 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /** */
     private int typeId;
 
-    /** */
-    private boolean allowFields = true;
+    /** Raw offset position. */
+    private int rawOffPos;
 
     /** */
     private boolean metaEnabled;
@@ -338,7 +338,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      *
      */
     public void writeRawOffsetIfNeeded() {
-        if (allowFields)
+        if (rawOffPos == 0)
             out.writeInt(start + RAW_DATA_OFF_POS, out.position() - start);
     }
 
@@ -1707,10 +1707,10 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
     /** {@inheritDoc} */
     @Override public PortableRawWriter rawWriter() {
-        if (allowFields) {
+        if (rawOffPos == 0) {
             out.writeInt(start + RAW_DATA_OFF_POS, out.position() - start);
 
-            allowFields = false;
+            rawOffPos = out.position();
         }
 
         return this;
@@ -1788,7 +1788,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     private void writeFieldId(String fieldName, byte fieldType) throws PortableException {
         A.notNull(fieldName, "fieldName");
 
-        if (!allowFields)
+        if (rawOffPos != 0)
             throw new PortableException("Individual field can't be written after raw writer is acquired " +
                 "via rawWriter() method. Consider fixing serialization logic for class: " + cls.getName());
 
