@@ -114,6 +114,19 @@ consoleModule.controller('sqlController',
         return false;
     };
 
+    Object.defineProperty($scope, 'scrollParagraph', {
+        get: function() {
+            return undefined;
+        },
+        set: function(paragraph) {
+            $location.hash('paragraph-' + paragraph.id);
+
+            $anchorScroll();
+
+            paragraph.ace.focus();
+        }
+    });
+
     var _hideColumn = function (col) {
         return !(col.fieldName === '_KEY') && !(col.fieldName == '_VAL');
     };

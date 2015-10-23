@@ -51,8 +51,8 @@ block container
                     label.col-sm-12 Notebook not accessible any more. Go back to configuration or open to another notebook.
                     button.h3.btn.btn-primary(ng-click='goToConfiguration()') Back to configuration
                 div(ng-if='notebook')
-                    .row(bs-affix)
-                        .docs-header.notebook-header
+                    .col-sm-12(bs-affix)
+                        .docs-header.notebook-header(style='padding: 10px 0')
                             h1.col-sm-6(ng-hide='notebook.edit')
                                 label(style='max-width: calc(100% - 60px)') {{notebook.name}}
                                 .btn-group
@@ -63,8 +63,9 @@ block container
                                 .input-tip
                                     input.form-control(ng-model='notebook.editName' required on-enter='renameNotebook(notebook.editName)' on-escape='notebook.edit = false;')
                             h1.pull-right
-                                .btn-group
+                                .btn-group(style='margin-top: 0px')
                                     +btn-toolbar('fa-plus', 'addParagraph()', 'Add new query')
+                                button.select-toggle.btn.btn-default(ng-model='scrollParagraph' data-multiple='0' bs-options='item as item.name for item in notebook.paragraphs' bs-select bs-tooltip data-placeholder='Scroll to query' data-title='Max number of rows to show in query result as one page')
                     .block-callout-parent
                         table
                             tbody

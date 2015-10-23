@@ -481,6 +481,7 @@ button.form-control {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            margin-top: 5px;
         }
 
         .btn-group {
@@ -490,13 +491,18 @@ button.form-control {
 
         > i.btn {
             float: right;
-            line-height: 40px;
+            line-height: 30px;
         }
-    }
 
-    input {
-        font-size: 22px;
-        height: 44px;
+        input {
+            font-size: 22px;
+            height: 35px;
+        }
+
+        > button.btn.select-toggle::after {
+            float: left;
+            right: 10px !important;
+        }
     }
 }
 
