@@ -216,7 +216,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="pos">Position.</param>
         /// <param name="val">Value.</param>
         /// <returns><c>true</c> if value is found in cache.</returns>
-        internal bool TryGetCachedField<T>(int pos, out T val)
+        public bool TryGetCachedField<T>(int pos, out T val)
         {
             if (_parent._cache != null)
             {
@@ -240,7 +240,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="pos">Position.</param>
         /// <param name="val">Value.</param>
-        internal void CacheField<T>(int pos, T val)
+        public void CacheField<T>(int pos, T val)
         {
             if (_parent._cache == null)
                 _parent._cache = new Dictionary<int, PortableBuilderField>(2);
