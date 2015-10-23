@@ -473,26 +473,29 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_parent._cache == null)
                 _parent._cache = new Dictionary<int, PortableBuilderField>(2);
 
-            // TODO: Need to detect a delegate by header
-            // TODO: Arrays, Collections, Dates can be written differently.
-            // TODO: Current tests do not cover this!
-
-            Action<PortableWriterImpl, object> writeAction = null;
-
             var hdr = _obj.Data[pos];
 
-            switch (hdr)
-            {
-                case PortableUtils.TypeArray:
-                    writeAction = _writeArrayAction;
-                    break;
-            }
-
-            var field = new PortableBuilderField(typeof(T), val, writeAction);
+            var field = new PortableBuilderField(typeof(T), val, GetWriteAction(hdr));
             
             _parent._cache[pos] = field;
 
             return field;
+        }
+
+        /// <summary>
+        /// Gets the write action by header.
+        /// </summary>
+        /// <param name="header">The header.</param>
+        /// <returns>Write action.</returns>
+        private Action<PortableWriterImpl, object> GetWriteAction(byte header)
+        {
+            // TODO: Arrays, Collections, Dates can be written differently.
+            switch (header)
+            {
+                case PortableUtils.TypeArray:
+                    return _writeArrayAction;
+            }
+            return null;
         }
 
         /// <summary>
