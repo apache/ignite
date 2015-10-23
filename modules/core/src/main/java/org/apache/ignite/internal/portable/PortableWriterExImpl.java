@@ -330,16 +330,11 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /**
      *
      */
-    public void writeLength() {
-        out.writeInt(start + TOTAL_LEN_POS, out.position() - start);
-    }
-
-    /**
-     *
-     */
-    public void writeRawOffsetIfNeeded() {
+    public void writeLengthAndRawOffset() {
         if (rawOffPos == 0)
             out.writeInt(start + RAW_DATA_OFF_POS, out.position() - start);
+
+        out.writeInt(start + TOTAL_LEN_POS, out.position() - start);
     }
 
     /**

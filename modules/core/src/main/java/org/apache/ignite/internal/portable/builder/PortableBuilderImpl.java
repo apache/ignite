@@ -32,10 +32,6 @@ import org.apache.ignite.portable.PortableMetadata;
 import org.apache.ignite.portable.PortableObject;
 import org.jetbrains.annotations.Nullable;
 import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.cache.portable.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.portable.*;
 
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLS_NAME_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DFLT_HDR_LEN;
@@ -399,8 +395,7 @@ public class PortableBuilderImpl implements PortableBuilder {
                 writer.write(reader.array(), rawOff, len - rawOff);
         }
 
-        writer.writeRawOffsetIfNeeded();
-        writer.writeLength();
+        writer.writeLengthAndRawOffset();
     }
 
     /** {@inheritDoc} */
