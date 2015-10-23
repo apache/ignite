@@ -20,6 +20,7 @@ package org.apache.ignite.internal.portable;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.portable.PortableObject;
 import org.jetbrains.annotations.Nullable;
 
@@ -80,3 +81,87 @@ class PortableReaderContext {
         return S.toString(PortableReaderContext.class, this);
     }
 }
+
+
+// TODO: Opto
+///**
+//* Reader context.
+//*/
+//class PortableReaderContext {
+//    /** */
+//    private Object oHandles;
+//
+//    /** */
+//    private Map<Integer, PortableObject> poHandles;
+//
+//    /**
+//     * @param handle Handle.
+//     * @param obj Object.
+//     */
+//    @SuppressWarnings("unchecked")
+//    void setObjectHandler(int handle, Object obj) {
+//        assert obj != null;
+//
+//        if (oHandles == null) {
+//            oHandles = new IgniteBiTuple(handle, obj);
+//        }
+//        else if (oHandles instanceof Map) {
+//            ((Map)oHandles).put(handle, obj);
+//        }
+//        else {
+//            Map map = new HashMap(3, 1.0f);
+//
+//            IgniteBiTuple t = (IgniteBiTuple)oHandles;
+//
+//            map.put(t.getKey(), t.getValue());
+//            map.put(handle, obj);
+//
+//            oHandles = map;
+//        }
+//    }
+//
+//    /**
+//     * @param handle Handle.
+//     * @param po Portable object.
+//     */
+//    void setPortableHandler(int handle, PortableObject po) {
+//        assert po != null;
+//
+//        if (poHandles == null)
+//            poHandles = new HashMap<>(3, 1.0f);
+//
+//        poHandles.put(handle, po);
+//    }
+//
+//    /**
+//     * @param handle Handle.
+//     * @return Object.
+//     */
+//    @Nullable Object getObjectByHandle(int handle) {
+//        if (oHandles != null) {
+//            if (oHandles instanceof IgniteBiTuple) {
+//                IgniteBiTuple t = (IgniteBiTuple)oHandles;
+//
+//                if (t.get1().equals(handle))
+//                    return t.get2();
+//            }
+//            else
+//                return ((Map)oHandles).get(handle);
+//        }
+//
+//        return null;
+//    }
+//
+//    /**
+//     * @param handle Handle.
+//     * @return Object.
+//     */
+//    @Nullable PortableObject getPortableByHandle(int handle) {
+//        return poHandles != null ? poHandles.get(handle) : null;
+//    }
+//
+//    /** {@inheritDoc} */
+//    @Override public String toString() {
+//        return S.toString(PortableReaderContext.class, this);
+//    }
+//}

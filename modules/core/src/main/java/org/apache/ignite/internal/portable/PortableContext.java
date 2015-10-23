@@ -637,6 +637,8 @@ public class PortableContext implements Externalizable {
         if (userTypes.containsKey(typeId) || predefinedTypes.containsKey(typeId))
             return DFLT_ID_MAPPER;
 
+        // TODO: Opto: comment above.
+
         return BASIC_CLS_ID_MAPPER;
     }
 
@@ -924,6 +926,9 @@ public class PortableContext implements Externalizable {
         }
 
         return h;
+
+//        // TODO: Opto.
+//        return str.hashCode();
     }
 
     /**

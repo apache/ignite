@@ -2051,6 +2051,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             else
                 off += strLen;
 
+            // TODO: Opto.
+            //in.position(in.position() + strLen);
+
             return res;
         }
         else
@@ -3034,22 +3037,51 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private int fieldOffset(int id) {
         assert hdrLen != 0;
 
-        int off = start + hdrLen;
+        int searchHead = start + hdrLen;
+        int searchTail = start + in.readInt(start + RAW_DATA_OFF_POS);
 
-        int end = start + in.readInt(start + RAW_DATA_OFF_POS);
+//        int searchPos = in.position();
+//
+//        while (searchPos < searchTail) {
+//            int id0 = in.readInt(searchPos);
+//
+//            if (id0 == id)
+//                return searchPos + 8;
+//
+//            int len = in.readInt(searchPos + 4);
+//
+//            searchPos += (8 + len);
+//        }
+//
+//        if (in.position() != searchHead) {
+//            searchPos = searchHead;
+//
+//            while (searchPos < in.position()) {
+//                int id0 = in.readInt(searchPos);
+//
+//                if (id0 == id)
+//                    return searchPos + 8;
+//
+//                int len = in.readInt(searchPos + 4);
+//
+//                searchPos += (8 + len);
+//            }
+//        }
+//
+//        return -1;
 
         while (true) {
-            if (off >= end)
+            if (searchHead >= searchTail)
                 return -1;
 
-            int id0 = in.readInt(off);
+            int id0 = in.readInt(searchHead);
 
             if (id0 == id)
-                return off + 8;
+                return searchHead + 8;
 
-            int len = in.readInt(off + 4);
+            int len = in.readInt(searchHead + 4);
 
-            off += (8 + len);
+            searchHead += (8 + len);
         }
     }
 

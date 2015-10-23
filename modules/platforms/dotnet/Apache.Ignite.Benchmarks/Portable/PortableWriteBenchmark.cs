@@ -78,7 +78,7 @@ namespace Apache.Ignite.Benchmarks.Portable
                 TypeConfigurations = new List<PortableTypeConfiguration>
                 {
                     new PortableTypeConfiguration(typeof (Address)) {MetadataEnabled = true},
-                    new PortableTypeConfiguration(typeof (TestModel)) {MetadataEnabled = false}
+                    //new PortableTypeConfiguration(typeof (TestModel)) {MetadataEnabled = false}
                 }
             });
         }
@@ -90,7 +90,7 @@ namespace Apache.Ignite.Benchmarks.Portable
         protected override void GetDescriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
             descs.Add(BenchmarkOperationDescriptor.Create("WriteAddress", WriteAddress, 1));
-            descs.Add(BenchmarkOperationDescriptor.Create("WriteTestModel", WriteTestModel, 1));
+            //descs.Add(BenchmarkOperationDescriptor.Create("WriteTestModel", WriteTestModel, 1));
         }
 
         /// <summary>

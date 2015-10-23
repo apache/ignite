@@ -77,6 +77,7 @@
         <module>modules/jms11</module>
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
+        <module>modules/microbench</module>
     </modules>
 
     <profiles>
