@@ -734,11 +734,11 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
+        /// <summary>
+        /// Writes the specified field.
+        /// </summary>
         private static void WriteField(Context ctx, PortableBuilderField field)
         {
-            // TODO: Properly write depending on method in PortableBuilderField
-            // Arrays, Collections, Dates can be written differently.
-
             var action = field.WriteAction;
 
             if (action != null)
