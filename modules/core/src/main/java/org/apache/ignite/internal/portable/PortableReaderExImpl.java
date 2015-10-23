@@ -203,8 +203,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         // Validate protocol version.
         PortableUtils.checkProtocolVersion(doReadByte(true));
 
-        // skip user flag
-        rawOff += 1;
+        // Skip flags
+        rawOff += 2;
 
         typeId = doReadInt(true);
 
@@ -1957,7 +1957,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @param raw Raw flag.
      * @return Value.
      */
-    private short doReadShort(boolean raw) {
+    public short doReadShort(boolean raw) {
         in.position(raw ? rawOff : off);
 
         short val = in.readShort();
@@ -2199,7 +2199,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
                 PortableUtils.checkProtocolVersion(doReadByte(true));
 
-                boolean userType = doReadBoolean(true);
+                boolean userType = PortableUtils.isUserType(PortableUtils.readFlags(this));
 
                 // Skip typeId and hash code.
                 rawOff += 8;

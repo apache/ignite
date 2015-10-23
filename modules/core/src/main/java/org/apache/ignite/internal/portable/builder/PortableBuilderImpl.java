@@ -201,7 +201,9 @@ public class PortableBuilderImpl implements PortableBuilder {
     void serializeTo(PortableWriterExImpl writer, PortableBuilderSerializer serializer) {
         writer.doWriteByte(GridPortableMarshaller.OBJ);
         writer.doWriteByte(PROTO_VER);
-        writer.doWriteBoolean(true);
+
+        PortableUtils.writeFlags(writer, true);
+
         writer.doWriteInt(registeredType ? typeId : UNREGISTERED_TYPE_ID);
         writer.doWriteInt(hashCode);
 

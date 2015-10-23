@@ -92,6 +92,44 @@ public class PortableUtils {
     /** Portable classes. */
     private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
 
+    /** Flag: user type. */
+    private static final short FLAG_USR_TYP = 0x1;
+
+    /**
+     * Write flags.
+     *
+     * @param writer Writer.
+     * @param userType User type flag.
+     */
+    public static void writeFlags(PortableWriterExImpl writer, boolean userType) {
+        short val = 0;
+
+        if (userType)
+            val |= FLAG_USR_TYP;
+
+        writer.doWriteShort(val);
+    }
+
+    /**
+     * Read flags.
+     *
+     * @param reader Reader.
+     * @return Flags.
+     */
+    public static short readFlags(PortableReaderExImpl reader) {
+        return reader.doReadShort(true);
+    }
+
+    /**
+     * Check if user type flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean isUserType(short flags) {
+        return (flags & FLAG_USR_TYP) == FLAG_USR_TYP;
+    }
+
     /**
      *
      */
