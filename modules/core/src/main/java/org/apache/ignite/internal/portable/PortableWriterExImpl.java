@@ -328,11 +328,10 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     }
 
     /**
-     *
+     * Write length and raw offset.
      */
     public void writeLengthAndRawOffset() {
-        if (rawOffPos == 0)
-            out.writeInt(start + RAW_DATA_OFF_POS, out.position() - start);
+        out.writeInt(start + RAW_DATA_OFF_POS, (rawOffPos == 0 ? out.position() : rawOffPos) - start);
 
         out.writeInt(start + TOTAL_LEN_POS, out.position() - start);
     }
@@ -1702,11 +1701,8 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
     /** {@inheritDoc} */
     @Override public PortableRawWriter rawWriter() {
-        if (rawOffPos == 0) {
-            out.writeInt(start + RAW_DATA_OFF_POS, out.position() - start);
-
+        if (rawOffPos == 0)
             rawOffPos = out.position();
-        }
 
         return this;
     }
