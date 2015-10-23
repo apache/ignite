@@ -64,6 +64,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
+import java.util.Date;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 @State(Scope.Benchmark)
@@ -101,6 +104,10 @@ public class MyBenchmark {
 
         marshAddrBytes = marsh.marshal(new Address());
         optMarshAddrBytes = optMarsh.marshal(new Address());
+
+        byte[] data = marsh.marshal(newCustomer(1));
+
+        System.out.println(data.length);
     }
 
     @Benchmark
@@ -116,12 +123,35 @@ public class MyBenchmark {
     private static final Address addr = new Address();
 
     public static void main(String[] args) throws Exception {
-//        setup();
-//        while (true)
-//            marsh.unmarshal(marshAddrBytes, null);
+        setup();
+        while (true)
+            marsh.unmarshal(marshAddrBytes, null);
 
-        Options opts = new OptionsBuilder().include(MyBenchmark.class.getSimpleName()).build();
-        new Runner(opts).run();
+//        Options opts = new OptionsBuilder().include(MyBenchmark.class.getSimpleName()).build();
+//        new Runner(opts).run();
+    }
+
+    enum Sex { MALE, FEMALE }
+
+    static class Customer {
+        public int customerId;
+        public String name;
+        public Date birthday;
+        public Sex gender;
+        public String emailAddress;
+        //long[] longArray;
+    }
+
+    public static Customer newCustomer(int i) {
+        Customer customer = new Customer();
+        customer.customerId = i;
+        customer.name = "Name" + i;
+        customer.gender = Sex.FEMALE;
+        customer.birthday = new Date(System.currentTimeMillis() -
+            ThreadLocalRandom.current().nextInt(100 * 365 * 24 * 60 * 60 * 1000));
+        customer.emailAddress = "email." + customer.name + "@gmail.com";
+        //customer.longArray = new long[100];
+        return customer;
     }
 
     static class Address implements PortableMarshalAware, Externalizable {
