@@ -534,12 +534,16 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestDateTime()
         {
-            // TODO: Test explicit .WriteTimestamp, check exception.
             var time = DateTime.Now;
             Assert.AreEqual(_marsh.Unmarshal<DateTime>(_marsh.Marshal(time)), time);
 
             var timeUtc = DateTime.UtcNow;
             Assert.AreEqual(_marsh.Unmarshal<DateTime>(_marsh.Marshal(timeUtc)), timeUtc);
+
+            // Check exception with non-UTC date
+            var stream = new PortableHeapStream(128);
+            var writer = _marsh.StartMarshal(stream);
+            Assert.Throws<InvalidOperationException>(() => writer.WriteTimestamp(DateTime.Now));
         }
 
         /**
