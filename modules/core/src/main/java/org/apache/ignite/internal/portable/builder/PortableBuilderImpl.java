@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.portable.builder;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import org.apache.ignite.internal.portable.PortableContext;
+import org.apache.ignite.internal.portable.PortableObjectImpl;
+import org.apache.ignite.internal.portable.PortableObjectOffheapImpl;
+import org.apache.ignite.internal.portable.PortableUtils;
+import org.apache.ignite.internal.portable.PortableWriterExImpl;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -31,11 +31,15 @@ import org.apache.ignite.portable.PortableInvalidClassException;
 import org.apache.ignite.portable.PortableMetadata;
 import org.apache.ignite.portable.PortableObject;
 import org.jetbrains.annotations.Nullable;
-import org.apache.ignite.internal.portable.*;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DFLT_HDR_LEN;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.HASH_CODE_POS;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.RAW_DATA_OFF_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TOTAL_LEN_POS;
@@ -194,19 +198,11 @@ public class PortableBuilderImpl implements PortableBuilder {
      * @param serializer Serializer.
      */
     void serializeTo(PortableWriterExImpl writer, PortableBuilderSerializer serializer) {
-        writer.doWriteByte(GridPortableMarshaller.OBJ);
-        writer.doWriteByte(PROTO_VER);
-
-        PortableUtils.writeFlags(writer, true);
-
-        writer.doWriteInt(registeredType ? typeId : UNREGISTERED_TYPE_ID);
-        writer.doWriteInt(hashCode);
-
-        // Length and raw offset.
-        writer.reserve(8);
-
-        if (!registeredType)
-            writer.writeString(clsNameToWrite);
+        PortableUtils.writeHeader(writer,
+            true,
+            registeredType ? typeId : UNREGISTERED_TYPE_ID,
+            hashCode,
+            registeredType ? null : clsNameToWrite);
 
         Set<Integer> remainsFlds = null;
 

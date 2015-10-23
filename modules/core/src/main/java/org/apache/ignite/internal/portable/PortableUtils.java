@@ -525,4 +525,34 @@ public class PortableUtils {
         if (PROTO_VER != protoVer)
             throw new PortableException("Unsupported protocol version: " + protoVer);
     }
+
+    /**
+     * Write portable header.
+     *
+     * @param writer Writer.
+     * @param usrTyp User type flag.
+     * @param typeId Type ID.
+     * @param hashCode Hash code.
+     * @param clsName Class name (optional).
+     * @return Position where length should be written.
+     */
+    public static int writeHeader(PortableWriterExImpl writer, boolean usrTyp, int typeId, int hashCode,
+        @Nullable String clsName) {
+        writer.doWriteByte(GridPortableMarshaller.OBJ);
+        writer.doWriteByte(GridPortableMarshaller.PROTO_VER);
+
+        PortableUtils.writeFlags(writer, usrTyp);
+
+        writer.doWriteInt(typeId);
+        writer.doWriteInt(hashCode);
+
+        int reserved = writer.reserve(8);
+
+        writer.doWriteInt(0); // TODO: Write schema offset here.
+
+        if (clsName != null)
+            writer.doWriteString(clsName);
+
+        return reserved;
+    }
 }

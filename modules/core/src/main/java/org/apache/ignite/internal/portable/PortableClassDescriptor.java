@@ -648,20 +648,11 @@ public class PortableClassDescriptor {
 
         int pos = writer.position();
 
-        writer.doWriteByte(GridPortableMarshaller.OBJ);
-        writer.doWriteByte(GridPortableMarshaller.PROTO_VER);
-
-        PortableUtils.writeFlags(writer, userType);
-
-        writer.doWriteInt(registered ? typeId : GridPortableMarshaller.UNREGISTERED_TYPE_ID);
-        writer.doWriteInt(obj instanceof CacheObjectImpl ? 0 : obj.hashCode());
-
-        // For length and raw offset.
-        int reserved = writer.reserve(8);
-
-        // Class name in case if typeId registration is failed.
-        if (!registered)
-            writer.doWriteString(cls.getName());
+        int reserved = PortableUtils.writeHeader(writer,
+            userType,
+            registered ? typeId : GridPortableMarshaller.UNREGISTERED_TYPE_ID,
+            obj instanceof CacheObjectImpl ? 0 : obj.hashCode(),
+            registered ? null : cls.getName());
 
         int current = writer.position();
         int len = current - pos;
