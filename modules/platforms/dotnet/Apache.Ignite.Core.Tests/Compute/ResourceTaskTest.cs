@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
 
             /** <inheritDoc /> */
-            public ComputeJobResultPolicy Result(IComputeJobResult<int> res, IList<IComputeJobResult<int>> rcvd)
+            public ComputeJobResultPolicy OnResult(IComputeJobResult<int> res, IList<IComputeJobResult<int>> rcvd)
             {
                 return ComputeJobResultPolicy.Wait;
             }
@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /** <inheritDoc /> */
             public int Reduce(IList<IComputeJobResult<int>> results)
             {
-                return results.Sum(res => res.Data());
+                return results.Sum(res => res.Data);
             }
         }
 
@@ -509,12 +509,12 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
 
             /** <inheritDoc /> */
-            public ComputeJobResultPolicy Result(IComputeJobResult<int> res, IList<IComputeJobResult<int>> rcvd)
+            public ComputeJobResultPolicy OnResult(IComputeJobResult<int> res, IList<IComputeJobResult<int>> rcvd)
             {
                 Assert.IsTrue(rcvd != null);
                 Assert.IsTrue(rcvd.Count == 0);
 
-                _sum += res.Data();
+                _sum += res.Data;
 
                 return ComputeJobResultPolicy.Wait;
             }

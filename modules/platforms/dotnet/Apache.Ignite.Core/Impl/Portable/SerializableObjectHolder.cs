@@ -17,6 +17,9 @@
 
 namespace Apache.Ignite.Core.Impl.Portable
 {
+    using System.Diagnostics;
+    using System.Runtime.Serialization.Formatters.Binary;
+    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
@@ -47,9 +50,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public void WritePortable(IPortableWriter writer)
         {
+            Debug.Assert(writer != null);
+
             var writer0 = (PortableWriterImpl)writer.GetRawWriter();
 
-            writer0.WithDetach(w => PortableUtils.WriteSerializable(w, Item));
+            writer0.WithDetach(w => new BinaryFormatter().Serialize(new PortableStreamAdapter(w.Stream), Item));
         }
 
         /// <summary>
@@ -58,7 +63,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="reader">The reader.</param>
         public SerializableObjectHolder(IPortableReader reader)
         {
-            _item = PortableUtils.ReadSerializable<object>((PortableReaderImpl)reader.GetRawReader());
+            Debug.Assert(reader != null);
+
+            var reader0 = (PortableReaderImpl) reader.GetRawReader();
+
+            _item = new BinaryFormatter().Deserialize(new PortableStreamAdapter(reader0.Stream), null);
         }
     }
 }

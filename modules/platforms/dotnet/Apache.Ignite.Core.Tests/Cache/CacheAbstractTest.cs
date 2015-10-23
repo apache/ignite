@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using System.Runtime.Serialization;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -2828,6 +2827,22 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
+        public void TestSerializableKeepPortable()
+        {
+            var cache = Cache<int, TestSerializableObject>();
+
+            var obj = new TestSerializableObject {Name = "Vasya", Id = 128};
+
+            cache.Put(1, obj);
+
+            var portableResult = cache.WithKeepPortable<int, IPortableObject>().Get(1);
+
+            var resultObj = portableResult.Deserialize<TestSerializableObject>();
+
+            Assert.AreEqual(obj, resultObj);
+        }
+
+        [Test]
         public void TestInvoke()
         {
             TestInvoke(false);
@@ -2849,7 +2864,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 TestInvoke<NonSerializableCacheEntryProcessor>(async);
                 Assert.Fail();
             }
-            catch (SerializationException)
+            catch (PortableException)
             {
                 // Expected
             }
@@ -2884,7 +2899,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             AssertThrowsCacheEntryProcessorException(
                 () => cache.Invoke(key, new T {ThrowErrPortable = true}, arg));
             AssertThrowsCacheEntryProcessorException(
-                () => cache.Invoke(key, new T { ThrowErrNonSerializable = true }, arg), "SerializationException");
+                () => cache.Invoke(key, new T { ThrowErrNonSerializable = true }, arg), "PortableException");
         }
 
         private static void AssertThrowsCacheEntryProcessorException(Action action, string containsText = null)
@@ -2930,7 +2945,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     TestInvokeAll<NonSerializableCacheEntryProcessor>(async, i);
                     Assert.Fail();
                 }
-                catch (SerializationException)
+                catch (PortableException)
                 {
                     // Expected
                 }
@@ -2978,7 +2993,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             TestInvokeAllException(cache, entries, new T { ThrowErrPortable = true, ThrowOnKey = errKey }, 
                 arg, errKey);
             TestInvokeAllException(cache, entries, new T { ThrowErrNonSerializable = true, ThrowOnKey = errKey }, 
-                arg, errKey, "SerializationException");
+                arg, errKey, "PortableException");
 
         }
 

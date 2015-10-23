@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Runtime.Serialization.Formatters.Binary;
     using System.Security.Policy;
     using System.Text;
+
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Portable;
@@ -166,9 +167,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         
         /** Type: native job holder. */
         public const byte TypeNativeJobHolder = 77;
-
-        /** Type: native job result holder. */
-        public const byte TypePortableJobResHolder = 76;
 
         /** Type: Ignite proxy. */
         public const byte TypeIgniteProxy = 74;
@@ -1672,102 +1670,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Write object which is not necessary portable.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="obj">Object.</param>
-        public static void WritePortableOrSerializable<T>(PortableWriterImpl writer, T obj)
-        {
-            if (writer.IsPortable(obj))
-            {
-                writer.WriteBoolean(true);
-
-                writer.WriteObject(obj);
-            }
-            else
-            {
-                writer.WriteBoolean(false);
-
-                WriteSerializable(writer, obj);
-            }
-        }
-
-        /// <summary>
-        /// Writes a serializable object.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="obj">Object.</param>
-        public static void WriteSerializable<T>(PortableWriterImpl writer, T obj)
-        {
-            new BinaryFormatter().Serialize(new PortableStreamAdapter(writer.Stream), obj);
-        }
-
-        /// <summary>
-        /// Read object which is not necessary portable.
-        /// </summary>
-        /// <param name="reader">Reader.</param>
-        /// <returns>Object.</returns>
-        public static T ReadPortableOrSerializable<T>(PortableReaderImpl reader)
-        {
-            return reader.ReadBoolean()
-                ? reader.ReadObject<T>()
-                : ReadSerializable<T>(reader);
-        }
-
-        /// <summary>
-        /// Reads a serializable object.
-        /// </summary>
-        /// <param name="reader">Reader.</param>
-        /// <returns>Object.</returns>
-        public static T ReadSerializable<T>(PortableReaderImpl reader)
-        {
-            return (T) new BinaryFormatter().Deserialize(new PortableStreamAdapter(reader.Stream), null);
-        }
-
-        /// <summary>
-        /// Writes wrapped invocation result.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="success">Success flag.</param>
-        /// <param name="res">Result.</param>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        public static void WriteWrappedInvocationResult(PortableWriterImpl writer, bool success, object res)
-        {
-            var pos = writer.Stream.Position;
-
-            try
-            {
-                if (success)
-                    writer.WriteBoolean(true);
-                else
-                {
-                    writer.WriteBoolean(false); // Call failed.
-                    writer.WriteBoolean(true); // Exception serialized sucessfully.
-                }
-
-                writer.Write(new PortableResultWrapper(res));
-            }
-            catch (Exception marshErr)
-            {
-                // Failed to serialize result, fallback to plain string.
-                writer.Stream.Seek(pos, SeekOrigin.Begin);
-
-                writer.WriteBoolean(false); // Call failed.
-                writer.WriteBoolean(false); // Cannot serialize result or exception.
-
-                if (success)
-                {
-                    writer.WriteString("Call completed successfully, but result serialization failed [resultType=" +
-                        res.GetType().Name + ", serializationErrMsg=" + marshErr.Message + ']');
-                }
-                else
-                {
-                    writer.WriteString("Call completed with error, but error serialization failed [errType=" +
-                        res.GetType().Name + ", serializationErrMsg=" + marshErr.Message + ']');
-                }
-            }
-        }
-        /// <summary>
         /// Writes invocation result.
         /// </summary>
         /// <param name="writer">Writer.</param>
@@ -1812,27 +1714,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Reads wrapped invocation result.
-        /// </summary>
-        /// <param name="reader">Reader.</param>
-        /// <param name="err">Error.</param>
-        /// <returns>Result.</returns>
-        public static object ReadWrappedInvocationResult(PortableReaderImpl reader, out object err)
-        {
-            err = null;
-
-            if (reader.ReadBoolean())
-                return reader.ReadObject<PortableResultWrapper>().Result;
-
-            if (reader.ReadBoolean())
-                err = (Exception) reader.ReadObject<PortableResultWrapper>().Result;
-            else
-                err = ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
-
-            return null;
-        }
-
-        /// <summary>
         /// Reads invocation result.
         /// </summary>
         /// <param name="reader">Reader.</param>
@@ -1845,10 +1726,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (reader.ReadBoolean())
                 return reader.ReadObject<object>();
 
-            if (reader.ReadBoolean())
-                err = reader.ReadObject<object>();
-            else
-                err = ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
+            err = reader.ReadBoolean()
+                ? reader.ReadObject<object>()
+                : ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
 
             return null;
         }

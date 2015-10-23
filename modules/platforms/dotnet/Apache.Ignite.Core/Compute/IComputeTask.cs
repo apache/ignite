@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="rcvd">All previously received results. Note that if task class has
         /// <see cref="ComputeTaskNoResultCacheAttribute"/> attribute, then this list will be empty.</param>
         /// <returns>Result policy that dictates how to process further upcoming job results.</returns>
-        ComputeJobResultPolicy Result(IComputeJobResult<TJobRes> res, IList<IComputeJobResult<TJobRes>> rcvd);
+        ComputeJobResultPolicy OnResult(IComputeJobResult<TJobRes> res, IList<IComputeJobResult<TJobRes>> rcvd);
 
         /// <summary>
         /// Reduces (or aggregates) results received so far into one compound result to be returned to 

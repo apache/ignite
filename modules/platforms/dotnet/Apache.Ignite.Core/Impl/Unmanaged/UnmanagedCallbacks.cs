@@ -978,7 +978,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                    var filter = (IClusterNodeFilter) reader.ReadObject<PortableOrSerializableObjectHolder>().Item;
+                    var filter = reader.ReadObject<IClusterNodeFilter>();
 
                     return filter.Invoke(_ignite.GetNode(reader.ReadGuid())) ? 1 : 0;
                 }
