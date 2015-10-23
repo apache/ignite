@@ -146,7 +146,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             PortableBuilderField field;
 
             if (_vals != null && _vals.TryGetValue(name, out field))
-                return field != PortableBuilderField.RmvMarker ? (T)field.Value : default(T);
+                return field != PortableBuilderField.RmvMarker ? (T) field.Value : default(T);
 
             int pos;
 
@@ -160,12 +160,9 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             val = _obj.GetField<T>(pos, this);
 
-            var fld = CacheField(pos, val, _obj.Data[pos]);
+            var fld = CacheField(pos, val);
 
-            if (_vals == null)
-                _vals = new Dictionary<string, PortableBuilderField>(2);
-
-            _vals[name] = fld;
+            SetField0(name, fld);
 
             return val;
         }
@@ -471,11 +468,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="pos">Position.</param>
         /// <param name="val">Value.</param>
-        /// <param name="header">Field header.</param>
-        public PortableBuilderField CacheField<T>(int pos, T val, byte header)
+        public PortableBuilderField CacheField<T>(int pos, T val)
         {
-            // TODO: Is header  "_obj.Data[pos];" ??
-
             if (_parent._cache == null)
                 _parent._cache = new Dictionary<int, PortableBuilderField>(2);
 
@@ -485,7 +479,9 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             Action<PortableWriterImpl, object> writeAction = null;
 
-            switch (header)
+            var hdr = _obj.Data[pos];
+
+            switch (hdr)
             {
                 case PortableUtils.TypeArray:
                     writeAction = _writeArrayAction;

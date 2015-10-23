@@ -763,15 +763,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     // Notify builder that we deserialized object on other location.
                     if (_builder != null)
-                    {
-                        var curPos = Stream.Position;
-
-                        Stream.Seek(hndPos, SeekOrigin.Begin);
-
-                        _builder.CacheField(hndPos, hndObj, Stream.ReadByte());
-
-                        Stream.Seek(curPos, SeekOrigin.Begin);
-                    }
+                        _builder.CacheField(hndPos, hndObj);
                 }
 
                 return (T) hndObj;
