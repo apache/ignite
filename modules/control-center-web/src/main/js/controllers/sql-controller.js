@@ -114,18 +114,27 @@ consoleModule.controller('sqlController',
         return false;
     };
 
-    Object.defineProperty($scope, 'scrollParagraph', {
-        get: function() {
-            return undefined;
-        },
-        set: function(paragraph) {
-            $location.hash('paragraph-' + paragraph.id);
+    $scope.scrollParagraphs = [];
 
-            $anchorScroll();
+    $scope.rebuildScrollParagraphs = function () {
+        $scope.scrollParagraphs = $scope.notebook.paragraphs.map(function (paragraph) {
+            return {
+                "text": paragraph.name,
+                "click": 'scrollToParagraph(' + paragraph.id + ')'
+            };
+        });
+    };
 
+    $scope.scrollToParagraph = function (paragraphId) {
+        $location.hash('paragraph-' + paragraphId);
+
+        $anchorScroll();
+
+        var paragraph = _.find($scope.notebook.paragraphs, {id: paragraphId});
+
+        if (paragraph)
             paragraph.ace.focus();
-        }
-    });
+    };
 
     var _hideColumn = function (col) {
         return !(col.fieldName === '_KEY') && !(col.fieldName == '_VAL');
@@ -228,6 +237,8 @@ consoleModule.controller('sqlController',
 
                 if (!notebook.paragraphs || notebook.paragraphs.length == 0)
                     $scope.addParagraph();
+                else
+                    $scope.rebuildScrollParagraphs();
 
                 $scope.startTopologyListening(getTopology);
             })
@@ -306,6 +317,8 @@ consoleModule.controller('sqlController',
         if (paragraph.name != newName) {
             paragraph.name = newName;
 
+            $scope.rebuildScrollParagraphs();
+
             _saveNotebook(function () { paragraph.edit = false; });
         }
         else
@@ -341,6 +354,8 @@ consoleModule.controller('sqlController',
         $scope.notebook.expandedParagraphs.push($scope.notebook.paragraphs.length);
 
         $scope.notebook.paragraphs.push(paragraph);
+
+        $scope.rebuildScrollParagraphs();
 
         $location.hash('paragraph-' + paragraph.id);
 
@@ -385,6 +400,8 @@ consoleModule.controller('sqlController',
                         $scope.notebook.expandedParagraphs.splice(panel_idx, 1);
 
                     $scope.notebook.paragraphs.splice(paragraph_idx, 1);
+
+                    $scope.rebuildScrollParagraphs();
 
                     _saveNotebook();
             });

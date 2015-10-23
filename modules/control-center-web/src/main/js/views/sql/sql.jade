@@ -27,8 +27,8 @@ append scripts
 
     script(src='/sql-controller.js')
 
-mixin btn-toolbar(btn, click, tip)
-    i.btn.btn-default.fa(class=btn ng-click=click bs-tooltip='' data-title=tip data-trigger='hover' data-placement='bottom')
+mixin btn-toolbar(btn, click, tip, focusId)
+    i.btn.btn-default.fa(class=btn ng-click=click bs-tooltip='' data-title=tip on-click-focus=focusId data-trigger='hover' data-placement='bottom')
 
 mixin btn-toolbar-data(btn, kind, tip)
     i.btn.btn-default.fa(class=btn ng-click='setResult(paragraph, "#{kind}")' ng-class='{active: resultEq(paragraph, "#{kind}")}' bs-tooltip='' data-title=tip data-trigger='hover' data-placement='bottom')
@@ -51,7 +51,7 @@ block container
                     label.col-sm-12 Notebook not accessible any more. Go back to configuration or open to another notebook.
                     button.h3.btn.btn-primary(ng-click='goToConfiguration()') Back to configuration
                 div(ng-if='notebook')
-                    .col-sm-12(bs-affix)
+                    .row(bs-affix)
                         .docs-header.notebook-header(style='padding: 10px 0')
                             h1.col-sm-6(ng-hide='notebook.edit')
                                 label(style='max-width: calc(100% - 60px)') {{notebook.name}}
@@ -63,9 +63,10 @@ block container
                                 .input-tip
                                     input.form-control(ng-model='notebook.editName' required on-enter='renameNotebook(notebook.editName)' on-escape='notebook.edit = false;')
                             h1.pull-right
+                                a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='scrollParagraphs' data-placement='bottom-right') Scroll to query
+                                    span.caret
                                 .btn-group(style='margin-top: 0px')
                                     +btn-toolbar('fa-plus', 'addParagraph()', 'Add new query')
-                                button.select-toggle.btn.btn-default(ng-model='scrollParagraph' data-multiple='0' bs-options='item as item.name for item in notebook.paragraphs' bs-select bs-tooltip data-placeholder='Scroll to query' data-title='Max number of rows to show in query result as one page')
                     .block-callout-parent
                         table
                             tbody
@@ -96,10 +97,10 @@ block container
                                         a {{paragraph.name}}
 
                                         .btn-group(ng-hide='notebook.paragraphs.length > 1')
-                                            +btn-toolbar('fa-pencil', 'paragraph.edit = true; paragraph.editName = paragraph.name; $event.stopPropagation();', 'Rename query')
+                                            +btn-toolbar('fa-pencil', 'paragraph.edit = true; paragraph.editName = paragraph.name; $event.stopPropagation();', 'Rename query', 'paragraph-name-{{paragraph.id}}')
 
                                         .btn-group(ng-show='notebook.paragraphs.length > 1' ng-click='$event.stopPropagation();')
-                                            +btn-toolbar('fa-pencil', 'paragraph.edit = true; paragraph.editName = paragraph.name;', 'Rename query')
+                                            +btn-toolbar('fa-pencil', 'paragraph.edit = true; paragraph.editName = paragraph.name;', 'Rename query', 'paragraph-name-{{paragraph.id}}')
                                             +btn-toolbar('fa-remove', 'removeParagraph(paragraph)', 'Remove query')
 
                                         .pull-right.btn-group(ng-model='paragraph.result' ng-click='$event.stopPropagation()' style='float: right')
@@ -111,8 +112,8 @@ block container
 
                                     div(ng-show='paragraph.edit')
                                         i.tipLabel.fa(ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
-                                        input.sql-name-input(ng-model='paragraph.editName' required ng-click='$event.stopPropagation();' on-enter='renameParagraph(paragraph, paragraph.editName)' on-escape='paragraph.edit = false')
-                                        i.tipLabel.fa.fa-floppy-o(ng-show='paragraph.editName' ng-click='renameParagraph(paragraph, paragraph.editName); $event.stopPropagation();' bs-tooltip data-title='Save paragraph name' data-trigger='hover')
+                                        input.sql-name-input(id='paragraph-name-{{paragraph.id}}' ng-model='paragraph.editName' required ng-click='$event.stopPropagation();' on-enter='renameParagraph(paragraph, paragraph.editName)' on-escape='paragraph.edit = false')
+                                        i.tipLabel.fa.fa-floppy-o(ng-show='paragraph.editName' ng-click='renameParagraph(paragraph, paragraph.editName); $event.stopPropagation();' bs-tooltip data-title='Save query name' data-trigger='hover')
                                 .panel-collapse(role='tabpanel' bs-collapse-target)
                                     .col-sm-12(ng-show='paragraph.editor')
                                         .col-xs-8.col-sm-9(style='border-right: 1px solid #eee')

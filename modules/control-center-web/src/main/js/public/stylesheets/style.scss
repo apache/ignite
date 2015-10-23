@@ -499,9 +499,9 @@ button.form-control {
             height: 35px;
         }
 
-        > button.btn.select-toggle::after {
-            float: left;
-            right: 10px !important;
+        a.dropdown-toggle {
+            font-size: $font-size-base;
+            margin-right: 5px;
         }
     }
 }
