@@ -1761,7 +1761,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
         int len = indexedTypes.length;
 
-        A.ensure(len > 0, "Array of indexed types can not be empty.");
+        if (len == 0)
+            return this;
+
         A.ensure((len & 1) == 0,
             "Number of indexed types is expected to be even. Refer to method javadoc for details.");
 
