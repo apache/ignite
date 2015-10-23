@@ -878,6 +878,17 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(new[] { nGuid }, portObj.GetField<Guid?[]>("fGuidArr"));
             Assert.AreEqual(new[] { TestEnum.One }, portObj.GetField<TestEnum[]>("fEnumArr"));
 
+            obj = portObj.Deserialize<StringDateGuidEnum>();
+
+            Assert.AreEqual("str", obj.FStr);
+            Assert.AreEqual(nDate, obj.FnDate);
+            Assert.AreEqual(nGuid, obj.FnGuid);
+            Assert.AreEqual(TestEnum.One, obj.FEnum);
+            Assert.AreEqual(new[] { "str" }, obj.FStrArr);
+            Assert.AreEqual(new[] { nDate }, obj.FDateArr);
+            Assert.AreEqual(new[] { nGuid }, obj.FGuidArr);
+            Assert.AreEqual(new[] { TestEnum.One }, obj.FEnumArr);
+
             // Overwrite.
             nDate = DateTime.Now.ToUniversalTime();
             nGuid = Guid.NewGuid();
