@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectStreamClass;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -29,14 +30,11 @@ import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import sun.misc.Unsafe;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 
 /**
  * Miscellaneous utility methods to facilitate {@link OptimizedMarshaller}.
@@ -44,10 +42,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALL
 class OptimizedMarshallerUtils {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
-    /** Use default {@code serialVersionUID} for {@link Serializable} classes. */
-    private static final boolean USE_DFLT_SUID =
-        IgniteSystemProperties.getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, false);
 
     /** */
     static final long HASH_SET_MAP_OFF;
@@ -280,8 +274,8 @@ class OptimizedMarshallerUtils {
     }
 
     /**
-     * Computes the serial version UID value for the given class.
-     * The code is taken from {@link ObjectStreamClass#computeDefaultSUID(Class)}.
+     * Computes the serial version UID value for the given class. The code is taken from {@link
+     * ObjectStreamClass#computeDefaultSUID(Class)}.
      *
      * @param cls A class.
      * @param fields Fields.
@@ -290,8 +284,30 @@ class OptimizedMarshallerUtils {
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     static short computeSerialVersionUid(Class cls, List<Field> fields) throws IOException {
-        if (USE_DFLT_SUID && Serializable.class.isAssignableFrom(cls) && !Enum.class.isAssignableFrom(cls))
-            return (short)ObjectStreamClass.lookup(cls).getSerialVersionUID();
+        if (Serializable.class.isAssignableFrom(cls) && !Enum.class.isAssignableFrom(cls)) {
+            try {
+                Field field = cls.getDeclaredField("serialVersionUID");
+
+                if (field.getType() == long.class) {
+                    int mod = field.getModifiers();
+
+                    if (Modifier.isStatic(mod) && Modifier.isFinal(mod)) {
+                        field.setAccessible(true);
+
+                        return (short)field.getLong(null);
+                    }
+                }
+            }
+            catch (NoSuchFieldException e) {
+                // No-op.
+            }
+            catch (IllegalAccessException e) {
+                throw new IOException(e);
+            }
+
+            if (OptimizedMarshaller.USE_DFLT_SUID)
+                return (short)ObjectStreamClass.lookup(cls).getSerialVersionUID();
+        }
 
         MessageDigest md;
 
