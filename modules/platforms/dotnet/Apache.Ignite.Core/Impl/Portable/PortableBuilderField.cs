@@ -33,16 +33,21 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Value. */
         private readonly object _val;
+        
+        /** Write action. */
+        private readonly Action<PortableWriterImpl, object> _writeAction;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="typ">Type.</param>
         /// <param name="val">Value.</param>
-        public PortableBuilderField(Type typ, object val)
+        /// <param name="writeAction">Optional write action.</param>
+        public PortableBuilderField(Type typ, object val, Action<PortableWriterImpl, object> writeAction = null)
         {
             _typ = typ;
             _val = val;
+            _writeAction = writeAction;
         }
 
         /// <summary>
@@ -59,6 +64,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         public object Value
         {
             get { return _val; }
+        }
+
+        /// <summary>
+        /// Gets the write action.
+        /// </summary>
+        public Action<PortableWriterImpl, object> WriteAction
+        {
+            get { return _writeAction; }
         }
     }
 }

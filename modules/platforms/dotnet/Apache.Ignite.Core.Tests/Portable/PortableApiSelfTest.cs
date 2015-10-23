@@ -811,7 +811,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 .SetField("fNGuid", nGuid)
                 .SetField("fEnum", TestEnum.One)
                 .SetField("fStrArr", new[] { "str" })
-                .SetField("fDateArr", new[] { nDate })
+                .SetArrayField("fDateArr", new[] { nDate })
                 .SetField("fGuidArr", new[] { nGuid })
                 .SetField("fEnumArr", new[] { TestEnum.One })
                 .SetHashCode(100)

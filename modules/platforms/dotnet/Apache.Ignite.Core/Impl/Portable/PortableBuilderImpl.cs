@@ -154,9 +154,16 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder SetField<T>(string name, T val)
+        public IPortableBuilder SetField<T>(string fieldName, T val)
         {
-            return SetField0(name, new PortableBuilderField(typeof(T), val));
+            return SetField0(fieldName, new PortableBuilderField(typeof(T), val));
+        }
+
+        /** <inheritDoc /> */
+        public IPortableBuilder SetArrayField<T>(string fieldName, T[] val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (T[]), val, (w, o) =>
+                w.WriteArray((T[]) o)));
         }
 
         /** <inheritDoc /> */
@@ -529,7 +536,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             // TODO: Properly write depending on method in PortableBuilderField
             // Arrays, Collections, Dates can be written differently.
 
-            ctx.Writer.Write(field.Value);
+            var action = field.WriteAction;
+
+            if (action != null)
+                action(ctx.Writer, field.Value);
+            else
+                ctx.Writer.Write(field.Value);
         }
 
         /// <summary>

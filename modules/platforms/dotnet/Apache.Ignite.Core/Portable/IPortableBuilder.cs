@@ -50,6 +50,15 @@ namespace Apache.Ignite.Core.Portable
         IPortableBuilder SetField<T>(string fieldName, T val);
 
         /// <summary>
+        /// Sets the array field.
+        /// </summary>
+        /// <typeparam name="T">Element type.</typeparam>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="val">The value.</param>
+        /// <returns>Current builder instance.</returns>
+        IPortableBuilder SetArrayField<T>(string fieldName, T[] val);
+
+        /// <summary>
         /// Remove object field.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
