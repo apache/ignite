@@ -51,22 +51,6 @@ block container
                     label.col-sm-12 Notebook not accessible any more. Go back to configuration or open to another notebook.
                     button.h3.btn.btn-primary(ng-click='goToConfiguration()') Back to configuration
                 div(ng-if='notebook')
-                    .row(bs-affix)
-                        .docs-header.notebook-header(style='padding: 10px 0')
-                            h1.col-sm-6(ng-hide='notebook.edit')
-                                label(style='max-width: calc(100% - 60px)') {{notebook.name}}
-                                .btn-group
-                                    +btn-toolbar('fa-pencil', 'notebook.edit = true;notebook.editName = notebook.name', 'Rename notebook')
-                                    +btn-toolbar('fa-trash', 'removeNotebook()', 'Remove notebook')
-                            h1.col-sm-6(ng-show='notebook.edit')
-                                i.btn.fa.fa-floppy-o(ng-show='notebook.editName' ng-click='renameNotebook(notebook.editName)' bs-tooltip data-title='Save notebook name' data-trigger='hover')
-                                .input-tip
-                                    input.form-control(ng-model='notebook.editName' required on-enter='renameNotebook(notebook.editName)' on-escape='notebook.edit = false;')
-                            h1.pull-right
-                                a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='scrollParagraphs' data-placement='bottom-right') Scroll to query
-                                    span.caret
-                                .btn-group(style='margin-top: 0px')
-                                    +btn-toolbar('fa-plus', 'addParagraph()', 'Add new query')
                     .block-callout-parent
                         table
                             tbody
@@ -87,11 +71,27 @@ block container
                                             li Populate caches with data
                                             li Start Apache Ignite Web Agent
                                             li Create query, enter some SQL and execute it
-                hr
+                    hr
+                    .row(bs-affix style='margin-bottom: 10px')
+                        .docs-header.notebook-header
+                            h1.col-sm-6(ng-hide='notebook.edit')
+                                label(style='max-width: calc(100% - 60px)') {{notebook.name}}
+                                .btn-group
+                                    +btn-toolbar('fa-pencil', 'notebook.edit = true;notebook.editName = notebook.name', 'Rename notebook')
+                                    +btn-toolbar('fa-trash', 'removeNotebook()', 'Remove notebook')
+                            h1.col-sm-6(ng-show='notebook.edit')
+                                i.btn.fa.fa-floppy-o(ng-show='notebook.editName' ng-click='renameNotebook(notebook.editName)' bs-tooltip data-title='Save notebook name' data-trigger='hover')
+                                .input-tip
+                                    input.form-control(ng-model='notebook.editName' required on-enter='renameNotebook(notebook.editName)' on-escape='notebook.edit = false;')
+                            h1.pull-right
+                                a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='scrollParagraphs' data-placement='bottom-right') Scroll to query
+                                    span.caret
+                                .btn-group(style='margin-top: 2px')
+                                    +btn-toolbar('fa-plus', 'addParagraph()', 'Add new query')
                 .docs-body.paragraphs
                     .panel-group(bs-collapse ng-model='notebook.expandedParagraphs' data-allow-multiple='true' data-start-collapsed='false')
-                        .panel.panel-default(id='paragraph-{{paragraph.id}}' ng-repeat='paragraph in notebook.paragraphs')
-                            .panel-heading(bs-collapse-toggle)
+                        .panel.panel-default(ng-repeat='paragraph in notebook.paragraphs')
+                            .panel-heading(id='paragraph-{{paragraph.id}}' bs-collapse-toggle)
                                 div(ng-hide='paragraph.edit')
                                     i.tipLabel.fa(ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
                                     a {{paragraph.name}}

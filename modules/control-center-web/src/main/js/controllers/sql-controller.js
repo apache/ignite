@@ -69,6 +69,8 @@ consoleModule.controller('sqlController',
 
     var MAX_VAL_COLS = CHART_COLORS.length;
 
+    $anchorScroll.yOffset = 50;
+
     $scope.chartColor = function(index) {
         return {"color": "white", "background-color": CHART_COLORS[index]};
     };
