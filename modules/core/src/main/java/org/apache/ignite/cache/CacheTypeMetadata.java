@@ -28,6 +28,9 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 
+import java.io.*;
+import java.util.*;
+
 /**
  * Cache type metadata need for configuration of indexes or automatic persistence.
  */
@@ -46,6 +49,9 @@ public class CacheTypeMetadata implements Serializable {
 
     /** Value class used to store value in cache. */
     private String valType;
+
+    /** Simple value type name that will be used as SQL table name.*/
+    private String simpleValType;
 
     /** Optional persistent key fields (needed only if {@link CacheJdbcPojoStore} is used). */
     @GridToStringInclude
@@ -75,22 +81,20 @@ public class CacheTypeMetadata implements Serializable {
     @GridToStringInclude
     private Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps;
 
+    /** */
+    @GridToStringInclude
+    private Map<String,String> aliases;
+
     /**
      * Default constructor.
      */
     public CacheTypeMetadata() {
         keyFields = new ArrayList<>();
-
         valFields = new ArrayList<>();
-
         qryFlds = new LinkedHashMap<>();
-
         ascFlds = new LinkedHashMap<>();
-
         descFlds = new LinkedHashMap<>();
-
         txtFlds = new LinkedHashSet<>();
-
         grps = new LinkedHashMap<>();
     }
 
@@ -99,25 +103,16 @@ public class CacheTypeMetadata implements Serializable {
      */
     public CacheTypeMetadata(CacheTypeMetadata src) {
         dbSchema = src.getDatabaseSchema();
-
         dbTbl = src.getDatabaseTable();
-
         keyType = src.getKeyType();
-
         valType = src.getValueType();
-
+        simpleValType = src.simpleValType;
         keyFields = new ArrayList<>(src.getKeyFields());
-
         valFields = new ArrayList<>(src.getValueFields());
-
         qryFlds = new LinkedHashMap<>(src.getQueryFields());
-
         ascFlds = new LinkedHashMap<>(src.getAscendingFields());
-
         descFlds = new LinkedHashMap<>(src.getDescendingFields());
-
         txtFlds = new LinkedHashSet<>(src.getTextFields());
-
         grps = new LinkedHashMap<>(src.getGroups());
     }
 
@@ -194,12 +189,28 @@ public class CacheTypeMetadata implements Serializable {
     }
 
     /**
+     * Gets simple value type.
+     *
+     * @return Simple value type.
+     */
+    public String getSimpleValueType() {
+        return simpleValType;
+    }
+
+    /**
      * Sets value type.
      *
      * @param valType Value type.
      */
     public void setValueType(String valType) {
+        if (this.valType != null)
+            throw new CacheException("Value type can be set only once.");
+
         this.valType = valType;
+
+        Class<?> cls = U.classForName(valType, null);
+
+        simpleValType = cls == null ? valType : GridQueryProcessor.typeName(cls);
     }
 
     /**
@@ -280,7 +291,10 @@ public class CacheTypeMetadata implements Serializable {
      * @param ascFlds Name-to-type map for ascending-indexed fields.
      */
     public void setAscendingFields(Map<String, Class<?>> ascFlds) {
-        this.ascFlds = ascFlds;
+        if (ascFlds == null)
+            this.ascFlds = ascFlds;
+        else
+            this.ascFlds.putAll(ascFlds);
     }
 
     /**
@@ -335,6 +349,25 @@ public class CacheTypeMetadata implements Serializable {
      */
     public void setGroups(Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps) {
         this.grps = grps;
+    }
+
+    /**
+     * Sets mapping from full property name in dot notation to an alias that will be used as SQL column name.
+     * Example: {"parent.name" -> "parentName"}.
+     *
+     * @param aliases Aliases.
+     */
+    public void setAliases(Map<String,String> aliases) {
+        this.aliases = aliases;
+    }
+
+    /**
+     * Gets aliases mapping.
+     *
+     * @return Aliases.
+     */
+    public Map<String,String> getAliases() {
+        return aliases;
     }
 
     /** {@inheritDoc} */

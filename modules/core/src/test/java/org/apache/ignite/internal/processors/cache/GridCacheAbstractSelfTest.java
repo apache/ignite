@@ -241,7 +241,11 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setAtomicityMode(atomicityMode());
         cfg.setWriteSynchronizationMode(writeSynchronization());
         cfg.setNearConfiguration(nearConfiguration());
-        cfg.setIndexedTypes(indexedTypes());
+
+        Class<?>[] idxTypes = indexedTypes();
+
+        if (!F.isEmpty(idxTypes))
+            cfg.setIndexedTypes(idxTypes);
 
         if (cacheMode() == PARTITIONED)
             cfg.setBackups(1);
