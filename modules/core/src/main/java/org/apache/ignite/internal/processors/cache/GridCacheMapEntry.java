@@ -29,14 +29,11 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.eviction.EvictableEntry;
-import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.igfs.IgfsOutOfSpaceException;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -55,8 +52,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConfl
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
-import org.apache.ignite.internal.processors.igfs.IgfsEx;
-import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -1169,38 +1164,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             long used = cache.igfsDataSpaceUsed();
 
             if (used >= max) {
-                GridCacheContext ctx = cache.context();
-
-                FileSystemConfiguration[] cfgs = ctx.kernalContext().config().getFileSystemConfiguration();
-
-                assert cfgs.length == 1;
-
-                FileSystemConfiguration cfg = cfgs[0];
-
-                IgfsProcessorAdapter igfsProc = ctx.kernalContext().igfs();
-
-                IgniteFileSystem fs = igfsProc.igfs(cfg.getName());
-
-                assert fs != null;
-                assert fs instanceof IgfsEx ;
-
-                long trashPurgeTimeout = fs.configuration().getTrashPurgeTimeout();
-
-                // Await some space to free due to garbage deletion:
-                try {
-                    ((IgfsEx)fs).awaitDeletesAsync().get(trashPurgeTimeout);
-                }
-                catch (IgniteFutureTimeoutCheckedException ignore) {
-                    // Ignore.
-                }
-
-                // Renew the used space size:
-                used = cctx.cache().igfsDataSpaceUsed();
-
-                if (used >= max)
-                    throw new IgfsOutOfSpaceException("Failed to write data block " +
-                        "(IGFS maximum data size exceeded) [used=" + used +
-                        ", allowed=" + max + ']');
+                throw new IgfsOutOfSpaceException("Failed to write data block " +
+                    "(IGFS maximum data size exceeded on node) [nodeId=" + cache.context().localNodeId() + ", used="
+                    + used + ", allowed=" + max + ']');
             }
         }
     }

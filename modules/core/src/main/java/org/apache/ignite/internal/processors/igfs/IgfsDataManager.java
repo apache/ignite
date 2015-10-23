@@ -60,7 +60,6 @@ import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsOutOfSpaceException;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -88,9 +87,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Cache based file's data container.
  */
 public class IgfsDataManager extends IgfsManager {
-    /** IGFS. */
-    private IgfsEx igfs;
-
     /** Data internal cache. */
     private IgniteInternalCache<IgfsBlockKey, byte[]> dataCachePrj;
 
@@ -121,14 +117,8 @@ public class IgfsDataManager extends IgfsManager {
     /** Affinity key generator. */
     private AtomicLong affKeyGen = new AtomicLong();
 
-    /** Request ID counter for write messages. */
-    private AtomicLong reqIdCtr = new AtomicLong();
-
     /** Async file delete worker. */
     private AsyncDeleteWorker delWorker;
-
-    /** Trash purge timeout. */
-    private long trashPurgeTimeout;
 
     /** On-going remote reads futures. */
     private final ConcurrentHashMap8<IgfsBlockKey, IgniteInternalFuture<byte[]>> rmtReadFuts =
@@ -166,13 +156,9 @@ public class IgfsDataManager extends IgfsManager {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        igfs = igfsCtx.igfs();
-
         dataCacheStartLatch = new CountDownLatch(1);
 
         String igfsName = igfsCtx.configuration().getName();
-
-        trashPurgeTimeout = igfsCtx.configuration().getTrashPurgeTimeout();
 
         putExecSvc = igfsCtx.configuration().getDualModePutExecutorService();
 
@@ -264,20 +250,32 @@ public class IgfsDataManager extends IgfsManager {
      * @param prevAffKey Affinity key of previous block.
      * @return Affinity key.
      */
-    public IgniteUuid nextAffinityKey(@Nullable IgniteUuid prevAffKey) {
+    public @Nullable IgniteUuid nextAffinityKey(@Nullable IgniteUuid prevAffKey) {
         // Do not generate affinity key for non-affinity nodes.
         if (!dataCache.context().affinityNode())
             return null;
 
         UUID nodeId = igfsCtx.kernalContext().localNodeId();
 
-        if (prevAffKey != null && dataCache.affinity().mapKeyToNode(prevAffKey).isLocal())
-            return prevAffKey;
+        if (prevAffKey != null) {
+            ClusterNode node = dataCache.affinity().mapKeyToNode(prevAffKey);
+
+            if (node == null)
+                return null; // No alive node for this cache.
+
+            if (node.isLocal())
+                return prevAffKey;
+        }
 
         while (true) {
             IgniteUuid key = new IgniteUuid(nodeId, affKeyGen.getAndIncrement());
 
-            if (dataCache.affinity().mapKeyToNode(key).isLocal())
+            ClusterNode node = dataCache.affinity().mapKeyToNode(key);
+
+            if (node == null)
+                return null; // No alive node for this cache.
+
+            if (node.isLocal())
                 return key;
         }
     }
@@ -929,6 +927,7 @@ public class IgfsDataManager extends IgfsManager {
      * @param inTx Expected transaction state.
      * @return Transaction state is correct.
      */
+    @SuppressWarnings("ConstantConditions")
     private boolean validTxState(boolean inTx) {
         boolean txState = inTx == (dataCachePrj.tx() != null);
 
@@ -940,20 +939,16 @@ public class IgfsDataManager extends IgfsManager {
 
     /**
      * @param fileId File ID.
-     * @param node Node to process blocks on.
      * @param blocks Blocks to put in cache.
      * @throws IgniteCheckedException If batch processing failed.
      */
-    private void processBatch(IgniteUuid fileId, final ClusterNode node,
-        final Map<IgfsBlockKey, byte[]> blocks) throws IgniteCheckedException {
-        final long batchId = reqIdCtr.getAndIncrement();
-
+    private void processBatch(IgniteUuid fileId, final Map<IgfsBlockKey, byte[]> blocks) throws IgniteCheckedException {
         final WriteCompletionFuture completionFut = pendingWrites.get(fileId);
 
         if (completionFut == null) {
             if (log.isDebugEnabled())
                 log.debug("Missing completion future for file write request (most likely exception occurred " +
-                    "which will be thrown upon stream close) [nodeId=" + node.id() + ", fileId=" + fileId + ']');
+                    "which will be thrown upon stream close) [fileId=" + fileId + ']');
 
             return;
         }
@@ -962,19 +957,17 @@ public class IgfsDataManager extends IgfsManager {
         if (completionFut.isDone())
             completionFut.get();
 
-        completionFut.onWriteRequest(node.id(), batchId);
-
-        final UUID nodeId = node.id();
+        completionFut.onWriteRequest();
 
         storeBlocksAsync(blocks).listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> fut) {
                 try {
                     fut.get();
 
-                    completionFut.onWriteAck(nodeId, batchId);
+                    completionFut.onWriteAck();
                 }
                 catch (IgniteCheckedException e) {
-                    completionFut.onError(nodeId, e);
+                    completionFut.onError(e);
                 }
             }
         });
@@ -985,13 +978,12 @@ public class IgfsDataManager extends IgfsManager {
      * If partial block write is attempted, both colocated and non-colocated keys are locked and data is appended
      * to correct block.
      *
-     * @param fileId File ID.
      * @param colocatedKey Block key.
      * @param startOff Data start offset within block.
      * @param data Data to write.
      * @throws IgniteCheckedException If update failed.
      */
-    private void processPartialBlockWrite(IgniteUuid fileId, IgfsBlockKey colocatedKey, int startOff,
+    private void processPartialBlockWrite(IgfsBlockKey colocatedKey, int startOff,
         byte[] data) throws IgniteCheckedException {
         // No affinity key present, just concat and return.
         if (colocatedKey.affinityKey() == null) {
@@ -1180,25 +1172,24 @@ public class IgfsDataManager extends IgfsManager {
             IgfsFileAffinityRange affinityRange,
             @Nullable IgfsFileWorkerBatch batch
         ) throws IgniteCheckedException {
-            IgniteUuid id = fileInfo.id();
-            int blockSize = fileInfo.blockSize();
+            final IgniteUuid id = fileInfo.id();
+            final int blockSize = fileInfo.blockSize();
 
-            int len = remainderLen + srcLen;
+            final int len = remainderLen + srcLen;
 
             if (len > reservedLen)
                 throw new IgfsException("Not enough space reserved to store data [id=" + id +
                     ", reservedLen=" + reservedLen + ", remainderLen=" + remainderLen +
                     ", data.length=" + srcLen + ']');
 
-            long start = reservedLen - len;
-            long first = start / blockSize;
-            long limit = (start + len + blockSize - 1) / blockSize;
+            final long start = reservedLen - len;
+            final long first = start / blockSize;
+            final long limit = (start + len + blockSize - 1) / blockSize;
+
             int written = 0;
             int remainderOff = 0;
 
             Map<IgfsBlockKey, byte[]> nodeBlocks = U.newLinkedHashMap((int)(limit - first));
-            ClusterNode node = null;
-            int off = 0;
 
             for (long block = first; block < limit; block++) {
                 final long blockStartOff = block == first ? (start % blockSize) : 0;
@@ -1226,13 +1217,6 @@ public class IgfsDataManager extends IgfsManager {
                 // Will update range if necessary.
                 IgfsBlockKey key = createBlockKey(block, fileInfo, affinityRange);
 
-                ClusterNode primaryNode = dataCachePrj.cache().affinity().mapKeyToNode(key);
-
-                if (block == first) {
-                    off = (int)blockStartOff;
-                    node = primaryNode;
-                }
-
                 if (size == blockSize) {
                     assert blockStartOff == 0 : "Cannot write the whole block not from start position [start=" +
                         start + ", block=" + block + ", blockStartOff=" + blockStartOff + ", blockEndOff=" +
@@ -1245,7 +1229,7 @@ public class IgfsDataManager extends IgfsManager {
                         assert written + portion.length == len;
 
                         if (!nodeBlocks.isEmpty()) {
-                            processBatch(id, node, nodeBlocks);
+                            processBatch(id, nodeBlocks);
 
                             metrics.addWriteBlocks(1, 0);
                         }
@@ -1264,25 +1248,21 @@ public class IgfsDataManager extends IgfsManager {
                         writtenSecondary = 1;
                 }
 
-                assert primaryNode != null;
-
                 int writtenTotal = 0;
 
-                if (!primaryNode.id().equals(node.id())) {
-                    if (!nodeBlocks.isEmpty())
-                        processBatch(id, node, nodeBlocks);
+                if (!nodeBlocks.isEmpty()) {
+                    processBatch(id, nodeBlocks);
 
                     writtenTotal = nodeBlocks.size();
-
-                    nodeBlocks = U.newLinkedHashMap((int)(limit - first));
-                    node = primaryNode;
                 }
+
+                nodeBlocks = U.newLinkedHashMap((int)(limit - first));
 
                 assert size == portion.length;
 
                 if (size != blockSize) {
                     // Partial writes must be always synchronous.
-                    processPartialBlockWrite(id, key, block == first ? off : 0, portion);
+                    processPartialBlockWrite(key, block == first ? (int)blockStartOff : 0, portion);
 
                     writtenTotal++;
                 }
@@ -1296,7 +1276,7 @@ public class IgfsDataManager extends IgfsManager {
 
             // Process final batch, if exists.
             if (!nodeBlocks.isEmpty()) {
-                processBatch(id, node, nodeBlocks);
+                processBatch(id, nodeBlocks);
 
                 metrics.addWriteBlocks(nodeBlocks.size(), 0);
             }
@@ -1620,11 +1600,8 @@ public class IgfsDataManager extends IgfsManager {
 
         /**
          * Write request will be asynchronously executed on node with given ID.
-         *
-         * @param nodeId Node ID.
-         * @param batchId Assigned batch ID.
          */
-        private void onWriteRequest(UUID nodeId, long batchId) {
+        private void onWriteRequest() {
             assert !awaitingLast; // Writing is finished, we should not receive more write requests.
 
             if (!isDone())
@@ -1634,33 +1611,28 @@ public class IgfsDataManager extends IgfsManager {
         /**
          * Error occurred on node with given ID.
          *
-         * @param nodeId Node ID.
          * @param e Caught exception.
          */
-        private void onError(UUID nodeId, IgniteCheckedException e) {
+        private void onError(IgniteCheckedException e) {
             completedBlocksCnt.set(0);
 
             signalNoAcks();
 
             if (e.hasCause(IgfsOutOfSpaceException.class))
-                onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " + nodeId, e));
+                onDone(new IgniteCheckedException("Failed to write data (not enough space on node): ", e));
             else
                 onDone(new IgniteCheckedException(
-                    "Failed to wait for write completion (write failed on node): " + nodeId, e));
+                    "Failed to wait for write completion (write failed on node): ", e));
         }
 
         /**
          * Write ack received from node with given ID for given batch ID.
-         *
-         * @param nodeId Node ID.
-         * @param batchId Batch ID.
          */
-        private void onWriteAck(UUID nodeId, long batchId) {
+        private void onWriteAck() {
             if (!isDone()) {
                 int afterAck = completedBlocksCnt.decrementAndGet();
 
-                assert afterAck >= 0 : "Received acknowledgement message for not registered batch [nodeId=" +
-                    nodeId + ", batchId=" + batchId + ']';
+                assert afterAck >= 0 : "Received acknowledgement message for not registered batch.";
 
                 if (afterAck == 0) {
                     signalNoAcks();
