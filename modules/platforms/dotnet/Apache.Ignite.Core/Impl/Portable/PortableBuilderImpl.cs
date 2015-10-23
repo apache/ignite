@@ -149,28 +149,23 @@ namespace Apache.Ignite.Core.Impl.Portable
                 return field != PortableBuilderField.RmvMarker ? (T)field.Value : default(T);
 
             int pos;
+
+            if (!_obj.TryGetFieldPosition(name, out pos))
+                return default(T);
+
             T val;
 
-            if (_obj.TryGetFieldPosition(name, out pos))
-            {
-                if (!TryGetCachedField(pos, out val))
-                {
-                    val = _obj.GetField<T>(pos, this);
+            if (TryGetCachedField(pos, out val))
+                return val;
 
-                    var hdr = _obj.Data[pos];
+            val = _obj.GetField<T>(pos, this);
 
-                    var fld = CacheField(pos, val, hdr);
-                    
-                    if (_vals == null)
-                        _vals = new Dictionary<string, PortableBuilderField>(2);
+            var fld = CacheField(pos, val, _obj.Data[pos]);
 
-                    _vals[name] = fld;
-                }
-            }
-            else
-            {
-                val = default(T);
-            }
+            if (_vals == null)
+                _vals = new Dictionary<string, PortableBuilderField>(2);
+
+            _vals[name] = fld;
 
             return val;
         }
@@ -479,6 +474,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="header">Field header.</param>
         public PortableBuilderField CacheField<T>(int pos, T val, byte header)
         {
+            // TODO: Is header  "_obj.Data[pos];" ??
+
             if (_parent._cache == null)
                 _parent._cache = new Dictionary<int, PortableBuilderField>(2);
 
