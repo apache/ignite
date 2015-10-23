@@ -854,12 +854,35 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(new[] { nGuid }, obj.FGuidArr);
             Assert.AreEqual(new[] { TestEnum.One }, obj.FEnumArr);
 
+            // Check builder field caching.
+            var builder = _grid.GetPortables().GetBuilder(portObj);
+
+            Assert.AreEqual("str", builder.GetField<string>("fStr"));
+            Assert.AreEqual(nDate, builder.GetField<DateTime?>("fNDate"));
+            Assert.AreEqual(nGuid, builder.GetField<Guid?>("fNGuid"));
+            Assert.AreEqual(TestEnum.One, builder.GetField<TestEnum>("fEnum"));
+            Assert.AreEqual(new[] { "str" }, builder.GetField<string[]>("fStrArr"));
+            Assert.AreEqual(new[] { nDate }, builder.GetField<DateTime?[]>("fDateArr"));
+            Assert.AreEqual(new[] { nGuid }, builder.GetField<Guid?[]>("fGuidArr"));
+            Assert.AreEqual(new[] { TestEnum.One }, builder.GetField<TestEnum[]>("fEnumArr"));
+
+            // Check reassemble.
+            portObj = builder.Build();
+
+            Assert.AreEqual("str", portObj.GetField<string>("fStr"));
+            Assert.AreEqual(nDate, portObj.GetField<DateTime?>("fNDate"));
+            Assert.AreEqual(nGuid, portObj.GetField<Guid?>("fNGuid"));
+            Assert.AreEqual(TestEnum.One, portObj.GetField<TestEnum>("fEnum"));
+            Assert.AreEqual(new[] { "str" }, portObj.GetField<string[]>("fStrArr"));
+            Assert.AreEqual(new[] { nDate }, portObj.GetField<DateTime?[]>("fDateArr"));
+            Assert.AreEqual(new[] { nGuid }, portObj.GetField<Guid?[]>("fGuidArr"));
+            Assert.AreEqual(new[] { TestEnum.One }, portObj.GetField<TestEnum[]>("fEnumArr"));
+
             // Overwrite.
             nDate = DateTime.Now.ToUniversalTime();
-
             nGuid = Guid.NewGuid();
 
-            portObj = _grid.GetPortables().GetBuilder(typeof(StringDateGuidEnum))
+            portObj = builder
                 .SetField("fStr", "str2")
                 .SetField("fNDate", nDate)
                 .SetField("fNGuid", nGuid)
