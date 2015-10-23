@@ -29,24 +29,29 @@ namespace Apache.Ignite.Core.Impl.Portable
             new PortableBuilderField(null, null);
 
         /** Type. */
-        private readonly Type _typ;
+        private readonly Type _type;
 
         /** Value. */
-        private readonly object _val;
+        private readonly object _value;
         
         /** Write action. */
         private readonly Action<PortableWriterImpl, object> _writeAction;
+        
+        /** Type id. */
+        private byte _typeId;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="typ">Type.</param>
-        /// <param name="val">Value.</param>
+        /// <param name="type">Type.</param>
+        /// <param name="value">Value.</param>
+        /// <param name="typeId">The type identifier.</param>
         /// <param name="writeAction">Optional write action.</param>
-        public PortableBuilderField(Type typ, object val, Action<PortableWriterImpl, object> writeAction = null)
+        public PortableBuilderField(Type type, object value, byte typeId, Action<PortableWriterImpl, object> writeAction = null)
         {
-            _typ = typ;
-            _val = val;
+            _type = type;
+            _value = value;
+            _typeId = typeId;
             _writeAction = writeAction;
         }
 
@@ -55,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public Type Type
         {
-            get { return _typ; }
+            get { return _type; }
         }
 
         /// <summary>
@@ -63,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public object Value
         {
-            get { return _val; }
+            get { return _value; }
         }
 
         /// <summary>
@@ -72,6 +77,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         public Action<PortableWriterImpl, object> WriteAction
         {
             get { return _writeAction; }
+        }
+
+        /// <summary>
+        /// Gets the type identifier.
+        /// </summary>
+        public byte TypeId
+        {
+            get { return _typeId; }
         }
     }
 }

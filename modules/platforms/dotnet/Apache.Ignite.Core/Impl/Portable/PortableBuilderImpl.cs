@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     internal class PortableBuilderImpl : IPortableBuilder
     {
         /** Type IDs for metadata. */
-        private static readonly IDictionary<Type, int> TypeIds;
+        private static readonly IDictionary<Type, byte> TypeIds;
 
         /** Cached dictionary with no values. */
         private static readonly IDictionary<int, PortableBuilderField> EmptyVals =
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
         static PortableBuilderImpl()
         {
-            TypeIds = new Dictionary<Type, int>();
+            TypeIds = new Dictionary<Type, byte>();
 
             // 1. Primitives.
             TypeIds[typeof(byte)] = PortableUtils.TypeByte;
@@ -170,27 +170,28 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public IPortableBuilder SetField<T>(string fieldName, T val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof(T), val));
+            return SetField0(fieldName, new PortableBuilderField(typeof(T), val, GetTypeId(typeof(T))));
         }
 
         /** <inheritDoc /> */
         public IPortableBuilder SetArrayField<T>(string fieldName, T[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (T[]), val, WriteArrayAction));
+            return SetField0(fieldName,
+                new PortableBuilderField(typeof (T[]), val, PortableUtils.TypeArray, WriteArrayAction));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetBooleanField(string fieldName, bool val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (bool), val, (w, o) =>
-                w.WriteBoolean((bool) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (bool), val, PortableUtils.TypeBool, 
+                (w, o) => w.WriteBoolean((bool) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetBooleanArrayField(string fieldName, bool[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (bool[]), val, (w, o) =>
-                w.WriteBooleanArray((bool[]) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (bool[]), val, PortableUtils.TypeArrayBool,
+                (w, o) => w.WriteBooleanArray((bool[]) o)));
         }
  
         /** <inheritDoc /> */
@@ -474,7 +475,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var hdr = _obj.Data[pos];
 
-            var field = new PortableBuilderField(typeof(T), val, GetWriteAction(hdr));
+            var field = new PortableBuilderField(typeof(T), val, hdr, GetWriteAction(hdr));
             
             _parent._cache[pos] = field;
 
@@ -571,7 +572,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         // Write metadata if: 1) it is enabled for type; 2) type is not null (i.e. it is neither 
                         // remove marker, nor a field read through "GetField" method.
                         if (metaHnd != null && valEntry.Value.Type != null)
-                            metaHnd.OnFieldWrite(fieldId, valEntry.Key, GetTypeId(valEntry.Value.Type));
+                            metaHnd.OnFieldWrite(fieldId, valEntry.Key, valEntry.Value.TypeId);
                     }
                 }
 
@@ -1019,9 +1020,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Type ID.</returns>
-        private static int GetTypeId(Type type)
+        private static byte GetTypeId(Type type)
         {
-            int typeId;
+            // TODO: Duplicating logic from PortableUtils.
+
+            byte typeId;
 
             if (TypeIds.TryGetValue(type, out typeId))
                 return typeId;
@@ -1031,12 +1034,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (type.IsArray)
                 return type.GetElementType().IsEnum ? PortableUtils.TypeArrayEnum : PortableUtils.TypeArray;
-
-            if (typeof (IDictionary).IsAssignableFrom(type))
-                return PortableUtils.TypeDictionary;
-            
-            if (typeof (ICollection).IsAssignableFrom(type))
-                return PortableUtils.TypeCollection;
 
             return PortableUtils.TypeObject;
         }
