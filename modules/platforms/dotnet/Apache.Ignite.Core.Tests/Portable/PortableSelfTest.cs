@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Tests.Portable
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -1408,29 +1407,6 @@ namespace Apache.Ignite.Core.Tests.Portable
                 Pairs = (IDictionary<TKey, TValue>) reader.ReadObject<object>("Pairs");
                 Objects = (ICollection<object>) reader.ReadObject<object>("Objects");
             }
-        }
-
-        private static string CollectionAsString(ICollection col)
-        {
-            if (col == null)
-                return null;
-            StringBuilder sb = new StringBuilder("[");
-
-            bool first = true;
-
-            foreach (object elem in col)
-            {
-                if (first)
-                    first = false;
-                else
-                    sb.Append(", ");
-
-                sb.Append(elem);
-            }
-
-            sb.Append("]");
-
-            return sb.ToString();
         }
 
         public class TestList : ArrayList
