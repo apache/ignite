@@ -231,16 +231,15 @@ public class GridPortableMarshaller {
 
     /**
      * @param obj Object to marshal.
-     * @param off Offset.
      * @return Byte array.
      * @throws PortableException In case of error.
      */
-    public byte[] marshal(@Nullable Object obj, int off) throws PortableException {
+    public byte[] marshal(@Nullable Object obj) throws PortableException {
         if (obj == null)
             return new byte[] { NULL };
 
-        try (PortableWriterExImpl writer = new PortableWriterExImpl(ctx, off)) {
-            writer.marshal(obj, false);
+        try (PortableWriterExImpl writer = new PortableWriterExImpl(ctx)) {
+            writer.marshal(obj);
 
             return writer.array();
         }
@@ -296,7 +295,7 @@ public class GridPortableMarshaller {
      * @return Writer.
      */
     public PortableWriterExImpl writer(PortableOutputStream out) {
-        return new PortableWriterExImpl(ctx, out, 0);
+        return new PortableWriterExImpl(ctx, out);
     }
 
     /**

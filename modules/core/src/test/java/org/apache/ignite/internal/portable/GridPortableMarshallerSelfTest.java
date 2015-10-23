@@ -2100,7 +2100,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         // Checking the writer directly.
         assertEquals(false, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
 
-        try (PortableWriterExImpl writer = new PortableWriterExImpl(initPortableContext(new PortableMarshaller()), 0)) {
+        try (PortableWriterExImpl writer = new PortableWriterExImpl(initPortableContext(new PortableMarshaller()))) {
             assertEquals(true, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
 
             writer.writeString("Thread local test");

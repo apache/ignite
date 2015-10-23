@@ -94,9 +94,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     private final PortableContext ctx;
 
     /** */
-    private final WriterContext wCtx;
-
-    /** */
     private final int start;
 
     /** */
@@ -117,64 +114,56 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /** */
     private int metaHashSum;
 
+    /** Handles. */
+    private Map<Object, Integer> handles;
+
+    /** Output stream. */
+    private PortableOutputStream out;
+
     /**
      * @param ctx Context.
-     * @param off Start offset.
      */
-    PortableWriterExImpl(PortableContext ctx, int off) {
-        this.ctx = ctx;
-
-        PortableOutputStream out = new PortableHeapOutputStream(off + INIT_CAP);
-
-        out.position(off);
-
-        wCtx = new WriterContext(out, null);
-
-        start = off;
+    PortableWriterExImpl(PortableContext ctx) {
+        this(ctx, new PortableHeapOutputStream(INIT_CAP));
     }
 
     /**
      * @param ctx Context.
      * @param out Output stream.
-     * @param off Start offset.
      */
-    PortableWriterExImpl(PortableContext ctx, PortableOutputStream out, int off) {
-        this.ctx = ctx;
-
-        wCtx = new WriterContext(out, null);
-
-        start = off;
+    PortableWriterExImpl(PortableContext ctx, PortableOutputStream out) {
+        this(ctx, out, new IdentityHashMap<Object, Integer>());
     }
+
+     /**
+      * @param ctx Context.
+      * @param out Output stream.
+      * @param handles Handles.
+      */
+     private PortableWriterExImpl(PortableContext ctx, PortableOutputStream out, Map<Object, Integer> handles) {
+         this.ctx = ctx;
+         this.out = out;
+         this.handles = handles;
+
+         start = out.position();
+     }
 
     /**
      * @param ctx Context.
-     * @param off Start offset.
      * @param typeId Type ID.
      */
-    public PortableWriterExImpl(PortableContext ctx, int off, int typeId, boolean metaEnabled) {
-        this(ctx, off);
+    public PortableWriterExImpl(PortableContext ctx, int typeId, boolean metaEnabled) {
+        this(ctx);
 
         this.typeId = typeId;
-
         this.metaEnabled = metaEnabled;
-    }
-
-    /**
-     * @param ctx Context.
-     * @param wCtx Writer context.
-     */
-    private PortableWriterExImpl(PortableContext ctx, WriterContext wCtx) {
-        this.ctx = ctx;
-        this.wCtx = wCtx;
-
-        start = wCtx.out.position();
     }
 
     /**
      * Close the writer releasing resources if necessary.
      */
     @Override public void close() {
-        wCtx.out.close();
+        out.close();
     }
 
     /**
@@ -186,10 +175,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
     /**
      * @param obj Object.
-     * @param detached Detached or not.
      * @throws PortableException In case of error.
      */
-    void marshal(Object obj, boolean detached) throws PortableException {
+    void marshal(Object obj) throws PortableException {
         assert obj != null;
 
         cls = obj.getClass();
@@ -258,9 +246,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
         metaEnabled = ctx.isMetaDataEnabled(typeId);
 
-        if (detached)
-            wCtx.resetHandles();
-
         desc.write(obj, this);
     }
 
@@ -271,28 +256,29 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     int handle(Object obj) {
         assert obj != null;
 
-        return wCtx.handle(obj);
+        Integer h = handles.get(obj);
+
+        if (h != null)
+            return out.position() - h;
+        else {
+            handles.put(obj, out.position());
+
+            return -1;
+        }
     }
 
     /**
      * @return Array.
      */
     public byte[] array() {
-        return wCtx.out.arrayCopy();
-    }
-
-    /**
-     * @return Output stream.
-     */
-    public PortableOutputStream outputStream() {
-        return wCtx.out;
+        return out.arrayCopy();
     }
 
     /**
      * @return Stream current position.
      */
     int position() {
-        return wCtx.out.position();
+        return out.position();
     }
 
     /**
@@ -301,7 +287,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param pos Position.
      */
     void position(int pos) {
-        wCtx.out.position(pos);
+        out.position(pos);
     }
 
      /**
@@ -309,9 +295,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @return Offset.
      */
     public int reserve(int bytes) {
-        int pos = wCtx.out.position();
+        int pos = out.position();
 
-        wCtx.out.position(pos + bytes);
+        out.position(pos + bytes);
 
         return pos;
     }
@@ -323,7 +309,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     public int reserveAndMark(int bytes) {
         int off0 = reserve(bytes);
 
-        mark = wCtx.out.position();
+        mark = out.position();
 
         return off0;
     }
@@ -332,14 +318,14 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param off Offset.
      */
     public void writeDelta(int off) {
-        wCtx.out.writeInt(off, wCtx.out.position() - mark);
+        out.writeInt(off, out.position() - mark);
     }
 
     /**
      *
      */
     public void writeLength() {
-        wCtx.out.writeInt(start + TOTAL_LEN_POS, wCtx.out.position() - start);
+        out.writeInt(start + TOTAL_LEN_POS, out.position() - start);
     }
 
     /**
@@ -347,7 +333,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      */
     public void writeRawOffsetIfNeeded() {
         if (allowFields)
-            wCtx.out.writeInt(start + RAW_DATA_OFF_POS, wCtx.out.position() - start);
+            out.writeInt(start + RAW_DATA_OFF_POS, out.position() - start);
     }
 
     /**
@@ -356,7 +342,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     public void write(byte[] val) {
         assert val != null;
 
-        wCtx.out.writeByteArray(val);
+        out.writeByteArray(val);
     }
 
     /**
@@ -367,63 +353,63 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     public void write(byte[] val, int off, int len) {
         assert val != null;
 
-        wCtx.out.write(val, off, len);
+        out.write(val, off, len);
     }
 
     /**
      * @param val Value.
      */
     public void doWriteByte(byte val) {
-        wCtx.out.writeByte(val);
+        out.writeByte(val);
     }
 
     /**
      * @param val Value.
      */
     public void doWriteShort(short val) {
-        wCtx.out.writeShort(val);
+        out.writeShort(val);
     }
 
     /**
      * @param val Value.
      */
     public void doWriteInt(int val) {
-        wCtx.out.writeInt(val);
+        out.writeInt(val);
     }
 
     /**
      * @param val Value.
      */
     public void doWriteLong(long val) {
-        wCtx.out.writeLong(val);
+        out.writeLong(val);
     }
 
     /**
      * @param val Value.
      */
     public void doWriteFloat(float val) {
-        wCtx.out.writeFloat(val);
+        out.writeFloat(val);
     }
 
     /**
      * @param val Value.
      */
     public void doWriteDouble(double val) {
-        wCtx.out.writeDouble(val);
+        out.writeDouble(val);
     }
 
     /**
      * @param val Value.
      */
     public void doWriteChar(char val) {
-        wCtx.out.writeChar(val);
+        out.writeChar(val);
     }
 
     /**
      * @param val Value.
      */
     public void doWriteBoolean(boolean val) {
-        wCtx.out.writeBoolean(val);
+        out.writeBoolean(val);
     }
 
     /**
@@ -440,15 +426,15 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             if (intVal.signum() == -1) {
                 intVal = intVal.negate();
 
-                wCtx.out.writeInt(val.scale() | 0x80000000);
+                out.writeInt(val.scale() | 0x80000000);
             }
             else
-                wCtx.out.writeInt(val.scale());
+                out.writeInt(val.scale());
 
             byte[] vals = intVal.toByteArray();
 
-            wCtx.out.writeInt(vals.length);
-            wCtx.out.writeByteArray(vals);
+            out.writeInt(vals.length);
+            out.writeByteArray(vals);
         }
     }
 
@@ -468,7 +454,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
                 doWriteInt(strArr.length);
 
-                wCtx.out.writeByteArray(strArr);
+                out.writeByteArray(strArr);
             }
             else {
                 doWriteBoolean(false);
@@ -477,7 +463,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
                 doWriteInt(strArr.length);
 
-                wCtx.out.writeCharArray(strArr);
+                out.writeCharArray(strArr);
             }
         }
     }
@@ -507,36 +493,32 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         }
     }
 
-     /**
-      * @param ts Timestamp.
-      */
-     public void doWriteTimestamp(@Nullable Timestamp ts) {
-         if (ts== null)
-             doWriteByte(NULL);
-         else {
-             doWriteByte(TIMESTAMP);
-             doWriteLong(ts.getTime());
-             doWriteInt(ts.getNanos() % 1000000);
-         }
-     }
+    /**
+     * @param ts Timestamp.
+     */
+    public void doWriteTimestamp(@Nullable Timestamp ts) {
+        if (ts== null)
+            doWriteByte(NULL);
+        else {
+            doWriteByte(TIMESTAMP);
+            doWriteLong(ts.getTime());
+            doWriteInt(ts.getNanos() % 1000000);
+        }
+    }
 
     /**
+     * Write object.
+     *
      * @param obj Object.
-     * @param detached Detached or not.
      * @throws PortableException In case of error.
      */
-    public void doWriteObject(@Nullable Object obj, boolean detached) throws PortableException {
+    public void doWriteObject(@Nullable Object obj) throws PortableException {
         if (obj == null)
             doWriteByte(NULL);
         else {
-            WriterContext wCtx = detached ? new WriterContext(this.wCtx.out, this.wCtx.handles) : this.wCtx;
+            PortableWriterExImpl writer = new PortableWriterExImpl(ctx, out, handles);
 
-            PortableWriterExImpl writer = new PortableWriterExImpl(ctx, wCtx);
-
-            writer.marshal(obj, detached);
-
-            if (detached)
-                this.wCtx.out = wCtx.out;
+            writer.marshal(obj);
         }
     }
 
@@ -553,7 +535,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             doWriteByte(BYTE_ARR);
             doWriteInt(val.length);
 
-            wCtx.out.writeByteArray(val);
+            out.writeByteArray(val);
         }
     }
 
@@ -570,7 +552,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             doWriteByte(SHORT_ARR);
             doWriteInt(val.length);
 
-            wCtx.out.writeShortArray(val);
+            out.writeShortArray(val);
         }
     }
 
@@ -587,7 +569,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             doWriteByte(INT_ARR);
             doWriteInt(val.length);
 
-            wCtx.out.writeIntArray(val);
+            out.writeIntArray(val);
         }
     }
 
@@ -604,7 +586,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             doWriteByte(LONG_ARR);
             doWriteInt(val.length);
 
-            wCtx.out.writeLongArray(val);
+            out.writeLongArray(val);
         }
     }
 
@@ -621,7 +603,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             doWriteByte(FLOAT_ARR);
             doWriteInt(val.length);
 
-            wCtx.out.writeFloatArray(val);
+            out.writeFloatArray(val);
         }
     }
 
@@ -638,7 +620,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             doWriteByte(DOUBLE_ARR);
             doWriteInt(val.length);
 
-            wCtx.out.writeDoubleArray(val);
+            out.writeDoubleArray(val);
         }
     }
 
@@ -655,7 +637,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             doWriteByte(CHAR_ARR);
             doWriteInt(val.length);
 
-            wCtx.out.writeCharArray(val);
+            out.writeCharArray(val);
         }
     }
 
@@ -672,7 +654,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             doWriteByte(BOOLEAN_ARR);
             doWriteInt(val.length);
 
-            wCtx.out.writeBooleanArray(val);
+            out.writeBooleanArray(val);
         }
     }
 
@@ -791,7 +773,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             doWriteInt(val.length);
 
             for (Object obj : val)
-                doWriteObject(obj, false);
+                doWriteObject(obj);
         }
     }
 
@@ -811,7 +793,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             doWriteByte(ctx.collectionType(col.getClass()));
 
             for (Object obj : col)
-                doWriteObject(obj, false);
+                doWriteObject(obj);
         }
     }
 
@@ -831,8 +813,8 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             doWriteByte(ctx.mapType(map.getClass()));
 
             for (Map.Entry<?, ?> e : map.entrySet()) {
-                doWriteObject(e.getKey(), false);
-                doWriteObject(e.getValue(), false);
+                doWriteObject(e.getKey());
+                doWriteObject(e.getValue());
             }
         }
     }
@@ -849,8 +831,8 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
                 return;
 
             doWriteByte(MAP_ENTRY);
-            doWriteObject(e.getKey(), false);
-            doWriteObject(e.getValue(), false);
+            doWriteObject(e.getKey());
+            doWriteObject(e.getValue());
         }
     }
 
@@ -936,7 +918,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
             doWriteInt(poArr.length);
 
-            wCtx.out.writeByteArray(poArr);
+            out.writeByteArray(poArr);
 
             doWriteInt(po.start());
         }
@@ -1118,7 +1100,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     void writeObjectField(@Nullable Object obj) throws PortableException {
         int lenPos = reserveAndMark(4);
 
-        doWriteObject(obj, false);
+        doWriteObject(obj);
 
         writeDelta(lenPos);
     }
@@ -1499,12 +1481,18 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
     /** {@inheritDoc} */
     @Override public void writeObject(@Nullable Object obj) throws PortableException {
-        doWriteObject(obj, false);
+        doWriteObject(obj);
     }
 
     /** {@inheritDoc} */
     @Override public void writeObjectDetached(@Nullable Object obj) throws PortableException {
-        doWriteObject(obj, true);
+        if (obj == null)
+            doWriteByte(NULL);
+        else {
+            PortableWriterExImpl writer = new PortableWriterExImpl(ctx, out, new IdentityHashMap<Object, Integer>());
+
+            writer.marshal(obj);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1714,7 +1702,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /** {@inheritDoc} */
     @Override public PortableRawWriter rawWriter() {
         if (allowFields) {
-            wCtx.out.writeInt(start + RAW_DATA_OFF_POS, wCtx.out.position() - start);
+            out.writeInt(start + RAW_DATA_OFF_POS, out.position() - start);
 
             allowFields = false;
         }
@@ -1724,7 +1712,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
     /** {@inheritDoc} */
     @Override public PortableOutputStream out() {
-        return wCtx.out;
+        return out;
     }
 
     /** {@inheritDoc} */
@@ -1784,7 +1772,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
      /** {@inheritDoc} */
     @Override public void writeInt(int pos, int val) throws PortableException {
-        wCtx.out.writeInt(pos, val);
+        out.writeInt(pos, val);
     }
 
     /**
@@ -1831,7 +1819,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @return New writer.
      */
     public PortableWriterExImpl newWriter(int typeId) {
-        PortableWriterExImpl res = new PortableWriterExImpl(ctx, wCtx);
+        PortableWriterExImpl res = new PortableWriterExImpl(ctx, out, handles);
 
         res.typeId = typeId;
 
@@ -1843,50 +1831,5 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      */
     public PortableContext context() {
         return ctx;
-    }
-
-    /** */
-    private static class WriterContext {
-        /** */
-        private Map<Object, Integer> handles = new IdentityHashMap<>();
-
-        /** Output stream. */
-        private PortableOutputStream out;
-
-        /**
-         * Constructor.
-         *
-         * @param out Output stream.
-         * @param handles Handles.
-         */
-        private WriterContext(PortableOutputStream out, Map<Object, Integer> handles) {
-            this.out = out;
-            this.handles = handles == null ? new IdentityHashMap<Object, Integer>() : handles;
-        }
-
-        /**
-         * @param obj Object.
-         * @return Handle.
-         */
-        private int handle(Object obj) {
-            assert obj != null;
-
-            Integer h = handles.get(obj);
-
-            if (h != null)
-                return out.position() - h;
-            else {
-                handles.put(obj, out.position());
-
-                return -1;
-            }
-        }
-
-        /**
-         *
-         */
-        private void resetHandles() {
-            handles = new IdentityHashMap<>();
-        }
     }
 }

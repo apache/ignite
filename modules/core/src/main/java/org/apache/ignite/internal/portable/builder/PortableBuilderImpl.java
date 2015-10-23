@@ -180,7 +180,7 @@ public class PortableBuilderImpl implements PortableBuilder {
 
     /** {@inheritDoc} */
     @Override public PortableObject build() {
-        try (PortableWriterExImpl writer = new PortableWriterExImpl(ctx, 0, typeId, false)) {
+        try (PortableWriterExImpl writer = new PortableWriterExImpl(ctx, typeId, false)) {
 
             PortableBuilderSerializer serializationCtx = new PortableBuilderSerializer();
 
