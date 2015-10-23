@@ -63,7 +63,6 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE_AR
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLASS;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLS_NAME_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.COL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_HASH_MAP;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_SKIP_LIST_SET;
@@ -209,8 +208,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         typeId = doReadInt(true);
 
         if (typeId == UNREGISTERED_TYPE_ID) {
-            // skip hash code, length and raw offset
-            rawOff += 12;
+            // Skip to the class name position.
+            rawOff += (GridPortableMarshaller.DFLT_HDR_LEN - 8);
 
             int off = rawOff;
 
@@ -223,7 +222,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             clsNameLen = rawOff - off;
 
-            hdrLen = CLS_NAME_POS + clsNameLen;
+            hdrLen = DFLT_HDR_LEN + clsNameLen;
         }
         else
             hdrLen = DFLT_HDR_LEN;

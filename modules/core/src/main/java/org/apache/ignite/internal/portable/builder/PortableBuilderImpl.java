@@ -33,7 +33,6 @@ import org.apache.ignite.portable.PortableObject;
 import org.jetbrains.annotations.Nullable;
 import org.apache.ignite.internal.portable.*;
 
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLS_NAME_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DFLT_HDR_LEN;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.HASH_CODE_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER;
@@ -146,7 +145,7 @@ public class PortableBuilderImpl implements PortableBuilder {
         if (typeId == UNREGISTERED_TYPE_ID) {
             int mark = reader.position();
 
-            reader.position(start + CLS_NAME_POS);
+            reader.position(start + DFLT_HDR_LEN);
 
             clsNameToWrite = reader.readString();
 

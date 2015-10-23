@@ -217,9 +217,6 @@ public class GridPortableMarshaller {
     public static final int SCHEMA_OFF_POS = 20;
 
     /** */
-    public static final int CLS_NAME_POS = 20;
-
-    /** */
     public static final byte DFLT_HDR_LEN = 20;
 
     /** */
