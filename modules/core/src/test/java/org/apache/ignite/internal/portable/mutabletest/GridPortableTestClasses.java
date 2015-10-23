@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -184,6 +185,9 @@ public class GridPortableTestClasses {
         public Date date;
 
         /** */
+        public Timestamp ts;
+
+        /** */
         public byte[] bArr;
 
         /** */
@@ -218,6 +222,9 @@ public class GridPortableTestClasses {
 
         /** */
         public Date[] dateArr;
+
+        /** */
+        public Timestamp[] tsArr;
 
         /** */
         public TestObjectEnum anEnum;
@@ -273,6 +280,7 @@ public class GridPortableTestClasses {
             str = "abc";
             uuid = new UUID(1, 1);
             date = new Date(1000000);
+            ts = new Timestamp(100020003);
 
             bArr = new byte[] {1, 2, 3};
             sArr = new short[] {1, 2, 3};
@@ -287,6 +295,7 @@ public class GridPortableTestClasses {
             uuidArr = new UUID[] {new UUID(1, 1), new UUID(2, 2)};
             bdArr = new BigDecimal[] {new BigDecimal(1000), BigDecimal.TEN};
             dateArr = new Date[] {new Date(1000000), new Date(200000)};
+            tsArr = new Timestamp[] {new Timestamp(100020003), new Timestamp(200030004)};
 
             anEnum = TestObjectEnum.A;
 

@@ -323,53 +323,29 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public DateTime? ReadDate(string fieldName)
+        public DateTime? ReadTimestamp(string fieldName)
         {
-            return ReadDate(fieldName, false);
+            return ReadField(fieldName, PortableUtils.ReadTimestamp);
         }
 
         /** <inheritdoc /> */
-        public DateTime? ReadDate(string fieldName, bool local)
+        public DateTime? ReadTimestamp()
         {
-            return ReadField(fieldName, r => PortableUtils.ReadDate(r, local));
+            return Read(PortableUtils.ReadTimestamp);
         }
-
+        
         /** <inheritdoc /> */
-        public DateTime? ReadDate()
+        public DateTime?[] ReadTimestampArray(string fieldName)
         {
-            return ReadDate(false);
+            return ReadField(fieldName, PortableUtils.ReadTimestampArray);
         }
-
+        
         /** <inheritdoc /> */
-        public DateTime? ReadDate(bool local)
+        public DateTime?[] ReadTimestampArray()
         {
-            return Read(r => PortableUtils.ReadDate(r, local));
+            return Read(PortableUtils.ReadTimestampArray);
         }
-
-        /** <inheritdoc /> */
-        public DateTime?[] ReadDateArray(string fieldName)
-        {
-            return ReadDateArray(fieldName, false);
-        }
-
-        /** <inheritdoc /> */
-        public DateTime?[] ReadDateArray(string fieldName, bool local)
-        {
-            return ReadField(fieldName, r => PortableUtils.ReadDateArray(r, local));
-        }
-
-        /** <inheritdoc /> */
-        public DateTime?[] ReadDateArray()
-        {
-            return ReadDateArray(false);
-        }
-
-        /** <inheritdoc /> */
-        public DateTime?[] ReadDateArray(bool local)
-        {
-            return Read(r => PortableUtils.ReadDateArray(r, local));
-        }
-
+        
         /** <inheritdoc /> */
         public string ReadString(string fieldName)
         {
@@ -385,13 +361,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public string[] ReadStringArray(string fieldName)
         {
-            return ReadField(fieldName, r => PortableUtils.ReadGenericArray<string>(r, false));
+            return ReadField(fieldName, r => PortableUtils.ReadArray<string>(r, false));
         }
 
         /** <inheritdoc /> */
         public string[] ReadStringArray()
         {
-            return Read(r => PortableUtils.ReadGenericArray<string>(r, false));
+            return Read(r => PortableUtils.ReadArray<string>(r, false));
         }
 
         /** <inheritdoc /> */
@@ -409,13 +385,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public Guid?[] ReadGuidArray(string fieldName)
         {
-            return ReadField(fieldName, r => PortableUtils.ReadGenericArray<Guid?>(r, false));
+            return ReadField(fieldName, r => PortableUtils.ReadArray<Guid?>(r, false));
         }
 
         /** <inheritdoc /> */
         public Guid?[] ReadGuidArray()
         {
-            return Read(r => PortableUtils.ReadGenericArray<Guid?>(r, false));
+            return Read(r => PortableUtils.ReadArray<Guid?>(r, false));
         }
 
         /** <inheritdoc /> */
@@ -433,13 +409,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public T[] ReadEnumArray<T>(string fieldName)
         {
-            return ReadField(fieldName, r => PortableUtils.ReadGenericArray<T>(r, true));
+            return ReadField(fieldName, r => PortableUtils.ReadArray<T>(r, true));
         }
 
         /** <inheritdoc /> */
         public T[] ReadEnumArray<T>()
         {
-            return Read(r => PortableUtils.ReadGenericArray<T>(r, true));
+            return Read(r => PortableUtils.ReadArray<T>(r, true));
         }
 
         /** <inheritdoc /> */
@@ -463,15 +439,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public T[] ReadObjectArray<T>(string fieldName)
+        public T[] ReadArray<T>(string fieldName)
         {
-            return ReadField(fieldName, r => PortableUtils.ReadGenericArray<T>(r, true));
+            return ReadField(fieldName, r => PortableUtils.ReadArray<T>(r, true));
         }
 
         /** <inheritdoc /> */
-        public T[] ReadObjectArray<T>()
+        public T[] ReadArray<T>()
         {
-            return Read(r => PortableUtils.ReadGenericArray<T>(r, true));
+            return Read(r => PortableUtils.ReadArray<T>(r, true));
         }
 
         /** <inheritdoc /> */
@@ -501,31 +477,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public ICollection<T> ReadGenericCollection<T>(string fieldName)
-        {
-            return ReadGenericCollection<T>(fieldName, null);
-        }
-
-        /** <inheritdoc /> */
-        public ICollection<T> ReadGenericCollection<T>()
-        {
-            return ReadGenericCollection((PortableGenericCollectionFactory<T>) null);
-        }
-
-        /** <inheritdoc /> */
-        public ICollection<T> ReadGenericCollection<T>(string fieldName,
-            PortableGenericCollectionFactory<T> factory)
-        {
-            return ReadField(fieldName, r => PortableUtils.ReadGenericCollection(r, factory));
-        }
-
-        /** <inheritdoc /> */
-        public ICollection<T> ReadGenericCollection<T>(PortableGenericCollectionFactory<T> factory)
-        {
-            return Read(r => PortableUtils.ReadGenericCollection(r, factory));
-        }
-
-        /** <inheritdoc /> */
         public IDictionary ReadDictionary(string fieldName)
         {
             return ReadDictionary(fieldName, null);
@@ -547,31 +498,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         public IDictionary ReadDictionary(PortableDictionaryFactory factory)
         {
             return Read(r => PortableUtils.ReadDictionary(r, factory));
-        }
-
-        /** <inheritdoc /> */
-        public IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(string fieldName)
-        {
-            return ReadGenericDictionary<TK, TV>(fieldName, null);
-        }
-
-        /** <inheritdoc /> */
-        public IDictionary<TK, TV> ReadGenericDictionary<TK, TV>()
-        {
-            return ReadGenericDictionary((PortableGenericDictionaryFactory<TK, TV>) null);
-        }
-
-        /** <inheritdoc /> */
-        public IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(string fieldName,
-            PortableGenericDictionaryFactory<TK, TV> factory)
-        {
-            return ReadField(fieldName, r => PortableUtils.ReadGenericDictionary(r, factory));
-        }
-
-        /** <inheritdoc /> */
-        public IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableGenericDictionaryFactory<TK, TV> factory)
-        {
-            return Read(r => PortableUtils.ReadGenericDictionary(r, factory));
         }
 
         /// <summary>

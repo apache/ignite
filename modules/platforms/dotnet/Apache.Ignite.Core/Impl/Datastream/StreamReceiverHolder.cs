@@ -54,8 +54,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             var rcvType = reader.ReadByte();
 
-            _rcv = PortableUtils.ReadPortableOrSerializable<object>(reader);
-            
+            _rcv = reader.ReadObject<object>();
+
             Debug.Assert(_rcv != null);
 
             var type = _rcv.GetType();
@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             else
             {
                 w.WriteByte(RcvNormal);
-                PortableUtils.WritePortableOrSerializable((PortableWriterImpl) writer, _rcv);
+                w.WriteObject(_rcv);
             }
         }
 

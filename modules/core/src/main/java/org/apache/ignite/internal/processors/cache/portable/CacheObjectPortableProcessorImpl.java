@@ -118,6 +118,8 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_ARR;
 
@@ -190,6 +192,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
         FIELD_TYPE_NAMES[DECIMAL] = "decimal";
         FIELD_TYPE_NAMES[STRING] = "String";
         FIELD_TYPE_NAMES[DATE] = "Date";
+        FIELD_TYPE_NAMES[TIMESTAMP] = "Timestamp";
         FIELD_TYPE_NAMES[ENUM] = "Enum";
         FIELD_TYPE_NAMES[OBJ] = "Object";
         FIELD_TYPE_NAMES[PORTABLE_OBJ] = "Object";
@@ -207,6 +210,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
         FIELD_TYPE_NAMES[DECIMAL_ARR] = "decimal[]";
         FIELD_TYPE_NAMES[STRING_ARR] = "String[]";
         FIELD_TYPE_NAMES[DATE_ARR] = "Date[]";
+        FIELD_TYPE_NAMES[TIMESTAMP_ARR] = "Timestamp[]";
         FIELD_TYPE_NAMES[OBJ_ARR] = "Object[]";
         FIELD_TYPE_NAMES[ENUM_ARR] = "Enum[]";
     }

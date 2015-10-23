@@ -225,6 +225,13 @@ public interface PortableWriter {
      * @param val Value to write.
      * @throws PortableException In case of error.
      */
+    public void writeTimestampArray(String fieldName, @Nullable Timestamp[] val) throws PortableException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws PortableException In case of error.
+     */
     public void writeObjectArray(String fieldName, @Nullable Object[] val) throws PortableException;
 
     /**

@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             LastUpdateTimeRaw = reader.ReadLong();
 
-            var lastUpdateTime = reader.ReadDate();
+            var lastUpdateTime = reader.ReadTimestamp();
             Debug.Assert(lastUpdateTime.HasValue);
             LastUpdateTime = lastUpdateTime.Value;
 
@@ -86,11 +86,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
             NonHeapMemoryTotal = reader.ReadLong();
             Uptime = reader.ReadLong();
 
-            var startTime = reader.ReadDate();
+            var startTime = reader.ReadTimestamp();
             Debug.Assert(startTime.HasValue);
             StartTime = startTime.Value;
 
-            var nodeStartTime = reader.ReadDate();
+            var nodeStartTime = reader.ReadTimestamp();
             Debug.Assert(nodeStartTime.HasValue);
             NodeStartTime = nodeStartTime.Value;
 

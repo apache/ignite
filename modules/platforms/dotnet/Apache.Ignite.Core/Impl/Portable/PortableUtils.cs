@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Runtime.Serialization.Formatters.Binary;
     using System.Security.Policy;
     using System.Text;
+
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Portable;
@@ -105,7 +106,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         public const byte TypeGuid = 10;
 
         /** Type: date. */
-        public const byte TypeDate = 11;
+        public const byte TypeTimestamp = 33;
 
         /** Type: unsigned byte array. */
         public const byte TypeArrayByte = 12;
@@ -141,7 +142,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         public const byte TypeArrayGuid = 21;
 
         /** Type: date array. */
-        public const byte TypeArrayDate = 22;
+        public const byte TypeArrayTimestamp = 34;
 
         /** Type: object array. */
         public const byte TypeArray = 23;
@@ -166,18 +167,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         
         /** Type: native job holder. */
         public const byte TypeNativeJobHolder = 77;
-
-        /** Type: native job result holder. */
-        public const byte TypePortableJobResHolder = 76;
-
-        /** Type: .Net configuration. */
-        public const byte TypeDotNetCfg = 202;
-
-        /** Type: .Net portable configuration. */
-        public const byte TypeDotNetPortableCfg = 203;
-
-        /** Type: .Net portable type configuration. */
-        public const byte TypeDotNetPortableTypCfg = 204;
 
         /** Type: Ignite proxy. */
         public const byte TypeIgniteProxy = 74;
@@ -212,9 +201,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Type: entry predicate holder. */
         public const byte TypeCacheEntryPredicateHolder = 90;
         
-        /** Type: product license. */
-        public const byte TypeProductLicense = 78;
-
         /** Type: message filter holder. */
         public const byte TypeMessageListenerHolder = 92;
 
@@ -223,6 +209,9 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Type: stream receiver holder. */
         public const byte TypeStreamReceiverHolder = 94;
+
+        /** Type: DateTime. */
+        public const byte TypeDateTime = 95;
 
         /** Collection: custom. */
         public const byte CollectionCustom = 0;
@@ -284,12 +273,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Dictionary type. */
         public static readonly Type TypDictionary = typeof(IDictionary);
 
-        /** Generic collection type. */
-        public static readonly Type TypGenericCollection = typeof(ICollection<>);
-
-        /** Generic dictionary type. */
-        public static readonly Type TypGenericDictionary = typeof(IDictionary<,>);
-
         /** Ticks for Java epoch. */
         private static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
         
@@ -300,25 +283,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Default poratble marshaller. */
         private static readonly PortableMarshaller Marsh = new PortableMarshaller(null);
 
-        /** Method: WriteGenericCollection. */
-        public static readonly MethodInfo MtdhWriteGenericCollection =
-            typeof(PortableUtils).GetMethod("WriteGenericCollection", _bindFlagsStatic);
-
-        /** Method: ReadGenericCollection. */
-        public static readonly MethodInfo MtdhReadGenericCollection =
-            typeof(PortableUtils).GetMethod("ReadGenericCollection", _bindFlagsStatic);
-
-        /** Method: WriteGenericDictionary. */
-        public static readonly MethodInfo MtdhWriteGenericDictionary =
-            typeof(PortableUtils).GetMethod("WriteGenericDictionary", _bindFlagsStatic);
-
-        /** Method: ReadGenericDictionary. */
-        public static readonly MethodInfo MtdhReadGenericDictionary =
-            typeof(PortableUtils).GetMethod("ReadGenericDictionary", _bindFlagsStatic);
-
-        /** Method: ReadGenericArray. */
-        public static readonly MethodInfo MtdhReadGenericArray =
-            typeof(PortableUtils).GetMethod("ReadGenericArray", _bindFlagsStatic);
+        /** Method: ReadArray. */
+        public static readonly MethodInfo MtdhReadArray =
+            typeof(PortableUtils).GetMethod("ReadArray", _bindFlagsStatic);
 
         /** Cached UTF8 encoding. */
         private static readonly Encoding Utf8 = Encoding.UTF8;
@@ -655,7 +622,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="val">Date.</param>
          * <param name="stream">Stream.</param>
          */
-        public static void WriteDate(DateTime val, IPortableStream stream)
+        public static void WriteTimestamp(DateTime val, IPortableStream stream)
         {
             long high;
             int low;
@@ -672,37 +639,20 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="local">Local flag.</param>
          * <returns>Date</returns>
          */
-        public static DateTime? ReadDate(IPortableStream stream, bool local)
+        public static DateTime? ReadTimestamp(IPortableStream stream)
         {
             long high = stream.ReadLong();
             int low = stream.ReadInt();
 
-            return ToDotNetDate(high, low, local);
+            return new DateTime(JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
         }
-
-        /// <summary>
-        /// Write date array.
-        /// </summary>
-        /// <param name="vals">Values.</param>
-        /// <param name="stream">Stream.</param>
-        public static void WriteDateArray(DateTime[] vals, IPortableStream stream)
-        {
-            stream.WriteInt(vals.Length);
-
-            foreach (DateTime val in vals)
-            {
-                stream.WriteByte(TypeDate);
-
-                WriteDate(val, stream);
-            }
-        }
-
+        
         /// <summary>
         /// Write nullable date array.
         /// </summary>
         /// <param name="vals">Values.</param>
         /// <param name="stream">Stream.</param>
-        public static void WriteDateArray(DateTime?[] vals, IPortableStream stream)
+        public static void WriteTimestampArray(DateTime?[] vals, IPortableStream stream)
         {
             stream.WriteInt(vals.Length);
 
@@ -710,9 +660,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 if (val.HasValue)
                 {
-                    stream.WriteByte(TypeDate);
+                    stream.WriteByte(TypeTimestamp);
 
-                    WriteDate(val.Value, stream);
+                    WriteTimestamp(val.Value, stream);
                 }
                 else
                     stream.WriteByte(HdrNull);
@@ -1006,7 +956,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             var vals = new decimal?[len];
 
             for (int i = 0; i < len; i++)
-                vals[i] = stream.ReadByte() == HdrNull ? (decimal?) null : ReadDecimal(stream);
+                vals[i] = stream.ReadByte() == HdrNull ? null : ReadDecimal(stream);
 
             return vals;
         }
@@ -1042,24 +992,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             return *(Guid*) (&dotnetGuid);
         }
-
-        /// <summary>
-        /// Write GUID array.
-        /// </summary>
-        /// <param name="vals">Values.</param>
-        /// <param name="stream">Stream.</param>
-        public static void WriteGuidArray(Guid[] vals, IPortableStream stream)
-        {
-            stream.WriteInt(vals.Length);
-
-            foreach (Guid val in vals)
-            {
-                stream.WriteByte(TypeGuid);
-
-                WriteGuid(val, stream);
-            }
-        }
-
+        
         /// <summary>
         /// Write GUID array.
         /// </summary>
@@ -1098,19 +1031,17 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             return vals;
         }
-        
+
         /// <summary>
         /// Write array.
         /// </summary>
         /// <param name="val">Array.</param>
         /// <param name="ctx">Write context.</param>
-        /// <param name="typed">Typed flag.</param>
-        public static void WriteArray(Array val, PortableWriterImpl ctx, bool typed)
+        public static void WriteArray(Array val, PortableWriterImpl ctx)
         {
             IPortableStream stream = ctx.Stream;
 
-            if (typed)
-                stream.WriteInt(ObjTypeId);
+            stream.WriteInt(ObjTypeId);
 
             stream.WriteInt(val.Length);
 
@@ -1125,14 +1056,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="typed">Typed flag.</param>
         /// <param name="elementType">Type of the element.</param>
         /// <returns>Array.</returns>
-        public static object ReadArray(PortableReaderImpl ctx, bool typed, Type elementType)
+        public static object ReadTypedArray(PortableReaderImpl ctx, bool typed, Type elementType)
         {
             Func<PortableReaderImpl, bool, object> result;
 
             if (!ArrayReaders.TryGetValue(elementType, out result))
                 result = ArrayReaders.GetOrAdd(elementType, t =>
                     DelegateConverter.CompileFunc<Func<PortableReaderImpl, bool, object>>(null,
-                        MtdhReadGenericArray.MakeGenericMethod(t),
+                        MtdhReadArray.MakeGenericMethod(t),
                         new[] {typeof (PortableReaderImpl), typeof (bool)}, new[] {false, false, true}));
 
             return result(ctx, typed);
@@ -1144,9 +1075,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="ctx">Read context.</param>
         /// <param name="typed">Typed flag.</param>
         /// <returns>Array.</returns>
-        public static T[] ReadGenericArray<T>(PortableReaderImpl ctx, bool typed)
+        public static T[] ReadArray<T>(PortableReaderImpl ctx, bool typed)
         {
-            IPortableStream stream = ctx.Stream;
+            var stream = ctx.Stream;
 
             if (typed)
                 stream.ReadInt();
@@ -1161,20 +1092,19 @@ namespace Apache.Ignite.Core.Impl.Portable
             return vals;
         }
 
-        /**
-         * <summary>Read DateTime array.</summary>
-         * <param name="stream">Stream.</param>
-         * <param name="local">Local flag.</param>
-         * <returns>Array.</returns>
-         */
-        public static DateTime?[] ReadDateArray(IPortableStream stream, bool local)
+        /// <summary>
+        /// Read timestamp array.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <returns>Timestamp array.</returns>
+        public static DateTime?[] ReadTimestampArray(IPortableStream stream)
         {
             int len = stream.ReadInt();
 
             DateTime?[] vals = new DateTime?[len];
 
             for (int i = 0; i < len; i++)
-                vals[i] = stream.ReadByte() == HdrNull ? null : ReadDate(stream, local);
+                vals[i] = stream.ReadByte() == HdrNull ? null : ReadTimestamp(stream);
 
             return vals;
         }
@@ -1186,9 +1116,29 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static void WriteCollection(ICollection val, PortableWriterImpl ctx)
         {
-            byte colType = val.GetType() == typeof(ArrayList) ? CollectionArrayList : CollectionCustom;
+            var valType = val.GetType();
+            
+            byte colType;
 
-            WriteTypedCollection(val, ctx, colType);
+            if (valType.IsGenericType)
+            {
+                var genType = valType.GetGenericTypeDefinition();
+
+                if (genType == typeof (List<>))
+                    colType = CollectionArrayList;
+                else if (genType == typeof (LinkedList<>))
+                    colType = CollectionLinkedList;
+                else if (genType == typeof (SortedSet<>))
+                    colType = CollectionSortedSet;
+                else if (genType == typeof (ConcurrentBag<>))
+                    colType = CollectionConcurrentBag;
+                else
+                    colType = CollectionCustom;
+            }
+            else
+                colType = valType == typeof (ArrayList) ? CollectionArrayList : CollectionCustom;
+
+            WriteCollection(val, ctx, colType);
         }
 
         /**
@@ -1197,7 +1147,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="ctx">Write context.</param>
          * <param name="colType">Collection type.</param>
          */
-        public static void WriteTypedCollection(ICollection val, PortableWriterImpl ctx, byte colType)
+        public static void WriteCollection(ICollection val, PortableWriterImpl ctx, byte colType)
         {
             ctx.Stream.WriteInt(val.Count);
 
@@ -1217,104 +1167,35 @@ namespace Apache.Ignite.Core.Impl.Portable
         public static ICollection ReadCollection(PortableReaderImpl ctx,
             PortableCollectionFactory factory, PortableCollectionAdder adder)
         {
-            if (factory == null)
-                factory = PortableSystemHandlers.CreateArrayList;
-
-            if (adder == null)
-                adder = PortableSystemHandlers.AddToArrayList;
-
             IPortableStream stream = ctx.Stream;
 
             int len = stream.ReadInt();
 
-            ctx.Stream.Seek(1, SeekOrigin.Current);
+            byte colType = ctx.Stream.ReadByte();
 
-            ICollection res = factory.Invoke(len);
+            ICollection res;
+
+            if (factory == null)
+            {
+                if (colType == CollectionLinkedList)
+                    res = new LinkedList<object>();
+                else if (colType == CollectionSortedSet)
+                    res = new SortedSet<object>();
+                else if (colType == CollectionConcurrentBag)
+                    res = new ConcurrentBag<object>();
+                else
+                    res = new ArrayList(len);
+            }
+            else
+                res = factory.Invoke(len);
+
+            if (adder == null)
+                adder = (col, elem) => { ((ArrayList) col).Add(elem); };
 
             for (int i = 0; i < len; i++)
                 adder.Invoke(res, ctx.Deserialize<object>());
 
             return res;
-        }
-
-        /**
-         * <summary>Write generic collection.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         */
-        public static void WriteGenericCollection<T>(ICollection<T> val, PortableWriterImpl ctx)
-        {
-            Type type = val.GetType().GetGenericTypeDefinition();
-
-            byte colType;
-
-            if (type == typeof(List<>))
-                colType = CollectionArrayList;
-            else if (type == typeof(LinkedList<>))
-                colType = CollectionLinkedList;
-            else if (type == typeof(HashSet<>))
-                colType = CollectionHashSet;
-            else if (type == typeof(SortedSet<>))
-                colType = CollectionSortedSet;
-            else
-                colType = CollectionCustom;
-
-            WriteTypedGenericCollection(val, ctx, colType);
-        }
-
-        /**
-         * <summary>Write generic non-null collection with known type.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         * <param name="colType">Collection type.</param>
-         */
-        public static void WriteTypedGenericCollection<T>(ICollection<T> val, PortableWriterImpl ctx,
-            byte colType)
-        {
-            ctx.Stream.WriteInt(val.Count);
-
-            ctx.Stream.WriteByte(colType);
-
-            foreach (T elem in val)
-                ctx.Write(elem);
-        }
-
-        /**
-         * <summary>Read generic collection.</summary>
-         * <param name="ctx">Context.</param>
-         * <param name="factory">Factory delegate.</param>
-         * <returns>Collection.</returns>
-         */
-        public static ICollection<T> ReadGenericCollection<T>(PortableReaderImpl ctx,
-            PortableGenericCollectionFactory<T> factory)
-        {
-            int len = ctx.Stream.ReadInt();
-
-            if (len >= 0)
-            {
-                byte colType = ctx.Stream.ReadByte();
-
-                if (factory == null)
-                {
-                    // Need to detect factory automatically.
-                    if (colType == CollectionLinkedList)
-                        factory = PortableSystemHandlers.CreateLinkedList<T>;
-                    else if (colType == CollectionHashSet)
-                        factory = PortableSystemHandlers.CreateHashSet<T>;
-                    else if (colType == CollectionSortedSet)
-                        factory = PortableSystemHandlers.CreateSortedSet<T>;
-                    else
-                        factory = PortableSystemHandlers.CreateList<T>;
-                }
-
-                ICollection<T> res = factory.Invoke(len);
-
-                for (int i = 0; i < len; i++)
-                    res.Add(ctx.Deserialize<T>());
-
-                return res;
-            }
-            return null;
         }
 
         /**
@@ -1324,9 +1205,27 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static void WriteDictionary(IDictionary val, PortableWriterImpl ctx)
         {
-            byte dictType = val.GetType() == typeof(Hashtable) ? MapHashMap : MapCustom;
+            var valType = val.GetType();
 
-            WriteTypedDictionary(val, ctx, dictType);
+            byte dictType;
+
+            if (valType.IsGenericType)
+            {
+                var genType = valType.GetGenericTypeDefinition();
+
+                if (genType == typeof (Dictionary<,>))
+                    dictType = MapHashMap;
+                else if (genType == typeof (SortedDictionary<,>))
+                    dictType = MapSortedMap;
+                else if (genType == typeof (ConcurrentDictionary<,>))
+                    dictType = MapConcurrentHashMap;
+                else
+                    dictType = MapCustom;
+            }
+            else
+                dictType = valType == typeof (Hashtable) ? MapHashMap : MapCustom;
+
+            WriteDictionary(val, ctx, dictType);
         }
 
         /**
@@ -1335,7 +1234,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="ctx">Write context.</param>
          * <param name="dictType">Dictionary type.</param>
          */
-        public static void WriteTypedDictionary(IDictionary val, PortableWriterImpl ctx, byte dictType)
+        public static void WriteDictionary(IDictionary val, PortableWriterImpl ctx, byte dictType)
         {
             ctx.Stream.WriteInt(val.Count);
 
@@ -1357,16 +1256,26 @@ namespace Apache.Ignite.Core.Impl.Portable
         public static IDictionary ReadDictionary(PortableReaderImpl ctx,
             PortableDictionaryFactory factory)
         {
-            if (factory == null)
-                factory = PortableSystemHandlers.CreateHashtable;
-
             IPortableStream stream = ctx.Stream;
 
             int len = stream.ReadInt();
 
-            ctx.Stream.Seek(1, SeekOrigin.Current);
+            byte colType = ctx.Stream.ReadByte();
 
-            IDictionary res = factory.Invoke(len);
+            IDictionary res;
+
+            if (factory == null)
+            {
+                if (colType == MapSortedMap)
+                    res = new SortedDictionary<object, object>();
+                else if (colType == MapConcurrentHashMap)
+                    res = new ConcurrentDictionary<object, object>(Environment.ProcessorCount, len);
+                else
+                    res = new Hashtable(len);
+            }
+            else
+                res = factory.Invoke(len);
+
 
             for (int i = 0; i < len; i++)
             {
@@ -1377,89 +1286,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             return res;
-        }
-
-        /**
-         * <summary>Write generic dictionary.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         */
-        public static void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val, PortableWriterImpl ctx)
-        {
-            Type type = val.GetType().GetGenericTypeDefinition();
-
-            byte dictType;
-
-            if (type == typeof(Dictionary<,>))
-                dictType = MapHashMap;
-            else if (type == typeof(SortedDictionary<,>))
-                dictType = MapSortedMap;
-            else if (type == typeof(ConcurrentDictionary<,>))
-                dictType = MapConcurrentHashMap;
-            else
-                dictType = MapCustom;
-
-            WriteTypedGenericDictionary(val, ctx, dictType);
-        }
-
-        /**
-         * <summary>Write generic non-null dictionary with known type.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         * <param name="dictType">Dictionary type.</param>
-         */
-        public static void WriteTypedGenericDictionary<TK, TV>(IDictionary<TK, TV> val,
-            PortableWriterImpl ctx, byte dictType)
-        {
-            ctx.Stream.WriteInt(val.Count);
-
-            ctx.Stream.WriteByte(dictType);
-
-            foreach (KeyValuePair<TK, TV> entry in val)
-            {
-                ctx.Write(entry.Key);
-                ctx.Write(entry.Value);
-            }
-        }
-
-        /**
-         * <summary>Read generic dictionary.</summary>
-         * <param name="ctx">Context.</param>
-         * <param name="factory">Factory delegate.</param>
-         * <returns>Collection.</returns>
-         */
-        public static IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableReaderImpl ctx,
-            PortableGenericDictionaryFactory<TK, TV> factory)
-        {
-            int len = ctx.Stream.ReadInt();
-
-            if (len >= 0)
-            {
-                byte colType = ctx.Stream.ReadByte();
-
-                if (factory == null)
-                {
-                    if (colType == MapSortedMap)
-                        factory = PortableSystemHandlers.CreateSortedDictionary<TK, TV>;
-                    else if (colType == MapConcurrentHashMap)
-                        factory = PortableSystemHandlers.CreateConcurrentDictionary<TK, TV>;
-                    else
-                        factory = PortableSystemHandlers.CreateDictionary<TK, TV>;
-                }
-
-                IDictionary<TK, TV> res = factory.Invoke(len);
-
-                for (int i = 0; i < len; i++)
-                {
-                    TK key = ctx.Deserialize<TK>();
-                    TV val = ctx.Deserialize<TV>();
-
-                    res[key] = val;
-                }
-
-                return res;
-            }
-            return null;
         }
 
         /**
@@ -1600,7 +1426,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 case TypeDecimal:
                 case TypeString:
                 case TypeGuid:
-                case TypeDate:
+                case TypeTimestamp:
                 case TypeEnum:
                 case TypeArrayByte:
                 case TypeArrayShort:
@@ -1613,7 +1439,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 case TypeArrayDecimal:
                 case TypeArrayString:
                 case TypeArrayGuid:
-                case TypeArrayDate:
+                case TypeArrayTimestamp:
                 case TypeArrayEnum:
                 case TypeArray:
                 case TypeCollection:
@@ -1844,102 +1670,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Write object which is not necessary portable.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="obj">Object.</param>
-        public static void WritePortableOrSerializable<T>(PortableWriterImpl writer, T obj)
-        {
-            if (writer.IsPortable(obj))
-            {
-                writer.WriteBoolean(true);
-
-                writer.WriteObject(obj);
-            }
-            else
-            {
-                writer.WriteBoolean(false);
-
-                WriteSerializable(writer, obj);
-            }
-        }
-
-        /// <summary>
-        /// Writes a serializable object.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="obj">Object.</param>
-        public static void WriteSerializable<T>(PortableWriterImpl writer, T obj)
-        {
-            new BinaryFormatter().Serialize(new PortableStreamAdapter(writer.Stream), obj);
-        }
-
-        /// <summary>
-        /// Read object which is not necessary portable.
-        /// </summary>
-        /// <param name="reader">Reader.</param>
-        /// <returns>Object.</returns>
-        public static T ReadPortableOrSerializable<T>(PortableReaderImpl reader)
-        {
-            return reader.ReadBoolean()
-                ? reader.ReadObject<T>()
-                : ReadSerializable<T>(reader);
-        }
-
-        /// <summary>
-        /// Reads a serializable object.
-        /// </summary>
-        /// <param name="reader">Reader.</param>
-        /// <returns>Object.</returns>
-        public static T ReadSerializable<T>(PortableReaderImpl reader)
-        {
-            return (T) new BinaryFormatter().Deserialize(new PortableStreamAdapter(reader.Stream), null);
-        }
-
-        /// <summary>
-        /// Writes wrapped invocation result.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="success">Success flag.</param>
-        /// <param name="res">Result.</param>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        public static void WriteWrappedInvocationResult(PortableWriterImpl writer, bool success, object res)
-        {
-            var pos = writer.Stream.Position;
-
-            try
-            {
-                if (success)
-                    writer.WriteBoolean(true);
-                else
-                {
-                    writer.WriteBoolean(false); // Call failed.
-                    writer.WriteBoolean(true); // Exception serialized sucessfully.
-                }
-
-                writer.Write(new PortableResultWrapper(res));
-            }
-            catch (Exception marshErr)
-            {
-                // Failed to serialize result, fallback to plain string.
-                writer.Stream.Seek(pos, SeekOrigin.Begin);
-
-                writer.WriteBoolean(false); // Call failed.
-                writer.WriteBoolean(false); // Cannot serialize result or exception.
-
-                if (success)
-                {
-                    writer.WriteString("Call completed successfully, but result serialization failed [resultType=" +
-                        res.GetType().Name + ", serializationErrMsg=" + marshErr.Message + ']');
-                }
-                else
-                {
-                    writer.WriteString("Call completed with error, but error serialization failed [errType=" +
-                        res.GetType().Name + ", serializationErrMsg=" + marshErr.Message + ']');
-                }
-            }
-        }
-        /// <summary>
         /// Writes invocation result.
         /// </summary>
         /// <param name="writer">Writer.</param>
@@ -1984,27 +1714,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Reads wrapped invocation result.
-        /// </summary>
-        /// <param name="reader">Reader.</param>
-        /// <param name="err">Error.</param>
-        /// <returns>Result.</returns>
-        public static object ReadWrappedInvocationResult(PortableReaderImpl reader, out object err)
-        {
-            err = null;
-
-            if (reader.ReadBoolean())
-                return reader.ReadObject<PortableResultWrapper>().Result;
-
-            if (reader.ReadBoolean())
-                err = (Exception) reader.ReadObject<PortableResultWrapper>().Result;
-            else
-                err = ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
-
-            return null;
-        }
-
-        /// <summary>
         /// Reads invocation result.
         /// </summary>
         /// <param name="reader">Reader.</param>
@@ -2017,10 +1726,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (reader.ReadBoolean())
                 return reader.ReadObject<object>();
 
-            if (reader.ReadBoolean())
-                err = reader.ReadObject<object>();
-            else
-                err = ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
+            err = reader.ReadBoolean()
+                ? reader.ReadObject<object>()
+                : ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
 
             return null;
         }
@@ -2050,21 +1758,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             high = diff / TimeSpan.TicksPerMillisecond;
 
             low = (int)(diff % TimeSpan.TicksPerMillisecond) * 100; 
-        }
-
-        /**
-         * <summary>Convert Java ticks to date.</summary>
-         * <param name="high">High part (milliseconds).</param>
-         * <param name="low">Low part (nanoseconds).</param>
-         * <param name="local">Whether the time should be treaten as local.</param>
-         * <returns>Date.</returns>
-         */
-        private static DateTime ToDotNetDate(long high, int low, bool local)
-        {
-            DateTime res = 
-                new DateTime(JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
-
-            return local ? res.ToLocalTime() : res;
         }
 
         /// <summary>

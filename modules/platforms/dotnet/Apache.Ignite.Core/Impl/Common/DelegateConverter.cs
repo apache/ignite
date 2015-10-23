@@ -148,18 +148,15 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Compiles a generic ctor with arbitrary number of arguments.
         /// </summary>
         /// <typeparam name="T">Result func type.</typeparam>
-        /// <param name="type">Type to be created by ctor.</param>
+        /// <param name="ctor">Contructor info.</param>
         /// <param name="argTypes">Argument types.</param>
         /// <param name="convertResultToObject">if set to <c>true</c> [convert result to object].
-        /// Flag that indicates whether ctor return value should be converted to object.
-        /// </param>
+        /// Flag that indicates whether ctor return value should be converted to object.</param>
         /// <returns>
         /// Compiled generic constructor.
         /// </returns>
-        public static T CompileCtor<T>(Type type, Type[] argTypes, bool convertResultToObject = true)
+        public static T CompileCtor<T>(ConstructorInfo ctor, Type[] argTypes, bool convertResultToObject = true)
         {
-            var ctor = type.GetConstructor(argTypes);
-
             Debug.Assert(ctor != null);
 
             var args = new ParameterExpression[argTypes.Length];
@@ -175,9 +172,28 @@ namespace Apache.Ignite.Core.Impl.Common
             Expression ctorExpr = Expression.New(ctor, argsConverted);  // ctor takes args of specific types
 
             if (convertResultToObject)
-                ctorExpr = Expression.Convert(ctorExpr, typeof (object)); // convert ctor result to object
+                ctorExpr = Expression.Convert(ctorExpr, typeof(object)); // convert ctor result to object
 
             return Expression.Lambda<T>(ctorExpr, args).Compile();  // lambda takes args as objects
+        }
+
+        /// <summary>
+        /// Compiles a generic ctor with arbitrary number of arguments.
+        /// </summary>
+        /// <typeparam name="T">Result func type.</typeparam>
+        /// <param name="type">Type to be created by ctor.</param>
+        /// <param name="argTypes">Argument types.</param>
+        /// <param name="convertResultToObject">if set to <c>true</c> [convert result to object].
+        /// Flag that indicates whether ctor return value should be converted to object.
+        /// </param>
+        /// <returns>
+        /// Compiled generic constructor.
+        /// </returns>
+        public static T CompileCtor<T>(Type type, Type[] argTypes, bool convertResultToObject = true)
+        {
+            var ctor = type.GetConstructor(argTypes);
+
+            return CompileCtor<T>(ctor, argTypes, convertResultToObject);
         }
 
         /// <summary>

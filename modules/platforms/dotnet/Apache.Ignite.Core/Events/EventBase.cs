@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Events
             _type = r.ReadInt();
             _name = r.ReadString();
             
-            var timestamp = r.ReadDate();
+            var timestamp = r.ReadTimestamp();
             Debug.Assert(timestamp.HasValue);
             _timestamp = timestamp.Value;
         }

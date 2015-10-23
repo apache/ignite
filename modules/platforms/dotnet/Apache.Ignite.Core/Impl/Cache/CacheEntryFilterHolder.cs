@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             var writer0 = (PortableWriterImpl)writer.GetRawWriter();
 
-            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _pred));
+            writer0.WithDetach(w => w.WriteObject(_pred));
             
             writer0.WriteBoolean(_keepPortable);
         }
@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             var reader0 = (PortableReaderImpl)reader.GetRawReader();
 
-            _pred = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+            _pred = reader0.ReadObject<object>();
 
             _keepPortable = reader0.ReadBoolean();
 

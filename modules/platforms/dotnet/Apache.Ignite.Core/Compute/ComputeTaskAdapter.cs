@@ -42,10 +42,10 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="res">Received remote Ignite executable result.</param>
         /// <param name="rcvd">All previously received results.</param>
         /// <returns>Result policy that dictates how to process further upcoming job results.</returns>
-        public virtual ComputeJobResultPolicy Result(IComputeJobResult<TJobRes> res,
+        public virtual ComputeJobResultPolicy OnResult(IComputeJobResult<TJobRes> res,
             IList<IComputeJobResult<TJobRes>> rcvd)
         {
-            Exception err = res.Exception();
+            Exception err = res.Exception;
 
             if (err != null)
             {

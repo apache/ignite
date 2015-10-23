@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Portable
 {
-    using System.Diagnostics.CodeAnalysis;
-
     /// <summary>
     /// Portable object builder. Provides ability to build portable objects dynamically
     /// without having class definitions.

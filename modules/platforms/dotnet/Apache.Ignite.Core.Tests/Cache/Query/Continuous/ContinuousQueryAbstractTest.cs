@@ -491,7 +491,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             }
             else
             {
-                Assert.Throws<SerializationException>(() =>
+                Assert.Throws<PortableException>(() =>
                 {
                     using (cache1.QueryContinuous(qry))
                     {

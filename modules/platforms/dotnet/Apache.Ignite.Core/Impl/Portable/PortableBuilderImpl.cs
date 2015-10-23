@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
@@ -95,16 +96,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             TypeIds[typeof(string[])] = PortableUtils.TypeArrayString;
 
             // 3. Guid.
-            TypeIds[typeof(Guid)] = PortableUtils.TypeGuid;
             TypeIds[typeof(Guid?)] = PortableUtils.TypeGuid;
-            TypeIds[typeof(Guid[])] = PortableUtils.TypeArrayGuid;
             TypeIds[typeof(Guid?[])] = PortableUtils.TypeArrayGuid;
 
             // 4. Date.
-            TypeIds[typeof(DateTime)] = PortableUtils.TypeDate;
-            TypeIds[typeof(DateTime?)] = PortableUtils.TypeDate;
-            TypeIds[typeof(DateTime[])] = PortableUtils.TypeArrayDate;
-            TypeIds[typeof(DateTime?[])] = PortableUtils.TypeArrayDate;
+            TypeIds[typeof(DateTime?)] = PortableUtils.TypeTimestamp;
+            TypeIds[typeof(DateTime?[])] = PortableUtils.TypeArrayTimestamp;
         }
 
         /// <summary>
@@ -176,7 +173,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             PortableWriterImpl writer = _portables.Marshaller.StartMarshal(outStream);
 
-            writer.Builder(this);
+            writer.SetBuilder(this);
 
             // All related builders will work in this context with this writer.
             _parent._ctx = new Context(writer);
@@ -282,7 +279,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             IDictionary<string, PortableBuilderField> vals)
         {
             // Set correct builder to writer frame.
-            PortableBuilderImpl oldBuilder = _parent._ctx.Writer.Builder(_parent);
+            PortableBuilderImpl oldBuilder = _parent._ctx.Writer.SetBuilder(_parent);
 
             int streamPos = inStream.Position;
             
@@ -312,7 +309,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         // Write metadata if: 1) it is enabled for type; 2) type is not null (i.e. it is neither 
                         // remove marker, nor a field read through "GetField" method.
                         if (metaHnd != null && valEntry.Value.Type != null)
-                            metaHnd.OnFieldWrite(fieldId, valEntry.Key, TypeId(valEntry.Value.Type));
+                            metaHnd.OnFieldWrite(fieldId, valEntry.Key, GetTypeId(valEntry.Value.Type));
                     }
                 }
 
@@ -331,7 +328,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             finally
             {
                 // Restore builder frame.
-                _parent._ctx.Writer.Builder(oldBuilder);
+                _parent._ctx.Writer.SetBuilder(oldBuilder);
 
                 inStream.Seek(streamPos, SeekOrigin.Begin);
             }
@@ -631,7 +628,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     break;
 
-                case PortableUtils.TypeDate:
+                case PortableUtils.TypeTimestamp:
                     TransferBytes(inStream, outStream, 12);
 
                     break;
@@ -679,7 +676,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 case PortableUtils.TypeArrayDecimal:
                 case PortableUtils.TypeArrayString:
                 case PortableUtils.TypeArrayGuid:
-                case PortableUtils.TypeArrayDate:
+                case PortableUtils.TypeArrayTimestamp:
                 case PortableUtils.TypeArrayEnum:
                 case PortableUtils.TypeArray:
                     int arrLen = inStream.ReadInt();
@@ -747,20 +744,26 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Type ID.</returns>
-        private static int TypeId(Type type)
+        private static int GetTypeId(Type type)
         {
             int typeId;
 
             if (TypeIds.TryGetValue(type, out typeId))
                 return typeId;
+
             if (type.IsEnum)
                 return PortableUtils.TypeEnum;
+
             if (type.IsArray)
                 return type.GetElementType().IsEnum ? PortableUtils.TypeArrayEnum : PortableUtils.TypeArray;
-            PortableCollectionInfo colInfo = PortableCollectionInfo.Info(type);
 
-            return colInfo.IsAny ? colInfo.IsCollection || colInfo.IsGenericCollection ?
-                PortableUtils.TypeCollection : PortableUtils.TypeDictionary : PortableUtils.TypeObject;
+            if (typeof (IDictionary).IsAssignableFrom(type))
+                return PortableUtils.TypeDictionary;
+            
+            if (typeof (ICollection).IsAssignableFrom(type))
+                return PortableUtils.TypeCollection;
+
+            return PortableUtils.TypeObject;
         }
 
         /// <summary>

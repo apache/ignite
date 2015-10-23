@@ -610,9 +610,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Date value.</param>
-        public void WriteDate(string fieldName, DateTime? val)
+        public void WriteTimestamp(string fieldName, DateTime? val)
         {
-            WriteFieldId(fieldName, PU.TypeDate);
+            WriteFieldId(fieldName, PU.TypeTimestamp);
 
             if (val == null)
                 WriteNullField();
@@ -620,8 +620,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 _stream.WriteInt(PU.LengthTypeId + 12);
 
-                _stream.WriteByte(PortableUtils.TypeDate);
-                PortableUtils.WriteDate(val.Value, _stream);
+                _stream.WriteByte(PortableUtils.TypeTimestamp);
+                PortableUtils.WriteTimestamp(val.Value, _stream);
             }
         }
         
@@ -629,14 +629,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write date value.
         /// </summary>
         /// <param name="val">Date value.</param>
-        public void WriteDate(DateTime? val)
+        public void WriteTimestamp(DateTime? val)
         {
             if (val == null)
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PortableUtils.TypeDate);
-                PortableUtils.WriteDate(val.Value, _stream);
+                _stream.WriteByte(PortableUtils.TypeTimestamp);
+                PortableUtils.WriteTimestamp(val.Value, _stream);
             }
         }
 
@@ -645,9 +645,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Date array.</param>
-        public void WriteDateArray(string fieldName, DateTime?[] val)
+        public void WriteTimestampArray(string fieldName, DateTime?[] val)
         {
-            WriteFieldId(fieldName, PU.TypeDate);
+            WriteFieldId(fieldName, PU.TypeTimestamp);
 
             if (val == null)
                 WriteNullField();
@@ -655,8 +655,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 int pos = SkipFieldLength();
 
-                _stream.WriteByte(PortableUtils.TypeArrayDate);
-                PortableUtils.WriteDateArray(val, _stream);
+                _stream.WriteByte(PortableUtils.TypeArrayTimestamp);
+                PortableUtils.WriteTimestampArray(val, _stream);
 
                 WriteFieldLength(_stream, pos);
             }
@@ -666,14 +666,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write date array.
         /// </summary>
         /// <param name="val">Date array.</param>
-        public void WriteDateArray(DateTime?[] val)
+        public void WriteTimestampArray(DateTime?[] val)
         {
             if (val == null)
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PortableUtils.TypeArrayDate);
-                PortableUtils.WriteDateArray(val, _stream);
+                _stream.WriteByte(PortableUtils.TypeArrayTimestamp);
+                PortableUtils.WriteTimestampArray(val, _stream);
             }
         }
 
@@ -867,7 +867,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 int pos = SkipFieldLength();
 
                 _stream.WriteByte(PU.TypeArrayEnum);
-                PortableUtils.WriteArray(val, this, true);
+                PortableUtils.WriteArray(val, this);
 
                 WriteFieldLength(_stream, pos);
             }
@@ -885,7 +885,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             else
             {
                 _stream.WriteByte(PU.TypeArrayEnum);
-                PortableUtils.WriteArray(val, this, true);
+                PortableUtils.WriteArray(val, this);
             }
         }
 
@@ -924,10 +924,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write named object array.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">Element type.</typeparam>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Object array.</param>
-        public void WriteObjectArray<T>(string fieldName, T[] val)
+        public void WriteArray<T>(string fieldName, T[] val)
         {
             WriteFieldId(fieldName, PU.TypeArray);
 
@@ -938,7 +938,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 int pos = SkipFieldLength();
 
                 _stream.WriteByte(PU.TypeArray);
-                PortableUtils.WriteArray(val, this, true);
+                PortableUtils.WriteArray(val, this);
 
                 WriteFieldLength(_stream, pos);
             }
@@ -947,16 +947,16 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write object array.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">Element type.</typeparam>
         /// <param name="val">Object array.</param>
-        public void WriteObjectArray<T>(T[] val)
+        public void WriteArray<T>(T[] val)
         {
             if (val == null)
                 WriteNullRawField();
             else
             {
                 _stream.WriteByte(PU.TypeArray);
-                PortableUtils.WriteArray(val, this, true);
+                PortableUtils.WriteArray(val, this);
             }
         }
 
@@ -975,7 +975,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 int pos = SkipFieldLength();
 
-                Write(val);
+                WriteCollection(val);
 
                 WriteFieldLength(_stream, pos);
             }
@@ -987,39 +987,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Collection.</param>
         public void WriteCollection(ICollection val)
         {
-            Write(val);
-        }
-
-        /// <summary>
-        /// Write named generic collection.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="fieldName">Field name.</param>
-        /// <param name="val">Collection.</param>
-        public void WriteGenericCollection<T>(string fieldName, ICollection<T> val)
-        {
-            WriteFieldId(fieldName, PU.TypeCollection);
-
-            if (val == null)
-                WriteNullField();
-            else
-            {
-                int pos = SkipFieldLength();
-
-                Write(val);
-
-                WriteFieldLength(_stream, pos);
-            }
-        }
-
-        /// <summary>
-        /// Write generic collection.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="val">Collection.</param>
-        public void WriteGenericCollection<T>(ICollection<T> val)
-        {
-            Write(val);
+            WriteByte(PU.TypeCollection);
+            PU.WriteCollection(val, this);
         }
 
         /// <summary>
@@ -1037,7 +1006,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 int pos = SkipFieldLength();
 
-                Write(val);
+                WriteDictionary(val);
 
                 WriteFieldLength(_stream, pos);
             }
@@ -1049,37 +1018,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Dictionary.</param>
         public void WriteDictionary(IDictionary val)
         {
-            Write(val);
-        }
-
-        /// <summary>
-        /// Write named generic dictionary.
-        /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <param name="val">Dictionary.</param>
-        public void WriteGenericDictionary<TK, TV>(string fieldName, IDictionary<TK, TV> val)
-        {
-            WriteFieldId(fieldName, PU.TypeDictionary);
-
-            if (val == null)
-                WriteNullField();
-            else
-            {
-                int pos = SkipFieldLength();
-
-                Write(val);
-
-                WriteFieldLength(_stream, pos);
-            }
-        }
-
-        /// <summary>
-        /// Write generic dictionary.
-        /// </summary>
-        /// <param name="val">Dictionary.</param>
-        public void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val)
-        {
-            Write(val);
+            WriteByte(PU.TypeDictionary);
+            PU.WriteDictionary(val, this);
         }
 
         /// <summary>
@@ -1118,7 +1058,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="builder">Builder.</param>
         /// <returns>Previous builder.</returns>
-        internal PortableBuilderImpl Builder(PortableBuilderImpl builder)
+        internal PortableBuilderImpl SetBuilder(PortableBuilderImpl builder)
         {
             PortableBuilderImpl ret = _builder;
 
@@ -1239,11 +1179,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                     handler.Invoke(this, obj);
                 else
                 {
-                    // Last chance: is object seializable?
                     if (type.IsSerializable)
                         Write(new SerializableObjectHolder(obj));
                     else
-                        // We did our best, object cannot be marshalled.
+                    // We did our best, object cannot be marshalled.
                         throw new PortableException("Unsupported object type [type=" + type + ", object=" + obj + ']');
                 }
             }

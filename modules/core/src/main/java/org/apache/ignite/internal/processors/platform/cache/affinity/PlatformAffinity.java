@@ -29,6 +29,7 @@ import org.apache.ignite.internal.portable.PortableRawReaderEx;
 import org.apache.ignite.internal.portable.PortableRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -248,7 +249,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
             }
 
             case OP_MAP_KEYS_TO_NODES: {
-                Collection<Object> keys = reader.readCollection();
+                Collection<Object> keys = PlatformUtils.readCollection(reader);
 
                 Map<ClusterNode, Collection<Object>> map = aff.mapKeysToNodes(keys);
 
@@ -265,7 +266,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
             }
 
             case OP_MAP_PARTITIONS_TO_NODES: {
-                Collection<Integer> parts = reader.readCollection();
+                Collection<Integer> parts = PlatformUtils.readCollection(reader);
 
                 Map<Integer, ClusterNode> map = aff.mapPartitionsToNodes(parts);
 

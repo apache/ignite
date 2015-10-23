@@ -73,6 +73,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.portable.PortableMetadata;
 import org.jetbrains.annotations.Nullable;
 
+import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -270,7 +271,7 @@ public class PlatformContextImpl implements PlatformContext {
             writer.writeBoolean(true);
 
             writer.writeLong(metrics.getLastUpdateTime());
-            writer.writeDate(new Date(metrics.getLastUpdateTime()));
+            writer.writeTimestamp(new Timestamp(metrics.getLastUpdateTime()));
             writer.writeInt(metrics.getMaximumActiveJobs());
             writer.writeInt(metrics.getCurrentActiveJobs());
             writer.writeFloat(metrics.getAverageActiveJobs());
@@ -318,8 +319,8 @@ public class PlatformContextImpl implements PlatformContext {
             writer.writeLong(metrics.getNonHeapMemoryTotal());
             writer.writeLong(metrics.getUpTime());
 
-            writer.writeDate(new Date(metrics.getStartTime()));
-            writer.writeDate(new Date(metrics.getNodeStartTime()));
+            writer.writeTimestamp(new Timestamp(metrics.getStartTime()));
+            writer.writeTimestamp(new Timestamp(metrics.getNodeStartTime()));
             writer.writeInt(metrics.getCurrentThreadCount());
             writer.writeInt(metrics.getMaximumThreadCount());
             writer.writeLong(metrics.getTotalStartedThreadCount());
@@ -572,7 +573,7 @@ public class PlatformContextImpl implements PlatformContext {
         writer.writeString(evt.message());
         writer.writeInt(evt.type());
         writer.writeString(evt.name());
-        writer.writeDate(new Date(evt.timestamp()));
+        writer.writeTimestamp(new Timestamp(evt.timestamp()));
     }
 
     /** {@inheritDoc} */

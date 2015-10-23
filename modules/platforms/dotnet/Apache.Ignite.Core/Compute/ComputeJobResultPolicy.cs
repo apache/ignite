@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Compute
 
     /// <summary>
     /// This enumeration provides different types of actions following the last received job result. See 
-    /// <see cref="IComputeTask{A,T,R}.Result(IComputeJobResult{T}, IList{IComputeJobResult{T}})"/>
+    /// <see cref="IComputeTask{TA,T,TR}.OnResult"/>
     /// for more details.
     /// </summary>
     public enum ComputeJobResultPolicy

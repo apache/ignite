@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             var reader0 = (PortableReaderImpl)reader.GetRawReader();
 
-            _job = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+            _job = reader0.ReadObject<object>();
 
             DelegateTypeDescriptor.GetComputeJob(_job.GetType(), out _execute, out _cancel);
         }
@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             var writer0 = (PortableWriterImpl)writer.GetRawWriter();
 
-            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, Job));
+            writer0.WithDetach(w => w.WriteObject(Job));
         }
 
         /// <summary>

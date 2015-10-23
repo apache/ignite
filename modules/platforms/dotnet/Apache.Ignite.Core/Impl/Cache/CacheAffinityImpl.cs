@@ -175,12 +175,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IDictionary<IClusterNode, IList<TK>> MapKeysToNodes<TK>(IList<TK> keys)
+        public IDictionary<IClusterNode, IList<TK>> MapKeysToNodes<TK>(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutInOp(OpMapKeysToNodes, w => w.WriteObject(keys),
-                reader => ReadDictionary(reader, ReadNode, r => r.ReadObject<IList<TK>>()));
+            return DoOutInOp(OpMapKeysToNodes, w => WriteEnumerable(w, keys),
+                reader => ReadDictionary(reader, ReadNode, r => (IList<TK>) r.ReadCollectionAsList<TK>()));
         }
 
         /** <inheritDoc /> */
@@ -206,12 +206,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IDictionary<int, IClusterNode> MapPartitionsToNodes(IList<int> parts)
+        public IDictionary<int, IClusterNode> MapPartitionsToNodes(IEnumerable<int> parts)
         {
             IgniteArgumentCheck.NotNull(parts, "parts");
 
             return DoOutInOp(OpMapPartitionsToNodes,
-                w => w.WriteObject(parts),
+                w => WriteEnumerable(w, parts),
                 reader => ReadDictionary(reader, r => r.ReadInt(), ReadNode));
         }
 

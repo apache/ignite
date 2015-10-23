@@ -266,7 +266,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 else
                     writer.WriteObject<CacheEntryFilterHolder>(null);
 
-                writer.WriteObjectArray(args);
+                writer.WriteArray(args);
             });
         }
 
@@ -885,15 +885,10 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Result.</returns>
         private static T GetResultOrThrow<T>(object obj)
         {
-            var holder = obj as PortableResultWrapper;
+            var err = obj as Exception;
 
-            if (holder != null)
-            {
-                var err = holder.Result as Exception;
-
-                if (err != null)
-                    throw err as CacheEntryProcessorException ?? new CacheEntryProcessorException(err);
-            }
+            if (err != null)
+                throw err as CacheEntryProcessorException ?? new CacheEntryProcessorException(err);
 
             return obj == null ? default(T) : (T) obj;
         }
@@ -939,7 +934,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             var clsName = item as string;
 
             if (clsName == null)
-                return new CacheEntryProcessorException((Exception) ((PortableResultWrapper) item).Result);
+                return new CacheEntryProcessorException((Exception) item);
 
             var msg = Unmarshal<string>(inStream);
                 
