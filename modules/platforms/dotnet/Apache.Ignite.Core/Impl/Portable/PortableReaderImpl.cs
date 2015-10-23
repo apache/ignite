@@ -441,13 +441,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public T[] ReadArray<T>(string fieldName)
         {
-            return ReadField(fieldName, r => PortableUtils.ReadArray<T>(r, true));
+            return ReadField(fieldName, r => PortableUtils.ReadArray<T>(r, true), PortableUtils.TypeArray);
         }
 
         /** <inheritdoc /> */
         public T[] ReadArray<T>()
         {
-            return Read(r => PortableUtils.ReadArray<T>(r, true));
+            return Read(r => PortableUtils.ReadArray<T>(r, true), PortableUtils.TypeArray);
         }
 
         /** <inheritdoc /> */
@@ -870,17 +870,24 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Determines whether header at current position is HDR_NULL.
         /// </summary>
-        private bool IsNullHeader()
+        private bool IsNotNullHeader(byte? expHdr = null)
         {
             var hdr = ReadByte();
+            
+            if (hdr == PortableUtils.HdrNull)
+                return false;
 
-            return hdr != PortableUtils.HdrNull;
+            if (expHdr.HasValue && expHdr.Value != hdr)
+                throw new PortableException(string.Format("Invalid header on deserialization. " +
+                                                          "Expected: {0} but was: {1}", expHdr, hdr));
+
+            return true;
         }
 
         /// <summary>
         /// Seeks the field by name, reads header and returns true if field is present and header is not null.
         /// </summary>
-        private bool SeekField(string fieldName)
+        private bool SeekField(string fieldName, byte? expHdr = null)
         {
             if (_curRaw)
                 throw new PortableException("Cannot read named fields after raw data is read.");
@@ -890,7 +897,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (!SeekField(fieldId))
                 return false;
 
-            return IsNullHeader();
+            return IsNotNullHeader(expHdr);
         }
 
         /// <summary>
@@ -904,9 +911,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Seeks specified field and invokes provided func.
         /// </summary>
-        private T ReadField<T>(string fieldName, Func<PortableReaderImpl, T> readFunc)
+        private T ReadField<T>(string fieldName, Func<PortableReaderImpl, T> readFunc, byte? expHdr = null)
         {
-            return SeekField(fieldName) ? readFunc(this) : default(T);
+            return SeekField(fieldName, expHdr) ? readFunc(this) : default(T);
         }
 
         /// <summary>
@@ -920,9 +927,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Reads header and invokes specified func if the header is not null.
         /// </summary>
-        private T Read<T>(Func<PortableReaderImpl, T> readFunc)
+        private T Read<T>(Func<PortableReaderImpl, T> readFunc, byte? expHdr = null)
         {
-            return IsNullHeader() ? readFunc(this) : default(T);
+            return IsNotNullHeader(expHdr) ? readFunc(this) : default(T);
         }
 
         /// <summary>
@@ -930,7 +937,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private T Read<T>(Func<IPortableStream, T> readFunc)
         {
-            return IsNullHeader() ? readFunc(Stream) : default(T);
+            return IsNotNullHeader() ? readFunc(Stream) : default(T);
         }
 
         /// <summary>
