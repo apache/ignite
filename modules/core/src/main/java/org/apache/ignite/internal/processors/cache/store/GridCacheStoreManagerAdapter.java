@@ -269,10 +269,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 // Never load internal keys from store as they are never persisted.
                 return null;
 
-            Object storeKey = key.value(cctx.cacheObjectContext(), false);
-
-            if (convertPortable())
-                storeKey = cctx.unwrapPortableIfNeeded(storeKey, false);
+            Object storeKey = cctx.unwrapPortableIfNeeded(key, !convertPortable());
 
             if (log.isDebugEnabled())
                 log.debug("Loading value from store for key: " + storeKey);
@@ -396,22 +393,12 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 return;
             }
 
-            Collection<Object> keys0;
-
-            if (convertPortable()) {
-                keys0 = F.viewReadOnly(keys, new C1<KeyCacheObject, Object>() {
+            Collection<Object> keys0 = F.viewReadOnly(keys,
+                new C1<KeyCacheObject, Object>() {
                     @Override public Object apply(KeyCacheObject key) {
-                        return cctx.unwrapPortableIfNeeded(key.value(cctx.cacheObjectContext(), false), false);
+                        return cctx.unwrapPortableIfNeeded(key, !convertPortable());
                     }
                 });
-            }
-            else {
-                keys0 = F.viewReadOnly(keys, new C1<KeyCacheObject, Object>() {
-                    @Override public Object apply(KeyCacheObject key) {
-                        return key.value(cctx.cacheObjectContext(), false);
-                    }
-                });
-            }
 
             if (log.isDebugEnabled())
                 log.debug("Loading values from store for keys: " + keys0);
@@ -637,8 +624,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (key instanceof GridCacheInternal)
                 return false;
 
-            if (convertPortable())
-                key = cctx.unwrapPortableIfNeeded(key, false);
+            key = cctx.unwrapPortableIfNeeded(key, !convertPortable());
 
             if (log.isDebugEnabled())
                 log.debug("Removing value from cache store [key=" + key + ']');

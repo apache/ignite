@@ -403,8 +403,8 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
 
         assert desc != null;
 
-//        if (desc.keepDeserialized())
-//            obj = obj0;
+        if (desc.keepDeserialized())
+            obj = obj0;
 
         return obj0;
     }

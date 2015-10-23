@@ -2098,7 +2098,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 // Try write-through.
                 if (writeThrough)
                     // Must persist inside synchronization in non-tx mode.
-                    cctx.store().put(null, keyValue(false), CU.value(updated, cctx, false), newVer);
+                    cctx.store().put(null, key, updated, newVer);
 
                 if (!hadVal) {
                     boolean new0 = isNew();
@@ -2168,7 +2168,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 if (writeThrough)
                     // Must persist inside synchronization in non-tx mode.
-                    cctx.store().remove(null, keyValue(false));
+                    cctx.store().remove(null, key);
 
                 if (oldVal == null)
                     oldVal = saveValueForIndexUnlocked();
