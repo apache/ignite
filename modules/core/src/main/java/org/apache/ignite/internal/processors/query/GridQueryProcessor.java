@@ -34,7 +34,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import javax.cache.Cache;
@@ -46,9 +48,6 @@ import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -82,10 +81,11 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import javax.cache.*;
-import java.lang.reflect.*;
-import java.util.*;
-import java.util.concurrent.*;
+import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
+import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
+import static org.apache.ignite.internal.processors.query.GridQueryIndexType.FULLTEXT;
+import static org.apache.ignite.internal.processors.query.GridQueryIndexType.GEO_SPATIAL;
+import static org.apache.ignite.internal.processors.query.GridQueryIndexType.SORTED;
 
 /**
  * Indexing processor.
@@ -1326,11 +1326,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param resType Expected result type.
      * @param aliases Aliases.
      * @return Property instance corresponding to the given path.
-     * @throws IgniteCheckedException If property cannot be created.
      */
     static ClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
-        Map<String,String> aliases)
-        throws IgniteCheckedException {
+        Map<String,String> aliases) {
         String[] path = pathStr.split("\\.");
 
         ClassProperty res = null;

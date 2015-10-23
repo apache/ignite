@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeSet;
@@ -71,10 +72,13 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.jetbrains.annotations.Nullable;
-import java.util.HashSet;
 
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.*;
-import static org.apache.ignite.internal.processors.query.GridQueryProcessor.*;
+import static org.apache.ignite.internal.processors.query.GridQueryIndexType.FULLTEXT;
+import static org.apache.ignite.internal.processors.query.GridQueryIndexType.GEO_SPATIAL;
+import static org.apache.ignite.internal.processors.query.GridQueryIndexType.SORTED;
+import static org.apache.ignite.internal.processors.query.GridQueryProcessor._VAL;
+import static org.apache.ignite.internal.processors.query.GridQueryProcessor.isGeometryClass;
+import static org.apache.ignite.internal.processors.query.GridQueryProcessor.isSqlType;
 
 /**
  * This class defines grid cache configuration. This configuration is passed to
