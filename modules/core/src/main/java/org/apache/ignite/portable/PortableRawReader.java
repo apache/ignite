@@ -188,6 +188,12 @@ public interface PortableRawReader {
     @Nullable public Date[] readDateArray() throws PortableException;
 
     /**
+     * @return Timestamp array.
+     * @throws PortableException In case of error.
+     */
+    @Nullable public Timestamp[] readTimestampArray() throws PortableException;
+
+    /**
      * @return Object array.
      * @throws PortableException In case of error.
      */

@@ -96,16 +96,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             TypeIds[typeof(string[])] = PortableUtils.TypeArrayString;
 
             // 3. Guid.
-            TypeIds[typeof(Guid)] = PortableUtils.TypeGuid;
             TypeIds[typeof(Guid?)] = PortableUtils.TypeGuid;
-            TypeIds[typeof(Guid[])] = PortableUtils.TypeArrayGuid;
             TypeIds[typeof(Guid?[])] = PortableUtils.TypeArrayGuid;
 
             // 4. Date.
-            TypeIds[typeof(DateTime)] = PortableUtils.TypeDate;
-            TypeIds[typeof(DateTime?)] = PortableUtils.TypeDate;
-            TypeIds[typeof(DateTime[])] = PortableUtils.TypeArrayDate;
-            TypeIds[typeof(DateTime?[])] = PortableUtils.TypeArrayDate;
+            TypeIds[typeof(DateTime?)] = PortableUtils.TypeTimestamp;
+            TypeIds[typeof(DateTime?[])] = PortableUtils.TypeArrayTimestamp;
         }
 
         /// <summary>
@@ -632,7 +628,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     break;
 
-                case PortableUtils.TypeDate:
+                case PortableUtils.TypeTimestamp:
                     TransferBytes(inStream, outStream, 12);
 
                     break;
@@ -680,7 +676,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 case PortableUtils.TypeArrayDecimal:
                 case PortableUtils.TypeArrayString:
                 case PortableUtils.TypeArrayGuid:
-                case PortableUtils.TypeArrayDate:
+                case PortableUtils.TypeArrayTimestamp:
                 case PortableUtils.TypeArrayEnum:
                 case PortableUtils.TypeArray:
                     int arrLen = inStream.ReadInt();

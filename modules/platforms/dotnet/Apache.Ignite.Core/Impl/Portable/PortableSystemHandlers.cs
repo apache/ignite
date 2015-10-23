@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             ReadHandlers[PortableUtils.TypeDecimal] = new PortableSystemReader<decimal?>(PortableUtils.ReadDecimal);
 
             // 2. Date.
-            ReadHandlers[PortableUtils.TypeDate] = new PortableSystemReader<DateTime?>(s => PortableUtils.ReadDate(s, false));
+            ReadHandlers[PortableUtils.TypeTimestamp] = new PortableSystemReader<DateTime?>(PortableUtils.ReadTimestamp);
 
             // 3. String.
             ReadHandlers[PortableUtils.TypeString] = new PortableSystemReader<string>(PortableUtils.ReadString);
@@ -104,8 +104,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 new PortableSystemReader<decimal?[]>(PortableUtils.ReadDecimalArray);
 
             // 6. Date array.
-            ReadHandlers[PortableUtils.TypeArrayDate] =
-                new PortableSystemReader<DateTime?[]>(s => PortableUtils.ReadDateArray(s, false));
+            ReadHandlers[PortableUtils.TypeArrayTimestamp] =
+                new PortableSystemReader<DateTime?[]>(PortableUtils.ReadTimestampArray);
 
             // 7. String array.
             ReadHandlers[PortableUtils.TypeArrayString] = new PortableSystemTypedArrayReader<string>();
@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private static PortableSystemWriteDelegate FindWriteHandler(Type type)
         {
             // 1. Well-known types.
-            if (type == typeof (string))
+            if (type == typeof(string))
                 return WriteString;
             if (type == typeof(decimal))
                 return WriteDecimal;
@@ -210,18 +210,14 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (elemType == typeof(ulong))
                     return WriteUlongArray;
                 // Special types.
-                else if (elemType == typeof (decimal?))
+                if (elemType == typeof (decimal?))
                     return WriteDecimalArray;
                 if (elemType == typeof(string))
                     return WriteStringArray;
-//                else if (elemType == typeof(DateTime))
-//                    return WriteDateArray;
                 if (elemType == typeof(DateTime?))
-                    return WriteNullableDateArray;
-//                else if (elemType == typeof(Guid))
-//                    return WriteGuidArray;
+                    return WriteTimestampArray;
                 if (elemType == typeof(Guid?))
-                    return WriteNullableGuidArray;
+                    return WriteGuidArray;
                 // Enums.
                 if (elemType.IsEnum)
                     return WriteEnumArray;
@@ -299,9 +295,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="obj">Value.</param>
         private static void WriteDate(PortableWriterImpl ctx, object obj)
         {
-            ctx.Stream.WriteByte(PortableUtils.TypeDate);
+            ctx.Stream.WriteByte(PortableUtils.TypeTimestamp);
 
-            PortableUtils.WriteDate((DateTime)obj, ctx.Stream);
+            PortableUtils.WriteTimestamp((DateTime)obj, ctx.Stream);
         }
         
         /// <summary>
@@ -483,29 +479,17 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             PortableUtils.WriteDecimalArray((decimal?[])obj, ctx.Stream);
         }
-
-        /// <summary>
-        /// Write date array.
-        /// </summary>
-        /// <param name="ctx">Context.</param>
-        /// <param name="obj">Value.</param>
-        private static void WriteDateArray(PortableWriterImpl ctx, object obj)
-        {
-            ctx.Stream.WriteByte(PortableUtils.TypeArrayDate);
-
-            PortableUtils.WriteDateArray((DateTime[])obj, ctx.Stream);
-        }
-
+        
         /// <summary>
         /// Write nullable date array.
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteNullableDateArray(PortableWriterImpl ctx, object obj)
+        private static void WriteTimestampArray(PortableWriterImpl ctx, object obj)
         {
-            ctx.Stream.WriteByte(PortableUtils.TypeArrayDate);
+            ctx.Stream.WriteByte(PortableUtils.TypeArrayTimestamp);
 
-            PortableUtils.WriteDateArray((DateTime?[])obj, ctx.Stream);
+            PortableUtils.WriteTimestampArray((DateTime?[])obj, ctx.Stream);
         }
 
         /// <summary>
@@ -519,25 +503,13 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             PortableUtils.WriteStringArray((string[])obj, ctx.Stream);
         }
-
-        /// <summary>
-        /// Write GUID array.
-        /// </summary>
-        /// <param name="ctx">Context.</param>
-        /// <param name="obj">Value.</param>
-        private static void WriteGuidArray(PortableWriterImpl ctx, object obj)
-        {
-            ctx.Stream.WriteByte(PortableUtils.TypeArrayGuid);
-
-            PortableUtils.WriteGuidArray((Guid[])obj, ctx.Stream);
-        }
-
+        
         /// <summary>
         /// Write nullable GUID array.
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteNullableGuidArray(PortableWriterImpl ctx, object obj)
+        private static void WriteGuidArray(PortableWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayGuid);
 

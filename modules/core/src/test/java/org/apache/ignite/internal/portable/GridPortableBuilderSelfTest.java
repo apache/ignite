@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.portable;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -133,7 +135,7 @@ public class GridPortableBuilderSelfTest extends GridCommonAbstractTest {
         assertEquals("class".hashCode(), po.typeId());
         assertEquals(100, po.hashCode());
 
-        assertEquals((byte)1, po.<Byte>field("byteField").byteValue());
+        assertEquals((byte) 1, po.<Byte>field("byteField").byteValue());
     }
 
     /**
@@ -296,6 +298,25 @@ public class GridPortableBuilderSelfTest extends GridCommonAbstractTest {
         assertEquals(100, po.hashCode());
 
         assertEquals("str", po.<String>field("stringField"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDateField() throws Exception {
+        Date date = new Date();
+
+        assertEquals(date, builder("C").setField("d", date).build().<Date>field("d"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTimestampField() throws Exception {
+        Timestamp ts = new Timestamp(new Date().getTime());
+        ts.setNanos(1000);
+
+        assertEquals(ts, builder("C").setField("t", ts).build().<Timestamp>field("t"));
     }
 
     /**
@@ -501,6 +522,33 @@ public class GridPortableBuilderSelfTest extends GridCommonAbstractTest {
         assertEquals(100, po.hashCode());
 
         assertTrue(Arrays.equals(new String[] {"str1", "str2", "str3"}, po.<String[]>field("stringArrayField")));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDateArrayField() throws Exception {
+        Date date1 = new Date();
+        Date date2 = new Date(date1.getTime() + 1000);
+
+        Date[] dateArr = new Date[] { date1, date2 };
+
+        assertTrue(Arrays.equals(dateArr, builder("C").setField("da", dateArr).build().<Date[]>field("da")));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTimestampArrayField() throws Exception {
+        Timestamp ts1 = new Timestamp(new Date().getTime());
+        Timestamp ts2 = new Timestamp(new Date().getTime() + 1000);
+
+        ts1.setNanos(1000);
+        ts2.setNanos(2000);
+
+        Timestamp[] tsArr = new Timestamp[] { ts1, ts2 };
+
+        assertTrue(Arrays.equals(tsArr, builder("C").setField("ta", tsArr).build().<Timestamp[]>field("ta")));
     }
 
     /**

@@ -137,13 +137,13 @@ namespace Apache.Ignite.Core.Portable
         /// Write date value.
         /// </summary>
         /// <param name="val">Date value.</param>
-        void WriteDate(DateTime? val);
+        void WriteTimestamp(DateTime? val);
 
         /// <summary>
         /// Write date array.
         /// </summary>
         /// <param name="val">Date array.</param>
-        void WriteDateArray(DateTime?[] val);
+        void WriteTimestampArray(DateTime?[] val);
 
         /// <summary>
         /// Write string value.

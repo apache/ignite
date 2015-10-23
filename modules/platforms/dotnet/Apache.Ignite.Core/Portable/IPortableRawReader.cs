@@ -134,31 +134,17 @@ namespace Apache.Ignite.Core.Portable
         decimal?[] ReadDecimalArray();
 
         /// <summary>
-        /// Read date value in UTC form. Shortcut for <c>ReadDate(false)</c>.
+        /// Read date value in UTC form. Shortcut for <c>ReadTimestamp(false)</c>.
         /// </summary>
         /// <returns>Date value.</returns>
-        DateTime? ReadDate();
-
+        DateTime? ReadTimestamp();
+        
         /// <summary>
-        /// Read date value.
-        /// </summary>
-        /// <param name="local">Whether to read date in local (<c>true</c>) or UTC (<c>false</c>) form.</param>
-        /// <returns></returns>
-        DateTime? ReadDate(bool local);
-
-        /// <summary>
-        /// Read date array in UTC form. Shortcut for <c>ReadDateArray(false)</c>.
+        /// Read date array in UTC form. Shortcut for <c>ReadTimestampArray(false)</c>.
         /// </summary>
         /// <returns>Date array.</returns>
-        DateTime?[] ReadDateArray();
-
-        /// <summary>
-        /// Read date array.
-        /// </summary>
-        /// <param name="local">Whether to read date array in local (<c>true</c>) or UTC (<c>false</c>) form.</param>
-        /// <returns>Date array.</returns>
-        DateTime?[] ReadDateArray(bool local);
-
+        DateTime?[] ReadTimestampArray();
+        
         /// <summary>
         /// Read string value. 
         /// </summary>

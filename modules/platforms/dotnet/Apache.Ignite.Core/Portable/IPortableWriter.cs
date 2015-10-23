@@ -156,14 +156,14 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Date value.</param>
-        void WriteDate(string fieldName, DateTime? val);
+        void WriteTimestamp(string fieldName, DateTime? val);
 
         /// <summary>
         /// Write named date array.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Date array.</param>
-        void WriteDateArray(string fieldName, DateTime?[] val);
+        void WriteTimestampArray(string fieldName, DateTime?[] val);
 
         /// <summary>
         /// Write named string value.

@@ -256,8 +256,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             } 
             else if (elemType == typeof(DateTime?))
             {
-                writeAction = GetWriter<DateTime?[]>(field, (f, w, o) => w.WriteDateArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadDateArray(f));
+                writeAction = GetWriter<DateTime?[]>(field, (f, w, o) => w.WriteTimestampArray(f, o));
+                readAction = GetReader(field, (f, r) => r.ReadTimestampArray(f));
             }
             else if (elemType.IsEnum)
             {
@@ -310,13 +310,13 @@ namespace Apache.Ignite.Core.Impl.Portable
             } 
             else if (type == typeof(DateTime))
             {
-                writeAction = GetWriter<DateTime>(field, (f, w, o) => w.WriteDate(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadDate(f));
+                writeAction = GetWriter<DateTime>(field, (f, w, o) => w.WriteTimestamp(f, o));
+                readAction = GetReader(field, (f, r) => r.ReadTimestamp(f));
             }
             else if (nullable && nullableType == typeof(DateTime))
             {
-                writeAction = GetWriter<DateTime?>(field, (f, w, o) => w.WriteDate(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadDate(f));
+                writeAction = GetWriter<DateTime?>(field, (f, w, o) => w.WriteTimestamp(f, o));
+                readAction = GetReader(field, (f, r) => r.ReadTimestamp(f));
             }
             else if (type.IsEnum)
             {

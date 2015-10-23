@@ -55,8 +55,11 @@ namespace Apache.Ignite.Core.Portable
         /** Type name: UUID. */
         public const string TypeNameGuid = "UUID";
 
-        /** Type name: Date. */
+        /** Type name: date. */
         public const string TypeNameDate = "Date";
+
+        /** Type name: timestamp. */
+        public const string TypeNameTimestamp = "Timestamp";
 
         /** Type name: Enum. */
         public const string TypeNameEnum = "Enum";
@@ -97,8 +100,11 @@ namespace Apache.Ignite.Core.Portable
         /** Type name: UUID array. */
         public const string TypeNameArrayGuid = "UUID[]";
 
-        /** Type name: Date array. */
+        /** Type name: timestamp array. */
         public const string TypeNameArrayDate = "Date[]";
+
+        /** Type name: timestamp array. */
+        public const string TypeNameArrayTimestamp = "Timestamp[]";
 
         /** Type name: Enum array. */
         public const string TypeNameArrayEnum = "Enum[]";

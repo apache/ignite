@@ -33,11 +33,11 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <param name="reader">The reader.</param>
         public TransactionMetricsImpl(IPortableRawReader reader)
         {
-            var commitTime = reader.ReadDate();
+            var commitTime = reader.ReadTimestamp();
             Debug.Assert(commitTime.HasValue);
             CommitTime = commitTime.Value;
 
-            var rollbackTime = reader.ReadDate();
+            var rollbackTime = reader.ReadTimestamp();
             Debug.Assert(rollbackTime.HasValue);
             RollbackTime = rollbackTime.Value;
 

@@ -196,15 +196,6 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         Date val = marshalUnmarshal(date);
 
         assertEquals(date, val);
-        assertEquals(Timestamp.class, val.getClass()); // With default configuration should unmarshal as Timestamp.
-
-        PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setUseTimestamp(false);
-
-        val = marshalUnmarshal(date, marsh);
-
-        assertEquals(date, val);
         assertEquals(Date.class, val.getClass());
     }
 
@@ -443,16 +434,12 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testUseTimestampFlag() throws Exception {
+    public void testDateAndTimestampInSingleObject() throws Exception {
         PortableTypeConfiguration cfg1 = new PortableTypeConfiguration(DateClass1.class.getName());
-
-        PortableTypeConfiguration cfg2 = new PortableTypeConfiguration(DateClass2.class.getName());
-
-        cfg2.setUseTimestamp(false);
 
         PortableMarshaller marsh = new PortableMarshaller();
 
-        marsh.setTypeConfigurations(Arrays.asList(cfg1, cfg2));
+        marsh.setTypeConfigurations(Arrays.asList(cfg1));
 
         Date date = new Date();
         Timestamp ts = new Timestamp(System.currentTimeMillis());
@@ -461,32 +448,16 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         obj1.date = date;
         obj1.ts = ts;
 
-        DateClass2 obj2 = new DateClass2();
-        obj2.date = date;
-        obj2.ts = ts;
-
         PortableObject po1 = marshal(obj1, marsh);
 
         assertEquals(date, po1.field("date"));
-        assertEquals(Timestamp.class, po1.field("date").getClass());
+        assertEquals(Date.class, po1.field("date").getClass());
         assertEquals(ts, po1.field("ts"));
-
-        PortableObject po2 = marshal(obj2, marsh);
-
-        assertEquals(date, po2.field("date"));
-        assertEquals(Date.class, po2.field("date").getClass());
-        assertEquals(new Date(ts.getTime()), po2.field("ts"));
-        assertEquals(Date.class, po2.field("ts").getClass());
+        assertEquals(Timestamp.class, po1.field("ts").getClass());
 
         obj1 = po1.deserialize();
         assertEquals(date, obj1.date);
-        assertEquals(Date.class, obj1.date.getClass());
         assertEquals(ts, obj1.ts);
-
-        obj2 = po2.deserialize();
-        assertEquals(date, obj2.date);
-        assertEquals(Date.class, obj2.date.getClass());
-        assertEquals(ts, obj2.ts);
     }
 
     /**
@@ -3596,16 +3567,6 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      */
     private static class DateClass1 {
-        /** */
-        private Date date;
-
-        /** */
-        private Timestamp ts;
-    }
-
-    /**
-     */
-    private static class DateClass2 {
         /** */
         private Date date;
 

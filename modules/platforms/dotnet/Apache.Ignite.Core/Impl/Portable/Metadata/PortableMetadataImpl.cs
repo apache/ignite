@@ -71,8 +71,8 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
                     return PortableTypeNames.TypeNameString;
                 case PortableUtils.TypeGuid:
                     return PortableTypeNames.TypeNameGuid;
-                case PortableUtils.TypeDate:
-                    return PortableTypeNames.TypeNameDate;
+                case PortableUtils.TypeTimestamp:
+                    return PortableTypeNames.TypeNameTimestamp;
                 case PortableUtils.TypeEnum:
                     return PortableTypeNames.TypeNameEnum;
                 case PortableUtils.TypePortable:
@@ -100,8 +100,8 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
                     return PortableTypeNames.TypeNameArrayString;
                 case PortableUtils.TypeArrayGuid:
                     return PortableTypeNames.TypeNameArrayGuid;
-                case PortableUtils.TypeArrayDate:
-                    return PortableTypeNames.TypeNameArrayDate;
+                case PortableUtils.TypeArrayTimestamp:
+                    return PortableTypeNames.TypeNameArrayTimestamp;
                 case PortableUtils.TypeArrayEnum:
                     return PortableTypeNames.TypeNameArrayEnum;
                 case PortableUtils.TypeArray:

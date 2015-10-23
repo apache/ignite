@@ -498,17 +498,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(vals, newVals);
         }
-
-        /**
-         * <summary>Check write of date.</summary>
-         */
-        [Test]
-        public void TestWriteDate() {
-            DateTime time = DateTime.Now.ToUniversalTime();
-
-            Assert.AreEqual(_marsh.Unmarshal<DateTime>(_marsh.Marshal(time)), time);
-        }
-
+        
         /// <summary>
         /// Test object with dates.
         /// </summary>
@@ -530,18 +520,12 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             DateTimeType otherObj = marsh.Unmarshal<DateTimeType>(marsh.Marshal(obj));
 
-            Assert.AreEqual(obj.Loc, otherObj.Loc);
             Assert.AreEqual(obj.Utc, otherObj.Utc);
-            Assert.AreEqual(obj.LocNull, otherObj.LocNull);
             Assert.AreEqual(obj.UtcNull, otherObj.UtcNull);            
-            Assert.AreEqual(obj.LocArr, otherObj.LocArr);
             Assert.AreEqual(obj.UtcArr, otherObj.UtcArr);
 
-            Assert.AreEqual(obj.LocRaw, otherObj.LocRaw);
             Assert.AreEqual(obj.UtcRaw, otherObj.UtcRaw);
-            Assert.AreEqual(obj.LocNullRaw, otherObj.LocNullRaw);
             Assert.AreEqual(obj.UtcNullRaw, otherObj.UtcNullRaw);
-            Assert.AreEqual(obj.LocArrRaw, otherObj.LocArrRaw);
             Assert.AreEqual(obj.UtcArrRaw, otherObj.UtcArrRaw);
         }
 
@@ -2059,22 +2043,16 @@ namespace Apache.Ignite.Core.Tests.Portable
         /// </summary>
         public class DateTimeType : IPortableMarshalAware
         {
-            public DateTime Loc;
             public DateTime Utc;
 
-            public DateTime? LocNull;
             public DateTime? UtcNull;
 
-            public DateTime?[] LocArr;
             public DateTime?[] UtcArr;
 
-            public DateTime LocRaw;
             public DateTime UtcRaw;
 
-            public DateTime? LocNullRaw;
             public DateTime? UtcNullRaw;
 
-            public DateTime?[] LocArrRaw;
             public DateTime?[] UtcArrRaw;
 
             /// <summary>
@@ -2083,63 +2061,45 @@ namespace Apache.Ignite.Core.Tests.Portable
             /// <param name="now">Current local time.</param>
             public DateTimeType(DateTime now)
             {
-                Loc = now;
                 Utc = now.ToUniversalTime();
 
-                LocNull = Loc;
                 UtcNull = Utc;
 
-                LocArr = new DateTime?[] { Loc };
                 UtcArr = new DateTime?[] { Utc };
 
-                LocRaw = Loc;
                 UtcRaw = Utc;
 
-                LocNullRaw = LocNull;
                 UtcNullRaw = UtcNull;
 
-                LocArrRaw = new[] { LocArr[0] };
                 UtcArrRaw = new[] { UtcArr[0] };
             }
 
             /** <inheritDoc /> */
             public void WritePortable(IPortableWriter writer)
             {
-                writer.WriteDate("loc", Loc);
-                writer.WriteDate("utc", Utc);
-                writer.WriteDate("locNull", LocNull);
-                writer.WriteDate("utcNull", UtcNull);
-                writer.WriteDateArray("locArr", LocArr);
-                writer.WriteDateArray("utcArr", UtcArr);
+                writer.WriteTimestamp("utc", Utc);
+                writer.WriteTimestamp("utcNull", UtcNull);
+                writer.WriteTimestampArray("utcArr", UtcArr);
 
                 IPortableRawWriter rawWriter = writer.GetRawWriter();
 
-                rawWriter.WriteDate(LocRaw);
-                rawWriter.WriteDate(UtcRaw);
-                rawWriter.WriteDate(LocNullRaw);
-                rawWriter.WriteDate(UtcNullRaw);
-                rawWriter.WriteDateArray(LocArrRaw);
-                rawWriter.WriteDateArray(UtcArrRaw);
+                rawWriter.WriteTimestamp(UtcRaw);
+                rawWriter.WriteTimestamp(UtcNullRaw);
+                rawWriter.WriteTimestampArray(UtcArrRaw);
             }
 
             /** <inheritDoc /> */
             public void ReadPortable(IPortableReader reader)
             {
-                Loc = reader.ReadDate("loc", true).Value;
-                Utc = reader.ReadDate("utc", false).Value;
-                LocNull = reader.ReadDate("loc", true).Value;
-                UtcNull = reader.ReadDate("utc", false).Value;
-                LocArr = reader.ReadDateArray("locArr", true);
-                UtcArr = reader.ReadDateArray("utcArr", false);
+                Utc = reader.ReadTimestamp("utc").Value;
+                UtcNull = reader.ReadTimestamp("utc").Value;
+                UtcArr = reader.ReadTimestampArray("utcArr");
 
                 IPortableRawReader rawReader = reader.GetRawReader();
 
-                LocRaw = rawReader.ReadDate(true).Value;
-                UtcRaw = rawReader.ReadDate(false).Value;
-                LocNullRaw = rawReader.ReadDate(true).Value;
-                UtcNullRaw = rawReader.ReadDate(false).Value;
-                LocArrRaw = rawReader.ReadDateArray(true);
-                UtcArrRaw = rawReader.ReadDateArray(false);
+                UtcRaw = rawReader.ReadTimestamp().Value;
+                UtcNullRaw = rawReader.ReadTimestamp().Value;
+                UtcArrRaw = rawReader.ReadTimestampArray();
             }
         }
 

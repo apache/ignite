@@ -323,53 +323,29 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public DateTime? ReadDate(string fieldName)
+        public DateTime? ReadTimestamp(string fieldName)
         {
-            return ReadDate(fieldName, false);
+            return ReadField(fieldName, PortableUtils.ReadTimestamp);
         }
 
         /** <inheritdoc /> */
-        public DateTime? ReadDate(string fieldName, bool local)
+        public DateTime? ReadTimestamp()
         {
-            return ReadField(fieldName, r => PortableUtils.ReadDate(r, local));
+            return Read(PortableUtils.ReadTimestamp);
         }
-
+        
         /** <inheritdoc /> */
-        public DateTime? ReadDate()
+        public DateTime?[] ReadTimestampArray(string fieldName)
         {
-            return ReadDate(false);
+            return ReadField(fieldName, PortableUtils.ReadTimestampArray);
         }
-
+        
         /** <inheritdoc /> */
-        public DateTime? ReadDate(bool local)
+        public DateTime?[] ReadTimestampArray()
         {
-            return Read(r => PortableUtils.ReadDate(r, local));
+            return Read(PortableUtils.ReadTimestampArray);
         }
-
-        /** <inheritdoc /> */
-        public DateTime?[] ReadDateArray(string fieldName)
-        {
-            return ReadDateArray(fieldName, false);
-        }
-
-        /** <inheritdoc /> */
-        public DateTime?[] ReadDateArray(string fieldName, bool local)
-        {
-            return ReadField(fieldName, r => PortableUtils.ReadDateArray(r, local));
-        }
-
-        /** <inheritdoc /> */
-        public DateTime?[] ReadDateArray()
-        {
-            return ReadDateArray(false);
-        }
-
-        /** <inheritdoc /> */
-        public DateTime?[] ReadDateArray(bool local)
-        {
-            return Read(r => PortableUtils.ReadDateArray(r, local));
-        }
-
+        
         /** <inheritdoc /> */
         public string ReadString(string fieldName)
         {

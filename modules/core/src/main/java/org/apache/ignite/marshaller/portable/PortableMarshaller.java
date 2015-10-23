@@ -21,7 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
@@ -87,9 +86,6 @@ public class PortableMarshaller extends AbstractMarshaller {
 
     /** Types. */
     private Collection<PortableTypeConfiguration> typeCfgs;
-
-    /** Use timestamp flag. */
-    private boolean useTs = true;
 
     /** Whether to convert string to bytes using UTF-8 encoding. */
     private boolean convertString = true;
@@ -176,24 +172,6 @@ public class PortableMarshaller extends AbstractMarshaller {
      */
     public void setTypeConfigurations(Collection<PortableTypeConfiguration> typeCfgs) {
         this.typeCfgs = typeCfgs;
-    }
-
-    /**
-     * If {@code true} then date values converted to {@link Timestamp} on deserialization.
-     * <p>
-     * Default value is {@code true}.
-     *
-     * @return Flag indicating whether date values converted to {@link Timestamp} during unmarshalling.
-     */
-    public boolean isUseTimestamp() {
-        return useTs;
-    }
-
-    /**
-     * @param useTs Flag indicating whether date values converted to {@link Timestamp} during unmarshalling.
-     */
-    public void setUseTimestamp(boolean useTs) {
-        this.useTs = useTs;
     }
 
     /**

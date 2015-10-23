@@ -17,22 +17,6 @@
 
 package org.apache.ignite.internal.portable;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.sql.Timestamp;
-import java.util.Collection;
-import java.util.Date;
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.portable.streams.PortableHeapOutputStream;
 import org.apache.ignite.internal.portable.streams.PortableOutputStream;
@@ -41,6 +25,18 @@ import org.apache.ignite.portable.PortableException;
 import org.apache.ignite.portable.PortableRawWriter;
 import org.apache.ignite.portable.PortableWriter;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.IOException;
+import java.io.ObjectOutput;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.sql.Timestamp;
+import java.util.Collection;
+import java.util.Date;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN;
@@ -77,6 +73,8 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TOTAL_LEN_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID;
@@ -506,22 +504,21 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         else {
             doWriteByte(DATE);
             doWriteLong(date.getTime());
-            doWriteInt(0);
         }
     }
 
-    /**
-     * @param ts Timestamp.
-     */
-    public void doWriteTimestamp(@Nullable Timestamp ts) {
-        if (ts == null)
-            doWriteByte(NULL);
-        else {
-            doWriteByte(DATE);
-            doWriteLong(ts.getTime());
-            doWriteInt(ts.getNanos() % 1000000);
-        }
-    }
+     /**
+      * @param ts Timestamp.
+      */
+     public void doWriteTimestamp(@Nullable Timestamp ts) {
+         if (ts== null)
+             doWriteByte(NULL);
+         else {
+             doWriteByte(TIMESTAMP);
+             doWriteLong(ts.getTime());
+             doWriteInt(ts.getNanos() % 1000000);
+         }
+     }
 
     /**
      * @param obj Object.
@@ -750,6 +747,24 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
                 doWriteDate(date);
         }
     }
+
+     /**
+      * @param val Array of timestamps.
+      */
+     void doWriteTimestampArray(@Nullable Timestamp[] val) {
+         if (val == null)
+             doWriteByte(NULL);
+         else {
+             if (tryWriteAsHandle(val))
+                 return;
+
+             doWriteByte(TIMESTAMP_ARR);
+             doWriteInt(val.length);
+
+             for (Timestamp ts : val)
+                 doWriteTimestamp(ts);
+         }
+     }
 
     /**
      * @param val Array of objects.
@@ -1084,7 +1099,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param val Value.
      */
     void writeDateField(@Nullable Date val) {
-        doWriteInt(val != null ? 13 : 1);
+        doWriteInt(val != null ? 9 : 1);
         doWriteDate(val);
     }
 
@@ -1236,6 +1251,17 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         int lenPos = reserveAndMark(4);
 
         doWriteDateArray(val);
+
+        writeDelta(lenPos);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void writeTimestampArrayField(@Nullable Timestamp[] val) {
+        int lenPos = reserveAndMark(4);
+
+        doWriteTimestampArray(val);
 
         writeDelta(lenPos);
     }
@@ -1456,7 +1482,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
     /** {@inheritDoc} */
     @Override public void writeTimestamp(String fieldName, @Nullable Timestamp val) throws PortableException {
-        writeFieldId(fieldName, DATE);
+        writeFieldId(fieldName, TIMESTAMP);
         writeTimestampField(val);
     }
 
@@ -1618,6 +1644,17 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     }
 
     /** {@inheritDoc} */
+    @Override public void writeTimestampArray(String fieldName, @Nullable Timestamp[] val) throws PortableException {
+        writeFieldId(fieldName, TIMESTAMP_ARR);
+        writeTimestampArrayField(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTimestampArray(@Nullable Timestamp[] val) throws PortableException {
+        doWriteTimestampArray(val);
+    }
+
+     /** {@inheritDoc} */
     @Override public void writeObjectArray(String fieldName, @Nullable Object[] val) throws PortableException {
         writeFieldId(fieldName, OBJ_ARR);
         writeObjectArrayField(val);

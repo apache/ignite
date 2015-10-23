@@ -801,17 +801,13 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestStringDateGuidEnum()
         {
-            DateTime date = DateTime.Now.ToUniversalTime();
             DateTime? nDate = DateTime.Now.ToUniversalTime();
 
-            Guid guid = Guid.NewGuid();
             Guid? nGuid = Guid.NewGuid();
 
             IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(StringDateGuidEnum))
                 .SetField("fStr", "str")
-                .SetField("fDate", date)
                 .SetField("fNDate", nDate)
-                .SetField("fGuid", guid)
                 .SetField("fNGuid", nGuid)
                 .SetField("fEnum", TestEnum.One)
                 .SetField("fStrArr", new[] { "str" })
@@ -827,23 +823,19 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(typeof(StringDateGuidEnum).Name, meta.TypeName);
 
-            Assert.AreEqual(10, meta.Fields.Count);
+            Assert.AreEqual(8, meta.Fields.Count);
 
             Assert.AreEqual(PortableTypeNames.TypeNameString, meta.GetFieldTypeName("fStr"));
-            Assert.AreEqual(PortableTypeNames.TypeNameDate, meta.GetFieldTypeName("fDate"));
-            Assert.AreEqual(PortableTypeNames.TypeNameDate, meta.GetFieldTypeName("fNDate"));
-            Assert.AreEqual(PortableTypeNames.TypeNameGuid, meta.GetFieldTypeName("fGuid"));
+            Assert.AreEqual(PortableTypeNames.TypeNameTimestamp, meta.GetFieldTypeName("fNDate"));
             Assert.AreEqual(PortableTypeNames.TypeNameGuid, meta.GetFieldTypeName("fNGuid"));
             Assert.AreEqual(PortableTypeNames.TypeNameEnum, meta.GetFieldTypeName("fEnum"));
             Assert.AreEqual(PortableTypeNames.TypeNameArrayString, meta.GetFieldTypeName("fStrArr"));
-            Assert.AreEqual(PortableTypeNames.TypeNameArrayDate, meta.GetFieldTypeName("fDateArr"));
+            Assert.AreEqual(PortableTypeNames.TypeNameArrayTimestamp, meta.GetFieldTypeName("fDateArr"));
             Assert.AreEqual(PortableTypeNames.TypeNameArrayGuid, meta.GetFieldTypeName("fGuidArr"));
             Assert.AreEqual(PortableTypeNames.TypeNameArrayEnum, meta.GetFieldTypeName("fEnumArr"));
 
             Assert.AreEqual("str", portObj.GetField<string>("fStr"));
-            Assert.AreEqual(date, portObj.GetField<DateTime>("fDate"));
             Assert.AreEqual(nDate, portObj.GetField<DateTime?>("fNDate"));
-            Assert.AreEqual(guid, portObj.GetField<Guid>("fGuid"));
             Assert.AreEqual(nGuid, portObj.GetField<Guid?>("fNGuid"));
             Assert.AreEqual(TestEnum.One, portObj.GetField<TestEnum>("fEnum"));
             Assert.AreEqual(new[] { "str" }, portObj.GetField<string[]>("fStrArr"));
@@ -854,9 +846,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             StringDateGuidEnum obj = portObj.Deserialize<StringDateGuidEnum>();
 
             Assert.AreEqual("str", obj.FStr);
-            Assert.AreEqual(date, obj.FDate);
             Assert.AreEqual(nDate, obj.FnDate);
-            Assert.AreEqual(guid, obj.FGuid);
             Assert.AreEqual(nGuid, obj.FnGuid);
             Assert.AreEqual(TestEnum.One, obj.FEnum);
             Assert.AreEqual(new[] { "str" }, obj.FStrArr);
@@ -865,17 +855,13 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(new[] { TestEnum.One }, obj.FEnumArr);
 
             // Overwrite.
-            date = DateTime.Now.ToUniversalTime();
             nDate = DateTime.Now.ToUniversalTime();
 
-            guid = Guid.NewGuid();
             nGuid = Guid.NewGuid();
 
             portObj = _grid.GetPortables().GetBuilder(typeof(StringDateGuidEnum))
                 .SetField("fStr", "str2")
-                .SetField("fDate", date)
                 .SetField("fNDate", nDate)
-                .SetField("fGuid", guid)
                 .SetField("fNGuid", nGuid)
                 .SetField("fEnum", TestEnum.Two)
                 .SetField("fStrArr", new[] { "str2" })
@@ -888,9 +874,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(200, portObj.GetHashCode());
 
             Assert.AreEqual("str2", portObj.GetField<string>("fStr"));
-            Assert.AreEqual(date, portObj.GetField<DateTime>("fDate"));
             Assert.AreEqual(nDate, portObj.GetField<DateTime?>("fNDate"));
-            Assert.AreEqual(guid, portObj.GetField<Guid>("fGuid"));
             Assert.AreEqual(nGuid, portObj.GetField<Guid?>("fNGuid"));
             Assert.AreEqual(TestEnum.Two, portObj.GetField<TestEnum>("fEnum"));
             Assert.AreEqual(new[] { "str2" }, portObj.GetField<string[]>("fStrArr"));
@@ -901,9 +885,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             obj = portObj.Deserialize<StringDateGuidEnum>();
 
             Assert.AreEqual("str2", obj.FStr);
-            Assert.AreEqual(date, obj.FDate);
             Assert.AreEqual(nDate, obj.FnDate);
-            Assert.AreEqual(guid, obj.FGuid);
             Assert.AreEqual(nGuid, obj.FnGuid);
             Assert.AreEqual(TestEnum.Two, obj.FEnum);
             Assert.AreEqual(new[] { "str2" }, obj.FStrArr);
@@ -1460,9 +1442,7 @@ namespace Apache.Ignite.Core.Tests.Portable
     public class StringDateGuidEnum
     {
         public string FStr;
-        public DateTime FDate;
         public DateTime? FnDate;
-        public Guid FGuid;
         public Guid? FnGuid;
         public TestEnum FEnum;
 

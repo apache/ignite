@@ -197,6 +197,11 @@ class PortableMetaDataCollector implements PortableWriter {
     }
 
     /** {@inheritDoc} */
+    @Override public void writeTimestampArray(String fieldName, @Nullable Timestamp[] val) throws PortableException {
+        add(fieldName, Timestamp[].class);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeObjectArray(String fieldName, @Nullable Object[] val) throws PortableException {
         add(fieldName, Object[].class);
     }

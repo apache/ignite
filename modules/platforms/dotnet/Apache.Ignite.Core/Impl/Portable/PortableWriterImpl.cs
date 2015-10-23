@@ -610,9 +610,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Date value.</param>
-        public void WriteDate(string fieldName, DateTime? val)
+        public void WriteTimestamp(string fieldName, DateTime? val)
         {
-            WriteFieldId(fieldName, PU.TypeDate);
+            WriteFieldId(fieldName, PU.TypeTimestamp);
 
             if (val == null)
                 WriteNullField();
@@ -620,8 +620,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 _stream.WriteInt(PU.LengthTypeId + 12);
 
-                _stream.WriteByte(PortableUtils.TypeDate);
-                PortableUtils.WriteDate(val.Value, _stream);
+                _stream.WriteByte(PortableUtils.TypeTimestamp);
+                PortableUtils.WriteTimestamp(val.Value, _stream);
             }
         }
         
@@ -629,14 +629,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write date value.
         /// </summary>
         /// <param name="val">Date value.</param>
-        public void WriteDate(DateTime? val)
+        public void WriteTimestamp(DateTime? val)
         {
             if (val == null)
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PortableUtils.TypeDate);
-                PortableUtils.WriteDate(val.Value, _stream);
+                _stream.WriteByte(PortableUtils.TypeTimestamp);
+                PortableUtils.WriteTimestamp(val.Value, _stream);
             }
         }
 
@@ -645,9 +645,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Date array.</param>
-        public void WriteDateArray(string fieldName, DateTime?[] val)
+        public void WriteTimestampArray(string fieldName, DateTime?[] val)
         {
-            WriteFieldId(fieldName, PU.TypeDate);
+            WriteFieldId(fieldName, PU.TypeTimestamp);
 
             if (val == null)
                 WriteNullField();
@@ -655,8 +655,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 int pos = SkipFieldLength();
 
-                _stream.WriteByte(PortableUtils.TypeArrayDate);
-                PortableUtils.WriteDateArray(val, _stream);
+                _stream.WriteByte(PortableUtils.TypeArrayTimestamp);
+                PortableUtils.WriteTimestampArray(val, _stream);
 
                 WriteFieldLength(_stream, pos);
             }
@@ -666,14 +666,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write date array.
         /// </summary>
         /// <param name="val">Date array.</param>
-        public void WriteDateArray(DateTime?[] val)
+        public void WriteTimestampArray(DateTime?[] val)
         {
             if (val == null)
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PortableUtils.TypeArrayDate);
-                PortableUtils.WriteDateArray(val, _stream);
+                _stream.WriteByte(PortableUtils.TypeArrayTimestamp);
+                PortableUtils.WriteTimestampArray(val, _stream);
             }
         }
 

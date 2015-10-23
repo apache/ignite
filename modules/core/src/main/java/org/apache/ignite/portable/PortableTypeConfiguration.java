@@ -41,9 +41,6 @@ public class PortableTypeConfiguration {
     /** Serializer. */
     private PortableSerializer serializer;
 
-    /** Use timestamp flag. */
-    private Boolean useTs;
-
     /** Meta data enabled flag. */
     private Boolean metaDataEnabled;
 
@@ -118,22 +115,6 @@ public class PortableTypeConfiguration {
      */
     public void setSerializer(PortableSerializer serializer) {
         this.serializer = serializer;
-    }
-
-    /**
-     * If {@code true} then date values converted to {@link Timestamp} during unmarshalling.
-     *
-     * @return Flag indicating whether date values converted to {@link Timestamp} during unmarshalling.
-     */
-    public Boolean isUseTimestamp() {
-        return useTs;
-    }
-
-    /**
-     * @param useTs Flag indicating whether date values converted to {@link Timestamp} during unmarshalling.
-     */
-    public void setUseTimestamp(Boolean useTs) {
-        this.useTs = useTs;
     }
 
     /**

@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         public const byte TypeGuid = 10;
 
         /** Type: date. */
-        public const byte TypeDate = 11;
+        public const byte TypeTimestamp = 33;
 
         /** Type: unsigned byte array. */
         public const byte TypeArrayByte = 12;
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         public const byte TypeArrayGuid = 21;
 
         /** Type: date array. */
-        public const byte TypeArrayDate = 22;
+        public const byte TypeArrayTimestamp = 34;
 
         /** Type: object array. */
         public const byte TypeArray = 23;
@@ -211,6 +211,9 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Type: stream receiver holder. */
         public const byte TypeStreamReceiverHolder = 94;
+
+        /** Type: DateTime. */
+        public const byte TypeDateTime = 95;
 
         /** Collection: custom. */
         public const byte CollectionCustom = 0;
@@ -621,7 +624,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="val">Date.</param>
          * <param name="stream">Stream.</param>
          */
-        public static void WriteDate(DateTime val, IPortableStream stream)
+        public static void WriteTimestamp(DateTime val, IPortableStream stream)
         {
             long high;
             int low;
@@ -638,37 +641,20 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="local">Local flag.</param>
          * <returns>Date</returns>
          */
-        public static DateTime? ReadDate(IPortableStream stream, bool local)
+        public static DateTime? ReadTimestamp(IPortableStream stream)
         {
             long high = stream.ReadLong();
             int low = stream.ReadInt();
 
-            return ToDotNetDate(high, low, local);
+            return new DateTime(JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
         }
-
-        /// <summary>
-        /// Write date array.
-        /// </summary>
-        /// <param name="vals">Values.</param>
-        /// <param name="stream">Stream.</param>
-        public static void WriteDateArray(DateTime[] vals, IPortableStream stream)
-        {
-            stream.WriteInt(vals.Length);
-
-            foreach (DateTime val in vals)
-            {
-                stream.WriteByte(TypeDate);
-
-                WriteDate(val, stream);
-            }
-        }
-
+        
         /// <summary>
         /// Write nullable date array.
         /// </summary>
         /// <param name="vals">Values.</param>
         /// <param name="stream">Stream.</param>
-        public static void WriteDateArray(DateTime?[] vals, IPortableStream stream)
+        public static void WriteTimestampArray(DateTime?[] vals, IPortableStream stream)
         {
             stream.WriteInt(vals.Length);
 
@@ -676,9 +662,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 if (val.HasValue)
                 {
-                    stream.WriteByte(TypeDate);
+                    stream.WriteByte(TypeTimestamp);
 
-                    WriteDate(val.Value, stream);
+                    WriteTimestamp(val.Value, stream);
                 }
                 else
                     stream.WriteByte(HdrNull);
@@ -1008,24 +994,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             return *(Guid*) (&dotnetGuid);
         }
-
-        /// <summary>
-        /// Write GUID array.
-        /// </summary>
-        /// <param name="vals">Values.</param>
-        /// <param name="stream">Stream.</param>
-        public static void WriteGuidArray(Guid[] vals, IPortableStream stream)
-        {
-            stream.WriteInt(vals.Length);
-
-            foreach (Guid val in vals)
-            {
-                stream.WriteByte(TypeGuid);
-
-                WriteGuid(val, stream);
-            }
-        }
-
+        
         /// <summary>
         /// Write GUID array.
         /// </summary>
@@ -1125,20 +1094,19 @@ namespace Apache.Ignite.Core.Impl.Portable
             return vals;
         }
 
-        /**
-         * <summary>Read DateTime array.</summary>
-         * <param name="stream">Stream.</param>
-         * <param name="local">Local flag.</param>
-         * <returns>Array.</returns>
-         */
-        public static DateTime?[] ReadDateArray(IPortableStream stream, bool local)
+        /// <summary>
+        /// Read timestamp array.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <returns>Timestamp array.</returns>
+        public static DateTime?[] ReadTimestampArray(IPortableStream stream)
         {
             int len = stream.ReadInt();
 
             DateTime?[] vals = new DateTime?[len];
 
             for (int i = 0; i < len; i++)
-                vals[i] = stream.ReadByte() == HdrNull ? null : ReadDate(stream, local);
+                vals[i] = stream.ReadByte() == HdrNull ? null : ReadTimestamp(stream);
 
             return vals;
         }
@@ -1460,7 +1428,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 case TypeDecimal:
                 case TypeString:
                 case TypeGuid:
-                case TypeDate:
+                case TypeTimestamp:
                 case TypeEnum:
                 case TypeArrayByte:
                 case TypeArrayShort:
@@ -1473,7 +1441,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 case TypeArrayDecimal:
                 case TypeArrayString:
                 case TypeArrayGuid:
-                case TypeArrayDate:
+                case TypeArrayTimestamp:
                 case TypeArrayEnum:
                 case TypeArray:
                 case TypeCollection:
@@ -1910,21 +1878,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             high = diff / TimeSpan.TicksPerMillisecond;
 
             low = (int)(diff % TimeSpan.TicksPerMillisecond) * 100; 
-        }
-
-        /**
-         * <summary>Convert Java ticks to date.</summary>
-         * <param name="high">High part (milliseconds).</param>
-         * <param name="low">Low part (nanoseconds).</param>
-         * <param name="local">Whether the time should be treaten as local.</param>
-         * <returns>Date.</returns>
-         */
-        private static DateTime ToDotNetDate(long high, int low, bool local)
-        {
-            DateTime res = 
-                new DateTime(JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
-
-            return local ? res.ToLocalTime() : res;
         }
 
         /// <summary>

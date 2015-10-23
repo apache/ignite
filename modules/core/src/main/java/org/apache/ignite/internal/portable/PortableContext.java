@@ -130,9 +130,6 @@ public class PortableContext implements Externalizable {
     private Map<Integer, Boolean> metaEnabled = new HashMap<>(0);
 
     /** */
-    private Set<Integer> usingTs = new HashSet<>();
-
-    /** */
     private PortableMetaDataHandler metaHnd;
 
     /** */
@@ -146,9 +143,6 @@ public class PortableContext implements Externalizable {
 
     /** */
     private boolean convertStrings;
-
-    /** */
-    private boolean useTs;
 
     /** */
     private boolean metaDataEnabled;
@@ -200,9 +194,9 @@ public class PortableContext implements Externalizable {
         registerPredefinedType(String.class, GridPortableMarshaller.STRING);
         registerPredefinedType(BigDecimal.class, GridPortableMarshaller.DECIMAL);
         registerPredefinedType(Date.class, GridPortableMarshaller.DATE);
+        registerPredefinedType(Timestamp.class, GridPortableMarshaller.TIMESTAMP);
         registerPredefinedType(UUID.class, GridPortableMarshaller.UUID);
         // TODO: How to handle timestamp? It has the same ID in .Net.
-        registerPredefinedType(Timestamp.class, GridPortableMarshaller.DATE);
 
         registerPredefinedType(byte[].class, GridPortableMarshaller.BYTE_ARR);
         registerPredefinedType(short[].class, GridPortableMarshaller.SHORT_ARR);
@@ -216,6 +210,7 @@ public class PortableContext implements Externalizable {
         registerPredefinedType(String[].class, GridPortableMarshaller.STRING_ARR);
         registerPredefinedType(UUID[].class, GridPortableMarshaller.UUID_ARR);
         registerPredefinedType(Date[].class, GridPortableMarshaller.DATE_ARR);
+        registerPredefinedType(Timestamp[].class, GridPortableMarshaller.TIMESTAMP_ARR);
         registerPredefinedType(Object[].class, GridPortableMarshaller.OBJ_ARR);
 
         registerPredefinedType(ArrayList.class, 0);
@@ -250,7 +245,6 @@ public class PortableContext implements Externalizable {
             return;
 
         convertStrings = marsh.isConvertStringToBytes();
-        useTs = marsh.isUseTimestamp();
         metaDataEnabled = marsh.isMetaDataEnabled();
         keepDeserialized = marsh.isKeepDeserialized();
 
@@ -263,7 +257,6 @@ public class PortableContext implements Externalizable {
         configure(
             marsh.getIdMapper(),
             marsh.getSerializer(),
-            marsh.isUseTimestamp(),
             marsh.isMetaDataEnabled(),
             marsh.isKeepDeserialized(),
             marsh.getClassNames(),
@@ -274,7 +267,6 @@ public class PortableContext implements Externalizable {
     /**
      * @param globalIdMapper ID mapper.
      * @param globalSerializer Serializer.
-     * @param globalUseTs Use timestamp flag.
      * @param globalMetaDataEnabled Metadata enabled flag.
      * @param globalKeepDeserialized Keep deserialized flag.
      * @param clsNames Class names.
@@ -284,7 +276,6 @@ public class PortableContext implements Externalizable {
     private void configure(
         PortableIdMapper globalIdMapper,
         PortableSerializer globalSerializer,
-        boolean globalUseTs,
         boolean globalMetaDataEnabled,
         boolean globalKeepDeserialized,
         Collection<String> clsNames,
@@ -300,11 +291,11 @@ public class PortableContext implements Externalizable {
                     String pkgName = clsName.substring(0, clsName.length() - 2);
 
                     for (String clsName0 : classesInPackage(pkgName))
-                        descs.add(clsName0, idMapper, null, null, globalUseTs, globalMetaDataEnabled,
+                        descs.add(clsName0, idMapper, null, null, globalMetaDataEnabled,
                             globalKeepDeserialized, true);
                 }
                 else // Regular single class
-                    descs.add(clsName, idMapper, null, null, globalUseTs, globalMetaDataEnabled,
+                    descs.add(clsName, idMapper, null, null, globalMetaDataEnabled,
                         globalKeepDeserialized, true);
             }
         }
@@ -328,7 +319,6 @@ public class PortableContext implements Externalizable {
                 if (typeCfg.getSerializer() != null)
                     serializer = typeCfg.getSerializer();
 
-                boolean useTs = typeCfg.isUseTimestamp() != null ? typeCfg.isUseTimestamp() : globalUseTs;
                 boolean metaDataEnabled = typeCfg.isMetaDataEnabled() != null ? typeCfg.isMetaDataEnabled() :
                     globalMetaDataEnabled;
                 boolean keepDeserialized = typeCfg.isKeepDeserialized() != null ? typeCfg.isKeepDeserialized() :
@@ -338,17 +328,17 @@ public class PortableContext implements Externalizable {
                     String pkgName = clsName.substring(0, clsName.length() - 2);
 
                     for (String clsName0 : classesInPackage(pkgName))
-                        descs.add(clsName0, idMapper, serializer, typeCfg.getAffinityKeyFieldName(), useTs,
+                        descs.add(clsName0, idMapper, serializer, typeCfg.getAffinityKeyFieldName(),
                             metaDataEnabled, keepDeserialized, true);
                 }
                 else
-                    descs.add(clsName, idMapper, serializer, typeCfg.getAffinityKeyFieldName(), useTs,
+                    descs.add(clsName, idMapper, serializer, typeCfg.getAffinityKeyFieldName(),
                         metaDataEnabled, keepDeserialized, false);
             }
         }
 
         for (TypeDescriptor desc : descs.descriptors()) {
-            registerUserType(desc.clsName, desc.idMapper, desc.serializer, desc.affKeyFieldName, desc.useTs,
+            registerUserType(desc.clsName, desc.idMapper, desc.serializer, desc.affKeyFieldName,
                 desc.metadataEnabled, desc.keepDeserialized);
         }
     }
@@ -505,7 +495,6 @@ public class PortableContext implements Externalizable {
                 clsName,
                 BASIC_CLS_ID_MAPPER,
                 null,
-                useTs,
                 metaDataEnabled,
                 keepDeserialized,
                 true, /* registered */
@@ -552,7 +541,6 @@ public class PortableContext implements Externalizable {
             typeName,
             idMapper,
             null,
-            useTs,
             metaDataEnabled,
             keepDeserialized,
             registered,
@@ -696,7 +684,6 @@ public class PortableContext implements Externalizable {
             null,
             false,
             false,
-            false,
             true, /* registered */
             true /* predefined */
         );
@@ -714,7 +701,6 @@ public class PortableContext implements Externalizable {
      * @param idMapper ID mapper.
      * @param serializer Serializer.
      * @param affKeyFieldName Affinity key field name.
-     * @param useTs Use timestamp flag.
      * @param metaDataEnabled Metadata enabled flag.
      * @param keepDeserialized Keep deserialized flag.
      * @throws PortableException In case of error.
@@ -724,7 +710,6 @@ public class PortableContext implements Externalizable {
         PortableIdMapper idMapper,
         @Nullable PortableSerializer serializer,
         @Nullable String affKeyFieldName,
-        boolean useTs,
         boolean metaDataEnabled,
         boolean keepDeserialized)
         throws PortableException {
@@ -748,9 +733,6 @@ public class PortableContext implements Externalizable {
         if (mappers.put(id, idMapper) != null)
             throw new PortableException("Duplicate type ID [clsName=" + clsName + ", id=" + id + ']');
 
-        if (useTs)
-            usingTs.add(id);
-
         String typeName = typeName(clsName);
 
         typeMappers.put(typeName, idMapper);
@@ -768,7 +750,6 @@ public class PortableContext implements Externalizable {
                 typeName,
                 idMapper,
                 serializer,
-                useTs,
                 metaDataEnabled,
                 keepDeserialized,
                 true, /* registered */
@@ -841,21 +822,6 @@ public class PortableContext implements Externalizable {
      */
     public void updateMetaData(int typeId, PortableMetaDataImpl meta) throws PortableException {
         metaHnd.addMeta(typeId, meta);
-    }
-
-    /**
-     * @return Use timestamp flag.
-     */
-    public boolean isUseTimestamp() {
-        return useTs;
-    }
-
-    /**
-     * @param typeId Type ID.
-     * @return If timestamp used.
-     */
-    public boolean isUseTimestamp(int typeId) {
-        return usingTs.contains(typeId);
     }
 
     /**
@@ -989,7 +955,6 @@ public class PortableContext implements Externalizable {
          * @param idMapper ID mapper.
          * @param serializer Serializer.
          * @param affKeyFieldName Affinity key field name.
-         * @param useTs Use timestamp flag.
          * @param metadataEnabled Metadata enabled flag.
          * @param keepDeserialized Keep deserialized flag.
          * @param canOverride Whether this descriptor can be override.
@@ -999,7 +964,6 @@ public class PortableContext implements Externalizable {
             PortableIdMapper idMapper,
             PortableSerializer serializer,
             String affKeyFieldName,
-            boolean useTs,
             boolean metadataEnabled,
             boolean keepDeserialized,
             boolean canOverride)
@@ -1008,7 +972,6 @@ public class PortableContext implements Externalizable {
                 idMapper,
                 serializer,
                 affKeyFieldName,
-                useTs,
                 metadataEnabled,
                 keepDeserialized,
                 canOverride);
@@ -1047,9 +1010,6 @@ public class PortableContext implements Externalizable {
         /** Affinity key field name. */
         private String affKeyFieldName;
 
-        /** Use timestamp flag. */
-        private boolean useTs;
-
         /** Metadata enabled flag. */
         private boolean metadataEnabled;
 
@@ -1066,19 +1026,17 @@ public class PortableContext implements Externalizable {
          * @param idMapper ID mapper.
          * @param serializer Serializer.
          * @param affKeyFieldName Affinity key field name.
-         * @param useTs Use timestamp flag.
          * @param metadataEnabled Metadata enabled flag.
          * @param keepDeserialized Keep deserialized flag.
          * @param canOverride Whether this descriptor can be override.
          */
         private TypeDescriptor(String clsName, PortableIdMapper idMapper, PortableSerializer serializer,
-            String affKeyFieldName, boolean useTs, boolean metadataEnabled, boolean keepDeserialized,
+            String affKeyFieldName, boolean metadataEnabled, boolean keepDeserialized,
             boolean canOverride) {
             this.clsName = clsName;
             this.idMapper = idMapper;
             this.serializer = serializer;
             this.affKeyFieldName = affKeyFieldName;
-            this.useTs = useTs;
             this.metadataEnabled = metadataEnabled;
             this.keepDeserialized = keepDeserialized;
             this.canOverride = canOverride;
@@ -1097,7 +1055,6 @@ public class PortableContext implements Externalizable {
                 idMapper = other.idMapper;
                 serializer = other.serializer;
                 affKeyFieldName = other.affKeyFieldName;
-                useTs = other.useTs;
                 metadataEnabled = other.metadataEnabled;
                 keepDeserialized = other.keepDeserialized;
                 canOverride = other.canOverride;
