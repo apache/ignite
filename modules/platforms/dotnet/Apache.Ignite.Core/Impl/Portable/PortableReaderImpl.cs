@@ -751,7 +751,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 object hndObj;
 
-                if (_builder == null || !_builder.CachedField(hndPos, out hndObj))
+                if (_builder == null || !_builder.TryGetCachedField(hndPos, out hndObj))
                 {
                     if (_hnds == null || !_hnds.TryGetValue(hndPos, out hndObj))
                     {

@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public T GetField<T>(string fieldName)
         {
-            return Field<T>(fieldName, null);
+            return GetField<T>(fieldName, null);
         }
 
         /** <inheritdoc /> */
@@ -146,7 +146,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="fieldName"></param>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public T Field<T>(string fieldName, PortableBuilderImpl builder)
+        public T GetField<T>(string fieldName, PortableBuilderImpl builder)
         {
             IPortableTypeDescriptor desc = _marsh.GetDescriptor(true, _typeId);
 
@@ -163,16 +163,16 @@ namespace Apache.Ignite.Core.Impl.Portable
                     // Read in scope of build process.
                     T res;
 
-                    if (!builder.CachedField(pos, out res))
+                    if (!builder.TryGetCachedField(pos, out res))
                     {
-                        res = Field0<T>(pos, builder);
+                        res = GetField0<T>(pos, builder);
 
                         builder.CacheField(pos, res);
                     }
 
                     return res;
                 }
-                return Field0<T>(pos, null);
+                return GetField0<T>(pos, null);
             }
             return default(T);
         }
@@ -200,7 +200,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="pos">Position.</param>
         /// <param name="builder">Builder.</param>
         /// <returns>Field value.</returns>
-        private T Field0<T>(int pos, PortableBuilderImpl builder)
+        private T GetField0<T>(int pos, PortableBuilderImpl builder)
         {
             IPortableStream stream = new PortableHeapStream(_data);
 
@@ -247,8 +247,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     // 3. Check if objects have the same field values.
                     foreach (KeyValuePair<int, int> field in _fields)
                     {
-                        object fieldVal = Field0<object>(field.Value, null);
-                        object thatFieldVal = that.Field0<object>(that._fields[field.Key], null);
+                        object fieldVal = GetField0<object>(field.Value, null);
+                        object thatFieldVal = that.GetField0<object>(that._fields[field.Key], null);
 
                         if (!Equals(fieldVal, thatFieldVal))
                             return false;
@@ -332,7 +332,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         {
                             sb.Append(fieldName).Append('=');
 
-                            ToString0(sb, Field0<object>(fieldPos, null), handled);
+                            ToString0(sb, GetField0<object>(fieldPos, null), handled);
                         }
                     }
                 }

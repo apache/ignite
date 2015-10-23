@@ -36,7 +36,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         private static readonly IDictionary<Type, int> TypeIds;
 
         /** Cached dictionary with no values. */
-        private static readonly IDictionary<int, object> EmptyVals = new Dictionary<int, object>();
+        private static readonly IDictionary<int, PortableBuilderField> EmptyVals =
+            new Dictionary<int, PortableBuilderField>();
         
         /** Portables. */
         private readonly PortablesImpl _portables;
@@ -54,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private IDictionary<string, PortableBuilderField> _vals;
 
         /** Contextual fields. */
-        private IDictionary<int, object> _cache;
+        private IDictionary<int, PortableBuilderField> _cache;
 
         /** Hash code. */
         private int _hashCode;
@@ -137,7 +138,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (_vals != null && _vals.TryGetValue(name, out field))
                 return field != PortableBuilderField.RmvMarker ? (T)field.Value : default(T);
-            T val = _obj.Field<T>(name, this);
+            T val = _obj.GetField<T>(name, this);
 
             if (_vals == null)
                 _vals = new Dictionary<string, PortableBuilderField>(2);
@@ -215,15 +216,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="pos">Position.</param>
         /// <param name="val">Value.</param>
         /// <returns><c>true</c> if value is found in cache.</returns>
-        public bool CachedField<T>(int pos, out T val)
+        internal bool TryGetCachedField<T>(int pos, out T val)
         {
             if (_parent._cache != null)
             {
-                object res;
+                PortableBuilderField res;
 
                 if (_parent._cache.TryGetValue(pos, out res))
                 {
-                    val = res != null ? (T)res : default(T);
+                    val = res != null ? (T) res.Value : default(T);
 
                     return true;
                 }
@@ -239,12 +240,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="pos">Position.</param>
         /// <param name="val">Value.</param>
-        public void CacheField(int pos, object val)
+        internal void CacheField<T>(int pos, T val)
         {
             if (_parent._cache == null)
-                _parent._cache = new Dictionary<int, object>(2);
+                _parent._cache = new Dictionary<int, PortableBuilderField>(2);
 
-            _parent._cache[pos] = val;
+            // TODO: Need to detect a delegate by header
+            _parent._cache[pos] = new PortableBuilderField(typeof(T), val);
         }
 
         /// <summary>
@@ -288,13 +290,13 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Prepare fields.
                 IPortableMetadataHandler metaHnd = _portables.Marshaller.GetMetadataHandler(desc);
 
-                IDictionary<int, object> vals0;
+                IDictionary<int, PortableBuilderField> vals0;
 
                 if (vals == null || vals.Count == 0)
                     vals0 = EmptyVals;
                 else
                 {
-                    vals0 = new Dictionary<int, object>(vals.Count);
+                    vals0 = new Dictionary<int, PortableBuilderField>(vals.Count);
 
                     foreach (KeyValuePair<string, PortableBuilderField> valEntry in vals)
                     {
@@ -304,7 +306,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                             throw new IgniteException("Collision in field ID detected (change field name or " +
                                 "define custom ID mapper) [fieldName=" + valEntry.Key + ", fieldId=" + fieldId + ']');
 
-                        vals0[fieldId] = valEntry.Value.Value;
+                        vals0[fieldId] = valEntry.Value;
 
                         // Write metadata if: 1) it is enabled for type; 2) type is not null (i.e. it is neither 
                         // remove marker, nor a field read through "GetField" method.
@@ -345,7 +347,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="vals">Values to be replaced.</param>
         /// <returns>Mutated object.</returns>
         private void Mutate0(Context ctx, PortableHeapStream inStream, IPortableStream outStream,
-            bool changeHash, int hash, IDictionary<int, object> vals)
+            bool changeHash, int hash, IDictionary<int, PortableBuilderField> vals)
         {
             int inStartPos = inStream.Position;
             int outStartPos = outStream.Position;
@@ -394,10 +396,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (ctx.AddOldToNew(inStartPos, outStartPos, out hndPos))
                 {
                     // Object could be cached in parent builder.
-                    object cachedVal;
+                    PortableBuilderField cachedVal;
 
                     if (_parent._cache != null && _parent._cache.TryGetValue(inStartPos, out cachedVal)) {
-                        ctx.Writer.Write(cachedVal);
+                        WriteField(ctx, cachedVal);
                     }
                     else
                     {
@@ -418,11 +420,11 @@ namespace Apache.Ignite.Core.Impl.Portable
                             int inFieldLen = inStream.ReadInt();
                             int inFieldDataPos = inStream.Position;
 
-                            object fieldVal;
+                            PortableBuilderField fieldVal;
 
                             bool fieldFound = vals.TryGetValue(inFieldId, out fieldVal);
 
-                            if (!fieldFound || fieldVal != PortableBuilderField.RmvMarkerObj)
+                            if (!fieldFound || fieldVal != PortableBuilderField.RmvMarker)
                             {
                                 outStream.WriteInt(inFieldId);
 
@@ -433,8 +435,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                                 if (fieldFound)
                                 {
                                     // Replace field with new value.
-                                    if (fieldVal != PortableBuilderField.RmvMarkerObj)
-                                        ctx.Writer.Write(fieldVal);
+                                    if (fieldVal != PortableBuilderField.RmvMarker)
+                                        WriteField(ctx, fieldVal);
 
                                     vals.Remove(inFieldId);
                                 }
@@ -442,9 +444,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                                 {
                                     // If field was requested earlier, then we must write tracked value
                                     if (_parent._cache != null && _parent._cache.TryGetValue(inFieldDataPos, out fieldVal))
-                                        ctx.Writer.Write(fieldVal);
+                                        WriteField(ctx, fieldVal);
                                     else
-                                        // Filed is not tracked, re-write as is.
+                                        // Field is not tracked, re-write as is.
                                         Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);                                    
                                 }
 
@@ -460,9 +462,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                         }
 
                         // Write remaining new fields.
-                        foreach (KeyValuePair<int, object> valEntry in vals)
+                        foreach (var valEntry in vals)
                         {
-                            if (valEntry.Value != PortableBuilderField.RmvMarkerObj)
+                            if (valEntry.Value != PortableBuilderField.RmvMarker)
                             {
                                 outStream.WriteInt(valEntry.Key);
 
@@ -470,7 +472,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                                 outStream.Seek(4, SeekOrigin.Current);
 
-                                ctx.Writer.Write(valEntry.Value);
+                                WriteField(ctx, valEntry.Value);
 
                                 int fieldEndPos = outStream.Position;
 
@@ -515,6 +517,12 @@ namespace Apache.Ignite.Core.Impl.Portable
                     throw new IgniteException("Unexpected header [position=" + (inStream.Position - 1) +
                         ", header=" + inHdr + ']');
             }
+        }
+
+        private static void WriteField(Context ctx, PortableBuilderField field)
+        {
+            // TODO: Properly write depending on method in PortableBuilderField
+            ctx.Writer.Write(field.Value);
         }
 
         /// <summary>

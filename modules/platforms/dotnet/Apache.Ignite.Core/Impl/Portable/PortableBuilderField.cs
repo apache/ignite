@@ -24,12 +24,9 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// </summary>
     internal class PortableBuilderField
     {
-        /** Remove marker object. */
-        public static readonly object RmvMarkerObj = new object();
-
         /** Remove marker. */
-        public static readonly PortableBuilderField RmvMarker = 
-            new PortableBuilderField(null, RmvMarkerObj);
+        public static readonly PortableBuilderField RmvMarker =
+            new PortableBuilderField(null, null);
 
         /** Type. */
         private readonly Type _typ;
@@ -53,10 +50,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public Type Type
         {
-            get
-            {
-                return _typ;
-            }
+            get { return _typ; }
         }
 
         /// <summary>
@@ -64,10 +58,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public object Value
         {
-            get
-            {
-                return _val;
-            }
+            get { return _val; }
         }
     }
 }
