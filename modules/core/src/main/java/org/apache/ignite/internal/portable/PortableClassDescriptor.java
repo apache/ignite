@@ -535,6 +535,8 @@ public class PortableClassDescriptor {
 
             case EXTERNALIZABLE:
                 if (writeHeader(obj, writer)) {
+                    writer.rawWriter();
+
                     try {
                         ((Externalizable)obj).writeExternal(writer);
                     }
@@ -542,6 +544,7 @@ public class PortableClassDescriptor {
                         throw new PortableException("Failed to write Externalizable object: " + obj, e);
                     }
 
+                    writer.writeRawOffsetIfNeeded();
                     writer.writeLength();
                 }
 
