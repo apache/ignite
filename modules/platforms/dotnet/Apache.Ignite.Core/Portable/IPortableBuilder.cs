@@ -76,6 +76,30 @@ namespace Apache.Ignite.Core.Portable
         IPortableObject Build();
 
         /// <summary>
+        /// Sets the array field.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="val">The value.</param>
+        /// <returns>Current builder instance.</returns>
+        IPortableBuilder SetArrayField<T>(string fieldName, T[] val);
+
+        /// <summary>
+        /// Sets the boolean field.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="val">The value.</param>
+        /// <returns>Current builder instance.</returns>
+        IPortableBuilder SetBooleanField<T>(string fieldName, bool val);
+
+        /// <summary>
+        /// Sets the boolean array field.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="val">The value.</param>
+        /// <returns>Current builder instance.</returns>
+        IPortableBuilder SetBooleanArrayField<T>(string fieldName, bool[] val);
+
+        /// <summary>
         /// Sets the byte field.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
@@ -108,20 +132,100 @@ namespace Apache.Ignite.Core.Portable
         IPortableBuilder SetCharArrayField<T>(string fieldName, char[] val);
 
         /// <summary>
-        /// Sets the short field.
+        /// Sets the collection field.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetShortField<T>(string fieldName, short val);
+        IPortableBuilder SetCollectionField<T>(string fieldName, ICollection val);
 
         /// <summary>
-        /// Sets the short array field.
+        /// Sets the decimal field.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetShortArrayField<T>(string fieldName, short[] val);
+        IPortableBuilder SetDecimalField<T>(string fieldName, decimal? val);
+
+        /// <summary>
+        /// Sets the decimal array field.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="val">The value.</param>
+        /// <returns>Current builder instance.</returns>
+        IPortableBuilder SetDecimalArrayField<T>(string fieldName, decimal?[] val);
+
+        /// <summary>
+        /// Sets the dictionary field.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="val">The value.</param>
+        /// <returns>Current builder instance.</returns>
+        IPortableBuilder SetDictionaryField<T>(string fieldName, IDictionary val);
+
+        /// <summary>
+        /// Sets the double field.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="val">The value.</param>
+        /// <returns>Current builder instance.</returns>
+        IPortableBuilder SetDoubleField<T>(string fieldName, double val);
+
+        /// <summary>
+        /// Sets the double array field.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="val">The value.</param>
+        /// <returns>Current builder instance.</returns>
+        IPortableBuilder SetDoubleArrayField<T>(string fieldName, double[] val);
+
+        /// <summary>
+        /// Sets the enum field.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="val">The value.</param>
+        /// <returns>Current builder instance.</returns>
+        IPortableBuilder SetEnumField<T>(string fieldName, T val);
+
+        /// <summary>
+        /// Sets the enum array field.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="val">The value.</param>
+        /// <returns>Current builder instance.</returns>
+        IPortableBuilder SetEnumArrayField<T>(string fieldName, T[] val);
+
+        /// <summary>
+        /// Sets the float field.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="val">The value.</param>
+        /// <returns>Current builder instance.</returns>
+        IPortableBuilder SetFloatField<T>(string fieldName, float val);
+
+        /// <summary>
+        /// Sets the float array field.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="val">The value.</param>
+        /// <returns>Current builder instance.</returns>
+        IPortableBuilder SetFloatArrayField<T>(string fieldName, float[] val);
+
+        /// <summary>
+        /// Sets the guid field.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="val">The value.</param>
+        /// <returns>Current builder instance.</returns>
+        IPortableBuilder SetGuidField<T>(string fieldName, Guid? val);
+
+        /// <summary>
+        /// Sets the guid array field.
+        /// </summary>
+        /// <param name="fieldName">Name of the field.</param>
+        /// <param name="val">The value.</param>
+        /// <returns>Current builder instance.</returns>
+        IPortableBuilder SetGuidArrayField<T>(string fieldName, Guid?[] val);
 
         /// <summary>
         /// Sets the int field.
@@ -156,84 +260,28 @@ namespace Apache.Ignite.Core.Portable
         IPortableBuilder SetLongArrayField<T>(string fieldName, long[] val);
 
         /// <summary>
-        /// Sets the boolean field.
+        /// Sets the object field.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetBooleanField<T>(string fieldName, bool val);
+        IPortableBuilder SetObjectField<T>(string fieldName, T val);
 
         /// <summary>
-        /// Sets the boolean array field.
+        /// Sets the short field.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetBooleanArrayField<T>(string fieldName, bool[] val);
+        IPortableBuilder SetShortField<T>(string fieldName, short val);
 
         /// <summary>
-        /// Sets the float field.
+        /// Sets the short array field.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetFloatField<T>(string fieldName, float val);
-
-        /// <summary>
-        /// Sets the float array field.
-        /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <param name="val">The value.</param>
-        /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetFloatArrayField<T>(string fieldName, float[] val);
-
-        /// <summary>
-        /// Sets the double field.
-        /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <param name="val">The value.</param>
-        /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetDoubleField<T>(string fieldName, double val);
-
-        /// <summary>
-        /// Sets the double array field.
-        /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <param name="val">The value.</param>
-        /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetDoubleArrayField<T>(string fieldName, double[] val);
-
-        /// <summary>
-        /// Sets the decimal field.
-        /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <param name="val">The value.</param>
-        /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetDecimalField<T>(string fieldName, decimal? val);
-
-        /// <summary>
-        /// Sets the decimal array field.
-        /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <param name="val">The value.</param>
-        /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetDecimalArrayField<T>(string fieldName, decimal?[] val);
-
-        /// <summary>
-        /// Sets the timestamp field.
-        /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <param name="val">The value.</param>
-        /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetTimestampField<T>(string fieldName, DateTime? val);
-
-        /// <summary>
-        /// Sets the timestamp array field.
-        /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <param name="val">The value.</param>
-        /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetTimestampArrayField<T>(string fieldName, DateTime?[] val);
+        IPortableBuilder SetShortArrayField<T>(string fieldName, short[] val);
 
         /// <summary>
         /// Sets the string field.
@@ -252,67 +300,19 @@ namespace Apache.Ignite.Core.Portable
         IPortableBuilder SetStringArrayField<T>(string fieldName, string[] val);
 
         /// <summary>
-        /// Sets the guid field.
+        /// Sets the timestamp field.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetGuidField<T>(string fieldName, Guid? val);
+        IPortableBuilder SetTimestampField<T>(string fieldName, DateTime? val);
 
         /// <summary>
-        /// Sets the guid array field.
+        /// Sets the timestamp array field.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetGuidArrayField<T>(string fieldName, Guid?[] val);
-
-        /// <summary>
-        /// Sets the enum field.
-        /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <param name="val">The value.</param>
-        /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetEnumField<T>(string fieldName, T val);
-
-        /// <summary>
-        /// Sets the enum array field.
-        /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <param name="val">The value.</param>
-        /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetEnumArrayField<T>(string fieldName, T[] val);
-
-        /// <summary>
-        /// Sets the object field.
-        /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <param name="val">The value.</param>
-        /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetObjectField<T>(string fieldName, T val);
-
-        /// <summary>
-        /// Sets the array field.
-        /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <param name="val">The value.</param>
-        /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetArrayField<T>(string fieldName, T[] val);
-
-        /// <summary>
-        /// Sets the collection field.
-        /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <param name="val">The value.</param>
-        /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetCollectionField<T>(string fieldName, ICollection val);
-
-        /// <summary>
-        /// Sets the dictionary field.
-        /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <param name="val">The value.</param>
-        /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetDictionaryField<T>(string fieldName, IDictionary val);
+        IPortableBuilder SetTimestampArrayField<T>(string fieldName, DateTime?[] val);
     }
 }
