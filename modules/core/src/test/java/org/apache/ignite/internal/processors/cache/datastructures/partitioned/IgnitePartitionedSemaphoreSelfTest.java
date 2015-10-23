@@ -30,5 +30,4 @@ public class IgnitePartitionedSemaphoreSelfTest extends IgniteSemaphoreAbstractS
     @Override protected CacheMode atomicsCacheMode() {
         return PARTITIONED;
     }
-
 }

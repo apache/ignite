@@ -60,6 +60,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     /** */
     private static final Random RND = new Random();
 
+    /** */
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 

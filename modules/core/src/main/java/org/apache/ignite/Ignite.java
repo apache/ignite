@@ -431,7 +431,7 @@ public interface Ignite extends AutoCloseable {
      * @throws IgniteException If semaphore could not be fetched or created.
      */
     public IgniteSemaphore semaphore(String name, int cnt, boolean fair, boolean create)
-            throws IgniteException;
+        throws IgniteException;
 
     /**
      * Will get a named queue from cache and create one if it has not been created yet and {@code cfg} is not

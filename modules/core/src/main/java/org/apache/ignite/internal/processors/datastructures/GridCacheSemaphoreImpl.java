@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.datastructures;
 
 import java.io.Externalizable;
@@ -90,8 +107,8 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
     }
 
     /**
-     * Synchronization implementation for semaphore.  Uses AQS state to represent permits. Subclassed into fair and
-     * nonfair versions.
+     * Synchronization implementation for semaphore.
+     * Uses AQS state to represent permits. Subclassed into fair and nonfair versions.
      */
     abstract class Sync extends AbstractQueuedSynchronizer {
         private static final long serialVersionUID = 1192457210091910933L;
@@ -195,7 +212,6 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
          */
         final int drainPermits() {
             for (; ; ) {
-
                 int current = getState();
 
                 if (current == 0 || compareAndSetGlobalState(current, 0))
@@ -212,7 +228,9 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                 CU.outTx(
                     retryTopologySafe(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
-                            try (IgniteInternalTx tx = CU.txStartInternal(ctx, semaphoreView, PESSIMISTIC, REPEATABLE_READ)) {
+                            try (
+                                IgniteInternalTx tx = CU.txStartInternal(ctx, semaphoreView, PESSIMISTIC, REPEATABLE_READ)
+                            ) {
                                 GridCacheSemaphoreState val = semaphoreView.get(key);
 
                                 if (val == null)
@@ -255,18 +273,22 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                 return CU.outTx(
                     retryTopologySafe(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
-                            try (IgniteInternalTx tx = CU.txStartInternal(ctx, semaphoreView, PESSIMISTIC, REPEATABLE_READ)) {
+                            try (
+                                IgniteInternalTx tx = CU.txStartInternal(ctx, semaphoreView,
+                                    PESSIMISTIC, REPEATABLE_READ)
+                            ) {
                                 GridCacheSemaphoreState val = semaphoreView.get(key);
 
                                 if (val == null)
-                                    throw new IgniteCheckedException("Failed to find semaphore with given name: " + name);
+                                    throw new IgniteCheckedException("Failed to find semaphore with given name: " +
+                                        name);
 
                                 boolean retVal = val.getCount() == expVal;
 
                                 if (retVal) {
-                                        /* If current thread is queued, than this call is the call that is going to be unblocked. */
+                                    // If current thread is queued, than this call is
+                                    // the call that is going to be unblocked.
                                     if (sync.isQueued(Thread.currentThread())) {
-
                                         int waiting = val.getWaiters() - 1;
 
                                         val.setWaiters(waiting);
@@ -300,7 +322,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
     }
 
     /**
-     * NonFair version
+     * NonFair version.
      */
     final class NonfairSync extends Sync {
         private static final long serialVersionUID = 7983135489326435495L;
@@ -356,12 +378,14 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
      * @param semaphoreView Semaphore projection.
      * @param ctx Cache context.
      */
-    public GridCacheSemaphoreImpl(String name,
+    public GridCacheSemaphoreImpl(
+        String name,
         int initCnt,
         boolean fair,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheSemaphoreState> semaphoreView,
-        GridCacheContext ctx) {
+        GridCacheContext ctx
+    ) {
         assert name != null;
         assert key != null;
         assert semaphoreView != null;
@@ -381,7 +405,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
      * @throws IgniteCheckedException If operation failed.
      */
     private void initializeSemaphore() throws IgniteCheckedException {
-        if (initGuard.compareAndSet(false, true)) {
+        if (!initGuard.get() && initGuard.compareAndSet(false, true)) {
             try {
                 sync = CU.outTx(
                     retryTopologySafe(new Callable<Sync>() {
@@ -499,6 +523,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
     /** {@inheritDoc} */
     @Override public void acquireUninterruptibly(int permits) {
         A.ensure(permits >= 0, "Number of permits must be non-negative.");
+
         try {
             initializeSemaphore();
 
@@ -514,10 +539,13 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         int ret;
         try {
             initializeSemaphore();
+
             ret = CU.outTx(
                 retryTopologySafe(new Callable<Integer>() {
                     @Override public Integer call() throws Exception {
-                        try (IgniteInternalTx tx = CU.txStartInternal(ctx, semaphoreView, PESSIMISTIC, REPEATABLE_READ)) {
+                        try (
+                            IgniteInternalTx tx = CU.txStartInternal(ctx, semaphoreView, PESSIMISTIC, REPEATABLE_READ)
+                        ) {
                             GridCacheSemaphoreState val = semaphoreView.get(key);
 
                             if (val == null)
@@ -537,6 +565,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+
         return ret;
     }
 
@@ -688,6 +717,4 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
     @Override public String toString() {
         return S.toString(GridCacheSemaphoreImpl.class, this);
     }
-
 }
-

@@ -1250,11 +1250,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                         dsView.put(key, val);
                     }
 
-                    semaphore = new GridCacheSemaphoreImpl(name, val.getCount(),
-                            fair,
-                            key,
-                            semaphoreView,
-                            dsCacheCtx);
+                    semaphore = new GridCacheSemaphoreImpl(
+                        name, val.getCount(),
+                        fair,
+                        key,
+                        semaphoreView,
+                        dsCacheCtx);
 
                     dsMap.put(key, semaphore);
 
@@ -1299,19 +1300,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     GridCacheSemaphoreState val = cast(dsView.get(key), GridCacheSemaphoreState.class);
 
                     if (val != null) {
-                        if (val.getCount() < 0) {
-                            throw new IgniteCheckedException("Failed to remove semaphore " +
-                                    "with blocked threads. ");
-                        }
+                        if (val.getCount() < 0)
+                            throw new IgniteCheckedException("Failed to remove semaphore with blocked threads. ");
 
                         dsView.remove(key);
 
                         tx.commit();
-                    } else
+                    }
+                    else
                         tx.setRollbackOnly();
 
                     return null;
-                } finally {
+                }
+                finally {
                     dsCacheCtx.gate().leave();
                 }
             }
@@ -1327,7 +1328,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If removing failed or class of object is different to expected class.
      */
     private <R> boolean removeInternal(final GridCacheInternal key, final Class<R> cls) throws IgniteCheckedException {
-        return CU.outTx(new Callable<Boolean>() {
+        return CU.outTx(
+            new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     try (IgniteInternalTx tx = CU.txStartInternal(dsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         // Check correctness type of removable object.
@@ -1365,7 +1367,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         @Override public boolean evaluate(CacheEntryEvent<?, ?> evt) throws CacheEntryListenerException {
             if (evt.getEventType() == EventType.CREATED || evt.getEventType() == EventType.UPDATED)
                 return evt.getValue() instanceof GridCacheCountDownLatchValue ||
-                        evt.getValue() instanceof GridCacheSemaphoreState;
+                    evt.getValue() instanceof GridCacheSemaphoreState;
             else {
                 assert evt.getEventType() == EventType.REMOVED : evt;
 
@@ -1573,7 +1575,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                 catch (ClusterGroupEmptyCheckedException e) {
                     throw new IgniteCheckedException(e);
                 }
-                catch (IgniteTxRollbackCheckedException | CachePartialUpdateCheckedException | ClusterTopologyCheckedException e) {
+                catch (IgniteTxRollbackCheckedException |
+                    CachePartialUpdateCheckedException |
+                    ClusterTopologyCheckedException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {
