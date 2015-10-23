@@ -257,7 +257,6 @@
     <Compile Include="Impl\Portable\Metadata\PortableMetadataImpl.cs" />
     <Compile Include="Impl\Portable\PortableBuilderField.cs" />
     <Compile Include="Impl\Portable\PortableBuilderImpl.cs" />
-    <Compile Include="Impl\Portable\PortableCollectionInfo.cs" />
     <Compile Include="Impl\Portable\PortableFullTypeDescriptor.cs" />
     <Compile Include="Impl\Portable\PortableHandleDictionary.cs" />
     <Compile Include="Impl\Portable\PortableMarshalAwareSerializer.cs" />
@@ -265,6 +264,7 @@
     <Compile Include="Impl\Portable\PortableMode.cs" />
     <Compile Include="Impl\Portable\PortableObjectHandle.cs" />
     <Compile Include="Impl\Portable\PortableOrSerializableObjectHolder.cs" />
+    <Compile Include="Impl\Portable\PortableReaderExtensions.cs" />
     <Compile Include="Impl\Portable\PortableReaderHandleDictionary.cs" />
     <Compile Include="Impl\Portable\PortableReaderImpl.cs" />
     <Compile Include="Impl\Portable\PortableReflectiveRoutines.cs" />

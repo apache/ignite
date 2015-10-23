@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Cache.Store
 {
-    using System;
     using System.Collections;
     using System.Diagnostics;
     using Apache.Ignite.Core.Cache.Store;
@@ -107,7 +106,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                 var assemblyName = reader.ReadString();
                 var className = reader.ReadString();
                 var convertPortable = reader.ReadBoolean();
-                var propertyMap = reader.ReadGenericDictionary<string, object>();
+                var propertyMap = reader.ReadDictionaryAsGeneric<string, object>();
 
                 var store = (ICacheStore) IgniteUtils.CreateInstance(assemblyName, className);
 
@@ -166,7 +165,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                 switch (opType)
                 {
                     case OpLoadCache:
-                        _store.LoadCache((k, v) => WriteObjects(cb, grid, k, v), rawReader.ReadObjectArray<object>());
+                        _store.LoadCache((k, v) => WriteObjects(cb, grid, k, v), rawReader.ReadArray<object>());
 
                         break;
 

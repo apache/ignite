@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Collections;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -32,15 +31,6 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <param name="writer">Write context.</param>
     /// <param name="obj">Object to write.</param>
     internal delegate void PortableSystemWriteDelegate(PortableWriterImpl writer, object obj);
-
-    /// <summary>
-    /// Typed write delegate.
-    /// </summary>
-    /// <param name="stream">Stream.</param>
-    /// <param name="obj">Object to write.</param>
-    // ReSharper disable once TypeParameterCanBeVariant
-    // Generic variance in a delegate causes performance hit
-    internal delegate void PortableSystemTypedWriteDelegate<T>(IPortableStream stream, T obj);
 
     /**
      * <summary>Collection of predefined handlers for various system types.</summary>
@@ -57,20 +47,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Read handlers. */
         private static readonly IPortableSystemReader[] ReadHandlers = new IPortableSystemReader[255];
         
-        /** Write handler: collection. */
-        public static readonly PortableSystemWriteDelegate WriteHndCollection = WriteCollection;
-
-        /** Write handler: dictionary. */
-        public static readonly PortableSystemWriteDelegate WriteHndDictionary = WriteDictionary;
-
-        /** Write handler: generic collection. */
-        public static readonly PortableSystemWriteDelegate WriteHndGenericCollection =
-            WriteGenericCollection;
-
-        /** Write handler: generic dictionary. */
-        public static readonly PortableSystemWriteDelegate WriteHndGenericDictionary =
-            WriteGenericDictionary;
-
         /// <summary>
         /// Initializes the <see cref="PortableSystemHandlers"/> class.
         /// </summary>
@@ -132,21 +108,21 @@ namespace Apache.Ignite.Core.Impl.Portable
                 new PortableSystemReader<DateTime?[]>(s => PortableUtils.ReadDateArray(s, false));
 
             // 7. String array.
-            ReadHandlers[PortableUtils.TypeArrayString] = new PortableSystemGenericArrayReader<string>();
+            ReadHandlers[PortableUtils.TypeArrayString] = new PortableSystemTypedArrayReader<string>();
 
             // 8. Guid array.
-            ReadHandlers[PortableUtils.TypeArrayGuid] = new PortableSystemGenericArrayReader<Guid?>();
+            ReadHandlers[PortableUtils.TypeArrayGuid] = new PortableSystemTypedArrayReader<Guid?>();
 
             // 9. Array.
             ReadHandlers[PortableUtils.TypeArray] = new PortableSystemReader(ReadArray);
 
-            // 12. Arbitrary collection.
+            // 11. Arbitrary collection.
             ReadHandlers[PortableUtils.TypeCollection] = new PortableSystemReader(ReadCollection);
 
             // 13. Arbitrary dictionary.
             ReadHandlers[PortableUtils.TypeDictionary] = new PortableSystemReader(ReadDictionary);
 
-            // 14. Map entry.
+            // 15. Map entry.
             ReadHandlers[PortableUtils.TypeMapEntry] = new PortableSystemReader(ReadMapEntry);
             
             // 16. Enum.
@@ -168,17 +144,14 @@ namespace Apache.Ignite.Core.Impl.Portable
             // Have we ever met this type?
             if (writeHandlers0 != null && writeHandlers0.TryGetValue(type, out res))
                 return res;
-            else
-            {
-                // Determine write handler for type and add it.
-                res = FindWriteHandler(type);
 
-                if (res != null)
-                    AddWriteHandler(type, res);
+            // Determine write handler for type and add it.
+            res = FindWriteHandler(type);
 
-                return res;
-            }
+            if (res != null)
+                AddWriteHandler(type, res);
 
+            return res;
         }
 
         /// <summary>
@@ -191,21 +164,21 @@ namespace Apache.Ignite.Core.Impl.Portable
             // 1. Well-known types.
             if (type == typeof (string))
                 return WriteString;
-            else if (type == typeof(decimal))
+            if (type == typeof(decimal))
                 return WriteDecimal;
-            else if (type == typeof(DateTime))
+            if (type == typeof(DateTime))
                 return WriteDate;
-            else if (type == typeof(Guid))
+            if (type == typeof(Guid))
                 return WriteGuid;
-            else if (type == typeof (PortableUserObject))
+            if (type == typeof (PortableUserObject))
                 return WritePortable;
-            else if (type == typeof (ArrayList))
+            if (type == typeof (ArrayList))
                 return WriteArrayList;
-            else if (type == typeof(Hashtable))
+            if (type == typeof(Hashtable))
                 return WriteHashtable;
-            else if (type == typeof(DictionaryEntry))
+            if (type == typeof(DictionaryEntry))
                 return WriteMapEntry;
-            else if (type.IsArray)
+            if (type.IsArray)
             {
                 // We know how to write any array type.
                 Type elemType = type.GetElementType();
@@ -213,62 +186,56 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Primitives.
                 if (elemType == typeof (bool))
                     return WriteBoolArray;
-                else if (elemType == typeof(byte))
+                if (elemType == typeof(byte))
                     return WriteByteArray;
-                else if (elemType == typeof(short))
+                if (elemType == typeof(short))
                     return WriteShortArray;
-                else if (elemType == typeof(char))
+                if (elemType == typeof(char))
                     return WriteCharArray;
-                else if (elemType == typeof(int))
+                if (elemType == typeof(int))
                     return WriteIntArray;
-                else if (elemType == typeof(long))
+                if (elemType == typeof(long))
                     return WriteLongArray;
-                else if (elemType == typeof(float))
+                if (elemType == typeof(float))
                     return WriteFloatArray;
-                else if (elemType == typeof(double))
+                if (elemType == typeof(double))
                     return WriteDoubleArray;
                 // Non-CLS primitives.
-                else if (elemType == typeof(sbyte))
+                if (elemType == typeof(sbyte))
                     return WriteSbyteArray;
-                else if (elemType == typeof(ushort))
+                if (elemType == typeof(ushort))
                     return WriteUshortArray;
-                else if (elemType == typeof(uint))
+                if (elemType == typeof(uint))
                     return WriteUintArray;
-                else if (elemType == typeof(ulong))
+                if (elemType == typeof(ulong))
                     return WriteUlongArray;
                 // Special types.
                 else if (elemType == typeof (decimal?))
                     return WriteDecimalArray;
-                else if (elemType == typeof(string))
+                if (elemType == typeof(string))
                     return WriteStringArray;
 //                else if (elemType == typeof(DateTime))
 //                    return WriteDateArray;
-                else if (elemType == typeof(DateTime?))
+                if (elemType == typeof(DateTime?))
                     return WriteNullableDateArray;
 //                else if (elemType == typeof(Guid))
 //                    return WriteGuidArray;
-                else if (elemType == typeof(Guid?))
+                if (elemType == typeof(Guid?))
                     return WriteNullableGuidArray;
                 // Enums.
                 if (elemType.IsEnum)
                     return WriteEnumArray;
                 
-                // Regular array.
-                return WriteArray;
+                // Object array.
+                if (elemType == typeof (object))
+                    return WriteArray;
             }
-            else if (type.IsEnum)
+
+            if (type.IsEnum)
                 // We know how to write enums.
                 return WriteEnum;
-            else
-            {
-                // We know how to write collections.
-                PortableCollectionInfo info = PortableCollectionInfo.Info(type);
 
-                if (info.IsAny)
-                    return info.WriteHandler;
-
-                return null;
-            }
+            return null;
         }
 
         /// <summary>
@@ -584,7 +551,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayEnum);
 
-            PortableUtils.WriteArray((Array)obj, ctx, true);
+            PortableUtils.WriteArray((Array)obj, ctx);
         }
 
         /**
@@ -594,55 +561,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArray);
 
-            PortableUtils.WriteArray((Array)obj, ctx, true);
-        }
-
-        /**
-         * <summary>Write collection.</summary>
-         */
-        private static void WriteCollection(PortableWriterImpl ctx, object obj)
-        {
-            ctx.Stream.WriteByte(PortableUtils.TypeCollection);
-
-            PortableUtils.WriteCollection((ICollection)obj, ctx);
-        }
-
-        /**
-         * <summary>Write generic collection.</summary>
-         */
-        private static void WriteGenericCollection(PortableWriterImpl ctx, object obj)
-        {
-            PortableCollectionInfo info = PortableCollectionInfo.Info(obj.GetType());
-
-            Debug.Assert(info.IsGenericCollection, "Not generic collection: " + obj.GetType().FullName);
-
-            ctx.Stream.WriteByte(PortableUtils.TypeCollection);
-
-            info.WriteGeneric(ctx, obj);
-        }
-
-        /**
-         * <summary>Write dictionary.</summary>
-         */
-        private static void WriteDictionary(PortableWriterImpl ctx, object obj)
-        {
-            ctx.Stream.WriteByte(PortableUtils.TypeDictionary);
-
-            PortableUtils.WriteDictionary((IDictionary)obj, ctx);
-        }
-
-        /**
-         * <summary>Write generic dictionary.</summary>
-         */
-        private static void WriteGenericDictionary(PortableWriterImpl ctx, object obj)
-        {
-            PortableCollectionInfo info = PortableCollectionInfo.Info(obj.GetType());
-
-            Debug.Assert(info.IsGenericDictionary, "Not generic dictionary: " + obj.GetType().FullName);
-
-            ctx.Stream.WriteByte(PortableUtils.TypeDictionary);
-
-            info.WriteGeneric(ctx, obj);
+            PortableUtils.WriteArray((Array)obj, ctx);
         }
 
         /**
@@ -652,7 +571,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             ctx.Stream.WriteByte(PortableUtils.TypeCollection);
 
-            PortableUtils.WriteTypedCollection((ICollection)obj, ctx, PortableUtils.CollectionArrayList);
+            PortableUtils.WriteCollection((ICollection)obj, ctx, PortableUtils.CollectionArrayList);
         }
 
         /**
@@ -662,7 +581,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             ctx.Stream.WriteByte(PortableUtils.TypeDictionary);
 
-            PortableUtils.WriteTypedDictionary((IDictionary)obj, ctx, PortableUtils.MapHashMap);
+            PortableUtils.WriteDictionary((IDictionary)obj, ctx, PortableUtils.MapHashMap);
         }
 
         /**
@@ -700,7 +619,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static object ReadEnumArray(PortableReaderImpl ctx, Type type)
         {
-            return PortableUtils.ReadArray(ctx, true, type.GetElementType());
+            return PortableUtils.ReadTypedArray(ctx, true, type.GetElementType());
         }
 
         /**
@@ -710,7 +629,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             var elemType = type.IsArray ? type.GetElementType() : typeof(object);
 
-            return PortableUtils.ReadArray(ctx, true, elemType);
+            return PortableUtils.ReadTypedArray(ctx, true, elemType);
         }
 
         /**
@@ -718,11 +637,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static object ReadCollection(PortableReaderImpl ctx, Type type)
         {
-            PortableCollectionInfo info = PortableCollectionInfo.Info(type);
-
-            return info.IsGenericCollection 
-                ? info.ReadGeneric(ctx)
-                : PortableUtils.ReadCollection(ctx, null, null);
+            return PortableUtils.ReadCollection(ctx, null, null);
         }
 
         /**
@@ -730,11 +645,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static object ReadDictionary(PortableReaderImpl ctx, Type type)
         {
-            PortableCollectionInfo info = PortableCollectionInfo.Info(type);
-
-            return info.IsGenericDictionary
-                ? info.ReadGeneric(ctx)
-                : PortableUtils.ReadDictionary(ctx, null);
+            return PortableUtils.ReadDictionary(ctx, null);
         }
 
         /**
@@ -746,104 +657,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /**
-         * <summary>Create new ArrayList.</summary>
-         * <param name="len">Length.</param>
-         * <returns>ArrayList.</returns>
-         */
-        public static ICollection CreateArrayList(int len)
-        {
-            return new ArrayList(len);
-        }
-
-        /**
          * <summary>Add element to array list.</summary>
          * <param name="col">Array list.</param>
          * <param name="elem">Element.</param>
          */
-        public static void AddToArrayList(ICollection col, object elem)
-        {
-            ((ArrayList) col).Add(elem);
-        }
-
-        /**
-         * <summary>Create new List.</summary>
-         * <param name="len">Length.</param>
-         * <returns>List.</returns>
-         */
-        public static ICollection<T> CreateList<T>(int len)
-        {
-            return new List<T>(len);
-        }
-
-        /**
-         * <summary>Create new LinkedList.</summary>
-         * <param name="len">Length.</param>
-         * <returns>LinkedList.</returns>
-         */
-        public static ICollection<T> CreateLinkedList<T>(int len)
-        {
-            return new LinkedList<T>();
-        }
-
-        /**
-         * <summary>Create new HashSet.</summary>
-         * <param name="len">Length.</param>
-         * <returns>HashSet.</returns>
-         */
-        public static ICollection<T> CreateHashSet<T>(int len)
-        {
-            return new HashSet<T>();
-        }
-
-        /**
-         * <summary>Create new SortedSet.</summary>
-         * <param name="len">Length.</param>
-         * <returns>SortedSet.</returns>
-         */
-        public static ICollection<T> CreateSortedSet<T>(int len)
-        {
-            return new SortedSet<T>();
-        }
-
-        /**
-         * <summary>Create new Hashtable.</summary>
-         * <param name="len">Length.</param>
-         * <returns>Hashtable.</returns>
-         */
-        public static IDictionary CreateHashtable(int len)
-        {
-            return new Hashtable(len);
-        }
-
-        /**
-         * <summary>Create new Dictionary.</summary>
-         * <param name="len">Length.</param>
-         * <returns>Dictionary.</returns>
-         */
-        public static IDictionary<TK, TV> CreateDictionary<TK, TV>(int len)
-        {
-            return new Dictionary<TK, TV>(len);
-        }
-
-        /**
-         * <summary>Create new SortedDictionary.</summary>
-         * <param name="len">Length.</param>
-         * <returns>SortedDictionary.</returns>
-         */
-        public static IDictionary<TK, TV> CreateSortedDictionary<TK, TV>(int len)
-        {
-            return new SortedDictionary<TK, TV>();
-        }
-
-        /**
-         * <summary>Create new ConcurrentDictionary.</summary>
-         * <param name="len">Length.</param>
-         * <returns>ConcurrentDictionary.</returns>
-         */
-        public static IDictionary<TK, TV> CreateConcurrentDictionary<TK, TV>(int len)
-        {
-            return new ConcurrentDictionary<TK, TV>(Environment.ProcessorCount, len);
-        }
 
 
         /**
@@ -930,11 +747,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Reader without boxing.
         /// </summary>
-        private class PortableSystemGenericArrayReader<T> : IPortableSystemReader
+        private class PortableSystemTypedArrayReader<T> : IPortableSystemReader
         {
             public TResult Read<TResult>(PortableReaderImpl ctx)
             {
-                return TypeCaster<TResult>.Cast(PortableUtils.ReadGenericArray<T>(ctx, false));
+                return TypeCaster<TResult>.Cast(PortableUtils.ReadArray<T>(ctx, false));
             }
         }
 

@@ -266,7 +266,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 else
                     writer.WriteObject<CacheEntryFilterHolder>(null);
 
-                writer.WriteObjectArray(args);
+                writer.WriteArray(args);
             });
         }
 

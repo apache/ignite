@@ -55,15 +55,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Method: read array. */
         private static readonly MethodInfo MthdReadObjArray =
-            typeof(IPortableReader).GetMethod("ReadObjectArray", new[] { typeof(string) });
-
-        /** Method: read generic collection. */
-        private static readonly MethodInfo MthdReadGenericCollection =
-            typeof(IPortableReader).GetMethod("ReadGenericCollection", new[] { typeof(string) });
-
-        /** Method: read generic dictionary. */
-        private static readonly MethodInfo MthdReadGenericDictionary =
-            typeof(IPortableReader).GetMethod("ReadGenericDictionary", new[] { typeof(string) });
+            typeof(IPortableReader).GetMethod("ReadArray", new[] { typeof(string) });
 
         /** Method: read object. */
         private static readonly MethodInfo MthdReadObj=
@@ -75,15 +67,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Method: write array. */
         private static readonly MethodInfo MthdWriteObjArray =
-            typeof(IPortableWriter).GetMethod("WriteObjectArray");
-
-        /** Method: write generic collection. */
-        private static readonly MethodInfo MthdWriteGenericCollection =
-            typeof(IPortableWriter).GetMethod("WriteGenericCollection");
-
-        /** Method: write generic dictionary. */
-        private static readonly MethodInfo MthdWriteGenericDictionary =
-            typeof(IPortableWriter).GetMethod("WriteGenericDictionary");
+            typeof(IPortableWriter).GetMethod("WriteArray");
 
         /** Method: read object. */
         private static readonly MethodInfo MthdWriteObj =
@@ -339,24 +323,12 @@ namespace Apache.Ignite.Core.Impl.Portable
                 writeAction = GetWriter<object>(field, (f, w, o) => w.WriteEnum(f, o), true);
                 readAction = GetReader(field, MthdReadEnum);
             }
-            else if (genericDef == PortableUtils.TypGenericDictionary ||
-                type.GetInterface(PortableUtils.TypGenericDictionary.FullName) != null)
-            {
-                writeAction = GetWriter(field, MthdWriteGenericDictionary, type.GetGenericArguments());
-                readAction = GetReader(field, MthdReadGenericDictionary, type.GetGenericArguments());
-            }
-            else if (genericDef == PortableUtils.TypGenericCollection ||
-                type.GetInterface(PortableUtils.TypGenericCollection.FullName) != null)
-            {
-                writeAction = GetWriter(field, MthdWriteGenericCollection, type.GetGenericArguments());
-                readAction = GetReader(field, MthdReadGenericCollection, type.GetGenericArguments());
-            }
-            else if (type == PortableUtils.TypDictionary || type.GetInterface(PortableUtils.TypDictionary.FullName) != null)
+            else if (type == PortableUtils.TypDictionary || type.GetInterface(PortableUtils.TypDictionary.FullName) != null && !type.IsGenericType)
             {
                 writeAction = GetWriter<IDictionary>(field, (f, w, o) => w.WriteDictionary(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadDictionary(f));
             }
-            else if (type == PortableUtils.TypCollection || type.GetInterface(PortableUtils.TypCollection.FullName) != null)
+            else if (type == PortableUtils.TypCollection || type.GetInterface(PortableUtils.TypCollection.FullName) != null && !type.IsGenericType)
             {
                 writeAction = GetWriter<ICollection>(field, (f, w, o) => w.WriteCollection(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadCollection(f));

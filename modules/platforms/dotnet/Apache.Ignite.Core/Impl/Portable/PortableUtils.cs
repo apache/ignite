@@ -170,15 +170,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Type: native job result holder. */
         public const byte TypePortableJobResHolder = 76;
 
-        /** Type: .Net configuration. */
-        public const byte TypeDotNetCfg = 202;
-
-        /** Type: .Net portable configuration. */
-        public const byte TypeDotNetPortableCfg = 203;
-
-        /** Type: .Net portable type configuration. */
-        public const byte TypeDotNetPortableTypCfg = 204;
-
         /** Type: Ignite proxy. */
         public const byte TypeIgniteProxy = 74;
 
@@ -212,9 +203,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Type: entry predicate holder. */
         public const byte TypeCacheEntryPredicateHolder = 90;
         
-        /** Type: product license. */
-        public const byte TypeProductLicense = 78;
-
         /** Type: message filter holder. */
         public const byte TypeMessageListenerHolder = 92;
 
@@ -284,12 +272,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Dictionary type. */
         public static readonly Type TypDictionary = typeof(IDictionary);
 
-        /** Generic collection type. */
-        public static readonly Type TypGenericCollection = typeof(ICollection<>);
-
-        /** Generic dictionary type. */
-        public static readonly Type TypGenericDictionary = typeof(IDictionary<,>);
-
         /** Ticks for Java epoch. */
         private static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
         
@@ -300,25 +282,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Default poratble marshaller. */
         private static readonly PortableMarshaller Marsh = new PortableMarshaller(null);
 
-        /** Method: WriteGenericCollection. */
-        public static readonly MethodInfo MtdhWriteGenericCollection =
-            typeof(PortableUtils).GetMethod("WriteGenericCollection", _bindFlagsStatic);
-
-        /** Method: ReadGenericCollection. */
-        public static readonly MethodInfo MtdhReadGenericCollection =
-            typeof(PortableUtils).GetMethod("ReadGenericCollection", _bindFlagsStatic);
-
-        /** Method: WriteGenericDictionary. */
-        public static readonly MethodInfo MtdhWriteGenericDictionary =
-            typeof(PortableUtils).GetMethod("WriteGenericDictionary", _bindFlagsStatic);
-
-        /** Method: ReadGenericDictionary. */
-        public static readonly MethodInfo MtdhReadGenericDictionary =
-            typeof(PortableUtils).GetMethod("ReadGenericDictionary", _bindFlagsStatic);
-
-        /** Method: ReadGenericArray. */
-        public static readonly MethodInfo MtdhReadGenericArray =
-            typeof(PortableUtils).GetMethod("ReadGenericArray", _bindFlagsStatic);
+        /** Method: ReadArray. */
+        public static readonly MethodInfo MtdhReadArray =
+            typeof(PortableUtils).GetMethod("ReadArray", _bindFlagsStatic);
 
         /** Cached UTF8 encoding. */
         private static readonly Encoding Utf8 = Encoding.UTF8;
@@ -1006,7 +972,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             var vals = new decimal?[len];
 
             for (int i = 0; i < len; i++)
-                vals[i] = stream.ReadByte() == HdrNull ? (decimal?) null : ReadDecimal(stream);
+                vals[i] = stream.ReadByte() == HdrNull ? null : ReadDecimal(stream);
 
             return vals;
         }
@@ -1098,19 +1064,17 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             return vals;
         }
-        
+
         /// <summary>
         /// Write array.
         /// </summary>
         /// <param name="val">Array.</param>
         /// <param name="ctx">Write context.</param>
-        /// <param name="typed">Typed flag.</param>
-        public static void WriteArray(Array val, PortableWriterImpl ctx, bool typed)
+        public static void WriteArray(Array val, PortableWriterImpl ctx)
         {
             IPortableStream stream = ctx.Stream;
 
-            if (typed)
-                stream.WriteInt(ObjTypeId);
+            stream.WriteInt(ObjTypeId);
 
             stream.WriteInt(val.Length);
 
@@ -1125,14 +1089,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="typed">Typed flag.</param>
         /// <param name="elementType">Type of the element.</param>
         /// <returns>Array.</returns>
-        public static object ReadArray(PortableReaderImpl ctx, bool typed, Type elementType)
+        public static object ReadTypedArray(PortableReaderImpl ctx, bool typed, Type elementType)
         {
             Func<PortableReaderImpl, bool, object> result;
 
             if (!ArrayReaders.TryGetValue(elementType, out result))
                 result = ArrayReaders.GetOrAdd(elementType, t =>
                     DelegateConverter.CompileFunc<Func<PortableReaderImpl, bool, object>>(null,
-                        MtdhReadGenericArray.MakeGenericMethod(t),
+                        MtdhReadArray.MakeGenericMethod(t),
                         new[] {typeof (PortableReaderImpl), typeof (bool)}, new[] {false, false, true}));
 
             return result(ctx, typed);
@@ -1144,9 +1108,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="ctx">Read context.</param>
         /// <param name="typed">Typed flag.</param>
         /// <returns>Array.</returns>
-        public static T[] ReadGenericArray<T>(PortableReaderImpl ctx, bool typed)
+        public static T[] ReadArray<T>(PortableReaderImpl ctx, bool typed)
         {
-            IPortableStream stream = ctx.Stream;
+            var stream = ctx.Stream;
 
             if (typed)
                 stream.ReadInt();
@@ -1186,9 +1150,29 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static void WriteCollection(ICollection val, PortableWriterImpl ctx)
         {
-            byte colType = val.GetType() == typeof(ArrayList) ? CollectionArrayList : CollectionCustom;
+            var valType = val.GetType();
+            
+            byte colType;
 
-            WriteTypedCollection(val, ctx, colType);
+            if (valType.IsGenericType)
+            {
+                var genType = valType.GetGenericTypeDefinition();
+
+                if (genType == typeof (List<>))
+                    colType = CollectionArrayList;
+                else if (genType == typeof (LinkedList<>))
+                    colType = CollectionLinkedList;
+                else if (genType == typeof (SortedSet<>))
+                    colType = CollectionSortedSet;
+                else if (genType == typeof (ConcurrentBag<>))
+                    colType = CollectionConcurrentBag;
+                else
+                    colType = CollectionCustom;
+            }
+            else
+                colType = valType == typeof (ArrayList) ? CollectionArrayList : CollectionCustom;
+
+            WriteCollection(val, ctx, colType);
         }
 
         /**
@@ -1197,7 +1181,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="ctx">Write context.</param>
          * <param name="colType">Collection type.</param>
          */
-        public static void WriteTypedCollection(ICollection val, PortableWriterImpl ctx, byte colType)
+        public static void WriteCollection(ICollection val, PortableWriterImpl ctx, byte colType)
         {
             ctx.Stream.WriteInt(val.Count);
 
@@ -1217,104 +1201,35 @@ namespace Apache.Ignite.Core.Impl.Portable
         public static ICollection ReadCollection(PortableReaderImpl ctx,
             PortableCollectionFactory factory, PortableCollectionAdder adder)
         {
-            if (factory == null)
-                factory = PortableSystemHandlers.CreateArrayList;
-
-            if (adder == null)
-                adder = PortableSystemHandlers.AddToArrayList;
-
             IPortableStream stream = ctx.Stream;
 
             int len = stream.ReadInt();
 
-            ctx.Stream.Seek(1, SeekOrigin.Current);
+            byte colType = ctx.Stream.ReadByte();
 
-            ICollection res = factory.Invoke(len);
+            ICollection res;
+
+            if (factory == null)
+            {
+                if (colType == CollectionLinkedList)
+                    res = new LinkedList<object>();
+                else if (colType == CollectionSortedSet)
+                    res = new SortedSet<object>();
+                else if (colType == CollectionConcurrentBag)
+                    res = new ConcurrentBag<object>();
+                else
+                    res = new ArrayList(len);
+            }
+            else
+                res = factory.Invoke(len);
+
+            if (adder == null)
+                adder = (col, elem) => { ((ArrayList) col).Add(elem); };
 
             for (int i = 0; i < len; i++)
                 adder.Invoke(res, ctx.Deserialize<object>());
 
             return res;
-        }
-
-        /**
-         * <summary>Write generic collection.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         */
-        public static void WriteGenericCollection<T>(ICollection<T> val, PortableWriterImpl ctx)
-        {
-            Type type = val.GetType().GetGenericTypeDefinition();
-
-            byte colType;
-
-            if (type == typeof(List<>))
-                colType = CollectionArrayList;
-            else if (type == typeof(LinkedList<>))
-                colType = CollectionLinkedList;
-            else if (type == typeof(HashSet<>))
-                colType = CollectionHashSet;
-            else if (type == typeof(SortedSet<>))
-                colType = CollectionSortedSet;
-            else
-                colType = CollectionCustom;
-
-            WriteTypedGenericCollection(val, ctx, colType);
-        }
-
-        /**
-         * <summary>Write generic non-null collection with known type.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         * <param name="colType">Collection type.</param>
-         */
-        public static void WriteTypedGenericCollection<T>(ICollection<T> val, PortableWriterImpl ctx,
-            byte colType)
-        {
-            ctx.Stream.WriteInt(val.Count);
-
-            ctx.Stream.WriteByte(colType);
-
-            foreach (T elem in val)
-                ctx.Write(elem);
-        }
-
-        /**
-         * <summary>Read generic collection.</summary>
-         * <param name="ctx">Context.</param>
-         * <param name="factory">Factory delegate.</param>
-         * <returns>Collection.</returns>
-         */
-        public static ICollection<T> ReadGenericCollection<T>(PortableReaderImpl ctx,
-            PortableGenericCollectionFactory<T> factory)
-        {
-            int len = ctx.Stream.ReadInt();
-
-            if (len >= 0)
-            {
-                byte colType = ctx.Stream.ReadByte();
-
-                if (factory == null)
-                {
-                    // Need to detect factory automatically.
-                    if (colType == CollectionLinkedList)
-                        factory = PortableSystemHandlers.CreateLinkedList<T>;
-                    else if (colType == CollectionHashSet)
-                        factory = PortableSystemHandlers.CreateHashSet<T>;
-                    else if (colType == CollectionSortedSet)
-                        factory = PortableSystemHandlers.CreateSortedSet<T>;
-                    else
-                        factory = PortableSystemHandlers.CreateList<T>;
-                }
-
-                ICollection<T> res = factory.Invoke(len);
-
-                for (int i = 0; i < len; i++)
-                    res.Add(ctx.Deserialize<T>());
-
-                return res;
-            }
-            return null;
         }
 
         /**
@@ -1324,9 +1239,27 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         public static void WriteDictionary(IDictionary val, PortableWriterImpl ctx)
         {
-            byte dictType = val.GetType() == typeof(Hashtable) ? MapHashMap : MapCustom;
+            var valType = val.GetType();
 
-            WriteTypedDictionary(val, ctx, dictType);
+            byte dictType;
+
+            if (valType.IsGenericType)
+            {
+                var genType = valType.GetGenericTypeDefinition();
+
+                if (genType == typeof (Dictionary<,>))
+                    dictType = MapHashMap;
+                else if (genType == typeof (SortedDictionary<,>))
+                    dictType = MapSortedMap;
+                else if (genType == typeof (ConcurrentDictionary<,>))
+                    dictType = MapConcurrentHashMap;
+                else
+                    dictType = MapCustom;
+            }
+            else
+                dictType = valType == typeof (Hashtable) ? MapHashMap : MapCustom;
+
+            WriteDictionary(val, ctx, dictType);
         }
 
         /**
@@ -1335,7 +1268,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="ctx">Write context.</param>
          * <param name="dictType">Dictionary type.</param>
          */
-        public static void WriteTypedDictionary(IDictionary val, PortableWriterImpl ctx, byte dictType)
+        public static void WriteDictionary(IDictionary val, PortableWriterImpl ctx, byte dictType)
         {
             ctx.Stream.WriteInt(val.Count);
 
@@ -1357,16 +1290,26 @@ namespace Apache.Ignite.Core.Impl.Portable
         public static IDictionary ReadDictionary(PortableReaderImpl ctx,
             PortableDictionaryFactory factory)
         {
-            if (factory == null)
-                factory = PortableSystemHandlers.CreateHashtable;
-
             IPortableStream stream = ctx.Stream;
 
             int len = stream.ReadInt();
 
-            ctx.Stream.Seek(1, SeekOrigin.Current);
+            byte colType = ctx.Stream.ReadByte();
 
-            IDictionary res = factory.Invoke(len);
+            IDictionary res;
+
+            if (factory == null)
+            {
+                if (colType == MapSortedMap)
+                    res = new SortedDictionary<object, object>();
+                else if (colType == MapConcurrentHashMap)
+                    res = new ConcurrentDictionary<object, object>(Environment.ProcessorCount, len);
+                else
+                    res = new Hashtable(len);
+            }
+            else
+                res = factory.Invoke(len);
+
 
             for (int i = 0; i < len; i++)
             {
@@ -1377,89 +1320,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             return res;
-        }
-
-        /**
-         * <summary>Write generic dictionary.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         */
-        public static void WriteGenericDictionary<TK, TV>(IDictionary<TK, TV> val, PortableWriterImpl ctx)
-        {
-            Type type = val.GetType().GetGenericTypeDefinition();
-
-            byte dictType;
-
-            if (type == typeof(Dictionary<,>))
-                dictType = MapHashMap;
-            else if (type == typeof(SortedDictionary<,>))
-                dictType = MapSortedMap;
-            else if (type == typeof(ConcurrentDictionary<,>))
-                dictType = MapConcurrentHashMap;
-            else
-                dictType = MapCustom;
-
-            WriteTypedGenericDictionary(val, ctx, dictType);
-        }
-
-        /**
-         * <summary>Write generic non-null dictionary with known type.</summary>
-         * <param name="val">Value.</param>
-         * <param name="ctx">Write context.</param>
-         * <param name="dictType">Dictionary type.</param>
-         */
-        public static void WriteTypedGenericDictionary<TK, TV>(IDictionary<TK, TV> val,
-            PortableWriterImpl ctx, byte dictType)
-        {
-            ctx.Stream.WriteInt(val.Count);
-
-            ctx.Stream.WriteByte(dictType);
-
-            foreach (KeyValuePair<TK, TV> entry in val)
-            {
-                ctx.Write(entry.Key);
-                ctx.Write(entry.Value);
-            }
-        }
-
-        /**
-         * <summary>Read generic dictionary.</summary>
-         * <param name="ctx">Context.</param>
-         * <param name="factory">Factory delegate.</param>
-         * <returns>Collection.</returns>
-         */
-        public static IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableReaderImpl ctx,
-            PortableGenericDictionaryFactory<TK, TV> factory)
-        {
-            int len = ctx.Stream.ReadInt();
-
-            if (len >= 0)
-            {
-                byte colType = ctx.Stream.ReadByte();
-
-                if (factory == null)
-                {
-                    if (colType == MapSortedMap)
-                        factory = PortableSystemHandlers.CreateSortedDictionary<TK, TV>;
-                    else if (colType == MapConcurrentHashMap)
-                        factory = PortableSystemHandlers.CreateConcurrentDictionary<TK, TV>;
-                    else
-                        factory = PortableSystemHandlers.CreateDictionary<TK, TV>;
-                }
-
-                IDictionary<TK, TV> res = factory.Invoke(len);
-
-                for (int i = 0; i < len; i++)
-                {
-                    TK key = ctx.Deserialize<TK>();
-                    TV val = ctx.Deserialize<TV>();
-
-                    res[key] = val;
-                }
-
-                return res;
-            }
-            return null;
         }
 
         /**

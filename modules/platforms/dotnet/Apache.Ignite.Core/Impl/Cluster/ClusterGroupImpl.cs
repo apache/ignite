@@ -541,13 +541,10 @@ namespace Apache.Ignite.Core.Impl.Cluster
         public IPortableMetadata GetMetadata(int typeId)
         {
             return DoOutInOp<IPortableMetadata>(OpMetadata, 
-                writer =>
-                {
-                    writer.WriteInt(typeId);
-                },
+                writer => writer.WriteInt(typeId),
                 stream =>
                 {
-                    PortableReaderImpl reader = Marshaller.StartUnmarshal(stream, false);
+                    var reader = Marshaller.StartUnmarshal(stream, false);
 
                     return reader.ReadBoolean() ? new PortableMetadataImpl(reader) : null;
                 }
