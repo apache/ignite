@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Common;
@@ -115,6 +116,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         public PortableBuilderImpl(PortablesImpl portables, PortableBuilderImpl parent, 
             PortableUserObject obj, IPortableTypeDescriptor desc)
         {
+            Debug.Assert(portables != null);
+            Debug.Assert(obj != null);
+            Debug.Assert(desc != null);
+
             _portables = portables;
             _parent = parent ?? this;
             _obj = obj;
