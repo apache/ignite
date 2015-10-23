@@ -849,8 +849,8 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableObject po1 = marshal(obj1, marsh);
 
         assertEquals(11111, po1.typeId());
-        assertEquals(22222, intFromPortable(po1, 20));
-        assertEquals(33333, intFromPortable(po1, 33));
+        assertEquals(22222, intFromPortable(po1, GridPortableMarshaller.DFLT_HDR_LEN));
+        assertEquals(33333, intFromPortable(po1, GridPortableMarshaller.DFLT_HDR_LEN + 13));
 
         assertEquals(10, po1.<CustomMappedObject1>deserialize().val1);
         assertEquals("str", po1.<CustomMappedObject1>deserialize().val2);
@@ -908,8 +908,8 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableObject po1 = marshal(obj1, marsh);
 
         assertEquals(11111, po1.typeId());
-        assertEquals(22222, intFromPortable(po1, 20));
-        assertEquals(33333, intFromPortable(po1, 33));
+        assertEquals(22222, intFromPortable(po1, GridPortableMarshaller.DFLT_HDR_LEN));
+        assertEquals(33333, intFromPortable(po1, GridPortableMarshaller.DFLT_HDR_LEN + 13));
 
         assertEquals(10, po1.<CustomMappedObject1>deserialize().val1);
         assertEquals("str1", po1.<CustomMappedObject1>deserialize().val2);
@@ -919,8 +919,8 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         PortableObject po2 = marshal(obj2, marsh);
 
         assertEquals(44444, po2.typeId());
-        assertEquals(55555, intFromPortable(po2, 20));
-        assertEquals(66666, intFromPortable(po2, 33));
+        assertEquals(55555, intFromPortable(po2, GridPortableMarshaller.DFLT_HDR_LEN));
+        assertEquals(66666, intFromPortable(po2, GridPortableMarshaller.DFLT_HDR_LEN + 13));
 
         assertEquals(20, po2.<CustomMappedObject2>deserialize().val1);
         assertEquals("str2", po2.<CustomMappedObject2>deserialize().val2);

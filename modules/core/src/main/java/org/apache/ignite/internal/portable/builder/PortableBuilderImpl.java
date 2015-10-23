@@ -395,7 +395,7 @@ public class PortableBuilderImpl implements PortableBuilder {
                 writer.write(reader.array(), rawOff, len - rawOff);
         }
 
-        writer.writeLengthAndRawOffset();
+        writer.postWrite();
     }
 
     /** {@inheritDoc} */

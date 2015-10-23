@@ -328,11 +328,15 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     }
 
     /**
-     * Write length and raw offset.
+     * Perform post-write activity. This includes:
+     * - writing object length;
+     * - writing schema ID;
+     * - writing schema offset;
+     * - writing schema to the tail.
      */
-    public void writeLengthAndRawOffset() {
-        out.writeInt(start + RAW_DATA_OFF_POS, (rawOffPos == 0 ? out.position() : rawOffPos) - start);
+    public void postWrite() {
         out.writeInt(start + TOTAL_LEN_POS, out.position() - start);
+        out.writeInt(start + RAW_DATA_OFF_POS, (rawOffPos == 0 ? out.position() : rawOffPos) - start);
     }
 
     /**
