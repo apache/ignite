@@ -512,6 +512,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             AddSystemType(PortableUtils.TypeComputeActionJob, w => new ComputeActionJob(w));
             AddSystemType(PortableUtils.TypeContinuousQueryRemoteFilterHolder, w => new ContinuousQueryFilterHolder(w));
             AddSystemType(PortableUtils.TypeSerializableHolder, w => new SerializableObjectHolder(w));
+            AddSystemType(PortableUtils.TypeDateTimeHolder, w => new DateTimeHolder(w));
             AddSystemType(PortableUtils.TypeCacheEntryProcessorHolder, w => new CacheEntryProcessorHolder(w));
             AddSystemType(PortableUtils.TypeCacheEntryPredicateHolder, w => new CacheEntryFilterHolder(w));
             AddSystemType(PortableUtils.TypeMessageListenerHolder, w => new MessageListenerHolder(w));
