@@ -116,6 +116,49 @@ mixin table-pair(header, tblMdl, keyFld, valFld, keyPlaceholder, valPlaceholder,
                         td.col-sm-12
                             +table-pair-edit('new', keyPlaceholder, valPlaceholder, keyJavaBuildInTypes, valueJavaBuildInTypes, '{{::field.focusId}}', '-1')
 
+mixin table-igfs-path-mode-edit(prefix, keyPlaceholder, valPlaceholder, focusId, index)
+    -var keyModel = 'field.' + prefix + 'Key'
+    -var valModel = 'field.' + prefix + 'Value'
+
+    -var keyFocusId = prefix + 'Key' + focusId
+    -var valFocusId = prefix + 'Value' + focusId
+
+    .col-xs-8.col-sm-8.col-md-8
+        label.placeholder #{keyPlaceholder}
+        label.fieldSep /
+        .input-tip
+            input.form-control(id=keyFocusId enter-focus-next=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder on-escape='tableReset()')
+    .col-xs-4.col-sm-4.col-md-4
+        -var arg = keyModel + ', ' + valModel
+        -var btnVisible = 'tablePairSaveVisible(field, ' + index + ')'
+        -var btnSave = 'tablePairSave(tablePairValid, backupItem, field, ' + index + ')'
+        -var btnVisibleAndSave = btnVisible + ' && ' + btnSave
+        label.placeholder #{valPlaceholder}
+        +btn-save(btnVisible, btnSave)
+        .input-tip
+            button.form-control(id=valFocusId bs-select ng-model=valModel data-placeholder=valPlaceholder bs-options="item.value as item.label for item in igfsModes" tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
+
+mixin table-igfs-path-mode(header, tblMdl, keyFld, valFld, keyPlaceholder, valPlaceholder)
+    .col-sm-12.group
+        .group-legend
+            label #{header}
+            +group-tip('field.tip')
+            +group-btn-add('tableNewItem(field)', 'field.addTip')
+        .group-content-empty(ng-if='!((#{tblMdl} && #{tblMdl}.length > 0) || tableNewItemActive(field))') Not defined
+        .group-content(ng-show='(#{tblMdl} && #{tblMdl}.length > 0) || tableNewItemActive(field)')
+            table.links-edit(id='{{::field.model}}' st-table=tblMdl)
+                tbody
+                    tr(ng-repeat='item in #{tblMdl}')
+                        td.col-sm-12(ng-show='!tableEditing(field, $index)')
+                            a.labelFormField(ng-click='tableStartEdit(backupItem, field, $index)') {{item.#{keyFld} + " [" + item.#{valFld} + "]"}}
+                            +btn-remove('tableRemove(backupItem, field, $index)', 'field.removeTip')
+                        td.col-sm-12(ng-show='tableEditing(field, $index)')
+                            +table-igfs-path-mode-edit('cur', keyPlaceholder, valPlaceholder, '{{::field.focusId}}', '$index')
+                tfoot(ng-show='tableNewItemActive(field)')
+                    tr
+                        td.col-sm-12
+                            +table-igfs-path-mode-edit('new', keyPlaceholder, valPlaceholder, '{{::field.focusId}}', '-1')
+
 mixin details-row
     - var lblDetailClasses = ['col-sm-4', 'details-label']
 
@@ -378,6 +421,8 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
             +table-pair('{{::field.label}}', fieldMdl, 'name', 'className', 'Field name', 'Field full class name', false, true)
         .group-section(ng-switch-when='queryFields' ng-hide=fieldHide)
             +table-pair('{{::field.label}}', fieldMdl, 'name', 'className', 'Field name', 'Field full class name', false, true)
+        .group-section(ng-switch-when='pathModes' ng-hide=fieldHide)
+            +table-igfs-path-mode('{{::field.label}}', fieldMdl, 'path', 'mode', 'Path', 'Mode')
         .group-section(ng-switch-when='table-db-fields' ng-hide=fieldHide)
             .col-sm-12.group
                 .group-legend
