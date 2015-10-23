@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetBooleanField<T>(string fieldName, bool val);
+        IPortableBuilder SetBooleanField(string fieldName, bool val);
 
         /// <summary>
         /// Sets the boolean array field.
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetBooleanArrayField<T>(string fieldName, bool[] val);
+        IPortableBuilder SetBooleanArrayField(string fieldName, bool[] val);
 
         /// <summary>
         /// Sets the byte field.
@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetByteField<T>(string fieldName, byte val);
+        IPortableBuilder SetByteField(string fieldName, byte val);
 
         /// <summary>
         /// Sets the byte array field.
@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetByteArrayField<T>(string fieldName, byte[] val);
+        IPortableBuilder SetByteArrayField(string fieldName, byte[] val);
 
         /// <summary>
         /// Sets the char field.
@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetCharField<T>(string fieldName, char val);
+        IPortableBuilder SetCharField(string fieldName, char val);
 
         /// <summary>
         /// Sets the char array field.
@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetCharArrayField<T>(string fieldName, char[] val);
+        IPortableBuilder SetCharArrayField(string fieldName, char[] val);
 
         /// <summary>
         /// Sets the collection field.
@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetCollectionField<T>(string fieldName, ICollection val);
+        IPortableBuilder SetCollectionField(string fieldName, ICollection val);
 
         /// <summary>
         /// Sets the decimal field.
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetDecimalField<T>(string fieldName, decimal? val);
+        IPortableBuilder SetDecimalField(string fieldName, decimal? val);
 
         /// <summary>
         /// Sets the decimal array field.
@@ -153,7 +153,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetDecimalArrayField<T>(string fieldName, decimal?[] val);
+        IPortableBuilder SetDecimalArrayField(string fieldName, decimal?[] val);
 
         /// <summary>
         /// Sets the dictionary field.
@@ -161,7 +161,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetDictionaryField<T>(string fieldName, IDictionary val);
+        IPortableBuilder SetDictionaryField(string fieldName, IDictionary val);
 
         /// <summary>
         /// Sets the double field.
@@ -169,7 +169,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetDoubleField<T>(string fieldName, double val);
+        IPortableBuilder SetDoubleField(string fieldName, double val);
 
         /// <summary>
         /// Sets the double array field.
@@ -177,7 +177,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetDoubleArrayField<T>(string fieldName, double[] val);
+        IPortableBuilder SetDoubleArrayField(string fieldName, double[] val);
 
         /// <summary>
         /// Sets the enum field.
@@ -201,7 +201,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetFloatField<T>(string fieldName, float val);
+        IPortableBuilder SetFloatField(string fieldName, float val);
 
         /// <summary>
         /// Sets the float array field.
@@ -209,7 +209,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetFloatArrayField<T>(string fieldName, float[] val);
+        IPortableBuilder SetFloatArrayField(string fieldName, float[] val);
 
         /// <summary>
         /// Sets the guid field.
@@ -217,7 +217,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetGuidField<T>(string fieldName, Guid? val);
+        IPortableBuilder SetGuidField(string fieldName, Guid? val);
 
         /// <summary>
         /// Sets the guid array field.
@@ -225,7 +225,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetGuidArrayField<T>(string fieldName, Guid?[] val);
+        IPortableBuilder SetGuidArrayField(string fieldName, Guid?[] val);
 
         /// <summary>
         /// Sets the int field.
@@ -233,7 +233,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetIntField<T>(string fieldName, int val);
+        IPortableBuilder SetIntField(string fieldName, int val);
 
         /// <summary>
         /// Sets the int array field.
@@ -241,7 +241,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetIntArrayField<T>(string fieldName, int[] val);
+        IPortableBuilder SetIntArrayField(string fieldName, int[] val);
 
         /// <summary>
         /// Sets the long field.
@@ -249,7 +249,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetLongField<T>(string fieldName, long val);
+        IPortableBuilder SetLongField(string fieldName, long val);
 
         /// <summary>
         /// Sets the long array field.
@@ -257,7 +257,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetLongArrayField<T>(string fieldName, long[] val);
+        IPortableBuilder SetLongArrayField(string fieldName, long[] val);
 
         /// <summary>
         /// Sets the object field.
@@ -273,7 +273,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetShortField<T>(string fieldName, short val);
+        IPortableBuilder SetShortField(string fieldName, short val);
 
         /// <summary>
         /// Sets the short array field.
@@ -281,7 +281,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetShortArrayField<T>(string fieldName, short[] val);
+        IPortableBuilder SetShortArrayField(string fieldName, short[] val);
 
         /// <summary>
         /// Sets the string field.
@@ -289,7 +289,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetStringField<T>(string fieldName, string val);
+        IPortableBuilder SetStringField(string fieldName, string val);
 
         /// <summary>
         /// Sets the string array field.
@@ -297,7 +297,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetStringArrayField<T>(string fieldName, string[] val);
+        IPortableBuilder SetStringArrayField(string fieldName, string[] val);
 
         /// <summary>
         /// Sets the timestamp field.
@@ -305,7 +305,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetTimestampField<T>(string fieldName, DateTime? val);
+        IPortableBuilder SetTimestampField(string fieldName, DateTime? val);
 
         /// <summary>
         /// Sets the timestamp array field.
@@ -313,6 +313,6 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="fieldName">Name of the field.</param>
         /// <param name="val">The value.</param>
         /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetTimestampArrayField<T>(string fieldName, DateTime?[] val);
+        IPortableBuilder SetTimestampArrayField(string fieldName, DateTime?[] val);
     }
 }

@@ -807,7 +807,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(StringDateGuidEnum))
                 .SetField("fStr", "str")
-                .SetField("fNDate", nDate)
+                .SetTimestampField("fNDate", nDate)
                 .SetField("fNGuid", nGuid)
                 .SetField("fEnum", TestEnum.One)
                 .SetField("fStrArr", new[] { "str" })
@@ -895,7 +895,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             portObj = builder
                 .SetField("fStr", "str2")
-                .SetField("fNDate", nDate)
+                .SetTimestampField("fNDate", nDate)
                 .SetField("fNGuid", nGuid)
                 .SetField("fEnum", TestEnum.Two)
                 .SetField("fStrArr", new[] { "str2" })
