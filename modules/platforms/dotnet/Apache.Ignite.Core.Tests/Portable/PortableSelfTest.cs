@@ -529,6 +529,20 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(obj.UtcArrRaw, otherObj.UtcArrRaw);
         }
 
+        /// <summary>
+        /// Tests the DateTime marshalling.
+        /// </summary>
+        [Test]
+        public void TestDateTime()
+        {
+            // TODO: Test explicit .WriteTimestamp, check exception.
+            var time = DateTime.Now;
+            Assert.AreEqual(_marsh.Unmarshal<DateTime>(_marsh.Marshal(time)), time);
+
+            var timeUtc = DateTime.UtcNow;
+            Assert.AreEqual(_marsh.Unmarshal<DateTime>(_marsh.Marshal(timeUtc)), timeUtc);
+        }
+
         /**
          * <summary>Check generic collections.</summary>
          */
