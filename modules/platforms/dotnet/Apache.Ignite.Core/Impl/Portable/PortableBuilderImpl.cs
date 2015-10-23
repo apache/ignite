@@ -461,6 +461,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 _parent._cache = new Dictionary<int, PortableBuilderField>(2);
 
             // TODO: Need to detect a delegate by header
+            // TODO: Current tests do not cover this!
+
             _parent._cache[pos] = new PortableBuilderField(typeof(T), val);
         }
 
