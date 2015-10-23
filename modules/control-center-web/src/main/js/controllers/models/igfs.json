@@ -285,8 +285,14 @@
         {
           "label": "Path modes",
           "id": "pathModes",
-          "type": "number",
+          "ui": "table-pair",
+          "type": "pathModes",
           "model": "pathModes",
+          "keyName": "path",
+          "valueName": "mode",
+          "focusId": "PathMode",
+          "addTip": "Add path mode",
+          "removeTip": "Remove path",
           "tip": [
             "Map of path prefixes to IGFS modes used for them"
           ]
