@@ -18,8 +18,8 @@
 // Controller for SQL notebook screen.
 consoleModule.controller('sqlController',
     ['$scope', '$window','$controller', '$http', '$timeout', '$common', '$confirm', '$interval', '$popover', '$loading',
-        '$location', function ($scope, $window, $controller, $http, $timeout, $common, $confirm,
-        $interval, $popover, $loading, $location) {
+        '$location', '$anchorScroll', function ($scope, $window, $controller, $http, $timeout, $common, $confirm,
+        $interval, $popover, $loading, $location, $anchorScroll) {
     // Initialize the super class and extend it.
     angular.extend(this, $controller('agent-download', {$scope: $scope}));
 
@@ -323,6 +323,8 @@ consoleModule.controller('sqlController',
         $scope.notebook.paragraphs.push(paragraph);
 
         $location.hash('paragraph-' + paragraph.id);
+
+        $anchorScroll();
 
         setTimeout(function () {
             paragraph.ace.focus();
