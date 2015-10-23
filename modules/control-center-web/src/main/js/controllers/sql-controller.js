@@ -67,8 +67,10 @@ consoleModule.controller('sqlController',
         '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5', '#aec7e8', '#c49c94', '#f7b6d2', '#c7c7c7', '#dbdb8d', '#9edae5'
     ];
 
+    var MAX_VAL_COLS = CHART_COLORS.length;
+
     $scope.chartColor = function(index) {
-        return {"background-color": CHART_COLORS[index]};
+        return {"color": "white", "background-color": CHART_COLORS[index]};
     };
 
     $scope.chartRemoveKeyColumn = function (paragraph, index) {
@@ -96,10 +98,15 @@ consoleModule.controller('sqlController',
     };
 
     $scope.chartAcceptValColumn = function(paragraph, item) {
-        var accepted = _.findIndex(paragraph.chartValCols, item) < 0 && item.value >= 0 && _numberType(item.type);
+        var valCols = paragraph.chartValCols;
+
+        var accepted = _.findIndex(valCols, item) < 0 && item.value >= 0 && _numberType(item.type);
 
         if (accepted) {
-            paragraph.chartValCols.push(item);
+            if (valCols.length == MAX_VAL_COLS - 1)
+                valCols.shift();
+
+            valCols.push(item);
 
             _chartApplySettings(paragraph, true);
         }
@@ -886,12 +893,20 @@ consoleModule.controller('sqlController',
                     }
                 }
                 else {
+                    index = paragraph.total;
+
                     values = _.map(paragraph.rows, function (row) {
-                        return {
-                            x: _chartNumber(row, paragraph.chartKeyCols[0].value, index),
-                            xLbl: _chartLabel(row, paragraph.chartKeyCols[0].value, undefined),
-                            y: _chartNumber(row, valCol.value, index++)
-                        }
+                        var xCol = paragraph.chartKeyCols[0].value;
+
+                        var v = {
+                            x: _chartNumber(row, xCol, index),
+                            xLbl: _chartLabel(row, xCol, undefined),
+                            y: _chartNumber(row, valCol.value, index)
+                        };
+
+                        index++;
+
+                        return v;
                     });
 
                     datum.push({key: valCol.label, values: values});
@@ -907,13 +922,19 @@ consoleModule.controller('sqlController',
 
         if (paragraph.chartColumnsConfigured() && !paragraph.chartTimeLineEnabled()) {
             paragraph.chartValCols.forEach(function (valCol) {
-                var index = 0;
+                var index = paragraph.total;
 
                 var values = _.map(paragraph.rows, function (row) {
-                    return {
-                        x: row[paragraph.chartKeyCols[0].value],
-                        y: _chartNumber(row, valCol.value, index++)
-                    }
+                    var xCol = paragraph.chartKeyCols[0].value;
+
+                    var v = {
+                        x: xCol < 0 ? index : row[xCol],
+                        y: _chartNumber(row, valCol, index)
+                    };
+
+                    index++;
+
+                    return v;
                 });
 
                 datum.push({key: valCol.label, values: values});
