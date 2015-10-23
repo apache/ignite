@@ -716,9 +716,18 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _curStruct = oldStruct;
                     _curRaw = oldRaw;
 
+                    // Process wrappers. We could introduce a common interface, but for only 2 if-else is faster.
                     var wrappedSerializable = obj as SerializableObjectHolder;
 
-                    return wrappedSerializable != null ? (T) wrappedSerializable.Item : (T) obj;
+                    if (wrappedSerializable != null) 
+                        return (T) wrappedSerializable.Item;
+
+                    var wrappedDateTime = obj as DateTimeHolder;
+
+                    if (wrappedDateTime != null)
+                        return TypeCaster<T>.Cast(wrappedDateTime.Item);
+                    
+                    return (T) obj;
                 }
             }
             finally
