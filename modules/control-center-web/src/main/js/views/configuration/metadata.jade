@@ -38,7 +38,7 @@ block content
                                     lable.labelHeader.labelFormField {{metadataTitle()}}
                                     .col-sm-8.pull-right(style='padding: 0')
                                         .col-sm-6
-                                            .pull-right.labelLogin.additional-filter(ng-if='(displayedRows | metadatasValidation:false:true).length > 0')
+                                            .pull-right.labelLogin.additional-filter(ng-if='(metadatas | metadatasValidation:false:true).length > 0')
                                                 a.labelFormField(ng-if='ui.showValid' ng-click='ui.showValid = !ui.showValid') Key fields should be configured: {{(displayedRows | metadatasValidation:false:true).length}}&nbsp
                                                 a.labelFormField(ng-if='!ui.showValid' ng-click='ui.showValid = !ui.showValid') Show all metadata: {{displayedRows.length}}&nbsp
                                         .col-sm-6
@@ -46,13 +46,13 @@ block content
                             tbody
                                 tr
                                     td
-                                        .scrollable-y(ng-show='displayedRows.length > 0' style='max-height: 200px')
+                                        .scrollable-y(ng-show='(displayedRows | metadatasValidation:ui.showValid:true).length > 0' style='max-height: 200px')
                                             table
                                                 tbody
                                                     tr(ng-repeat='row in (displayedRows | metadatasValidation:ui.showValid:true) track by row._id')
                                                         td
                                                             a(ng-class='{active: row._id == selectedItem._id}' ng-click='selectItem(row)') {{$index + 1}}) {{row.valueType}}
-                                        label.placeholder(ng-show='displayedRows.length == 0') No metadata found
+                                        label.placeholder(ng-show='(displayedRows | metadatasValidation:ui.showValid:true).length == 0') No metadata found
                 .padding-top-dflt(bs-affix)
                     .panel-tip-container(data-placement='bottom' bs-tooltip data-title='Create new metadata')
                         button.btn.btn-primary(id='new-item' ng-click='createItem()') Add metadata
@@ -60,7 +60,7 @@ block content
                         button.btn.btn-primary(ng-click='showLoadMetadataModal()') Load from database
                     +save-remove-buttons('metadata')
                 hr
-                form.form-horizontal(name='ui.inputForm' ng-if='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate unsaved-warning-form)
+                form.form-horizontal(name='ui.inputForm' ng-if='backupItem && tableVisibleRow((displayedRows | metadatasValidation:ui.showValid:true), selectedItem)' novalidate unsaved-warning-form)
                     .panel-group(bs-collapse ng-model='panels.activePanels' data-allow-multiple='true')
                         +groups('metadata', 'backupItem')
                     .section

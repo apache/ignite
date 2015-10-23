@@ -677,12 +677,7 @@ consoleModule.controller('metadataController', [
             };
 
             $scope.metadataTitle = function () {
-                var validFilter = $filter('metadatasValidation');
-
-                if ($scope.ui.showValid || validFilter($scope.displayedRows, false, true).length == 0)
-                    return 'Types metadata:';
-
-                return 'Type metadata without key fields:';
+                return $scope.ui.showValid ? 'Types metadata:' : 'Type metadata without key fields:';
             };
 
             function selectFirstItem() {
