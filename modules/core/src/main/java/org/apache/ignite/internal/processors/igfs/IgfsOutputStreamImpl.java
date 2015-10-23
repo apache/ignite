@@ -41,6 +41,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 import static org.apache.ignite.igfs.IgfsMode.PROXY;
+import static org.apache.ignite.internal.processors.igfs.IgfsMetaManager.calculateNextReservedDelta;
 
 /**
  * Output stream to store data into grid cache with separate blocks.
@@ -247,7 +248,9 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      *
      * @param len Data length to be written.
      */
-    private void preStoreDataBlocks(@Nullable DataInput in, int len) throws IgniteCheckedException, IOException {
+    private void preStoreDataBlocks(@Nullable DataInput in, final int len) throws IgniteCheckedException, IOException {
+        assert Thread.holdsLock(this);
+
         // Check if any exception happened while writing data.
         if (writeCompletionFut.isDone()) {
             assert ((GridFutureAdapter)writeCompletionFut).isFailed();
@@ -257,6 +260,21 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
 
             writeCompletionFut.get();
         }
+
+        long reservedDelta = fileInfo.reservedDelta();
+
+        if (len > reservedDelta) {
+            // Must invoke flush to renew the space reservation:
+            flush(len);
+
+            assert remainder == null;
+            assert remainderDataLen == 0;
+            assert space == 0;
+        }
+
+        reservedDelta = fileInfo.reservedDelta(); // Renew the delta
+
+        assert len <= reservedDelta : "Requested len = " + len + ", reserved = " + reservedDelta;
 
         bytes += len;
         space += len;
@@ -268,6 +286,17 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @exception IOException  if an I/O error occurs.
      */
     @Override public synchronized void flush() throws IOException {
+        flush(0L);
+    }
+
+    /**
+     *
+     * @param expWriteAmount
+     * @throws IOException
+     */
+    private void flush(long expWriteAmount) throws IOException {
+        assert Thread.holdsLock(this);
+
         boolean exists;
 
         try {
@@ -294,11 +323,14 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                 remainderDataLen = 0;
             }
 
-            if (space > 0) {
+            long newReservedDelta = calculateNextReservedDelta(fileInfo.blockSize(),
+                fileInfo.length() + space, expWriteAmount);
+
+            if (space > 0 || newReservedDelta > fileInfo.reservedDelta()) {
                 data.awaitAllAcksReceived(fileInfo.id());
 
                 IgfsFileInfo fileInfo0 = meta.updateInfo(fileInfo.id(),
-                    new ReserveSpaceClosure(space, streamRange));
+                    new UpdateLengthClosure(space, newReservedDelta, streamRange));
 
                 if (fileInfo0 == null)
                     throw new IOException("File was concurrently deleted: " + path);
@@ -353,7 +385,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                 try {
                     data.writeClose(fileInfo);
 
-                    writeCompletionFut.get();
+                    writeCompletionFut.get(); // Wait all the data are committed into data cache.
                 }
                 catch (IgniteCheckedException e) {
                     err = new IOException("Failed to close stream [path=" + path + ", fileInfo=" + fileInfo + ']', e);
@@ -451,13 +483,16 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * Helper closure to reserve specified space and update file's length
      */
     @GridInternal
-    private static final class ReserveSpaceClosure implements IgniteClosure<IgfsFileInfo, IgfsFileInfo>,
+    private static final class UpdateLengthClosure implements IgniteClosure<IgfsFileInfo, IgfsFileInfo>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Space amount (bytes number) to increase file's length. */
         private long space;
+
+        /** New delta to reserve. */
+        private long reservedDelta;
 
         /** Affinity range for this particular update. */
         private IgfsFileAffinityRange range;
@@ -466,7 +501,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
          * Empty constructor required for {@link Externalizable}.
          *
          */
-        public ReserveSpaceClosure() {
+        public UpdateLengthClosure() {
             // No-op.
         }
 
@@ -476,9 +511,12 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
          * @param space Space amount (bytes number) to increase file's length.
          * @param range Affinity range specifying which part of file was colocated.
          */
-        private ReserveSpaceClosure(long space, IgfsFileAffinityRange range) {
+        private UpdateLengthClosure(long space, long reservedDelta, IgfsFileAffinityRange range) {
+            assert space > 0 || reservedDelta > 0;
+
             this.space = space;
             this.range = range;
+            this.reservedDelta = reservedDelta;
         }
 
         /** {@inheritDoc} */
@@ -489,8 +527,11 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
 
             newMap.addRange(range);
 
-            // Update file length.
-            IgfsFileInfo updated = new IgfsFileInfo(oldInfo, oldInfo.length() + space);
+            // Update file length:
+            IgfsFileInfo updated = space == 0 ? oldInfo : new IgfsFileInfo(oldInfo, oldInfo.length() + space);
+
+            // Update the reserved delta:
+            updated = IgfsFileInfo.builder(updated).reservedDelta(reservedDelta).build();
 
             updated.fileMap(newMap);
 
@@ -500,18 +541,20 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeLong(space);
+            out.writeLong(reservedDelta);
             out.writeObject(range);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             space = in.readLong();
+            reservedDelta = in.readLong();
             range = (IgfsFileAffinityRange)in.readObject();
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(ReserveSpaceClosure.class, this);
+            return S.toString(UpdateLengthClosure.class, this);
         }
     }
 }

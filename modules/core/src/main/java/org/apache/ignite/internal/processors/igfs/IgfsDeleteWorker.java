@@ -224,7 +224,7 @@ public class IgfsDeleteWorker extends IgfsThread {
                     assert info.isFile();
 
                     // Lock the file with special lock Id to prevent concurrent writing:
-                    IgfsFileInfo lockedInfo = meta.lock(id, true);
+                    IgfsFileInfo lockedInfo = meta.lockForDeletion(id);
 
                     if (lockedInfo == null)
                         return false; // File is locked, we cannot delete it.
@@ -293,7 +293,7 @@ public class IgfsDeleteWorker extends IgfsThread {
                         if (fileInfo != null) {
                             assert fileInfo.isFile();
 
-                            IgfsFileInfo lockedInfo = meta.lock(fileInfo.id(), true);
+                            IgfsFileInfo lockedInfo = meta.lockForDeletion(fileInfo.id());
 
                             if (lockedInfo == null)
                                 // File is already locked:

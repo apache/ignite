@@ -53,6 +53,12 @@ public final class IgfsFileInfo implements Externalizable {
     /** File length in bytes. */
     private long len;
 
+    /** Reserved length, in bytes. This parameter makes sense only for files opened for writing.
+     * The reserved length indicates the length that may be achieved up to the next flush.
+     * In case of node failure all the data in range from {@code length} to {@code length + reservedDelta}
+     * will be cleaned up. */
+    private long reservedDelta;
+
     /** File block size, {@code zero} for directories. */
     private int blockSize;
 
@@ -378,6 +384,17 @@ public final class IgfsFileInfo implements Externalizable {
     }
 
     /**
+     * Gets the number of bytes that may be safely written before the next flush.
+     *
+     * @return The reserved space delta.
+     */
+    public long reservedDelta() {
+        assert isFile();
+
+        return reservedDelta;
+    }
+
+    /**
      * Get single data block size to store this file.
      *
      * @return Single data block size to store this file.
@@ -493,6 +510,7 @@ public final class IgfsFileInfo implements Externalizable {
         U.writeGridUuid(out, id);
         out.writeInt(blockSize);
         out.writeLong(len);
+        out.writeLong(reservedDelta);
         U.writeStringMap(out, props);
         U.writeGridUuid(out, lockId);
         U.writeGridUuid(out, affKey);
@@ -510,6 +528,7 @@ public final class IgfsFileInfo implements Externalizable {
         id = U.readGridUuid(in);
         blockSize = in.readInt();
         len = in.readLong();
+        reservedDelta = in.readLong();
         props = U.readStringMap(in);
         lockId = U.readGridUuid(in);
         affKey = U.readGridUuid(in);
@@ -569,6 +588,18 @@ public final class IgfsFileInfo implements Externalizable {
          */
         public Builder path(IgfsPath path) {
             info.path = path;
+
+            return this;
+        }
+
+        /**
+         * Sets new reserved length.
+         *
+         * @param reservedDelta New reserved length.
+         * @return The builder.
+         */
+        public Builder reservedDelta(long reservedDelta) {
+            info.reservedDelta = reservedDelta;
 
             return this;
         }

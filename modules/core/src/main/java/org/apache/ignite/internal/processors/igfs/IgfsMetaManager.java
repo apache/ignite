@@ -468,13 +468,13 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
-     * Lock the file explicitly outside of transaction.
+     * Lock the file for deletion explicitly outside of transaction.
      *
      * @param fileId File ID to lock.
      * @return Locked file info or {@code null} if file cannot be locked or doesn't exist.
      * @throws IgniteCheckedException If the file with such id does not exist, or on another failure.
      */
-    public @Nullable IgfsFileInfo lock(IgniteUuid fileId, boolean isDeleteLock) throws IgniteCheckedException {
+    @Nullable IgfsFileInfo lockForDeletion(IgniteUuid fileId) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert validTxState(false);
@@ -492,7 +492,9 @@ public class IgfsMetaManager extends IgfsManager {
                     if (oldInfo.lockId() != null)
                         return null; // The file is already locked, we cannot lock it.
 
-                    IgfsFileInfo newInfo = lockInfo(oldInfo, isDeleteLock);
+                    IgfsFileInfo newInfo = lockInfo(oldInfo, true);
+
+                    assert newInfo.reservedDelta() == 0L;
 
                     boolean put = metaCache.replace(fileId, oldInfo, newInfo);
 
@@ -564,8 +566,11 @@ public class IgfsMetaManager extends IgfsManager {
             try {
                 final IgniteUuid lockId = info.lockId();
 
-                if (lockId == null)
+                if (lockId == null) {
+                    assert info.reservedDelta() == 0;
+
                     return;
+                }
 
                 // Temporary clear interrupted state for unlocking.
                 final boolean interrupted = Thread.interrupted();
@@ -589,6 +594,7 @@ public class IgfsMetaManager extends IgfsManager {
                                     "[fileId=" + fileId + ", lockId=" + info.lockId() + ", actualLockId=" +
                                     oldInfo.lockId() + ']');
 
+                            // New info will be created with zero reserved delta and null lock id:
                             IgfsFileInfo newInfo = new IgfsFileInfo(oldInfo, null, modificationTime);
 
                             boolean put = metaCache.put(fileId, newInfo);
@@ -3357,6 +3363,19 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
+     * Actually it uses an heuristic algorythm. May be made configurable.
+     *
+     * @param blockSize The block size.
+     * @param length The currect file length.
+     * @return The new delta to reserve, in bytes.
+     */
+    static long calculateNextReservedDelta(int blockSize, long length, long expectedWriteDelta) {
+        long x = Math.max(blockSize, length * 2);
+
+        return Math.max(x, expectedWriteDelta);
+    }
+
+    /**
      * Create a new file.
      *
      * @param path Path.
@@ -3390,8 +3409,10 @@ public class IgfsMetaManager extends IgfsManager {
                     b = new DirectoryChainBuilder(path, dirProps, fileProps) {
                         /** {@inheritDoc} */
                         @Override protected IgfsFileInfo buildLeaf() {
-                            return new IgfsFileInfo(blockSize, 0L, affKey, composeLockId(false),
-                                 evictExclude, leafProps);
+                            return IgfsFileInfo.builder(new IgfsFileInfo(blockSize, 0L, affKey, composeLockId(false),
+                                 evictExclude, leafProps))
+                                .reservedDelta(calculateNextReservedDelta(blockSize, 0L, 0L))
+                                .build();
                         }
                     };
 
@@ -3485,8 +3506,10 @@ public class IgfsMetaManager extends IgfsManager {
                                         id2InfoPrj.invoke(lowermostExistingInfo.id(), new UpdatePath(path));
 
                                         // Make a new locked info:
-                                        final IgfsFileInfo newFileInfo = new IgfsFileInfo(cfg.getBlockSize(), 0L,
-                                            affKey, composeLockId(false), evictExclude, fileProps);
+                                        final IgfsFileInfo newFileInfo = IgfsFileInfo.builder(new IgfsFileInfo(cfg.getBlockSize(), 0L,
+                                            affKey, composeLockId(false), evictExclude, fileProps))
+                                            .reservedDelta(calculateNextReservedDelta(cfg.getBlockSize(), 0L, 0L))
+                                            .build();
 
                                         assert newFileInfo.lockId() != null; // locked info should be created.
 
@@ -3784,7 +3807,8 @@ public class IgfsMetaManager extends IgfsManager {
             if (info.lockId() != null)
                 return null; // file is already locked.
 
-            IgfsFileInfo newInfo = new IgfsFileInfo(info, newLockId, info.modificationTime());
+            IgfsFileInfo newInfo = IgfsFileInfo.builder(new IgfsFileInfo(info, newLockId, info.modificationTime()))
+                .reservedDelta(calculateNextReservedDelta(info.blockSize(), info.length(), 0L)).build();
 
             entry.setValue(newInfo);
 
