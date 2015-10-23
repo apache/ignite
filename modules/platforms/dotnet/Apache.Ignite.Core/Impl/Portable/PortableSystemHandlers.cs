@@ -233,7 +233,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             // TODO: Universal interface for wrappers?
             if (type.IsSerializable)
-                return (writer, o) => writer.Write(new SerializableObjectHolder(o));  // TODO: Method
+                return WriteSerializable;
 
             return null;
         }
@@ -591,6 +591,16 @@ namespace Apache.Ignite.Core.Impl.Portable
             ctx.Stream.WriteByte(PortableUtils.TypeEnum);
 
             PortableUtils.WriteEnum(ctx.Stream, (Enum)obj);
+        }
+
+        /// <summary>
+        /// Writes serializable.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="o">The object.</param>
+        private static void WriteSerializable(PortableWriterImpl writer, object o)
+        {
+            writer.Write(new SerializableObjectHolder(o));
         }
 
         /**
