@@ -211,7 +211,10 @@ public class GridPortableMarshaller {
     public static final int TOTAL_LEN_POS = 12;
 
     /** */
-    public static final byte RAW_DATA_OFF_POS = 16;
+    public static final int RAW_DATA_OFF_POS = 16;
+
+    /** Schema offset position. */
+    public static final int SCHEMA_OFF_POS = 20;
 
     /** */
     public static final int CLS_NAME_POS = 20;

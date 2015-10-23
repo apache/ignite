@@ -32,9 +32,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -119,6 +121,10 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
     /** Output stream. */
     private PortableOutputStream out;
+
+    /** Field infos. */
+    // TODO: Optimize.
+    private List<Integer> fieldInfos = new ArrayList<>();
 
     /**
      * @param ctx Context.
@@ -1787,11 +1793,25 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
                 "via rawWriter() method. Consider fixing serialization logic for class: " + cls.getName());
 
         int id = ctx.fieldId(typeId, fieldName);
+        int off = out.position() - start;
+
+        saveFieldInfo(id, off);
 
         if (metaEnabled)
             metaHashSum = 31 * metaHashSum + (id + fieldType);
 
         doWriteInt(id);
+    }
+
+     /**
+      * Save field info.
+      *
+      * @param id Field ID.
+      * @param off Offset starting from object head.
+      */
+    private void saveFieldInfo(int id, int off) {
+        fieldInfos.add(id);
+        fieldInfos.add(off);
     }
 
      /**
