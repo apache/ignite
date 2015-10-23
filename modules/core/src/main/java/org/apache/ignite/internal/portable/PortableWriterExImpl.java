@@ -71,6 +71,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OPTM_MARSH;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PORTABLE_OBJ;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.RAW_DATA_OFF_POS;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.SCHEMA_OFF_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
@@ -124,7 +125,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
     /** Field infos. */
     // TODO: Optimize.
-    private List<Integer> fieldInfos = new ArrayList<>();
+    private List<Integer> fieldInfos;
 
     /**
      * @param ctx Context.
@@ -335,8 +336,21 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * - writing schema to the tail.
      */
     public void postWrite() {
-        out.writeInt(start + TOTAL_LEN_POS, out.position() - start);
+        // 1. Write raw offset.
         out.writeInt(start + RAW_DATA_OFF_POS, (rawOffPos == 0 ? out.position() : rawOffPos) - start);
+
+        if (fieldInfos != null) {
+            // 2. Write schema offset.
+            out.writeInt(start + SCHEMA_OFF_POS, out.position() - start);
+
+            // 3. Write the schema.
+            for (Integer val : fieldInfos)
+                out.writeInt(val);
+        }
+
+        // 4. Write length.
+        out.writeInt(start + TOTAL_LEN_POS, out.position() - start);
+
     }
 
     /**
@@ -1804,6 +1818,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
       * @param off Offset starting from object head.
       */
     private void saveFieldInfo(int id, int off) {
+        if (fieldInfos == null)
+            fieldInfos = new ArrayList<>(2);
+
         fieldInfos.add(id);
         fieldInfos.add(off);
     }
