@@ -455,12 +455,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="pos">Position.</param>
         /// <param name="val">Value.</param>
-        public void CacheField<T>(int pos, T val)
+        /// <param name="header">Field header.</param>
+        public void CacheField<T>(int pos, T val, byte header)
         {
             if (_parent._cache == null)
                 _parent._cache = new Dictionary<int, PortableBuilderField>(2);
 
             // TODO: Need to detect a delegate by header
+            // TODO: Arrays, Collections, Dates can be written differently.
             // TODO: Current tests do not cover this!
 
             _parent._cache[pos] = new PortableBuilderField(typeof(T), val);

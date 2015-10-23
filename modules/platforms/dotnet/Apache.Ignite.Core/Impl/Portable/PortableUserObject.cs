@@ -167,7 +167,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     {
                         res = GetField0<T>(pos, builder);
 
-                        builder.CacheField(pos, res);
+                        builder.CacheField(pos, res, _data[pos]);
                     }
 
                     return res;
