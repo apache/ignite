@@ -136,9 +136,6 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
     /** State keeping. */
     private volatile boolean stopped = true;
 
-    /** State keeping. */
-    private volatile boolean connected;
-
     /** Cached log prefix for cache messages. */
     private String cachedLogValues;
 
@@ -231,10 +228,10 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
             stopped = false;
 
             // Build retrier.
-            Retryer<Boolean> retrier = RetryerBuilder.<Boolean>newBuilder()
-                .retryIfResult(new Predicate<Boolean>() {
-                    @Override public boolean apply(Boolean connected) {
-                        return !connected;
+            Retryer<Void> retrier = RetryerBuilder.<Void>newBuilder()
+                .retryIfResult(new Predicate<Void>() {
+                    @Override public boolean apply(Void v) {
+                        return !client.isConnected() && !stopped;
                     }
                 })
                 .retryIfException().retryIfRuntimeException()
@@ -288,7 +285,6 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
 
             client.close();
 
-            connected = false;
             stopped = true;
         }
         catch (Exception e) {
@@ -307,9 +303,7 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
      * {@inheritDoc}
      */
     @Override public void connectionLost(Throwable throwable) {
-        connected = false;
-
-        // if we have been stopped, we do not try to establish the connection again
+        // If we have been stopped, we do not try to establish the connection again.
         if (stopped)
             return;
 
@@ -623,12 +617,13 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
     }
 
     /**
-     * Returns whether this streamer is connected.
+     * Returns whether this streamer is connected by delegating to the underlying {@link MqttClient#isConnected()}
      *
      * @return {@code true} if connected; {@code false} if not.
+     * @see MqttClient#isConnected()
      */
     public boolean isConnected() {
-        return connected;
+        return client.isConnected();
     }
 
     /**
@@ -637,17 +632,17 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
      */
     private class MqttConnectionRetrier {
         /** The guava-retrying retrier object. */
-        private final Retryer<Boolean> retrier;
+        private final Retryer<Void> retrier;
 
         /** Single-threaded pool. */
-        private ExecutorService exec = Executors.newSingleThreadExecutor();
+        private final ExecutorService exec = Executors.newSingleThreadExecutor();
 
         /**
          * Constructor.
          *
          * @param retrier The retryier object.
          */
-        public MqttConnectionRetrier(Retryer<Boolean> retrier) {
+        public MqttConnectionRetrier(Retryer<Void> retrier) {
             this.retrier = retrier;
         }
 
@@ -655,14 +650,14 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
          * Method called by the streamer to ask us to (re-)connect.
          */
         public void connect() {
-            Callable<Boolean> callable = retrier.wrap(new Callable<Boolean>() {
-                @Override public Boolean call() throws Exception {
+            Callable<Void> callable = retrier.wrap(new Callable<Void>() {
+                @Override public Void call() throws Exception {
                     // If we're already connected, return immediately.
-                    if (connected)
-                        return true;
+                    if (client.isConnected())
+                        return null;
 
                     if (stopped)
-                        return false;
+                        return null;
 
                     // Connect to broker.
                     if (connectOptions == null)
@@ -686,13 +681,11 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
 
                     log.info("MQTT Streamer (re-)connected and subscribed " + cachedLogValues);
 
-                    connected = true;
-
-                    return true;
+                    return null;
                 }
             });
 
-            Future<Boolean> result = exec.submit(callable);
+            Future<Void> result = exec.submit(callable);
 
             if (blockUntilConnected) {
                 try {

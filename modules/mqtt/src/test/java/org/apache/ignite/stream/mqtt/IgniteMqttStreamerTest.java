@@ -172,6 +172,54 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testConnectDisconnect() throws Exception {
+        // configure streamer
+        streamer.setSingleTupleExtractor(singleTupleExtractor());
+        streamer.setTopic(SINGLE_TOPIC_NAME);
+        streamer.setBlockUntilConnected(true);
+
+        // action time: repeat 10 times; make sure the connection state is kept correctly every time
+        for (int i = 0; i < 10; i++) {
+            streamer.start();
+
+            assertTrue(streamer.isConnected());
+
+            streamer.stop();
+
+            assertFalse(streamer.isConnected());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConnectionStatusWithBrokerDisconnection() throws Exception {
+        // configure streamer
+        streamer.setSingleTupleExtractor(singleTupleExtractor());
+        streamer.setTopic(SINGLE_TOPIC_NAME);
+        streamer.setBlockUntilConnected(true);
+        streamer.setRetryWaitStrategy(WaitStrategies.noWait());
+
+        streamer.start();
+
+        // action time: repeat 5 times; make sure the connection state is kept correctly every time
+        for (int i = 0; i < 5; i++) {
+            assertTrue(streamer.isConnected());
+
+            broker.stop();
+
+            assertFalse(streamer.isConnected());
+
+            broker.start(true);
+            broker.waitUntilStarted();
+
+            Thread.sleep(500);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testSingleTopic_NoQoS_OneEntryPerMessage() throws Exception {
         // configure streamer
         streamer.setSingleTupleExtractor(singleTupleExtractor());
@@ -307,7 +355,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
+     * @throws Exception
      */
     public void testSingleTopic_NoQoS_Reconnect() throws Exception {
         // configure streamer
