@@ -152,6 +152,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_vals == null)
                 _vals = new Dictionary<string, PortableBuilderField>(2);
 
+            // TODO: WriteAction!
             _vals[name] = new PortableBuilderField(typeof(T), val);
 
             return val;
