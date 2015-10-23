@@ -214,8 +214,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                     return WriteDecimalArray;
                 if (elemType == typeof(string))
                     return WriteStringArray;
-                if (elemType == typeof(DateTime?))
-                    return WriteTimestampArray;
                 if (elemType == typeof(Guid?))
                     return WriteGuidArray;
                 // Enums.
@@ -231,7 +229,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // We know how to write enums.
                 return WriteEnum;
 
-            // TODO: Universal interface for wrappers?
             if (type.IsSerializable)
                 return WriteSerializable;
 
@@ -299,11 +296,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="obj">Value.</param>
         private static void WriteDate(PortableWriterImpl ctx, object obj)
         {
-            // TODO: write as a wrapper
-
-            ctx.Stream.WriteByte(PortableUtils.TypeTimestamp);
-
-            PortableUtils.WriteTimestamp((DateTime)obj, ctx.Stream);
+            ctx.Write(new DateTimeHolder((DateTime) obj));
         }
         
         /// <summary>
@@ -486,19 +479,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             PortableUtils.WriteDecimalArray((decimal?[])obj, ctx.Stream);
         }
         
-        /// <summary>
-        /// Write nullable date array.
-        /// </summary>
-        /// <param name="ctx">Context.</param>
-        /// <param name="obj">Value.</param>
-        private static void WriteTimestampArray(PortableWriterImpl ctx, object obj)
-        {
-            // TODO: Write as wrapper
-            ctx.Stream.WriteByte(PortableUtils.TypeArrayTimestamp);
-
-            PortableUtils.WriteTimestampArray((DateTime?[])obj, ctx.Stream);
-        }
-
         /// <summary>
         /// Write string array.
         /// </summary>
