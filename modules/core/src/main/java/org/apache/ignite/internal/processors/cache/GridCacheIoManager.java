@@ -24,10 +24,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -56,8 +56,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -97,9 +95,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /** Stopping flag. */
     private boolean stopping;
-
-    /** Error flag. */
-    private final AtomicBoolean startErr = new AtomicBoolean();
 
     /** Mutex. */
     private final GridSpinReadWriteLock rw = new GridSpinReadWriteLock();
@@ -851,9 +846,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     ", old=" + clsHandlers.get(key) + ", new=" + c + ']';
         }
 
-        if (log != null && log.isDebugEnabled())
-            log.debug("Registered cache communication handler [cacheId=" + cacheId + ", type=" + type +
-                ", msgIdx=" + msgIdx + ", handler=" + c + ']');
+        IgniteLogger log0 = log;
+
+        if (log0 != null && log0.isTraceEnabled())
+            log0.trace(
+                "Registered cache communication handler [cacheId=" + cacheId + ", type=" + type +
+                    ", msgIdx=" + msgIdx + ", handler=" + c + ']');
     }
 
     /**
@@ -906,15 +904,17 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     @SuppressWarnings({"unchecked"})
     public void addOrderedHandler(Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+        IgniteLogger log0 = log;
+
         if (orderedHandlers.putIfAbsent(topic, c) == null) {
             cctx.gridIO().addMessageListener(topic, new OrderedMessageListener(
                 (IgniteBiInClosure<UUID, GridCacheMessage>)c));
 
-            if (log != null && log.isDebugEnabled())
-                log.debug("Registered ordered cache communication handler [topic=" + topic + ", handler=" + c + ']');
+            if (log0 != null && log0.isTraceEnabled())
+                log0.trace("Registered ordered cache communication handler [topic=" + topic + ", handler=" + c + ']');
         }
-        else if (log != null)
-            U.warn(log, "Failed to register ordered cache communication handler because it is already " +
+        else if (log0 != null)
+            U.warn(log0, "Failed to register ordered cache communication handler because it is already " +
                 "registered for this topic [topic=" + topic + ", handler=" + c + ']');
     }
 
@@ -938,10 +938,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     /**
      * @param nodeId Sender node ID.
      * @param cacheMsg Message.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ErrorNotRethrown", "unchecked"})
-    private void unmarshall(UUID nodeId, GridCacheMessage cacheMsg) throws IgniteCheckedException {
+    private void unmarshall(UUID nodeId, GridCacheMessage cacheMsg) {
         if (cctx.localNodeId().equals(nodeId))
             return;
 

@@ -193,6 +193,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private boolean clientOnlyExchange;
 
+    /** Init timestamp. Used to track the amount of time spent to complete the future. */
+    private long initTs;
+
     /**
      * Dummy future created to trigger reassignments if partition
      * topology changed while preloading.
@@ -487,6 +490,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (init.compareAndSet(false, true)) {
             if (isDone())
                 return;
+
+            initTs = U.currentTimeMillis();
 
             try {
                 // Wait for event to occur to make sure that discovery
@@ -800,7 +805,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                             for (Map.Entry<IgniteTxKey, Collection<GridCacheMvccCandidate>> e : locks.entrySet())
                                 U.warn(log, "Awaited locked entry [key=" + e.getKey() + ", mvcc=" + e.getValue() + ']');
-                            
+
                             dumpedObjects++;
                         }
                     }
@@ -1059,7 +1064,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (super.onDone(res, err) && !dummy && !forcePreload) {
             if (log.isDebugEnabled())
-                log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this + ']');
+                log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
+                    "duration=" + duration() + ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
 
             initFut.onDone(err == null);
 
@@ -1206,7 +1212,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         else if (log.isDebugEnabled())
                             log.debug("Exchange future full map is not sent [allReceived=" + allReceived() +
                                 ", ready=" + ready + ", replied=" + replied.get() + ", init=" + init.get() +
-                                ", fut=" + this + ']');
+                                ", fut=" + GridDhtPartitionsExchangeFuture.this + ']');
                     }
                 }
             });
