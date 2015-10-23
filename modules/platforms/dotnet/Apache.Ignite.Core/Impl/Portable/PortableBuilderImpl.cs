@@ -147,13 +147,30 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (_vals != null && _vals.TryGetValue(name, out field))
                 return field != PortableBuilderField.RmvMarker ? (T)field.Value : default(T);
-            T val = _obj.GetField<T>(name, this);
 
-            if (_vals == null)
-                _vals = new Dictionary<string, PortableBuilderField>(2);
+            int pos;
+            T val;
 
-            // TODO: WriteAction!
-            _vals[name] = new PortableBuilderField(typeof(T), val);
+            if (_obj.TryGetFieldPosition(name, out pos))
+            {
+                if (!TryGetCachedField(pos, out val))
+                {
+                    val = _obj.GetField<T>(pos, this);
+
+                    var hdr = _obj.Data[pos];
+
+                    var fld = CacheField(pos, val, hdr);
+                    
+                    if (_vals == null)
+                        _vals = new Dictionary<string, PortableBuilderField>(2);
+
+                    _vals[name] = fld;
+                }
+            }
+            else
+            {
+                val = default(T);
+            }
 
             return val;
         }
@@ -460,7 +477,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="pos">Position.</param>
         /// <param name="val">Value.</param>
         /// <param name="header">Field header.</param>
-        public void CacheField<T>(int pos, T val, byte header)
+        public PortableBuilderField CacheField<T>(int pos, T val, byte header)
         {
             if (_parent._cache == null)
                 _parent._cache = new Dictionary<int, PortableBuilderField>(2);
@@ -478,7 +495,11 @@ namespace Apache.Ignite.Core.Impl.Portable
                     break;
             }
 
-            _parent._cache[pos] = new PortableBuilderField(typeof(T), val, writeAction);
+            var field = new PortableBuilderField(typeof(T), val, writeAction);
+            
+            _parent._cache[pos] = field;
+
+            return field;
         }
 
         /// <summary>
