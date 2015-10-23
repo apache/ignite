@@ -295,6 +295,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="obj">Value.</param>
         private static void WriteDate(PortableWriterImpl ctx, object obj)
         {
+            // TODO: write as a wrapper
+
             ctx.Stream.WriteByte(PortableUtils.TypeTimestamp);
 
             PortableUtils.WriteTimestamp((DateTime)obj, ctx.Stream);
@@ -487,6 +489,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="obj">Value.</param>
         private static void WriteTimestampArray(PortableWriterImpl ctx, object obj)
         {
+            // TODO: Write as wrapper
             ctx.Stream.WriteByte(PortableUtils.TypeArrayTimestamp);
 
             PortableUtils.WriteTimestampArray((DateTime?[])obj, ctx.Stream);

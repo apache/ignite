@@ -1179,6 +1179,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     handler.Invoke(this, obj);
                 else
                 {
+                    // TODO: Universal interface for wrappers?
                     if (type.IsSerializable)
                         Write(new SerializableObjectHolder(obj));
                     else

@@ -1753,7 +1753,11 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void ToJavaDate(DateTime date, out long high, out int low)
         {
-            long diff = date.ToUniversalTime().Ticks - JavaDateTicks;
+            if (date.Kind != DateTimeKind.Utc)
+                throw new InvalidOperationException(
+                    "DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.");
+
+            long diff = date.Ticks - JavaDateTicks;
 
             high = diff / TimeSpan.TicksPerMillisecond;
 
