@@ -1173,19 +1173,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             else
             {
                 // Are we dealing with a well-known type?
-                PortableSystemWriteDelegate handler = PortableSystemHandlers.GetWriteHandler(type);
+                var handler = PortableSystemHandlers.GetWriteHandler(type);
 
-                if (handler != null)
-                    handler.Invoke(this, obj);
-                else
-                {
-                    // TODO: Universal interface for wrappers?
-                    if (type.IsSerializable)
-                        Write(new SerializableObjectHolder(obj));
-                    else
-                    // We did our best, object cannot be marshalled.
-                        throw new PortableException("Unsupported object type [type=" + type + ", object=" + obj + ']');
-                }
+                if (handler == null)  // We did our best, object cannot be marshalled.
+                    throw new PortableException("Unsupported object type [type=" + type + ", object=" + obj + ']');
+                
+                handler(this, obj);
             }
         }
 

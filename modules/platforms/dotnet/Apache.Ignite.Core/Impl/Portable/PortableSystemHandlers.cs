@@ -231,6 +231,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // We know how to write enums.
                 return WriteEnum;
 
+            // TODO: Universal interface for wrappers?
+            if (type.IsSerializable)
+                return (writer, o) => writer.Write(new SerializableObjectHolder(o));  // TODO: Method
+
             return null;
         }
 
