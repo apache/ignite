@@ -417,6 +417,9 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
 
     /** {@inheritDoc} */
     @Override public int typeId(String typeName) {
+        if (portableCtx == null)
+            return super.typeId(typeName);
+
         return portableCtx.typeId(typeName);
     }
 

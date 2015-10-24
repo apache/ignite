@@ -23,12 +23,14 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 import javax.cache.Cache;
@@ -48,6 +50,8 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryEntityIndex;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.eviction.EvictionFilter;
@@ -367,6 +371,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache store session listeners. */
     private Factory<? extends CacheStoreSessionListener>[] storeSesLsnrs;
 
+    /** Query entities. */
+    private Collection<QueryEntity> qryEntities;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -429,6 +436,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
+        pluginCfgs = cc.getPluginConfigurations();
+        qryEntities = cc.getQueryEntities();
         rebalanceMode = cc.getRebalanceMode();
         rebalanceBatchSize = cc.getRebalanceBatchSize();
         rebalanceDelay = cc.getRebalanceDelay();
@@ -453,7 +462,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
         writeSync = cc.getWriteSynchronizationMode();
-        pluginCfgs = cc.getPluginConfigurations();
     }
 
     /**
@@ -1595,14 +1603,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param typeMeta Collection of type metadata.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link #setQueryEntities(java.util.Collection)} instead.
      */
     public CacheConfiguration<K, V> setTypeMetadata(Collection<CacheTypeMetadata> typeMeta) {
-        if (this.typeMeta == null)
-            this.typeMeta = new ArrayList<>(typeMeta);
-        else if (indexedTypes != null)
-            this.typeMeta.addAll(typeMeta);
-        else
-            throw new CacheException("Type metadata can be set only once.");
+        this.typeMeta = new ArrayList<>(typeMeta);
 
         return this;
     }
@@ -1779,8 +1783,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             newIndexedTypes[i] = U.box(indexedTypes[i]);
         }
 
-        if (typeMeta == null)
-            typeMeta = new ArrayList<>();
+        if (qryEntities == null)
+            qryEntities = new ArrayList<>();
 
         for (int i = 0; i < len; i += 2) {
             Class<?> keyCls = newIndexedTypes[i];
@@ -1788,7 +1792,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
             TypeDescriptor desc = processKeyAndValueClasses(keyCls, valCls);
 
-            typeMeta.add(convert(desc));
+            qryEntities.add(convert(desc));
         }
 
         return this;
@@ -1836,6 +1840,32 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setPluginConfigurations(CachePluginConfiguration... pluginCfgs) {
         this.pluginCfgs = pluginCfgs;
+
+        return this;
+    }
+
+    /**
+     * Gets a collection of configured  query entities.
+     *
+     * @return Query entities configurations.
+     */
+    public Collection<QueryEntity> getQueryEntities() {
+        return qryEntities != null ? qryEntities : Collections.<QueryEntity>emptyList();
+    }
+
+    /**
+     * Sets query entities configuration.
+     *
+     * @param qryEntities Query entities.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setQueryEntities(Collection<QueryEntity> qryEntities) {
+        if (this.qryEntities == null)
+            this.qryEntities = new ArrayList<>(qryEntities);
+        else if (indexedTypes != null)
+            this.qryEntities.addAll(qryEntities);
+        else
+            throw new CacheException("Query entities can be set only once.");
 
         return this;
     }
@@ -1911,85 +1941,65 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param desc Type descriptor.
      * @return Type metadata.
      */
-    private static CacheTypeMetadata convert(TypeDescriptor desc) {
-        CacheTypeMetadata meta = new CacheTypeMetadata();
+    static QueryEntity convert(TypeDescriptor desc) {
+        QueryEntity entity = new QueryEntity();
 
         // Key and val types.
-        meta.setKeyType(desc.keyClass());
-        meta.setValueType(desc.valueClass());
-
-        // Query fields.
-        Map<String, Class<?>> qryFields = new HashMap<>();
+        entity.setKeyType(desc.keyClass().getName());
+        entity.setValueType(desc.valueClass().getName());
 
         for (ClassProperty prop : desc.props.values())
-            qryFields.put(prop.fullName(), mask(prop.type()));
+            entity.addQueryField(prop.fullName(), prop.type().getName(), prop.alias());
 
-        meta.setQueryFields(qryFields);
+        QueryEntityIndex txtIdx = null;
 
-        // Indexes.
-        Collection<String> txtFields = new ArrayList<>();
-        Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps = new HashMap<>();
+        Collection<QueryEntityIndex> idxs = new ArrayList<>();
 
-        for (Map.Entry<String,GridQueryIndexDescriptor> idxEntry : desc.indexes().entrySet()) {
+        for (Map.Entry<String, GridQueryIndexDescriptor> idxEntry : desc.indexes().entrySet()) {
             GridQueryIndexDescriptor idx = idxEntry.getValue();
 
             if (idx.type() == FULLTEXT) {
-                assert txtFields.isEmpty();
+                assert txtIdx == null;
 
-                txtFields.addAll(idx.fields());
+                txtIdx = new QueryEntityIndex();
+
+                txtIdx.setType(QueryEntityIndex.Type.FULLTEXT);
+                txtIdx.setFields(new ArrayList<>(idx.fields()));
             }
             else {
-                LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> grp = new LinkedHashMap<>();
+                Collection<String> grp = new ArrayList<>();
 
-                for (String fieldName : idx.fields()) {
-                    Class<?> cls;
+                for (String fieldName : idx.fields())
+                    grp.add(idx.descending(fieldName) ? fieldName + " desc" : fieldName);
 
-                    if (_VAL.equals(fieldName))
-                        cls = desc.valueClass();
-                    else {
-                        ClassProperty prop = desc.props.get(fieldName);
+                QueryEntityIndex sortedIdx = new QueryEntityIndex();
 
-                        assert prop != null : fieldName;
+                sortedIdx.setType(QueryEntityIndex.Type.SORTED);
+                sortedIdx.setFields(grp);
 
-                        cls = prop.type();
-                    }
-
-                    cls = mask(cls);
-
-                    grp.put(fieldName, new IgniteBiTuple<Class<?>, Boolean>(cls, idx.descending(fieldName)));
-                }
-
-                grps.put(idxEntry.getKey(), grp);
+                idxs.add(sortedIdx);
             }
         }
 
-        meta.setGroups(grps);
+        if (desc.valueTextIndex()) {
+            if (txtIdx == null) {
+                txtIdx = new QueryEntityIndex();
 
-        if (desc.valueTextIndex())
-            txtFields.add(_VAL);
+                txtIdx.setType(QueryEntityIndex.Type.FULLTEXT);
 
-        if (!txtFields.isEmpty())
-            meta.setTextFields(txtFields);
-
-        // Aliases.
-        Map<String,String> aliases = null;
-
-        for (ClassProperty prop : desc.props.values()) {
-            while (prop != null) {
-                if (!F.isEmpty(prop.alias)) {
-                    if (aliases == null)
-                        aliases = new HashMap<>();
-
-                    aliases.put(prop.fullName(), prop.alias);
-                }
-
-                prop = prop.parent;
+                txtIdx.setFields(Arrays.asList(_VAL));
             }
+            else
+                txtIdx.getFields().add(_VAL);
         }
 
-        meta.setAliases(aliases);
+        if (txtIdx != null)
+            idxs.add(txtIdx);
 
-        return meta;
+        if (!F.isEmpty(idxs))
+            entity.setIndexes(idxs);
+
+        return entity;
     }
 
     /**
@@ -2007,7 +2017,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param valCls Value class.
      * @return Type descriptor.
      */
-    private static TypeDescriptor processKeyAndValueClasses(
+    static TypeDescriptor processKeyAndValueClasses(
         Class<?> keyCls,
         Class<?> valCls
     ) {
@@ -2177,7 +2187,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
         /** */
         @GridToStringExclude
-        private final Map<String, ClassProperty> props = new HashMap<>();
+        private final Map<String, ClassProperty> props = new LinkedHashMap<>();
 
         /** */
         @GridToStringInclude

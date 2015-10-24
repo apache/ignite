@@ -45,6 +45,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheTypeMetadata;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryEntityIndex;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -167,7 +169,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return {@code true} If query index must be enabled for this cache.
      */
     public static boolean isEnabled(CacheConfiguration<?,?> ccfg) {
-        return !F.isEmpty(ccfg.getIndexedTypes()) || !F.isEmpty(ccfg.getTypeMetadata());
+        return !F.isEmpty(ccfg.getIndexedTypes()) ||
+            !F.isEmpty(ccfg.getTypeMetadata()) ||
+            !F.isEmpty(ccfg.getQueryEntities());
     }
 
     /**
@@ -185,6 +189,56 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         idx.registerCache(ccfg);
 
         try {
+            if (!F.isEmpty(ccfg.getQueryEntities())) {
+                for (QueryEntity qryEntity : ccfg.getQueryEntities()) {
+                    if (F.isEmpty(qryEntity.getValueType()))
+                        throw new IgniteCheckedException("Value type is not set: " + qryEntity);
+
+                    TypeDescriptor desc = new TypeDescriptor();
+
+                    // Key and value classes still can be available if they are primitive or JDK part.
+                    // We need that to set correct types for _key and _val columns.
+                    Class<?> valCls = U.classForName(qryEntity.getValueType(), null);
+
+                    String simpleValType = valCls == null ? qryEntity.getValueType() : typeName(valCls);
+
+                    desc.name(simpleValType);
+
+                    desc.valueClass(valCls != null ? valCls : Object.class);
+                    desc.keyClass(
+                        qryEntity.getKeyType() == null ?
+                            Object.class :
+                            U.classForName(qryEntity.getKeyType(), Object.class));
+
+                    TypeId typeId;
+                    TypeId altTypeId = null;
+
+                    if (valCls == null || ctx.cacheObjects().isPortableEnabled(ccfg)) {
+                        processPortableMeta(qryEntity, desc);
+
+                        typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
+
+                        if (valCls != null)
+                            altTypeId = new TypeId(ccfg.getName(), valCls);
+                    }
+                    else {
+                        processClassMeta(qryEntity, desc);
+
+                        typeId = new TypeId(ccfg.getName(), valCls);
+                        altTypeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
+                    }
+
+                    addTypeByName(ccfg, desc);
+                    types.put(typeId, desc);
+
+                    if (altTypeId != null)
+                        types.put(altTypeId, desc);
+
+                    desc.registered(idx.registerType(ccfg.getName(), desc));
+
+                }
+            }
+
             if (!F.isEmpty(ccfg.getTypeMetadata())) {
                 for (CacheTypeMetadata meta : ccfg.getTypeMetadata()) {
                     if (F.isEmpty(meta.getValueType()))
@@ -1265,6 +1319,100 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             if (!d.props.containsKey(prop.name()))
                 d.addProperty(prop, false);
+        }
+    }
+
+    /**
+     * Processes declarative metadata for portable object.
+     *
+     * @param qryEntity Declared metadata.
+     * @param d Type descriptor.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void processPortableMeta(QueryEntity qryEntity, TypeDescriptor d) throws IgniteCheckedException {
+        Map<String,String> aliases = qryEntity.getAliases();
+
+        if (aliases == null)
+            aliases = Collections.emptyMap();
+
+        for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
+            PortableProperty prop = buildPortableProperty(entry.getKey(), U.classForName(entry.getValue(), Object.class), aliases);
+
+            d.addProperty(prop, false);
+        }
+
+        processIndexes(qryEntity, d);
+    }
+
+    /**
+     * Processes declarative metadata for portable object.
+     *
+     * @param qryEntity Declared metadata.
+     * @param d Type descriptor.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void processClassMeta(QueryEntity qryEntity, TypeDescriptor d) throws IgniteCheckedException {
+        Map<String,String> aliases = qryEntity.getAliases();
+
+        if (aliases == null)
+            aliases = Collections.emptyMap();
+
+        for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
+            ClassProperty prop = buildClassProperty(
+                d.keyClass(),
+                d.valueClass(),
+                entry.getKey(),
+                U.classForName(entry.getValue(), Object.class),
+                aliases);
+
+
+            d.addProperty(prop, false);
+        }
+
+        processIndexes(qryEntity, d);
+    }
+
+    /**
+     * Processes indexes based on query entity.
+     *
+     * @param qryEntity Query entity to process.
+     * @param d Type descriptor to populate.
+     * @throws IgniteCheckedException If failed to build index information.
+     */
+    private void processIndexes(QueryEntity qryEntity, TypeDescriptor d) throws IgniteCheckedException {
+        if (!F.isEmpty(qryEntity.getIndexes())) {
+            for (QueryEntityIndex idx : qryEntity.getIndexes()) {
+                String idxName = idx.getName();
+
+                if (idxName == null)
+                    idxName = QueryEntity.defaultIndexName(idx);
+
+                if (idx.getType() == QueryEntityIndex.Type.SORTED || idx.getType() == QueryEntityIndex.Type.GEOSPATIAL) {
+                    d.addIndex(idxName, idx.getType() == QueryEntityIndex.Type.SORTED ? SORTED : GEO_SPATIAL);
+
+                    int i = 0;
+
+                    for (String field : idx.getFields()) {
+                        boolean desc = false;
+
+                        int space = field.indexOf(' ');
+
+                        if (space != -1) {
+                            desc = field.toLowerCase().startsWith("desc", space + 1);
+
+                            field = field.substring(0, space);
+                        }
+
+                        d.addFieldToIndex(idxName, field, i++, desc);
+                    }
+                }
+                else {
+                    assert idx.getType() == QueryEntityIndex.Type.FULLTEXT;
+
+                    for (String field : idx.getFields())
+                        d.addFieldToTextIndex(field);
+                }
+            }
         }
     }
 
