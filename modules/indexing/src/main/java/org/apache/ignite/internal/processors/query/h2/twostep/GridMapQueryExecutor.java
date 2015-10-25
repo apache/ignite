@@ -485,7 +485,8 @@ public class GridMapQueryExecutor {
                 .filter(h2.backupFilter(caches, topVer, parts))
                 .partitionsMap(partsMap)
                 .distributedJoins(distributedJoins)
-                .pageSize(pageSize);
+                .pageSize(pageSize)
+                .topologyVersion(topVer);
 
             List<GridH2Table> snapshotedTbls = null;
 

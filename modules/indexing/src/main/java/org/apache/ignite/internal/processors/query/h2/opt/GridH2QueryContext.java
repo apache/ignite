@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -52,6 +54,9 @@ public class GridH2QueryContext {
     private IndexingQueryFilter filter;
 
     /** */
+    private AffinityTopologyVersion topVer;
+
+    /** */
     private Map<UUID,int[]> partsMap;
 
     /** */
@@ -81,6 +86,20 @@ public class GridH2QueryContext {
     }
 
     /**
+     * @return Origin node ID.
+     */
+    public UUID originNodeId() {
+        return key.nodeId;
+    }
+
+    /**
+     * @return Query request ID.
+     */
+    public long queryId() {
+        return key.qryId;
+    }
+
+    /**
      * @param distributedJoins Distributed joins can be run in this query.
      * @return {@code this}.
      */
@@ -95,6 +114,23 @@ public class GridH2QueryContext {
      */
     public boolean distributedJoins() {
         return distributedJoins;
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @return {@code this}.
+     */
+    public GridH2QueryContext topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
+
+        return this;
+    }
+
+    /**
+     * @return Topology version.
+     */
+    public AffinityTopologyVersion topologyVersion() {
+        return topVer;
     }
 
     /**
@@ -116,20 +152,16 @@ public class GridH2QueryContext {
 
     /**
      * @param p Partition.
+     * @param cctx Cache context.
      * @return Owning node ID.
      */
-    public UUID nodeForPartition(int p) {
+    public UUID nodeForPartition(int p, GridCacheContext<?,?> cctx) {
         UUID[] nodeIds = partsNodes;
 
         if (nodeIds == null) {
             assert partsMap != null;
 
-            int allParts = 0;
-
-            for (int[] nodeParts : partsMap.values())
-                allParts += nodeParts.length;
-
-            nodeIds = new UUID[allParts];
+            nodeIds = new UUID[cctx.affinity().partitions()];
 
             for (Map.Entry<UUID,int[]> e : partsMap.entrySet()) {
                 UUID nodeId = e.getKey();

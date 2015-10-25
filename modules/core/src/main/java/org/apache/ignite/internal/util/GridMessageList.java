@@ -15,74 +15,62 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep.msg;
+package org.apache.ignite.internal.util;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.UUID;
-import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.util.GridMessageList;
+import java.util.List;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- *
+ * List of messages.
  */
-public class GridH2IndexRangeRequest implements Message {
+public class GridMessageList<X extends Message> implements Message {
     /** */
-    private long id;
+    @GridDirectCollection(Message.class)
+    private List<X> list;
 
-    /** */
-    private UUID originNodeId;
+    /**
+     * @param arr Zero or more messages.
+     * @return Message list.
+     */
+    public static <Z  extends Message> GridMessageList<Z> asList(Z...arr) {
+        GridMessageList<Z> res = new GridMessageList<>();
 
-    /** */
-    private long qryId;
+        res.list(F.asList(arr));
 
-    /** Range ID to search row pair mapping. */
-    @GridDirectMap(keyType = Message.class, valueType = Message.class)
-    private Map<GridH2Integer,GridMessageList<GridH2RowMessage>> searchRows;
-
-    public Map<GridH2Integer,GridMessageList<GridH2RowMessage>> searchRows() {
-        return searchRows;
+        return res;
     }
 
-    public void searchRows(Map<GridH2Integer,GridMessageList<GridH2RowMessage>> searchRows) {
-        this.searchRows = searchRows;
+    /**
+     * @param list List of messages.
+     */
+    public void list(List<X> list) {
+        this.list = list;
     }
 
-    public UUID originNodeId() {
-        return originNodeId;
+    /**
+     * @return List of messages.
+     */
+    public List<X> list() {
+        return list;
     }
 
-    public void originNodeId(UUID originNodeId) {
-        this.originNodeId = originNodeId;
-    }
-
-    public long queryId() {
-        return qryId;
-    }
-
-    public void queryId(long qryId) {
-        this.qryId = qryId;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         return false;
     }
 
-    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         return false;
     }
 
-    /** {@inheritDoc} */
     @Override public byte directType() {
-        return -23;
+        return 114;
     }
 
-    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 0;
     }

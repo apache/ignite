@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -37,14 +37,16 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Integer;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.util.GridEmptyIterator;
+import org.apache.ignite.internal.util.GridMessageList;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
@@ -67,6 +69,9 @@ import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+
+import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Integer.fromInt;
+import static org.apache.ignite.internal.util.GridMessageList.asList;
 
 /**
  * Base class for snapshotable tree indexes.
@@ -146,11 +151,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         if (desc != null && desc.context() != null) {
             ctx = desc.context().kernalContext();
 
-            String schemaName = tbl.getSchema().getName();
-            String tblName = tbl.getName();
-            String idxName = getName();
-
-            msgTopic = new IgniteBiTuple<>(GridTopic.TOPIC_QUERY, schemaName + '.' + tblName + '.' + idxName);
+            msgTopic = new IgniteBiTuple<>(GridTopic.TOPIC_QUERY, tbl.identifier() + '.' + getName());
 
             msgLsnr = new GridMessageListener() {
                 @Override public void onMessage(UUID nodeId, Object msg) {
@@ -539,77 +540,161 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public List<Future<Cursor>> findBatched(TableFilter filter, List<SearchRow> firstLastPairs) {
-        List<Range> ranges = toRanges(firstLastPairs);
-
-
-
-        // TODO Topology version + explicit partitions
-
-        return null;
-    }
-
-    /**
-     * @param firstLastPairs First last pairs.
-     * @return Ranges list.
-     */
-    private List<Range> toRanges(List<SearchRow> firstLastPairs) {
         if (F.isEmpty(firstLastPairs))
-            throw new IllegalStateException();
+            throw new IllegalStateException("Empty batch.");
+
+        IgniteH2Indexing h2 = getTable().rowDescriptor().indexing();
+        GridCacheContext<?,?> cctx = getTable().rowDescriptor().context();
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+        Map<ClusterNode, GridH2IndexRangeRequest> reqMap = new HashMap<>();
+        Collection<ClusterNode> broadcastNodes = null;
+
+        assert qctx != null;
 
         IndexColumn affCol = getTable().getAffinityKeyColumn();
+        int affColId = affCol.column.getColumnId();
 
-        List<Range> ranges = new ArrayList<>(firstLastPairs.size() >>> 1);
+        List<Future<Cursor>> res = new ArrayList<>(firstLastPairs.size() >>> 1);
 
+        // Compose messages and create respective futures.
         for (int i = 0; i < firstLastPairs.size(); i += 2) {
-            Value affKey = firstLastPairs.get(i).getValue(affCol.column.getColumnId());
+            SearchRow firstRow = firstLastPairs.get(i);
+            SearchRow lastRow = firstLastPairs.get(i + 1);
 
-            GridH2RowMessage first = toRowMessage(firstLastPairs.get(i));
-            GridH2RowMessage last = toRowMessage(firstLastPairs.get(i + 1));
+            // Create messages.
+            GridH2RowMessage first = toRowMessage(firstRow);
+            GridH2RowMessage last = toRowMessage(lastRow);
 
-            ranges.add(new Range(ranges.size(), affKey == null ? null : affKey.getObject(), first, last));
+            Value affKeyFirst = firstRow.getValue(affColId);
+            Value affKeyLast = lastRow.getValue(affColId);
+
+            Future<Cursor> fut;
+            Collection<ClusterNode> nodes;
+
+            if (affKeyFirst != null && equal(affKeyFirst, affKeyLast)) {
+                if (affKeyFirst.getType() == Value.NULL) {
+                    nodes = null;
+                    fut = null; // It is allowed to provide null here instead of future with empty cursor.
+                }
+                else {
+                    nodes = F.asList(rangeNode(cctx, qctx, affKeyFirst));
+                    fut = null; // TODO
+                }
+            }
+            else {
+                // Affinity key is not provided or is not the same in upper and lower bounds, we have to broadcast.
+                if (broadcastNodes == null)
+                    broadcastNodes = broadcastNodes(qctx, cctx);
+
+                nodes = broadcastNodes;
+                fut = null;// TODO
+            }
+
+            res.add(fut);
+
+            if (nodes != null) {
+                GridH2Integer rangeId0 = fromInt(i);
+                GridMessageList<GridH2RowMessage> searchRows = asList(first, last);
+
+                for (ClusterNode node : nodes) {
+                    assert node != null;
+
+                    GridH2IndexRangeRequest req = reqMap.get(node);
+
+                    if (req == null)
+                        reqMap.put(node, req = createRequest(qctx));
+
+                    GridMessageList<GridH2RowMessage> old = req.searchRows().put(rangeId0, searchRows);
+
+                    assert old == null;
+                }
+            }
         }
 
-        return ranges;
+        // Send messages.
+        for (Map.Entry<ClusterNode,GridH2IndexRangeRequest> entry : reqMap.entrySet()) {
+            ClusterNode node = entry.getKey();
+            GridH2IndexRangeRequest msg = entry.getValue();
+
+            // TODO send
+
+        }
+
+        return res;
     }
 
     /**
-     * @param affKey Affinity key.
-     * @param topVer Topology version.
-     * @return Cluster nodes
+     * @param v1 First value.
+     * @param v2 Second value.
+     * @return {@code true} If they equal.
      */
-    private Collection<ClusterNode> rangeNodes(Value affKey, AffinityTopologyVersion topVer) {
-        GridCacheContext<?,?> cctx = getTable().rowDescriptor().context();
+    private boolean equal(Value v1, Value v2) {
+        return v1 == v2 || (v1 != null && v2 != null && v1.compareTypeSafe(v2, getDatabase().getCompareMode()) == 0);
+    }
 
-        Collection<ClusterNode> nodes;
+    /**
+     * @param qctx Query context.
+     * @return Index range request.
+     */
+    private static GridH2IndexRangeRequest createRequest(GridH2QueryContext qctx) {
+        GridH2IndexRangeRequest req = new GridH2IndexRangeRequest();
 
-        if (affKey != null) {
-            if (affKey.getType() == Value.NULL)
-                return null;
+        req.originNodeId(qctx.originNodeId());
+        req.queryId(qctx.queryId());
+        req.searchRows(new HashMap<GridH2Integer,GridMessageList<GridH2RowMessage>>());
 
-            GridH2QueryContext qctx = GridH2QueryContext.get();
+        return req;
+    }
 
-            ClusterNode node;
+    private Collection<ClusterNode> broadcastNodes(GridH2QueryContext qctx, GridCacheContext<?,?> cctx) {
+        Map<UUID,int[]> partMap = qctx.partitionsMap();
 
-            if (qctx.partitionsMap() != null) {
-                UUID nodeId = qctx.nodeForPartition(cctx.affinity().partition(affKey.getObject()));
+        if (partMap == null)
+            return CU.affinityNodes(cctx, qctx.topologyVersion());
 
-                node = cctx.discovery().node(nodeId);
-            }
-            else
-                node = cctx.affinity().primary(affKey.getObject(), topVer);
+        Collection<ClusterNode> res = new ArrayList<>(partMap.size());
+
+        for (UUID nodeId : partMap.keySet()) {
+            ClusterNode node = ctx.discovery().node(nodeId);
 
             if (node == null)
                 throw new GridH2RetryException();
 
-            nodes = Collections.singleton(node);
+            res.add(node);
         }
-        else
-            nodes = CU.affinityNodes(cctx, topVer);
 
-        if (F.isEmpty(nodes))
-            throw new CacheException("Failed to calculate affinity nodes.");
+        return res;
+    }
 
-        return nodes;
+    /**
+     * @param cctx Cache context.
+     * @param qctx Query context.
+     * @param affKey Affinity key.
+     * @return Cluster nodes or {@code null} if affinity key is a null value.
+     */
+    private ClusterNode rangeNode(GridCacheContext<?,?> cctx, GridH2QueryContext qctx, Value affKey) {
+        assert affKey != null;
+
+        Object affKeyObj = affKey.getObject();
+
+        if (affKeyObj == null)
+            return null; // Affinity key is explicit null value, we will not find anything.
+
+        ClusterNode node;
+
+        if (qctx.partitionsMap() != null) {
+            // If we have explicit partitions map, we have to use it to calculate affinity node.
+            UUID nodeId = qctx.nodeForPartition(cctx.affinity().partition(affKeyObj), cctx);
+
+            node = cctx.discovery().node(nodeId);
+        }
+        else // Get primary node for current topology version.
+            node = cctx.affinity().primary(affKeyObj, qctx.topologyVersion());
+
+        if (node == null) // Node was not found, probably topology changed and we need to retry the whole query.
+            throw new GridH2RetryException();
+
+        return node;
     }
 
     /**
@@ -638,51 +723,6 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         res.values(vals);
 
         return res;
-    }
-
-    /**
-     * Streams rows for ranges from remote nodes.
-     */
-    private class RangeStream {
-        /** */
-        final Queue<RangeData> ranges;
-
-        private RangeStream(int rangesNum) {
-            ranges = new ArrayDeque<>(rangesNum);
-
-            for (int i = 0; i < rangesNum; i++)
-                ranges.add(new RangeData(i));
-        }
-    }
-
-    /**
-     *
-     */
-    private static class Range {
-        /** */
-        final int id;
-
-        /** */
-        final Object affKey;
-
-        /** */
-        final GridH2RowMessage first;
-
-        /** */
-        final GridH2RowMessage last;
-
-        /**
-         * @param id Range ID.
-         * @param affKey Affinity key.
-         * @param first Lower bound.
-         * @param last Upper bound.
-         */
-        private Range(int id, Object affKey, GridH2RowMessage first, GridH2RowMessage last) {
-            this.id = id;
-            this.affKey = affKey;
-            this.first = first;
-            this.last = last;
-        }
     }
 
     /**

@@ -2324,6 +2324,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
+        @Override public IgniteH2Indexing indexing() {
+            return IgniteH2Indexing.this;
+        }
+
+        /** {@inheritDoc} */
         @Override public GridQueryTypeDescriptor type() {
             return type;
         }
