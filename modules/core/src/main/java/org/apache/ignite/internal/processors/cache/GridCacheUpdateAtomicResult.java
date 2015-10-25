@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.processors.cache;
 
 import javax.cache.processor.EntryProcessor;
+
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -63,6 +66,9 @@ public class GridCacheUpdateAtomicResult {
     /** Value computed by entry processor. */
     private IgniteBiTuple<Object, Exception> res;
 
+    /** Continuous query notify listener. */
+    private CI1<IgniteInternalFuture<Void>> contQryNtfy;
+
     /**
      * Constructor.
      *
@@ -86,7 +92,8 @@ public class GridCacheUpdateAtomicResult {
         @Nullable GridCacheVersion rmvVer,
         @Nullable GridCacheVersionConflictContext<?, ?> conflictRes,
         boolean sndToDht,
-        long updateIdx) {
+        long updateIdx,
+        @Nullable CI1<IgniteInternalFuture<Void>> contQryNtfy) {
         this.success = success;
         this.oldVal = oldVal;
         this.newVal = newVal;
@@ -97,6 +104,7 @@ public class GridCacheUpdateAtomicResult {
         this.conflictRes = conflictRes;
         this.sndToDht = sndToDht;
         this.updateIdx = updateIdx;
+        this.contQryNtfy = contQryNtfy;
     }
 
     /**
@@ -168,6 +176,13 @@ public class GridCacheUpdateAtomicResult {
      */
     public boolean sendToDht() {
         return sndToDht;
+    }
+
+    /**
+     * @return Continuous notify closure.
+     */
+    public CI1<IgniteInternalFuture<Void>> contQryNtfy() {
+        return contQryNtfy;
     }
 
     /** {@inheritDoc} */
