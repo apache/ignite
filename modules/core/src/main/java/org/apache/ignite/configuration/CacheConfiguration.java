@@ -1949,7 +1949,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         entity.setValueType(desc.valueClass().getName());
 
         for (ClassProperty prop : desc.props.values())
-            entity.addQueryField(prop.fullName(), prop.type().getName(), prop.alias());
+            entity.addQueryField(prop.fullName(), U.box(prop.type()).getName(), prop.alias());
 
         QueryEntityIndex txtIdx = null;
 
