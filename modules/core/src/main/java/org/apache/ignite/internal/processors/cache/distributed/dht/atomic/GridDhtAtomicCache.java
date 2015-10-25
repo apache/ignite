@@ -1799,12 +1799,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     readersOnly = true;
                 }
 
-                if (!primary) {
-                    int z = 0;
-
-                    ++z;
-                }
-
                 if (updRes.contQryNtfy() != null) {
                     if (primary && dhtFut != null) {
                         dhtFut.listen(new CI1<IgniteInternalFuture<Void>>() {

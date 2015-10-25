@@ -189,12 +189,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         if (preload && !internal)
             return;
 
-        if (!primary) {
-            int z = 0;
-
-            ++z;
-        }
-
         ConcurrentMap<UUID, CacheContinuousQueryListener> lsnrCol;
 
         if (internal)
