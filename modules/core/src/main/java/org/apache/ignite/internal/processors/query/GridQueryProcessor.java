@@ -1381,6 +1381,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private void processIndexes(QueryEntity qryEntity, TypeDescriptor d) throws IgniteCheckedException {
         if (!F.isEmpty(qryEntity.getIndexes())) {
+            Map<String, String> aliases = qryEntity.getAliases();
+
+            if (aliases == null)
+                aliases = Collections.emptyMap();
+
             for (QueryEntityIndex idx : qryEntity.getIndexes()) {
                 String idxName = idx.getName();
 
@@ -1403,14 +1408,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             field = field.substring(0, space);
                         }
 
+                        String alias = aliases.get(field);
+
+                        if (alias != null)
+                            field = alias;
+
                         d.addFieldToIndex(idxName, field, i++, desc);
                     }
                 }
                 else {
                     assert idx.getType() == QueryEntityIndex.Type.FULLTEXT;
 
-                    for (String field : idx.getFields())
+                    for (String field : idx.getFields()) {
+                        String alias = aliases.get(field);
+
+                        if (alias != null)
+                            field = alias;
+
                         d.addFieldToTextIndex(field);
+                    }
                 }
             }
         }

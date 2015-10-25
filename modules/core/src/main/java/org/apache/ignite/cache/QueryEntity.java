@@ -161,7 +161,7 @@ public class QueryEntity implements Serializable {
         fields.put(fullName, type);
 
         if (alias != null)
-            aliases.put(alias, fullName);
+            aliases.put(fullName, alias);
     }
 
     /**
