@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
@@ -136,12 +137,24 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
+        public Task DeployClusterSingletonAsync(string name, IService service)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
         public void DeployNodeSingleton(string name, IService service)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNull(service, "service");
 
             DeployMultiple(name, service, 0, 1);
+        }
+
+        /** <inheritDoc /> */
+        public Task DeployNodeSingletonAsync(string name, IService service)
+        {
+            throw new NotImplementedException();
         }
 
         /** <inheritDoc /> */
@@ -163,6 +176,12 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
+        public Task DeployKeyAffinitySingletonAsync<TK>(string name, IService service, string cacheName, TK affinityKey)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
         public void DeployMultiple(string name, IService service, int totalCount, int maxPerNodeCount)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
@@ -175,6 +194,12 @@ namespace Apache.Ignite.Core.Impl.Services
                 w.WriteInt(totalCount);
                 w.WriteInt(maxPerNodeCount);
             });
+        }
+
+        /** <inheritDoc /> */
+        public Task DeployMultipleAsync(string name, IService service, int totalCount, int maxPerNodeCount)
+        {
+            throw new NotImplementedException();
         }
 
         /** <inheritDoc /> */
@@ -199,6 +224,12 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
+        public Task DeployAsync(ServiceConfiguration configuration)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
         public void Cancel(string name)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
@@ -207,9 +238,21 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
+        public Task CancelAsync(string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
         public void CancelAll()
         {
             UU.ServicesCancelAll(Target);
+        }
+
+        /** <inheritDoc /> */
+        public Task CancelAllAsync()
+        {
+            throw new NotImplementedException();
         }
 
         /** <inheritDoc /> */
