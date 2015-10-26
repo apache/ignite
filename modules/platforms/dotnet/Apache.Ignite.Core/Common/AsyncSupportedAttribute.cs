@@ -19,6 +19,8 @@ namespace Apache.Ignite.Core.Common
 {
     using System;
 
+    // TODO: Remove this
+
     /// <summary>
     /// Attribute to indicate that method can be executed asynchronously if async mode is enabled.
     /// To enable async mode, invoke <see cref="IAsyncSupport{TWithAsync}.WithAsync"/> method on the API.

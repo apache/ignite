@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Events
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
 
@@ -27,7 +28,7 @@ namespace Apache.Ignite.Core.Events
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// </summary>
-    public interface IEvents : IAsyncSupport<IEvents>
+    public interface IEvents
     {
         /// <summary>
         /// Gets the cluster group to which this instance belongs.
@@ -42,7 +43,6 @@ namespace Apache.Ignite.Core.Events
         /// <param name="timeout">Maximum time to wait for result, null or 0 to wait forever.</param>
         /// <param name="types">Event types to be queried.</param>
         /// <returns>Collection of Ignite events returned from specified nodes.</returns>
-        [AsyncSupported]
         ICollection<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, params int[] types) 
             where T : IEvent;
 
@@ -54,8 +54,29 @@ namespace Apache.Ignite.Core.Events
         /// <param name="timeout">Maximum time to wait for result, null or 0 to wait forever.</param>
         /// <param name="types">Event types to be queried.</param>
         /// <returns>Collection of Ignite events returned from specified nodes.</returns>
-        [AsyncSupported]
+        Task<ICollection<T>> RemoteQueryAsync<T>(IEventFilter<T> filter, TimeSpan? timeout = null, params int[] types) 
+            where T : IEvent;
+
+        /// <summary>
+        /// Queries nodes in this cluster group for events using passed in predicate filter for event selection.
+        /// </summary>
+        /// <typeparam name="T">Type of events.</typeparam>
+        /// <param name="filter">Predicate filter used to query events on remote nodes.</param>
+        /// <param name="timeout">Maximum time to wait for result, null or 0 to wait forever.</param>
+        /// <param name="types">Event types to be queried.</param>
+        /// <returns>Collection of Ignite events returned from specified nodes.</returns>
         ICollection<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, IEnumerable<int> types = null) 
+            where T : IEvent;
+
+        /// <summary>
+        /// Queries nodes in this cluster group for events using passed in predicate filter for event selection.
+        /// </summary>
+        /// <typeparam name="T">Type of events.</typeparam>
+        /// <param name="filter">Predicate filter used to query events on remote nodes.</param>
+        /// <param name="timeout">Maximum time to wait for result, null or 0 to wait forever.</param>
+        /// <param name="types">Event types to be queried.</param>
+        /// <returns>Collection of Ignite events returned from specified nodes.</returns>
+        Task<ICollection<T>> RemoteQueryAsync<T>(IEventFilter<T> filter, TimeSpan? timeout = null, IEnumerable<int> types = null) 
             where T : IEvent;
 
         /// <summary>
@@ -64,7 +85,6 @@ namespace Apache.Ignite.Core.Events
         /// <param name="types">Types of the events to wait for. 
         /// If not provided, all events will be passed to the filter.</param>
         /// <returns>Ignite event.</returns>
-        [AsyncSupported]
         IEvent WaitForLocal(params int[] types);
 
         /// <summary>
@@ -73,8 +93,23 @@ namespace Apache.Ignite.Core.Events
         /// <param name="types">Types of the events to wait for. 
         /// If not provided, all events will be passed to the filter.</param>
         /// <returns>Ignite event.</returns>
-        [AsyncSupported]
+        Task<IEvent> WaitForLocalAsync(params int[] types);
+
+        /// <summary>
+        /// Waits for the specified events.
+        /// </summary>
+        /// <param name="types">Types of the events to wait for. 
+        /// If not provided, all events will be passed to the filter.</param>
+        /// <returns>Ignite event.</returns>
         IEvent WaitForLocal(IEnumerable<int> types);
+
+        /// <summary>
+        /// Waits for the specified events.
+        /// </summary>
+        /// <param name="types">Types of the events to wait for. 
+        /// If not provided, all events will be passed to the filter.</param>
+        /// <returns>Ignite event.</returns>
+        Task<IEvent> WaitForLocalAsync(IEnumerable<int> types);
 
         /// <summary>
         /// Waits for the specified events.
@@ -96,7 +131,29 @@ namespace Apache.Ignite.Core.Events
         /// If not provided, all events will be passed to the filter.</param>
         /// <returns>Ignite event.</returns>
         [AsyncSupported]
+        Task<T> WaitForLocalAsync<T>(IEventFilter<T> filter, params int[] types) where T : IEvent;
+
+        /// <summary>
+        /// Waits for the specified events.
+        /// </summary>
+        /// <typeparam name="T">Type of events.</typeparam>
+        /// <param name="filter">Optional filtering predicate. Event wait will end as soon as it returns false.</param>
+        /// <param name="types">Types of the events to wait for. 
+        /// If not provided, all events will be passed to the filter.</param>
+        /// <returns>Ignite event.</returns>
+        [AsyncSupported]
         T WaitForLocal<T>(IEventFilter<T> filter, IEnumerable<int> types) where T : IEvent;
+
+        /// <summary>
+        /// Waits for the specified events.
+        /// </summary>
+        /// <typeparam name="T">Type of events.</typeparam>
+        /// <param name="filter">Optional filtering predicate. Event wait will end as soon as it returns false.</param>
+        /// <param name="types">Types of the events to wait for. 
+        /// If not provided, all events will be passed to the filter.</param>
+        /// <returns>Ignite event.</returns>
+        [AsyncSupported]
+        Task<T> WaitForLocalAsync<T>(IEventFilter<T> filter, IEnumerable<int> types) where T : IEvent;
 
         /// <summary>
         /// Queries local node for events using of specified types.
