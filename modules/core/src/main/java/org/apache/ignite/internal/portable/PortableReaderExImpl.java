@@ -192,27 +192,32 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     /**
      * Preloads typeId from the input array.
      */
-    private void readHeaderIfNeeded(boolean skipObjByte) {
+    private void parseHeaderIfNeeded(boolean skipObjByte) {
         if (hdrParsed)
             return;
 
-        int pos = rawOff;
+        int retPos = in.position();
+        int retRawOff = rawOff;
 
-        if (!skipObjByte)
-            // skip obj type byte
-            rawOff++;
+        in.position(start);
 
-        // Validate protocol version.
-        PortableUtils.checkProtocolVersion(doReadByte(true));
+        byte hdr = in.readByte();
 
-        // Skip flags
-        rawOff += 2;
+        if (hdr != GridPortableMarshaller.OBJ)
+            throw new PortableException("Invalid header [pos=" + retPos + "expected=" + GridPortableMarshaller.OBJ +
+                ", actual=" + hdr + ']');
 
-        typeId = doReadInt(true);
+        PortableUtils.checkProtocolVersion(in.readByte());
+
+        in.position(in.position() + 2); // Skip flags.
+
+        typeId = in.readInt();
 
         if (typeId == UNREGISTERED_TYPE_ID) {
             // Skip to the class name position.
-            rawOff += (GridPortableMarshaller.DFLT_HDR_LEN - 8);
+            in.position(in.position() + GridPortableMarshaller.DFLT_HDR_LEN - 8);
+
+            rawOff = in.position();
 
             int off = rawOff;
 
@@ -230,7 +235,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         else
             hdrLen = DFLT_HDR_LEN;
 
-        in.position(rawOff = pos);
+        // Restore state.
+        in.position(retPos);
+        rawOff = retRawOff;
 
         hdrParsed = true;
     }
@@ -1820,7 +1827,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 break;
 
             case OBJ:
-                readHeaderIfNeeded(true);
+                parseHeaderIfNeeded(true);
 
                 assert typeId != UNREGISTERED_TYPE_ID;
 
@@ -2675,7 +2682,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private int fieldId(String name) {
         assert name != null;
 
-        readHeaderIfNeeded(false);
+        parseHeaderIfNeeded(false);
 
         assert typeId != UNREGISTERED_TYPE_ID;
 
