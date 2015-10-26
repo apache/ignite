@@ -2408,7 +2408,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 task.Wait();
                 Assert.Fail();
             }
-            catch (InvalidOperationException)
+            catch (AggregateException)
             {
                 // Expected
             }
