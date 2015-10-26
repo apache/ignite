@@ -132,12 +132,6 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private final ClassLoader ldr;
 
     /** */
-    private int off;
-
-    /** */
-    private int rawOff;
-
-    /** */
     private int len;
 
     /** */
@@ -148,6 +142,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** Type ID. */
     private int typeId;
+
+    /** Raw offset. */
+    private int rawOff;
 
     /** */
     private int hdrLen;
@@ -185,8 +182,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         this.ldr = ldr;
         this.rCtx = rCtx;
 
-        off = start;
-        rawOff = start;
+        in.position(start);
     }
 
     /**
@@ -197,7 +193,6 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             return;
 
         int retPos = in.position();
-        int retRawOff = rawOff;
 
         in.position(start);
 
@@ -213,13 +208,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         typeId = in.readInt();
 
+        rawOff = in.readInt(start + RAW_DATA_OFF_POS);
+
         if (typeId == UNREGISTERED_TYPE_ID) {
             // Skip to the class name position.
             in.position(in.position() + GridPortableMarshaller.DFLT_HDR_LEN - 8);
 
-            rawOff = in.position();
-
-            int off = rawOff;
+            int off = in.position();
 
             Class cls = doReadClass(true, typeId);
 
@@ -228,7 +223,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             typeId = desc.typeId();
 
-            int clsNameLen = rawOff - off;
+            int clsNameLen = in.position() - off;
 
             hdrLen = DFLT_HDR_LEN + clsNameLen;
         }
@@ -237,7 +232,6 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         // Restore state.
         in.position(retPos);
-        rawOff = retRawOff;
 
         hdrParsed = true;
     }
@@ -272,9 +266,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     public Object unmarshal(int offset) throws PortableException {
-        off = offset;
+        in.position(offset);
 
-        return off >= 0 ? unmarshal(false) : null;
+        return in.position() >= 0 ? unmarshal(false) : null;
     }
 
     /**
@@ -908,12 +902,12 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Field.
      */
     private <T> T readHandleField() {
-        int handle = (off - 1) - doReadInt(false);
+        int handle = (in.position() - 1) - doReadInt(false);
 
         Object obj = rCtx.getObjectByHandle(handle);
 
         if (obj == null) {
-            off = handle;
+            in.position(handle);
 
             obj = doReadObject(false);
         }
@@ -1402,6 +1396,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Override public PortableRawReader rawReader() {
+        in.position(start + rawOff);
+
         return this;
     }
 
@@ -1436,7 +1432,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 if (handledPo != null)
                     return handledPo;
 
-                off = handle;
+                in.position(handle);
 
                 return unmarshal(false);
 
@@ -1462,10 +1458,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
                 rCtx.setPortableHandler(start, po);
 
-                if (raw)
-                    rawOff = start + po.length();
-                else
-                    off = start + po.length();
+                in.position(start + po.length());
 
                 return po;
 
@@ -1739,7 +1732,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             String res = new String(in.array(), strOff, strLen, UTF_8);
 
-            shiftOffset(raw, strLen);
+            in.position(in.position() + strLen);
 
             // TODO: Opto.
             //in.position(in.position() + strLen);
@@ -1819,9 +1812,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 obj = rCtx.getObjectByHandle(handle);
 
                 if (obj == null) {
-                    off = handle;
+                    int retPos = in.position();
+
+                    in.position(handle);
 
                     obj = doReadObject(false);
+
+                    in.position(retPos);
                 }
 
                 break;
@@ -1836,18 +1833,20 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 boolean userType = PortableUtils.isUserType(PortableUtils.readFlags(this));
 
                 // Skip typeId and hash code.
-                rawOff += 8;
+                in.position(in.position() + 8);
 
                 desc = ctx.descriptorForTypeId(userType, typeId, ldr);
 
                 len = doReadInt(true);
 
-                rawOff = start + doReadInt(true);
+                in.position(start + hdrLen);
 
                 if (desc == null)
                     throw new PortableInvalidClassException("Unknown type ID: " + typeId);
 
                 obj = desc.read(this);
+
+                in.position(start + len);
 
                 break;
 
@@ -2038,7 +2037,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                     throw new PortableException("Failed to unmarshal object with optimized marshaller", e);
                 }
 
-                rawOff += len;
+                in.position(in.position() + len);
 
                 break;
 
@@ -2047,7 +2046,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         }
 
         if (len == 0)
-            len = rawOff - start;
+            len = in.position() - start;
 
         return obj;
     }
@@ -2580,9 +2579,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (in.offheapPointer() > 0) {
             int len = doReadInt(raw);
 
-            int pos = offset(raw);
+            int pos = in.position();
 
-            shiftOffset(raw, len);
+            in.position(in.position() + len);
 
             int start = doReadInt(raw);
 
@@ -2736,7 +2735,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             int id0 = in.readInt(searchHead);
 
             if (id0 == id) {
-                off = searchHead + 8;
+                in.position(searchHead + 8);
 
                 return true;
             }
@@ -2800,14 +2799,10 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Override public void readFully(byte[] b, int off, int len) throws IOException {
-        in.position(rawOff);
-
         int cnt = in.read(b, off, len);
 
         if (cnt < len)
             throw new EOFException();
-
-        rawOff += len;
     }
 
     /** {@inheritDoc} */
@@ -2815,8 +2810,6 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         int toSkip = Math.min(in.remaining(), n);
 
         in.position(in.position() + toSkip);
-
-        rawOff += toSkip;
 
         return toSkip;
     }
@@ -2833,13 +2826,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Override public int read(byte[] b, int off, int len) throws IOException {
-        in.position(rawOff);
-
-        int cnt = in.read(b, off, len);
-
-        rawOff += len;
-
-        return cnt;
+        return in.read(b, off, len);
     }
 
     /** {@inheritDoc} */
@@ -2864,7 +2851,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Offset.
      */
     private int offset(boolean raw) {
-        return raw ? rawOff : off;
+        return in.position();
     }
 
     /**
@@ -2874,10 +2861,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @param cnt Count.
      */
     private void shiftOffset(boolean raw, int cnt) {
-        if (raw)
-            rawOff += cnt;
-        else
-            off += cnt;
+        //in.position(in.position() + cnt);
     }
 
     /**
