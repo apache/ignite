@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
@@ -61,18 +62,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         public ICache<TK, TV> WithExpiryPolicy(IExpiryPolicy plc)
         {
             return new CacheProxyImpl<TK, TV>((CacheImpl<TK, TV>)_cache.WithExpiryPolicy(plc));
-        }
-
-        /** <inheritDoc /> */
-        public ICache<TK, TV> WithAsync()
-        {
-            return IsAsync ? this : new CacheProxyImpl<TK, TV>((CacheImpl<TK, TV>) _cache.WithAsync());
-        }
-
-        /** <inheritDoc /> */
-        public bool IsAsync
-        {
-            get { return _cache.IsAsync; }
         }
 
         /** <inheritDoc /> */
@@ -150,12 +139,22 @@ namespace Apache.Ignite.Core.Impl.Cache
             SetLastAsyncOp(CacheOp.LoadCache);
         }
 
+        public Task LoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
+        {
+            throw new System.NotImplementedException();
+        }
+
         /** <inheritDoc /> */
         public void LocalLoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
             _cache.LocalLoadCache(p, args);
 
             SetLastAsyncOp(CacheOp.LocLoadCache);
+        }
+
+        public Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
+        {
+            throw new System.NotImplementedException();
         }
 
         /** <inheritDoc /> */
@@ -168,6 +167,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             return result;
         }
 
+        public Task<bool> ContainsKeyAsync(TK key)
+        {
+            throw new System.NotImplementedException();
+        }
+
         /** <inheritDoc /> */
         public bool ContainsKeys(IEnumerable<TK> keys)
         {
@@ -176,6 +180,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             SetLastAsyncOp(CacheOp.ContainsKeys);
 
             return result;
+        }
+
+        public Task<bool> ContainsKeysAsync(IEnumerable<TK> keys)
+        {
+            throw new System.NotImplementedException();
         }
 
         /** <inheritDoc /> */
@@ -207,6 +216,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             return result;
         }
 
+        public Task<TV> GetAsync(TK key)
+        {
+            throw new System.NotImplementedException();
+        }
+
         /** <inheritDoc /> */
         public bool TryGet(TK key, out TV value)
         {
@@ -223,12 +237,22 @@ namespace Apache.Ignite.Core.Impl.Cache
             return result;
         }
 
+        public Task<IDictionary<TK, TV>> GetAllAsync(IEnumerable<TK> keys)
+        {
+            throw new System.NotImplementedException();
+        }
+
         /** <inheritDoc /> */
         public void Put(TK key, TV val)
         {
             _cache.Put(key, val);
 
             SetLastAsyncOp(CacheOp.Put);
+        }
+
+        public Task PutAsync(TK key, TV val)
+        {
+            throw new System.NotImplementedException();
         }
 
         /** <inheritDoc /> */
@@ -241,6 +265,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             return result;
         }
 
+        public Task<CacheResult<TV>> GetAndPutAsync(TK key, TV val)
+        {
+            throw new System.NotImplementedException();
+        }
+
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndReplace(TK key, TV val)
         {
@@ -249,6 +278,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             SetLastAsyncOp(CacheOp.GetAndReplace);
 
             return result;
+        }
+
+        public Task<CacheResult<TV>> GetAndReplaceAsync(TK key, TV val)
+        {
+            throw new System.NotImplementedException();
         }
 
         /** <inheritDoc /> */
@@ -261,6 +295,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             return result;
         }
 
+        public Task<CacheResult<TV>> GetAndRemoveAsync(TK key)
+        {
+            throw new System.NotImplementedException();
+        }
+
         /** <inheritDoc /> */
         public bool PutIfAbsent(TK key, TV val)
         {
@@ -269,6 +308,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             SetLastAsyncOp(CacheOp.PutIfAbsent);
 
             return result;
+        }
+
+        public Task<bool> PutIfAbsentAsync(TK key, TV val)
+        {
+            throw new System.NotImplementedException();
         }
 
         /** <inheritDoc /> */
@@ -281,6 +325,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             return result;
         }
 
+        public Task<CacheResult<TV>> GetAndPutIfAbsentAsync(TK key, TV val)
+        {
+            throw new System.NotImplementedException();
+        }
+
         /** <inheritDoc /> */
         public bool Replace(TK key, TV val)
         {
@@ -289,6 +338,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             SetLastAsyncOp(CacheOp.Replace2);
 
             return result;
+        }
+
+        public Task<bool> ReplaceAsync(TK key, TV val)
+        {
+            throw new System.NotImplementedException();
         }
 
         /** <inheritDoc /> */
@@ -301,12 +355,22 @@ namespace Apache.Ignite.Core.Impl.Cache
             return result;
         }
 
+        public Task<bool> ReplaceAsync(TK key, TV oldVal, TV newVal)
+        {
+            throw new System.NotImplementedException();
+        }
+
         /** <inheritDoc /> */
         public void PutAll(IDictionary<TK, TV> vals)
         {
             _cache.PutAll(vals);
 
             SetLastAsyncOp(CacheOp.PutAll);
+        }
+
+        public Task PutAllAsync(IDictionary<TK, TV> vals)
+        {
+            throw new System.NotImplementedException();
         }
 
         /** <inheritDoc /> */
@@ -323,6 +387,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             ClearLastAsyncOp();
         }
 
+        public Task ClearAsync()
+        {
+            throw new System.NotImplementedException();
+        }
+
         /** <inheritDoc /> */
         public void Clear(TK key)
         {
@@ -331,12 +400,22 @@ namespace Apache.Ignite.Core.Impl.Cache
             SetLastAsyncOp(CacheOp.Clear);
         }
 
+        public Task ClearAsync(TK key)
+        {
+            throw new System.NotImplementedException();
+        }
+
         /** <inheritDoc /> */
         public void ClearAll(IEnumerable<TK> keys)
         {
             _cache.ClearAll(keys);
             
             SetLastAsyncOp(CacheOp.ClearAll);
+        }
+
+        public Task ClearAllAsync(IEnumerable<TK> keys)
+        {
+            throw new System.NotImplementedException();
         }
 
         /** <inheritDoc /> */
@@ -361,6 +440,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             return result;
         }
 
+        public Task<bool> RemoveAsync(TK key)
+        {
+            throw new System.NotImplementedException();
+        }
+
         /** <inheritDoc /> */
         public bool Remove(TK key, TV val)
         {
@@ -371,6 +455,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             return result;
         }
 
+        public Task<bool> RemoveAsync(TK key, TV val)
+        {
+            throw new System.NotImplementedException();
+        }
+
         /** <inheritDoc /> */
         public void RemoveAll(IEnumerable<TK> keys)
         {
@@ -379,12 +468,22 @@ namespace Apache.Ignite.Core.Impl.Cache
             SetLastAsyncOp(CacheOp.RemoveAll);
         }
 
+        public Task RemoveAllAsync(IEnumerable<TK> keys)
+        {
+            throw new System.NotImplementedException();
+        }
+
         /** <inheritDoc /> */
         public void RemoveAll()
         {
             _cache.RemoveAll();
 
             ClearLastAsyncOp();
+        }
+
+        public Task RemoveAllAsync()
+        {
+            throw new System.NotImplementedException();
         }
 
         /** <inheritDoc /> */
@@ -401,6 +500,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             ClearLastAsyncOp();
 
             return result;
+        }
+
+        public Task<int> GetSizeAsync(params CachePeekMode[] modes)
+        {
+            throw new System.NotImplementedException();
         }
 
         /** <inheritDoc /> */
@@ -449,6 +553,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             return result;
         }
 
+        public Task<TRes> InvokeAsync<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
+        {
+            throw new System.NotImplementedException();
+        }
+
         /** <inheritDoc /> */
         public IDictionary<TK, ICacheEntryProcessorResult<TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys,
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
@@ -458,6 +567,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             SetLastAsyncOp(CacheOp.InvokeAll);
 
             return result;
+        }
+
+        public Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
+        {
+            throw new System.NotImplementedException();
         }
 
         /** <inheritDoc /> */
