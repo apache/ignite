@@ -216,7 +216,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             int off = in.position();
 
-            Class cls = doReadClass(true, typeId);
+            Class cls = doReadClass(typeId);
 
             // registers class by typeId, at least locally if the cache is not ready yet.
             PortableClassDescriptor desc = ctx.descriptorForClass(cls);
@@ -827,9 +827,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             // Revisit: why have we started writing Class for enums in their serialized form?
             if (cls == null)
-                cls = doReadClass(false);
+                cls = doReadClass();
             else
-                doReadClass(false);
+                doReadClass();
 
             Object[] vals = GridEnumCache.get(cls);
 
@@ -851,9 +851,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             if (flag == Flag.NORMAL) {
                 if (cls == null)
-                    cls = doReadClass(false);
+                    cls = doReadClass();
                 else
-                    doReadClass(false);
+                    doReadClass();
 
                 return doReadEnumArray(false, cls);
             }
@@ -874,7 +874,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (checkFlag(CLASS, false) == Flag.NULL)
                 return null;
 
-            return doReadClass(false);
+            return doReadClass();
         }
 
         return null;
@@ -1340,7 +1340,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (checkFlag(ENUM, true) == Flag.NULL)
             return null;
 
-        Class cls = doReadClass(true);
+        Class cls = doReadClass();
 
         return (T)doReadEnum(true, cls);
     }
@@ -1356,7 +1356,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (checkFlag(ENUM_ARR, true) == Flag.NULL)
             return null;
 
-        Class cls = doReadClass(true);
+        Class cls = doReadClass();
 
         return (T[])doReadEnumArray(true, cls);
     }
@@ -1556,10 +1556,10 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 return doReadPortableObject(raw);
 
             case ENUM:
-                return doReadEnum(raw, doReadClass(raw));
+                return doReadEnum(raw, doReadClass());
 
             case ENUM_ARR:
-                return doReadEnumArray(raw, doReadClass(raw));
+                return doReadEnumArray(raw, doReadClass());
 
             case CLASS:
                 return in.readInt();
@@ -1891,17 +1891,17 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 break;
 
             case ENUM:
-                obj = doReadEnum(true, doReadClass(true));
+                obj = doReadEnum(true, doReadClass());
 
                 break;
 
             case ENUM_ARR:
-                obj = doReadEnumArray(true, doReadClass(true));
+                obj = doReadEnumArray(true, doReadClass());
 
                 break;
 
             case CLASS:
-                obj = doReadClass(true);
+                obj = doReadClass();
 
                 break;
 
@@ -2210,7 +2210,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private Object[] doReadObjectArray(boolean raw, boolean deep) throws PortableException {
         int hPos = in.position() - 1;
 
-        Class compType = doReadClass(raw);
+        Class compType = doReadClass();
 
         int len = in.readInt();
 
@@ -2465,26 +2465,24 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (flag == NULL)
                 arr[i] = null;
             else
-                arr[i] = doReadEnum(raw, doReadClass(raw));
+                arr[i] = doReadEnum(raw, doReadClass());
         }
 
         return arr;
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private Class doReadClass(boolean raw) throws PortableException {
-        return doReadClass(raw, in.readInt());
+    private Class doReadClass() throws PortableException {
+        return doReadClass(in.readInt());
     }
 
     /**
-     * @param raw Raw flag.
      * @param typeId Type id.
      * @return Value.
      */
-    private Class doReadClass(boolean raw, int typeId) throws PortableException {
+    private Class doReadClass(int typeId) throws PortableException {
         Class cls;
 
         if (typeId == OBJECT_TYPE_ID)
