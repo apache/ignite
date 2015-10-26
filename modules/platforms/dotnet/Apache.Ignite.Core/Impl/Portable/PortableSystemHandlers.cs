@@ -159,11 +159,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Write handler or NULL.</returns>
-        private static PortableSystemWriteDelegate FindWriteHandler(Type type)
+        private static KeyValuePair<byte, PortableSystemWriteDelegate> FindWriteHandler(Type type)
         {
+            // TODO: 
+            // 1) Create a class for the write handler + header
+            // 2) Create a set of static predefined handlers to use in writer and all other places to avoid duplication
+
             // 1. Well-known types.
             if (type == typeof(string))
-                return WriteString;
+                return new KeyValuePair<byte, PortableSystemWriteDelegate>(PortableUtils.TypeString, WriteString);
             if (type == typeof(decimal))
                 return WriteDecimal;
             if (type == typeof(DateTime))

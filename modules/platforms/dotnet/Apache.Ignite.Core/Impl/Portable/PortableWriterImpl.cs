@@ -1034,7 +1034,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write NULL field.
         /// </summary>
-        public void WriteNullField()
+        private void WriteNullField()
         {
             _stream.WriteInt(1);
             _stream.WriteByte(PU.HdrNull);
@@ -1043,7 +1043,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write NULL raw field.
         /// </summary>
-        public void WriteNullRawField()
+        private void WriteNullRawField()
         {
             _stream.WriteByte(PU.HdrNull);
         }
@@ -1196,7 +1196,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="val">Object.</param>
         /// <param name="type">Type.</param>
-        public unsafe void WritePrimitive<T>(T val, Type type)
+        private unsafe void WritePrimitive<T>(T val, Type type)
         {
             // .Net defines 14 primitive types. We support 12 - excluding IntPtr and UIntPtr.
             // Types check sequence is designed to minimize comparisons for the most frequent types.
