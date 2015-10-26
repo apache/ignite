@@ -146,7 +146,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployNodeSingletonAsync(string name, IService service)
         {
-            _asyncInstance.DeployNodeSingletonAsync(name, service);
+            _asyncInstance.DeployNodeSingleton(name, service);
 
             return _asyncInstance.GetTask();
         }
@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployKeyAffinitySingletonAsync<TK>(string name, IService service, string cacheName, TK affinityKey)
         {
-            _asyncInstance.DeployKeyAffinitySingletonAsync(name, service, cacheName, affinityKey);
+            _asyncInstance.DeployKeyAffinitySingleton(name, service, cacheName, affinityKey);
 
             return _asyncInstance.GetTask();
         }
@@ -195,7 +195,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployMultipleAsync(string name, IService service, int totalCount, int maxPerNodeCount)
         {
-            _asyncInstance.DeployMultipleAsync(name, service, totalCount, maxPerNodeCount);
+            _asyncInstance.DeployMultiple(name, service, totalCount, maxPerNodeCount);
 
             return _asyncInstance.GetTask();
         }
@@ -224,7 +224,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployAsync(ServiceConfiguration configuration)
         {
-            _asyncInstance.DeployAsync(configuration);
+            _asyncInstance.Deploy(configuration);
 
             return _asyncInstance.GetTask();
         }
@@ -240,7 +240,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task CancelAsync(string name)
         {
-            _asyncInstance.CancelAsync(name);
+            _asyncInstance.Cancel(name);
 
             return _asyncInstance.GetTask();
         }
@@ -254,7 +254,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task CancelAllAsync()
         {
-            _asyncInstance.CancelAllAsync();
+            _asyncInstance.CancelAll();
 
             return _asyncInstance.GetTask();
         }

@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Services
 {
+    using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
@@ -84,7 +85,14 @@ namespace Apache.Ignite.Core.Tests.Services
         /** <inheritDoc /> */
         public void DeployMultiple(string name, IService service, int totalCount, int maxPerNodeCount)
         {
-            _services.DeployMultipleAsync(name, service, totalCount, maxPerNodeCount).Wait();
+            try
+            {
+                _services.DeployMultipleAsync(name, service, totalCount, maxPerNodeCount).Wait();
+            }
+            catch (AggregateException ex)
+            {
+                throw ex.InnerException;
+            }
         }
 
         /** <inheritDoc /> */
