@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         internal IFuture<TResult> GetFuture<TResult>(CacheOp lastAsyncOp) 
         {
             if (!_flagAsync)
-                throw IgniteUtils.GetAsyncModeDisabledException();
+                throw new AggregateException("OMG OMG");
 
             var converter = GetFutureResultConverter<TResult>(lastAsyncOp);
 

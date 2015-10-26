@@ -196,7 +196,6 @@
     <Compile Include="Impl\Compute\Closure\ComputeSingleClosureTask.cs" />
     <Compile Include="Impl\Compute\Closure\IComputeResourceInjector.cs" />
     <Compile Include="Impl\Compute\Compute.cs" />
-    <Compile Include="Impl\Compute\ComputeAsync.cs" />
     <Compile Include="Impl\Compute\ComputeFunc.cs" />
     <Compile Include="Impl\Compute\ComputeImpl.cs" />
     <Compile Include="Impl\Compute\ComputeJob.cs" />
