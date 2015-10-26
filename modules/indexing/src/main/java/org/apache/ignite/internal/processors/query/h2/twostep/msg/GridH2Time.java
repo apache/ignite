@@ -102,7 +102,7 @@ public class GridH2Time extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2Time.class);
     }
 
     /** {@inheritDoc} */

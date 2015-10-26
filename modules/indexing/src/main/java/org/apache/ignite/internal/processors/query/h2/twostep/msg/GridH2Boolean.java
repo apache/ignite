@@ -99,7 +99,7 @@ public class GridH2Boolean extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2Boolean.class);
     }
 
     /** {@inheritDoc} */

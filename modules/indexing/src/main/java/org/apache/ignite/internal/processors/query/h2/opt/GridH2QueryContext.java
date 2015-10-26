@@ -50,8 +50,11 @@ public class GridH2QueryContext {
     @GridToStringInclude
     private Map<Long, Object> snapshots;
 
-    /** */
+    /** Range streams for indexes. */
     private final ConcurrentMap<Long, Object> streams = new ConcurrentHashMap8<>();
+
+    /** Range sources for indexes. */
+    private final ConcurrentMap<Long, Object> sources = new ConcurrentHashMap8<>();
 
     /** */
     private IndexingQueryFilter filter;
@@ -215,21 +218,39 @@ public class GridH2QueryContext {
 
     /**
      * @param idxId Index ID.
-     * @param streams Streams.
+     * @param streams Range streams.
      */
     public void putStreams(long idxId, Object streams) {
-        Object old = this.streams.put(idxId, streams);
-
-        assert old == null;
+        this.streams.put(idxId, streams);
     }
 
     /**
      * @param idxId Index ID.
-     * @return Streams.
+     * @return Range streams.
      */
     @SuppressWarnings("unchecked")
     public <T> T getStreams(long idxId) {
         return (T)streams.get(idxId);
+    }
+
+    /**
+     * @param idxId Index ID.
+     * @param src Range source.
+     */
+    public void putSource(long idxId, Object src) {
+        if (src != null)
+            sources.put(idxId, src);
+        else
+            sources.remove(idxId);
+    }
+
+    /**
+     * @param idxId Index ID.
+     * @return Range source.
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T getSource(long idxId) {
+        return (T)sources.get(idxId);
     }
 
     /**

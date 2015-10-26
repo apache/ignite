@@ -121,7 +121,7 @@ public class GridH2Decimal extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2Decimal.class);
     }
 
     /** {@inheritDoc} */

@@ -119,7 +119,7 @@ public class GridH2Uuid extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2Uuid.class);
     }
 
     /** {@inheritDoc} */

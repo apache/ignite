@@ -111,7 +111,7 @@ public class GridH2Integer extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2Integer.class);
     }
 
     /** {@inheritDoc} */

@@ -101,7 +101,7 @@ public class GridH2String extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2String.class);
     }
 
     /** {@inheritDoc} */

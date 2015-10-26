@@ -119,7 +119,7 @@ public class GridH2Timestamp extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2Timestamp.class);
     }
 
     /** {@inheritDoc} */

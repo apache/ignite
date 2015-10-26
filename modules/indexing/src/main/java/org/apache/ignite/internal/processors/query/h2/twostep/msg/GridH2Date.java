@@ -101,7 +101,7 @@ public class GridH2Date extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2Date.class);
     }
 
     /** {@inheritDoc} */
