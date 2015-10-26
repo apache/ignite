@@ -1818,11 +1818,15 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
       * @param off Offset starting from object head.
       */
     private void saveFieldInfo(int id, int off) {
-        if (tail == null)
-            tail = new ArrayList<>(2);
+        if (tail == null) {
+            tail = new ArrayList<>(1);
 
-        tail.add(off);
-        tail.add(id);
+            tail.add(id);
+        }
+        else {
+            tail.add(off);
+            tail.add(id);
+        }
     }
 
      /**
