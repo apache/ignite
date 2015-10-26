@@ -132,9 +132,6 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private final ClassLoader ldr;
 
     /** */
-    private int len;
-
-    /** */
     private PortableClassDescriptor desc;
 
     /** Flag indicating that object header was parsed. */
@@ -1702,7 +1699,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
                 desc = ctx.descriptorForTypeId(userType, typeId, ldr);
 
-                len = in.readInt();
+                int len = in.readInt();
 
                 in.position(start + hdrLen);
 
@@ -1891,9 +1888,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 break;
 
             case OPTM_MARSH:
-                int len = in.readInt();
+                int dataLen = in.readInt();
 
-                ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
+                ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), dataLen);
 
                 try {
                     obj = ctx.optimizedMarsh().unmarshal(input, null);
@@ -1902,16 +1899,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                     throw new PortableException("Failed to unmarshal object with optimized marshaller", e);
                 }
 
-                in.position(in.position() + len);
+                in.position(in.position() + dataLen);
 
                 break;
 
             default:
                 throw new PortableException("Invalid flag value: " + flag);
         }
-
-        if (len == 0)
-            len = in.position() - start;
 
         return obj;
     }
