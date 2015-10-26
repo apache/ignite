@@ -226,20 +226,12 @@ public class PortableBuilderImpl implements PortableBuilder {
 
             reader.position(start + hdrLen);
 
-            int cpStart = -1;
-
             while (reader.position() < rawOff) {
                 int fieldId = reader.readInt();
                 int fieldLen = reader.readInt();
 
-                if (assignedFldsById.containsKey(fieldId)) {
-                    if (cpStart >= 0) {
-                        writer.write(reader.array(), cpStart, reader.position() - 4 - 4 - cpStart);
-
-                        cpStart = -1;
-                    }
-
-                    Object assignedVal = assignedFldsById.remove(fieldId);
+                if (assignedFldsById.containsKey(fldId)) {
+                    Object assignedVal = assignedFldsById.remove(fldId);
 
                     reader.skip(fieldLen);
 
@@ -256,20 +248,15 @@ public class PortableBuilderImpl implements PortableBuilder {
                 else {
                     int type = fieldLen != 0 ? reader.readByte(0) : 0;
 
-                    if (fieldLen != 0 && !PortableUtils.isPlainArrayType(type) && PortableUtils.isPlainType(type)) {
-                        if (cpStart < 0)
-                            cpStart = reader.position() - 4 - 4;
+                    if (len != 0 && !PortableUtils.isPlainArrayType(type) && PortableUtils.isPlainType(type)) {
+                        writer.writeInt(fieldId);
+                        writer.writeInt(fieldLen);
+                        writer.write(reader.array(), reader.position(), len);
 
                         reader.skip(fieldLen);
                     }
                     else {
-                        if (cpStart >= 0) {
-                            writer.write(reader.array(), cpStart, reader.position() - 4 - cpStart);
-
-                            cpStart = -1;
-                        }
-                        else
-                            writer.writeFieldId(fieldId);
+                        writer.writeInt(fldId);
 
                         Object val;
 
@@ -296,9 +283,6 @@ public class PortableBuilderImpl implements PortableBuilder {
                     }
                 }
             }
-
-            if (cpStart >= 0)
-                writer.write(reader.array(), cpStart, reader.position() - cpStart);
         }
 
         if (assignedVals != null && (remainsFlds == null || !remainsFlds.isEmpty())) {
