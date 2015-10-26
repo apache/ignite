@@ -346,9 +346,13 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             // 3. Write the schema.
             for (Integer val : tail)
                 out.writeInt(val);
+
+            // 4. Write raw offset if needed.
+            if (rawOffPos != 0)
+                out.writeInt(rawOffPos);
         }
 
-        // 4. Write length.
+        // 5. Write length.
         out.writeInt(start + TOTAL_LEN_POS, out.position() - start);
 
     }
