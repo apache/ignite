@@ -1587,9 +1587,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Value.
      */
     private byte doReadByte(boolean raw) {
-        in.position(raw ? rawOff++ : off++);
+        in.position(offset(raw));
 
-        return in.readByte();
+        byte val = in.readByte();
+
+        shiftOffset(raw, 1);
+
+        return val;
     }
 
     /**
@@ -1681,9 +1685,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Value.
      */
     private boolean doReadBoolean(boolean raw) {
-        in.position(raw ? rawOff++ : off++);
+        in.position(offset(raw));
 
-        return in.readBoolean();
+        boolean val = in.readBoolean();
+
+        shiftOffset(raw, 1);
+
+        return val;
     }
 
     /**
