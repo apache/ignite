@@ -109,151 +109,100 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         PortableObject copy = copy(po, null);
 
-        assertEquals(obj, copy.deserialize());
-
-        copy = copy(po, new HashMap<String, Object>());
-
-        assertEquals(obj, copy.deserialize());
-
-        Map<String, Object> map = new HashMap<>(1, 1.0f);
-
-        map.put("i", 3);
-
-        copy = copy(po, map);
-
-        assertEquals((byte)2, copy.<Byte>field("b").byteValue());
-        assertEquals((short)2, copy.<Short>field("s").shortValue());
-        assertEquals(3, copy.<Integer>field("i").intValue());
-        assertEquals(2L, copy.<Long>field("l").longValue());
-        assertEquals(2.2f, copy.<Float>field("f").floatValue(), 0);
-        assertEquals(2.2d, copy.<Double>field("d").doubleValue(), 0);
-        assertEquals((char)2, copy.<Character>field("c").charValue());
-        assertEquals(false, copy.<Boolean>field("bool").booleanValue());
-
-        SimpleObject obj0 = copy.deserialize();
-
-        assertEquals((byte)2, obj0.b);
-        assertEquals((short)2, obj0.s);
-        assertEquals(3, obj0.i);
-        assertEquals(2L, obj0.l);
-        assertEquals(2.2f, obj0.f, 0);
-        assertEquals(2.2d, obj0.d, 0);
-        assertEquals((char)2, obj0.c);
-        assertEquals(false, obj0.bool);
-
-        map = new HashMap<>(3, 1.0f);
-
-        map.put("b", (byte)3);
-        map.put("l", 3L);
-        map.put("bool", true);
-
-        copy = copy(po, map);
-
-        assertEquals((byte)3, copy.<Byte>field("b").byteValue());
-        assertEquals((short)2, copy.<Short>field("s").shortValue());
-        assertEquals(2, copy.<Integer>field("i").intValue());
-        assertEquals(3L, copy.<Long>field("l").longValue());
-        assertEquals(2.2f, copy.<Float>field("f").floatValue(), 0);
-        assertEquals(2.2d, copy.<Double>field("d").doubleValue(), 0);
-        assertEquals((char)2, copy.<Character>field("c").charValue());
-        assertEquals(true, copy.<Boolean>field("bool").booleanValue());
-
-        obj0 = copy.deserialize();
-
-        assertEquals((byte)3, obj0.b);
-        assertEquals((short)2, obj0.s);
-        assertEquals(2, obj0.i);
-        assertEquals(3L, obj0.l);
-        assertEquals(2.2f, obj0.f, 0);
-        assertEquals(2.2d, obj0.d, 0);
-        assertEquals((char)2, obj0.c);
-        assertEquals(true, obj0.bool);
-
-        map = new HashMap<>(8, 1.0f);
-
-        map.put("b", (byte)3);
-        map.put("s", (short)3);
-        map.put("i", 3);
-        map.put("l", 3L);
-        map.put("f", 3.3f);
-        map.put("d", 3.3d);
-        map.put("c", (char)3);
-        map.put("bool", true);
-
-        copy = copy(po, map);
-
-        assertEquals((byte)3, copy.<Byte>field("b").byteValue());
-        assertEquals((short)3, copy.<Short>field("s").shortValue());
-        assertEquals(3, copy.<Integer>field("i").intValue());
-        assertEquals(3L, copy.<Long>field("l").longValue());
-        assertEquals(3.3f, copy.<Float>field("f").floatValue(), 0);
-        assertEquals(3.3d, copy.<Double>field("d").doubleValue(), 0);
-        assertEquals((char)3, copy.<Character>field("c").charValue());
-        assertEquals(true, copy.<Boolean>field("bool").booleanValue());
-
-        obj0 = copy.deserialize();
-
-        assertEquals((byte)3, obj0.b);
-        assertEquals((short)3, obj0.s);
-        assertEquals(3, obj0.i);
-        assertEquals(3L, obj0.l);
-        assertEquals(3.3f, obj0.f, 0);
-        assertEquals(3.3d, obj0.d, 0);
-        assertEquals((char)3, obj0.c);
-        assertEquals(true, obj0.bool);
-
-//        GridTestUtils.assertThrows(
-//            log,
-//            new Callable<Object>() {
-//                @Override public Object call() throws Exception {
-//                    po.copy(F.<String, Object>asMap("i", false));
+//        assertEquals(obj, copy.deserialize());
 //
-//                    return null;
-//                }
-//            },
-//            PortableException.class,
-//            "Invalid value type for field: i"
-//        );
+//        copy = copy(po, new HashMap<String, Object>());
+//
+//        assertEquals(obj, copy.deserialize());
+//
+//        Map<String, Object> map = new HashMap<>(1, 1.0f);
+//
+//        map.put("i", 3);
+//
+//        copy = copy(po, map);
+//
+//        assertEquals((byte)2, copy.<Byte>field("b").byteValue());
+//        assertEquals((short)2, copy.<Short>field("s").shortValue());
+//        assertEquals(3, copy.<Integer>field("i").intValue());
+//        assertEquals(2L, copy.<Long>field("l").longValue());
+//        assertEquals(2.2f, copy.<Float>field("f").floatValue(), 0);
+//        assertEquals(2.2d, copy.<Double>field("d").doubleValue(), 0);
+//        assertEquals((char)2, copy.<Character>field("c").charValue());
+//        assertEquals(false, copy.<Boolean>field("bool").booleanValue());
+//
+//        SimpleObject obj0 = copy.deserialize();
+//
+//        assertEquals((byte)2, obj0.b);
+////        assertEquals((short)2, obj0.s);
+////        assertEquals(3, obj0.i);
+////        assertEquals(2L, obj0.l);
+////        assertEquals(2.2f, obj0.f, 0);
+////        assertEquals(2.2d, obj0.d, 0);
+////        assertEquals((char)2, obj0.c);
+////        assertEquals(false, obj0.bool);
+//
+//        map = new HashMap<>(3, 1.0f);
+//
+//        map.put("b", (byte)3);
+//        map.put("l", 3L);
+//        map.put("bool", true);
+//
+//        copy = copy(po, map);
+//
+//        assertEquals((byte)3, copy.<Byte>field("b").byteValue());
+//        assertEquals((short)2, copy.<Short>field("s").shortValue());
+//        assertEquals(2, copy.<Integer>field("i").intValue());
+//        assertEquals(3L, copy.<Long>field("l").longValue());
+//        assertEquals(2.2f, copy.<Float>field("f").floatValue(), 0);
+//        assertEquals(2.2d, copy.<Double>field("d").doubleValue(), 0);
+//        assertEquals((char)2, copy.<Character>field("c").charValue());
+//        assertEquals(true, copy.<Boolean>field("bool").booleanValue());
+//
+//        obj0 = copy.deserialize();
+//
+//        assertEquals((byte)3, obj0.b);
+////        assertEquals((short)2, obj0.s);
+////        assertEquals(2, obj0.i);
+////        assertEquals(3L, obj0.l);
+////        assertEquals(2.2f, obj0.f, 0);
+////        assertEquals(2.2d, obj0.d, 0);
+////        assertEquals((char)2, obj0.c);
+////        assertEquals(true, obj0.bool);
+//
+//        map = new HashMap<>(8, 1.0f);
+//
+//        map.put("b", (byte)3);
+//        map.put("s", (short)3);
+//        map.put("i", 3);
+//        map.put("l", 3L);
+//        map.put("f", 3.3f);
+//        map.put("d", 3.3d);
+//        map.put("c", (char)3);
+//        map.put("bool", true);
+//
+//        copy = copy(po, map);
+//
+//        assertEquals((byte)3, copy.<Byte>field("b").byteValue());
+//        assertEquals((short)3, copy.<Short>field("s").shortValue());
+//        assertEquals(3, copy.<Integer>field("i").intValue());
+//        assertEquals(3L, copy.<Long>field("l").longValue());
+//        assertEquals(3.3f, copy.<Float>field("f").floatValue(), 0);
+//        assertEquals(3.3d, copy.<Double>field("d").doubleValue(), 0);
+//        assertEquals((char)3, copy.<Character>field("c").charValue());
+//        assertEquals(true, copy.<Boolean>field("bool").booleanValue());
+//
+//        obj0 = copy.deserialize();
+//
+//        assertEquals((byte)3, obj0.b);
+////        assertEquals((short)3, obj0.s);
+////        assertEquals(3, obj0.i);
+////        assertEquals(3L, obj0.l);
+////        assertEquals(3.3f, obj0.f, 0);
+////        assertEquals(3.3d, obj0.d, 0);
+////        assertEquals((char)3, obj0.c);
+////        assertEquals(true, obj0.bool);
     }
 
-    /**
-     * @param obj Simple object.
-     * @param po Portable object.
-     */
-    private void checkSimpleObjectData(SimpleObject obj, PortableObject po) {
-        assertEquals(obj.b, (byte)po.field("b"));
-        assertEquals(obj.s, (short)po.field("s"));
-        assertEquals(obj.i, (int)po.field("i"));
-        assertEquals(obj.l, (long)po.field("l"));
-        assertEquals(obj.f, (float)po.field("f"), 0);
-        assertEquals(obj.d, (double)po.field("d"), 0);
-        assertEquals(obj.c, (char)po.field("c"));
-        assertEquals(obj.bool, (boolean)po.field("bool"));
-        assertEquals(obj.str, po.field("str"));
-        assertEquals(obj.uuid, po.field("uuid"));
-        assertEquals(obj.date, po.field("date"));
-        assertEquals(Date.class, obj.date.getClass());
-        assertEquals(obj.ts, po.field("ts"));
-        assertArrayEquals(obj.bArr, (byte[])po.field("bArr"));
-        assertArrayEquals(obj.sArr, (short[])po.field("sArr"));
-        assertArrayEquals(obj.iArr, (int[])po.field("iArr"));
-        assertArrayEquals(obj.lArr, (long[])po.field("lArr"));
-        assertArrayEquals(obj.fArr, (float[])po.field("fArr"), 0);
-        assertArrayEquals(obj.dArr, (double[])po.field("dArr"), 0);
-        assertArrayEquals(obj.cArr, (char[])po.field("cArr"));
-        assertBooleanArrayEquals(obj.boolArr, (boolean[])po.field("boolArr"));
-        assertArrayEquals(obj.strArr, (String[])po.field("strArr"));
-        assertArrayEquals(obj.uuidArr, (UUID[])po.field("uuidArr"));
-        assertArrayEquals(obj.dateArr, (Date[])po.field("dateArr"));
-        assertArrayEquals(obj.objArr, (Object[])po.field("objArr"));
-        assertEquals(obj.col, po.field("col"));
-        assertEquals(obj.map, po.field("map"));
-        assertEquals(new Integer(obj.enumVal.ordinal()), new Integer(((Enum<?>)po.field("enumVal")).ordinal()));
-        assertArrayEquals(ordinals(obj.enumArr), ordinals((Enum<?>[])po.field("enumArr")));
-        assertNull(po.field("unknown"));
-
-        assertEquals(obj, po.deserialize());
-    }
 
     /**
      * @param po Portable object.
@@ -431,290 +380,92 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         inner.b = 1;
         inner.s = 1;
-        inner.i = 1;
-        inner.l = 1;
-        inner.f = 1.1f;
-        inner.d = 1.1d;
-        inner.c = 1;
-        inner.bool = true;
-        inner.str = "str1";
-        inner.uuid = UUID.randomUUID();
-        inner.date = new Date();
-        inner.ts = new Timestamp(System.currentTimeMillis());
-        inner.bArr = new byte[] {1, 2, 3};
-        inner.sArr = new short[] {1, 2, 3};
-        inner.iArr = new int[] {1, 2, 3};
-        inner.lArr = new long[] {1, 2, 3};
-        inner.fArr = new float[] {1.1f, 2.2f, 3.3f};
-        inner.dArr = new double[] {1.1d, 2.2d, 3.3d};
-        inner.cArr = new char[] {1, 2, 3};
-        inner.boolArr = new boolean[] {true, false, true};
-        inner.strArr = new String[] {"str1", "str2", "str3"};
-        inner.uuidArr = new UUID[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
-        inner.dateArr = new Date[] {new Date(11111), new Date(22222), new Date(33333)};
-        inner.objArr = new Object[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
-        inner.col = new ArrayList<>();
-        inner.map = new HashMap<>();
-        inner.enumVal = TestEnum.A;
-        inner.enumArr = new TestEnum[] {TestEnum.A, TestEnum.B};
-        inner.bdArr = new BigDecimal[] {new BigDecimal(1000), BigDecimal.ONE};
-
-        inner.col.add("str1");
-        inner.col.add("str2");
-        inner.col.add("str3");
-
-        inner.map.put(1, "str1");
-        inner.map.put(2, "str2");
-        inner.map.put(3, "str3");
-
-        inner.mEntry = inner.map.entrySet().iterator().next();
+//        inner.i = 1;
+//        inner.l = 1;
+//        inner.f = 1.1f;
+//        inner.d = 1.1d;
+//        inner.c = 1;
+//        inner.bool = true;
+//        inner.str = "str1";
+//        inner.uuid = UUID.randomUUID();
+//        inner.date = new Date();
+//        inner.ts = new Timestamp(System.currentTimeMillis());
+//        inner.bArr = new byte[] {1, 2, 3};
+//        inner.sArr = new short[] {1, 2, 3};
+//        inner.iArr = new int[] {1, 2, 3};
+//        inner.lArr = new long[] {1, 2, 3};
+//        inner.fArr = new float[] {1.1f, 2.2f, 3.3f};
+//        inner.dArr = new double[] {1.1d, 2.2d, 3.3d};
+//        inner.cArr = new char[] {1, 2, 3};
+//        inner.boolArr = new boolean[] {true, false, true};
+//        inner.strArr = new String[] {"str1", "str2", "str3"};
+//        inner.uuidArr = new UUID[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
+//        inner.dateArr = new Date[] {new Date(11111), new Date(22222), new Date(33333)};
+//        inner.objArr = new Object[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
+//        inner.col = new ArrayList<>();
+//        inner.map = new HashMap<>();
+//        inner.enumVal = TestEnum.A;
+//        inner.enumArr = new TestEnum[] {TestEnum.A, TestEnum.B};
+//        inner.bdArr = new BigDecimal[] {new BigDecimal(1000), BigDecimal.ONE};
+//
+//        inner.col.add("str1");
+//        inner.col.add("str2");
+//        inner.col.add("str3");
+//
+//        inner.map.put(1, "str1");
+//        inner.map.put(2, "str2");
+//        inner.map.put(3, "str3");
+//
+//        inner.mEntry = inner.map.entrySet().iterator().next();
 
         SimpleObject outer = new SimpleObject();
 
         outer.b = 2;
-        outer.s = 2;
-        outer.i = 2;
-        outer.l = 2;
-        outer.f = 2.2f;
-        outer.d = 2.2d;
-        outer.c = 2;
-        outer.bool = false;
-        outer.str = "str2";
-        outer.uuid = UUID.randomUUID();
-        outer.date = new Date();
-        outer.ts = new Timestamp(System.currentTimeMillis());
-        outer.bArr = new byte[] {10, 20, 30};
-        outer.sArr = new short[] {10, 20, 30};
-        outer.iArr = new int[] {10, 20, 30};
-        outer.lArr = new long[] {10, 20, 30};
-        outer.fArr = new float[] {10.01f, 20.02f, 30.03f};
-        outer.dArr = new double[] {10.01d, 20.02d, 30.03d};
-        outer.cArr = new char[] {10, 20, 30};
-        outer.boolArr = new boolean[] {false, true, false};
-        outer.strArr = new String[] {"str10", "str20", "str30"};
-        outer.uuidArr = new UUID[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
-        outer.dateArr = new Date[] {new Date(44444), new Date(55555), new Date(66666)};
-        outer.objArr = new Object[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
-        outer.col = new ArrayList<>();
-        outer.map = new HashMap<>();
-        outer.enumVal = TestEnum.B;
-        outer.enumArr = new TestEnum[] {TestEnum.B, TestEnum.C};
+//        outer.s = 2;
+//        outer.i = 2;
+//        outer.l = 2;
+//        outer.f = 2.2f;
+//        outer.d = 2.2d;
+//        outer.c = 2;
+//        outer.bool = false;
+//        outer.str = "str2";
+//        outer.uuid = UUID.randomUUID();
+//        outer.date = new Date();
+//        outer.ts = new Timestamp(System.currentTimeMillis());
+//        outer.bArr = new byte[] {10, 20, 30};
+//        outer.sArr = new short[] {10, 20, 30};
+//        outer.iArr = new int[] {10, 20, 30};
+//        outer.lArr = new long[] {10, 20, 30};
+//        outer.fArr = new float[] {10.01f, 20.02f, 30.03f};
+//        outer.dArr = new double[] {10.01d, 20.02d, 30.03d};
+//        outer.cArr = new char[] {10, 20, 30};
+//        outer.boolArr = new boolean[] {false, true, false};
+//        outer.strArr = new String[] {"str10", "str20", "str30"};
+//        outer.uuidArr = new UUID[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
+//        outer.dateArr = new Date[] {new Date(44444), new Date(55555), new Date(66666)};
+//        outer.objArr = new Object[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
+//        outer.col = new ArrayList<>();
+//        outer.map = new HashMap<>();
+//        outer.enumVal = TestEnum.B;
+//        outer.enumArr = new TestEnum[] {TestEnum.B, TestEnum.C};
         outer.inner = inner;
-        outer.bdArr = new BigDecimal[] {new BigDecimal(5000), BigDecimal.TEN};
+//        outer.bdArr = new BigDecimal[] {new BigDecimal(5000), BigDecimal.TEN};
 
 
-        outer.col.add("str4");
-        outer.col.add("str5");
-        outer.col.add("str6");
-
-        outer.map.put(4, "str4");
-        outer.map.put(5, "str5");
-        outer.map.put(6, "str6");
-
-        outer.mEntry = outer.map.entrySet().iterator().next();
-
-        return outer;
-    }
-
-    /**
-     * @return Portable object.
-     */
-    private TestPortableObject portableObject() {
-        SimpleObject innerSimple = new SimpleObject();
-
-        innerSimple.b = 1;
-        innerSimple.s = 1;
-        innerSimple.i = 1;
-        innerSimple.l = 1;
-        innerSimple.f = 1.1f;
-        innerSimple.d = 1.1d;
-        innerSimple.c = 1;
-        innerSimple.bool = true;
-        innerSimple.str = "str1";
-        innerSimple.uuid = UUID.randomUUID();
-        innerSimple.date = new Date();
-        innerSimple.ts = new Timestamp(System.currentTimeMillis());
-        innerSimple.bArr = new byte[] {1, 2, 3};
-        innerSimple.sArr = new short[] {1, 2, 3};
-        innerSimple.iArr = new int[] {1, 2, 3};
-        innerSimple.lArr = new long[] {1, 2, 3};
-        innerSimple.fArr = new float[] {1.1f, 2.2f, 3.3f};
-        innerSimple.dArr = new double[] {1.1d, 2.2d, 3.3d};
-        innerSimple.cArr = new char[] {1, 2, 3};
-        innerSimple.boolArr = new boolean[] {true, false, true};
-        innerSimple.strArr = new String[] {"str1", "str2", "str3"};
-        innerSimple.uuidArr = new UUID[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
-        innerSimple.dateArr = new Date[] {new Date(11111), new Date(22222), new Date(33333)};
-        innerSimple.objArr = new UUID[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
-        innerSimple.col = new ArrayList<>();
-        innerSimple.map = new HashMap<>();
-        innerSimple.enumVal = TestEnum.A;
-        innerSimple.enumArr = new TestEnum[] {TestEnum.A, TestEnum.B};
-
-        innerSimple.col.add("str1");
-        innerSimple.col.add("str2");
-        innerSimple.col.add("str3");
-
-        innerSimple.map.put(1, "str1");
-        innerSimple.map.put(2, "str2");
-        innerSimple.map.put(3, "str3");
-
-        TestPortableObject innerPortable = new TestPortableObject();
-
-        innerPortable.b = 2;
-        innerPortable.s = 2;
-        innerPortable.i = 2;
-        innerPortable.l = 2;
-        innerPortable.f = 2.2f;
-        innerPortable.d = 2.2d;
-        innerPortable.c = 2;
-        innerPortable.bool = true;
-        innerPortable.str = "str2";
-        innerPortable.uuid = UUID.randomUUID();
-        innerPortable.date = new Date();
-        innerPortable.ts = new Timestamp(System.currentTimeMillis());
-        innerPortable.bArr = new byte[] {10, 20, 30};
-        innerPortable.sArr = new short[] {10, 20, 30};
-        innerPortable.iArr = new int[] {10, 20, 30};
-        innerPortable.lArr = new long[] {10, 20, 30};
-        innerPortable.fArr = new float[] {10.01f, 20.02f, 30.03f};
-        innerPortable.dArr = new double[] {10.01d, 20.02d, 30.03d};
-        innerPortable.cArr = new char[] {10, 20, 30};
-        innerPortable.boolArr = new boolean[] {true, false, true};
-        innerPortable.strArr = new String[] {"str10", "str20", "str30"};
-        innerPortable.uuidArr = new UUID[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
-        innerPortable.dateArr = new Date[] {new Date(44444), new Date(55555), new Date(66666)};
-        innerPortable.objArr = new Object[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
-        innerPortable.bRaw = 3;
-        innerPortable.sRaw = 3;
-        innerPortable.iRaw = 3;
-        innerPortable.lRaw = 3;
-        innerPortable.fRaw = 3.3f;
-        innerPortable.dRaw = 3.3d;
-        innerPortable.cRaw = 3;
-        innerPortable.boolRaw = true;
-        innerPortable.strRaw = "str3";
-        innerPortable.uuidRaw = UUID.randomUUID();
-        innerPortable.dateRaw = new Date();
-        innerPortable.tsRaw = new Timestamp(System.currentTimeMillis());
-        innerPortable.bArrRaw = new byte[] {11, 21, 31};
-        innerPortable.sArrRaw = new short[] {11, 21, 31};
-        innerPortable.iArrRaw = new int[] {11, 21, 31};
-        innerPortable.lArrRaw = new long[] {11, 21, 31};
-        innerPortable.fArrRaw = new float[] {11.11f, 21.12f, 31.13f};
-        innerPortable.dArrRaw = new double[] {11.11d, 21.12d, 31.13d};
-        innerPortable.cArrRaw = new char[] {11, 21, 31};
-        innerPortable.boolArrRaw = new boolean[] {true, false, true};
-        innerPortable.strArrRaw = new String[] {"str11", "str21", "str31"};
-        innerPortable.uuidArrRaw = new UUID[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
-        innerPortable.dateArrRaw = new Date[] {new Date(77777), new Date(88888), new Date(99999)};
-        innerPortable.objArrRaw = new Object[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
-        innerPortable.col = new ArrayList<>();
-        innerPortable.colRaw = new ArrayList<>();
-        innerPortable.map = new HashMap<>();
-        innerPortable.mapRaw = new HashMap<>();
-        innerPortable.enumVal = TestEnum.B;
-        innerPortable.enumValRaw = TestEnum.C;
-        innerPortable.enumArr = new TestEnum[] {TestEnum.B, TestEnum.C};
-        innerPortable.enumArrRaw = new TestEnum[] {TestEnum.C, TestEnum.D};
-
-        innerPortable.col.add("str4");
-        innerPortable.col.add("str5");
-        innerPortable.col.add("str6");
-
-        innerPortable.map.put(4, "str4");
-        innerPortable.map.put(5, "str5");
-        innerPortable.map.put(6, "str6");
-
-        innerPortable.colRaw.add("str7");
-        innerPortable.colRaw.add("str8");
-        innerPortable.colRaw.add("str9");
-
-        innerPortable.mapRaw.put(7, "str7");
-        innerPortable.mapRaw.put(8, "str8");
-        innerPortable.mapRaw.put(9, "str9");
-
-        TestPortableObject outer = new TestPortableObject();
-
-        outer.b = 4;
-        outer.s = 4;
-        outer.i = 4;
-        outer.l = 4;
-        outer.f = 4.4f;
-        outer.d = 4.4d;
-        outer.c = 4;
-        outer.bool = true;
-        outer.str = "str4";
-        outer.uuid = UUID.randomUUID();
-        outer.date = new Date();
-        outer.ts = new Timestamp(System.currentTimeMillis());
-        outer.bArr = new byte[] {12, 22, 32};
-        outer.sArr = new short[] {12, 22, 32};
-        outer.iArr = new int[] {12, 22, 32};
-        outer.lArr = new long[] {12, 22, 32};
-        outer.fArr = new float[] {12.21f, 22.22f, 32.23f};
-        outer.dArr = new double[] {12.21d, 22.22d, 32.23d};
-        outer.cArr = new char[] {12, 22, 32};
-        outer.boolArr = new boolean[] {true, false, true};
-        outer.strArr = new String[] {"str12", "str22", "str32"};
-        outer.uuidArr = new UUID[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
-        outer.dateArr = new Date[] {new Date(10101), new Date(20202), new Date(30303)};
-        outer.objArr = new Object[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
-        outer.simple = innerSimple;
-        outer.portable = innerPortable;
-        outer.bRaw = 5;
-        outer.sRaw = 5;
-        outer.iRaw = 5;
-        outer.lRaw = 5;
-        outer.fRaw = 5.5f;
-        outer.dRaw = 5.5d;
-        outer.cRaw = 5;
-        outer.boolRaw = true;
-        outer.strRaw = "str5";
-        outer.uuidRaw = UUID.randomUUID();
-        outer.dateRaw = new Date();
-        outer.tsRaw = new Timestamp(System.currentTimeMillis());
-        outer.bArrRaw = new byte[] {13, 23, 33};
-        outer.sArrRaw = new short[] {13, 23, 33};
-        outer.iArrRaw = new int[] {13, 23, 33};
-        outer.lArrRaw = new long[] {13, 23, 33};
-        outer.fArrRaw = new float[] {13.31f, 23.32f, 33.33f};
-        outer.dArrRaw = new double[] {13.31d, 23.32d, 33.33d};
-        outer.cArrRaw = new char[] {13, 23, 33};
-        outer.boolArrRaw = new boolean[] {true, false, true};
-        outer.strArrRaw = new String[] {"str13", "str23", "str33"};
-        outer.uuidArrRaw = new UUID[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
-        outer.dateArr = new Date[] {new Date(40404), new Date(50505), new Date(60606)};
-        outer.objArrRaw = new Object[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
-        outer.col = new ArrayList<>();
-        outer.colRaw = new ArrayList<>();
-        outer.map = new HashMap<>();
-        outer.mapRaw = new HashMap<>();
-        outer.enumVal = TestEnum.D;
-        outer.enumValRaw = TestEnum.E;
-        outer.enumArr = new TestEnum[] {TestEnum.D, TestEnum.E};
-        outer.enumArrRaw = new TestEnum[] {TestEnum.E, TestEnum.A};
-        outer.simpleRaw = innerSimple;
-        outer.portableRaw = innerPortable;
-
-        outer.col.add("str10");
-        outer.col.add("str11");
-        outer.col.add("str12");
-
-        outer.map.put(10, "str10");
-        outer.map.put(11, "str11");
-        outer.map.put(12, "str12");
-
-        outer.colRaw.add("str13");
-        outer.colRaw.add("str14");
-        outer.colRaw.add("str15");
-
-        outer.mapRaw.put(16, "str16");
-        outer.mapRaw.put(17, "str16");
-        outer.mapRaw.put(18, "str17");
+//        outer.col.add("str4");
+//        outer.col.add("str5");
+//        outer.col.add("str6");
+//
+//        outer.map.put(4, "str4");
+//        outer.map.put(5, "str5");
+//        outer.map.put(6, "str6");
+//
+//        outer.mEntry = outer.map.entrySet().iterator().next();
 
         return outer;
     }
+
+
 
     /**
      */
@@ -729,90 +480,90 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         /** */
         private short s;
-
-        /** */
-        private int i;
-
-        /** */
-        private long l;
-
-        /** */
-        private float f;
-
-        /** */
-        private double d;
-
-        /** */
-        private char c;
-
-        /** */
-        private boolean bool;
-
-        /** */
-        private String str;
-
-        /** */
-        private UUID uuid;
-
-        /** */
-        private Date date;
-
-        /** */
-        private Timestamp ts;
-
-        /** */
-        private byte[] bArr;
-
-        /** */
-        private short[] sArr;
-
-        /** */
-        private int[] iArr;
-
-        /** */
-        private long[] lArr;
-
-        /** */
-        private float[] fArr;
-
-        /** */
-        private double[] dArr;
-
-        /** */
-        private char[] cArr;
-
-        /** */
-        private boolean[] boolArr;
-
-        /** */
-        private String[] strArr;
-
-        /** */
-        private UUID[] uuidArr;
-
-        /** */
-        private Date[] dateArr;
-
-        /** */
-        private Object[] objArr;
-
-        /** */
-        private BigDecimal[] bdArr;
-
-        /** */
-        private Collection<String> col;
-
-        /** */
-        private Map<Integer, String> map;
-
-        /** */
-        private TestEnum enumVal;
-
-        /** */
-        private TestEnum[] enumArr;
-
-        /** */
-        private Map.Entry<Integer, String> mEntry;
+//
+//        /** */
+//        private int i;
+//
+//        /** */
+//        private long l;
+//
+//        /** */
+//        private float f;
+//
+//        /** */
+//        private double d;
+//
+//        /** */
+//        private char c;
+//
+//        /** */
+//        private boolean bool;
+//
+//        /** */
+//        private String str;
+//
+//        /** */
+//        private UUID uuid;
+//
+//        /** */
+//        private Date date;
+//
+//        /** */
+//        private Timestamp ts;
+//
+//        /** */
+//        private byte[] bArr;
+//
+//        /** */
+//        private short[] sArr;
+//
+//        /** */
+//        private int[] iArr;
+//
+//        /** */
+//        private long[] lArr;
+//
+//        /** */
+//        private float[] fArr;
+//
+//        /** */
+//        private double[] dArr;
+//
+//        /** */
+//        private char[] cArr;
+//
+//        /** */
+//        private boolean[] boolArr;
+//
+//        /** */
+//        private String[] strArr;
+//
+//        /** */
+//        private UUID[] uuidArr;
+//
+//        /** */
+//        private Date[] dateArr;
+//
+//        /** */
+//        private Object[] objArr;
+//
+//        /** */
+//        private BigDecimal[] bdArr;
+//
+//        /** */
+//        private Collection<String> col;
+//
+//        /** */
+//        private Map<Integer, String> map;
+//
+//        /** */
+//        private TestEnum enumVal;
+//
+//        /** */
+//        private TestEnum[] enumArr;
+//
+//        /** */
+//        private Map.Entry<Integer, String> mEntry;
 
         /** */
         private SimpleObject inner;
@@ -1235,230 +986,6 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    private static class CustomSerializer1 implements PortableSerializer {
-        /** {@inheritDoc} */
-        @Override public void writePortable(Object obj, PortableWriter writer) throws PortableException {
-            CustomSerializedObject1 o = (CustomSerializedObject1)obj;
-
-            writer.writeInt("val", o.val * 2);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readPortable(Object obj, PortableReader reader) throws PortableException {
-            CustomSerializedObject1 o = (CustomSerializedObject1)obj;
-
-            o.val = reader.readInt("val");
-        }
-    }
-
-    /**
-     */
-    private static class CustomSerializer2 implements PortableSerializer {
-        /** {@inheritDoc} */
-        @Override public void writePortable(Object obj, PortableWriter writer) throws PortableException {
-            CustomSerializedObject2 o = (CustomSerializedObject2)obj;
-
-            writer.writeInt("val", o.val * 3);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readPortable(Object obj, PortableReader reader) throws PortableException {
-            CustomSerializedObject2 o = (CustomSerializedObject2)obj;
-
-            o.val = reader.readInt("val");
-        }
-    }
-
-    /**
-     */
-    private static class CustomMappedObject1 {
-        /** */
-        private int val1;
-
-        /** */
-        private String val2;
-
-        /**
-         */
-        private CustomMappedObject1() {
-            // No-op.
-        }
-
-        /**
-         * @param val1 Value 1.
-         * @param val2 Value 2.
-         */
-        private CustomMappedObject1(int val1, String val2) {
-            this.val1 = val1;
-            this.val2 = val2;
-        }
-    }
-
-    /**
-     */
-    private static class CustomMappedObject2 {
-        /** */
-        private int val1;
-
-        /** */
-        private String val2;
-
-        /**
-         */
-        private CustomMappedObject2() {
-            // No-op.
-        }
-
-        /**
-         * @param val1 Value 1.
-         * @param val2 Value 2.
-         */
-        private CustomMappedObject2(int val1, String val2) {
-            this.val1 = val1;
-            this.val2 = val2;
-        }
-    }
-
-    /**
-     */
-    private static class DynamicObject implements PortableMarshalAware {
-        /** */
-        private int idx;
-
-        /** */
-        private int val1;
-
-        /** */
-        private int val2;
-
-        /** */
-        private int val3;
-
-        /**
-         */
-        private DynamicObject() {
-            // No-op.
-        }
-
-        /**
-         * @param val1 Value 1.
-         * @param val2 Value 2.
-         * @param val3 Value 3.
-         */
-        private DynamicObject(int idx, int val1, int val2, int val3) {
-            this.idx = idx;
-            this.val1 = val1;
-            this.val2 = val2;
-            this.val3 = val3;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writePortable(PortableWriter writer) throws PortableException {
-            writer.writeInt("val1", val1);
-
-            if (idx > 0)
-                writer.writeInt("val2", val2);
-
-            if (idx > 1)
-                writer.writeInt("val3", val3);
-
-            idx++;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readPortable(PortableReader reader) throws PortableException {
-            val1 = reader.readInt("val1");
-            val2 = reader.readInt("val2");
-            val3 = reader.readInt("val3");
-        }
-    }
-
-    /**
-     */
-    private static class CycleLinkObject {
-        /** */
-        private CycleLinkObject self;
-    }
-
-    /**
-     */
-    private static class DetachedTestObject implements PortableMarshalAware {
-        /** */
-        private DetachedInnerTestObject inner1;
-
-        /** */
-        private Object inner2;
-
-        /** */
-        private Object inner3;
-
-        /** */
-        private DetachedInnerTestObject inner4;
-
-        /**
-         */
-        private DetachedTestObject() {
-            // No-op.
-        }
-
-        /**
-         * @param inner Inner object.
-         */
-        private DetachedTestObject(DetachedInnerTestObject inner) {
-            inner1 = inner;
-            inner2 = inner;
-            inner3 = new DetachedInnerTestObject(inner, inner.id);
-            inner4 = inner;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writePortable(PortableWriter writer) throws PortableException {
-            PortableRawWriterEx raw = (PortableRawWriterEx)writer.rawWriter();
-
-            raw.writeObject(inner1);
-            raw.writeObjectDetached(inner2);
-            raw.writeObjectDetached(inner3);
-            raw.writeObject(inner4);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readPortable(PortableReader reader) throws PortableException {
-            PortableRawReaderEx raw = (PortableRawReaderEx)reader.rawReader();
-
-            inner1 = (DetachedInnerTestObject)raw.readObject();
-            inner2 = raw.readObjectDetached();
-            inner3 = raw.readObjectDetached();
-            inner4 = (DetachedInnerTestObject)raw.readObject();
-        }
-    }
-
-    /**
-     */
-    private static class DetachedInnerTestObject {
-        /** */
-        private DetachedInnerTestObject inner;
-
-        /** */
-        private UUID id;
-
-        /**
-         */
-        private DetachedInnerTestObject() {
-            // No-op.
-        }
-
-        /**
-         * @param inner Inner object.
-         * @param id ID.
-         */
-        private DetachedInnerTestObject(DetachedInnerTestObject inner, UUID id) {
-            this.inner = inner;
-            this.id = id;
-        }
-    }
-
-    /**
-     */
     @SuppressWarnings("UnusedDeclaration")
     private static class CollectionFieldsObject {
         /** */
@@ -1544,99 +1071,6 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
          */
         private Value(int val) {
             this.val = val;
-        }
-    }
-
-    /**
-     */
-    private static class DateClass1 {
-        /** */
-        private Date date;
-
-        /** */
-        private Timestamp ts;
-    }
-
-    /**
-     *
-     */
-    private static class NoPublicConstructor {
-        /** */
-        private String val = "test";
-
-        /**
-         * @return Value.
-         */
-        public String getVal() {
-            return val;
-        }
-    }
-
-    /**
-     *
-     */
-    @SuppressWarnings("PublicConstructorInNonPublicClass")
-    private static class NoPublicDefaultConstructor {
-        /** */
-        private int val;
-
-        /**
-         * @param val Value.
-         */
-        public NoPublicDefaultConstructor(int val) {
-            this.val = val;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class ProtectedConstructor {
-        /**
-         *  Protected constructor.
-         */
-        protected ProtectedConstructor() {
-            // No-op.
-        }
-    }
-
-    /**
-     *
-     */
-    private static class MyTestClass implements PortableMarshalAware {
-        /** */
-        private boolean readyToSerialize;
-
-        /** */
-        private String s;
-
-        /**
-         * @return Object.
-         */
-        Object writeReplace() {
-            readyToSerialize = true;
-
-            return this;
-        }
-
-        /**
-         * @return Object.
-         */
-        Object readResolve() {
-            s = "readResolve";
-
-            return this;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writePortable(PortableWriter writer) throws PortableException {
-            if (!readyToSerialize)
-                fail();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readPortable(PortableReader reader) throws PortableException {
-            s = "readPortable";
         }
     }
 

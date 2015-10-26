@@ -229,23 +229,22 @@ public class PortableBuilderImpl implements PortableBuilder {
             int cpStart = -1;
 
             while (reader.position() < rawOff) {
-                int fldId = reader.readInt();
+                int fieldId = reader.readInt();
+                int fieldLen = reader.readInt();
 
-                int len = reader.readInt();
-
-                if (assignedFldsById.containsKey(fldId)) {
+                if (assignedFldsById.containsKey(fieldId)) {
                     if (cpStart >= 0) {
                         writer.write(reader.array(), cpStart, reader.position() - 4 - 4 - cpStart);
 
                         cpStart = -1;
                     }
 
-                    Object assignedVal = assignedFldsById.remove(fldId);
+                    Object assignedVal = assignedFldsById.remove(fieldId);
 
-                    reader.skip(len);
+                    reader.skip(fieldLen);
 
                     if (assignedVal != REMOVED_FIELD_MARKER) {
-                        writer.writeFieldId(fldId);
+                        writer.writeFieldId(fieldId);
 
                         int lenPos = writer.reserveAndMark(4);
 
@@ -255,13 +254,13 @@ public class PortableBuilderImpl implements PortableBuilder {
                     }
                 }
                 else {
-                    int type = len != 0 ? reader.readByte(0) : 0;
+                    int type = fieldLen != 0 ? reader.readByte(0) : 0;
 
-                    if (len != 0 && !PortableUtils.isPlainArrayType(type) && PortableUtils.isPlainType(type)) {
+                    if (fieldLen != 0 && !PortableUtils.isPlainArrayType(type) && PortableUtils.isPlainType(type)) {
                         if (cpStart < 0)
                             cpStart = reader.position() - 4 - 4;
 
-                        reader.skip(len);
+                        reader.skip(fieldLen);
                     }
                     else {
                         if (cpStart >= 0) {
@@ -270,23 +269,23 @@ public class PortableBuilderImpl implements PortableBuilder {
                             cpStart = -1;
                         }
                         else
-                            writer.writeFieldId(fldId);
+                            writer.writeFieldId(fieldId);
 
                         Object val;
 
-                        if (len == 0)
+                        if (fieldLen == 0)
                             val = null;
                         else if (readCache == null) {
                             int savedPos = reader.position();
 
                             val = reader.parseValue();
 
-                            assert reader.position() == savedPos + len;
+                            assert reader.position() == savedPos + fieldLen;
                         }
                         else {
-                            val = readCache.get(fldId);
+                            val = readCache.get(fieldId);
 
-                            reader.skip(len);
+                            reader.skip(fieldLen);
                         }
 
                         int lenPos = writer.reserveAndMark(4);
