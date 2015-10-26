@@ -643,6 +643,7 @@
           "type": "number",
           "path": "communication",
           "model": "unacknowledgedMessagesBufferSize",
+          "placeholder": 0,
           "tip": [
             "Maximum number of stored unacknowledged messages per connection to node"
           ]

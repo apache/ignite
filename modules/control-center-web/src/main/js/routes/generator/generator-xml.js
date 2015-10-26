@@ -145,10 +145,8 @@ $generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBean
 
         var hasData = false;
 
-        _.forEach(props, function(propName) {
+        _.forIn(props, function(descr, propName) {
             if (props.hasOwnProperty(propName)) {
-                var descr = props[propName];
-
                 if (descr) {
                     switch (descr.type) {
                         case 'list':
@@ -402,12 +400,12 @@ $generatorXml.clusterCommunication = function (cluster, res) {
 
     $generatorXml.beanProperty(res, cluster.communication, 'communicationSpi', $generatorCommon.COMMUNICATION_CONFIGURATION);
 
-    $generatorXml.property(res, cluster, 'networkTimeout');
-    $generatorXml.property(res, cluster, 'networkSendRetryDelay');
-    $generatorXml.property(res, cluster, 'networkSendRetryCount');
+    $generatorXml.property(res, cluster, 'networkTimeout', undefined, 5000);
+    $generatorXml.property(res, cluster, 'networkSendRetryDelay', undefined, 1000);
+    $generatorXml.property(res, cluster, 'networkSendRetryCount', undefined, 3);
     $generatorXml.property(res, cluster, 'segmentCheckFrequency');
     $generatorXml.property(res, cluster, 'waitForSegmentOnStart', null, false);
-    $generatorXml.property(res, cluster, 'discoveryStartupDelay');
+    $generatorXml.property(res, cluster, 'discoveryStartupDelay', undefined, 600000);
 
     res.needEmptyLine = true;
 

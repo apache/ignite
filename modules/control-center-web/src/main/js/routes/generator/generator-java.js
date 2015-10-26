@@ -265,10 +265,8 @@ $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVa
 
         $generatorJava.declareVariable(res, true, beanVarName, beanClass);
 
-        _.forEach(props, function(propName) {
+        _.forIn(props, function(descr, propName) {
             if (props.hasOwnProperty(propName)) {
-                var descr = props[propName];
-
                 if (descr) {
                     switch (descr.type) {
                         case 'list':
@@ -331,7 +329,7 @@ $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVa
                             break;
 
                         default:
-                            $generatorJava.property(res, beanVarName, bean, propName, null, descr.setterName);
+                            $generatorJava.property(res, beanVarName, bean, propName, null, descr.setterName, descr.dflt);
                     }
                 }
                 else {
@@ -525,12 +523,12 @@ $generatorJava.clusterCommunication = function (cluster, res) {
 
     res.needEmptyLine = false;
 
-    $generatorJava.property(res, 'cfg', cluster, 'networkTimeout');
-    $generatorJava.property(res, 'cfg', cluster, 'networkSendRetryDelay');
-    $generatorJava.property(res, 'cfg', cluster, 'networkSendRetryCount');
+    $generatorJava.property(res, 'cfg', cluster, 'networkTimeout', undefined, undefined, 5000);
+    $generatorJava.property(res, 'cfg', cluster, 'networkSendRetryDelay', undefined, undefined, 1000);
+    $generatorJava.property(res, 'cfg', cluster, 'networkSendRetryCount', undefined, undefined, 3);
     $generatorJava.property(res, 'cfg', cluster, 'segmentCheckFrequency');
     $generatorJava.property(res, 'cfg', cluster, 'waitForSegmentOnStart', null, null, false);
-    $generatorJava.property(res, 'cfg', cluster, 'discoveryStartupDelay');
+    $generatorJava.property(res, 'cfg', cluster, 'discoveryStartupDelay', undefined, undefined, 600000);
 
     res.needEmptyLine = true;
 
