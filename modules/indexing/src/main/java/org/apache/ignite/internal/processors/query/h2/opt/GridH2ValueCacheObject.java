@@ -114,8 +114,8 @@ public class GridH2ValueCacheObject extends Value {
             }
         }
 
-        // For portables and byte array cache object types.
-        return Utils.serialize(obj.value(objectContext(), false), null);
+        // For user-provided and array types.
+        return Utils.serialize(obj, null);
     }
 
     /** {@inheritDoc} */
