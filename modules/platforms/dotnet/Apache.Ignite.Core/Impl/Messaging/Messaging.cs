@@ -57,6 +57,15 @@ namespace Apache.Ignite.Core.Impl.Messaging
 
         /** Grid */
         private readonly Ignite _ignite;
+        
+        /** Async instance. */
+        private readonly Messaging _asyncInstance;
+
+        /** Async flag. */
+        private readonly bool _isAsync;
+
+        /** Cluster group. */
+        private readonly IClusterGroup _clusterGroup;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Messaging" /> class.
@@ -69,15 +78,32 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             Debug.Assert(prj != null);
 
-            ClusterGroup = prj;
+            _clusterGroup = prj;
 
             _ignite = (Ignite) prj.Ignite;
+
+            _asyncInstance = new Messaging(this);
+        }
+
+        /// <summary>
+        /// Initializes a new async instance
+        /// </summary>
+        /// <param name="messaging">The messaging.</param>
+        private Messaging(Messaging messaging) : base(UU.MessagingWithASync(messaging.Target), messaging.Marshaller)
+        {
+            _isAsync = true;
+            _ignite = messaging._ignite;
+            _clusterGroup = messaging.ClusterGroup;
         }
 
         /** <inheritdoc /> */
-        public IClusterGroup ClusterGroup { get; private set; }
+        public IClusterGroup ClusterGroup
+        {
+            get { return _clusterGroup; }
+        }
 
         /** <inheritdoc /> */
+
         public void Send(object message, object topic = null)
         {
             IgniteArgumentCheck.NotNull(message, "message");
@@ -189,21 +215,22 @@ namespace Apache.Ignite.Core.Impl.Messaging
             {
                 Guid id = Guid.Empty;
 
-                DoOutInOp((int) Op.RemoteListen, writer =>
-                {
-                    writer.Write(filter0);
-                    writer.WriteLong(filterHnd);
-                    writer.Write(topic);
-                }, 
-                input =>
-                {
-                    var id0 = Marshaller.StartUnmarshal(input).GetRawReader().ReadGuid();
+                DoOutInOp((int) Op.RemoteListen,
+                    writer =>
+                    {
+                        writer.Write(filter0);
+                        writer.WriteLong(filterHnd);
+                        writer.Write(topic);
+                    },
+                    input =>
+                    {
+                        var id0 = Marshaller.StartUnmarshal(input).GetRawReader().ReadGuid();
 
-                    Debug.Assert(IsAsync || id0.HasValue);
+                        Debug.Assert(_isAsync || id0.HasValue);
 
-                    if (id0.HasValue)
-                        id = id0.Value;
-                });
+                        if (id0.HasValue)
+                            id = id0.Value;
+                    });
 
                 return id;
             }
@@ -216,6 +243,14 @@ namespace Apache.Ignite.Core.Impl.Messaging
         }
 
         /** <inheritdoc /> */
+        public IFuture<Guid> RemoteListenAsync<T>(IMessageListener<T> listener, object topic = null)
+        {
+            _asyncInstance.RemoteListen(listener, topic);
+
+            return _asyncInstance.GetFuture<Guid>();
+        }
+
+        /** <inheritdoc /> */
         public void StopRemoteListen(Guid opId)
         {
             DoOutOp((int) Op.StopRemoteListen, writer =>
@@ -225,27 +260,11 @@ namespace Apache.Ignite.Core.Impl.Messaging
         }
 
         /** <inheritdoc /> */
-        public virtual IMessaging WithAsync()
+        public IFuture StopRemoteListenAsync(Guid opId)
         {
-            return new MessagingAsync(UU.MessagingWithASync(Target), Marshaller, ClusterGroup);
-        }
+            _asyncInstance.StopRemoteListen(opId);
 
-        /** <inheritdoc /> */
-        public virtual bool IsAsync
-        {
-            get { return false; }
-        }
-
-        /** <inheritdoc /> */
-        public virtual IFuture GetFuture()
-        {
-            throw IgniteUtils.GetAsyncModeDisabledException();
-        }
-
-        /** <inheritdoc /> */
-        public virtual IFuture<TResult> GetFuture<TResult>()
-        {
-            throw IgniteUtils.GetAsyncModeDisabledException();
+            return _asyncInstance.GetFuture<object>();
         }
 
         /// <summary>

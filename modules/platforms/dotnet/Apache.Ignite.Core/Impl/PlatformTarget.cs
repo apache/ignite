@@ -652,6 +652,14 @@ namespace Apache.Ignite.Core.Impl
             return fut;
         }
 
+        /// <summary>
+        /// Creates a future and starts listening.
+        /// </summary>
+        protected IFuture<T> GetFuture<T>()
+        {
+            return GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp));
+        }
+
         #endregion
     }
 

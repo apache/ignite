@@ -241,7 +241,6 @@
     <Compile Include="Impl\Memory\PlatformUnpooledMemory.cs" />
     <Compile Include="Impl\Messaging\MessageListenerHolder.cs" />
     <Compile Include="Impl\Messaging\Messaging.cs" />
-    <Compile Include="Impl\Messaging\MessagingAsync.cs" />
     <Compile Include="Impl\NativeMethods.cs" />
     <Compile Include="Impl\Portable\IO\IPortableStream.cs" />
     <Compile Include="Impl\Portable\IO\PortableAbstractStream.cs" />
