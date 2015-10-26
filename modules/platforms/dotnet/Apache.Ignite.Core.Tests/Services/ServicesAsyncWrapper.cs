@@ -18,9 +18,8 @@
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System.Collections.Generic;
-    using System.Diagnostics;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Services;
 
     /// <summary>
@@ -37,33 +36,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <param name="services">Services to wrap.</param>
         public ServicesAsyncWrapper(IServices services)
         {
-            _services = services.WithAsync();
-        }
-
-        /** <inheritDoc /> */
-        public IServices WithAsync()
-        {
-            return this;
-        }
-
-        /** <inheritDoc /> */
-        public bool IsAsync
-        {
-            get { return true; }
-        }
-
-        /** <inheritDoc /> */
-        public IFuture GetFuture()
-        {
-            Debug.Fail("ServicesAsyncWrapper.Future() should not be called. It always returns null.");
-            return null;
-        }
-
-        /** <inheritDoc /> */
-        public IFuture<TResult> GetFuture<TResult>()
-        {
-            Debug.Fail("ServicesAsyncWrapper.Future() should not be called. It always returns null.");
-            return null;
+            _services = services;
         }
 
         /** <inheritDoc /> */
@@ -75,50 +48,78 @@ namespace Apache.Ignite.Core.Tests.Services
         /** <inheritDoc /> */
         public void DeployClusterSingleton(string name, IService service)
         {
-            _services.DeployClusterSingleton(name, service);
-            WaitResult();
+            _services.DeployClusterSingletonAsync(name, service).Wait();
+        }
+
+        public Task DeployClusterSingletonAsync(string name, IService service)
+        {
+            return _services.DeployClusterSingletonAsync(name, service);
         }
 
         /** <inheritDoc /> */
         public void DeployNodeSingleton(string name, IService service)
         {
-            _services.DeployNodeSingleton(name, service);
-            WaitResult();
+            _services.DeployNodeSingletonAsync(name, service).Wait();
+        }
+
+        public Task DeployNodeSingletonAsync(string name, IService service)
+        {
+            return _services.DeployNodeSingletonAsync(name, service);
         }
 
         /** <inheritDoc /> */
         public void DeployKeyAffinitySingleton<TK>(string name, IService service, string cacheName, TK affinityKey)
         {
-            _services.DeployKeyAffinitySingleton(name, service, cacheName, affinityKey);
-            WaitResult();
+            _services.DeployKeyAffinitySingletonAsync(name, service, cacheName, affinityKey).Wait();
+        }
+
+        public Task DeployKeyAffinitySingletonAsync<TK>(string name, IService service, string cacheName, TK affinityKey)
+        {
+            return _services.DeployKeyAffinitySingletonAsync(name, service, cacheName, affinityKey);
         }
 
         /** <inheritDoc /> */
         public void DeployMultiple(string name, IService service, int totalCount, int maxPerNodeCount)
         {
-            _services.DeployMultiple(name, service, totalCount, maxPerNodeCount);
-            WaitResult();
+            _services.DeployMultipleAsync(name, service, totalCount, maxPerNodeCount).Wait();
+        }
+
+        public Task DeployMultipleAsync(string name, IService service, int totalCount, int maxPerNodeCount)
+        {
+            return _services.DeployMultipleAsync(name, service, totalCount, maxPerNodeCount);
         }
 
         /** <inheritDoc /> */
         public void Deploy(ServiceConfiguration configuration)
         {
-            _services.Deploy(configuration);
-            WaitResult();
+            _services.DeployAsync(configuration).Wait();
+        }
+
+        public Task DeployAsync(ServiceConfiguration configuration)
+        {
+            return _services.DeployAsync(configuration);
         }
 
         /** <inheritDoc /> */
         public void Cancel(string name)
         {
-            _services.Cancel(name);
-            WaitResult();
+            _services.CancelAsync(name).Wait();
+        }
+
+        public Task CancelAsync(string name)
+        {
+            return _services.CancelAsync(name);
         }
 
         /** <inheritDoc /> */
         public void CancelAll()
         {
-            _services.CancelAll();
-            WaitResult();
+            _services.CancelAllAsync().Wait();
+        }
+
+        public Task CancelAllAsync()
+        {
+            return _services.CancelAllAsync();
         }
 
         /** <inheritDoc /> */
@@ -161,14 +162,6 @@ namespace Apache.Ignite.Core.Tests.Services
         public IServices WithServerKeepPortable()
         {
             return new ServicesAsyncWrapper(_services.WithServerKeepPortable());
-        }
-
-        /// <summary>
-        /// Waits for the async result.
-        /// </summary>
-        private void WaitResult()
-        {
-            _services.GetFuture().Get();
         }
     }
 }
