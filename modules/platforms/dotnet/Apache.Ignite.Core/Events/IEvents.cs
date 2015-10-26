@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Events
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Provides functionality for event notifications on nodes defined by <see cref="ClusterGroup"/>.
@@ -119,7 +118,6 @@ namespace Apache.Ignite.Core.Events
         /// <param name="types">Types of the events to wait for. 
         /// If not provided, all events will be passed to the filter.</param>
         /// <returns>Ignite event.</returns>
-        [AsyncSupported]
         T WaitForLocal<T>(IEventFilter<T> filter, params int[] types) where T : IEvent;
 
         /// <summary>
@@ -130,7 +128,6 @@ namespace Apache.Ignite.Core.Events
         /// <param name="types">Types of the events to wait for. 
         /// If not provided, all events will be passed to the filter.</param>
         /// <returns>Ignite event.</returns>
-        [AsyncSupported]
         Task<T> WaitForLocalAsync<T>(IEventFilter<T> filter, params int[] types) where T : IEvent;
 
         /// <summary>
@@ -141,7 +138,6 @@ namespace Apache.Ignite.Core.Events
         /// <param name="types">Types of the events to wait for. 
         /// If not provided, all events will be passed to the filter.</param>
         /// <returns>Ignite event.</returns>
-        [AsyncSupported]
         T WaitForLocal<T>(IEventFilter<T> filter, IEnumerable<int> types) where T : IEvent;
 
         /// <summary>
@@ -152,7 +148,6 @@ namespace Apache.Ignite.Core.Events
         /// <param name="types">Types of the events to wait for. 
         /// If not provided, all events will be passed to the filter.</param>
         /// <returns>Ignite event.</returns>
-        [AsyncSupported]
         Task<T> WaitForLocalAsync<T>(IEventFilter<T> filter, IEnumerable<int> types) where T : IEvent;
 
         /// <summary>
