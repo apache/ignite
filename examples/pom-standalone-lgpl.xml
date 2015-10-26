@@ -143,11 +143,10 @@
         </profile>
 
         <profile>
-            <!-- See README.txt for details -->
             <id>lgpl</id>
 
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <activeByDefault>true</activeByDefault>
             </activation>
 
             <properties>

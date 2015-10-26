@@ -129,9 +129,6 @@
                 <exclude>org.apache.ignite:ignite-schema-import</exclude>
                 <exclude>org.apache.ignite:ignite-codegen</exclude>
                 <exclude>org.apache.ignite:ignite-apache-license-gen</exclude>
-                <exclude>org.apache.ignite:ignite-hibernate</exclude>
-                <exclude>org.apache.ignite:ignite-schedule</exclude>
-                <exclude>org.apache.ignite:ignite-geospatial</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
