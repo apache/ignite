@@ -855,7 +855,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 else
                     doReadClass();
 
-                return doReadEnumArray(false, cls);
+                return doReadEnumArray(cls);
             }
             else if (flag == Flag.HANDLE)
                 return readHandleField();
@@ -1342,7 +1342,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         Class cls = doReadClass();
 
-        return (T)doReadEnum(true, cls);
+        return (T)doReadEnum(cls);
     }
 
     /** {@inheritDoc} */
@@ -1358,7 +1358,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         Class cls = doReadClass();
 
-        return (T[])doReadEnumArray(true, cls);
+        return (T[])doReadEnumArray(cls);
     }
 
     /**
@@ -1553,13 +1553,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 return doReadMapEntry(raw, false);
 
             case PORTABLE_OBJ:
-                return doReadPortableObject(raw);
+                return doReadPortableObject();
 
             case ENUM:
-                return doReadEnum(raw, doReadClass());
+                return doReadEnum(doReadClass());
 
             case ENUM_ARR:
-                return doReadEnumArray(raw, doReadClass());
+                return doReadEnumArray(doReadClass());
 
             case CLASS:
                 return in.readInt();
@@ -1877,7 +1877,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 break;
 
             case PORTABLE_OBJ:
-                obj = doReadPortableObject(true);
+                obj = doReadPortableObject();
 
                 ((PortableObjectImpl)obj).context(ctx);
 
@@ -1887,12 +1887,12 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 break;
 
             case ENUM:
-                obj = doReadEnum(true, doReadClass());
+                obj = doReadEnum(doReadClass());
 
                 break;
 
             case ENUM_ARR:
-                obj = doReadEnumArray(true, doReadClass());
+                obj = doReadEnumArray(doReadClass());
 
                 break;
 
@@ -2407,10 +2407,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private PortableObject doReadPortableObject(boolean raw) {
+    private PortableObject doReadPortableObject() {
         if (in.offheapPointer() > 0) {
             int len = in.readInt();
 
@@ -2431,11 +2430,10 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     }
 
     /**
-     * @param raw Raw flag.
      * @param cls Enum class.
      * @return Value.
      */
-    private Enum<?> doReadEnum(boolean raw, Class<?> cls) throws PortableException {
+    private Enum<?> doReadEnum(Class<?> cls) throws PortableException {
         if (!cls.isEnum())
             throw new PortableException("Class does not represent enum type: " + cls.getName());
 
@@ -2445,11 +2443,10 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     }
 
     /**
-     * @param raw Raw flag.
      * @param cls Enum class.
      * @return Value.
      */
-    private Object[] doReadEnumArray(boolean raw, Class<?> cls) throws PortableException {
+    private Object[] doReadEnumArray(Class<?> cls) throws PortableException {
         int len = in.readInt();
 
         Object[] arr = (Object[])Array.newInstance(cls, len);
@@ -2460,7 +2457,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (flag == NULL)
                 arr[i] = null;
             else
-                arr[i] = doReadEnum(raw, doReadClass());
+                arr[i] = doReadEnum(doReadClass());
         }
 
         return arr;
