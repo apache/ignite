@@ -99,6 +99,7 @@
           "path": "ipcEndpointConfiguration",
           "model": "port",
           "placeholder": 10500,
+          "max": 65535,
           "hide": "!backupItem.ipcEndpointEnabled",
           "tip": [
             "Port"
@@ -278,6 +279,7 @@
           "type": "number",
           "model": "managementPort",
           "placeholder": 11400,
+          "max": 65535,
           "tip": [
             "Port number for management endpoint"
           ]

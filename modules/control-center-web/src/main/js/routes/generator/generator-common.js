@@ -69,10 +69,6 @@ $generatorCommon.builder = function () {
     res.safeDatasources = [];
     res.safePoint = -1;
 
-    function getLineStart() {
-        return this.lineStart ? _.repeat('    ', this.deep) : '';
-    }
-
     res.startSafeBlock = function () {
         res.safeDeep = this.deep;
         this.safeNeedEmptyLine = this.needEmptyLine;
@@ -370,6 +366,18 @@ $generatorCommon.COMMUNICATION_CONFIGURATION = {
         socketWriteTimeout: 2000,
         selectorsCount: null,
         addressResolver: {type: 'bean'}
+    }
+};
+
+// Communication configuration code generation descriptor.
+$generatorCommon.IGFS_IPC_CONFIGURATION = {
+    className: 'org.apache.ignite.igfs.IgfsIpcEndpointConfiguration',
+    fields: {
+        type: {type: 'enum', enumClass: 'org.apache.ignite.igfs.IgfsIpcEndpointType'},
+        host: {dflt: '127.0.0.1'},
+        port: {dflt: 10500},
+        memorySize: {dflt: 262144},
+        tokenDirectoryPath: {dflt: 'ipc/shmem'}
     }
 };
 

@@ -89,6 +89,7 @@ consoleModule.controller('igfsController', [
                 general: {xml: '', java: '', allDefaults: true},
                 ipc: {xml: '', java: '', allDefaults: true},
                 fragmentizer: {xml: '', java: '', allDefaults: true},
+                dualMode: {xml: '', java: '', allDefaults: true},
                 misc: {xml: '', java: '', allDefaults: true}
             };
 
@@ -159,9 +160,25 @@ consoleModule.controller('igfsController', [
 
                                     var varName = $commonUtils.toJavaName('igfs', val.name);
 
-                                    $scope.preview.general.xml = $generatorXml.igfs(val).asString();
-                                    $scope.preview.general.java = $generatorJava.igfs(val, varName).asString();
+                                    $scope.preview.general.xml = $generatorXml.igfsGeneral(val).asString();
+                                    $scope.preview.general.java = $generatorJava.igfsGeneral(val, varName).asString();
                                     $scope.preview.general.allDefaults = $common.isEmptyString($scope.preview.general.xml);
+
+                                    $scope.preview.ipc.xml = $generatorXml.igfsIPC(val).asString();
+                                    $scope.preview.ipc.java = $generatorJava.igfsIPC(val, varName).asString();
+                                    $scope.preview.ipc.allDefaults = $common.isEmptyString($scope.preview.ipc.xml);
+
+                                    $scope.preview.fragmentizer.xml = $generatorXml.igfsFragmentizer(val).asString();
+                                    $scope.preview.fragmentizer.java = $generatorJava.igfsFragmentizer(val, varName).asString();
+                                    $scope.preview.fragmentizer.allDefaults = $common.isEmptyString($scope.preview.fragmentizer.xml);
+
+                                    $scope.preview.dualMode.xml = $generatorXml.igfsDualMode(val).asString();
+                                    $scope.preview.dualMode.java = $generatorJava.igfsDualMode(val, varName).asString();
+                                    $scope.preview.dualMode.allDefaults = $common.isEmptyString($scope.preview.dualMode.xml);
+
+                                    $scope.preview.misc.xml = $generatorXml.igfsMisc(val).asString();
+                                    $scope.preview.misc.java = $generatorJava.igfsMisc(val, varName).asString();
+                                    $scope.preview.misc.allDefaults = $common.isEmptyString($scope.preview.general.xml);
                                 }
                             }, true);
                         })
@@ -233,7 +250,8 @@ consoleModule.controller('igfsController', [
                 if ($common.isEmptyString(item.name))
                     return showPopoverMessage($scope.panels, 'general', 'igfsName', 'Name should not be empty');
 
-                if (!$common.isEmptyString(item.dualModePutExecutorService) && !$common.isValidJavaClass('Put executor service', item.dualModePutExecutorService, false, 'dualModePutExecutorService', false, $scope.panels, 'dualMode'))
+                if (!$common.isEmptyString(item.dualModePutExecutorService) &&
+                    !$common.isValidJavaClass('Put executor service', item.dualModePutExecutorService, false, 'dualModePutExecutorService', false, $scope.panels, 'dualMode'))
                     return false;
 
                 return true;

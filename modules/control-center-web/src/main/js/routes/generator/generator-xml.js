@@ -637,6 +637,8 @@ $generatorXml.clusterSsl = function(cluster, res) {
             $generatorCommon.SSL_CONFIGURATION_TRUST_FILE_FACTORY;
 
         $generatorXml.beanProperty(res, cluster.sslContextFactory, 'sslContextFactory', propsDesc, false);
+
+        res.needEmptyLine = true;
     }
 
     return res;
@@ -1088,11 +1090,137 @@ $generatorXml.clusterCaches = function(caches, res) {
     return res;
 };
 
-$generatorXml.igfs = function(igfs, res) {
+$generatorXml.igfss = function(igfss, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    res.line('TODO IGFS XML generation');
+    if ($commonUtils.isDefinedAndNotEmpty(igfss)) {
+        res.emptyLineIfNeeded();
+
+        res.startBlock('<property name="fileSystemConfiguration">');
+        res.startBlock('<list>');
+
+        _.forEach(igfss, function(igfs) {
+            res.startBlock('<bean class="org.apache.ignite.configuration.FileSystemConfiguration">');
+
+            $generatorXml.igfsGeneral(igfs, res);
+            $generatorXml.igfsIPC(igfs, res);
+            $generatorXml.igfsFragmentizer(igfs, res);
+            $generatorXml.igfsDualMode(igfs, res);
+            $generatorXml.igfsMisc(igfs, res);
+
+            res.endBlock('</bean>');
+
+        });
+
+        res.endBlock('</list>');
+        res.endBlock('</property>');
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
+$generatorXml.igfsIPC = function(igfs, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if (igfs.ipcEndpointEnabled) {
+        $generatorXml.beanProperty(res, igfs.ipcEndpointConfiguration, 'ipcEndpointConfiguration', $generatorCommon.IGFS_IPC_CONFIGURATION, true);
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
+$generatorXml.igfsFragmentizer = function(igfs, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if (igfs.fragmentizerEnabled) {
+        $generatorXml.property(res, igfs, 'fragmentizerConcurrentFiles', undefined, 0);
+        $generatorXml.property(res, igfs, 'fragmentizerThrottlingBlockLength', undefined, 16777216);
+        $generatorXml.property(res, igfs, 'fragmentizerThrottlingDelay', undefined, 200);
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
+$generatorXml.igfsDualMode = function(igfs, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    $generatorXml.property(res, igfs, 'dualModeMaxPendingPutsSize', undefined, 0);
+
+    if ($commonUtils.isDefinedAndNotEmpty(igfs.dualModePutExecutorService)) {
+        res.startBlock('<property name="dualModePutExecutorService">');
+        res.line('<bean class="' + igfs.dualModePutExecutorService + '"/>');
+        res.endBlock('</property>');
+    }
+
+    $generatorXml.property(res, igfs, 'dualModePutExecutorServiceShutdown', undefined, false);
+
+    res.needEmptyLine = true;
+
+    return res;
+};
+
+$generatorXml.igfsGeneral = function(igfs, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if ($commonUtils.isDefinedAndNotEmpty(igfs.name)) {
+        igfs.dataCacheName = igfs.name + 'Data';
+        igfs.metaCacheName = igfs.name + 'Meta';
+
+        $generatorXml.property(res, igfs, 'name');
+        $generatorXml.property(res, igfs, 'dataCacheName');
+        $generatorXml.property(res, igfs, 'metaCacheName');
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
+$generatorXml.igfsMisc = function(igfs, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    $generatorXml.property(res, igfs, 'blockSize', undefined, 65536);
+    $generatorXml.property(res, igfs, 'streamBufferSize', undefined, 65536);
+    $generatorXml.property(res, igfs, 'defaultMode', undefined, "DUAL_ASYNC");
+    $generatorXml.property(res, igfs, 'maxSpaceSize');
+    $generatorXml.property(res, igfs, 'maximumTaskRangeLength');
+    $generatorXml.property(res, igfs, 'managementPort', undefined, 11400);
+
+    res.needEmptyLine = true;
+
+    if (igfs.pathModes && igfs.pathModes.length > 0) {
+        res.startBlock('<property name="pathModes">');
+        res.startBlock('<map>');
+
+        for (var i = 0; i < igfs.pathModes.length; i++) {
+            var pair = igfs.pathModes[i];
+
+            res.line('<entry key="' + pair.path + '" value="' + pair.mode + '"/>');
+        }
+
+        res.endBlock('</map>');
+        res.endBlock('</property>');
+
+        res.needEmptyLine = true;
+    }
+
+    $generatorXml.property(res, igfs, 'perNodeBatchSize', undefined, 100);
+    $generatorXml.property(res, igfs, 'perNodeParallelBatchCount', undefined, 8);
+    $generatorXml.property(res, igfs, 'prefetchBlocks', undefined, 0);
+    $generatorXml.property(res, igfs, 'sequentialReadsBeforePrefetch', undefined, 0);
+    $generatorXml.property(res, igfs, 'trashPurgeTimeout', undefined, 1000);
 
     return res;
 };
@@ -1152,6 +1280,8 @@ $generatorXml.cluster = function (cluster, clientNearCfg) {
         $generatorXml.clusterCaches(cluster.caches, res);
 
         $generatorXml.clusterSsl(cluster, res);
+
+        $generatorXml.igfss(cluster.igfss, res);
 
         res.endBlock('</bean>');
 

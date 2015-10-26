@@ -201,6 +201,10 @@ consoleModule.controller('summaryController', [
                     cluster.caches = _.filter(data.caches, function (cache) {
                         return _.contains(cluster.caches, cache._id);
                     });
+
+                    cluster.igfss = _.filter(data.igfss, function (igfs) {
+                        return _.contains(cluster.igfss, igfs._id);
+                    });
                 });
 
                 var restoredId = sessionStorage.summarySelectedId;

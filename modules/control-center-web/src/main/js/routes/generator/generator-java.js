@@ -1512,16 +1512,144 @@ $generatorJava.clusterSsl = function(cluster, res) {
 
         $generatorJava.beanProperty(res, 'cfg', cluster.sslContextFactory, 'sslContextFactory', 'sslContextFactory',
             'org.apache.ignite.ssl.SslContextFactory', propsDesc, false);
+
+        res.needEmptyLine = true;
     }
 
     return res;
 };
 
-$generatorJava.igfs = function(igfs, varName, res) {
+$generatorJava.igfss = function(igfss, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    res.line('TODO IGFS java code generation');
+    if ($commonUtils.isDefinedAndNotEmpty(igfss)) {
+        res.emptyLineIfNeeded();
+
+        var arrayName = 'fileSystems';
+        var igfsInst = 'igfs';
+
+        res.line(res.importClass('org.apache.ignite.configuration.FileSystemConfiguration') + '[] ' + arrayName + ' = new FileSystemConfiguration[' + igfss.length + '];');
+
+        _.forEach(igfss, function(igfs, ix) {
+            $generatorJava.declareVariable(res, $generatorJava.needNewVariable(res, igfsInst), igfsInst, 'org.apache.ignite.configuration.FileSystemConfiguration');
+
+            $generatorJava.igfsGeneral(igfs, igfsInst, res);
+            $generatorJava.igfsIPC(igfs, igfsInst, res);
+            $generatorJava.igfsFragmentizer(igfs, igfsInst, res);
+            $generatorJava.igfsDualMode(igfs, igfsInst, res);
+            $generatorJava.igfsMisc(igfs, igfsInst, res);
+
+            res.line(arrayName + '[' + ix + '] = ' + igfsInst + ';');
+
+            res.needEmptyLine = true;
+        });
+
+        res.line(varName + '.' + 'setFileSystemConfiguration(' + arrayName + ');');
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
+$generatorJava.igfsIPC = function(igfs, varName, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if (igfs.ipcEndpointEnabled) {
+        var desc = $generatorCommon.IGFS_IPC_CONFIGURATION;
+
+        $generatorJava.beanProperty(res, varName, igfs.ipcEndpointConfiguration, 'ipcEndpointConfiguration', 'ipcEndpointCfg',
+            desc.className, desc.fields, true);
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
+$generatorJava.igfsFragmentizer = function(igfs, varName, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if (igfs.fragmentizerEnabled) {
+        $generatorJava.property(res, varName, igfs, 'fragmentizerConcurrentFiles', undefined, undefined, 0);
+        $generatorJava.property(res, varName, igfs, 'fragmentizerThrottlingBlockLength', undefined, undefined, 16777216);
+        $generatorJava.property(res, varName, igfs, 'fragmentizerThrottlingDelay', undefined, undefined, 200);
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
+$generatorJava.igfsDualMode = function(igfs, varName, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    $generatorJava.property(res, varName, igfs, 'dualModeMaxPendingPutsSize', undefined, undefined, 0);
+
+    if ($commonUtils.isDefinedAndNotEmpty(igfs.dualModePutExecutorService))
+        res.line(varName + '.' + $generatorJava.setterName('dualModePutExecutorService') + '(new ' + res.importClass(igfs.dualModePutExecutorService) + '());');
+
+    $generatorJava.property(res, varName, igfs, 'dualModePutExecutorServiceShutdown', undefined, undefined, false);
+
+    res.needEmptyLine = true;
+
+    return res;
+};
+
+$generatorJava.igfsGeneral = function(igfs, varName, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if ($commonUtils.isDefinedAndNotEmpty(igfs.name)) {
+        igfs.dataCacheName = igfs.name + 'Data';
+        igfs.metaCacheName = igfs.name + 'Meta';
+
+        $generatorJava.property(res, varName, igfs, 'name');
+        $generatorJava.property(res, varName, igfs, 'dataCacheName');
+        $generatorJava.property(res, varName, igfs, 'metaCacheName');
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
+$generatorJava.igfsMisc = function(igfs, varName, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    $generatorJava.property(res, varName, igfs, 'blockSize', undefined, undefined, 65536);
+    $generatorJava.property(res, varName, igfs, 'streamBufferSize', undefined, undefined, 65536);
+    $generatorJava.property(res, varName, igfs, 'defaultMode', res.importClass('org.apache.ignite.igfs.IgfsMode'), undefined, "DUAL_ASYNC");
+    $generatorJava.property(res, varName, igfs, 'maxSpaceSize');
+    $generatorJava.property(res, varName, igfs, 'maximumTaskRangeLength');
+    $generatorJava.property(res, varName, igfs, 'managementPort', undefined, undefined, 11400);
+
+    if (igfs.pathModes && igfs.pathModes.length > 0) {
+        res.needEmptyLine = true;
+
+        $generatorJava.declareVariable(res, true, 'pathModes', 'java.util.HashMap<String, ' + res.importClass('org.apache.ignite.igfs.IgfsMode') + '>');
+
+        _.forEach(igfs.pathModes, function (pair) {
+            res.line('pathModes.put("' + pair.path + '", IgfsMode.' + pair.mode +');');
+        });
+
+        res.needEmptyLine = true;
+
+        res.line(varName + '.setPathModes(pathModes);');
+    }
+
+    $generatorJava.property(res, varName, igfs, 'perNodeBatchSize', undefined, undefined, 100);
+    $generatorJava.property(res, varName, igfs, 'perNodeParallelBatchCount', undefined, undefined, 8);
+    $generatorJava.property(res, varName, igfs, 'prefetchBlocks', undefined, undefined, 0);
+    $generatorJava.property(res, varName, igfs, 'sequentialReadsBeforePrefetch', undefined, undefined, 0);
+    $generatorJava.property(res, varName, igfs, 'trashPurgeTimeout', undefined, undefined, 1000);
+
+    res.needEmptyLine = true;
 
     return res;
 };
@@ -1576,6 +1704,8 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
         $generatorJava.clusterCaches(cluster.caches, res);
 
         $generatorJava.clusterSsl(cluster, res);
+
+        $generatorJava.igfss(cluster.igfss, 'cfg', res);
 
         if (javaClass) {
             res.importClass('org.apache.ignite.Ignite');
