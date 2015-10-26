@@ -125,7 +125,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
     /** Field infos. */
     // TODO: Optimize.
-    private List<Integer> fieldInfos;
+    private List<Integer> tail;
 
     /**
      * @param ctx Context.
@@ -339,12 +339,12 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         // 1. Write raw offset.
         out.writeInt(start + RAW_DATA_OFF_POS, (rawOffPos == 0 ? out.position() : rawOffPos) - start);
 
-        if (fieldInfos != null) {
+        if (tail != null) {
             // 2. Write schema offset.
             out.writeInt(start + SCHEMA_OFF_POS, out.position() - start);
 
             // 3. Write the schema.
-            for (Integer val : fieldInfos)
+            for (Integer val : tail)
                 out.writeInt(val);
         }
 
@@ -1818,11 +1818,11 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
       * @param off Offset starting from object head.
       */
     private void saveFieldInfo(int id, int off) {
-        if (fieldInfos == null)
-            fieldInfos = new ArrayList<>(2);
+        if (tail == null)
+            tail = new ArrayList<>(2);
 
-        fieldInfos.add(id);
-        fieldInfos.add(off);
+        tail.add(off);
+        tail.add(id);
     }
 
      /**
