@@ -23,12 +23,14 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -1668,6 +1670,41 @@ public class IgfsDataManager extends IgfsManager {
 
             if (completedBlocksCnt.get() == 0)
                 onDone(true);
+        }
+    }
+
+    /**
+     * Rolls back the data written to the file reserved space.
+     *
+     * @param info The info to clean up the data for.
+     */
+    void cleanUpReservedFileData(IgfsFileInfo info) throws IgniteCheckedException {
+        System.out.println("########################## data clean up.");
+
+        long reservedSizeDelta = info.reservedDelta();
+
+        if (reservedSizeDelta == 0)
+            return;
+
+        // Synchronize file ending.
+        long len = info.length();
+        int blockSize = info.blockSize();
+
+        int blockIdx1 = (int)(len / blockSize);
+
+        int blockIdx2 = (int)((len + reservedSizeDelta) / blockSize);
+
+        // TODO: 1. remainder: what if both the old & new length boundaries end up in the same block? How to clean
+        // up in that case?
+        // TODO: 2. Should we deal with affinityRanges there? See #createBlockKey() method.
+
+        if (blockIdx2 > blockIdx1) {
+            List<IgfsBlockKey> list = new ArrayList<>(blockIdx2 - blockIdx1);
+
+            for (int b = blockIdx1 + 1; b <= blockIdx2; b++)
+                list.add(blockKey(b, info));
+
+            dataCachePrj.removeAll(list);
         }
     }
 }

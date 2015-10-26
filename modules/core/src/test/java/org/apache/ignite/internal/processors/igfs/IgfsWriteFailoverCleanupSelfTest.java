@@ -53,7 +53,7 @@ import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.wr
  * Tests IGFS behavioral guarantees if some nodes on the cluster are synchronously or asynchronously stopped.
  * The operations to check are read, write or both.
  */
-public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
+public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
     /** Directory. */
     protected static final IgfsPath DIR = new IgfsPath("/dir");
 
@@ -64,7 +64,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
     protected final int numIgfsNodes = 5;
 
     /** Number of backup copies of data (aka replication). */
-    protected final int numBackups = numIgfsNodes - 1;
+    protected final int numBackups = 0; //numIgfsNodes - 1;
 
     /** */
     private final int fileSize = 11 * 1024;
@@ -204,233 +204,233 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
         return new IgfsPath(SUBDIR, "file" + j);
     }
 
-    /**
-     * Checks correct data read *after* N-1 nodes are stopped.
-     *
-     * @throws Exception On error.
-     */
-    public void testReadFailoverAfterStopMultipleNodes() throws Exception {
-        final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
-
-        clear(igfs0);
-
-        IgfsAbstractSelfTest.create(igfs0, paths(DIR, SUBDIR), null);
-
-        // Create files through the 0th node:
-        for (int f=0; f<files; f++) {
-            final byte[] data = createChunk(fileSize, f);
-
-            createFile(igfs0, filePath(f), true, -1/*block size unused*/, data);
-        }
-
-        // Check files:
-        for (int f=0; f<files; f++) {
-            IgfsPath path = filePath(f);
-            byte[] data = createChunk(fileSize, f);
-
-            // Check through 0th node:
-            checkExist(igfs0, path);
-
-            checkFileContent(igfs0, path, data);
-
-            // Check the same file through other nodes:
-            for (int n=1; n<numIgfsNodes; n++) {
-                checkExist(nodeDatas[n].igfsImpl, path);
-
-                checkFileContent(nodeDatas[n].igfsImpl, path, data);
-            }
-        }
-
-        // Now stop all the nodes but the 1st:
-        for (int n=1; n<numIgfsNodes; n++)
-            stopGrid(n);
-
-        // Check files again:
-        for (int f=0; f<files; f++) {
-            IgfsPath path = filePath(f);
-
-            byte[] data = createChunk(fileSize, f);
-
-            // Check through 0th node:
-            checkExist(igfs0, path);
-
-            checkFileContent(igfs0, path, data);
-        }
-    }
-
-    /**
-     * Checks correct data read *while* N-1 nodes are being concurrently stopped.
-     *
-     * @throws Exception On error.
-     */
-    public void testReadFailoverWhileStoppingMultipleNodes() throws Exception {
-        final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
-
-        clear(igfs0);
-
-        IgfsAbstractSelfTest.create(igfs0, paths(DIR, SUBDIR), null);
-
-        // Create files:
-        for (int f = 0; f < files; f++) {
-            final byte[] data = createChunk(fileSize, f);
-
-            createFile(igfs0, filePath(f), true, -1/*block size unused*/, data);
-        }
-
-        // Check files:
-        for (int f = 0; f < files; f++) {
-            IgfsPath path = filePath(f);
-            byte[] data = createChunk(fileSize, f);
-
-            // Check through 1st node:
-            checkExist(igfs0, path);
-
-            checkFileContent(igfs0, path, data);
-
-            // Check the same file through other nodes:
-            for (int n = 1; n < numIgfsNodes; n++) {
-                checkExist(nodeDatas[n].igfsImpl, path);
-
-                checkFileContent(nodeDatas[n].igfsImpl, path, data);
-            }
-        }
-
-        final AtomicBoolean stop = new AtomicBoolean();
-
-        GridTestUtils.runMultiThreadedAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                Thread.sleep(1_000); // Some delay to ensure read is in progress.
-
-                // Now stop all the nodes but the 1st:
-                for (int n = 1; n < numIgfsNodes; n++) {
-                    stopGrid(n);
-
-                    X.println("grid " + n + " stopped.");
-                }
-
-                Thread.sleep(1_000);
-
-                stop.set(true);
-
-                return null;
-            }
-        }, 1, "igfs-node-stopper");
-
-        // Read the files repeatedly, while the nodes are being stopped:
-        while (!stop.get()) {
-            // Check files while the nodes are being stopped:
-            for (int f = 0; f < files; f++) {
-                IgfsPath path = filePath(f);
-
-                byte[] data = createChunk(fileSize, f);
-
-                // Check through 1st node:
-                checkExist(igfs0, path);
-
-                checkFileContent(igfs0, path, data);
-            }
-        }
-    }
-
-    /**
-     * Checks possibility to append the data to files *after* N-1 nodes are stopped.
-     * First, some data written to files.
-     * After that N-1 nodes are stopped.
-     * Then data are attempted to append to the streams opened before the nodes stop.
-     * If failed, the streams are attempted to reopen and the files are attempted to append.
-     * After that the read operation is performed to check data correctness.
-     *
-     * @throws Exception On error.
-     */
-    public void testWriteFailoverAfterStopMultipleNodes() throws Exception {
-        final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
-
-        clear(igfs0);
-
-        IgfsAbstractSelfTest.create(igfs0, paths(DIR, SUBDIR), null);
-
-        final IgfsOutputStream[] outStreams = new IgfsOutputStream[files];
-
-        // Create files:
-        for (int f = 0; f < files; f++) {
-            final byte[] data = createChunk(fileSize, f);
-
-            IgfsOutputStream os = null;
-
-            try {
-                os = igfs0.create(filePath(f), 256, true, null, 0, -1, null);
-
-                assert os != null;
-
-                writeFileChunks(os, data);
-            }
-            finally {
-                if (os != null)
-                    os.flush();
-            }
-
-            outStreams[f] = os;
-
-            X.println("write #1 completed: " + f);
-        }
-
-        // Now stop all the nodes but the 1st:
-        for (int n = 1; n < numIgfsNodes; n++) {
-            stopGrid(n);
-
-            X.println("#### grid " + n + " stopped.");
-        }
-
-        // Create files:
-        for (int f0 = 0; f0 < files; f0++) {
-            final IgfsOutputStream os = outStreams[f0];
-
-            assert os != null;
-
-            final int f = f0;
-
-            int att = doWithRetries(1, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    IgfsOutputStream ios = os;
-
-                    try {
-                        writeChunks0(igfs0, ios, f);
-                    }
-                    catch (IOException ioe) {
-                        log().warning("Attempt to append the data to existing stream failed: ", ioe);
-
-                        ios = igfs0.append(filePath(f), false);
-
-                        assert ios != null;
-
-                        writeChunks0(igfs0, ios, f);
-                    }
-
-                    return null;
-                }
-            });
-
-            assert att == 1;
-
-            X.println("write #2 completed: " + f0 + " in " + att + " attempts.");
-        }
-
-        // Check files:
-        for (int f = 0; f < files; f++) {
-            IgfsPath path = filePath(f);
-
-            byte[] data = createChunk(fileSize, f);
-
-            // Check through 1st node:
-            checkExist(igfs0, path);
-
-            assertEquals("File length mismatch.", data.length * 2, igfs0.size(path));
-
-            checkFileContent(igfs0, path, data, data);
-
-            X.println("Read test completed: " + f);
-        }
-    }
+//    /**
+//     * Checks correct data read *after* N-1 nodes are stopped.
+//     *
+//     * @throws Exception On error.
+//     */
+//    public void testReadFailoverAfterStopMultipleNodes() throws Exception {
+//        final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
+//
+//        clear(igfs0);
+//
+//        IgfsAbstractSelfTest.create(igfs0, paths(DIR, SUBDIR), null);
+//
+//        // Create files through the 0th node:
+//        for (int f=0; f<files; f++) {
+//            final byte[] data = createChunk(fileSize, f);
+//
+//            createFile(igfs0, filePath(f), true, -1/*block size unused*/, data);
+//        }
+//
+//        // Check files:
+//        for (int f=0; f<files; f++) {
+//            IgfsPath path = filePath(f);
+//            byte[] data = createChunk(fileSize, f);
+//
+//            // Check through 0th node:
+//            checkExist(igfs0, path);
+//
+//            checkFileContent(igfs0, path, data);
+//
+//            // Check the same file through other nodes:
+//            for (int n=1; n<numIgfsNodes; n++) {
+//                checkExist(nodeDatas[n].igfsImpl, path);
+//
+//                checkFileContent(nodeDatas[n].igfsImpl, path, data);
+//            }
+//        }
+//
+//        // Now stop all the nodes but the 1st:
+//        for (int n=1; n<numIgfsNodes; n++)
+//            stopGrid(n);
+//
+//        // Check files again:
+//        for (int f=0; f<files; f++) {
+//            IgfsPath path = filePath(f);
+//
+//            byte[] data = createChunk(fileSize, f);
+//
+//            // Check through 0th node:
+//            checkExist(igfs0, path);
+//
+//            checkFileContent(igfs0, path, data);
+//        }
+//    }
+
+//    /**
+//     * Checks correct data read *while* N-1 nodes are being concurrently stopped.
+//     *
+//     * @throws Exception On error.
+//     */
+//    public void testReadFailoverWhileStoppingMultipleNodes() throws Exception {
+//        final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
+//
+//        clear(igfs0);
+//
+//        IgfsAbstractSelfTest.create(igfs0, paths(DIR, SUBDIR), null);
+//
+//        // Create files:
+//        for (int f = 0; f < files; f++) {
+//            final byte[] data = createChunk(fileSize, f);
+//
+//            createFile(igfs0, filePath(f), true, -1/*block size unused*/, data);
+//        }
+//
+//        // Check files:
+//        for (int f = 0; f < files; f++) {
+//            IgfsPath path = filePath(f);
+//            byte[] data = createChunk(fileSize, f);
+//
+//            // Check through 1st node:
+//            checkExist(igfs0, path);
+//
+//            checkFileContent(igfs0, path, data);
+//
+//            // Check the same file through other nodes:
+//            for (int n = 1; n < numIgfsNodes; n++) {
+//                checkExist(nodeDatas[n].igfsImpl, path);
+//
+//                checkFileContent(nodeDatas[n].igfsImpl, path, data);
+//            }
+//        }
+//
+//        final AtomicBoolean stop = new AtomicBoolean();
+//
+//        GridTestUtils.runMultiThreadedAsync(new Callable() {
+//            @Override public Object call() throws Exception {
+//                Thread.sleep(1_000); // Some delay to ensure read is in progress.
+//
+//                // Now stop all the nodes but the 1st:
+//                for (int n = 1; n < numIgfsNodes; n++) {
+//                    stopGrid(n);
+//
+//                    X.println("grid " + n + " stopped.");
+//                }
+//
+//                Thread.sleep(1_000);
+//
+//                stop.set(true);
+//
+//                return null;
+//            }
+//        }, 1, "igfs-node-stopper");
+//
+//        // Read the files repeatedly, while the nodes are being stopped:
+//        while (!stop.get()) {
+//            // Check files while the nodes are being stopped:
+//            for (int f = 0; f < files; f++) {
+//                IgfsPath path = filePath(f);
+//
+//                byte[] data = createChunk(fileSize, f);
+//
+//                // Check through 1st node:
+//                checkExist(igfs0, path);
+//
+//                checkFileContent(igfs0, path, data);
+//            }
+//        }
+//    }
+
+//    /**
+//     * Checks possibility to append the data to files *after* N-1 nodes are stopped.
+//     * First, some data written to files.
+//     * After that N-1 nodes are stopped.
+//     * Then data are attempted to append to the streams opened before the nodes stop.
+//     * If failed, the streams are attempted to reopen and the files are attempted to append.
+//     * After that the read operation is performed to check data correctness.
+//     *
+//     * @throws Exception On error.
+//     */
+//    public void testWriteFailoverAfterStopMultipleNodes() throws Exception {
+//        final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
+//
+//        clear(igfs0);
+//
+//        IgfsAbstractSelfTest.create(igfs0, paths(DIR, SUBDIR), null);
+//
+//        final IgfsOutputStream[] outStreams = new IgfsOutputStream[files];
+//
+//        // Create files:
+//        for (int f = 0; f < files; f++) {
+//            final byte[] data = createChunk(fileSize, f);
+//
+//            IgfsOutputStream os = null;
+//
+//            try {
+//                os = igfs0.create(filePath(f), 256, true, null, 0, -1, null);
+//
+//                assert os != null;
+//
+//                writeFileChunks(os, data);
+//            }
+//            finally {
+//                if (os != null)
+//                    os.flush();
+//            }
+//
+//            outStreams[f] = os;
+//
+//            X.println("write #1 completed: " + f);
+//        }
+//
+//        // Now stop all the nodes but the 1st:
+//        for (int n = 1; n < numIgfsNodes; n++) {
+//            stopGrid(n);
+//
+//            X.println("#### grid " + n + " stopped.");
+//        }
+//
+//        // Create files:
+//        for (int f0 = 0; f0 < files; f0++) {
+//            final IgfsOutputStream os = outStreams[f0];
+//
+//            assert os != null;
+//
+//            final int f = f0;
+//
+//            int att = doWithRetries(1, new Callable<Void>() {
+//                @Override public Void call() throws Exception {
+//                    IgfsOutputStream ios = os;
+//
+//                    try {
+//                        writeChunks0(igfs0, ios, f);
+//                    }
+//                    catch (IOException ioe) {
+//                        log().warning("Attempt to append the data to existing stream failed: ", ioe);
+//
+//                        ios = igfs0.append(filePath(f), false);
+//
+//                        assert ios != null;
+//
+//                        writeChunks0(igfs0, ios, f);
+//                    }
+//
+//                    return null;
+//                }
+//            });
+//
+//            assert att == 1;
+//
+//            X.println("write #2 completed: " + f0 + " in " + att + " attempts.");
+//        }
+//
+//        // Check files:
+//        for (int f = 0; f < files; f++) {
+//            IgfsPath path = filePath(f);
+//
+//            byte[] data = createChunk(fileSize, f);
+//
+//            // Check through 1st node:
+//            checkExist(igfs0, path);
+//
+//            assertEquals("File length mismatch.", data.length * 2, igfs0.size(path));
+//
+//            checkFileContent(igfs0, path, data, data);
+//
+//            X.println("Read test completed: " + f);
+//        }
+//    }
 
     /**
      *
@@ -443,30 +443,6 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
 
         IgfsAbstractSelfTest.create(igfs0, paths(DIR, SUBDIR), null);
 
-        final IgfsOutputStream[] outStreams = new IgfsOutputStream[files];
-
-        // Create files:
-        for (int f = 0; f < files; f++) {
-            final byte[] data = createChunk(fileSize, f);
-
-            IgfsOutputStream os = null;
-
-            try {
-                os = igfs0.create(filePath(f), 256, true, null, 0, -1, null);
-
-                assert os != null;
-
-                writeFileChunks(os, data);
-            }
-            finally {
-                if (os != null)
-                    os.flush();
-            }
-
-            outStreams[f] = os;
-
-            X.println("write #1 completed: " + f);
-        }
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -475,7 +451,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
                 Thread.sleep(10_000); // Some delay to ensure read is in progress.
 
                 // Now stop all the nodes but the 1st:
-                for (int n = 1; n < numIgfsNodes; n++) {
+                for (int n = 0; n < 1/*numIgfsNodes - 1*/; n++) {
                     stopGrid(n);
 
                     X.println("#### grid " + n + " stopped.");
@@ -489,36 +465,76 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
             }
         }, 1, "igfs-node-stopper");
 
+
+        final IgfsOutputStream[] outStreams = new IgfsOutputStream[files];
+
+        // Create files:
+        for (int f = 0; f < files; f++) {
+            final byte[] data = createChunk(fileSize, f);
+
+            IgfsOutputStream os = null;
+
+            try {
+                os = igfs0.create(filePath(f), 256, true, null, 0, -1, null);
+
+                assert os != null;
+
+                writeFileChunks(os, data);
+
+                os.flush();
+            }
+            catch (Exception e) {
+                // Ignore the exception there because there are no backups.
+                X.println("" + e);
+            }
+            finally {
+                U.closeQuiet(os); // Also ignore exceptions there.
+            }
+
+            outStreams[f] = os;
+
+            X.println("write #1 completed: " + f);
+        }
+
+        final IgfsImpl igfs1 = nodeDatas[numIgfsNodes - 1].igfsImpl;
+
         // Write #2:
         for (int f0 = 0; f0 < files; f0++) {
-            final IgfsOutputStream os = outStreams[f0];
+            //final IgfsOutputStream os = outStreams[f0];
 
-            assert os != null;
+            //assert os != null;
 
             final int f = f0;
 
-            int att = doWithRetries(1, new Callable<Void>() {
+            int att = doWithRetries(2, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    IgfsOutputStream ios = os;
+                    //IgfsOutputStream ios = os;
 
-                    try {
-                        writeChunks0(igfs0, ios, f);
-                    }
-                    catch (IOException ioe) {
-                        log().warning("Attempt to append the data to existing stream failed: ", ioe);
+//                    try {
+//                        writeChunks0(igfs0, ios, f);
+//                    }
+//                    catch (IOException ioe) {
+//                        log().warning("Attempt to append the data to existing stream failed: ", ioe);
+//
+//                        ios = igfs0.append(filePath(f), false);
+//
+//                        assert ios != null;
+//
+//                        writeChunks0(igfs0, ios, f);
+//                    }
 
-                        ios = igfs0.append(filePath(f), false);
+                    // Any way should be able to write over the files , even if they are corrupted:
+                    IgfsOutputStream ios = igfs1.create(filePath(f), true/*overwrite*/);
 
-                        assert ios != null;
+                    assert ios != null;
 
-                        writeChunks0(igfs0, ios, f);
-                    }
+                    writeChunks0(igfs1, ios, f);
 
                     return null;
                 }
             });
 
-            assert att == 1;
+            //assert att == 1;
 
             X.println("write #2 completed: " + f0 + " in " + att + " attempts.");
         }
@@ -536,11 +552,11 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
             byte[] data = createChunk(fileSize, f);
 
             // Check through 1st node:
-            checkExist(igfs0, path);
+            checkExist(igfs1, path);
 
-            assertEquals("File length mismatch.", data.length * 2, igfs0.size(path));
+            assertEquals("File length mismatch.", data.length, igfs1.size(path));
 
-            checkFileContent(igfs0, path, data, data);
+            checkFileContent(igfs1, path, data, data);
 
             X.println("Read test completed: " + f);
         }

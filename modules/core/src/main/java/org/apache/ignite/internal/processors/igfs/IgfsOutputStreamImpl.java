@@ -290,8 +290,9 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     }
 
     /**
+     * Flushes data with some expected length to be written.
      *
-     * @param expWriteAmount
+     * @param expWriteAmount The amount of data expected to be written.
      * @throws IOException
      */
     private void flush(long expWriteAmount) throws IOException {

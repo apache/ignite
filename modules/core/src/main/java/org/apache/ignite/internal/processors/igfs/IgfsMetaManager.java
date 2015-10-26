@@ -65,6 +65,7 @@ import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
@@ -558,7 +559,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @param modificationTime Modification time to write to file info.
      * @throws IgniteCheckedException If failed.
      */
-    public void unlock(final IgfsFileInfo info, final long modificationTime) throws IgniteCheckedException {
+    void unlock(final IgfsFileInfo info, final long modificationTime) throws IgniteCheckedException {
         assert validTxState(false);
         assert info != null;
 
@@ -594,6 +595,9 @@ public class IgfsMetaManager extends IgfsManager {
                                     "[fileId=" + fileId + ", lockId=" + info.lockId() + ", actualLockId=" +
                                     oldInfo.lockId() + ']');
 
+                            // This method assumes that the file should be unlocked only by the node which locked it:
+                            assert igfsCtx.kernalContext().localNodeId().equals(info.lockId().globalId());
+
                             // New info will be created with zero reserved delta and null lock id:
                             IgfsFileInfo newInfo = new IgfsFileInfo(oldInfo, null, modificationTime);
 
@@ -607,8 +611,6 @@ public class IgfsMetaManager extends IgfsManager {
                     });
                 }
                 finally {
-                    assert validTxState(false);
-
                     if (interrupted)
                         Thread.currentThread().interrupt();
                 }
@@ -3363,10 +3365,11 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
-     * Actually it uses an heuristic algorythm. May be made configurable.
+     * Calculates new reserved delta. (Currently uses an heuristic algorythm.)
      *
      * @param blockSize The block size.
      * @param length The currect file length.
+     * @param expectedWriteDelta The length delta that is known to be expected to be written to the file.
      * @return The new delta to reserve, in bytes.
      */
     static long calculateNextReservedDelta(int blockSize, long length, long expectedWriteDelta) {
@@ -3453,7 +3456,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                                     final IgniteUuid parentId = b.idList.get(b.idList.size() - 2);
 
-                                    final IgniteUuid lockId = lowermostExistingInfo.lockId();
+                                    final IgniteUuid lockId = getAliveLock(lowermostExistingInfo);
 
                                     if (append) {
                                         if (lockId != null)
@@ -3804,8 +3807,8 @@ public class IgfsMetaManager extends IgfsManager {
 
             assert info != null;
 
-            if (info.lockId() != null)
-                return null; // file is already locked.
+            // Note: info.lockId() may be null there, since since in some cases we lock
+            // files locked by a "stale" lock.
 
             IgfsFileInfo newInfo = IgfsFileInfo.builder(new IgfsFileInfo(info, newLockId, info.modificationTime()))
                 .reservedDelta(calculateNextReservedDelta(info.blockSize(), info.length(), 0L)).build();
@@ -3829,5 +3832,36 @@ public class IgfsMetaManager extends IgfsManager {
         @Override public String toString() {
             return S.toString(LockFileProcessor.class, this);
         }
+    }
+
+    /**
+     *
+     * @return {@code null} if there is no lock, or if can safely delete the lock.
+     */
+    private IgniteUuid getAliveLock(IgfsFileInfo info) throws IgniteCheckedException {
+        assert validTxState(true); // Currently invoked only inside a transaction.
+
+        IgniteUuid lockId = info.lockId();
+
+        if (lockId == null)
+            return null;
+
+        UUID nodeId = lockId.globalId();
+
+        GridDiscoveryManager disco = igfsCtx.kernalContext().discovery();
+
+        ClusterNode aliveNode = disco.getAlive(nodeId);
+
+        if (aliveNode != null) {
+            assert igfsCtx.igfsNode(aliveNode);
+
+            // There is an existing lock, and the owning node is alive:
+            return lockId;
+        }
+
+        // Node is dead, so we can safely clean up the data and delete the write lock.
+        igfsCtx.data().cleanUpReservedFileData(info);
+
+        return null;
     }
 }

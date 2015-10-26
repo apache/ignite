@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.igfs.IgfsFragmentizerSelfTest;
 import org.apache.ignite.igfs.IgfsFragmentizerTopologySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsAttributesSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsBackupFailoverSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsBackupsDualAsyncSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsBackupsDualSyncSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsBackupsPrimarySelfTest;
@@ -120,8 +121,7 @@ public class IgniteIgfsTestSuite extends TestSuite {
         suite.addTestSuite(IgfsBackupsDualSyncSelfTest.class);
         suite.addTestSuite(IgfsBackupsDualAsyncSelfTest.class);
 
-        // TODO: Enable when IGFS failover is fixed.
-        //suite.addTestSuite(IgfsBackupFailoverSelfTest.class);
+        suite.addTestSuite(IgfsBackupFailoverSelfTest.class);
 
         return suite;
     }
