@@ -15,62 +15,100 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import java.nio.ByteBuffer;
-import java.util.List;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * List of messages.
+ * Bounds of row range.
  */
-public class GridMessageList<X extends Message> implements Message {
+public class GridH2RowRangeBounds implements Message {
     /** */
-    @GridDirectCollection(Message.class)
-    private List<X> list;
+    private int rangeId;
+
+    /** */
+    private GridH2RowMessage first;
+
+    /** */
+    private GridH2RowMessage last;
 
     /**
-     * @param arr Zero or more messages.
-     * @return Message list.
+     * @param rangeId Range ID.
+     * @param first First.
+     * @param last Last.
+     * @return Range bounds.
      */
-    public static <Z  extends Message> GridMessageList<Z> asList(Z...arr) {
-        GridMessageList<Z> res = new GridMessageList<>();
+    public static GridH2RowRangeBounds rangeBounds(int rangeId, GridH2RowMessage first, GridH2RowMessage last) {
+        GridH2RowRangeBounds res = new GridH2RowRangeBounds();
 
-        res.list(F.asList(arr));
+        res.rangeId(rangeId);
+        res.first(first);
+        res.last(last);
 
         return res;
     }
 
     /**
-     * @param list List of messages.
+     * @param rangeId Range ID.
      */
-    public void list(List<X> list) {
-        this.list = list;
+    public void rangeId(int rangeId) {
+        this.rangeId = rangeId;
     }
 
     /**
-     * @return List of messages.
+     * @return Range ID.
      */
-    public List<X> list() {
-        return list;
+    public int rangeId() {
+        return rangeId;
     }
 
+    /**
+     * @param first First.
+     */
+    public void first(GridH2RowMessage first) {
+        this.first = first;
+    }
+
+    /**
+     * @return First.
+     */
+    public GridH2RowMessage first() {
+        return first;
+    }
+
+    /**
+     * @param last Last.
+     */
+    public void last(GridH2RowMessage last) {
+        this.last = last;
+    }
+
+    /**
+     * @return Last.
+     */
+    public GridH2RowMessage last() {
+        return last;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public byte directType() {
-        return 114;
+        return -28;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 0;
     }

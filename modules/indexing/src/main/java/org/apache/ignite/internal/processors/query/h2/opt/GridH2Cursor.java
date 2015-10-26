@@ -28,6 +28,25 @@ import org.h2.result.SearchRow;
  */
 public class GridH2Cursor implements Cursor {
     /** */
+    public static final Cursor EMPTY = new Cursor() {
+        @Override public Row get() {
+            return null;
+        }
+
+        @Override public SearchRow getSearchRow() {
+            return null;
+        }
+
+        @Override public boolean next() {
+            return false;
+        }
+
+        @Override public boolean previous() {
+            return false;
+        }
+    };
+
+    /** */
     protected Iterator<? extends Row> iter;
 
     /** */

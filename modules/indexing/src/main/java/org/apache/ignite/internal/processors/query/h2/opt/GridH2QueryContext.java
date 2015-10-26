@@ -51,6 +51,9 @@ public class GridH2QueryContext {
     private Map<Long, Object> snapshots;
 
     /** */
+    private final ConcurrentMap<Long, Object> streams = new ConcurrentHashMap8<>();
+
+    /** */
     private IndexingQueryFilter filter;
 
     /** */
@@ -208,6 +211,25 @@ public class GridH2QueryContext {
     @SuppressWarnings("unchecked")
     public <T> T getSnapshot(long idxId) {
         return (T)snapshots.get(idxId);
+    }
+
+    /**
+     * @param idxId Index ID.
+     * @param streams Streams.
+     */
+    public void putStreams(long idxId, Object streams) {
+        Object old = this.streams.put(idxId, streams);
+
+        assert old == null;
+    }
+
+    /**
+     * @param idxId Index ID.
+     * @return Streams.
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T getStreams(long idxId) {
+        return (T)streams.get(idxId);
     }
 
     /**

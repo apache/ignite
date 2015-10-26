@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
+ * Range response message.
  */
 public class GridH2IndexRangeResponse implements Message {
     /** */
@@ -34,17 +36,18 @@ public class GridH2IndexRangeResponse implements Message {
     public static final byte STATUS_ERROR = 1;
 
     /** */
-    public static final byte STATUS_RETRY = 1;
+    public static final byte STATUS_NOT_FOUND = 2;
 
     /** */
-    private long id;
+    private UUID originNodeId;
 
-    /** Sizes for returned ranges. */
-    private int[] sizes;
+    /** */
+    private long qryId;
 
-    /** Row for one or multiple ranges. */
+    /** */
+    /** */
     @GridDirectCollection(Message.class)
-    private List<GridH2RowMessage> rows;
+    private List<GridH2RowRange> ranges;
 
     /** */
     private byte status;
@@ -52,8 +55,47 @@ public class GridH2IndexRangeResponse implements Message {
     /** */
     private String err;
 
-    /** */
-    private long sourceId;
+    /**
+     * @param ranges Ranges.
+     */
+    public void ranges(List<GridH2RowRange> ranges) {
+        this.ranges = ranges;
+    }
+
+    /**
+     * @return Ranges.
+     */
+    public List<GridH2RowRange> ranges() {
+        return ranges;
+    }
+
+    /**
+     * @return Origin node ID.
+     */
+    public UUID originNodeId() {
+        return originNodeId;
+    }
+
+    /**
+     * @param originNodeId Origin node ID.
+     */
+    public void originNodeId(UUID originNodeId) {
+        this.originNodeId = originNodeId;
+    }
+
+    /**
+     * @return Query ID.
+     */
+    public long queryId() {
+        return qryId;
+    }
+
+    /**
+     * @param qryId Query ID.
+     */
+    public void queryId(long qryId) {
+        this.qryId = qryId;
+    }
 
     /**
      * @param err Error message.
@@ -70,45 +112,17 @@ public class GridH2IndexRangeResponse implements Message {
     }
 
     /**
-     * @param id ID.
+     * @param status Status.
      */
-    public void id(long id) {
-        this.id = id;
+    public void status(byte status) {
+        this.status = status;
     }
 
     /**
-     * @return ID.
+     * @return Status.
      */
-    public long id() {
-        return id;
-    }
-
-    /**
-     * @return Sizes.
-     */
-    public int[] sizes() {
-        return sizes;
-    }
-
-    /**
-     * @param sizes Sizes.
-     */
-    public void sizes(int[] sizes) {
-        this.sizes = sizes;
-    }
-
-    /**
-     * @return Rows.
-     */
-    public List<GridH2RowMessage> rows() {
-        return rows;
-    }
-
-    /**
-     * @param rows Rows.
-     */
-    public void rows(List<GridH2RowMessage> rows) {
-        this.rows = rows;
+    public byte status() {
+        return status;
     }
 
     /** {@inheritDoc} */

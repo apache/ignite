@@ -42,7 +42,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
     private static final AtomicLong idxIdGen = new AtomicLong();
 
     /** */
-    private final long idxId = idxIdGen.incrementAndGet();
+    protected final long idxId = idxIdGen.incrementAndGet();
 
     /** */
     private final ThreadLocal<Object> snapshot = new ThreadLocal<>();

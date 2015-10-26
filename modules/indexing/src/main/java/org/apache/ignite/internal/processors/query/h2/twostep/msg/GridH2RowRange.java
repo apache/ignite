@@ -19,66 +19,68 @@ package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.UUID;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Range request.
+ * Range of rows.
  */
-public class GridH2IndexRangeRequest implements Message {
+public class GridH2RowRange implements Message {
     /** */
-    private UUID originNodeId;
+    private static int FLAG_PARTIAL = 1;
 
     /** */
-    private long qryId;
+    private int rangeId;
 
     /** */
     @GridDirectCollection(Message.class)
-    private List<GridH2RowRangeBounds> bounds;
+    private List<GridH2RowMessage> rows;
+
+    /** */
+    private byte flags;
 
     /**
-     * @param bounds Range bounds list.
+     * @param rangeId Range ID.
      */
-    public void bounds(List<GridH2RowRangeBounds> bounds) {
-        this.bounds = bounds;
+    public void rangeId(int rangeId) {
+        this.rangeId = rangeId;
     }
 
     /**
-     * @return Range bounds list.
+     * @return Range ID.
      */
-    public List<GridH2RowRangeBounds> bounds() {
-        return bounds;
+    public int rangeId() {
+        return rangeId;
     }
 
     /**
-     * @return Origin node ID.
+     * @param rows Rows.
      */
-    public UUID originNodeId() {
-        return originNodeId;
+    public void rows(List<GridH2RowMessage> rows) {
+        this.rows = rows;
     }
 
     /**
-     * @param originNodeId Origin node ID.
+     * @return Rows.
      */
-    public void originNodeId(UUID originNodeId) {
-        this.originNodeId = originNodeId;
+    public List<GridH2RowMessage> rows() {
+        return rows;
     }
 
     /**
-     * @return Query ID.
+     * Sets that this is a partial range.
      */
-    public long queryId() {
-        return qryId;
+    public void setPartial() {
+        flags |= FLAG_PARTIAL;
     }
 
     /**
-     * @param qryId Query ID.
+     * @return {@code true} If this is a partial range.
      */
-    public void queryId(long qryId) {
-        this.qryId = qryId;
+    public boolean isPartial() {
+        return (flags & FLAG_PARTIAL) == FLAG_PARTIAL;
     }
 
     /** {@inheritDoc} */
@@ -93,7 +95,7 @@ public class GridH2IndexRangeRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -23;
+        return -27;
     }
 
     /** {@inheritDoc} */

@@ -102,6 +102,12 @@ public class GridH2ValueMessageFactory implements MessageFactory {
 
             case -26:
                 return new GridH2QueryRequest();
+
+            case -27:
+                return new GridH2RowRange();
+
+            case -28:
+                return new GridH2RowRangeBounds();
         }
 
         return null;
