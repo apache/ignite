@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Reflection;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Unmanaged;
@@ -55,10 +54,13 @@ namespace Apache.Ignite.Core.Impl.Services
         private readonly IClusterGroup _clusterGroup;
 
         /** Invoker portable flag. */
-        protected readonly bool KeepPortable;
+        private readonly bool _keepPortable;
 
         /** Server portable flag. */
-        protected readonly bool SrvKeepPortable;
+        private readonly bool _srvKeepPortable;
+
+        /** Async instance. */
+        private readonly Services _asyncInstance;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Services" /> class.
@@ -75,50 +77,39 @@ namespace Apache.Ignite.Core.Impl.Services
             Debug.Assert(clusterGroup  != null);
 
             _clusterGroup = clusterGroup;
-            KeepPortable = keepPortable;
-            SrvKeepPortable = srvKeepPortable;
+            _keepPortable = keepPortable;
+            _srvKeepPortable = srvKeepPortable;
+            
+            _asyncInstance = new Services(this);
+        }
+
+        /// <summary>
+        /// Initializes a new async instance.
+        /// </summary>
+        /// <param name="services">The services.</param>
+        private Services(Services services) : base(UU.ServicesWithAsync(services.Target), services.Marshaller)
+        {
+            _clusterGroup = services.ClusterGroup;
+            _keepPortable = services._keepPortable;
+            _srvKeepPortable = services._srvKeepPortable;
         }
 
         /** <inheritDoc /> */
         public virtual IServices WithKeepPortable()
         {
-            if (KeepPortable)
+            if (_keepPortable)
                 return this;
 
-            return new Services(Target, Marshaller, _clusterGroup, true, SrvKeepPortable);
+            return new Services(Target, Marshaller, _clusterGroup, true, _srvKeepPortable);
         }
 
         /** <inheritDoc /> */
         public virtual IServices WithServerKeepPortable()
         {
-            if (SrvKeepPortable)
+            if (_srvKeepPortable)
                 return this;
 
-            return new Services(UU.ServicesWithServerKeepPortable(Target), Marshaller, _clusterGroup, KeepPortable, true);
-        }
-
-        /** <inheritDoc /> */
-        public virtual IServices WithAsync()
-        {
-            return new ServicesAsync(UU.ServicesWithAsync(Target), Marshaller, _clusterGroup, KeepPortable, SrvKeepPortable);
-        }
-
-        /** <inheritDoc /> */
-        public virtual bool IsAsync
-        {
-            get { return false; }
-        }
-
-        /** <inheritDoc /> */
-        public virtual IFuture GetFuture()
-        {
-            throw new InvalidOperationException("Asynchronous mode is disabled");
-        }
-
-        /** <inheritDoc /> */
-        public virtual IFuture<TResult> GetFuture<TResult>()
-        {
-            throw new InvalidOperationException("Asynchronous mode is disabled");
+            return new Services(UU.ServicesWithServerKeepPortable(Target), Marshaller, _clusterGroup, _keepPortable, true);
         }
 
         /** <inheritDoc /> */
@@ -139,7 +130,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployClusterSingletonAsync(string name, IService service)
         {
-            throw new NotImplementedException();
+            _asyncInstance.DeployClusterSingleton(name, service);
+
+            return _asyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -260,7 +253,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             return DoInOp(OpDescriptors, stream =>
             {
-                var reader = Marshaller.StartUnmarshal(stream, KeepPortable);
+                var reader = Marshaller.StartUnmarshal(stream, _keepPortable);
 
                 var size = reader.ReadInt();
 
@@ -353,7 +346,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             return DoOutInOp(OpInvokeMethod,
                 writer => ServiceProxySerializer.WriteProxyMethod(writer, method, args),
-                stream => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, KeepPortable), proxy.Target);
+                stream => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepPortable), proxy.Target);
         }
     }
 }
