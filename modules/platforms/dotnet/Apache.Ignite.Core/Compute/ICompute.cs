@@ -88,6 +88,16 @@ namespace Apache.Ignite.Core.Compute
         TRes ExecuteJavaTask<TRes>(string taskName, object taskArg);
 
         /// <summary>
+        /// Executes given Java task on the grid projection. If task for given name has not been deployed yet,
+        /// then 'taskName' will be used as task class name to auto-deploy the task.
+        /// </summary>
+        /// <param name="taskName">Java task name</param>
+        /// <param name="taskArg">Optional argument of task execution, can be null.</param>
+        /// <returns>Task result.</returns>
+        /// <typeparam name="TRes">Type of task result.</typeparam>
+        Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg);
+
+        /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
         /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
         /// </summary>

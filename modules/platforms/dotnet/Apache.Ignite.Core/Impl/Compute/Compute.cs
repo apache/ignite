@@ -80,6 +80,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg)
+        {
+            return _compute.ExecuteJavaTaskAsync<TRes>(taskName, taskArg).ToTask();
+        }
+
+        /** <inheritDoc /> */
         public TReduceRes Execute<TArg, TJobRes, TReduceRes>(IComputeTask<TArg, TJobRes, TReduceRes> task, TArg taskArg)
         {
             return _compute.Execute(task, taskArg).Get();
