@@ -226,20 +226,12 @@ public class PortableBuilderImpl implements PortableBuilder {
 
             reader.position(start + hdrLen);
 
-            int cpStart = -1;
-
             while (reader.position() < rawOff) {
                 int fldId = reader.readInt();
 
                 int len = reader.readInt();
 
                 if (assignedFldsById.containsKey(fldId)) {
-                    if (cpStart >= 0) {
-                        writer.write(reader.array(), cpStart, reader.position() - 4 - 4 - cpStart);
-
-                        cpStart = -1;
-                    }
-
                     Object assignedVal = assignedFldsById.remove(fldId);
 
                     reader.skip(len);
@@ -258,19 +250,14 @@ public class PortableBuilderImpl implements PortableBuilder {
                     int type = len != 0 ? reader.readByte(0) : 0;
 
                     if (len != 0 && !PortableUtils.isPlainArrayType(type) && PortableUtils.isPlainType(type)) {
-                        if (cpStart < 0)
-                            cpStart = reader.position() - 4 - 4;
+                        writer.writeInt(fldId);
+                        writer.writeInt(len);
+                        writer.write(reader.array(), reader.position(), len);
 
                         reader.skip(len);
                     }
                     else {
-                        if (cpStart >= 0) {
-                            writer.write(reader.array(), cpStart, reader.position() - 4 - cpStart);
-
-                            cpStart = -1;
-                        }
-                        else
-                            writer.writeInt(fldId);
+                        writer.writeInt(fldId);
 
                         Object val;
 
@@ -297,9 +284,6 @@ public class PortableBuilderImpl implements PortableBuilder {
                     }
                 }
             }
-
-            if (cpStart >= 0)
-                writer.write(reader.array(), cpStart, reader.position() - cpStart);
         }
 
         if (assignedVals != null && (remainsFlds == null || !remainsFlds.isEmpty())) {
