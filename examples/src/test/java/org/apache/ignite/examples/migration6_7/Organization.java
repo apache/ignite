@@ -15,30 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache;
+package org.apache.ignite.examples.migration6_7;
 
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
-import org.yardstickframework.BenchmarkConfiguration;
+import java.io.Serializable;
+import java.util.UUID;
 
 /**
- * Abstract class for Ignite benchmarks which use cache.
  */
-public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractBenchmark {
-    /** Cache. */
-    protected IgniteCache<K, V> cache;
+public class Organization implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
 
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
+    String name = UUID.randomUUID().toString();
 
-        cache = cache();
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof Organization))
+            return false;
+
+        Organization that = (Organization)o;
+
+        if (name != null ? !name.equals(that.name) : that.name != null)
+            return false;
+
+        return true;
     }
 
-    /**
-     * Each benchmark must determine which cache will be used.
-     *
-     * @return IgniteCache Cache to use.
-     */
-    protected abstract IgniteCache<K, V> cache();
+    @Override
+    public int hashCode() {
+        return name != null ? name.hashCode() : 0;
+    }
 }

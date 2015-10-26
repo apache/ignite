@@ -38,6 +38,13 @@
         </dependency>
 
         <dependency>
+            <groupId>org.gridgain</groupId>
+            <artifactId>gridgain-fabric</artifactId>
+            <version>6.6.5</version>
+            <type>pom</type>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${project.version}</version>
