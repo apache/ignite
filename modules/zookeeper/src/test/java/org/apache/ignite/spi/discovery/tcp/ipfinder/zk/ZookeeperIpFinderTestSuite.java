@@ -15,8 +15,18 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.spi.discovery.tcp.ipfinder.zk;
+
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+
 /**
- * <!-- Package description. -->
- * Demonstrates usage of cron-based scheduler.
+ * Zookeeper IP Finder tests.
  */
-package org.apache.ignite.examples.java8.misc.schedule;
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    ZookeeperIpFinderTest.class
+})
+public class ZookeeperIpFinderTestSuite {
+
+}

@@ -17,23 +17,13 @@
   limitations under the License.
 -->
 
-<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2
-          http://maven.apache.org/xsd/assembly-1.1.2.xsd">
-    <id>fabric</id>
-
-    <includeBaseDirectory>false</includeBaseDirectory>
-
-    <formats>
-        <format>dir</format>
-    </formats>
-
-    <files>
-        <file>
-            <source>assembly/LICENSE_HADOOP</source><!--assembly should contain at least one file. copied from release-hadoop.xml -->
-            <destName>LICENSE</destName>
-            <outputDirectory>/</outputDirectory>
-        </file>
-    </files>
-</assembly>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <!--
+        Alter configuration below as needed.
+    -->
+    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"/>
+</beans>
