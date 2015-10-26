@@ -91,7 +91,6 @@
     <Compile Include="Cluster\IClusterNode.cs" />
     <Compile Include="Cluster\IClusterNodeFilter.cs" />
     <Compile Include="Common\IgniteException.cs" />
-    <Compile Include="Common\IAsyncSupport.cs" />
     <Compile Include="Common\IFuture.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Compute\ComputeExecutionRejectedException.cs" />

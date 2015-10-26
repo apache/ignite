@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Cache
     /// <typeparam name="TK">Key type.</typeparam>
     /// <typeparam name="TV">Value type.</typeparam>
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
-    public interface ICache<TK, TV> : IAsyncSupport<ICache<TK, TV>>, IEnumerable<ICacheEntry<TK, TV>>
+    public interface ICache<TK, TV> : IEnumerable<ICacheEntry<TK, TV>>
     {
         /// <summary>
         /// Name of this cache (<c>null</c> for default cache).
