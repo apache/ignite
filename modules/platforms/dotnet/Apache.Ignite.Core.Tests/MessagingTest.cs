@@ -291,7 +291,7 @@ namespace Apache.Ignite.Core.Tests
 
             var listener = MessagingTestHelper.GetListener();
             var listenId = async
-                ? messaging.RemoteListenAsync(listener, topic).Get()
+                ? messaging.RemoteListenAsync(listener, topic).Result
                 : messaging.RemoteListen(listener, topic);
 
             // Test sending
@@ -302,13 +302,13 @@ namespace Apache.Ignite.Core.Tests
 
             // Test multiple subscriptions for the same filter
             var listenId2 = async
-                ? messaging.RemoteListenAsync(listener, topic).Get()
+                ? messaging.RemoteListenAsync(listener, topic).Result
                 : messaging.RemoteListen(listener, topic);
 
             CheckSend(topic, msg: messaging, remoteListen: true, repeatMultiplier: 2); // expect twice the messages
 
             if (async)
-                messaging.StopRemoteListenAsync(listenId2).Get();
+                messaging.StopRemoteListenAsync(listenId2).Wait();
             else
                 messaging.StopRemoteListen(listenId2);
 
@@ -320,7 +320,7 @@ namespace Apache.Ignite.Core.Tests
 
             // Test end listen
             if (async)
-                messaging.StopRemoteListenAsync(listenId).Get();
+                messaging.StopRemoteListenAsync(listenId).Wait();
             else
                 messaging.StopRemoteListen(listenId);
 
