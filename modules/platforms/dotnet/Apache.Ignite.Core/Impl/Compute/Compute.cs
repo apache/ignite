@@ -85,6 +85,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             return _compute.Execute(task, taskArg).Get();
         }
 
+        /** <inheritDoc /> */
         public Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(IComputeTask<TArg, TJobRes, TRes> task, TArg taskArg)
         {
             throw new NotImplementedException();
@@ -96,6 +97,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             return _compute.Execute(task, null).Get();
         }
 
+        /** <inheritDoc /> */
         public Task<TRes> ExecuteAsync<TJobRes, TRes>(IComputeTask<TJobRes, TRes> task)
         {
             throw new NotImplementedException();
@@ -107,16 +109,19 @@ namespace Apache.Ignite.Core.Impl.Compute
             return _compute.Execute<TArg, TJobRes, TReduceRes>(taskType, taskArg).Get();
         }
 
+        /** <inheritDoc /> */
         public Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(Type taskType, TArg taskArg)
         {
             throw new NotImplementedException();
         }
 
+        /** <inheritDoc /> */
         public TReduceRes Execute<TArg, TReduceRes>(Type taskType)
         {
             return _compute.Execute<object, TArg, TReduceRes>(taskType, null).Get();
         }
 
+        /** <inheritDoc /> */
         public Task<TRes> ExecuteAsync<TJobRes, TRes>(Type taskType)
         {
             throw new NotImplementedException();
@@ -128,6 +133,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             return _compute.Execute(clo).Get();
         }
 
+        /** <inheritDoc /> */
         public Task<TRes> CallAsync<TRes>(IComputeFunc<TRes> clo)
         {
             throw new NotImplementedException();
@@ -139,6 +145,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             return _compute.AffinityCall(cacheName, affinityKey, clo).Get();
         }
 
+        /** <inheritDoc /> */
         public Task<TRes> AffinityCallAsync<TRes>(string cacheName, object affinityKey, IComputeFunc<TRes> clo)
         {
             throw new NotImplementedException();
@@ -156,11 +163,13 @@ namespace Apache.Ignite.Core.Impl.Compute
             throw new NotImplementedException();
         }
 
+        /** <inheritDoc /> */
         public ICollection<TJobRes> Call<TJobRes>(IEnumerable<IComputeFunc<TJobRes>> clos)
         {
             return _compute.Execute(clos).Get();
         }
 
+        /** <inheritDoc /> */
         public Task<ICollection<TRes>> CallAsync<TRes>(IEnumerable<IComputeFunc<TRes>> clos)
         {
             throw new NotImplementedException();
@@ -179,6 +188,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             return _compute.Broadcast(clo).Get();
         }
 
+        /** <inheritDoc /> */
         public Task<ICollection<TRes>> BroadcastAsync<TRes>(IComputeFunc<TRes> clo)
         {
             throw new NotImplementedException();
@@ -190,6 +200,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             return _compute.Broadcast(clo, arg).Get();
         }
 
+        /** <inheritDoc /> */
         public Task<ICollection<TRes>> BroadcastAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, TArg arg)
         {
             throw new NotImplementedException();
@@ -201,6 +212,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             _compute.Broadcast(action).Get();
         }
 
+        /** <inheritDoc /> */
         public Task BroadcastAsync(IComputeAction action)
         {
             throw new NotImplementedException();
@@ -212,6 +224,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             _compute.Run(action).Get();
         }
 
+        /** <inheritDoc /> */
         public Task RunAsync(IComputeAction action)
         {
             throw new NotImplementedException();
@@ -223,6 +236,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             _compute.AffinityRun(cacheName, affinityKey, action).Get();
         }
 
+        /** <inheritDoc /> */
         public Task AffinityRunAsync(string cacheName, object affinityKey, IComputeAction action)
         {
             throw new NotImplementedException();
@@ -234,6 +248,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             _compute.Run(actions).Get();
         }
 
+        /** <inheritDoc /> */
         public Task RunAsync(IEnumerable<IComputeAction> actions)
         {
             throw new NotImplementedException();
@@ -245,6 +260,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             return _compute.Apply(clo, arg).Get();
         }
 
+        /** <inheritDoc /> */
         public Task<TRes> ApplyAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, TArg arg)
         {
             throw new NotImplementedException();
@@ -256,6 +272,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             return _compute.Apply(clo, args).Get();
         }
 
+        /** <inheritDoc /> */
         public Task<ICollection<TRes>> ApplyAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, IEnumerable<TArg> args)
         {
             throw new NotImplementedException();
@@ -268,6 +285,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             return _compute.Apply(clo, args, rdc).Get();
         }
 
+        /** <inheritDoc /> */
         public Task<TRes> ApplyAsync<TArg, TFuncRes, TRes>(IComputeFunc<TArg, TFuncRes> clo, IEnumerable<TArg> args, IComputeReducer<TFuncRes, TRes> rdc)
         {
             throw new NotImplementedException();
