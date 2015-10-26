@@ -251,9 +251,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Object unmarshal(String fieldName) throws PortableException {
-        off = fieldOffset(fieldId(fieldName));
-
-        return off >= 0 ? unmarshal(false) : null;
+        return hasField(fieldName) ? unmarshal(false) : null;
     }
 
     /**
@@ -273,9 +271,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Byte readByte(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             if (checkFlag(BYTE, false) == Flag.NULL)
                 return null;
 
@@ -291,9 +287,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Short readShort(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             if (checkFlag(SHORT, false) == Flag.NULL)
                 return null;
 
@@ -309,9 +303,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Integer readInt(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             if (checkFlag(INT, false) == Flag.NULL)
                 return null;
 
@@ -327,9 +319,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Long readLong(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             if (checkFlag(LONG, false) == Flag.NULL)
                 return null;
 
@@ -345,9 +335,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Float readFloat(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             if (checkFlag(FLOAT, false) == Flag.NULL)
                 return null;
 
@@ -363,9 +351,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Double readDouble(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             if (checkFlag(DOUBLE, false) == Flag.NULL)
                 return null;
 
@@ -381,9 +367,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Character readChar(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             if (checkFlag(CHAR, false) == Flag.NULL)
                 return null;
 
@@ -399,9 +383,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Boolean readBoolean(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             if (checkFlag(BOOLEAN, false) == Flag.NULL)
                 return null;
 
@@ -417,9 +399,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable BigDecimal readDecimal(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             if (checkFlag(DECIMAL, false) == Flag.NULL)
                 return null;
 
@@ -435,9 +415,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable String readString(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             if (checkFlag(STRING, false) == Flag.NULL)
                 return null;
 
@@ -453,9 +431,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable UUID readUuid(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             if (checkFlag(UUID, false) == Flag.NULL)
                 return null;
 
@@ -471,9 +447,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Date readDate(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             if (checkFlag(DATE, false) == Flag.NULL)
                 return null;
 
@@ -489,9 +463,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Timestamp readTimestamp(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             if (checkFlag(TIMESTAMP, false) == Flag.NULL)
                 return null;
 
@@ -507,9 +479,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Object readObject(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        return off >= 0 ? doReadObject(false) : null;
+        return hasField(fieldId) ? doReadObject(false) : null;
     }
 
     /**
@@ -518,9 +488,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable byte[] readByteArray(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(BYTE_ARR, false);
 
             if (flag == Flag.NORMAL)
@@ -538,9 +506,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable short[] readShortArray(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(SHORT_ARR, false);
 
             if (flag == Flag.NORMAL)
@@ -558,9 +524,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable int[] readIntArray(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(INT_ARR, false);
 
             if (flag == Flag.NORMAL)
@@ -578,9 +542,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable long[] readLongArray(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(LONG_ARR, false);
 
             if (flag == Flag.NORMAL)
@@ -598,9 +560,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable float[] readFloatArray(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(FLOAT_ARR, false);
 
             if (flag == Flag.NORMAL)
@@ -618,9 +578,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable double[] readDoubleArray(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(DOUBLE_ARR, false);
 
             if (flag == Flag.NORMAL)
@@ -638,9 +596,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable char[] readCharArray(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(CHAR_ARR, false);
 
             if (flag == Flag.NORMAL)
@@ -658,9 +614,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable boolean[] readBooleanArray(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(BOOLEAN_ARR, false);
 
             if (flag == Flag.NORMAL)
@@ -678,9 +632,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable BigDecimal[] readDecimalArray(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(DECIMAL_ARR, false);
 
             if (flag == Flag.NORMAL)
@@ -698,9 +650,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable String[] readStringArray(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(STRING_ARR, false);
 
             if (flag == Flag.NORMAL)
@@ -718,9 +668,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable UUID[] readUuidArray(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(UUID_ARR, false);
 
             if (flag == Flag.NORMAL)
@@ -738,9 +686,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Date[] readDateArray(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(DATE_ARR, false);
 
             if (flag == Flag.NORMAL)
@@ -758,9 +704,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Timestamp[] readTimestampArray(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(TIMESTAMP_ARR, false);
 
             if (flag == Flag.NORMAL)
@@ -778,9 +722,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Object[] readObjectArray(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(OBJ_ARR, false);
 
             if (flag == Flag.NORMAL)
@@ -800,9 +742,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      */
     @Nullable <T> Collection<T> readCollection(int fieldId, @Nullable Class<? extends Collection> cls)
         throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(COL, false);
 
             if (flag == Flag.NORMAL)
@@ -822,9 +762,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      */
     @Nullable Map<?, ?> readMap(int fieldId, @Nullable Class<? extends Map> cls)
         throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(MAP, false);
 
             if (flag == Flag.NORMAL)
@@ -842,9 +780,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException On case of error.
      */
     @Nullable Map.Entry<?, ?> readMapEntry(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(MAP_ENTRY, false);
 
             if (flag == Flag.NORMAL)
@@ -862,9 +798,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable PortableObject readPortableObject(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             if (checkFlag(PORTABLE_OBJ, false) == Flag.NULL)
                 return null;
 
@@ -881,9 +815,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Enum<?> readEnum(int fieldId, @Nullable Class<?> cls) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             if (checkFlag(ENUM, false) == Flag.NULL)
                 return null;
 
@@ -908,9 +840,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Object[] readEnumArray(int fieldId, @Nullable Class<?> cls) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             Flag flag = checkFlag(ENUM_ARR, false);
 
             if (flag == Flag.NORMAL) {
@@ -934,9 +864,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Class<?> readClass(int fieldId) throws PortableException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
+        if (hasField(fieldId)) {
             if (checkFlag(CLASS, false) == Flag.NULL)
                 return null;
 
@@ -1457,7 +1385,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return {@code true} if field is set.
      */
     public boolean hasField(String fieldName) {
-        return fieldOffset(fieldId(fieldName)) != -1;
+        return hasField(fieldId(fieldName));
     }
 
     /** {@inheritDoc} */
@@ -2813,7 +2741,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @param id Field ID.
      * @return Field offset.
      */
-    private int fieldOffset(int id) {
+    private boolean hasField(int id) {
         assert hdrLen != 0;
 
         int searchHead = start + hdrLen;
@@ -2851,12 +2779,15 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         while (true) {
             if (searchHead >= searchTail)
-                return -1;
+                return false;
 
             int id0 = in.readInt(searchHead);
 
-            if (id0 == id)
-                return searchHead + 8;
+            if (id0 == id) {
+                off = searchHead + 8;
+
+                return true;
+            }
 
             int len = in.readInt(searchHead + 4);
 
