@@ -22,8 +22,8 @@ namespace Apache.Ignite.Core.Impl.Messaging
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Collections;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable;
@@ -243,11 +243,11 @@ namespace Apache.Ignite.Core.Impl.Messaging
         }
 
         /** <inheritdoc /> */
-        public IFuture<Guid> RemoteListenAsync<T>(IMessageListener<T> listener, object topic = null)
+        public Task<Guid> RemoteListenAsync<T>(IMessageListener<T> listener, object topic = null)
         {
             _asyncInstance.RemoteListen(listener, topic);
 
-            return _asyncInstance.GetFuture<Guid>();
+            return _asyncInstance.GetTask<Guid>();
         }
 
         /** <inheritdoc /> */
@@ -260,11 +260,11 @@ namespace Apache.Ignite.Core.Impl.Messaging
         }
 
         /** <inheritdoc /> */
-        public IFuture StopRemoteListenAsync(Guid opId)
+        public Task StopRemoteListenAsync(Guid opId)
         {
             _asyncInstance.StopRemoteListen(opId);
 
-            return _asyncInstance.GetFuture<object>();
+            return _asyncInstance.GetTask();
         }
 
         /// <summary>

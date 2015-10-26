@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
@@ -653,11 +654,19 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Creates a future and starts listening.
+        /// Creates a task to listen for the last async op.
         /// </summary>
-        protected IFuture<T> GetFuture<T>()
+        protected Task GetTask()
         {
-            return GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp));
+            return GetTask<object>();
+        }
+
+        /// <summary>
+        /// Creates a task to listen for the last async op.
+        /// </summary>
+        protected Task<T> GetTask<T>()
+        {
+            return GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp)).ToTask();
         }
 
         #endregion

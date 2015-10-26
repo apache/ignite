@@ -19,8 +19,8 @@ namespace Apache.Ignite.Core.Messaging
 {
     using System;
     using System.Collections;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Provides functionality for topic-based message exchange among nodes defined by <see cref="IClusterGroup"/>.
@@ -95,7 +95,6 @@ namespace Apache.Ignite.Core.Messaging
         /// <returns>
         /// Operation ID that can be passed to <see cref="StopRemoteListen"/> method to stop listening.
         /// </returns>
-        [AsyncSupported]
         Guid RemoteListen<T>(IMessageListener<T> listener, object topic = null);
 
         /// <summary>
@@ -112,21 +111,18 @@ namespace Apache.Ignite.Core.Messaging
         /// <returns>
         /// Operation ID that can be passed to <see cref="StopRemoteListen"/> method to stop listening.
         /// </returns>
-        [AsyncSupported]
-        IFuture<Guid> RemoteListenAsync<T>(IMessageListener<T> listener, object topic = null);
+        Task<Guid> RemoteListenAsync<T>(IMessageListener<T> listener, object topic = null);
 
         /// <summary>
         /// Unregisters all listeners identified with provided operation ID on all nodes in the cluster group.
         /// </summary>
         /// <param name="opId">Operation ID that was returned from <see cref="RemoteListen{T}"/> method.</param>
-        [AsyncSupported]
         void StopRemoteListen(Guid opId);
 
         /// <summary>
         /// Unregisters all listeners identified with provided operation ID on all nodes in the cluster group.
         /// </summary>
         /// <param name="opId">Operation ID that was returned from <see cref="RemoteListen{T}"/> method.</param>
-        [AsyncSupported]
-        IFuture StopRemoteListenAsync(Guid opId);
+        Task StopRemoteListenAsync(Guid opId);
     }
 }

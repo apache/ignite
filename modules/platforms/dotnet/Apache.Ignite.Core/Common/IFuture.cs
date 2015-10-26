@@ -20,6 +20,8 @@ namespace Apache.Ignite.Core.Common
     using System;
     using System.Threading.Tasks;
 
+    // TODO: delete these.
+
     /// <summary>
     /// Non-generic Future. Represents an asynchronous operation that can return a value.
     /// <para/>
