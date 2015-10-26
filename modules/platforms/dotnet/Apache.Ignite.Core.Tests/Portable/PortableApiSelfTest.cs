@@ -448,7 +448,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             IPortableBuilder builderItem =
                 _grid.GetPortables().GetBuilder(typeof(BuilderCollectionItem)).SetField("val", 1);
 
-            builderCol.SetField<ICollection>("col", new ArrayList { builderItem });
+            builderCol.SetCollectionField("col", new ArrayList { builderItem });
 
             IPortableObject portCol = builderCol.Build();
 
@@ -808,11 +808,11 @@ namespace Apache.Ignite.Core.Tests.Portable
             IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(StringDateGuidEnum))
                 .SetField("fStr", "str")
                 .SetTimestampField("fNDate", nDate)
-                .SetField("fNGuid", nGuid)
+                .SetGuidField("fNGuid", nGuid)
                 .SetField("fEnum", TestEnum.One)
                 .SetField("fStrArr", new[] { "str" })
                 .SetArrayField("fDateArr", new[] { nDate })
-                .SetField("fGuidArr", new[] { nGuid })
+                .SetGuidArrayField("fGuidArr", new[] { nGuid })
                 .SetField("fEnumArr", new[] { TestEnum.One })
                 .SetHashCode(100)
                 .Build();
@@ -1104,8 +1104,8 @@ namespace Apache.Ignite.Core.Tests.Portable
             dict[3] = new CompositeInner(3);
 
             IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(CompositeContainer)).SetHashCode(100)
-                .SetField<ICollection>("col", col)
-                .SetField("dict", dict).Build();
+                .SetCollectionField("col", col)
+                .SetDictionaryField("dict", dict).Build();
 
             // 1. Check meta.
             IPortableMetadata meta = portObj.GetMetadata();
