@@ -1810,14 +1810,23 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
                 "via rawWriter() method. Consider fixing serialization logic for class: " + cls.getName());
 
         int id = ctx.fieldId(typeId, fieldName);
-        int off = out.position() - start;
 
-        saveFieldInfo(id, off);
+        writeFieldId(id);
 
         if (metaEnabled)
             metaHashSum = 31 * metaHashSum + (id + fieldType);
+    }
 
-        doWriteInt(id);
+    /**
+     * Write field ID.
+     * @param fieldId Field ID.
+     */
+    public void writeFieldId(int fieldId) {
+        int off = out.position() - start;
+
+        saveFieldInfo(fieldId, off);
+
+        doWriteInt(fieldId);
     }
 
      /**
