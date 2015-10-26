@@ -42,10 +42,50 @@ namespace Apache.Ignite.Core.Impl.Portable
             new Dictionary<Type, PortableSystemWriteDelegate>();
 
         /** Mutex for write handlers update. */
-        private static readonly Object WriteHandlersMux = new Object();
+        private static readonly object WriteHandlersMux = new object();
 
         /** Read handlers. */
         private static readonly IPortableSystemReader[] ReadHandlers = new IPortableSystemReader[255];
+
+        /** Type ids. */
+        private static readonly Dictionary<Type, byte> TypeIds = new Dictionary<Type, byte>
+        {
+            {typeof (bool), PortableUtils.TypeBool},
+            {typeof (byte), PortableUtils.TypeByte},
+            {typeof (sbyte), PortableUtils.TypeByte},
+            {typeof (short), PortableUtils.TypeShort},
+            {typeof (ushort), PortableUtils.TypeShort},
+            {typeof (char), PortableUtils.TypeChar},
+            {typeof (int), PortableUtils.TypeInt},
+            {typeof (uint), PortableUtils.TypeInt},
+            {typeof (long), PortableUtils.TypeLong},
+            {typeof (ulong), PortableUtils.TypeLong},
+            {typeof (float), PortableUtils.TypeFloat},
+            {typeof (double), PortableUtils.TypeDouble},
+            {typeof (string), PortableUtils.TypeString},
+            {typeof (decimal), PortableUtils.TypeDecimal},
+            {typeof (Guid), PortableUtils.TypeGuid},
+            {typeof (Guid?), PortableUtils.TypeGuid},
+            {typeof (ArrayList), PortableUtils.TypeCollection},
+            {typeof (Hashtable), PortableUtils.TypeDictionary},
+            {typeof (DictionaryEntry), PortableUtils.TypeMapEntry},
+            {typeof (bool[]), PortableUtils.TypeArrayBool},
+            {typeof (byte[]), PortableUtils.TypeArrayByte},
+            {typeof (sbyte[]), PortableUtils.TypeArrayByte},
+            {typeof (short[]), PortableUtils.TypeArrayShort},
+            {typeof (ushort[]), PortableUtils.TypeArrayShort},
+            {typeof (char[]), PortableUtils.TypeArrayChar},
+            {typeof (int[]), PortableUtils.TypeArrayInt},
+            {typeof (uint[]), PortableUtils.TypeArrayInt},
+            {typeof (long[]), PortableUtils.TypeArrayLong},
+            {typeof (ulong[]), PortableUtils.TypeArrayLong},
+            {typeof (float[]), PortableUtils.TypeArrayFloat},
+            {typeof (double[]), PortableUtils.TypeArrayDouble},
+            {typeof (string[]), PortableUtils.TypeArrayString},
+            {typeof (decimal?[]), PortableUtils.TypeArrayDecimal},
+            {typeof (Guid?[]), PortableUtils.TypeArrayGuid},
+            {typeof (object[]), PortableUtils.TypeArray}
+        };
         
         /// <summary>
         /// Initializes the <see cref="PortableSystemHandlers"/> class.
@@ -242,83 +282,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Write handler or NULL.</returns>
         public static byte GetTypeId(Type type)
         {
-            // Primitives.
-            if (type == typeof(bool))
-                return PortableUtils.TypeBool;
-            if (type == typeof(byte) || type == typeof(sbyte))
-                return PortableUtils.TypeByte;
-            if (type == typeof(short) || type == typeof(ushort))
-                return PortableUtils.TypeShort;
-            if (type == typeof(char))
-                return PortableUtils.TypeChar;
-            if (type == typeof(int) || type == typeof(uint))
-                return PortableUtils.TypeInt;
-            if (type == typeof(long) || type == typeof(ulong))
-                return PortableUtils.TypeLong;
-            if (type == typeof(float))
-                return PortableUtils.TypeFloat;
-            if (type == typeof(double))
-                return PortableUtils.TypeDouble;
+            byte res;
 
-            // 1. Well-known types.
-            if (type == typeof(string))
-                return PortableUtils.TypeString;
-            if (type == typeof(decimal))
-                return PortableUtils.TypeDecimal;
-            if (type == typeof(DateTime))
-                return PortableUtils.TypeTimestamp;
-            if (type == typeof(Guid))
-                return PortableUtils.TypeGuid;
-            if (type == typeof(ArrayList))
-                return PortableUtils.TypeCollection;
-            if (type == typeof(Hashtable))
-                return PortableUtils.TypeDictionary;
-            if (type == typeof(DictionaryEntry))
-                return PortableUtils.TypeMapEntry;
-            if (type.IsArray)
-            {
-                // We know how to write any array type.
-                Type elemType = type.GetElementType();
+            if (TypeIds.TryGetValue(type, out res))
+                return res;
 
-                // Primitives.
-                if (elemType == typeof(bool))
-                    return PortableUtils.TypeArrayBool;
-                if (elemType == typeof(byte) || elemType == typeof(sbyte))
-                    return PortableUtils.TypeArrayByte;
-                if (elemType == typeof(short) || elemType == typeof(ushort))
-                    return PortableUtils.TypeArrayShort;
-                if (elemType == typeof(char))
-                    return PortableUtils.TypeArrayChar;
-                if (elemType == typeof(int) || elemType == typeof(uint))
-                    return PortableUtils.TypeArrayInt;
-                if (elemType == typeof(long) || elemType == typeof(ulong))
-                    return PortableUtils.TypeArrayLong;
-                if (elemType == typeof(float))
-                    return PortableUtils.TypeArrayFloat;
-                if (elemType == typeof(double))
-                    return PortableUtils.TypeArrayDouble;
-                // Special types.
-                if (elemType == typeof(decimal?))
-                    return PortableUtils.TypeArrayDecimal;
-                if (elemType == typeof(string))
-                    return PortableUtils.TypeArrayString;
-                if (elemType == typeof(Guid?))
-                    return PortableUtils.TypeArrayGuid;
-                
-                // Enums.
-                if (elemType.IsEnum)
-                    return PortableUtils.TypeArrayEnum;
-
-                // Object array.
-                if (elemType == typeof(object))
-                    return PortableUtils.TypeArray;
-            }
-
-            if (type.IsEnum)
-                // We know how to write enums.
-                return PortableUtils.TypeEnum;
-
-            return PortableUtils.TypeObject;
+            return type.IsEnum ? PortableUtils.TypeEnum : PortableUtils.TypeObject;
         }
 
         /// <summary>
