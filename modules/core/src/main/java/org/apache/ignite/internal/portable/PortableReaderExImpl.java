@@ -281,7 +281,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (checkFlag(BYTE, false) == Flag.NULL)
                 return null;
 
-            return doReadByte(false);
+            return in.readByte();
         }
         else
             return null;
@@ -297,7 +297,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (checkFlag(SHORT, false) == Flag.NULL)
                 return null;
 
-            return doReadShort(false);
+            return in.readShort();
         }
         else
             return null;
@@ -313,7 +313,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (checkFlag(INT, false) == Flag.NULL)
                 return null;
 
-            return doReadInt(false);
+            return in.readInt();
         }
         else
             return null;
@@ -329,7 +329,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (checkFlag(LONG, false) == Flag.NULL)
                 return null;
 
-            return doReadLong(false);
+            return in.readLong();
         }
         else
             return null;
@@ -345,7 +345,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (checkFlag(FLOAT, false) == Flag.NULL)
                 return null;
 
-            return doReadFloat(false);
+            return in.readFloat();
         }
         else
             return null;
@@ -361,7 +361,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (checkFlag(DOUBLE, false) == Flag.NULL)
                 return null;
 
-            return doReadDouble(false);
+            return in.readDouble();
         }
         else
             return null;
@@ -377,7 +377,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (checkFlag(CHAR, false) == Flag.NULL)
                 return null;
 
-            return doReadChar(false);
+            return in.readChar();
         }
         else
             return null;
@@ -393,7 +393,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (checkFlag(BOOLEAN, false) == Flag.NULL)
                 return null;
 
-            return doReadBoolean(false);
+            return in.readBoolean();
         }
         else
             return null;
@@ -808,7 +808,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (checkFlag(PORTABLE_OBJ, false) == Flag.NULL)
                 return null;
 
-            return new PortableObjectImpl(ctx, doReadByteArray(false), doReadInt(false));
+            return new PortableObjectImpl(ctx, doReadByteArray(false), in.readInt());
         }
         else
             return null;
@@ -833,7 +833,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             Object[] vals = GridEnumCache.get(cls);
 
-            return (Enum<?>)vals[doReadInt(false)];
+            return (Enum<?>)vals[in.readInt()];
         }
         else
             return null;
@@ -902,7 +902,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Field.
      */
     private <T> T readHandleField() {
-        int handle = (in.position() - 1) - doReadInt(false);
+        int handle = (in.position() - 1) - in.readInt();
 
         Object obj = rCtx.getObjectByHandle(handle);
 
@@ -923,7 +923,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Override public byte readByte() throws PortableException {
-        return doReadByte(true);
+        return in.readByte();
     }
 
     /** {@inheritDoc} */
@@ -935,7 +935,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Override public short readShort() throws PortableException {
-        return doReadShort(true);
+        return in.readShort();
     }
 
     /** {@inheritDoc} */
@@ -947,7 +947,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Override public int readInt() throws PortableException {
-        return doReadInt(true);
+        return in.readInt();
     }
 
     /** {@inheritDoc} */
@@ -959,7 +959,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Override public long readLong() throws PortableException {
-        return doReadLong(true);
+        return in.readLong();
     }
 
     /** {@inheritDoc} */
@@ -971,7 +971,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Override public float readFloat() throws PortableException {
-        return doReadFloat(true);
+        return in.readFloat();
     }
 
     /** {@inheritDoc} */
@@ -983,7 +983,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Override public double readDouble() throws PortableException {
-        return doReadDouble(true);
+        return in.readDouble();
     }
 
     /** {@inheritDoc} */
@@ -995,7 +995,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Override public char readChar() throws PortableException {
-        return doReadChar(true);
+        return in.readChar();
     }
 
     /** {@inheritDoc} */
@@ -1007,7 +1007,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Override public boolean readBoolean() throws PortableException {
-        return doReadBoolean(true);
+        return in.readBoolean();
     }
 
     /** {@inheritDoc} */
@@ -1370,7 +1370,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException If flag is neither null, nor expected.
      */
     private Flag checkFlag(byte expFlag, boolean raw) {
-        byte flag = doReadByte(raw);
+        byte flag = in.readByte();
 
         if (flag == NULL)
             return Flag.NULL;
@@ -1418,14 +1418,14 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     @Nullable private Object unmarshal(boolean raw, boolean detach) throws PortableException {
         int start = in.position();
 
-        byte flag = doReadByte(raw);
+        byte flag = in.readByte();
 
         switch (flag) {
             case NULL:
                 return null;
 
             case HANDLE:
-                int handle = start - doReadInt(raw);
+                int handle = start - in.readInt();
 
                 PortableObject handledPo = rCtx.getPortableByHandle(handle);
 
@@ -1437,7 +1437,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 return unmarshal(false);
 
             case OBJ:
-                PortableUtils.checkProtocolVersion(doReadByte(raw));
+                PortableUtils.checkProtocolVersion(in.readByte());
 
                 PortableObjectEx po;
 
@@ -1463,28 +1463,28 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 return po;
 
             case BYTE:
-                return doReadByte(raw);
+                return in.readByte();
 
             case SHORT:
-                return doReadShort(raw);
+                return in.readShort();
 
             case INT:
-                return doReadInt(raw);
+                return in.readInt();
 
             case LONG:
-                return doReadLong(raw);
+                return in.readLong();
 
             case FLOAT:
-                return doReadFloat(raw);
+                return in.readFloat();
 
             case DOUBLE:
-                return doReadDouble(raw);
+                return in.readDouble();
 
             case CHAR:
-                return doReadChar(raw);
+                return in.readChar();
 
             case BOOLEAN:
-                return doReadBoolean(raw);
+                return in.readBoolean();
 
             case DECIMAL:
                 return doReadDecimal(raw);
@@ -1562,10 +1562,10 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 return doReadEnumArray(raw, doReadClass(raw));
 
             case CLASS:
-                return doReadInt(raw);
+                return in.readInt();
 
             case OPTM_MARSH:
-                int len = doReadInt(true);
+                int len = in.readInt();
 
                 ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
 
@@ -1589,72 +1589,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @param raw Raw flag.
      * @return Value.
      */
-    private byte doReadByte(boolean raw) {
-        return in.readByte();
-    }
-
-    /**
-     * @param raw Raw flag.
-     * @return Value.
-     */
-    public short doReadShort(boolean raw) {
-        return in.readShort();
-    }
-
-    /**
-     * @param raw Raw flag.
-     * @return Value.
-     */
-    private int doReadInt(boolean raw) {
-        return in.readInt();
-    }
-
-    /**
-     * @param raw Raw flag.
-     * @return Value.
-     */
-    private long doReadLong(boolean raw) {
-        return in.readLong();
-    }
-
-    /**
-     * @param raw Raw flag.
-     * @return Value.
-     */
-    private float doReadFloat(boolean raw) {
-        return in.readFloat();
-    }
-
-    /**
-     * @param raw Raw flag.
-     * @return Value.
-     */
-    private double doReadDouble(boolean raw) {
-        return in.readDouble();
-    }
-
-    /**
-     * @param raw Raw flag.
-     * @return Value.
-     */
-    private char doReadChar(boolean raw) {
-        return in.readChar();
-    }
-
-    /**
-     * @param raw Raw flag.
-     * @return Value.
-     */
-    private boolean doReadBoolean(boolean raw) {
-        return in.readBoolean();
-    }
-
-    /**
-     * @param raw Raw flag.
-     * @return Value.
-     */
     private BigDecimal doReadDecimal(boolean raw) {
-        int scale = doReadInt(raw);
+        int scale = in.readInt();
         byte[] mag = doReadByteArray(raw);
 
         BigInteger intVal = new BigInteger(mag);
@@ -1673,11 +1609,11 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Value.
      */
     private String doReadString(boolean raw) {
-        if (doReadBoolean(raw)) {
+        if (in.readBoolean()) {
             if (!in.hasArray())
                 return new String(doReadByteArray(raw), UTF_8);
 
-            int strLen = doReadInt(raw);
+            int strLen = in.readInt();
             int strOff = in.position();
 
             String res = new String(in.array(), strOff, strLen, UTF_8);
@@ -1698,7 +1634,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Value.
      */
     private UUID doReadUuid(boolean raw) {
-        return new UUID(doReadLong(raw), doReadLong(raw));
+        return new UUID(in.readLong(), in.readLong());
     }
 
     /**
@@ -1706,7 +1642,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Value.
      */
     private Date doReadDate(boolean raw) {
-        long time = doReadLong(raw);
+        long time = in.readLong();
 
         return new Date(time);
     }
@@ -1716,8 +1652,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Value.
      */
     private Timestamp doReadTimestamp(boolean raw) {
-        long time = doReadLong(raw);
-        int nanos = doReadInt(raw);
+        long time = in.readLong();
+        int nanos = in.readInt();
 
         Timestamp ts = new Timestamp(time);
 
@@ -1744,7 +1680,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     @Nullable Object deserialize() throws PortableException {
         Object obj;
 
-        byte flag = doReadByte(true);
+        byte flag = in.readByte();
 
         switch (flag) {
             case NULL:
@@ -1753,7 +1689,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 break;
 
             case HANDLE:
-                int handle = start - doReadInt(true);
+                int handle = start - in.readInt();
 
                 obj = rCtx.getObjectByHandle(handle);
 
@@ -1774,7 +1710,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
                 assert typeId != UNREGISTERED_TYPE_ID;
 
-                PortableUtils.checkProtocolVersion(doReadByte(true));
+                PortableUtils.checkProtocolVersion(in.readByte());
 
                 boolean userType = PortableUtils.isUserType(PortableUtils.readFlags(this));
 
@@ -1783,7 +1719,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
                 desc = ctx.descriptorForTypeId(userType, typeId, ldr);
 
-                len = doReadInt(true);
+                len = in.readInt();
 
                 in.position(start + hdrLen);
 
@@ -1797,42 +1733,42 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 break;
 
             case BYTE:
-                obj = doReadByte(true);
+                obj = in.readByte();
 
                 break;
 
             case SHORT:
-                obj = doReadShort(true);
+                obj = in.readShort();
 
                 break;
 
             case INT:
-                obj = doReadInt(true);
+                obj = in.readInt();
 
                 break;
 
             case LONG:
-                obj = doReadLong(true);
+                obj = in.readLong();
 
                 break;
 
             case FLOAT:
-                obj = doReadFloat(true);
+                obj = in.readFloat();
 
                 break;
 
             case DOUBLE:
-                obj = doReadDouble(true);
+                obj = in.readDouble();
 
                 break;
 
             case CHAR:
-                obj = doReadChar(true);
+                obj = in.readChar();
 
                 break;
 
             case BOOLEAN:
-                obj = doReadBoolean(true);
+                obj = in.readBoolean();
 
                 break;
 
@@ -1972,7 +1908,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 break;
 
             case OPTM_MARSH:
-                int len = doReadInt(true);
+                int len = in.readInt();
 
                 ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
 
@@ -2004,7 +1940,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private byte[] doReadByteArray(boolean raw) {
         int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         byte[] arr = in.readByteArray(len);
 
@@ -2020,7 +1956,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private short[] doReadShortArray(boolean raw) {
         int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         short[] arr = in.readShortArray(len);
 
@@ -2036,7 +1972,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private int[] doReadIntArray(boolean raw) {
         int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         int[] arr = in.readIntArray(len);
 
@@ -2052,7 +1988,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private long[] doReadLongArray(boolean raw) {
         int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         long[] arr = in.readLongArray(len);
 
@@ -2068,7 +2004,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private float[] doReadFloatArray(boolean raw) {
         int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         float[] arr = in.readFloatArray(len);
 
@@ -2084,7 +2020,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private double[] doReadDoubleArray(boolean raw) {
         int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         double[] arr = in.readDoubleArray(len);
 
@@ -2100,7 +2036,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private char[] doReadCharArray(boolean raw) {
         int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         char[] arr = in.readCharArray(len);
 
@@ -2116,7 +2052,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private boolean[] doReadBooleanArray(boolean raw) {
         int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         boolean[] arr = in.readBooleanArray(len);
 
@@ -2133,14 +2069,14 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private BigDecimal[] doReadDecimalArray(boolean raw) throws PortableException {
         int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         BigDecimal[] arr = new BigDecimal[len];
 
         setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
-            byte flag = doReadByte(raw);
+            byte flag = in.readByte();
 
             if (flag == NULL)
                 arr[i] = null;
@@ -2163,14 +2099,14 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private String[] doReadStringArray(boolean raw) throws PortableException {
         int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         String[] arr = new String[len];
 
         setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
-            byte flag = doReadByte(raw);
+            byte flag = in.readByte();
 
             if (flag == NULL)
                 arr[i] = null;
@@ -2193,14 +2129,14 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private UUID[] doReadUuidArray(boolean raw) throws PortableException {
         int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         UUID[] arr = new UUID[len];
 
         setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
-            byte flag = doReadByte(raw);
+            byte flag = in.readByte();
 
             if (flag == NULL)
                 arr[i] = null;
@@ -2223,14 +2159,14 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private Date[] doReadDateArray(boolean raw) throws PortableException {
         int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         Date[] arr = new Date[len];
 
         setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
-            byte flag = doReadByte(raw);
+            byte flag = in.readByte();
 
             if (flag == NULL)
                 arr[i] = null;
@@ -2253,14 +2189,14 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private Timestamp[] doReadTimestampArray(boolean raw) throws PortableException {
         int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         Timestamp[] arr = new Timestamp[len];
 
         setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
-            byte flag = doReadByte(raw);
+            byte flag = in.readByte();
 
             if (flag == NULL)
                 arr[i] = null;
@@ -2286,7 +2222,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         Class compType = doReadClass(raw);
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         Object[] arr = deep ? (Object[])Array.newInstance(compType, len) : new Object[len];
 
@@ -2310,11 +2246,11 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         throws PortableException {
         int hPos = in.position() - 1;
 
-        int size = doReadInt(raw);
+        int size = in.readInt();
 
         assert size >= 0;
 
-        byte colType = doReadByte(raw);
+        byte colType = in.readByte();
 
         Collection<Object> col;
 
@@ -2399,11 +2335,11 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         throws PortableException {
         int hPos = in.position() - 1;
 
-        int size = doReadInt(raw);
+        int size = in.readInt();
 
         assert size >= 0;
 
-        byte mapType = doReadByte(raw);
+        byte mapType = in.readByte();
 
         Map<Object, Object> map;
 
@@ -2491,19 +2427,19 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      */
     private PortableObject doReadPortableObject(boolean raw) {
         if (in.offheapPointer() > 0) {
-            int len = doReadInt(raw);
+            int len = in.readInt();
 
             int pos = in.position();
 
             in.position(in.position() + len);
 
-            int start = doReadInt(raw);
+            int start = in.readInt();
 
             return new PortableObjectOffheapImpl(ctx, in.offheapPointer() + pos, start, len);
         }
         else {
             byte[] arr = doReadByteArray(raw);
-            int start = doReadInt(raw);
+            int start = in.readInt();
 
             return new PortableObjectImpl(ctx, arr, start);
         }
@@ -2518,7 +2454,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (!cls.isEnum())
             throw new PortableException("Class does not represent enum type: " + cls.getName());
 
-        int ord = doReadInt(raw);
+        int ord = in.readInt();
 
         return ord >= 0 ? (Enum<?>)GridEnumCache.get(cls)[ord] : null;
     }
@@ -2529,12 +2465,12 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Value.
      */
     private Object[] doReadEnumArray(boolean raw, Class<?> cls) throws PortableException {
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         Object[] arr = (Object[])Array.newInstance(cls, len);
 
         for (int i = 0; i < len; i++) {
-            byte flag = doReadByte(raw);
+            byte flag = in.readByte();
 
             if (flag == NULL)
                 arr[i] = null;
@@ -2550,7 +2486,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Value.
      */
     private Class doReadClass(boolean raw) throws PortableException {
-        return doReadClass(raw, doReadInt(raw));
+        return doReadClass(raw, in.readInt());
     }
 
     /**
@@ -2567,7 +2503,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (typeId != UNREGISTERED_TYPE_ID)
             cls = ctx.descriptorForTypeId(true, typeId, ldr).describedClass();
         else {
-            byte flag = doReadByte(raw);
+            byte flag = in.readByte();
 
             if (flag != STRING)
                 throw new PortableException("No class definition for typeId: " + typeId);

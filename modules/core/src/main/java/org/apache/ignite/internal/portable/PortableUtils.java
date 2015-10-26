@@ -117,7 +117,7 @@ public class PortableUtils {
      * @return Flags.
      */
     public static short readFlags(PortableReaderExImpl reader) {
-        return reader.doReadShort(true);
+        return reader.readShort();
     }
 
     /**
