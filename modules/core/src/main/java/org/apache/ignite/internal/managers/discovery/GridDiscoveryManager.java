@@ -56,6 +56,7 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -299,16 +300,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param cacheName Cache name.
      * @param filter Cache filter.
      * @param nearEnabled Near enabled flag.
-     * @param loc {@code True} if cache is local.
+     * @param cacheMode Cache mode.
      */
     public void setCacheFilter(
         String cacheName,
         IgnitePredicate<ClusterNode> filter,
         boolean nearEnabled,
-        boolean loc
+        CacheMode cacheMode
     ) {
         if (!registeredCaches.containsKey(cacheName))
-            registeredCaches.put(cacheName, new CachePredicate(filter, nearEnabled, loc));
+            registeredCaches.put(cacheName, new CachePredicate(filter, nearEnabled, cacheMode));
     }
 
     /**
@@ -550,7 +551,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         gridStartTime = getSpi().getGridStartTime();
 
                     updateTopologyVersionIfGreater(new AffinityTopologyVersion(locNode.order()),
-                        new DiscoCache(localNode(), getSpi().getRemoteNodes()));
+                        new DiscoCache(localNode(), F.view(topSnapshot, F.remoteNodes(locNode.id()))));
 
                     startLatch.countDown();
 
@@ -987,19 +988,24 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         boolean locP2pEnabled = locNode.attribute(ATTR_PEER_CLASSLOADING);
 
-        boolean warned = false;
+        boolean ipV4Warned = false;
+
+        boolean jvmMajVerWarned = false;
 
         for (ClusterNode n : nodes) {
             int rmtJvmMajVer = nodeJavaMajorVersion(n);
 
-            if (locJvmMajVer != rmtJvmMajVer)
-                throw new IgniteCheckedException("Local node's java major version is different from remote node's one" +
-                    " [locJvmMajVer=" + locJvmMajVer + ", rmtJvmMajVer=" + rmtJvmMajVer + "]");
+            if (locJvmMajVer != rmtJvmMajVer && !jvmMajVerWarned) {
+                U.warn(log, "Local java version is different from remote [loc=" +
+                    locJvmMajVer + ", rmt=" + rmtJvmMajVer + "]");
+
+                jvmMajVerWarned = true;
+            }
 
             String rmtPreferIpV4 = n.attribute("java.net.preferIPv4Stack");
 
             if (!F.eq(rmtPreferIpV4, locPreferIpV4)) {
-                if (!warned)
+                if (!ipV4Warned)
                     U.warn(log, "Local node's value of 'java.net.preferIPv4Stack' " +
                         "system property differs from remote node's " +
                         "(all nodes in topology should have identical value) " +
@@ -1008,7 +1014,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         ", rmtAddrs=" + U.addressesAsString(n) + ']',
                         "Local and remote 'java.net.preferIPv4Stack' system properties do not match.");
 
-                warned = true;
+                ipV4Warned = true;
             }
 
             // Daemon nodes are allowed to have any deployment they need.
@@ -1584,6 +1590,25 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         CachePredicate pred = registeredCaches.get(cacheName);
 
         return pred != null && pred.cacheNode(node);
+    }
+
+    /**
+     * @param node Node to check.
+     * @return Cache names accessible on the given node.
+     */
+    public Map<String, CacheMode> nodeCaches(ClusterNode node) {
+        Map<String, CacheMode> caches = U.newHashMap(registeredCaches.size());
+
+        for (Map.Entry<String, CachePredicate> entry : registeredCaches.entrySet()) {
+            String cacheName = entry.getKey();
+
+            CachePredicate pred = entry.getValue();
+
+            if (pred != null && pred.cacheNode(node))
+                caches.put(cacheName, pred.cacheMode);
+        }
+
+        return caches;
     }
 
     /**
@@ -2827,8 +2852,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** If near cache is enabled on data nodes. */
         private final boolean nearEnabled;
 
-        /** Flag indicating if cache is local. */
-        private final boolean loc;
+        /** Cache mode. */
+        private final CacheMode cacheMode;
 
         /** Collection of client near nodes. */
         private final ConcurrentHashMap<UUID, Boolean> clientNodes;
@@ -2836,14 +2861,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /**
          * @param cacheFilter Cache filter.
          * @param nearEnabled Near enabled flag.
-         * @param loc {@code True} if cache is local.
+         * @param cacheMode Cache mode.
          */
-        private CachePredicate(IgnitePredicate<ClusterNode> cacheFilter, boolean nearEnabled, boolean loc) {
+        private CachePredicate(IgnitePredicate<ClusterNode> cacheFilter, boolean nearEnabled, CacheMode cacheMode) {
             assert cacheFilter != null;
 
             this.cacheFilter = cacheFilter;
             this.nearEnabled = nearEnabled;
-            this.loc = loc;
+            this.cacheMode = cacheMode;
 
             clientNodes = new ConcurrentHashMap<>();
         }

@@ -507,15 +507,20 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     return dataStructure;
                 }
             }
-            catch (ClusterTopologyCheckedException e) {
-                IgniteInternalFuture<?> fut = e.retryReadyFuture();
-
-                fut.get();
-            }
             catch (IgniteTxRollbackCheckedException ignore) {
                 // Safe to retry right away.
             }
+            catch (IgniteCheckedException e) {
+                ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
 
+                if (topErr == null)
+                    throw e;
+
+                IgniteInternalFuture<?> fut = topErr.retryReadyFuture();
+
+                if (fut != null)
+                    fut.get();
+            }
         }
     }
 
@@ -596,13 +601,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                 if (afterRmv != null && rmvInfo != null)
                     afterRmv.applyx(rmvInfo);
             }
-            catch (ClusterTopologyCheckedException e) {
-                IgniteInternalFuture<?> fut = e.retryReadyFuture();
-
-                fut.get();
-            }
             catch (IgniteTxRollbackCheckedException ignore) {
                 // Safe to retry right away.
+            }
+            catch (IgniteCheckedException e) {
+                ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
+
+                if (topErr == null)
+                    throw e;
+
+                IgniteInternalFuture<?> fut = topErr.retryReadyFuture();
+
+                if (fut != null)
+                    fut.get();
             }
         }
     }
@@ -998,13 +1009,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
                 return col;
             }
-            catch (ClusterTopologyCheckedException e) {
-                IgniteInternalFuture<?> fut = e.retryReadyFuture();
-
-                fut.get();
-            }
             catch (IgniteTxRollbackCheckedException ignore) {
                 // Safe to retry right away.
+            }
+            catch (IgniteCheckedException e) {
+                ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
+
+                if (topErr == null)
+                    throw e;
+
+                IgniteInternalFuture<?> fut = topErr.retryReadyFuture();
+
+                if (fut != null)
+                    fut.get();
             }
         }
     }

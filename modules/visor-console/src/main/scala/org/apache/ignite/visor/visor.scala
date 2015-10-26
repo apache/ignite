@@ -461,7 +461,6 @@ object visor extends VisorTag {
         shortInfo = "Starts or stops grid-wide events logging.",
         longInfo = Seq(
             "Logging of discovery and failure grid-wide events.",
-            "Logging starts by default when Visor starts.",
             " ",
             "Events are logged to a file. If path is not provided,",
             "it will log into '<Ignite home folder>/work/visor/visor-log'.",
