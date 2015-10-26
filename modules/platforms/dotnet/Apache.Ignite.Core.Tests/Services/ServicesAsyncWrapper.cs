@@ -51,6 +51,7 @@ namespace Apache.Ignite.Core.Tests.Services
             _services.DeployClusterSingletonAsync(name, service).Wait();
         }
 
+        /** <inheritDoc /> */
         public Task DeployClusterSingletonAsync(string name, IService service)
         {
             return _services.DeployClusterSingletonAsync(name, service);
@@ -62,6 +63,7 @@ namespace Apache.Ignite.Core.Tests.Services
             _services.DeployNodeSingletonAsync(name, service).Wait();
         }
 
+        /** <inheritDoc /> */
         public Task DeployNodeSingletonAsync(string name, IService service)
         {
             return _services.DeployNodeSingletonAsync(name, service);
@@ -73,6 +75,7 @@ namespace Apache.Ignite.Core.Tests.Services
             _services.DeployKeyAffinitySingletonAsync(name, service, cacheName, affinityKey).Wait();
         }
 
+        /** <inheritDoc /> */
         public Task DeployKeyAffinitySingletonAsync<TK>(string name, IService service, string cacheName, TK affinityKey)
         {
             return _services.DeployKeyAffinitySingletonAsync(name, service, cacheName, affinityKey);
@@ -84,6 +87,7 @@ namespace Apache.Ignite.Core.Tests.Services
             _services.DeployMultipleAsync(name, service, totalCount, maxPerNodeCount).Wait();
         }
 
+        /** <inheritDoc /> */
         public Task DeployMultipleAsync(string name, IService service, int totalCount, int maxPerNodeCount)
         {
             return _services.DeployMultipleAsync(name, service, totalCount, maxPerNodeCount);
@@ -95,6 +99,7 @@ namespace Apache.Ignite.Core.Tests.Services
             _services.DeployAsync(configuration).Wait();
         }
 
+        /** <inheritDoc /> */
         public Task DeployAsync(ServiceConfiguration configuration)
         {
             return _services.DeployAsync(configuration);
@@ -106,6 +111,7 @@ namespace Apache.Ignite.Core.Tests.Services
             _services.CancelAsync(name).Wait();
         }
 
+        /** <inheritDoc /> */
         public Task CancelAsync(string name)
         {
             return _services.CancelAsync(name);
@@ -117,6 +123,7 @@ namespace Apache.Ignite.Core.Tests.Services
             _services.CancelAllAsync().Wait();
         }
 
+        /** <inheritDoc /> */
         public Task CancelAllAsync()
         {
             return _services.CancelAllAsync();
