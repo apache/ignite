@@ -197,189 +197,183 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public IPortableBuilder SetByteField(string fieldName, byte val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (byte), val, (w, o) =>
-                w.WriteByte((byte) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (byte), val, PortableUtils.TypeByte,
+                (w, o) => w.WriteByte((byte) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetByteArrayField(string fieldName, byte[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (byte[]), val, (w, o) =>
-                w.WriteByteArray((byte[]) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (byte[]), val, PortableUtils.TypeArrayByte,
+                (w, o) => w.WriteByteArray((byte[]) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetCharField(string fieldName, char val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (char), val, (w, o) =>
-                w.WriteChar((char) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (char), val, PortableUtils.TypeChar,
+                (w, o) => w.WriteChar((char) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetCharArrayField(string fieldName, char[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (char[]), val, (w, o) =>
-                w.WriteCharArray((char[]) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (char[]), val, PortableUtils.TypeArrayChar,
+                (w, o) => w.WriteCharArray((char[]) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetCollectionField(string fieldName, ICollection val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (ICollection), val, WriteCollectionAction));
+            return SetField0(fieldName, new PortableBuilderField(typeof (ICollection), val, PortableUtils.TypeCollection,
+                WriteCollectionAction));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetDecimalField(string fieldName, decimal? val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (decimal?), val, (w, o) =>
-                w.WriteDecimal((decimal?) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (decimal?), val, PortableUtils.TypeDecimal,
+                (w, o) => w.WriteDecimal((decimal?) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetDecimalArrayField(string fieldName, decimal?[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (decimal?[]), val, (w, o) =>
-                w.WriteDecimalArray((decimal?[]) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (decimal?[]), val, PortableUtils.TypeArrayDecimal,
+                (w, o) => w.WriteDecimalArray((decimal?[]) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetDictionaryField(string fieldName, IDictionary val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (IDictionary), val, (w, o) =>
-                w.WriteDictionary((IDictionary) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (IDictionary), val, PortableUtils.TypeDictionary,
+                (w, o) => w.WriteDictionary((IDictionary) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetDoubleField(string fieldName, double val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (double), val, (w, o) =>
-                w.WriteDouble((double) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (double), val, PortableUtils.TypeDouble,
+                (w, o) => w.WriteDouble((double) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetDoubleArrayField(string fieldName, double[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (double[]), val, (w, o) =>
-                w.WriteDoubleArray((double[]) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (double[]), val, PortableUtils.TypeArrayDouble,
+                (w, o) => w.WriteDoubleArray((double[]) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetEnumField<T>(string fieldName, T val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (T), val, (w, o) =>
-                w.WriteEnum((T) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (T), val, PortableUtils.TypeEnum,
+                (w, o) => w.WriteEnum((T) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetEnumArrayField<T>(string fieldName, T[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (T[]), val, (w, o) =>
-                w.WriteEnumArray((T[]) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (T[]), val, PortableUtils.TypeArrayEnum,
+                (w, o) => w.WriteEnumArray((T[]) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetFloatField(string fieldName, float val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (float), val, (w, o) =>
-                w.WriteFloat((float) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (float), val, PortableUtils.TypeFloat,
+                (w, o) => w.WriteFloat((float) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetFloatArrayField(string fieldName, float[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (float[]), val, (w, o) =>
-                w.WriteFloatArray((float[]) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (float[]), val, PortableUtils.TypeArrayFloat,
+                (w, o) => w.WriteFloatArray((float[]) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetGuidField(string fieldName, Guid? val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (Guid?), val, (w, o) =>
-                w.WriteGuid((Guid?) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (Guid?), val, PortableUtils.TypeGuid,
+                (w, o) => w.WriteGuid((Guid?) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetGuidArrayField(string fieldName, Guid?[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (Guid?[]), val, (w, o) =>
-                w.WriteGuidArray((Guid?[]) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (Guid?[]), val, PortableUtils.TypeArrayGuid,
+                (w, o) => w.WriteGuidArray((Guid?[]) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetIntField(string fieldName, int val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (int), val, (w, o) =>
-                w.WriteInt((int) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (int), val, PortableUtils.TypeInt,
+                (w, o) => w.WriteInt((int) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetIntArrayField(string fieldName, int[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (int[]), val, (w, o) =>
-                w.WriteIntArray((int[]) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (int[]), val, PortableUtils.TypeArrayInt,
+                (w, o) => w.WriteIntArray((int[]) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetLongField(string fieldName, long val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (long), val, (w, o) =>
-                w.WriteLong((long) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (long), val, PortableUtils.TypeLong,
+                (w, o) => w.WriteLong((long) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetLongArrayField(string fieldName, long[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (long[]), val, (w, o) =>
-                w.WriteLongArray((long[]) o)));
-        }
- 
-        /** <inheritDoc /> */
-        public IPortableBuilder SetObjectField<T>(string fieldName, T val)
-        {
-            return SetField0(fieldName, new PortableBuilderField(typeof (T), val, (w, o) =>
-                w.WriteObject((T) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (long[]), val, PortableUtils.TypeArrayLong,
+                (w, o) => w.WriteLongArray((long[]) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetShortField(string fieldName, short val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (short), val, (w, o) =>
-                w.WriteShort((short) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (short), val, PortableUtils.TypeShort,
+                (w, o) => w.WriteShort((short) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetShortArrayField(string fieldName, short[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (short[]), val, (w, o) =>
-                w.WriteShortArray((short[]) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (short[]), val, PortableUtils.TypeArrayShort,
+                (w, o) => w.WriteShortArray((short[]) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetStringField(string fieldName, string val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (string), val, (w, o) =>
-                w.WriteString((string) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (string), val, PortableUtils.TypeString,
+                (w, o) => w.WriteString((string) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetStringArrayField(string fieldName, string[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (string[]), val, (w, o) =>
-                w.WriteStringArray((string[]) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (string[]), val, PortableUtils.TypeArrayString,
+                (w, o) => w.WriteStringArray((string[]) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetTimestampField(string fieldName, DateTime? val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (DateTime?), val, (w, o) =>
-                w.WriteTimestamp((DateTime?) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (DateTime?), val, PortableUtils.TypeTimestamp,
+                (w, o) => w.WriteTimestamp((DateTime?) o)));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetTimestampArrayField(string fieldName, DateTime?[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (DateTime?[]), val, (w, o) =>
-                w.WriteTimestampArray((DateTime?[]) o)));
+            return SetField0(fieldName, new PortableBuilderField(typeof (DateTime?[]), val, PortableUtils.TypeArrayTimestamp,
+                (w, o) => w.WriteTimestampArray((DateTime?[]) o)));
         } 
 
         /** <inheritDoc /> */

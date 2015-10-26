@@ -260,14 +260,6 @@ namespace Apache.Ignite.Core.Portable
         IPortableBuilder SetLongArrayField(string fieldName, long[] val);
 
         /// <summary>
-        /// Sets the object field.
-        /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
-        /// <param name="val">The value.</param>
-        /// <returns>Current builder instance.</returns>
-        IPortableBuilder SetObjectField<T>(string fieldName, T val);
-
-        /// <summary>
         /// Sets the short field.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>
