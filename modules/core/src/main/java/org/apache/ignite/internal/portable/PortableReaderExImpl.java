@@ -96,7 +96,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OPTM_MARSH;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PORTABLE_OBJ;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROPERTIES_MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.RAW_DATA_OFF_POS;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.SCHEMA_ID_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
@@ -205,7 +205,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         typeId = in.readInt();
 
-        rawOff = in.readInt(start + RAW_DATA_OFF_POS);
+        rawOff = PortableUtils.rawOffset(in, start);
 
         if (typeId == UNREGISTERED_TYPE_ID) {
             // Skip to the class name position.
@@ -2501,7 +2501,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         assert hdrLen != 0;
 
         int searchHead = start + hdrLen;
-        int searchTail = start + in.readInt(start + RAW_DATA_OFF_POS);
+        int searchTail = start + PortableUtils.rawOffset(in, start);
 
         // TODO: Opto.
 

@@ -646,21 +646,13 @@ public class PortableClassDescriptor {
         if (writer.tryWriteAsHandle(obj))
             return false;
 
-        int pos = writer.position();
-
-        int reserved = PortableUtils.writeHeader(writer,
+        PortableUtils.writeHeader(
+            writer,
             userType,
             registered ? typeId : GridPortableMarshaller.UNREGISTERED_TYPE_ID,
             obj instanceof CacheObjectImpl ? 0 : obj.hashCode(),
-            registered ? null : cls.getName());
-
-        int current = writer.position();
-        int len = current - pos;
-
-        // Default raw offset (equal to header length).
-        writer.position(reserved + 4);
-        writer.doWriteInt(len);
-        writer.position(current);
+            registered ? null : cls.getName()
+        );
 
         return true;
     }

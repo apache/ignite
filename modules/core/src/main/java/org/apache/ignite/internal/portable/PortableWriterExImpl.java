@@ -70,8 +70,8 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OPTM_MARSH;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PORTABLE_OBJ;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.RAW_DATA_OFF_POS;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.SCHEMA_OFF_POS;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.SCHEMA_ID_POS;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
@@ -125,7 +125,10 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
     /** Field infos. */
     // TODO: Optimize.
-    private List<Integer> tail;
+    private List<Integer> schema;
+
+    /** Schema ID. */
+    private int schemaId;
 
     /**
      * @param ctx Context.
@@ -336,25 +339,27 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * - writing schema to the tail.
      */
     public void postWrite() {
-        // 1. Write raw offset.
-        out.writeInt(start + RAW_DATA_OFF_POS, (rawOffPos == 0 ? out.position() : rawOffPos) - start);
+        if (schema != null) {
+            // Write schema ID.
+            out.writeInt(start + SCHEMA_ID_POS, schemaId);
 
-        if (tail != null) {
-            // 2. Write schema offset.
-            out.writeInt(start + SCHEMA_OFF_POS, out.position() - start);
+            // Write schema offset.
+            out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, out.position() - start);
 
-            // 3. Write the schema.
-            for (Integer val : tail)
+            // Write the schema.
+            for (Integer val : schema)
                 out.writeInt(val);
 
-            // 4. Write raw offset if needed.
+            // Write raw offset if needed.
             if (rawOffPos != 0)
-                out.writeInt(rawOffPos);
+                out.writeInt(rawOffPos - start);
         }
+        else
+            // If there are no schema, we are free to write raw offset to schema offset.
+            out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, (rawOffPos == 0 ? out.position() : rawOffPos) - start);
 
         // 5. Write length.
         out.writeInt(start + TOTAL_LEN_POS, out.position() - start);
-
     }
 
     /**
@@ -1822,15 +1827,13 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
       * @param off Offset starting from object head.
       */
     private void saveFieldInfo(int id, int off) {
-        if (tail == null) {
-            tail = new ArrayList<>(1);
+        if (schema == null)
+            schema = new ArrayList<>(2);
 
-            tail.add(id);
-        }
-        else {
-            tail.add(off);
-            tail.add(id);
-        }
+        schema.add(id);
+        schema.add(off);
+
+        schemaId = 31 * schemaId + id;
     }
 
      /**

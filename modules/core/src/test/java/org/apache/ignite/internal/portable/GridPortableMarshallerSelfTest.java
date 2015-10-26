@@ -714,29 +714,6 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testInvalidClass() throws Exception {
-        byte[] arr = new byte[20];
-
-        arr[0] = 103;
-        arr[1] = 1;
-
-        U.intToBytes(Integer.reverseBytes(11111), arr, 4);
-
-        final PortableObject po = new PortableObjectImpl(initPortableContext(new PortableMarshaller()), arr, 0);
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-                                       @Override public Object call() throws Exception {
-                                           po.deserialize();
-
-                                           return null;
-                                       }
-                                   }, PortableInvalidClassException.class, "Unknown type ID: 11111"
-        );
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testClassWithoutPublicConstructor() throws Exception {
         PortableMarshaller marsh = new PortableMarshaller();
 

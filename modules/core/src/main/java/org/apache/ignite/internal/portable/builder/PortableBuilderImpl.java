@@ -41,7 +41,6 @@ import java.util.Set;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DFLT_HDR_LEN;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.HASH_CODE_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER_POS;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.RAW_DATA_OFF_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TOTAL_LEN_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TYPE_ID_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
@@ -223,7 +222,7 @@ public class PortableBuilderImpl implements PortableBuilder {
             else
                 assignedFldsById = Collections.emptyMap();
 
-            int rawOff = start + reader.readIntAbsolute(start + RAW_DATA_OFF_POS);
+            int rawOff = start + PortableUtils.rawOffset(reader, start);
 
             reader.position(start + hdrLen);
 
@@ -383,7 +382,7 @@ public class PortableBuilderImpl implements PortableBuilder {
         writer.rawWriter();
 
         if (reader != null) {
-            int rawOff = reader.readIntAbsolute(start + RAW_DATA_OFF_POS);
+            int rawOff = PortableUtils.rawOffset(reader, start);
             int len = reader.readIntAbsolute(start + TOTAL_LEN_POS);
 
             if (rawOff < len)
@@ -408,7 +407,7 @@ public class PortableBuilderImpl implements PortableBuilder {
             Map<Integer, Object> readCache = new HashMap<>();
 
             int pos = start + hdrLen;
-            int end = start + reader.readIntAbsolute(start + RAW_DATA_OFF_POS);
+            int end = start + PortableUtils.rawOffset(reader, start);
 
             while (pos < end) {
                 int fieldId = reader.readIntAbsolute(pos);

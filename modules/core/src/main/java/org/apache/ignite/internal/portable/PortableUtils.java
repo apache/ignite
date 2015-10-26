@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.internal.portable.builder.PortableBuilderReader;
 import org.apache.ignite.internal.portable.builder.PortableLazyValue;
+import org.apache.ignite.internal.portable.streams.PortableInputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.portable.PortableException;
 import org.apache.ignite.portable.PortableObject;
@@ -554,5 +556,59 @@ public class PortableUtils {
             writer.doWriteString(clsName);
 
         return reserved;
+    }
+
+    /**
+     * Get raw offset of the object.
+     *
+     * @param in Input stream.
+     * @param start Object start position inside the stream.
+     * @return Raw offset.
+     */
+    public static int rawOffset(PortableInputStream in, int start) {
+        int len = in.readInt(start + GridPortableMarshaller.TOTAL_LEN_POS);
+        int schemaId = in.readInt(start + GridPortableMarshaller.SCHEMA_ID_POS);
+
+        if (schemaId == 0)
+            // No schema, raw offset is located on schema offset position.
+            return in.readInt(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        else {
+            // Schema exists.
+            int schemaOff = in.readInt(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+
+            if ((((len - schemaOff) >> 2) & 0x1) == 0x0)
+                // Even amount of records in schema => no raw offset.
+                return len;
+            else
+                // Odd amount of records in schema => raw offset is the very last 4 bytes in object.
+                return in.readInt(start + len - 4);
+        }
+    }
+
+    /**
+     * Get raw offset of the object.
+     *
+     * @param in Input stream.
+     * @param start Object start position inside the stream.
+     * @return Raw offset.
+     */
+    public static int rawOffset(PortableBuilderReader in, int start) {
+        int len = in.readIntAbsolute(start + GridPortableMarshaller.TOTAL_LEN_POS);
+        int schemaId = in.readIntAbsolute(start + GridPortableMarshaller.SCHEMA_ID_POS);
+
+        if (schemaId == 0)
+            // No schema, raw offset is located on schema offset position.
+            return in.readIntAbsolute(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        else {
+            // Schema exists.
+            int schemaOff = in.readIntAbsolute(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+
+            if ((((len - schemaOff) >> 2) & 0x1) == 0x0)
+                // Even amount of records in schema => no raw offset.
+                return len;
+            else
+                // Odd amount of records in schema => raw offset is the very last 4 bytes in object.
+                return in.readIntAbsolute(start + len - 4);
+        }
     }
 }

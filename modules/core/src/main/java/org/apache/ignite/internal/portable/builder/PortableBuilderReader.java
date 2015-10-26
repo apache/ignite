@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
 /**
  *
  */
-class PortableBuilderReader {
+public class PortableBuilderReader {
     /** */
     private static final PortablePrimitives PRIM = PortablePrimitives.get();
 
