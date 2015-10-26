@@ -159,15 +159,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Write handler or NULL.</returns>
-        private static KeyValuePair<byte, PortableSystemWriteDelegate> FindWriteHandler(Type type)
+        private static PortableSystemWriteDelegate FindWriteHandler(Type type)
         {
-            // TODO: 
-            // 1) Create a class for the write handler + header
-            // 2) Create a set of static predefined handlers to use in writer and all other places to avoid duplication
-
             // 1. Well-known types.
             if (type == typeof(string))
-                return new KeyValuePair<byte, PortableSystemWriteDelegate>(PortableUtils.TypeString, WriteString);
+                return WriteString;
             if (type == typeof(decimal))
                 return WriteDecimal;
             if (type == typeof(DateTime))
@@ -237,6 +233,74 @@ namespace Apache.Ignite.Core.Impl.Portable
                 return WriteSerializable;
 
             return null;
+        }
+
+        /// <summary>
+        /// Find write handler for type.
+        /// </summary>
+        /// <param name="type">Type.</param>
+        /// <returns>Write handler or NULL.</returns>
+        public static byte GetTypeId(Type type)
+        {
+            // 1. Well-known types.
+            if (type == typeof(string))
+                return PortableUtils.TypeString;
+            if (type == typeof(decimal))
+                return PortableUtils.TypeDecimal;
+            if (type == typeof(DateTime))
+                return PortableUtils.TypeTimestamp;
+            if (type == typeof(Guid))
+                return PortableUtils.TypeGuid;
+            if (type == typeof(ArrayList))
+                return PortableUtils.TypeCollection;
+            if (type == typeof(Hashtable))
+                return PortableUtils.TypeDictionary;
+            if (type == typeof(DictionaryEntry))
+                return PortableUtils.TypeMapEntry;
+            if (type.IsArray)
+            {
+                // We know how to write any array type.
+                Type elemType = type.GetElementType();
+
+                // Primitives.
+                if (elemType == typeof(bool))
+                    return PortableUtils.TypeArrayBool;
+                if (elemType == typeof(byte) || elemType == typeof(sbyte))
+                    return PortableUtils.TypeArrayByte;
+                if (elemType == typeof(short) || elemType == typeof(ushort))
+                    return PortableUtils.TypeArrayShort;
+                if (elemType == typeof(char))
+                    return PortableUtils.TypeArrayChar;
+                if (elemType == typeof(int) || elemType == typeof(uint))
+                    return PortableUtils.TypeArrayInt;
+                if (elemType == typeof(long) || elemType == typeof(ulong))
+                    return PortableUtils.TypeArrayLong;
+                if (elemType == typeof(float))
+                    return PortableUtils.TypeArrayFloat;
+                if (elemType == typeof(double))
+                    return PortableUtils.TypeArrayDouble;
+                // Special types.
+                if (elemType == typeof(decimal?))
+                    return PortableUtils.TypeArrayDecimal;
+                if (elemType == typeof(string))
+                    return PortableUtils.TypeArrayString;
+                if (elemType == typeof(Guid?))
+                    return PortableUtils.TypeArrayGuid;
+                
+                // Enums.
+                if (elemType.IsEnum)
+                    return PortableUtils.TypeArrayEnum;
+
+                // Object array.
+                if (elemType == typeof(object))
+                    return PortableUtils.TypeArray;
+            }
+
+            if (type.IsEnum)
+                // We know how to write enums.
+                return PortableUtils.TypeEnum;
+
+            return PortableUtils.TypeObject;
         }
 
         /// <summary>

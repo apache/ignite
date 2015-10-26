@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -33,9 +32,6 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// </summary>
     internal class PortableBuilderImpl : IPortableBuilder
     {
-        /** Type IDs for metadata. */
-        private static readonly IDictionary<Type, byte> TypeIds;
-
         /** Cached dictionary with no values. */
         private static readonly IDictionary<int, PortableBuilderField> EmptyVals =
             new Dictionary<int, PortableBuilderField>();
@@ -65,50 +61,20 @@ namespace Apache.Ignite.Core.Impl.Portable
         private Context _ctx;
 
         /** Write array action. */
-        private static readonly Action<PortableWriterImpl, object> WriteArrayAction = (w, o) =>
-            w.WriteArrayInternal((Array) o);
+        private static readonly Action<PortableWriterImpl, object> WriteArrayAction = 
+            (w, o) => w.WriteArrayInternal((Array) o);
 
         /** Write collection action. */
-        private static readonly Action<PortableWriterImpl, object> WriteCollectionAction = (w, o) =>
-            w.WriteCollection((ICollection) o);
+        private static readonly Action<PortableWriterImpl, object> WriteCollectionAction = 
+            (w, o) => w.WriteCollection((ICollection) o);
 
-        /// <summary>
-        /// Static initializer.
-        /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
-        static PortableBuilderImpl()
-        {
-            TypeIds = new Dictionary<Type, byte>();
+        /** Write timestamp action. */
+        private static readonly Action<PortableWriterImpl, object> WriteTimestampAction = 
+            (w, o) => w.WriteTimestamp((DateTime?) o);
 
-            // 1. Primitives.
-            TypeIds[typeof(byte)] = PortableUtils.TypeByte;
-            TypeIds[typeof(bool)] = PortableUtils.TypeBool;
-            TypeIds[typeof(short)] = PortableUtils.TypeShort;
-            TypeIds[typeof(char)] = PortableUtils.TypeChar;
-            TypeIds[typeof(int)] = PortableUtils.TypeInt;
-            TypeIds[typeof(long)] = PortableUtils.TypeLong;
-            TypeIds[typeof(float)] = PortableUtils.TypeFloat;
-            TypeIds[typeof(double)] = PortableUtils.TypeDouble;
-            TypeIds[typeof(decimal)] = PortableUtils.TypeDecimal;
-
-            TypeIds[typeof(byte[])] = PortableUtils.TypeArrayByte;
-            TypeIds[typeof(bool[])] = PortableUtils.TypeArrayBool;
-            TypeIds[typeof(short[])] = PortableUtils.TypeArrayShort;
-            TypeIds[typeof(char[])] = PortableUtils.TypeArrayChar;
-            TypeIds[typeof(int[])] = PortableUtils.TypeArrayInt;
-            TypeIds[typeof(long[])] = PortableUtils.TypeArrayLong;
-            TypeIds[typeof(float[])] = PortableUtils.TypeArrayFloat;
-            TypeIds[typeof(double[])] = PortableUtils.TypeArrayDouble;
-            TypeIds[typeof(decimal?[])] = PortableUtils.TypeArrayDecimal;
-
-            // 2. String.
-            TypeIds[typeof(string)] = PortableUtils.TypeString;
-            TypeIds[typeof(string[])] = PortableUtils.TypeArrayString;
-
-            // 3. Guid.
-            TypeIds[typeof(Guid?)] = PortableUtils.TypeGuid;
-            TypeIds[typeof(Guid?[])] = PortableUtils.TypeArrayGuid;
-        }
+        /** Write timestamp array action. */
+        private static readonly Action<PortableWriterImpl, object> WriteTimestampArrayAction = 
+            (w, o) => w.WriteTimestampArray((DateTime?[])o);
 
         /// <summary>
         /// Constructor.
@@ -170,7 +136,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritDoc /> */
         public IPortableBuilder SetField<T>(string fieldName, T val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof(T), val, GetTypeId(typeof(T))));
+            return SetField0(fieldName,
+                new PortableBuilderField(typeof (T), val, PortableSystemHandlers.GetTypeId(typeof (T))));
         }
 
         /** <inheritDoc /> */
@@ -366,14 +333,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         public IPortableBuilder SetTimestampField(string fieldName, DateTime? val)
         {
             return SetField0(fieldName, new PortableBuilderField(typeof (DateTime?), val, PortableUtils.TypeTimestamp,
-                (w, o) => w.WriteTimestamp((DateTime?) o)));
+                WriteTimestampAction));
         }
  
         /** <inheritDoc /> */
         public IPortableBuilder SetTimestampArrayField(string fieldName, DateTime?[] val)
         {
             return SetField0(fieldName, new PortableBuilderField(typeof (DateTime?[]), val, PortableUtils.TypeArrayTimestamp,
-                (w, o) => w.WriteTimestampArray((DateTime?[]) o)));
+                WriteTimestampArrayAction));
         } 
 
         /** <inheritDoc /> */
@@ -481,7 +448,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="header">The header.</param>
         /// <returns>Write action.</returns>
-        private Action<PortableWriterImpl, object> GetWriteAction(byte header)
+        private static Action<PortableWriterImpl, object> GetWriteAction(byte header)
         {
             // We need special actions for all cases where SetField(X) produces different result from SetSpecialField(X)
             // Arrays, Collections, Dates
@@ -495,10 +462,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                     return WriteCollectionAction;
 
                 case PortableUtils.TypeTimestamp:
-                    return null; // TODO
+                    return WriteTimestampAction;
 
                 case PortableUtils.TypeArrayTimestamp:
-                    return null; // TODO
+                    return WriteTimestampArrayAction;
             }
 
             return null;
@@ -1007,29 +974,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             return true;
-        }
-
-        /// <summary>
-        /// Get's metadata field type ID for the given type.
-        /// </summary>
-        /// <param name="type">Type.</param>
-        /// <returns>Type ID.</returns>
-        private static byte GetTypeId(Type type)
-        {
-            // TODO: Duplicating logic from PortableUtils.
-
-            byte typeId;
-
-            if (TypeIds.TryGetValue(type, out typeId))
-                return typeId;
-
-            if (type.IsEnum)
-                return PortableUtils.TypeEnum;
-
-            if (type.IsArray)
-                return type.GetElementType().IsEnum ? PortableUtils.TypeArrayEnum : PortableUtils.TypeArray;
-
-            return PortableUtils.TypeObject;
         }
 
         /// <summary>
