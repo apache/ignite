@@ -63,15 +63,31 @@ namespace ignite
              * Start callback.
              *
              * @param memPtr Memory pointer.
+             * @param proc Processor instance.
              */
-            void OnStartCallback(long long memPtr);        
-            
+            void OnStartCallback(long long memPtr, void* proc);
+
+            /**
+             * Cache Invoke callback.
+             *
+             * @param inMemPtr Input memory pointer.
+             * @param outMemPtr Output memory pointer.
+             */
+            void CacheInvokeCallback(long long inMemPtr, long long outMemPtr);
+
             /**
              * Get name of Ignite instance.
              *
              * @return Name.
              */
             const char* InstanceName() const;
+
+            /**
+             * Get processor associated with the instance.
+             *
+             * @return Processor.
+             */
+            void* GetProcessor();
 
             /**
              * Get JNI context.
@@ -109,6 +125,13 @@ namespace ignite
              * @param Metadata manager.
              */
             portable::PortableMetadataManager* GetMetadataManager();
+
+            void* Acquire(void* obj);
+
+            /**
+             * Notify processor that Ignite instance has started.
+             */
+            void ProcessorReleaseStart();
         private:
             /** Context to access Java. */
             ignite::common::concurrent::SharedPointer<ignite::common::java::JniContext> ctx;
@@ -118,6 +141,9 @@ namespace ignite
 
             /** Ignite name. */
             char* name;
+
+            /** Processor instance. */
+            void* proc;
 
             /** Metadata manager. */
             portable::PortableMetadataManager* metaMgr;       

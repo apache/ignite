@@ -191,6 +191,7 @@
     <ClInclude Include="..\..\include\ignite\cache\cache.h" />
     <ClInclude Include="..\..\include\ignite\cache\cache_entry.h" />
     <ClInclude Include="..\..\include\ignite\cache\cache_peek_mode.h" />
+    <ClInclude Include="..\..\include\ignite\cache\mutable_cache_entry.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\query.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\query_argument.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\query_cursor.h" />
@@ -202,6 +203,7 @@
     <ClInclude Include="..\..\include\ignite\ignite_error.h" />
     <ClInclude Include="..\..\include\ignite\ignition.h" />
     <ClInclude Include="..\..\include\ignite\guid.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cache\cache_entry_processor_holder.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\ignite_environment.h" />
@@ -211,6 +213,7 @@
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_input_stream.h" />
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_memory.h" />
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_output_stream.h" />
+    <ClInclude Include="..\..\include\ignite\impl\module_manager.h" />
     <ClInclude Include="..\..\include\ignite\impl\operations.h" />
     <ClInclude Include="..\..\include\ignite\impl\portable\portable_common.h" />
     <ClInclude Include="..\..\include\ignite\impl\portable\portable_id_resolver.h" />

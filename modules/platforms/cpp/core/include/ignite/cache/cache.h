@@ -30,7 +30,9 @@
 #include "ignite/cache/query/query_sql.h"
 #include "ignite/cache/query/query_text.h"
 #include "ignite/impl/cache/cache_impl.h"
+#include "ignite/impl/cache/cache_entry_processor_holder.h"
 #include "ignite/impl/operations.h"
+#include "ignite/impl/module_manager.h"
 #include "ignite/ignite_error.h"
 
 namespace ignite
@@ -1141,6 +1143,56 @@ namespace ignite
                 impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QueryScan(qry, &err);
 
                 return query::QueryCursor<K, V>(cursorImpl);
+            }
+
+            /**
+             * Invokes an CacheEntryProcessor against the MutableCacheEntry specified by the
+             * provided key. If an entry does not exist for the specified key, an attempt is made
+             * to load it (if a loader is configured) or a surrogate entry, consisting of the key
+             * with a null value is used instead.
+             *
+             * @param key The key.
+             * @param processor The processor.
+             * @param arg The argument.
+             * @param err Error.
+             * @return Result of the processing.
+             */
+            template<typename R, typename P, typename A>
+            R Invoke(const K& key, const P& processor, const A& arg, IgniteError& err)
+            {
+                typedef impl::cache::CacheEntryProcessorHolder<P, A> ProcessorHolder;
+
+                ProcessorHolder procHolder(processor, arg);
+
+                impl::In2Operation<K, ProcessorHolder> inOp(&key, &procHolder);
+                impl::Out1Operation<R> outOp;
+
+                impl.Get()->Invoke(inOp, outOp, &err);
+
+                return outOp.GetResult();
+            }
+
+            /**
+             * Invokes an CacheEntryProcessor against the MutableCacheEntry specified by the
+             * provided key. If an entry does not exist for the specified key, an attempt is made
+             * to load it (if a loader is configured) or a surrogate entry, consisting of the key
+             * with a null value is used instead.
+             *
+             * @param key The key.
+             * @param processor The processor.
+             * @param arg The argument.
+             * @return Result of the processing.
+             */
+            template<typename R, typename P, typename A>
+            R Invoke(const K& key, const P& processor, const A& arg)
+            {
+                IgniteError err;
+
+                R res = Invoke<R>(key, processor, arg, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return res;
             }
 
             /**

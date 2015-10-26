@@ -184,11 +184,13 @@
     <ClInclude Include="..\..\include\ignite\common\java.h" />
     <ClInclude Include="..\..\os\win\include\ignite\common\common.h" />
     <ClInclude Include="..\..\os\win\include\ignite\common\concurrent_os.h" />
+    <ClInclude Include="..\..\os\win\include\ignite\common\dynamic_load_os.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\common.cpp" />
     <ClCompile Include="..\..\os\win\src\concurrent_os.cpp" />
+    <ClCompile Include="..\..\os\win\src\dynamic_load_os.cpp" />
     <ClCompile Include="..\..\src\concurrent.cpp" />
     <ClCompile Include="..\..\src\exports.cpp" />
     <ClCompile Include="..\..\src\java.cpp" />

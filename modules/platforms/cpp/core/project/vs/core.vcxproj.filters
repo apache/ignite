@@ -213,6 +213,15 @@
     <ClInclude Include="..\..\include\ignite\cache\query\query_scan.h">
       <Filter>Code\cache\query</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\mutable_cache_entry.h">
+      <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\cache_entry_processor_holder.h">
+      <Filter>Code\impl\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\module_manager.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">

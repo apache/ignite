@@ -316,6 +316,15 @@ namespace ignite
                  * @return Query cursor.
                  */
                 query::QueryCursorImpl* QueryScan(const ignite::cache::query::ScanQuery& qry, IgniteError* err);
+
+                /*
+                 * Perform Invoke.
+                 *
+                 * @param inOp Input.
+                 * @param outOp Output.
+                 * @param err Error.
+                 */
+                void Invoke(InputOperation& inOp, OutputOperation& outOp, IgniteError* err);
                 
             private:
                 /** Name. */

@@ -28,6 +28,9 @@
     <ClInclude Include="targetver.h">
       <Filter>Misc</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\os\win\include\ignite\common\dynamic_load_os.h">
+      <Filter>Code</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\common.cpp">
@@ -43,6 +46,9 @@
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\java.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\dynamic_load_os.cpp">
       <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>

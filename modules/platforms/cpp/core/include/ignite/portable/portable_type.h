@@ -20,7 +20,7 @@
 
 #include <stdint.h>
 
-#include <ignite/common/common.h>
+#include "ignite/common/common.h"
 
 #include "ignite/ignite_error.h"
 
@@ -226,7 +226,7 @@ namespace ignite
             }
         };
 
-        /*
+        /**
          * Templated portable type for pointers.
          */
         template <typename T>

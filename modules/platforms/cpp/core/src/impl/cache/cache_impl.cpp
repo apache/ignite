@@ -70,6 +70,9 @@ namespace ignite
             /** Operation: GetAndReplace. */
             const int32_t OP_GET_AND_REPLACE = 10;
 
+            /** Operation: Invoke. */
+            const int32_t OP_INVOKE = 12;
+
             /** Operation: LocalEvict. */
             const int32_t OP_LOCAL_EVICT = 16;
 
@@ -294,6 +297,11 @@ namespace ignite
                 return QueryInternal(qry, OP_QRY_SCAN, err);
             }
 
+            void CacheImpl::Invoke(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            {
+                OutInOpInternal(OP_INVOKE, inOp, outOp, err);
+            }
+
             int64_t CacheImpl::WriteTo(InteropMemory* mem, InputOperation& inOp, IgniteError* err)
             {
                 PortableMetadataManager* metaMgr = env.Get()->GetMetadataManager();
@@ -374,7 +382,7 @@ namespace ignite
 
                 if (outPtr)
                 {
-                    env.Get()->Context()->TargetInStreamOutStream(javaRef, opType, WriteTo(outMem.Get(), inOp, err), 
+                    env.Get()->Context()->TargetInStreamOutStream(javaRef, opType, outPtr,
                         inMem.Get()->PointerLong(), &jniErr);
 
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);

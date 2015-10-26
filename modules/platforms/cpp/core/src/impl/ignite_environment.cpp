@@ -17,6 +17,7 @@
 
 #include "ignite/impl/portable/portable_reader_impl.h"
 #include "ignite/impl/ignite_environment.h"
+#include "ignite/impl/module_manager.h"
 #include "ignite/portable/portable.h"
 
 using namespace ignite::common::concurrent;
@@ -33,14 +34,14 @@ namespace ignite
          * OnStart callback.
          *
          * @param target Target environment.
-         * @param proc Processor instance (not used for now).
+         * @param proc Processor instance.
          * @param memPtr Memory pointer.
          */
         void IGNITE_CALL OnStart(void* target, void* proc, long long memPtr)
         {
             SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
-            ptr->Get()->OnStartCallback(memPtr);
+            ptr->Get()->OnStartCallback(memPtr, proc);
         }
 
         /**
@@ -53,10 +54,24 @@ namespace ignite
             SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
             delete ptr;
-        } 
+        }
+
+        /**
+         * CacheInvoke callback.
+         *
+         * @param target Target environment.
+         * @param inMemPtr Input memory pointer.
+         * @param outMemPtr Output memory pointer.
+         */
+        void IGNITE_CALL CacheInvoke(void* target, long long inMemPtr, long long outMemPtr)
+        {
+            SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+
+            ptr->Get()->CacheInvokeCallback(inMemPtr, outMemPtr);
+        }
 
         IgniteEnvironment::IgniteEnvironment() : ctx(SharedPointer<JniContext>()), latch(new SingleLatch), name(NULL),
-            metaMgr(new PortableMetadataManager())
+            proc(NULL), metaMgr(new PortableMetadataManager())
         {
             // No-op.
         }
@@ -80,6 +95,8 @@ namespace ignite
             hnds.onStart = OnStart;
             hnds.onStop = OnStop;
 
+            hnds.cacheInvoke = CacheInvoke;
+
             hnds.error = NULL;
 
             return hnds;
@@ -95,6 +112,11 @@ namespace ignite
         const char* IgniteEnvironment::InstanceName() const
         {
             return name;
+        }
+
+        void* IgniteEnvironment::GetProcessor()
+        {
+            return proc;
         }
 
         JniContext* IgniteEnvironment::Context()
@@ -141,13 +163,26 @@ namespace ignite
             return metaMgr;
         }
 
-        void IgniteEnvironment::OnStartCallback(long long memPtr)
+        void* IgniteEnvironment::Acquire(void *obj)
         {
+            return reinterpret_cast<void*>(ctx.Get()->Acquire(reinterpret_cast<jobject>(obj)));
+        }
+
+        void IgniteEnvironment::ProcessorReleaseStart()
+        {
+            if (proc)
+                ctx.Get()->ProcessorReleaseStart(reinterpret_cast<jobject>(proc));
+        }
+
+        void IgniteEnvironment::OnStartCallback(long long memPtr, void* proc)
+        {
+            this->proc = proc;
+
             InteropExternalMemory mem(reinterpret_cast<int8_t*>(memPtr));
             InteropInputStream stream(&mem);
 
             PortableReaderImpl reader(&stream);
-            
+
             int32_t nameLen = reader.ReadString(NULL, 0);
 
             if (nameLen >= 0)
@@ -157,6 +192,26 @@ namespace ignite
             }
             else
                 name = NULL;
+        }
+
+        void IgniteEnvironment::CacheInvokeCallback(long long inMemPtr, long long outMemPtr)
+        {
+            InteropExternalMemory inMem(reinterpret_cast<int8_t*>(inMemPtr));
+            InteropInputStream inStream(&inMem);
+            PortableReaderImpl reader(&inStream);
+
+            InteropExternalMemory outMem(reinterpret_cast<int8_t*>(outMemPtr));
+            InteropOutputStream outStream(&outMem);
+            PortableWriterImpl writer(&outStream, GetMetadataManager());
+
+            ModuleManager &mm = ModuleManager::GetInstance();
+
+            // TODO: implement me.
+            std::string typeId = "CacheEntryModifier";
+
+            mm.InvokeJobById(typeId, reader, writer);
+
+            outStream.Synchronize();
         }
     }
 }

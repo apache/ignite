@@ -282,6 +282,8 @@ namespace ignite
         }
         else 
         {
+            env.Get()->ProcessorReleaseStart();
+
             IgniteImpl* impl = new IgniteImpl(env, javaRef);
 
             return Ignite(impl);

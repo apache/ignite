@@ -34,6 +34,9 @@
     <ClCompile Include="..\..\src\teamcity_messages.cpp">
       <Filter>TeamCity</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\cache_invoke_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\portable_test_defs.h">

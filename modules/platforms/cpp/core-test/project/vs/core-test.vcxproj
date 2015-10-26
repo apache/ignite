@@ -32,6 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\cache_test.cpp" />
+    <ClCompile Include="..\..\src\cache_invoke_test.cpp" />
     <ClCompile Include="..\..\src\concurrent_test.cpp" />
     <ClCompile Include="..\..\src\ignition_test.cpp" />
     <ClCompile Include="..\..\src\handle_registry_test.cpp" />
