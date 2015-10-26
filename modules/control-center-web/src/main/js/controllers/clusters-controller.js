@@ -236,8 +236,8 @@ consoleModule.controller('clustersController', [
 
                                 $scope.ui.checkDirty(val, srcItem);
 
-                                $scope.preview.general.xml = $generatorXml.clusterCaches(clusterCaches, $generatorXml.clusterGeneral(val)).asString();
-                                $scope.preview.general.java = $generatorJava.clusterCaches(clusterCaches, $generatorJava.clusterGeneral(val)).asString();
+                                $scope.preview.general.xml = $generatorXml.clusterCaches(clusterCaches, null, $generatorXml.clusterGeneral(val)).asString();
+                                $scope.preview.general.java = $generatorJava.clusterCaches(clusterCaches, null, $generatorJava.clusterGeneral(val)).asString();
                                 $scope.preview.general.allDefaults = $common.isEmptyString($scope.preview.general.xml);
 
                                 $scope.preview.atomics.xml = $generatorXml.clusterAtomics(val).asString();

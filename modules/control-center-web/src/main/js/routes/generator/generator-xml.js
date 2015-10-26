@@ -97,8 +97,9 @@ $generatorXml.listProperty = function (res, obj, propName, listType, rowFactory)
         res.startBlock('<property name="' + propName + '">');
         res.startBlock('<' + listType + '>');
 
-        for (var i = 0; i < val.length; i++)
-            res.line(rowFactory(val[i]));
+        _.forEach(val, function(v) {
+            res.line(rowFactory(v));
+        });
 
         res.endBlock('</' + listType + '>');
         res.endBlock('</property>');
@@ -144,7 +145,7 @@ $generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBean
 
         var hasData = false;
 
-        for (var propName in props) {
+        _.forEach(props, function(propName) {
             if (props.hasOwnProperty(propName)) {
                 var descr = props[propName];
 
@@ -175,15 +176,13 @@ $generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBean
                                 res.startBlock('<property name="' + propName + '">');
                                 res.startBlock('<props>');
 
-                                for (var i = 0; i < val.length; i++) {
-                                    var nameAndValue = val[i];
-
+                                _.forEach(val, function(nameAndValue) {
                                     var eqIndex = nameAndValue.indexOf('=');
                                     if (eqIndex >= 0) {
                                         res.line('<prop key="' + $generatorXml.escape(nameAndValue.substring(0, eqIndex)) + '">' +
                                             $generatorXml.escape(nameAndValue.substr(eqIndex + 1)) + '</prop>');
                                     }
-                                }
+                                });
 
                                 res.endBlock('</props>');
                                 res.endBlock('</property>');
@@ -211,7 +210,7 @@ $generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBean
                     if ($generatorXml.property(res, bean, propName))
                         hasData = true;
             }
-        }
+        });
 
         res.endBlock('</bean>');
         res.endBlock('</property>');
@@ -494,20 +493,18 @@ $generatorXml.clusterEvents = function (cluster, res) {
         else {
             res.startBlock('<list>');
 
-            for (i = 0; i < cluster.includeEventTypes.length; i++) {
-                if (i > 0)
+            _.forEach(cluster.includeEventTypes, function(eventGroup, ix) {
+                if (ix > 0)
                     res.line();
-
-                var eventGroup = cluster.includeEventTypes[i];
 
                 res.line('<!-- EventType.' + eventGroup + ' -->');
 
                 var eventList = $dataStructures.EVENT_GROUPS[eventGroup];
 
-                for (var k = 0; k < eventList.length; k++) {
-                    res.line('<util:constant static-field="org.apache.ignite.events.EventType.' + eventList[k] + '"/>')
-                }
-            }
+                _.forEach(eventList, function(event) {
+                    res.line('<util:constant static-field="org.apache.ignite.events.EventType.' + event + '"/>')
+                });
+            });
 
             res.endBlock('</list>');
         }
@@ -700,12 +697,10 @@ $generatorXml.cacheQuery = function(cache, res) {
         res.startBlock('<property name="indexedTypes">');
         res.startBlock('<list>');
 
-        for (var i = 0; i < cache.indexedTypes.length; i++) {
-            var pair = cache.indexedTypes[i];
-
+        _.forEach(cache.indexedTypes, function(pair) {
             res.line('<value>' + $dataStructures.fullClassName(pair.keyClass) + '</value>');
             res.line('<value>' + $dataStructures.fullClassName(pair.valueClass) + '</value>');
-        }
+        });
 
         res.endBlock('</list>');
         res.endBlock('</property>');
@@ -1064,22 +1059,31 @@ $generatorXml.cache = function(cache, res) {
 };
 
 // Generate caches configs.
-$generatorXml.clusterCaches = function(caches, res) {
+$generatorXml.clusterCaches = function(caches, igfss, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if (caches && caches.length > 0) {
+    if ((caches && caches.length > 0) || (igfss && igfss.length > 0)) {
         res.emptyLineIfNeeded();
 
         res.startBlock('<property name="cacheConfiguration">');
         res.startBlock('<list>');
 
-        for (var i = 0; i < caches.length; i++) {
-            if (i > 0)
-                res.line();
+        _.forEach(caches, function(cache) {
+            $generatorXml.cache(cache, res);
 
-            $generatorXml.cache(caches[i], res);
-        }
+            res.needEmptyLine = true;
+        });
+
+        _.forEach(igfss, function(igfs) {
+            $generatorXml.cache({name: igfs.name + '-data', cacheMode: 'PARTITIONED', atomicityMode: 'TRANSACTIONAL'}, res);
+
+            res.needEmptyLine = true;
+
+            $generatorXml.cache({name: igfs.name + '-meta', cacheMode: 'REPLICATED', atomicityMode: 'TRANSACTIONAL'}, res);
+
+            res.needEmptyLine = true;
+        });
 
         res.endBlock('</list>');
         res.endBlock('</property>');
@@ -1111,6 +1115,7 @@ $generatorXml.igfss = function(igfss, res) {
 
             res.endBlock('</bean>');
 
+            res.needEmptyLine = true;
         });
 
         res.endBlock('</list>');
@@ -1174,8 +1179,8 @@ $generatorXml.igfsGeneral = function(igfs, res) {
         res = $generatorCommon.builder();
 
     if ($commonUtils.isDefinedAndNotEmpty(igfs.name)) {
-        igfs.dataCacheName = igfs.name + 'Data';
-        igfs.metaCacheName = igfs.name + 'Meta';
+        igfs.dataCacheName = igfs.name + '-data';
+        igfs.metaCacheName = igfs.name + '-meta';
 
         $generatorXml.property(res, igfs, 'name');
         $generatorXml.property(res, igfs, 'dataCacheName');
@@ -1204,11 +1209,9 @@ $generatorXml.igfsMisc = function(igfs, res) {
         res.startBlock('<property name="pathModes">');
         res.startBlock('<map>');
 
-        for (var i = 0; i < igfs.pathModes.length; i++) {
-            var pair = igfs.pathModes[i];
-
+        _.forEach(igfs.pathModes, function(pair) {
             res.line('<entry key="' + pair.path + '" value="' + pair.mode + '"/>');
-        }
+        });
 
         res.endBlock('</map>');
         res.endBlock('</property>');
@@ -1277,7 +1280,7 @@ $generatorXml.cluster = function (cluster, clientNearCfg) {
 
         $generatorXml.clusterTransactions(cluster, res);
 
-        $generatorXml.clusterCaches(cluster.caches, res);
+        $generatorXml.clusterCaches(cluster.caches, cluster.igfss, res);
 
         $generatorXml.clusterSsl(cluster, res);
 

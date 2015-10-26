@@ -237,12 +237,12 @@ $generatorJava.multiparamProperty = function (res, varName, obj, propName, dataT
 
         res.append(varName + '.' + $generatorJava.setterName(propName, setterName) + '(');
 
-        for (var i = 0; i < val.length; i++) {
-            if (i > 0)
+        _.forEach(val, function(v, ix) {
+            if (ix > 0)
                 res.append(', ');
 
-            res.append($generatorJava.toJavaCode(val[i], dataType));
-        }
+            res.append($generatorJava.toJavaCode(v, dataType));
+        });
 
         res.line(');');
     }
@@ -265,7 +265,7 @@ $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVa
 
         $generatorJava.declareVariable(res, true, beanVarName, beanClass);
 
-        for (var propName in props) {
+        _.forEach(props, function(propName) {
             if (props.hasOwnProperty(propName)) {
                 var descr = props[propName];
 
@@ -301,17 +301,15 @@ $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVa
                             if (val && val.length > 0) {
                                 res.line('Properties ' + descr.propVarName + ' = new Properties();');
 
-                                for (var i = 0; i < val.length; i++) {
-                                    var nameAndValue = val[i];
-
+                                _.forEach(val, function(nameAndValue) {
                                     var eqIndex = nameAndValue.indexOf('=');
+
                                     if (eqIndex >= 0) {
                                         res.line(descr.propVarName + '.setProperty('
                                             + nameAndValue.substring(0, eqIndex) + ', '
                                             + nameAndValue.substr(eqIndex + 1) + ');');
                                     }
-
-                                }
+                                });
 
                                 res.line(beanVarName + '.' + $generatorJava.setterName(propName) + '(' + descr.propVarName + ');');
                             }
@@ -340,7 +338,7 @@ $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVa
                     $generatorJava.property(res, beanVarName, bean, propName);
                 }
             }
-        }
+        });
 
         res.needEmptyLine = true;
 
@@ -638,11 +636,13 @@ $generatorJava.clusterEvents = function (cluster, res) {
         else {
             res.append('int[] events = new int[EventType.' + cluster.includeEventTypes[0] + '.length');
 
-            for (i = 1; i < cluster.includeEventTypes.length; i++) {
-                res.needEmptyLine = true;
+            _.forEach(cluster.includeEventTypes, function(e, ix) {
+                if (ix > 0) {
+                    res.needEmptyLine = true;
 
-                res.append('    + EventType.' + cluster.includeEventTypes[i] + '.length');
-            }
+                    res.append('    + EventType.' + e + '.length');
+                }
+            });
 
             res.line('];');
 
@@ -650,14 +650,12 @@ $generatorJava.clusterEvents = function (cluster, res) {
 
             res.line('int k = 0;');
 
-            for (i = 0; i < cluster.includeEventTypes.length; i++) {
+            _.forEach(cluster.includeEventTypes, function(e) {
                 res.needEmptyLine = true;
-
-                var e = cluster.includeEventTypes[i];
 
                 res.line('System.arraycopy(EventType.' + e + ', 0, events, k, EventType.' + e + '.length);');
                 res.line('k += EventType.' + e + '.length;');
-            }
+            });
 
             res.needEmptyLine = true;
 
@@ -827,14 +825,12 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
 
         res.append(varName + '.setIndexedTypes(');
 
-        for (var i = 0; i < cache.indexedTypes.length; i++) {
-            if (i > 0)
+        _.forEach(cache.indexedTypes, function(pair, ix) {
+            if (ix > 0)
                 res.append(', ');
 
-            var pair = cache.indexedTypes[i];
-
             res.append($generatorJava.toJavaCode(res.importClass(pair.keyClass), 'class')).append(', ').append($generatorJava.toJavaCode(res.importClass(pair.valueClass), 'class'))
-        }
+        });
 
         res.line(');');
     }
@@ -1196,29 +1192,48 @@ $generatorJava.cache = function(cache, varName, res) {
 };
 
 // Generate cluster caches.
-$generatorJava.clusterCaches = function (caches, res) {
+$generatorJava.clusterCaches = function (caches, igfss, res) {
+    function clusterCache(res, cache, names) {
+        res.emptyLineIfNeeded();
+
+        var cacheName = $commonUtils.toJavaName('cache', cache.name);
+
+        $generatorJava.declareVariable(res, true, cacheName, 'org.apache.ignite.configuration.CacheConfiguration');
+
+        $generatorJava.cache(cache, cacheName, res);
+
+        names.push(cacheName);
+
+        res.needEmptyLine = true;
+    }
+
     if (!res)
         res = $generatorCommon.builder();
+
+    var names = [];
 
     if (caches && caches.length > 0) {
         res.emptyLineIfNeeded();
 
-        var names = [];
-
         _.forEach(caches, function (cache) {
-            res.emptyLineIfNeeded();
-
-            var cacheName = $commonUtils.toJavaName('cache', cache.name);
-
-            $generatorJava.declareVariable(res, true, cacheName, 'org.apache.ignite.configuration.CacheConfiguration');
-
-            $generatorJava.cache(cache, cacheName, res);
-
-            names.push(cacheName);
-
-            res.needEmptyLine = true;
+            clusterCache(res, cache, names);
         });
 
+        res.needEmptyLine = true;
+    }
+
+    if (igfss && igfss.length > 0) {
+        res.emptyLineIfNeeded();
+
+        _.forEach(igfss, function (igfs) {
+            clusterCache(res, {name: igfs.name + '-data', cacheMode: 'PARTITIONED', atomicityMode: 'TRANSACTIONAL'}, names);
+            clusterCache(res, {name: igfs.name + '-meta', cacheMode: 'REPLICATED', atomicityMode: 'TRANSACTIONAL'}, names);
+        });
+
+        res.needEmptyLine = true;
+    }
+
+    if (names.length > 0) {
         res.line('cfg.setCacheConfiguration(' + names.join(', ') + ');');
 
         res.needEmptyLine = true;
@@ -1257,24 +1272,18 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
     res.line('private static final long serialVersionUID = 0L;');
     res.needEmptyLine = true;
 
-    var fields = (key || includeKeyFields) ? meta.keyFields.slice() : [];
+    var allFields = (key || includeKeyFields) ? meta.keyFields.slice() : [];
 
     if (!key)
-        fields.push.apply(fields, meta.valueFields);
-
-    for (var fldIx = fields.length - 1; fldIx >= 0; fldIx --) {
-        var field = fields[fldIx];
-
-        var ix = _.findIndex(fields, function(fld) {
-            return fld.javaName == field.javaName;
+        _.forEach(meta.valueFields, function (valFld) {
+            if (_.findIndex(allFields, function(fld) {
+                return fld.javaName == valFld.javaName;
+            }) < 0)
+                allFields.push(valFld);
         });
 
-        if (ix >= 0 && ix < fldIx)
-            fields.splice(fldIx, 1);
-    }
-
-    // Generate fields declaration.
-    _.forEach(fields, function (field) {
+    // Generate allFields declaration.
+    _.forEach(allFields, function (field) {
         var fldName = field.javaName;
 
         res.line('/** Value for ' + fldName + '. */');
@@ -1300,17 +1309,15 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
         res.line(' */');
         res.startBlock('public ' + type + '(');
 
-        for (fldIx = 0; fldIx < fields.length; fldIx ++) {
-            field = fields[fldIx];
-
-            res.line(res.importClass(field.javaType) + ' ' + field.javaName + (fldIx < fields.length - 1 ? ',' : ''))
-        }
+        _.forEach(allFields, function(field) {
+            res.line(res.importClass(field.javaType) + ' ' + field.javaName + (fldIx < allFields.length - 1 ? ',' : ''))
+        });
 
         res.endBlock(') {');
 
         res.startBlock();
 
-        _.forEach(fields, function (field) {
+        _.forEach(allFields, function (field) {
             res.line('this.' + field.javaName +' = ' + field.javaName + ';');
         });
 
@@ -1320,7 +1327,7 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
     }
 
     // Generate getters and setters methods.
-    _.forEach(fields, function (field) {
+    _.forEach(allFields, function (field) {
         var fldName = field.javaName;
 
         var fldType = res.importClass(field.javaType);
@@ -1364,7 +1371,7 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
 
     res.line(type + ' that = (' + type + ')o;');
 
-    _.forEach(fields, function (field) {
+    _.forEach(allFields, function (field) {
         res.needEmptyLine = true;
 
         var javaName = field.javaName;
@@ -1388,7 +1395,7 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
 
     var first = true;
 
-    _.forEach(fields, function (field) {
+    _.forEach(allFields, function (field) {
         var javaName = field.javaName;
 
         if (!first)
@@ -1409,13 +1416,13 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
     res.line('/** {@inheritDoc} */');
     res.startBlock('@Override public String toString() {');
 
-    if (fields.length > 0) {
-        field = fields[0];
+    if (allFields.length > 0) {
+        field = allFields[0];
 
         res.startBlock('return \"' + type + ' [' + field.javaName + '=\" + ' + field.javaName + ' +', type);
 
-        for (fldIx = 1; fldIx < fields.length; fldIx ++) {
-            field = fields[fldIx];
+        for (fldIx = 1; fldIx < allFields.length; fldIx ++) {
+            field = allFields[fldIx];
 
             var javaName = field.javaName;
 
@@ -1444,12 +1451,8 @@ $generatorJava.pojos = function (caches, useConstructor, includeKeyFields) {
 
     $generatorJava.metadatas = [];
 
-    for (var cacheIx = 0; cacheIx < caches.length; cacheIx ++) {
-        var cache = caches[cacheIx];
-
-        for (var metaIx = 0; metaIx < cache.metadatas.length; metaIx ++) {
-            var meta = cache.metadatas[metaIx];
-
+    _.forEach(caches, function(cache) {
+        _.forEach(cache.metadatas, function(meta) {
             // Skip already generated classes.
             if (metadataNames.indexOf(meta.valueType) < 0) {
                 // Skip metadata without value fields.
@@ -1472,8 +1475,8 @@ $generatorJava.pojos = function (caches, useConstructor, includeKeyFields) {
 
                 metadataNames.push(meta.valueType);
             }
-        }
-    }
+        });
+    });
 };
 
 /**
@@ -1605,8 +1608,8 @@ $generatorJava.igfsGeneral = function(igfs, varName, res) {
         res = $generatorCommon.builder();
 
     if ($commonUtils.isDefinedAndNotEmpty(igfs.name)) {
-        igfs.dataCacheName = igfs.name + 'Data';
-        igfs.metaCacheName = igfs.name + 'Meta';
+        igfs.dataCacheName = igfs.name + '-data';
+        igfs.metaCacheName = igfs.name + '-meta';
 
         $generatorJava.property(res, varName, igfs, 'name');
         $generatorJava.property(res, varName, igfs, 'dataCacheName');
@@ -1701,7 +1704,7 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
 
         $generatorJava.clusterTransactions(cluster, res);
 
-        $generatorJava.clusterCaches(cluster.caches, res);
+        $generatorJava.clusterCaches(cluster.caches, cluster.igfss, res);
 
         $generatorJava.clusterSsl(cluster, res);
 
