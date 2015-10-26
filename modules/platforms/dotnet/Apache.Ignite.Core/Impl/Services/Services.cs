@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Services
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -147,7 +146,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployNodeSingletonAsync(string name, IService service)
         {
-            throw new NotImplementedException();
+            _asyncInstance.DeployNodeSingletonAsync(name, service);
+
+            return _asyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -171,7 +172,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployKeyAffinitySingletonAsync<TK>(string name, IService service, string cacheName, TK affinityKey)
         {
-            throw new NotImplementedException();
+            _asyncInstance.DeployKeyAffinitySingletonAsync(name, service, cacheName, affinityKey);
+
+            return _asyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -192,7 +195,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployMultipleAsync(string name, IService service, int totalCount, int maxPerNodeCount)
         {
-            throw new NotImplementedException();
+            _asyncInstance.DeployMultipleAsync(name, service, totalCount, maxPerNodeCount);
+
+            return _asyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -219,7 +224,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployAsync(ServiceConfiguration configuration)
         {
-            throw new NotImplementedException();
+            _asyncInstance.DeployAsync(configuration);
+
+            return _asyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -233,7 +240,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task CancelAsync(string name)
         {
-            throw new NotImplementedException();
+            _asyncInstance.CancelAsync(name);
+
+            return _asyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -245,7 +254,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task CancelAllAsync()
         {
-            throw new NotImplementedException();
+            _asyncInstance.CancelAllAsync();
+
+            return _asyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
