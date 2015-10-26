@@ -642,7 +642,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             Flag flag = checkFlag(DECIMAL_ARR, false);
 
             if (flag == Flag.NORMAL)
-                return doReadDecimalArray(false);
+                return doReadDecimalArray();
             else if (flag == Flag.HANDLE)
                 return readHandleField();
         }
@@ -660,7 +660,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             Flag flag = checkFlag(STRING_ARR, false);
 
             if (flag == Flag.NORMAL)
-                return doReadStringArray(false);
+                return doReadStringArray();
             else if (flag == Flag.HANDLE)
                 return readHandleField();
         }
@@ -678,7 +678,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             Flag flag = checkFlag(UUID_ARR, false);
 
             if (flag == Flag.NORMAL)
-                return doReadUuidArray(false);
+                return doReadUuidArray();
             else if (flag == Flag.HANDLE)
                 return readHandleField();
         }
@@ -696,7 +696,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             Flag flag = checkFlag(DATE_ARR, false);
 
             if (flag == Flag.NORMAL)
-                return doReadDateArray(false);
+                return doReadDateArray();
             else if (flag == Flag.HANDLE)
                 return readHandleField();
         }
@@ -714,7 +714,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             Flag flag = checkFlag(TIMESTAMP_ARR, false);
 
             if (flag == Flag.NORMAL)
-                return doReadTimestampArray(false);
+                return doReadTimestampArray();
             else if (flag == Flag.HANDLE)
                 return readHandleField();
         }
@@ -752,7 +752,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             Flag flag = checkFlag(COL, false);
 
             if (flag == Flag.NORMAL)
-                return (Collection<T>)doReadCollection(false, true, cls);
+                return (Collection<T>)doReadCollection(true, cls);
             else if (flag == Flag.HANDLE)
                 return readHandleField();
         }
@@ -772,7 +772,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             Flag flag = checkFlag(MAP, false);
 
             if (flag == Flag.NORMAL)
-                return doReadMap(false, true, cls);
+                return doReadMap(true, cls);
             else if (flag == Flag.HANDLE)
                 return readHandleField();
         }
@@ -790,7 +790,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             Flag flag = checkFlag(MAP_ENTRY, false);
 
             if (flag == Flag.NORMAL)
-                return doReadMapEntry(false, true);
+                return doReadMapEntry(true);
             else if (flag == Flag.HANDLE)
                 return readHandleField();
         }
@@ -1205,7 +1205,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (checkFlag(DECIMAL_ARR, true) == Flag.NULL)
             return null;
 
-        return doReadDecimalArray(true);
+        return doReadDecimalArray();
     }
 
     /** {@inheritDoc} */
@@ -1218,7 +1218,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (checkFlag(STRING_ARR, true) == Flag.NULL)
             return null;
 
-        return doReadStringArray(true);
+        return doReadStringArray();
     }
 
     /** {@inheritDoc} */
@@ -1231,7 +1231,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (checkFlag(UUID_ARR, true) == Flag.NULL)
             return null;
 
-        return doReadUuidArray(true);
+        return doReadUuidArray();
     }
 
     /** {@inheritDoc} */
@@ -1249,7 +1249,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (checkFlag(DATE_ARR, true) == Flag.NULL)
             return null;
 
-        return doReadDateArray(true);
+        return doReadDateArray();
     }
 
     /** {@inheritDoc} */
@@ -1257,7 +1257,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (checkFlag(TIMESTAMP_ARR, true) == Flag.NULL)
             return null;
 
-        return doReadTimestampArray(true);
+        return doReadTimestampArray();
     }
 
     /** {@inheritDoc} */
@@ -1283,7 +1283,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (checkFlag(COL, true) == Flag.NULL)
             return null;
 
-        return (Collection<T>)doReadCollection(true, true, null);
+        return (Collection<T>)doReadCollection(true, null);
     }
 
     /** {@inheritDoc} */
@@ -1298,7 +1298,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (checkFlag(COL, true) == Flag.NULL)
             return null;
 
-        return (Collection<T>)doReadCollection(true, true, colCls);
+        return (Collection<T>)doReadCollection(true, colCls);
     }
 
     /** {@inheritDoc} */
@@ -1311,7 +1311,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (checkFlag(MAP, true) == Flag.NULL)
             return null;
 
-        return (Map<K, V>)doReadMap(true, true, null);
+        return (Map<K, V>)doReadMap(true, null);
     }
 
     /** {@inheritDoc} */
@@ -1326,7 +1326,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (checkFlag(MAP, true) == Flag.NULL)
             return null;
 
-        return (Map<K, V>)doReadMap(true, true, mapCls);
+        return (Map<K, V>)doReadMap(true, mapCls);
     }
 
     /** {@inheritDoc} */
@@ -1526,31 +1526,31 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 return doReadBooleanArray();
 
             case DECIMAL_ARR:
-                return doReadDecimalArray(raw);
+                return doReadDecimalArray();
 
             case STRING_ARR:
-                return doReadStringArray(raw);
+                return doReadStringArray();
 
             case UUID_ARR:
-                return doReadUuidArray(raw);
+                return doReadUuidArray();
 
             case DATE_ARR:
-                return doReadDateArray(raw);
+                return doReadDateArray();
 
             case TIMESTAMP_ARR:
-                return doReadTimestampArray(raw);
+                return doReadTimestampArray();
 
             case OBJ_ARR:
                 return doReadObjectArray(false);
 
             case COL:
-                return doReadCollection(raw, false, null);
+                return doReadCollection(false, null);
 
             case MAP:
-                return doReadMap(raw, false, null);
+                return doReadMap(false, null);
 
             case MAP_ENTRY:
-                return doReadMapEntry(raw, false);
+                return doReadMapEntry(false);
 
             case PORTABLE_OBJ:
                 return doReadPortableObject();
@@ -1832,27 +1832,27 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 break;
 
             case DECIMAL_ARR:
-                obj = doReadDecimalArray(true);
+                obj = doReadDecimalArray();
 
                 break;
 
             case STRING_ARR:
-                obj = doReadStringArray(true);
+                obj = doReadStringArray();
 
                 break;
 
             case UUID_ARR:
-                obj = doReadUuidArray(true);
+                obj = doReadUuidArray();
 
                 break;
 
             case DATE_ARR:
-                obj = doReadDateArray(true);
+                obj = doReadDateArray();
 
                 break;
 
             case TIMESTAMP_ARR:
-                obj = doReadTimestampArray(true);
+                obj = doReadTimestampArray();
 
                 break;
 
@@ -1862,17 +1862,17 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 break;
 
             case COL:
-                obj = doReadCollection(true, true, null);
+                obj = doReadCollection(true, null);
 
                 break;
 
             case MAP:
-                obj = doReadMap(true, true, null);
+                obj = doReadMap(true, null);
 
                 break;
 
             case MAP_ENTRY:
-                obj = doReadMapEntry(true, true);
+                obj = doReadMapEntry(true);
 
                 break;
 
@@ -2048,11 +2048,10 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      * @throws PortableException In case of error.
      */
-    private BigDecimal[] doReadDecimalArray(boolean raw) throws PortableException {
+    private BigDecimal[] doReadDecimalArray() throws PortableException {
         int hPos = in.position() - 1;
 
         int len = in.readInt();
@@ -2078,11 +2077,10 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      * @throws PortableException In case of error.
      */
-    private String[] doReadStringArray(boolean raw) throws PortableException {
+    private String[] doReadStringArray() throws PortableException {
         int hPos = in.position() - 1;
 
         int len = in.readInt();
@@ -2108,11 +2106,10 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      * @throws PortableException In case of error.
      */
-    private UUID[] doReadUuidArray(boolean raw) throws PortableException {
+    private UUID[] doReadUuidArray() throws PortableException {
         int hPos = in.position() - 1;
 
         int len = in.readInt();
@@ -2138,11 +2135,10 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      * @throws PortableException In case of error.
      */
-    private Date[] doReadDateArray(boolean raw) throws PortableException {
+    private Date[] doReadDateArray() throws PortableException {
         int hPos = in.position() - 1;
 
         int len = in.readInt();
@@ -2168,11 +2164,10 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      * @throws PortableException In case of error.
      */
-    private Timestamp[] doReadTimestampArray(boolean raw) throws PortableException {
+    private Timestamp[] doReadTimestampArray() throws PortableException {
         int hPos = in.position() - 1;
 
         int len = in.readInt();
@@ -2220,14 +2215,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     }
 
     /**
-     * @param raw Raw flag.
      * @param deep Deep flag.
      * @param cls Collection class.
      * @return Value.
      * @throws PortableException In case of error.
      */
     @SuppressWarnings("unchecked")
-    private Collection<?> doReadCollection(boolean raw, boolean deep, @Nullable Class<? extends Collection> cls)
+    private Collection<?> doReadCollection(boolean deep, @Nullable Class<? extends Collection> cls)
         throws PortableException {
         int hPos = in.position() - 1;
 
@@ -2303,20 +2297,19 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         setHandler(col, hPos);
 
         for (int i = 0; i < size; i++)
-            col.add(deep ? doReadObject() : unmarshal(raw));
+            col.add(deep ? doReadObject() : unmarshal());
 
         return col;
     }
 
     /**
-     * @param raw Raw flag.
      * @param deep Deep flag.
      * @param cls Map class.
      * @return Value.
      * @throws PortableException In case of error.
      */
     @SuppressWarnings("unchecked")
-    private Map<?, ?> doReadMap(boolean raw, boolean deep, @Nullable Class<? extends Map> cls)
+    private Map<?, ?> doReadMap(boolean deep, @Nullable Class<? extends Map> cls)
         throws PortableException {
         int hPos = in.position() - 1;
 
@@ -2382,22 +2375,21 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         setHandler(map, hPos);
 
         for (int i = 0; i < size; i++)
-            map.put(deep ? doReadObject() : unmarshal(raw), deep ? doReadObject() : unmarshal(raw));
+            map.put(deep ? doReadObject() : unmarshal(), deep ? doReadObject() : unmarshal());
 
         return map;
     }
 
     /**
-     * @param raw Raw flag.
      * @param deep Deep flag.
      * @return Value.
      * @throws PortableException In case of error.
      */
-    private Map.Entry<?, ?> doReadMapEntry(boolean raw, boolean deep) throws PortableException {
+    private Map.Entry<?, ?> doReadMapEntry(boolean deep) throws PortableException {
         int hPos = in.position() - 1;
 
-        Object val1 = deep ? doReadObject() : unmarshal(raw);
-        Object val2 = deep ? doReadObject() : unmarshal(raw);
+        Object val1 = deep ? doReadObject() : unmarshal();
+        Object val2 = deep ? doReadObject() : unmarshal();
 
         GridMapEntry entry = new GridMapEntry<>(val1, val2);
 
