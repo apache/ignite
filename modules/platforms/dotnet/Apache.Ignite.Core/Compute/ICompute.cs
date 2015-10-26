@@ -233,7 +233,8 @@ namespace Apache.Ignite.Core.Compute
         /// <returns>Reduced job result for this execution.</returns>
         /// <typeparam name="TFuncRes">Type of function result.</typeparam>
         /// <typeparam name="TRes">Type of result after reduce.</typeparam>
-        Task<TRes> CallAsync<TFuncRes, TRes>(IEnumerable<IComputeFunc<TFuncRes>> clos, IComputeReducer<TFuncRes, TRes> reducer);
+        Task<TRes> CallAsync<TFuncRes, TRes>(IEnumerable<IComputeFunc<TFuncRes>> clos, 
+            IComputeReducer<TFuncRes, TRes> reducer);
 
         /// <summary>
         /// Executes collection of jobs on nodes within this grid projection.
@@ -398,7 +399,8 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="TArg">Type of argument.</typeparam>
         /// <typeparam name="TFuncRes">Type of function result.</typeparam>
         /// <typeparam name="TRes">Type of result after reduce.</typeparam>
-        TRes Apply<TArg, TFuncRes, TRes>(IComputeFunc<TArg, TFuncRes> clo, IEnumerable<TArg> args, IComputeReducer<TFuncRes, TRes> rdc);
+        TRes Apply<TArg, TFuncRes, TRes>(IComputeFunc<TArg, TFuncRes> clo, IEnumerable<TArg> args, 
+            IComputeReducer<TFuncRes, TRes> rdc);
 
         /// <summary>
         /// Executes provided closure job on nodes within this grid projection. A new job is executed for
@@ -413,6 +415,7 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="TArg">Type of argument.</typeparam>
         /// <typeparam name="TFuncRes">Type of function result.</typeparam>
         /// <typeparam name="TRes">Type of result after reduce.</typeparam>
-        Task<TRes> ApplyAsync<TArg, TFuncRes, TRes>(IComputeFunc<TArg, TFuncRes> clo, IEnumerable<TArg> args, IComputeReducer<TFuncRes, TRes> rdc);
+        Task<TRes> ApplyAsync<TArg, TFuncRes, TRes>(IComputeFunc<TArg, TFuncRes> clo, IEnumerable<TArg> args, 
+            IComputeReducer<TFuncRes, TRes> rdc);
     }
 }

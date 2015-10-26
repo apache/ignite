@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(IComputeTask<TArg, TJobRes, TRes> task, TArg taskArg)
         {
-            throw new NotImplementedException();
+            return _compute.Execute(task, taskArg).ToTask();
         }
 
         /** <inheritDoc /> */
@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public Task<TRes> ExecuteAsync<TJobRes, TRes>(IComputeTask<TJobRes, TRes> task)
         {
-            throw new NotImplementedException();
+            return _compute.Execute(task, null).ToTask();
         }
 
         /** <inheritDoc /> */
@@ -110,9 +110,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(Type taskType, TArg taskArg)
+        public Task<TReduceRes> ExecuteAsync<TArg, TJobRes, TReduceRes>(Type taskType, TArg taskArg)
         {
-            throw new NotImplementedException();
+            return _compute.Execute<TArg, TJobRes, TReduceRes>(taskType, taskArg).ToTask();
         }
 
         /** <inheritDoc /> */
@@ -122,9 +122,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public Task<TRes> ExecuteAsync<TJobRes, TRes>(Type taskType)
+        public Task<TReduceRes> ExecuteAsync<TArg, TReduceRes>(Type taskType)
         {
-            throw new NotImplementedException();
+            return _compute.Execute<object, TArg, TReduceRes>(taskType, null).ToTask();
         }
 
         /** <inheritDoc /> */
@@ -136,7 +136,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public Task<TRes> CallAsync<TRes>(IComputeFunc<TRes> clo)
         {
-            throw new NotImplementedException();
+            return _compute.Execute(clo).ToTask();
         }
 
         /** <inheritDoc /> */
@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public Task<TRes> AffinityCallAsync<TRes>(string cacheName, object affinityKey, IComputeFunc<TRes> clo)
         {
-            throw new NotImplementedException();
+            return _compute.AffinityCall(cacheName, affinityKey, clo).ToTask();
         }
 
         /** <inheritDoc /> */
@@ -160,7 +160,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public Task<TRes> CallAsync<TFuncRes, TRes>(IEnumerable<IComputeFunc<TFuncRes>> clos, IComputeReducer<TFuncRes, TRes> reducer)
         {
-            throw new NotImplementedException();
+            return _compute.Execute(clos, reducer).ToTask();
         }
 
         /** <inheritDoc /> */
@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public Task<ICollection<TRes>> CallAsync<TRes>(IEnumerable<IComputeFunc<TRes>> clos)
         {
-            throw new NotImplementedException();
+            return _compute.Execute(clos).ToTask();
         }
 
         /** <inheritDoc /> */
@@ -191,7 +191,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public Task<ICollection<TRes>> BroadcastAsync<TRes>(IComputeFunc<TRes> clo)
         {
-            throw new NotImplementedException();
+            return _compute.Broadcast(clo).ToTask();
         }
 
         /** <inheritDoc /> */
@@ -203,7 +203,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public Task<ICollection<TRes>> BroadcastAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, TArg arg)
         {
-            throw new NotImplementedException();
+            return _compute.Broadcast(clo, arg).ToTask();
         }
 
         /** <inheritDoc /> */
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public Task BroadcastAsync(IComputeAction action)
         {
-            throw new NotImplementedException();
+            return _compute.Broadcast(action).ToTask();
         }
 
         /** <inheritDoc /> */
@@ -227,7 +227,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public Task RunAsync(IComputeAction action)
         {
-            throw new NotImplementedException();
+            return _compute.Run(action).ToTask();
         }
 
         /** <inheritDoc /> */
@@ -239,7 +239,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public Task AffinityRunAsync(string cacheName, object affinityKey, IComputeAction action)
         {
-            throw new NotImplementedException();
+            return _compute.AffinityRun(cacheName, affinityKey, action).ToTask();
         }
 
         /** <inheritDoc /> */
@@ -251,7 +251,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public Task RunAsync(IEnumerable<IComputeAction> actions)
         {
-            throw new NotImplementedException();
+            return _compute.Run(actions).ToTask();
         }
 
         /** <inheritDoc /> */
@@ -263,7 +263,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public Task<TRes> ApplyAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, TArg arg)
         {
-            throw new NotImplementedException();
+            return _compute.Apply(clo, arg).ToTask();
         }
 
         /** <inheritDoc /> */
@@ -275,7 +275,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public Task<ICollection<TRes>> ApplyAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, IEnumerable<TArg> args)
         {
-            throw new NotImplementedException();
+            return _compute.Apply(clo, args).ToTask();
         }
 
         /** <inheritDoc /> */
@@ -288,7 +288,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public Task<TRes> ApplyAsync<TArg, TFuncRes, TRes>(IComputeFunc<TArg, TFuncRes> clo, IEnumerable<TArg> args, IComputeReducer<TFuncRes, TRes> rdc)
         {
-            throw new NotImplementedException();
+            return _compute.Apply(clo, args, rdc).ToTask();
         }
     }
 }
