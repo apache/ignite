@@ -594,7 +594,7 @@ public class PortableUtils {
 
             if ((((len - schemaOff) >> 2) & 0x1) == 0x0)
                 // Even amount of records in schema => no raw offset.
-                return len;
+                return schemaOff;
             else
                 // Odd amount of records in schema => raw offset is the very last 4 bytes in object.
                 return in.readIntPositioned(start + len - 4);

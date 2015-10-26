@@ -844,7 +844,8 @@ public class PortableClassDescriptor {
             assert obj != null;
             assert writer != null;
 
-            writer.doWriteInt(id);
+            //writer.doWriteInt(id);
+            writer.writeFieldId(id);
 
             Object val;
 

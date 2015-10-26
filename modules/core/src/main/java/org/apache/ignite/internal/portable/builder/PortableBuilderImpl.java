@@ -245,7 +245,7 @@ public class PortableBuilderImpl implements PortableBuilder {
                     reader.skip(len);
 
                     if (assignedVal != REMOVED_FIELD_MARKER) {
-                        writer.writeInt(fldId);
+                        writer.writeFieldId(fldId);
 
                         int lenPos = writer.reserveAndMark(4);
 
@@ -270,7 +270,7 @@ public class PortableBuilderImpl implements PortableBuilder {
                             cpStart = -1;
                         }
                         else
-                            writer.writeInt(fldId);
+                            writer.writeFieldId(fldId);
 
                         Object val;
 
@@ -325,7 +325,7 @@ public class PortableBuilderImpl implements PortableBuilder {
                 if (remainsFlds != null && !remainsFlds.contains(fldId))
                     continue;
 
-                writer.writeInt(fldId);
+                writer.writeFieldId(fldId);
 
                 int lenPos = writer.reserveAndMark(4);
 
@@ -383,10 +383,10 @@ public class PortableBuilderImpl implements PortableBuilder {
 
         if (reader != null) {
             int rawOff = PortableUtils.rawOffset(reader, start);
-            int len = reader.readIntPositioned(start + TOTAL_LEN_POS);
+            int footerStart = PortableUtils.footerStart(reader, start);
 
-            if (rawOff < len)
-                writer.write(reader.array(), rawOff, len - rawOff);
+            if (rawOff < footerStart)
+                writer.write(reader.array(), rawOff, footerStart - rawOff);
         }
 
         writer.postWrite();
