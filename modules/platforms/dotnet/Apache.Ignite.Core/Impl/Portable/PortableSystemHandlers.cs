@@ -287,7 +287,13 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (TypeIds.TryGetValue(type, out res))
                 return res;
 
-            return type.IsEnum ? PortableUtils.TypeEnum : PortableUtils.TypeObject;
+            if (type.IsEnum)
+                return PortableUtils.TypeEnum;
+
+            if (type.IsArray && type.GetElementType().IsEnum)
+                return PortableUtils.TypeArrayEnum;
+
+            return PortableUtils.TypeObject;
         }
 
         /// <summary>
