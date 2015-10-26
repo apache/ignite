@@ -112,6 +112,10 @@ public class IgniteBenchmarkArguments {
     @Parameter(names = {"-jdbc", "--jdbcUrl"}, description = "JDBC url")
     private String jdbcUrl;
 
+    /** */
+    @Parameter(names = {"-kpt", "--keysPerThread"}, description = "Use not intersecting keys in putAll benchmark")
+    private boolean keysPerThread;
+
     /**
      * @return JDBC url.
      */
@@ -272,6 +276,13 @@ public class IgniteBenchmarkArguments {
     public String description() {
         return "-nn=" + nodes + "-b=" + backups + "-sm=" + syncMode + "-cl=" + clientOnly + "-nc=" + nearCacheFlag +
             (orderMode == null ? "" : "-wom=" + orderMode) + "-txc=" + txConcurrency;
+    }
+
+    /**
+     * @return {@code True} if use not intersecting keys in putAll benchmark.
+     */
+    public boolean keysPerThread() {
+       return keysPerThread;
     }
 
     /** {@inheritDoc} */
