@@ -230,8 +230,8 @@ public class PortableBuilderImpl implements PortableBuilder {
                 int fieldId = reader.readInt();
                 int fieldLen = reader.readInt();
 
-                if (assignedFldsById.containsKey(fldId)) {
-                    Object assignedVal = assignedFldsById.remove(fldId);
+                if (assignedFldsById.containsKey(fieldId)) {
+                    Object assignedVal = assignedFldsById.remove(fieldId);
 
                     reader.skip(fieldLen);
 
@@ -248,15 +248,15 @@ public class PortableBuilderImpl implements PortableBuilder {
                 else {
                     int type = fieldLen != 0 ? reader.readByte(0) : 0;
 
-                    if (len != 0 && !PortableUtils.isPlainArrayType(type) && PortableUtils.isPlainType(type)) {
+                    if (fieldLen != 0 && !PortableUtils.isPlainArrayType(type) && PortableUtils.isPlainType(type)) {
                         writer.writeInt(fieldId);
                         writer.writeInt(fieldLen);
-                        writer.write(reader.array(), reader.position(), len);
+                        writer.write(reader.array(), reader.position(), fieldLen);
 
                         reader.skip(fieldLen);
                     }
                     else {
-                        writer.writeInt(fldId);
+                        writer.writeInt(fieldId);
 
                         Object val;
 
