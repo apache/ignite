@@ -2503,6 +2503,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         int searchHead = start + hdrLen;
         int searchTail = start + in.readInt(start + RAW_DATA_OFF_POS);
 
+        // TODO: Opto.
+
 //        int searchPos = in.position();
 //
 //        while (searchPos < searchTail) {
