@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
@@ -38,8 +37,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** wrapped cache instance */
         private readonly CacheImpl<TK, TV> _cache;
 
-        /** */
-        private readonly ThreadLocal<CacheOp> _lastAsyncOp = new ThreadLocal<CacheOp>(() => CacheOp.None);
+        /** wrapped async cache instance */
+        private readonly CacheImpl<TK, TV> _cacheAsync;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheProxyImpl{K, V}"/> class.
@@ -50,6 +49,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             Debug.Assert(cache != null);
 
             _cache = cache;
+            _cacheAsync = (CacheImpl<TK, TV>) cache.WithAsync();
         }
 
         /** <inheritDoc /> */
@@ -62,22 +62,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         public ICache<TK, TV> WithExpiryPolicy(IExpiryPolicy plc)
         {
             return new CacheProxyImpl<TK, TV>((CacheImpl<TK, TV>)_cache.WithExpiryPolicy(plc));
-        }
-
-        /** <inheritDoc /> */
-        public IFuture GetFuture()
-        {
-            return GetFuture<object>();
-        }
-
-        /** <inheritDoc /> */
-        public IFuture<TResult> GetFuture<TResult>()
-        {
-            var fut = _cache.GetFuture<TResult>(_lastAsyncOp.Value);
-
-            ClearLastAsyncOp();
-
-            return fut;
         }
 
         /** <inheritDoc /> */
@@ -136,14 +120,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         public void LoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
             _cache.LoadCache(p, args);
-
-            SetLastAsyncOp(CacheOp.LoadCache);
         }
 
         /** <inheritDoc /> */
         public Task LoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            throw new System.NotImplementedException();
+            _cacheAsync.LoadCache(p, args);
+
+            return _cacheAsync.GetTask(CacheOp.LoadCache);
         }
 
         /** <inheritDoc /> */
@@ -634,26 +618,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         public ICache<TK, TV> WithNoRetries()
         {
             return _cache.IsNoRetries ? this : new CacheProxyImpl<TK, TV>((CacheImpl<TK, TV>) _cache.WithNoRetries());
-        }
-
-        /// <summary>
-        /// Sets the last asynchronous op id.
-        /// </summary>
-        /// <param name="opId">The op identifier.</param>
-        private void SetLastAsyncOp(CacheOp opId)
-        {
-            if (IsAsync)
-                _lastAsyncOp.Value = opId;
-        }
-
-        /// <summary>
-        /// Clears the last asynchronous op id.
-        /// This should be called in the end of each method that supports async and does not call SetLastAsyncOp.
-        /// </summary>
-        private void ClearLastAsyncOp()
-        {
-            if (IsAsync)
-                _lastAsyncOp.Value = CacheOp.None;
         }
     }
 }

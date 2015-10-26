@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public bool IsAsync
+        private bool IsAsync
         {
             get { return _flagAsync; }
         }
@@ -116,17 +116,29 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// Future for previous asynchronous operation.
         /// </returns>
         /// <exception cref="System.InvalidOperationException">Asynchronous mode is disabled</exception>
-        internal IFuture<TResult> GetFuture<TResult>(CacheOp lastAsyncOp) 
+        internal Task GetTask(CacheOp lastAsyncOp)
         {
-            if (!_flagAsync)
-                throw new AggregateException("OMG OMG");
+            return GetTask<object>();
+        }
+
+        /// <summary>
+        /// Gets and resets future for previous asynchronous operation.
+        /// </summary>
+        /// <param name="lastAsyncOp">The last async op id.</param>
+        /// <returns>
+        /// Future for previous asynchronous operation.
+        /// </returns>
+        /// <exception cref="System.InvalidOperationException">Asynchronous mode is disabled</exception>
+        internal Task<TResult> GetTask<TResult>(CacheOp lastAsyncOp) 
+        {
+            Debug.Assert(_flagAsync);
 
             var converter = GetFutureResultConverter<TResult>(lastAsyncOp);
 
             _invokeAllConverter.Value = null;
 
             return GetFuture((futId, futTypeId) => UU.TargetListenFutureForOperation(Target, futId, futTypeId, 
-                (int) lastAsyncOp), _flagKeepPortable, converter);
+                (int) lastAsyncOp), _flagKeepPortable, converter).ToTask();
         }
 
         /** <inheritDoc /> */
