@@ -441,7 +441,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (checkFlag(UUID, false) == Flag.NULL)
                 return null;
 
-            return doReadUuid(false);
+            return doReadUuid();
         }
         else
             return null;
@@ -457,7 +457,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (checkFlag(DATE, false) == Flag.NULL)
                 return null;
 
-            return doReadDate(false);
+            return doReadDate();
         }
         else
             return null;
@@ -473,7 +473,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (checkFlag(TIMESTAMP, false) == Flag.NULL)
                 return null;
 
-            return doReadTimestamp(false);
+            return doReadTimestamp();
         }
         else
             return null;
@@ -1046,7 +1046,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (checkFlag(UUID, true) == Flag.NULL)
             return null;
 
-        return doReadUuid(true);
+        return doReadUuid();
     }
 
     /** {@inheritDoc} */
@@ -1059,7 +1059,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (checkFlag(DATE, true) == Flag.NULL)
             return null;
 
-        return doReadDate(true);
+        return doReadDate();
     }
 
     /** {@inheritDoc} */
@@ -1072,7 +1072,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (checkFlag(TIMESTAMP, true) == Flag.NULL)
             return null;
 
-        return doReadTimestamp(true);
+        return doReadTimestamp();
     }
 
     /** {@inheritDoc} */
@@ -1493,13 +1493,13 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 return doReadString();
 
             case UUID:
-                return doReadUuid(raw);
+                return doReadUuid();
 
             case DATE:
-                return doReadDate(raw);
+                return doReadDate();
 
             case TIMESTAMP:
-                return doReadTimestamp(raw);
+                return doReadTimestamp();
 
             case BYTE_ARR:
                 return doReadByteArray();
@@ -1628,28 +1628,25 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private UUID doReadUuid(boolean raw) {
+    private UUID doReadUuid() {
         return new UUID(in.readLong(), in.readLong());
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private Date doReadDate(boolean raw) {
+    private Date doReadDate() {
         long time = in.readLong();
 
         return new Date(time);
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private Timestamp doReadTimestamp(boolean raw) {
+    private Timestamp doReadTimestamp() {
         long time = in.readLong();
         int nanos = in.readInt();
 
@@ -1781,17 +1778,17 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 break;
 
             case UUID:
-                obj = doReadUuid(true);
+                obj = doReadUuid();
 
                 break;
 
             case DATE:
-                obj = doReadDate(true);
+                obj = doReadDate();
 
                 break;
 
             case TIMESTAMP:
-                obj = doReadTimestamp(true);
+                obj = doReadTimestamp();
 
                 break;
 
@@ -2134,7 +2131,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 if (flag != UUID)
                     throw new PortableException("Invalid flag value: " + flag);
 
-                arr[i] = doReadUuid(raw);
+                arr[i] = doReadUuid();
             }
         }
 
@@ -2164,7 +2161,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 if (flag != DATE)
                     throw new PortableException("Invalid flag value: " + flag);
 
-                arr[i] = doReadDate(raw);
+                arr[i] = doReadDate();
             }
         }
 
@@ -2194,7 +2191,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 if (flag != TIMESTAMP)
                     throw new PortableException("Invalid flag value: " + flag);
 
-                arr[i] = doReadTimestamp(raw);
+                arr[i] = doReadTimestamp();
             }
         }
 
