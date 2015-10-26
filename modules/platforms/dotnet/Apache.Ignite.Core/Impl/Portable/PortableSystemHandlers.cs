@@ -242,6 +242,24 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Write handler or NULL.</returns>
         public static byte GetTypeId(Type type)
         {
+            // Primitives.
+            if (type == typeof(bool))
+                return PortableUtils.TypeBool;
+            if (type == typeof(byte) || type == typeof(sbyte))
+                return PortableUtils.TypeByte;
+            if (type == typeof(short) || type == typeof(ushort))
+                return PortableUtils.TypeShort;
+            if (type == typeof(char))
+                return PortableUtils.TypeChar;
+            if (type == typeof(int) || type == typeof(uint))
+                return PortableUtils.TypeInt;
+            if (type == typeof(long) || type == typeof(ulong))
+                return PortableUtils.TypeLong;
+            if (type == typeof(float))
+                return PortableUtils.TypeFloat;
+            if (type == typeof(double))
+                return PortableUtils.TypeDouble;
+
             // 1. Well-known types.
             if (type == typeof(string))
                 return PortableUtils.TypeString;
