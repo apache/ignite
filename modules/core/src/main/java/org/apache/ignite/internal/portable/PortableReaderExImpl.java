@@ -143,14 +143,14 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     /** */
     private PortableClassDescriptor desc;
 
+    /** Flag indicating that object header was parsed. */
+    private boolean hdrParsed;
+
+    /** Type ID. */
+    private int typeId;
+
     /** */
     private int hdrLen;
-
-    /** */
-    private int clsNameLen;
-
-    /** */
-    private Integer typeId;
 
     /**
      * @param ctx Context.
@@ -192,7 +192,10 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     /**
      * Preloads typeId from the input array.
      */
-    private void readObjectTypeId(boolean skipObjByte) {
+    private void readHeaderIfNeeded(boolean skipObjByte) {
+        if (hdrParsed)
+            return;
+
         int pos = rawOff;
 
         if (!skipObjByte)
@@ -220,7 +223,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             typeId = desc.typeId();
 
-            clsNameLen = rawOff - off;
+            int clsNameLen = rawOff - off;
 
             hdrLen = DFLT_HDR_LEN + clsNameLen;
         }
@@ -228,6 +231,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             hdrLen = DFLT_HDR_LEN;
 
         in.position(rawOff = pos);
+
+        hdrParsed = true;
     }
 
     /**
@@ -1815,8 +1820,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 break;
 
             case OBJ:
-                if (typeId == null)
-                    readObjectTypeId(true);
+                readHeaderIfNeeded(true);
 
                 assert typeId != UNREGISTERED_TYPE_ID;
 
@@ -2671,8 +2675,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private int fieldId(String name) {
         assert name != null;
 
-        if (typeId == null)
-            readObjectTypeId(false);
+        readHeaderIfNeeded(false);
 
         assert typeId != UNREGISTERED_TYPE_ID;
 
