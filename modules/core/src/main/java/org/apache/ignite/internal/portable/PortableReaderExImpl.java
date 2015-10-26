@@ -276,13 +276,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+            if (isNullOrExpectedType(BYTE, false))
                 return null;
-
-            if (flag != BYTE)
-                throw new PortableException("Invalid flag value: " + flag);
 
             return doReadByte(false);
         }
@@ -299,13 +294,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+            if (isNullOrExpectedType(SHORT, false))
                 return null;
-
-            if (flag != SHORT)
-                throw new PortableException("Invalid flag value: " + flag);
 
             return doReadShort(false);
         }
@@ -322,13 +312,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+            if (isNullOrExpectedType(INT, false))
                 return null;
-
-            if (flag != INT)
-                throw new PortableException("Invalid flag value: " + flag);
 
             return doReadInt(false);
         }
@@ -345,18 +330,37 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+            if (isNullOrExpectedType(LONG, false))
                 return null;
-
-            if (flag != LONG)
-                throw new PortableException("Invalid flag value: " + flag);
 
             return doReadLong(false);
         }
         else
             return null;
+    }
+
+    /**
+     * Ensure that type flag is either null or contains expected value.
+     *
+     * @param expFlag Expected value.
+     * @param raw Raw flag.
+     * @return {@code True} if null, {@code false} otherwise.
+     * @throws PortableException If flag is neither null, nor expected.
+     */
+    private boolean isNullOrExpectedType(byte expFlag, boolean raw) {
+        byte flag = doReadByte(raw);
+
+        if (flag == NULL)
+            return true;
+
+        if (flag != expFlag) {
+            int pos = in.position() - 1;
+
+            throw new PortableException("Unexpected flag value [pos=" + pos + ", expected=" + expFlag +
+                ", actual=" + flag + ']');
+        }
+
+        return false;
     }
 
     /**
@@ -368,13 +372,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+            if (isNullOrExpectedType(FLOAT, false))
                 return null;
-
-            if (flag != FLOAT)
-                throw new PortableException("Invalid flag value: " + flag);
 
             return doReadFloat(false);
         }
@@ -391,13 +390,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+            if (isNullOrExpectedType(DOUBLE, false))
                 return null;
-
-            if (flag != DOUBLE)
-                throw new PortableException("Invalid flag value: " + flag);
 
             return doReadDouble(false);
         }
@@ -414,13 +408,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+            if (isNullOrExpectedType(CHAR, false))
                 return null;
-
-            if (flag != CHAR)
-                throw new PortableException("Invalid flag value: " + flag);
 
             return doReadChar(false);
         }
@@ -437,13 +426,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+            if (isNullOrExpectedType(BOOLEAN, false))
                 return null;
-
-            if (flag != BOOLEAN)
-                throw new PortableException("Invalid flag value: " + flag);
 
             return doReadBoolean(false);
         }
@@ -460,13 +444,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+            if (isNullOrExpectedType(DECIMAL, false))
                 return null;
-
-            if (flag != DECIMAL)
-                throw new PortableException("Invalid flag value: " + flag);
 
             return doReadDecimal(false);
         }
@@ -483,13 +462,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+            if (isNullOrExpectedType(STRING, false))
                 return null;
-
-            if (flag != STRING)
-                throw new PortableException("Invalid flag value: " + flag);
 
             return doReadString(false);
         }
@@ -506,13 +480,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+            if (isNullOrExpectedType(UUID, false))
                 return null;
-
-            if (flag != UUID)
-                throw new PortableException("Invalid flag value: " + flag);
 
             return doReadUuid(false);
         }
@@ -529,13 +498,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+            if (isNullOrExpectedType(DATE, false))
                 return null;
-
-            if (flag != DATE)
-                throw new PortableException("Invalid flag value: " + flag);
 
             return doReadDate(false);
         }
@@ -552,13 +516,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+            if (isNullOrExpectedType(TIMESTAMP, false))
                 return null;
-
-            if (flag != TIMESTAMP)
-                throw new PortableException("Invalid flag value: " + flag);
 
             return doReadTimestamp(false);
         }
@@ -1032,13 +991,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+            if (isNullOrExpectedType(PORTABLE_OBJ, false))
                 return null;
-
-            if (flag != PORTABLE_OBJ)
-                throw new PortableException("Invalid flag value: " + flag);
 
             return new PortableObjectImpl(ctx, doReadByteArray(false), doReadInt(false));
         }
@@ -1056,13 +1010,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+            if (isNullOrExpectedType(ENUM, false))
                 return null;
-
-            if (flag != ENUM)
-                throw new PortableException("Invalid flag value: " + flag);
 
             // Revisit: why have we started writing Class for enums in their serialized form?
             if (cls == null)
@@ -1117,13 +1066,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         off = fieldOffset(fieldId);
 
         if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+            if (isNullOrExpectedType(CLASS, false))
                 return null;
-
-            if (flag != CLASS)
-                throw new PortableException("Invalid flag type: [flag=" + flag + ']');
 
             return doReadClass(false);
         }
@@ -1268,13 +1212,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Override @Nullable public BigDecimal readDecimal() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(DECIMAL, true))
             return null;
-
-        if (flag != DECIMAL)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadDecimal(true);
     }
@@ -1286,13 +1225,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public String readString() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(STRING, true))
             return null;
-
-        if (flag != STRING)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadString(true);
     }
@@ -1304,13 +1238,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public UUID readUuid() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(UUID, true))
             return null;
-
-        if (flag != UUID)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadUuid(true);
     }
@@ -1322,13 +1251,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public Date readDate() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(DATE, true))
             return null;
-
-        if (flag != DATE)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadDate(true);
     }
@@ -1340,13 +1264,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public Timestamp readTimestamp() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(TIMESTAMP, true))
             return null;
-
-        if (flag != TIMESTAMP)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadTimestamp(true);
     }
@@ -1374,13 +1293,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public byte[] readByteArray() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(BYTE_ARR, true))
             return null;
-
-        if (flag != BYTE_ARR)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadByteArray(true);
     }
@@ -1392,13 +1306,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public short[] readShortArray() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(SHORT_ARR, true))
             return null;
-
-        if (flag != SHORT_ARR)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadShortArray(true);
     }
@@ -1410,13 +1319,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public int[] readIntArray() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(INT_ARR, true))
             return null;
-
-        if (flag != INT_ARR)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadIntArray(true);
     }
@@ -1428,13 +1332,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public long[] readLongArray() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(LONG_ARR, true))
             return null;
-
-        if (flag != LONG_ARR)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadLongArray(true);
     }
@@ -1446,13 +1345,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public float[] readFloatArray() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(FLOAT_ARR, true))
             return null;
-
-        if (flag != FLOAT_ARR)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadFloatArray(true);
     }
@@ -1464,13 +1358,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public double[] readDoubleArray() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(DOUBLE_ARR, true))
             return null;
-
-        if (flag != DOUBLE_ARR)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadDoubleArray(true);
     }
@@ -1482,13 +1371,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public char[] readCharArray() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(CHAR_ARR, true))
             return null;
-
-        if (flag != CHAR_ARR)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadCharArray(true);
     }
@@ -1500,13 +1384,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public boolean[] readBooleanArray() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(BOOLEAN_ARR, true))
             return null;
-
-        if (flag != BOOLEAN_ARR)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadBooleanArray(true);
     }
@@ -1518,13 +1397,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Override @Nullable public BigDecimal[] readDecimalArray() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(DECIMAL_ARR, true))
             return null;
-
-        if (flag != DECIMAL_ARR)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadDecimalArray(true);
     }
@@ -1536,13 +1410,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public String[] readStringArray() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(STRING_ARR, true))
             return null;
-
-        if (flag != STRING_ARR)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadStringArray(true);
     }
@@ -1554,13 +1423,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public UUID[] readUuidArray() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(UUID_ARR, true))
             return null;
-
-        if (flag != UUID_ARR)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadUuidArray(true);
     }
@@ -1577,26 +1441,16 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public Date[] readDateArray() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(DATE_ARR, true))
             return null;
-
-        if (flag != DATE_ARR)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadDateArray(true);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Timestamp[] readTimestampArray() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(TIMESTAMP_ARR, true))
             return null;
-
-        if (flag != TIMESTAMP_ARR)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadTimestampArray(true);
     }
@@ -1608,13 +1462,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public Object[] readObjectArray() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(OBJ_ARR, true))
             return null;
-
-        if (flag != OBJ_ARR)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return doReadObjectArray(true, true);
     }
@@ -1626,13 +1475,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> Collection<T> readCollection() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(COL, true))
             return null;
-
-        if (flag != COL)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return (Collection<T>)doReadCollection(true, true, null);
     }
@@ -1646,13 +1490,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     /** {@inheritDoc} */
     @Nullable @Override public <T> Collection<T> readCollection(Class<? extends Collection<T>> colCls)
         throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(COL, true))
             return null;
-
-        if (flag != COL)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return (Collection<T>)doReadCollection(true, true, colCls);
     }
@@ -1664,13 +1503,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public <K, V> Map<K, V> readMap() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(MAP, true))
             return null;
-
-        if (flag != MAP)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return (Map<K, V>)doReadMap(true, true, null);
     }
@@ -1684,13 +1518,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     /** {@inheritDoc} */
     @Nullable @Override public <K, V> Map<K, V> readMap(Class<? extends Map<K, V>> mapCls)
         throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(MAP, true))
             return null;
-
-        if (flag != MAP)
-            throw new PortableException("Invalid flag value: " + flag);
 
         return (Map<K, V>)doReadMap(true, true, mapCls);
     }
@@ -1703,13 +1532,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public <T extends Enum<?>> T readEnum() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(ENUM, true))
             return null;
-
-        if (flag != ENUM)
-            throw new PortableException("Invalid flag value: " + flag);
 
         Class cls = doReadClass(true);
 
@@ -1724,13 +1548,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public <T extends Enum<?>> T[] readEnumArray() throws PortableException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (isNullOrExpectedType(ENUM_ARR, true))
             return null;
-
-        if (flag != ENUM_ARR)
-            throw new PortableException("Invalid flag value: " + flag);
 
         Class cls = doReadClass(true);
 
