@@ -538,6 +538,11 @@ consoleModule.controller('sqlController',
         return retainedCols;
     }
 
+    var _tryCloseQueryResult = function (queryId) {
+        if (queryId)
+            $http.post('/agent/query/close', { queryId: queryId });
+    };
+
     var _processQueryResult = function (paragraph, refreshMode) {
         return function (res) {
             if (res.meta && !refreshMode) {
@@ -626,6 +631,8 @@ consoleModule.controller('sqlController',
     };
 
     var _executeRefresh = function (paragraph) {
+        _tryCloseQueryResult(paragraph.queryId);
+
         $http.post('/agent/query', paragraph.queryArgs)
             .success(_processQueryResult(paragraph, true))
             .error(function (errMsg) {
@@ -645,14 +652,16 @@ consoleModule.controller('sqlController',
 
         paragraph.prevQuery = paragraph.queryArgs ? paragraph.queryArgs.query : paragraph.query;
 
+        _showLoading(paragraph, true);
+
+        _tryCloseQueryResult(paragraph.queryId);
+
         paragraph.queryArgs = {
             type: "QUERY",
             query: paragraph.query,
             pageSize: paragraph.pageSize,
             cacheName: paragraph.cacheName
         };
-
-        _showLoading(paragraph, true);
 
         $http.post('/agent/query', paragraph.queryArgs)
             .success(function (res) {
@@ -676,9 +685,16 @@ consoleModule.controller('sqlController',
 
         _cancelRefresh(paragraph);
 
-        paragraph.queryArgs = { type: "EXPLAIN", query: 'EXPLAIN ' + paragraph.query, pageSize: paragraph.pageSize, cacheName: paragraph.cacheName };
-
         _showLoading(paragraph, true);
+
+        _tryCloseQueryResult(paragraph.queryId);
+
+        paragraph.queryArgs = {
+            type: "EXPLAIN",
+            query: 'EXPLAIN ' + paragraph.query,
+            pageSize: paragraph.pageSize,
+            cacheName: paragraph.cacheName
+        };
 
         $http.post('/agent/query', paragraph.queryArgs)
             .success(_processQueryResult(paragraph))
@@ -696,9 +712,15 @@ consoleModule.controller('sqlController',
 
         _cancelRefresh(paragraph);
 
-        paragraph.queryArgs = { type: "SCAN", pageSize: paragraph.pageSize, cacheName: paragraph.cacheName };
-
         _showLoading(paragraph, true);
+
+        _tryCloseQueryResult(paragraph.queryId);
+
+        paragraph.queryArgs = {
+            type: "SCAN",
+            pageSize: paragraph.pageSize,
+            cacheName: paragraph.cacheName
+        };
 
         $http.post('/agent/scan', paragraph.queryArgs)
             .success(_processQueryResult(paragraph))

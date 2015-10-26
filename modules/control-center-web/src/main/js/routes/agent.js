@@ -185,6 +185,23 @@ router.post('/query/fetch', function (req, res) {
     }
 });
 
+/* Close query cursor by id. */
+router.post('/query/close', function (req, res) {
+    var client = _client(req, res);
+
+    if (client) {
+        var cache = client.ignite().cache(req.body.cacheName);
+
+        var cmd = cache._createCommand('qrycls').addParam('qryId', req.body.queryId);
+
+        cache.__createPromise(cmd).then(function () {
+            res.sendStatus(200);
+        }, function (err) {
+            res.status(500).send(err);
+        });
+    }
+});
+
 /* Get metadata for cache. */
 router.post('/cache/metadata', function (req, res) {
     var client = _client(req, res);
