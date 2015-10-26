@@ -21,12 +21,11 @@ namespace Apache.Ignite.Core.Services
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Defines functionality to deploy distributed services in the Ignite.
     /// </summary>
-    public interface IServices : IAsyncSupport<IServices>
+    public interface IServices
     {
         /// <summary>
         /// Gets the cluster group to which this instance belongs.
