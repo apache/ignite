@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Events
         private readonly IClusterGroup _clusterGroup;
         
         /** Async instance. */
-        private readonly EventsAsync _asyncInstance;
+        private readonly Events _asyncInstance;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Events" /> class.
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
             _clusterGroup = clusterGroup;
 
-            _asyncInstance = async ? null : new EventsAsync(UU.EventsWithAsync(Target), Marshaller, ClusterGroup);
+            _asyncInstance = async ? null : new Events(UU.EventsWithAsync(Target), Marshaller, ClusterGroup, true);
         }
 
         /** <inheritDoc /> */
@@ -116,7 +116,10 @@ namespace Apache.Ignite.Core.Impl.Events
         public Task<ICollection<T>> RemoteQueryAsync<T>(IEventFilter<T> filter, TimeSpan? timeout = null, 
             params int[] types) where T : IEvent
         {
-            return _asyncInstance.RemoteQueryAsyncEx(filter, timeout, types);
+            _asyncInstance.RemoteQuery(filter, timeout, types);
+
+            return GetFuture((futId, futTyp) => UU.TargetListenFutureForOperation(_asyncInstance.Target, futId, futTyp,
+                (int) Op.RemoteQuery), convertFunc: ReadEvents<T>).ToTask();
         }
 
         /** <inheritDoc /> */
@@ -222,7 +225,29 @@ namespace Apache.Ignite.Core.Impl.Events
 
         public Task<T> WaitForLocalAsync<T>(IEventFilter<T> filter, params int[] types) where T : IEvent
         {
-            return _asyncInstance.WaitForLocalAsyncEx(filter, types);
+            long hnd = 0;
+
+            try
+            {
+                _asyncInstance.WaitForLocal0(filter, ref hnd, types);
+
+                var fut = GetFuture((futId, futTyp) => UU.TargetListenFutureForOperation(_asyncInstance.Target, futId,
+                    futTyp, (int) Op.WaitForLocal), convertFunc: reader => (T) EventReader.Read<IEvent>(reader));
+
+                if (filter != null)
+                {
+                    // Dispose handle as soon as future ends.
+                    fut.Listen(() => Ignite.HandleRegistry.Release(hnd));
+                }
+
+                return fut.ToTask();
+            }
+            catch (Exception)
+            {
+                Ignite.HandleRegistry.Release(hnd);
+                throw;
+            }
+
         }
 
         /** <inheritDoc /> */
