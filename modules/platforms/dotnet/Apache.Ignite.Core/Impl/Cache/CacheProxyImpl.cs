@@ -134,46 +134,42 @@ namespace Apache.Ignite.Core.Impl.Cache
         public void LocalLoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
             _cache.LocalLoadCache(p, args);
-
-            SetLastAsyncOp(CacheOp.LocLoadCache);
         }
 
         /** <inheritDoc /> */
         public Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            throw new System.NotImplementedException();
+            _cacheAsync.LocalLoadCache(p, args);
+
+            return _cacheAsync.GetTask(CacheOp.LocLoadCache);
         }
 
         /** <inheritDoc /> */
         public bool ContainsKey(TK key)
         {
-            var result = _cache.ContainsKey(key);
-            
-            SetLastAsyncOp(CacheOp.ContainsKey);
-
-            return result;
+            return _cache.ContainsKey(key);
         }
 
         /** <inheritDoc /> */
         public Task<bool> ContainsKeyAsync(TK key)
         {
-            throw new System.NotImplementedException();
+            _cacheAsync.ContainsKey(key);
+
+            return _cacheAsync.GetTask<bool>(CacheOp.ContainsKey);
         }
 
         /** <inheritDoc /> */
         public bool ContainsKeys(IEnumerable<TK> keys)
         {
-            var result = _cache.ContainsKeys(keys);
-
-            SetLastAsyncOp(CacheOp.ContainsKeys);
-
-            return result;
+            return _cache.ContainsKeys(keys);
         }
 
         /** <inheritDoc /> */
         public Task<bool> ContainsKeysAsync(IEnumerable<TK> keys)
         {
-            throw new System.NotImplementedException();
+            _cacheAsync.ContainsKeys(keys);
+
+            return _cacheAsync.GetTask<bool>(CacheOp.ContainsKeys);
         }
 
         /** <inheritDoc /> */
