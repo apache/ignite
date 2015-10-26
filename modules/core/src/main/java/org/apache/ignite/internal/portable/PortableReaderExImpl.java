@@ -188,7 +188,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     /**
      * Preloads typeId from the input array.
      */
-    private void parseHeaderIfNeeded(boolean skipObjByte) {
+    private void parseHeaderIfNeeded() {
         if (hdrParsed)
             return;
 
@@ -248,7 +248,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Object unmarshal() throws PortableException {
-        return unmarshal(true);
+        return unmarshal(false);
     }
 
     /**
@@ -257,7 +257,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @throws PortableException In case of error.
      */
     @Nullable Object unmarshal(String fieldName) throws PortableException {
-        return hasField(fieldName) ? unmarshal(false) : null;
+        return hasField(fieldName) ? unmarshal() : null;
     }
 
     /**
@@ -268,7 +268,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     public Object unmarshal(int offset) throws PortableException {
         in.position(offset);
 
-        return in.position() >= 0 ? unmarshal(false) : null;
+        return in.position() >= 0 ? unmarshal() : null;
     }
 
     /**
@@ -1088,7 +1088,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObjectDetached() throws PortableException {
-        return unmarshal(true, true);
+        return unmarshal(true);
     }
 
     /** {@inheritDoc} */
@@ -1402,20 +1402,10 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     }
 
     /**
-     * @param raw Raw flag.
      * @return Unmarshalled value.
      * @throws PortableException In case of error.
      */
-    @Nullable private Object unmarshal(boolean raw) throws PortableException {
-        return unmarshal(raw, false);
-    }
-
-    /**
-     * @param raw Raw flag.
-     * @return Unmarshalled value.
-     * @throws PortableException In case of error.
-     */
-    @Nullable private Object unmarshal(boolean raw, boolean detach) throws PortableException {
+    @Nullable private Object unmarshal(boolean detach) throws PortableException {
         int start = in.position();
 
         byte flag = in.readByte();
@@ -1434,7 +1424,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
                 in.position(handle);
 
-                return unmarshal(false);
+                return unmarshal();
 
             case OBJ:
                 PortableUtils.checkProtocolVersion(in.readByte());
@@ -1700,7 +1690,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 break;
 
             case OBJ:
-                parseHeaderIfNeeded(true);
+                parseHeaderIfNeeded();
 
                 assert typeId != UNREGISTERED_TYPE_ID;
 
@@ -2503,7 +2493,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private int fieldId(String name) {
         assert name != null;
 
-        parseHeaderIfNeeded(false);
+        parseHeaderIfNeeded();
 
         assert typeId != UNREGISTERED_TYPE_ID;
 
