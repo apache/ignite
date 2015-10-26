@@ -145,6 +145,12 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     /** */
     private int hdrLen;
 
+    /** Footer start. */
+    private int footerStart;
+
+    /** Footer end. */
+    private int footerEnd;
+
     /**
      * @param ctx Context.
      * @param arr Array.
@@ -202,13 +208,20 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         in.position(in.position() + 2); // Skip flags.
 
-        typeId = in.readInt();
+        typeId = in.readIntPositioned(start + GridPortableMarshaller.TYPE_ID_POS);
+
+        footerStart = PortableUtils.footerStart(in, start);
+        footerEnd = in.readIntPositioned(start + GridPortableMarshaller.TOTAL_LEN_POS);
+
+        // Take in count possible raw offset.
+        if ((((footerEnd - footerStart) >> 2) & 0x1) == 0x1)
+            footerEnd -= 4;
 
         rawOff = PortableUtils.rawOffset(in, start);
 
         if (typeId == UNREGISTERED_TYPE_ID) {
             // Skip to the class name position.
-            in.position(in.position() + GridPortableMarshaller.DFLT_HDR_LEN - 8);
+            in.position(start + GridPortableMarshaller.DFLT_HDR_LEN);
 
             int off = in.position();
 

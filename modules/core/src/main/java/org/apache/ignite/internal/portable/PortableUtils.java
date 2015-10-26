@@ -557,6 +557,24 @@ public class PortableUtils {
     }
 
     /**
+     * Get footer start of the object.
+     *
+     * @param in Input stream.
+     * @param start Object start position inside the stream.
+     * @return Footer start.
+     */
+    public static int footerStart(PortablePositionReadable in, int start) {
+        int schemaId = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_ID_POS);
+
+        if (schemaId == 0)
+            // No schema, footer start equals to object end.
+            return in.readIntPositioned(start + GridPortableMarshaller.TOTAL_LEN_POS);
+        else
+            // Schema exists, use offset.
+            return in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+    }
+
+    /**
      * Get raw offset of the object.
      *
      * @param in Input stream.
