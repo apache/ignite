@@ -748,7 +748,6 @@ public class PortableBuilderReader implements PortablePositionReadable {
                 return new PortablePlainPortableObject(portableObj);
             }
 
-
             default:
                 throw new PortableException("Invalid flag value: " + type);
         }

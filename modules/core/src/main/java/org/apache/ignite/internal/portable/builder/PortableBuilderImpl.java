@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.portable.builder;
 
+import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableObjectImpl;
 import org.apache.ignite.internal.portable.PortableObjectOffheapImpl;
@@ -249,14 +250,14 @@ public class PortableBuilderImpl implements PortableBuilder {
                     int type = fieldLen != 0 ? reader.readByte(0) : 0;
 
                     if (fieldLen != 0 && !PortableUtils.isPlainArrayType(type) && PortableUtils.isPlainType(type)) {
-                        writer.writeInt(fieldId);
+                        writer.writeFieldId(fieldId);
                         writer.writeInt(fieldLen);
                         writer.write(reader.array(), reader.position(), fieldLen);
 
                         reader.skip(fieldLen);
                     }
                     else {
-                        writer.writeInt(fieldId);
+                        writer.writeFieldId(fieldId);
 
                         Object val;
 
@@ -362,14 +363,18 @@ public class PortableBuilderImpl implements PortableBuilder {
             }
         }
 
-        writer.rawWriter();
-
         if (reader != null) {
-            int rawOff = PortableUtils.rawOffset(reader, start);
-            int footerStart = PortableUtils.footerStart(reader, start);
+            int rawOff = start + PortableUtils.rawOffset(reader, start);
+            int footerStart = start + PortableUtils.footerStart(reader, start);
 
-            if (rawOff < footerStart)
+            if (rawOff < footerStart) {
+                writer.rawWriter();
+
                 writer.write(reader.array(), rawOff, footerStart - rawOff);
+            }
+
+            // Shift reader to the end of the object.
+            reader.position(start + reader.readIntPositioned(start + GridPortableMarshaller.TOTAL_LEN_POS));
         }
 
         writer.postWrite();
