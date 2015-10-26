@@ -69,7 +69,7 @@ consoleModule.controller('sqlController',
 
     var MAX_VAL_COLS = CHART_COLORS.length;
 
-    $anchorScroll.yOffset = 50;
+    $anchorScroll.yOffset = 55;
 
     $scope.chartColor = function(index) {
         return {"color": "white", "background-color": CHART_COLORS[index]};
@@ -369,18 +369,17 @@ consoleModule.controller('sqlController',
     };
 
     $scope.setResult = function (paragraph, new_result) {
-        var changed = paragraph.result != new_result;
+        if (paragraph.result === new_result)
+            return;
 
-        paragraph.result = paragraph.result === new_result ? 'none' : new_result;
+        paragraph.result = new_result;
 
-        if (changed) {
-            if (paragraph.chart())
-                _chartApplySettings(paragraph, changed);
-            else
-                setTimeout(function () {
-                    paragraph.gridOptions.api.sizeColumnsToFit();
-                });
-        }
+        if (paragraph.chart())
+            _chartApplySettings(paragraph, true);
+        else
+            setTimeout(function () {
+                paragraph.gridOptions.api.sizeColumnsToFit();
+            });
     };
 
     $scope.resultEq = function(paragraph, result) {

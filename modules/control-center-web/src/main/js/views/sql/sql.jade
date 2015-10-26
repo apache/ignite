@@ -33,14 +33,26 @@ mixin btn-toolbar(btn, click, tip, focusId)
 mixin btn-toolbar-data(btn, kind, tip)
     i.btn.btn-default.fa(class=btn ng-click='setResult(paragraph, "#{kind}")' ng-class='{active: resultEq(paragraph, "#{kind}")}' bs-tooltip='' data-title=tip data-trigger='hover' data-placement='bottom')
 
+mixin result-toolbar
+    .btn-group(ng-model='paragraph.result' ng-click='$event.stopPropagation()' style='left: 50%; margin: 0 0 0 -70px;')
+        +btn-toolbar-data('fa-table', 'table', 'Show data in tabular form.')
+        +btn-toolbar-data('fa-bar-chart', 'bar', 'Show bar chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
+        +btn-toolbar-data('fa-pie-chart', 'pie', 'Show pie chart.<br/>By default first column - pie labels, second column - pie values.<br/>In case of one column it will be treated as pie values.')
+        +btn-toolbar-data('fa-line-chart', 'line', 'Show line chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
+        +btn-toolbar-data('fa-area-chart', 'area', 'Show area chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
+
 mixin chart-settings(mdl)
-    .chart-settings-link.row(ng-show='paragraph.chart')
-        i.fa.fa-chevron-circle-down
-        a(ng-click='$event.stopPropagation()' bs-popover data-template-url='chart-settings' data-placement='bottom' data-auto-close='1' data-trigger='click') Chart settings
-        div(ng-show='paragraphTimeSpanVisible(paragraph)')
-            label Show
-            button.select-manual-caret.btn.btn-default(ng-model='paragraph.timeLineSpan' ng-change='applyChartTimeFrame(paragraph)' bs-options='item for item in timeLineSpans' bs-select data-caret-html='<span class="caret"></span>')
-            label min
+    .row(ng-show='paragraph.chart')
+        .col-xs-4.chart-settings-link
+            i.fa.fa-chevron-circle-down
+            a(ng-click='$event.stopPropagation()' bs-popover data-template-url='chart-settings' data-placement='bottom' data-auto-close='1' data-trigger='click') Chart settings
+            div(ng-show='paragraphTimeSpanVisible(paragraph)')
+                label Show
+                button.select-manual-caret.btn.btn-default(ng-model='paragraph.timeLineSpan' ng-change='applyChartTimeFrame(paragraph)' bs-options='item for item in timeLineSpans' bs-select data-caret-html='<span class="caret"></span>')
+                label min
+        .col-xs-4
+            +result-toolbar
+
 
 block container
     .row
@@ -103,13 +115,6 @@ block container
                                         +btn-toolbar('fa-pencil', 'paragraph.edit = true; paragraph.editName = paragraph.name;', 'Rename query', 'paragraph-name-{{paragraph.id}}')
                                         +btn-toolbar('fa-remove', 'removeParagraph(paragraph)', 'Remove query')
 
-                                    .pull-right.btn-group(ng-model='paragraph.result' ng-click='$event.stopPropagation()' style='float: right')
-                                        +btn-toolbar-data('fa-table', 'table', 'Show data in tabular form.')
-                                        +btn-toolbar-data('fa-bar-chart', 'bar', 'Show bar chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
-                                        +btn-toolbar-data('fa-pie-chart', 'pie', 'Show pie chart.<br/>By default first column - pie labels, second column - pie values.<br/>In case of one column it will be treated as pie values.')
-                                        +btn-toolbar-data('fa-line-chart', 'line', 'Show line chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
-                                        +btn-toolbar-data('fa-area-chart', 'area', 'Show area chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
-
                                 div(ng-show='paragraph.edit')
                                     i.tipLabel.fa(ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
                                     input.sql-name-input(id='paragraph-name-{{paragraph.id}}' ng-model='paragraph.editName' required ng-click='$event.stopPropagation();' on-enter='renameParagraph(paragraph, paragraph.editName)' on-escape='paragraph.edit = false')
@@ -156,13 +161,16 @@ block container
                                     hr(style='margin-top: 0; margin-bottom: 10px')
                                     .sql-empty-result(ng-show='!paragraph.nonEmpty()') Result set is empty
                                     div(ng-show='paragraph.table() && paragraph.nonEmpty()')
-                                        .sql-table-total
-                                            label Page #&nbsp;
-                                            b {{paragraph.page}}&nbsp;&nbsp;&nbsp;
-                                            label Results so far:&nbsp;
-                                            b {{paragraph.rows.length + paragraph.total}}
-                                            .pull-right
-                                                .btn-group(ng-disabled='paragraph.loading')
+                                        .sql-table-total.row
+                                            .col-xs-4
+                                                label Page #&nbsp;
+                                                b {{paragraph.page}}&nbsp;&nbsp;&nbsp;
+                                                label Results so far:&nbsp;
+                                                b {{paragraph.rows.length + paragraph.total}}
+                                            .col-xs-4
+                                                +result-toolbar
+                                            .col-xs-4
+                                                .btn-group.pull-right(ng-disabled='paragraph.loading')
                                                     button.btn.btn-primary.fieldButton(ng-click='exportPage(paragraph)' bs-tooltip data-title='{{actionTooltip(paragraph, "export", false)}}') Export
                                                     button.btn.btn-primary(id='export-item-dropdown' data-toggle='dropdown' data-container='body' bs-dropdown='exportDropdown' data-placement='bottom-right')
                                                         span.caret
