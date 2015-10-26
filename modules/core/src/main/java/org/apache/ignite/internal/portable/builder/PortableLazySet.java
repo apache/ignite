@@ -49,7 +49,7 @@ class PortableLazySet extends PortableAbstractLazyValue {
     /** {@inheritDoc} */
     @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
         if (val == null) {
-            int size = reader.readIntAbsolute(off + 1);
+            int size = reader.readIntPositioned(off + 1);
 
             int hdrSize = 1 /* flag */ + 4 /* size */ + 1 /* col type */;
             writer.write(reader.array(), off, hdrSize);
@@ -78,7 +78,7 @@ class PortableLazySet extends PortableAbstractLazyValue {
 
     /** {@inheritDoc} */
     @Override protected Object init() {
-        int size = reader.readIntAbsolute(off + 1);
+        int size = reader.readIntPositioned(off + 1);
 
         reader.position(off + 1/* flag */ + 4/* size */ + 1/* col type */);
 

@@ -141,9 +141,9 @@ public class PortableBuilderImpl implements PortableBuilder {
 
         PortableUtils.checkProtocolVersion(ver);
 
-        int typeId = reader.readIntAbsolute(start + TYPE_ID_POS);
+        int typeId = reader.readIntPositioned(start + TYPE_ID_POS);
         ctx = reader.portableContext();
-        hashCode = reader.readIntAbsolute(start + HASH_CODE_POS);
+        hashCode = reader.readIntPositioned(start + HASH_CODE_POS);
 
         if (typeId == UNREGISTERED_TYPE_ID) {
             int mark = reader.position();
@@ -383,7 +383,7 @@ public class PortableBuilderImpl implements PortableBuilder {
 
         if (reader != null) {
             int rawOff = PortableUtils.rawOffset(reader, start);
-            int len = reader.readIntAbsolute(start + TOTAL_LEN_POS);
+            int len = reader.readIntPositioned(start + TOTAL_LEN_POS);
 
             if (rawOff < len)
                 writer.write(reader.array(), rawOff, len - rawOff);
@@ -410,11 +410,11 @@ public class PortableBuilderImpl implements PortableBuilder {
             int end = start + PortableUtils.rawOffset(reader, start);
 
             while (pos < end) {
-                int fieldId = reader.readIntAbsolute(pos);
+                int fieldId = reader.readIntPositioned(pos);
 
                 pos += 4;
 
-                int len = reader.readIntAbsolute(pos);
+                int len = reader.readIntPositioned(pos);
 
                 pos += 4;
 

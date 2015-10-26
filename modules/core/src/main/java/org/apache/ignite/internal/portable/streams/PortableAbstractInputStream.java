@@ -158,13 +158,13 @@ public abstract class PortableAbstractInputStream extends PortableAbstractStream
     }
 
     /** {@inheritDoc} */
-    @Override public int readInt(int pos) {
+    @Override public int readIntPositioned(int pos) {
         int delta = pos + 4 - this.pos;
 
         if (delta > 0)
             ensureEnoughData(delta);
 
-        return readIntPositioned(pos);
+        return readIntPositioned0(pos);
     }
 
     /** {@inheritDoc} */
@@ -339,5 +339,5 @@ public abstract class PortableAbstractInputStream extends PortableAbstractStream
      * @param pos Position.
      * @return Int value.
      */
-    protected abstract int readIntPositioned(int pos);
+    protected abstract int readIntPositioned0(int pos);
 }

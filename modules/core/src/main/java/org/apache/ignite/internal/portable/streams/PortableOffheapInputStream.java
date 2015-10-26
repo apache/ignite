@@ -113,7 +113,7 @@ public class PortableOffheapInputStream extends PortableAbstractInputStream {
     }
 
     /** {@inheritDoc} */
-    @Override protected int readIntPositioned(int pos) {
+    @Override protected int readIntPositioned0(int pos) {
         int res = UNSAFE.getInt(ptr + pos);
 
         if (!LITTLE_ENDIAN)

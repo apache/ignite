@@ -146,7 +146,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
     }
 
     /** {@inheritDoc} */
-    @Override public int readInt(int pos) {
+    @Override public int readIntPositioned(int pos) {
         int delta = pos + 4 - this.pos;
 
         if (delta > 0)

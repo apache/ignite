@@ -123,7 +123,7 @@ public final class PortableHeapInputStream extends PortableAbstractInputStream {
     }
 
     /** {@inheritDoc} */
-    @Override protected int readIntPositioned(int pos) {
+    @Override protected int readIntPositioned0(int pos) {
         int res = UNSAFE.getInt(data, BYTE_ARR_OFF + pos);
 
         if (!LITTLE_ENDIAN)

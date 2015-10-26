@@ -96,7 +96,6 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OPTM_MARSH;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PORTABLE_OBJ;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROPERTIES_MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.SCHEMA_ID_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
@@ -2539,7 +2538,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (searchHead >= searchTail)
                 return false;
 
-            int id0 = in.readInt(searchHead);
+            int id0 = in.readIntPositioned(searchHead);
 
             if (id0 == id) {
                 in.position(searchHead + 8);
@@ -2547,7 +2546,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 return true;
             }
 
-            int len = in.readInt(searchHead + 4);
+            int len = in.readIntPositioned(searchHead + 4);
 
             searchHead += (8 + len);
         }
