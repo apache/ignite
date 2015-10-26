@@ -19,6 +19,7 @@
 #define _IGNITE_CONFIGURATION
 
 #include <stdint.h>
+#include "ignite/impl/utils.h"
 
 #include "ignite/impl/utils.h"
 
