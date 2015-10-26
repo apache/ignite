@@ -25,8 +25,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     internal class PortableBuilderField
     {
         /** Remove marker. */
-        public static readonly PortableBuilderField RmvMarker =
-            new PortableBuilderField(null, null, 0);
+        public static readonly PortableBuilderField RmvMarker = new PortableBuilderField(null, null, 0);
 
         /** Type. */
         private readonly Type _type;
