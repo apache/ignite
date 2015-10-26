@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Compute
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// </summary>
-    public interface ICompute : IAsyncSupport<ICompute>
+    public interface ICompute
     {
         /// <summary>
         /// Grid projection to which this compute instance belongs.
@@ -166,8 +166,7 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="TFuncRes">Type of function result.</typeparam>
         /// <typeparam name="TRes">Type of result after reduce.</typeparam>
         [AsyncSupported]
-        TRes Call<TFuncRes, TRes>(IEnumerable<IComputeFunc<TFuncRes>> clos, 
-            IComputeReducer<TFuncRes, TRes> reducer);
+        TRes Call<TFuncRes, TRes>(IEnumerable<IComputeFunc<TFuncRes>> clos, IComputeReducer<TFuncRes, TRes> reducer);
         
         /// <summary>
         /// Executes collection of jobs on nodes within this grid projection.
@@ -267,7 +266,6 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="TFuncRes">Type of function result.</typeparam>
         /// <typeparam name="TRes">Type of result after reduce.</typeparam>
         [AsyncSupported]
-        TRes Apply<TArg, TFuncRes, TRes>(IComputeFunc<TArg, TFuncRes> clo, IEnumerable<TArg> args, 
-            IComputeReducer<TFuncRes, TRes> rdc);
+        TRes Apply<TArg, TFuncRes, TRes>(IComputeFunc<TArg, TFuncRes> clo, IEnumerable<TArg> args, IComputeReducer<TFuncRes, TRes> rdc);
     }
 }
