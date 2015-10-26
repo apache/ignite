@@ -68,15 +68,6 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /** */
     private static final int TOP_CHANGE_THREAD_CNT = 3;
 
-    /** */
-    private static final int TOP_CHANGED_ERR_RETRY_CNT = 5;
-
-    /** */
-    private static final long TOP_CHANGED_ERR_RETRY_TIMEOUT = 3000;
-
-    /** */
-    private static final long READY_FUTURE_WAIT_TIMEOUT = 10_000;
-
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return TEST_TIMEOUT;
@@ -490,6 +481,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
             fut.get();
 
+            val = s.peek();
+
             for (Ignite g : G.allGrids())
                 assertEquals(val, (int)g.<Integer>queue(STRUCTURE_NAME, 0, null).peek());
         }
@@ -673,9 +666,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                         }
                     }
                     catch (Exception e) {
-                        failed.set(true);
-
-                        throw F.wrap(e);
+                        if (failed.compareAndSet(false, true))
+                            throw F.wrap(e);
                     }
                 }
             }, TOP_CHANGE_THREAD_CNT, "topology-change-thread");
@@ -727,9 +719,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                         }
                     }
                     catch (Exception e) {
-                        failed.set(true);
-
-                        throw F.wrap(e);
+                        if (failed.compareAndSet(false, true))
+                            throw F.wrap(e);
                     }
                 }
             }, TOP_CHANGE_THREAD_CNT, "topology-change-thread");
