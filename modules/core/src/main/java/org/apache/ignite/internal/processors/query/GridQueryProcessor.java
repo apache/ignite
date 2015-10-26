@@ -198,17 +198,29 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     // Key and value classes still can be available if they are primitive or JDK part.
                     // We need that to set correct types for _key and _val columns.
+                    Class<?> keyCls = U.classForName(qryEntity.getKeyType(), null);
                     Class<?> valCls = U.classForName(qryEntity.getValueType(), null);
 
                     String simpleValType = valCls == null ? qryEntity.getValueType() : typeName(valCls);
 
                     desc.name(simpleValType);
 
-                    desc.valueClass(valCls != null ? valCls : Object.class);
-                    desc.keyClass(
-                        qryEntity.getKeyType() == null ?
-                            Object.class :
-                            U.classForName(qryEntity.getKeyType(), Object.class));
+                    if (ctx.cacheObjects().isPortableEnabled(ccfg)) {
+                        // Safe to check null.
+                        if (SQL_TYPES.contains(valCls))
+                            desc.valueClass(valCls);
+                        else
+                            desc.valueClass(Object.class);
+
+                        if (SQL_TYPES.contains(keyCls))
+                            desc.keyClass(keyCls);
+                        else
+                            desc.keyClass(Object.class);
+                    }
+                    else {
+                        desc.valueClass(valCls);
+                        desc.keyClass(keyCls);
+                    }
 
                     TypeId typeId;
                     TypeId altTypeId = null;
@@ -248,15 +260,27 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     // Key and value classes still can be available if they are primitive or JDK part.
                     // We need that to set correct types for _key and _val columns.
+                    Class<?> keyCls = U.classForName(meta.getKeyType(), null);
                     Class<?> valCls = U.classForName(meta.getValueType(), null);
 
                     desc.name(meta.getSimpleValueType());
 
-                    desc.valueClass(valCls != null ? valCls : Object.class);
-                    desc.keyClass(
-                        meta.getKeyType() == null ?
-                            Object.class :
-                            U.classForName(meta.getKeyType(), Object.class));
+                    if (ctx.cacheObjects().isPortableEnabled(ccfg)) {
+                        // Safe to check null.
+                        if (SQL_TYPES.contains(valCls))
+                            desc.valueClass(valCls);
+                        else
+                            desc.valueClass(Object.class);
+
+                        if (SQL_TYPES.contains(keyCls))
+                            desc.keyClass(keyCls);
+                        else
+                            desc.keyClass(Object.class);
+                    }
+                    else {
+                        desc.valueClass(valCls);
+                        desc.keyClass(keyCls);
+                    }
 
                     TypeId typeId;
                     TypeId altTypeId = null;

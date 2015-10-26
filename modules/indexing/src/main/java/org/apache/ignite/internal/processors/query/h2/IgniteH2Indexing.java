@@ -2253,7 +2253,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (v == null)
                 return null;
 
-            return v.value(cctx.cacheObjectContext(), false);
+            return v;
         }
 
         /** {@inheritDoc} */
