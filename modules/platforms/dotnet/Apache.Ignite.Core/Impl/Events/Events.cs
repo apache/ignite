@@ -137,6 +137,7 @@ namespace Apache.Ignite.Core.Impl.Events
             return RemoteQuery(filter, timeout, TypesToArray(types));
         }
 
+        /** <inheritDoc /> */
         public Task<ICollection<T>> RemoteQueryAsync<T>(IEventFilter<T> filter, TimeSpan? timeout = null, 
             IEnumerable<int> types = null) where T : IEvent
         {
@@ -199,6 +200,7 @@ namespace Apache.Ignite.Core.Impl.Events
             return WaitForLocal<IEvent>(null, types);
         }
 
+        /** <inheritDoc /> */
         public Task<IEvent> WaitForLocalAsync(params int[] types)
         {
             return WaitForLocalAsync<IEvent>(null, types);
@@ -210,6 +212,7 @@ namespace Apache.Ignite.Core.Impl.Events
             return WaitForLocal(TypesToArray(types));
         }
 
+        /** <inheritDoc /> */
         public Task<IEvent> WaitForLocalAsync(IEnumerable<int> types)
         {
             return WaitForLocalAsync<IEvent>(null, TypesToArray(types));
@@ -231,6 +234,7 @@ namespace Apache.Ignite.Core.Impl.Events
             }
         }
 
+        /** <inheritDoc /> */
         public Task<T> WaitForLocalAsync<T>(IEventFilter<T> filter, params int[] types) where T : IEvent
         {
             long hnd = 0;
@@ -264,6 +268,7 @@ namespace Apache.Ignite.Core.Impl.Events
             return WaitForLocal(filter, TypesToArray(types));
         }
 
+        /** <inheritDoc /> */
         public Task<T> WaitForLocalAsync<T>(IEventFilter<T> filter, IEnumerable<int> types) where T : IEvent
         {
             return WaitForLocalAsync(filter, TypesToArray(types));
