@@ -19,7 +19,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
-    using Apache.Ignite.Core.Common;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
@@ -45,30 +45,6 @@ namespace Apache.Ignite.Core.Impl.Transactions
         public void Dispose()
         {
             Tx.Dispose();
-        }
-
-        /** <inheritDoc /> */
-        public ITransaction WithAsync()
-        {
-            return new AsyncTransaction(Tx);
-        }
-
-        /** <inheritDoc /> */
-        public virtual bool IsAsync
-        {
-            get { return false; }
-        }
-
-        /** <inheritDoc /> */
-        public virtual IFuture GetFuture()
-        {
-            throw IgniteUtils.GetAsyncModeDisabledException();
-        }
-        
-        /** <inheritDoc /> */
-        public virtual IFuture<TResult> GetFuture<TResult>()
-        {
-            throw IgniteUtils.GetAsyncModeDisabledException();
         }
 
         /** <inheritDoc /> */
@@ -132,9 +108,21 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /** <inheritDoc /> */
+        public Task CommitAsync()
+        {
+            return Tx.GetFutureOrError(() => Tx.CommitAsync()).ToTask();
+        }
+
+        /** <inheritDoc /> */
         public virtual void Rollback()
         {
             Tx.Rollback();
+        }
+
+        /** <inheritDoc /> */
+        public Task RollbackAsync()
+        {
+            return Tx.GetFutureOrError(() => Tx.RollbackAsync()).ToTask();
         }
 
         /** <inheritDoc /> */

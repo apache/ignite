@@ -2050,16 +2050,11 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 if (async)
                 {
-                    var asyncTx = tx.WithAsync();
-                    
-                    asyncTx.Commit();
+                    var task = tx.CommitAsync();
 
-                    var fut = asyncTx.GetFuture();
+                    task.Wait();
 
-                    fut.Get();
-
-                    Assert.IsTrue(fut.IsDone);
-                    Assert.AreEqual(fut.Get(), null);
+                    Assert.IsTrue(task.IsCompleted);
                 }
                 else
                     tx.Commit();
@@ -2398,21 +2393,19 @@ namespace Apache.Ignite.Core.Tests.Cache
                 // Expected
             }
 
-            tx = Transactions.TxStart().WithAsync();
+            tx = Transactions.TxStart();
 
             Assert.AreEqual(TransactionState.Active, tx.State);
 
-            tx.Commit();
-
-            tx.GetFuture().Get();
+            tx.CommitAsync().Wait();
 
             Assert.AreEqual(TransactionState.Committed, tx.State);
 
-            tx.Rollback();  // Illegal, but should not fail here; will fail in future
+            var task = tx.RollbackAsync();  // Illegal, but should not fail here; will fail in future
 
             try
             {
-                tx.GetFuture<object>().Get();
+                task.Wait();
                 Assert.Fail();
             }
             catch (InvalidOperationException)
