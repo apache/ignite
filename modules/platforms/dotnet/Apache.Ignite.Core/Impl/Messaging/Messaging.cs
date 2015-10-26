@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         }
 
         /// <summary>
-        /// Initializes a new async instance
+        /// Initializes a new async instance.
         /// </summary>
         /// <param name="messaging">The messaging.</param>
         private Messaging(Messaging messaging) : base(UU.MessagingWithASync(messaging.Target), messaging.Marshaller)

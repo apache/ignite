@@ -41,13 +41,14 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <summary>
         /// Opcodes.
         /// </summary>
-        protected enum Op
+        private enum Op
         {
             RemoteQuery = 1,
             RemoteListen = 2,
             StopRemoteListen = 3,
             WaitForLocal = 4,
             LocalQuery = 5,
+            // ReSharper disable once UnusedMember.Local
             RecordLocal = 6,
             EnableLocal = 8,
             DisableLocal = 9,
@@ -70,16 +71,23 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="clusterGroup">Cluster group.</param>
-        /// <param name="async">Async flag.</param>
-        public Events(IUnmanagedTarget target, PortableMarshaller marsh, IClusterGroup clusterGroup, 
-            bool async = false)
+        public Events(IUnmanagedTarget target, PortableMarshaller marsh, IClusterGroup clusterGroup) 
             : base(target, marsh)
         {
             Debug.Assert(clusterGroup != null);
 
             _clusterGroup = clusterGroup;
 
-            _asyncInstance = async ? null : new Events(UU.EventsWithAsync(Target), Marshaller, ClusterGroup, true);
+            _asyncInstance = new Events(this);
+        }
+
+        /// <summary>
+        /// Initializes a new async instance.
+        /// </summary>
+        /// <param name="events">The events.</param>
+        private Events(Events events) : base(UU.EventsWithAsync(events.Target), events.Marshaller)
+        {
+            _clusterGroup = events.ClusterGroup;
         }
 
         /** <inheritDoc /> */
@@ -89,7 +97,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** */
-        protected Ignite Ignite
+        private Ignite Ignite
         {
             get { return (Ignite) ClusterGroup.Ignite; }
         }
@@ -373,7 +381,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="types">Types of the events to wait for. 
         /// If not provided, all events will be passed to the filter.</param>
         /// <returns>Ignite event.</returns>
-        protected T WaitForLocal0<T>(IEventFilter<T> filter, ref long handle, params int[] types) where T : IEvent
+        private T WaitForLocal0<T>(IEventFilter<T> filter, ref long handle, params int[] types) where T : IEvent
         {
             if (filter != null)
                 handle = Ignite.HandleRegistry.Allocate(new LocalEventFilter
@@ -416,7 +424,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <typeparam name="T">Event type.</typeparam>
         /// <param name="portableReader">Reader.</param>
         /// <returns>Resulting list or null.</returns>
-        protected static ICollection<T> ReadEvents<T>(PortableReaderImpl portableReader) where T : IEvent
+        private static ICollection<T> ReadEvents<T>(PortableReaderImpl portableReader) where T : IEvent
         {
             var count = portableReader.GetRawReader().ReadInt();
 
