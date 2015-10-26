@@ -587,12 +587,27 @@ button.form-control {
     font-size: $font-size-large;
     line-height: 27px;
 
-    a { color: black; }
+    label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: calc(100% - 85px)
+    }
 
-    .btn-group { margin-left: 10px; }
+    .btn-group {
+        margin-top: -5px;
+        margin-left: 10px;
+    }
+
+    .fa-floppy-o {
+        float: right;
+        line-height: 30px;
+    }
 
     .fa-chevron-circle-up, .fa-chevron-circle-down {
         color: inherit;
+        float: left;
+        line-height: 30px;
     }
 
     .fa-undo {

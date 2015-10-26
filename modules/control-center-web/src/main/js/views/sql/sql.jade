@@ -104,21 +104,23 @@ block container
                     .panel-group(bs-collapse ng-model='notebook.expandedParagraphs' data-allow-multiple='true' data-start-collapsed='false')
                         .panel.panel-default(ng-repeat='paragraph in notebook.paragraphs')
                             .panel-heading(id='paragraph-{{paragraph.id}}' bs-collapse-toggle)
-                                div(ng-hide='paragraph.edit')
-                                    i.tipLabel.fa(ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
-                                    a {{paragraph.name}}
+                                .row
+                                    .col-sm-6(ng-hide='paragraph.edit')
+                                        i.tipLabel.fa(ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+                                        label {{paragraph.name}}
 
-                                    .btn-group(ng-hide='notebook.paragraphs.length > 1')
-                                        +btn-toolbar('fa-pencil', 'paragraph.edit = true; paragraph.editName = paragraph.name; $event.stopPropagation();', 'Rename query', 'paragraph-name-{{paragraph.id}}')
+                                        .btn-group(ng-hide='notebook.paragraphs.length > 1')
+                                            +btn-toolbar('fa-pencil', 'paragraph.edit = true; paragraph.editName = paragraph.name; $event.stopPropagation();', 'Rename query', 'paragraph-name-{{paragraph.id}}')
 
-                                    .btn-group(ng-show='notebook.paragraphs.length > 1' ng-click='$event.stopPropagation();')
-                                        +btn-toolbar('fa-pencil', 'paragraph.edit = true; paragraph.editName = paragraph.name;', 'Rename query', 'paragraph-name-{{paragraph.id}}')
-                                        +btn-toolbar('fa-remove', 'removeParagraph(paragraph)', 'Remove query')
+                                        .btn-group(ng-show='notebook.paragraphs.length > 1' ng-click='$event.stopPropagation();')
+                                            +btn-toolbar('fa-pencil', 'paragraph.edit = true; paragraph.editName = paragraph.name;', 'Rename query', 'paragraph-name-{{paragraph.id}}')
+                                            +btn-toolbar('fa-remove', 'removeParagraph(paragraph)', 'Remove query')
 
-                                div(ng-show='paragraph.edit')
-                                    i.tipLabel.fa(ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
-                                    input.sql-name-input(id='paragraph-name-{{paragraph.id}}' ng-model='paragraph.editName' required ng-click='$event.stopPropagation();' on-enter='renameParagraph(paragraph, paragraph.editName)' on-escape='paragraph.edit = false')
-                                    i.tipLabel.fa.fa-floppy-o(ng-show='paragraph.editName' ng-click='renameParagraph(paragraph, paragraph.editName); $event.stopPropagation();' bs-tooltip data-title='Save query name' data-trigger='hover')
+                                    .col-sm-6(ng-show='paragraph.edit')
+                                        i.tipLabel.fa(style='float: left;' ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+                                        i.tipLabel.fa.fa-floppy-o(style='float: right;' ng-show='paragraph.editName' ng-click='renameParagraph(paragraph, paragraph.editName); $event.stopPropagation();' bs-tooltip data-title='Save query name' data-trigger='hover')
+                                        .input-tip
+                                            input.form-control(id='paragraph-name-{{paragraph.id}}' ng-model='paragraph.editName' required ng-click='$event.stopPropagation();' on-enter='renameParagraph(paragraph, paragraph.editName)' on-escape='paragraph.edit = false')
                             .panel-collapse(role='tabpanel' bs-collapse-target)
                                 .col-sm-12(ng-show='paragraph.editor')
                                     .col-xs-8.col-sm-9(style='border-right: 1px solid #eee')
