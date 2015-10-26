@@ -27,6 +27,7 @@ import java.lang.ref.SoftReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.nio.file.attribute.PosixFilePermission;
@@ -1139,7 +1140,6 @@ public final class GridTestUtils {
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static void setFieldValue(Object obj, Class cls, String fieldName, Object val) throws IgniteException {
-        assert obj != null;
         assert fieldName != null;
 
         try {
@@ -1149,9 +1149,21 @@ public final class GridTestUtils {
                 // Backup accessible field state.
                 boolean accessible = field.isAccessible();
 
+                boolean isFinal = (field.getModifiers() & Modifier.FINAL) > 0;
+
+                Field modifiersField = null;
+
+                if (isFinal)
+                    modifiersField = Field.class.getDeclaredField("modifiers");
+
                 try {
                     if (!accessible)
                         field.setAccessible(true);
+
+                    if (isFinal) {
+                        modifiersField.setAccessible(true);
+                        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+                    }
 
                     field.set(obj, val);
                 }
@@ -1159,6 +1171,11 @@ public final class GridTestUtils {
                     // Recover accessible field state.
                     if (!accessible)
                         field.setAccessible(false);
+
+                    if (isFinal) {
+                        modifiersField.setInt(field, field.getModifiers() | Modifier.FINAL);
+                        modifiersField.setAccessible(false);
+                    }
                 }
             }
         }

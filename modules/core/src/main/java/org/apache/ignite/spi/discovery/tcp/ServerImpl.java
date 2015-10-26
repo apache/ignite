@@ -2997,8 +2997,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 Boolean rmtMarshUseDfltSuid = node.attribute(ATTR_MARSHALLER_USE_DFLT_SUID);
                 boolean rmtMarshUseDfltSuidBool = rmtMarshUseDfltSuid == null ? true : rmtMarshUseDfltSuid;
 
-                if (!F.eq(locMarshUseDfltSuid, rmtMarshUseDfltSuid) &&
-                    locMarshUseDfltSuidBool != rmtMarshUseDfltSuidBool) {
+                if (locMarshUseDfltSuidBool != rmtMarshUseDfltSuidBool) {
                     String errMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
                         " property value differs from remote node's value " +
                         "(to make sure all nodes in topology have identical marshaller settings, " +
