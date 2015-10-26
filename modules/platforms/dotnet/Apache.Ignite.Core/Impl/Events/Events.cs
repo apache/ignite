@@ -113,7 +113,8 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
-        public Task<ICollection<T>> RemoteQueryAsync<T>(IEventFilter<T> filter, TimeSpan? timeout = null, params int[] types) where T : IEvent
+        public Task<ICollection<T>> RemoteQueryAsync<T>(IEventFilter<T> filter, TimeSpan? timeout = null, 
+            params int[] types) where T : IEvent
         {
             return _asyncInstance.RemoteQueryAsyncEx(filter, timeout, types);
         }
@@ -125,9 +126,10 @@ namespace Apache.Ignite.Core.Impl.Events
             return RemoteQuery(filter, timeout, TypesToArray(types));
         }
 
-        public Task<ICollection<T>> RemoteQueryAsync<T>(IEventFilter<T> filter, TimeSpan? timeout = null, IEnumerable<int> types = null) where T : IEvent
+        public Task<ICollection<T>> RemoteQueryAsync<T>(IEventFilter<T> filter, TimeSpan? timeout = null, 
+            IEnumerable<int> types = null) where T : IEvent
         {
-            return _asyncInstance.RemoteQueryAsyncEx(filter, timeout, TypesToArray(types));
+            return RemoteQueryAsync(filter, timeout, TypesToArray(types));
         }
 
         /** <inheritDoc /> */
@@ -188,7 +190,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
         public Task<IEvent> WaitForLocalAsync(params int[] types)
         {
-            return _asyncInstance.WaitForLocalAsyncEx<IEvent>(null, types);
+            return WaitForLocalAsync<IEvent>(null, types);
         }
 
         /** <inheritDoc /> */
@@ -199,7 +201,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
         public Task<IEvent> WaitForLocalAsync(IEnumerable<int> types)
         {
-            return _asyncInstance.WaitForLocalAsyncEx<IEvent>(null, TypesToArray(types));
+            return WaitForLocalAsync<IEvent>(null, TypesToArray(types));
         }
 
         /** <inheritDoc /> */
@@ -231,7 +233,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
         public Task<T> WaitForLocalAsync<T>(IEventFilter<T> filter, IEnumerable<int> types) where T : IEvent
         {
-            return _asyncInstance.WaitForLocalAsyncEx(filter, TypesToArray(types));
+            return WaitForLocalAsync(filter, TypesToArray(types));
         }
 
         /** <inheritDoc /> */
