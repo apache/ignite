@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
-    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Impl.Portable.IO;
 
@@ -32,15 +31,6 @@ namespace Apache.Ignite.Core.Impl.Common
     {
         /** Converter. */
         private readonly IFutureConverter<T> _converter;
-
-        /** Result. */
-        private T _res;
-
-        /** Caught cxception. */
-        private Exception _err;
-
-        /** Done flag. */
-        private volatile bool _done;
 
         /** Task completion source. */
         private readonly TaskCompletionSource<T> _taskCompletionSource = new TaskCompletionSource<T>();
@@ -55,36 +45,9 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /** <inheritdoc/> */
-        public bool IsDone
-        {
-            get { return _done; }
-        }
-
-        /** <inheritdoc/> */
         public T Get()
         {
-            // TODO: Get rid of this
-            if (!_done)
-            {
-                lock (this)
-                {
-                    while (!_done)
-                        Monitor.Wait(this);
-                }
-            }
-
-            return Get0();
-        }
-
-        /// <summary>
-        /// Get result or throw an error.
-        /// </summary>
-        private T Get0()
-        {
-            if (_err != null)
-                throw _err;
-
-            return _res;
+            return Task.Result;
         }
 
         /** <inheritdoc/> */
@@ -110,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /** <inheritdoc /> */
         public void OnError(Exception err)
         {
-            OnDone(default(T), err);
+            _taskCompletionSource.SetException(err);
         }
 
         /** <inheritdoc /> */
@@ -139,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="res">Result.</param>
         internal void OnResult(T res)
         {
-            OnDone(res, null);
+            _taskCompletionSource.SetResult(res);
         }
 
         /// <summary>
@@ -149,23 +112,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="err">Error.</param>
         public void OnDone(T res, Exception err)
         {
-            lock (this)
-            {
-                if (!_done)
-                {
-                    _res = res;
-                    _err = err;
-
-                    _done = true;
-
-                    Monitor.PulseAll(this);
-                }
-            }
-
             if (err != null)
-                _taskCompletionSource.SetException(err);
+                OnError(err);
             else
-                _taskCompletionSource.SetResult(res);
+                OnResult(res);
         }
     }
 }

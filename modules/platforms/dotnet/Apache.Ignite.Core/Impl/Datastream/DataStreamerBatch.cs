@@ -264,7 +264,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     return false;
             }
 
-            return _fut.IsDone;
+            return _fut.Task.IsCompleted;
         }
     }
 }
