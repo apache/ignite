@@ -20,8 +20,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
     using System;
     using System.Globalization;
     using System.Threading;
-    using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Common;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
@@ -336,7 +335,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <summary>
         /// Commits tx in async mode.
         /// </summary>
-        internal IFuture CommitAsync()
+        internal Task CommitAsync()
         {
             lock (this)
             {
@@ -353,7 +352,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <summary>
         /// Rolls tx back in async mode.
         /// </summary>
-        internal IFuture RollbackAsync()
+        internal Task RollbackAsync()
         {
             lock (this)
             {
@@ -408,7 +407,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <summary>
         /// Creates a future via provided factory if IsClosed is false; otherwise, return a future with an error.
         /// </summary>
-        internal IFuture GetFutureOrError(Func<IFuture> operationFactory)
+        internal Task GetFutureOrError(Func<Task> operationFactory)
         {
             lock (this)
             {
@@ -419,13 +418,13 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <summary>
         /// Gets the future that throws an exception.
         /// </summary>
-        private IFuture GetExceptionFuture()
+        private Task GetExceptionFuture()
         {
-            var fut = new Future<object>();
-
-            fut.OnError(GetClosedException());
-
-            return fut;
+            var tcs = new TaskCompletionSource<object>();
+            
+            tcs.SetException(GetClosedException());
+            
+            return tcs.Task;
         }
 
         /// <summary>
@@ -451,9 +450,9 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <summary>
         /// Closes this transaction upon future completion.
         /// </summary>
-        private void CloseWhenComplete(IFuture fut)
+        private void CloseWhenComplete(Task task)
         {
-            fut.Listen(Close);
+            task.ContinueWith(x => Close());
         }
 
         /** <inheritdoc /> */

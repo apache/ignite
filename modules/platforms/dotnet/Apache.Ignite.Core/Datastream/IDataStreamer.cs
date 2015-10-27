@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Datastream
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
 
@@ -133,7 +134,7 @@ namespace Apache.Ignite.Core.Datastream
         /// Gets future for this loading process. This future completes whenever method
         /// <see cref="IDataStreamer{K,V}.Close(bool)"/> completes.
         /// </summary>
-        IFuture Future { get; }
+        Task Future { get; }  // TODO
 
         /// <summary>
         /// Gets or sets custom stream receiver.
@@ -147,7 +148,7 @@ namespace Apache.Ignite.Core.Datastream
         /// <param name="key">Key.</param>
         /// <param name="val">Value.</param>
         /// <returns>Future for this operation.</returns>
-        IFuture AddData(TK key, TV val);
+        Task AddData(TK key, TV val);
 
         /// <summary>
         /// Adds single key-value pair for loading. Passing <c>null</c> as pair's value will 
@@ -155,21 +156,21 @@ namespace Apache.Ignite.Core.Datastream
         /// </summary>
         /// <param name="pair">Key-value pair.</param>
         /// <returns>Future for this operation.</returns>
-        IFuture AddData(KeyValuePair<TK, TV> pair);
+        Task AddData(KeyValuePair<TK, TV> pair);
 
         /// <summary>
         /// Adds collection of key-value pairs for loading. 
         /// </summary>
         /// <param name="entries">Entries.</param>
         /// <returns>Future for this operation.</returns>
-        IFuture AddData(ICollection<KeyValuePair<TK, TV>> entries);
+        Task AddData(ICollection<KeyValuePair<TK, TV>> entries);
 
         /// <summary>
         /// Adds key for removal.
         /// </summary>
         /// <param name="key">Key.</param>
         /// <returns>Future for this operation.</returns>
-        IFuture RemoveData(TK key);
+        Task RemoveData(TK key);
 
         /// <summary>
         /// Makes an attempt to load remaining data. This method is mostly similar to 

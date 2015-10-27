@@ -2456,22 +2456,21 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Category(TestUtils.CategoryIntensive)]
         public void TestFuturesGc()
         {
-            var cache = Cache().WithAsync();
+            var cache = Cache();
 
-            cache.Put(1, 1);
+            cache.PutAsync(1, 1);
 
             for (int i = 0; i < 10; i++)
             {
                 TestUtils.RunMultiThreaded(() =>
                 {
                     for (int j = 0; j < 1000; j++)
-                        cache.Get(1);
+                        cache.GetAsync(1);
                 }, 5);
 
                 GC.Collect();
 
-                cache.Get(1);
-                Assert.AreEqual(1, cache.GetFuture<int>().Get());
+                Assert.AreEqual(1, cache.GetAsync(1).Result);
             }
 
             Thread.Sleep(2000);
@@ -2982,26 +2981,25 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestSkipStore()
         {
-            CacheProxyImpl<int, int> cache = (CacheProxyImpl<int, int>)Cache();
+            var cache = (CacheImpl<int, int>) Cache();
 
-            Assert.IsFalse(cache.SkipStore);
+            Assert.IsFalse(cache.IsSkipStore);
 
             // Ensure correct flag set.
-            CacheProxyImpl<int, int> cacheSkipStore1 = (CacheProxyImpl<int, int>)cache.WithSkipStore();
+            var cacheSkipStore1 = (CacheImpl<int, int>) cache.WithSkipStore();
 
             Assert.AreNotSame(cache, cacheSkipStore1);
-            Assert.IsFalse(cache.SkipStore);
-            Assert.IsTrue(cacheSkipStore1.SkipStore);
+            Assert.IsFalse(cache.IsSkipStore);
+            Assert.IsTrue(cacheSkipStore1.IsSkipStore);
 
             // Ensure that the same instance is returned if flag is already set.
-            CacheProxyImpl<int, int> cacheSkipStore2 = (CacheProxyImpl<int, int>)cacheSkipStore1.WithSkipStore();
+            var cacheSkipStore2 = (CacheImpl<int, int>) cacheSkipStore1.WithSkipStore();
 
-            Assert.IsTrue(cacheSkipStore2.SkipStore);
+            Assert.IsTrue(cacheSkipStore2.IsSkipStore);
             Assert.AreSame(cacheSkipStore1, cacheSkipStore2);
 
             // Ensure other flags are preserved.
-            Assert.IsTrue(((CacheProxyImpl<int, int>)cache.WithKeepPortable<int, int>().WithSkipStore()).IsKeepPortable);
-            Assert.IsTrue(cache.WithAsync().WithSkipStore().IsAsync);
+            Assert.IsTrue(((CacheImpl<int, int>) cache.WithKeepPortable<int, int>().WithSkipStore()).IsKeepPortable);
         }
 
         [Test]
@@ -3025,7 +3023,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             var fut = cache.Rebalance();
 
-            Assert.IsNull(fut.Get());
+            
         }
 
         [Test]

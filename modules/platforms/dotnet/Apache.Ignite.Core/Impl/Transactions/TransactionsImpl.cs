@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
-    using Apache.Ignite.Core.Common;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Portable;
@@ -177,17 +177,17 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <summary>
         /// Commits tx in async mode.
         /// </summary>
-        internal IFuture CommitAsync(TransactionImpl tx)
+        internal Task CommitAsync(TransactionImpl tx)
         {
-            return GetFuture<object>((futId, futTyp) => UU.TransactionsCommitAsync(Target, tx.Id, futId));
+            return GetFuture<object>((futId, futTyp) => UU.TransactionsCommitAsync(Target, tx.Id, futId)).ToTask();
         }
 
         /// <summary>
         /// Rolls tx back in async mode.
         /// </summary>
-        internal IFuture RollbackAsync(TransactionImpl tx)
+        internal Task RollbackAsync(TransactionImpl tx)
         {
-            return GetFuture<object>((futId, futTyp) => UU.TransactionsRollbackAsync(Target, tx.Id, futId));
+            return GetFuture<object>((futId, futTyp) => UU.TransactionsRollbackAsync(Target, tx.Id, futId)).ToTask();
         }
  
         /// <summary>

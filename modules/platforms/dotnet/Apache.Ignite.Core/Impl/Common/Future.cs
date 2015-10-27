@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
@@ -30,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// </summary>
     [SuppressMessage("ReSharper", "ParameterHidesMember")]
     [CLSCompliant(false)]
-    public sealed class Future<T> : IFutureInternal, IFuture<T>
+    public sealed class Future<T> : IFutureInternal
     {
         /** Converter. */
         private readonly IFutureConverter<T> _converter;
@@ -46,6 +45,9 @@ namespace Apache.Ignite.Core.Impl.Common
 
         /** Listener(s). Either Action or List{Action}. */
         private object _callbacks;
+
+        /** Task completion source. */
+        private readonly TaskCompletionSource<T> _taskCompletionSource = new TaskCompletionSource<T>();
 
         /// <summary>
         /// Constructor.
@@ -121,17 +123,11 @@ namespace Apache.Ignite.Core.Impl.Common
         /** <inheritdoc/> */
         public void Listen(Action callback)
         {
-            Listen((Action<IFuture<T>>) (fut => callback()));
+            Listen(fut => callback());
         }
 
         /** <inheritdoc/> */
-        public void Listen(Action<IFuture> callback)
-        {
-            Listen((Action<IFuture<T>>)callback);
-        }
-
-        /** <inheritdoc/> */
-        public void Listen(Action<IFuture<T>> callback)
+        public void Listen(Action<Future<T>> callback)
         {
             IgniteArgumentCheck.NotNull(callback, "callback");
 
@@ -163,33 +159,9 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /** <inheritdoc/> */
-        public IAsyncResult ToAsyncResult()
-        {
-            return _done ? (IAsyncResult) new CompletedAsyncResult() : new AsyncResult(this);
-        }
-
-        /** <inheritdoc/> */
-        Task<object> IFuture.ToTask()
-        {
-            return Task.Factory.FromAsync(ToAsyncResult(), x => (object) Get());
-        }
-
-        /** <inheritdoc/> */
         public Task<T> ToTask()
         {
-            return Task.Factory.FromAsync(ToAsyncResult(), x => Get());
-        }
-
-        /** <inheritdoc/> */
-        object IFuture.Get(TimeSpan timeout)
-        {
-            return Get(timeout);
-        }
-
-        /** <inheritdoc/> */
-        object IFuture.Get()
-        {
-            return Get();
+            return _taskCompletionSource.Task;
         }
 
         /** <inheritdoc /> */
@@ -267,21 +239,26 @@ namespace Apache.Ignite.Core.Impl.Common
                 }
             }
 
+            if (err != null)
+                _taskCompletionSource.SetException(err);
+            else
+                _taskCompletionSource.SetResult(res);
+
             if (callbacks0 != null)
             {
-                var list = callbacks0 as List<Action<IFuture<T>>>;
+                var list = callbacks0 as List<Action<Future<T>>>;
 
                 if (list != null)
                     list.ForEach(x => x(this));
                 else
-                    ((Action<IFuture<T>>) callbacks0)(this);
+                    ((Action<Future<T>>) callbacks0)(this);
             }
         }
 
         /// <summary>
         /// Adds a callback.
         /// </summary>
-        private void AddCallback(Action<IFuture<T>> callback)
+        private void AddCallback(Action<Future<T>> callback)
         {
             if (_callbacks == null)
             {
@@ -290,8 +267,8 @@ namespace Apache.Ignite.Core.Impl.Common
                 return;
             }
 
-            var list = _callbacks as List<Action<IFuture<T>>> ??
-                new List<Action<IFuture<T>>> {(Action<IFuture<T>>) _callbacks};
+            var list = _callbacks as List<Action<Future<T>>> ??
+                new List<Action<Future<T>>> {(Action<Future<T>>) _callbacks};
 
             list.Add(callback);
 

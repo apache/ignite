@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable;
@@ -73,11 +74,11 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /// <summary>
-        /// Gets the future.
+        /// Gets the task.
         /// </summary>
-        public IFuture Future
+        public Task Task
         {
-            get { return _fut; }
+            get { return _fut.ToTask(); }
         }
 
         /// <summary>

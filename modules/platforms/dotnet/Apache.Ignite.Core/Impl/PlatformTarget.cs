@@ -23,8 +23,6 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Portable;
@@ -632,7 +630,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="keepPortable">Keep portable flag, only applicable to object futures. False by default.</param>
         /// <param name="convertFunc">The function to read future result from stream.</param>
         /// <returns>Created future.</returns>
-        protected IFuture<T> GetFuture<T>(Action<long, int> listenAction, bool keepPortable = false,
+        protected Future<T> GetFuture<T>(Action<long, int> listenAction, bool keepPortable = false,
             Func<PortableReaderImpl, T> convertFunc = null)
         {
             var futType = FutureType.Object;

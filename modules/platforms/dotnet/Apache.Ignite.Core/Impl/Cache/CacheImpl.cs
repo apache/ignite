@@ -844,9 +844,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IFuture Rebalance()
+        public Task Rebalance()
         {
-            return GetFuture<object>((futId, futTyp) => UU.CacheRebalance(Target, futId));
+            return GetFuture<object>((futId, futTyp) => UU.CacheRebalance(Target, futId)).ToTask();
         }
 
         /** <inheritDoc /> */

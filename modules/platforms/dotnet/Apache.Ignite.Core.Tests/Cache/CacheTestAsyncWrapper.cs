@@ -499,7 +499,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public IFuture Rebalance()
+        public Task Rebalance()
         {
             return _cache.Rebalance();
         }

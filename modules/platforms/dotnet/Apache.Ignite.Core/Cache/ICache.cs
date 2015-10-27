@@ -821,7 +821,7 @@ namespace Apache.Ignite.Core.Cache
         /// rebalanceDelay expires.
         /// </summary>
         /// <returns>Future that will be completed when rebalancing is finished.</returns>
-        IFuture Rebalance();
+        Task Rebalance();
 
         /// <summary>
         /// Get another cache instance with no-retries behavior enabled.
