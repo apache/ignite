@@ -585,7 +585,7 @@ button.form-control {
     margin: 0;
     cursor: pointer;
     font-size: $font-size-large;
-    line-height: 27px;
+    line-height: 24px;
 
     label {
         overflow: hidden;
@@ -595,29 +595,40 @@ button.form-control {
     }
 
     .btn-group {
-        margin-top: -5px;
+        vertical-align:top;
         margin-left: 10px;
+
+        i { line-height: 18px; }
+    }
+
+    > i {
+        vertical-align: top;
+        line-height: 26px;
+        height: 26px;
+    }
+
+    .fa {
+        line-height: 26px;
     }
 
     .fa-floppy-o {
         float: right;
-        line-height: 30px;
     }
 
     .fa-chevron-circle-up, .fa-chevron-circle-down {
+        font-size: $font-size-base;
         color: inherit;
         float: left;
-        line-height: 30px;
     }
 
     .fa-undo {
-        font-size: 16px;
+        padding: 1px 6px;
 
-        padding: 5px 7px;
+        font-size: 16px;
     }
 
     .fa-undo:hover {
-        padding: 4px 6px;
+        padding: 0 5px;
 
         border-radius: 5px;
         border: thin dotted $ignite-darck-border-color;
