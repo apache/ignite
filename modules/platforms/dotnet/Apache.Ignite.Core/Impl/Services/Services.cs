@@ -192,9 +192,9 @@ namespace Apache.Ignite.Core.Impl.Services
                 w.WriteObject(configuration.AffinityKey);
 
                 if (configuration.NodeFilter != null)
-                    w.WriteObject(new PortableOrSerializableObjectHolder(configuration.NodeFilter));
+                    w.WriteObject(configuration.NodeFilter);
                 else
-                    w.WriteObject<PortableOrSerializableObjectHolder>(null);
+                    w.WriteObject<object>(null);
             });
         }
 

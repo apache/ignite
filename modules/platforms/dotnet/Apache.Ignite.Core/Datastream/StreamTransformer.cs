@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Datastream
 
             w.WriteByte(StreamReceiverHolder.RcvTransformer);
 
-            PortableUtils.WritePortableOrSerializable(w, _proc);
+            w.WriteObject(_proc);
         }
     }
 }

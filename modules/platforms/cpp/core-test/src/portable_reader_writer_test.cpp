@@ -41,7 +41,7 @@ void CheckPrimitive(T val)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    out.Position(18);
+    out.Position(19);
 
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
@@ -63,7 +63,7 @@ void CheckPrimitive(T val)
 
     InteropInputStream in(&mem);
 
-    in.Position(18);
+    in.Position(19);
 
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100);
     PortableReader reader(&readerImpl);
@@ -101,7 +101,7 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100);
     PortableReader reader(&readerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     try
     {
@@ -125,17 +125,17 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
     out.Synchronize();
     in.Synchronize();
     
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 0) == -1);
 
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == -1);
 
     T arr1[2];
     arr1[0] = dflt;
     arr1[1] = dflt;
 
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 1) == -1);
 
     BOOST_REQUIRE(arr1[0] == dflt);
@@ -146,68 +146,68 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
     arr2[0] = val1;
     arr2[1] = val2;
 
-    out.Position(18);
+    out.Position(19);
     
     WriteArray<T>(writer, fieldName, arr2, 0);
 
     out.Synchronize();
     in.Synchronize();
 
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 0) == 0);
 
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == 0);
 
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 0) == 0);
     BOOST_REQUIRE(arr1[0] == dflt);
     BOOST_REQUIRE(arr1[1] == dflt);
 
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 2) == 0);
     BOOST_REQUIRE(arr1[0] == dflt);
     BOOST_REQUIRE(arr1[1] == dflt);
 
     // 3. Partial array write.
-    out.Position(18);
+    out.Position(19);
     
     WriteArray<T>(writer, fieldName, arr2, 1);
 
     out.Synchronize();
     in.Synchronize();
 
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 0) == 1);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == 1);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 0) == 1);
     BOOST_REQUIRE(arr1[0] == dflt);
     BOOST_REQUIRE(arr1[1] == dflt);
 
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 1) == 1);
     BOOST_REQUIRE(arr1[0] == val1);
     BOOST_REQUIRE(arr1[1] == dflt);
     arr1[0] = dflt;
 
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 2) == 1);
     BOOST_REQUIRE(arr1[0] == val1);
     BOOST_REQUIRE(arr1[1] == dflt);
     arr1[0] = dflt;
 
     // 4. Full array write.
-    out.Position(18);
+    out.Position(19);
     
     WriteArray<T>(writer, fieldName, arr2, 2);
 
     out.Synchronize();
     in.Synchronize();
 
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 0) == 2);
 
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == 2);
 
     try
@@ -410,7 +410,7 @@ void CheckCollectionEmpty(CollectionType* colType)
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     PortableCollectionWriter<PortableInner> colWriter = colType ?
         writer.WriteCollection<PortableInner>("field1", *colType) : writer.WriteCollection<PortableInner>("field1");
@@ -449,7 +449,7 @@ void CheckCollectionEmpty(CollectionType* colType)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(18);
+    in.Position(19);
 
     PortableCollectionReader<PortableInner> colReader = reader.ReadCollection<PortableInner>("field1");
 
@@ -490,7 +490,7 @@ void CheckCollection(CollectionType* colType)
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     PortableCollectionWriter<PortableInner> colWriter = colType ?
         writer.WriteCollection<PortableInner>("field1", *colType) : writer.WriteCollection<PortableInner>("field1");
@@ -533,7 +533,7 @@ void CheckCollection(CollectionType* colType)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(18);
+    in.Position(19);
 
     PortableCollectionReader<PortableInner> colReader = reader.ReadCollection<PortableInner>("field1");
 
@@ -572,6 +572,59 @@ void CheckCollection(CollectionType* colType)
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
 }
 
+void CheckCollectionIterators(CollectionType* colType)
+{
+    typedef std::vector<PortableInner> PortableInnerVector;
+    PortableInnerVector writeValues;
+
+    writeValues.push_back(1);
+    writeValues.push_back(0);
+    writeValues.push_back(2);
+
+    TemplatedPortableIdResolver<PortableDummy> idRslvr;
+
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriter writer(&writerImpl);
+
+    out.Position(18);
+
+    if (colType)
+        writer.WriteCollection("field1", writeValues.begin(), writeValues.end(), *colType);
+    else
+        writer.WriteCollection("field1", writeValues.begin(), writeValues.end());
+    
+    writer.WriteInt8("field2", 1);
+
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReader reader(&readerImpl);
+
+    in.Position(18);
+
+    BOOST_REQUIRE(reader.ReadCollectionSize("field1") == writeValues.size());
+
+    CollectionType expectedCollectionType = colType ? *colType : IGNITE_COLLECTION_UNDEFINED;
+    BOOST_REQUIRE(reader.ReadCollectionType("field1") == expectedCollectionType);
+
+    PortableInnerVector readValues;
+    std::back_insert_iterator<PortableInnerVector> readInsertIterator(readValues);
+
+    reader.ReadCollection<PortableInner>("field1", readInsertIterator);
+    
+    BOOST_REQUIRE(readValues.size() == 3);
+
+    BOOST_REQUIRE(readValues[0].GetValue() == writeValues[0].GetValue());
+    BOOST_REQUIRE(readValues[1].GetValue() == writeValues[1].GetValue());
+    BOOST_REQUIRE(readValues[2].GetValue() == writeValues[2].GetValue());
+    
+    BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
+}
+
 void CheckMapEmpty(MapType* mapType)
 {
     TemplatedPortableIdResolver<PortableDummy> idRslvr;
@@ -582,7 +635,7 @@ void CheckMapEmpty(MapType* mapType)
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     PortableMapWriter<int8_t, PortableInner> mapWriter = mapType ?
         writer.WriteMap<int8_t, PortableInner>("field1", *mapType) : writer.WriteMap<int8_t, PortableInner>("field1");
@@ -621,7 +674,7 @@ void CheckMapEmpty(MapType* mapType)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(18);
+    in.Position(19);
 
     PortableMapReader<int8_t, PortableInner> mapReader = reader.ReadMap<int8_t, PortableInner>("field1");
 
@@ -665,7 +718,7 @@ void CheckMap(MapType* mapType)
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     PortableMapWriter<int8_t, PortableInner> mapWriter = mapType ?
         writer.WriteMap<int8_t, PortableInner>("field1", *mapType) : writer.WriteMap<int8_t, PortableInner>("field1");
@@ -708,7 +761,7 @@ void CheckMap(MapType* mapType)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(18);
+    in.Position(19);
 
     PortableMapReader<int8_t, PortableInner> mapReader = reader.ReadMap<int8_t, PortableInner>("field1");
 
@@ -863,7 +916,7 @@ BOOST_AUTO_TEST_CASE(TestGuidNull)
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     try
     {
@@ -884,7 +937,7 @@ BOOST_AUTO_TEST_CASE(TestGuidNull)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100);
     PortableReader reader(&readerImpl);
     
-    in.Position(18);
+    in.Position(19);
 
     try
     {
@@ -912,7 +965,7 @@ BOOST_AUTO_TEST_CASE(TestString) {
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     const char* writeVal1 = "testtest";
     const char* writeVal2 = "test";
@@ -963,7 +1016,7 @@ BOOST_AUTO_TEST_CASE(TestString) {
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(18);
+    in.Position(19);
 
     try
     {
@@ -1024,7 +1077,7 @@ BOOST_AUTO_TEST_CASE(TestStringArrayNull)
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     writer.WriteNull("field1");
     writer.WriteInt8("field2", 1);
@@ -1035,7 +1088,7 @@ BOOST_AUTO_TEST_CASE(TestStringArrayNull)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(18);
+    in.Position(19);
 
     PortableStringArrayReader arrReader = reader.ReadStringArray("field1");
 
@@ -1080,7 +1133,7 @@ BOOST_AUTO_TEST_CASE(TestStringArrayEmpty)
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     PortableStringArrayWriter arrWriter = writer.WriteStringArray("field1");
     
@@ -1146,7 +1199,7 @@ BOOST_AUTO_TEST_CASE(TestStringArrayEmpty)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(18);
+    in.Position(19);
 
     PortableStringArrayReader arrReader = reader.ReadStringArray("field1");
 
@@ -1195,7 +1248,7 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     PortableStringArrayWriter arrWriter = writer.WriteStringArray("field1");
 
@@ -1267,7 +1320,7 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(18);
+    in.Position(19);
 
     PortableStringArrayReader arrReader = reader.ReadStringArray("field1");
 
@@ -1363,7 +1416,7 @@ BOOST_AUTO_TEST_CASE(TestObject)
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     writer.WriteObject("field1", writeVal1);
     writer.WriteObject("field2", writeVal2);
@@ -1375,7 +1428,7 @@ BOOST_AUTO_TEST_CASE(TestObject)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(18);
+    in.Position(19);
 
     PortableInner readVal1 = reader.ReadObject<PortableInner>("field1");
     BOOST_REQUIRE(writeVal1.GetValue() == readVal1.GetValue());
@@ -1400,7 +1453,7 @@ BOOST_AUTO_TEST_CASE(TestNestedObject)
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     writer.WriteObject("field1", writeVal1);
     writer.WriteObject("field2", writeVal2);
@@ -1412,7 +1465,7 @@ BOOST_AUTO_TEST_CASE(TestNestedObject)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(18);
+    in.Position(19);
 
     PortableOuter readVal1 = reader.ReadObject<PortableOuter>("field1");
     BOOST_REQUIRE(writeVal1.GetValue() == readVal1.GetValue());
@@ -1437,7 +1490,7 @@ BOOST_AUTO_TEST_CASE(TestArrayNull)
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     writer.WriteNull("field1");
     writer.WriteInt8("field2", 1);
@@ -1448,7 +1501,7 @@ BOOST_AUTO_TEST_CASE(TestArrayNull)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(18);
+    in.Position(19);
 
     PortableArrayReader<PortableInner> arrReader = reader.ReadArray<PortableInner>("field1");
 
@@ -1480,7 +1533,7 @@ BOOST_AUTO_TEST_CASE(TestArrayEmpty)
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     PortableArrayWriter<PortableInner> arrWriter = writer.WriteArray<PortableInner>("field1");
 
@@ -1518,7 +1571,7 @@ BOOST_AUTO_TEST_CASE(TestArrayEmpty)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(18);
+    in.Position(19);
 
     PortableArrayReader<PortableInner> arrReader = reader.ReadArray<PortableInner>("field1");
 
@@ -1554,7 +1607,7 @@ BOOST_AUTO_TEST_CASE(TestArray)
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     PortableArrayWriter<PortableInner> arrWriter = writer.WriteArray<PortableInner>("field1");
 
@@ -1596,7 +1649,7 @@ BOOST_AUTO_TEST_CASE(TestArray)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(18);
+    in.Position(19);
 
     PortableArrayReader<PortableInner> arrReader = reader.ReadArray<PortableInner>("field1");
 
@@ -1640,7 +1693,7 @@ BOOST_AUTO_TEST_CASE(TestCollectionNull)
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     writer.WriteNull("field1");
     writer.WriteInt8("field2", 1);
@@ -1651,7 +1704,7 @@ BOOST_AUTO_TEST_CASE(TestCollectionNull)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(18);
+    in.Position(19);
 
     PortableCollectionReader<PortableInner> colReader = reader.ReadCollection<PortableInner>("field1");
 
@@ -1698,6 +1751,18 @@ BOOST_AUTO_TEST_CASE(testCollectionTyped)
     CheckCollection(&typ);
 }
 
+BOOST_AUTO_TEST_CASE(TestCollectionIterators)
+{
+    CheckCollectionIterators(NULL);
+}
+
+BOOST_AUTO_TEST_CASE(TestCollectionIteratorsTyped)
+{
+    CollectionType typ = IGNITE_COLLECTION_CONCURRENT_SKIP_LIST_SET;
+
+    CheckCollectionIterators(&typ);
+}
+
 BOOST_AUTO_TEST_CASE(TestMapNull)
 {
     TemplatedPortableIdResolver<PortableDummy> idRslvr;
@@ -1708,7 +1773,7 @@ BOOST_AUTO_TEST_CASE(TestMapNull)
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     writer.WriteNull("field1");
     writer.WriteInt8("field2", 1);
@@ -1719,7 +1784,7 @@ BOOST_AUTO_TEST_CASE(TestMapNull)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(18);
+    in.Position(19);
 
     PortableMapReader<int8_t, PortableInner> mapReader = reader.ReadMap<int8_t, PortableInner>("field1");
 
@@ -1779,7 +1844,7 @@ BOOST_AUTO_TEST_CASE(TestRawMode)
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
     PortableWriter writer(&writerImpl);
 
-    out.Position(18);
+    out.Position(19);
 
     PortableRawWriter rawWriter = writer.RawWriter();
 
@@ -1801,10 +1866,10 @@ BOOST_AUTO_TEST_CASE(TestRawMode)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 18);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 19);
     PortableReader reader(&readerImpl);
 
-    in.Position(18);
+    in.Position(19);
 
     PortableRawReader rawReader = reader.RawReader();
 
@@ -1843,6 +1908,7 @@ BOOST_AUTO_TEST_CASE(TestFieldSeek)
 
     int32_t pos = in.Position();
     in.ReadInt8(); // We do not need a header here.
+    in.ReadInt8(); // We do not need proto ver here.
     bool usrType = in.ReadBool();
     int32_t typeId = in.ReadInt32();
     int32_t hashCode = in.ReadInt32();
@@ -1859,34 +1925,34 @@ BOOST_AUTO_TEST_CASE(TestFieldSeek)
     BOOST_REQUIRE(reader.ReadInt32("val2") == 2);
 
     // 2. Counter closkwise.
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(reader.ReadInt32("val2") == 2);
     BOOST_REQUIRE(reader.ReadInt32("val1") == 1);
     BOOST_REQUIRE(reader.ReadInt32("val2") == 2);
     BOOST_REQUIRE(reader.ReadInt32("val1") == 1);
 
     // 3. Same field twice.
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(reader.ReadInt32("val1") == 1);
     BOOST_REQUIRE(reader.ReadInt32("val1") == 1);
 
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(reader.ReadInt32("val2") == 2);
     BOOST_REQUIRE(reader.ReadInt32("val2") == 2);
     
     // 4. Read missing field in between.
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(reader.ReadInt32("val1") == 1);
     BOOST_REQUIRE(reader.ReadInt32("missing") == 0);
     BOOST_REQUIRE(reader.ReadInt32("val2") == 2);
 
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(reader.ReadInt32("val2") == 2);
     BOOST_REQUIRE(reader.ReadInt32("missing") == 0);
     BOOST_REQUIRE(reader.ReadInt32("val1") == 1);
 
     // 5. Invalid field type.
-    in.Position(18);
+    in.Position(19);
     BOOST_REQUIRE(reader.ReadInt32("val1") == 1);
 
     try

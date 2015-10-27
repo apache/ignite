@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAssignmentFetchFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -260,6 +261,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public void onReconnected() {
         startFut = new GridFutureAdapter<>();
+
+        long topVer0 = cctx.kernalContext().discovery().topologyVersion();
+
+        assert topVer0 > 0 : topVer0;
+
+        topVer.set(topVer0);
     }
 
     /** {@inheritDoc} */
@@ -339,7 +346,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @param msg Force keys message.
      */
     private void processForceKeysRequest(final ClusterNode node, final GridDhtForceKeysRequest msg) {
-        IgniteInternalFuture<?> fut = cctx.mvcc().finishKeys(msg.keys(), msg.topologyVersion());
+        IgniteInternalFuture<?> fut = cctx.mvcc().finishKeys(msg.keys(), msg.cacheId(), msg.topologyVersion());
 
         if (fut.isDone())
             processForceKeysRequest0(node, msg);
@@ -373,10 +380,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 GridDhtLocalPartition locPart = top.localPartition(p, AffinityTopologyVersion.NONE, false);
 
                 // If this node is no longer an owner.
-                if (locPart == null && !top.owners(p).contains(loc))
+                if (locPart == null && !top.owners(p).contains(loc)) {
                     res.addMissed(k);
 
-                GridCacheEntryEx entry;
+                    continue;
+                }
+
+                GridCacheEntryEx entry = null;
 
                 if (cctx.isSwapOrOffheapEnabled()) {
                     while (true) {
@@ -390,6 +400,14 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         catch (GridCacheEntryRemovedException ignore) {
                             if (log.isDebugEnabled())
                                 log.debug("Got removed entry: " + k);
+                        }
+                        catch (GridDhtInvalidPartitionException ignore) {
+                            if (log.isDebugEnabled())
+                                log.debug("Local node is no longer an owner: " + p);
+
+                            res.addMissed(k);
+
+                            break;
                         }
                     }
                 }

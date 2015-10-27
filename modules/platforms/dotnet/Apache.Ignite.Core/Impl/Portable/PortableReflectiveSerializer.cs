@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// zone. It means that this difference will be different as you change time zones. 
     /// To overcome this discrepancy Ignite always converts .Net date to UTC form 
     /// before serializing and allows user to decide whether to deserialize them 
-    /// in UTC or local form using <c>ReadDate(..., true/false)</c> methods in 
+    /// in UTC or local form using <c>ReadTimestamp(..., true/false)</c> methods in 
     /// <see cref="IPortableReader"/> and <see cref="IPortableRawReader"/>.
     /// This serializer always read dates in UTC form. It means that if you have
     /// local date in any field/property, it will be implicitly converted to UTC

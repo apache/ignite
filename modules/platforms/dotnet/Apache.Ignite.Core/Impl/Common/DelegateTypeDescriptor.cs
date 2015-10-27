@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private readonly Func<object, object, object> _computeFunc;
 
         /** */
-        private readonly Func<object, Guid?, object, bool> _eventFilter;
+        private readonly Func<object, object, bool> _eventFilter;
 
         /** */
         private readonly Func<object, object, object, bool> _cacheEntryFilter;
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Common
             _cacheEntryProcessor;
 
         /** */
-        private readonly Func<object, Guid, object, bool> _messageFilter;
+        private readonly Func<object, Guid, object, bool> _messageLsnr;
 
         /** */
         private readonly Func<object, object> _computeJobExecute;
@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Precompiled invocator delegate.</returns>
-        public static Func<object, Guid?, object, bool> GetEventFilter(Type type)
+        public static Func<object, object, bool> GetEventFilter(Type type)
         {
             return Get(type)._eventFilter;
         }
@@ -136,13 +136,13 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Gets the <see cref="IMessageFilter{T}" /> invocator.
+        /// Gets the <see cref="IMessageListener{T}" /> invocator.
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Precompiled invocator delegate.</returns>
-        public static Func<object, Guid, object, bool> GetMessageFilter(Type type)
+        public static Func<object, Guid, object, bool> GetMessageListener(Type type)
         {
-            return Get(type)._messageFilter;
+            return Get(type)._messageLsnr;
         }
 
         /// <summary>
@@ -245,8 +245,8 @@ namespace Apache.Ignite.Core.Impl.Common
 
                     var args = iface.GetGenericArguments();
 
-                    _eventFilter = DelegateConverter.CompileFunc<Func<object, Guid?, object, bool>>(iface, 
-                        new[] {typeof (Guid?), args[0]}, new[] {false, true, false});
+                    _eventFilter = DelegateConverter.CompileFunc<Func<object, object, bool>>(iface, 
+                        new[] {args[0]}, new[] {true, false});
                 }
                 else if (genericTypeDefinition == typeof (ICacheEntryFilter<,>))
                 {
@@ -286,18 +286,18 @@ namespace Apache.Ignite.Core.Impl.Common
                     _streamTransformerCtor = DelegateConverter.CompileCtor<Func<object, object>>(transformerType,
                         new[] {iface});
                 }
-                else if (genericTypeDefinition == typeof (IMessageFilter<>))
+                else if (genericTypeDefinition == typeof (IMessageListener<>))
                 {
-                    ThrowIfMultipleInterfaces(_messageFilter, type, typeof(IMessageFilter<>));
+                    ThrowIfMultipleInterfaces(_messageLsnr, type, typeof(IMessageListener<>));
 
                     var arg = iface.GetGenericArguments()[0];
 
-                    _messageFilter = DelegateConverter.CompileFunc<Func<object, Guid, object, bool>>(iface,
+                    _messageLsnr = DelegateConverter.CompileFunc<Func<object, Guid, object, bool>>(iface,
                         new[] { typeof(Guid), arg }, new[] { false, true, false });
                 }
                 else if (genericTypeDefinition == typeof (IComputeJob<>))
                 {
-                    ThrowIfMultipleInterfaces(_messageFilter, type, typeof(IComputeJob<>));
+                    ThrowIfMultipleInterfaces(_messageLsnr, type, typeof(IComputeJob<>));
 
                     _computeJobExecute = DelegateConverter.CompileFunc<Func<object, object>>(iface, new Type[0], 
                         methodName: "Execute");

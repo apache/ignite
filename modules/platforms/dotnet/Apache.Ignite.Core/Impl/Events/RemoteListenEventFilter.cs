@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Events
     using System.Diagnostics;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
@@ -33,14 +32,14 @@ namespace Apache.Ignite.Core.Impl.Events
         private readonly Ignite _ignite;
         
         /** */
-        private readonly Func<Guid?, IEvent, bool> _filter;
+        private readonly Func<IEvent, bool> _filter;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RemoteListenEventFilter"/> class.
         /// </summary>
         /// <param name="ignite">The grid.</param>
         /// <param name="filter">The filter.</param>
-        public RemoteListenEventFilter(Ignite ignite, Func<Guid?, IEvent, bool> filter)
+        public RemoteListenEventFilter(Ignite ignite, Func<IEvent, bool> filter)
         {
             _ignite = ignite;
             _filter = filter;
@@ -53,9 +52,9 @@ namespace Apache.Ignite.Core.Impl.Events
 
             var evt = EventReader.Read<IEvent>(reader);
 
-            var nodeId = reader.ReadGuid();
+            reader.ReadGuid();  // unused node id
 
-            return _filter(nodeId, evt) ? 1 : 0;
+            return _filter(evt) ? 1 : 0;
         }
 
         /// <summary>
@@ -74,11 +73,11 @@ namespace Apache.Ignite.Core.Impl.Events
 
                 var reader = marsh.StartUnmarshal(stream);
 
-                var pred = reader.ReadObject<PortableOrSerializableObjectHolder>().Item;
+                var pred = reader.ReadObject<object>();
 
                 var func = DelegateTypeDescriptor.GetEventFilter(pred.GetType());
 
-                return new RemoteListenEventFilter(grid, (id, evt) => func(pred, id, evt));
+                return new RemoteListenEventFilter(grid, evt => func(pred, evt));
             }
         }
     }

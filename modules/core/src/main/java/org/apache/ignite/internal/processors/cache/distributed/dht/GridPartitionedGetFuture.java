@@ -587,8 +587,11 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         if (keysSize != 0) {
             Map<K, V> map = new GridLeanMap<>(keysSize);
 
-            for (GridCacheEntryInfo info : infos)
+            for (GridCacheEntryInfo info : infos) {
+                assert skipVals == (info.value() == null);
+
                 cctx.addResult(map, info.key(), info.value(), skipVals, false, deserializePortable, false);
+            }
 
             return map;
         }

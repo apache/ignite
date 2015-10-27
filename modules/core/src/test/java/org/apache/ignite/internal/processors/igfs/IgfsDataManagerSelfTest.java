@@ -165,7 +165,9 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     public void testDataStoring() throws Exception {
         for (int i = 0; i < 10; i++) {
             IgfsPath path = new IgfsPath();
-            IgfsFileInfo info = new IgfsFileInfo(200, null, false, null);
+
+            IgfsFileInfo info = new IgfsFileInfo(200, 0L, null, IgfsMetaManager.DELETE_LOCK_ID,
+                    false, null);
 
             assertNull(mgr.dataBlock(info, path, 0, null).get());
 
@@ -246,7 +248,9 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
         for (int i = 0; i < 10; i++) {
             IgfsPath path = new IgfsPath();
-            IgfsFileInfo info = new IgfsFileInfo(blockSize, null, false, null);
+
+            IgfsFileInfo info = new IgfsFileInfo(blockSize, 0L, null, IgfsMetaManager.DELETE_LOCK_ID,
+                false, null);
 
             assertNull(mgr.dataBlock(info, path, 0, null).get());
 
@@ -333,7 +337,10 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
         for (int i = 0; i < 10; i++) {
             IgfsPath path = new IgfsPath();
-            IgfsFileInfo info = new IgfsFileInfo(blockSize, null, false, null);
+
+            IgfsFileInfo info =
+                new IgfsFileInfo(blockSize, 0L, null, IgfsMetaManager.DELETE_LOCK_ID,
+                    false, null);
 
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 

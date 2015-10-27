@@ -20,7 +20,11 @@ package org.apache.ignite.internal.processors.hadoop.igfs;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.AbstractFileSystem;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathExistsException;
 import org.apache.hadoop.fs.PathIsNotEmptyDirectoryException;
 import org.apache.ignite.IgniteCheckedException;
@@ -126,6 +130,38 @@ public class HadoopIgfsUtils {
             String msg = e.getMessage();
 
             return msg == null ? new IOException(e) : new IOException(msg, e);
+        }
+    }
+
+    /**
+     * Deletes all files from the given file system.
+     *
+     * @param fs The file system to clean up.
+     * @throws IOException On error.
+     */
+    public static void clear(FileSystem fs) throws IOException {
+        // Delete root contents:
+        FileStatus[] statuses = fs.listStatus(new Path("/"));
+
+        if (statuses != null) {
+            for (FileStatus stat: statuses)
+                fs.delete(stat.getPath(), true);
+        }
+    }
+
+    /**
+     * Deletes all files from the given file system.
+     *
+     * @param fs The file system to clean up.
+     * @throws IOException On error.
+     */
+    public static void clear(AbstractFileSystem fs) throws IOException {
+        // Delete root contents:
+        FileStatus[] statuses = fs.listStatus(new Path("/"));
+
+        if (statuses != null) {
+            for (FileStatus stat: statuses)
+                fs.delete(stat.getPath(), true);
         }
     }
 

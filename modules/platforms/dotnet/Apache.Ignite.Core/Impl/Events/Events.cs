@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Impl.Events
             return DoOutInOp((int) Op.RemoteQuery,
                 writer =>
                 {
-                    writer.Write(new PortableOrSerializableObjectHolder(filter));
+                    writer.Write(filter);
 
                     writer.WriteLong((long) (timeout == null ? 0 : timeout.Value.TotalMilliseconds));
 
@@ -148,14 +148,14 @@ namespace Apache.Ignite.Core.Impl.Events
 
                     if (localListener != null)
                     {
-                        var listener = new RemoteListenEventFilter(Ignite, (id, e) => localListener.Invoke(id, (T) e));
+                        var listener = new RemoteListenEventFilter(Ignite, e => localListener.Invoke((T) e));
                         writer.WriteLong(Ignite.HandleRegistry.Allocate(listener));
                     }
 
                     writer.WriteBoolean(remoteFilter != null);
 
                     if (remoteFilter != null)
-                        writer.Write(new PortableOrSerializableObjectHolder(remoteFilter));
+                        writer.Write(remoteFilter);
 
                     WriteEventTypes(types, writer);
                 },
@@ -164,7 +164,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
         /** <inheritDoc /> */
         public Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
-            IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, IEnumerable<int> types = null) 
+            IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, IEnumerable<int> types = null)
             where T : IEvent
         {
             return RemoteListen(bufSize, interval, autoUnsubscribe, localListener, remoteFilter, TypesToArray(types));
@@ -230,11 +230,11 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public void RecordLocal(IEvent evt)
         {
-            throw new NotImplementedException("GG-10244");
+            throw new NotImplementedException("IGNITE-1410");
         }
 
         /** <inheritDoc /> */
-        public void LocalListen<T>(IEventFilter<T> listener, params int[] types) where T : IEvent
+        public void LocalListen<T>(IEventListener<T> listener, params int[] types) where T : IEvent
         {
             IgniteArgumentCheck.NotNull(listener, "listener");
             IgniteArgumentCheck.NotNullOrEmpty(types, "types");
@@ -244,13 +244,13 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
-        public void LocalListen<T>(IEventFilter<T> listener, IEnumerable<int> types) where T : IEvent
+        public void LocalListen<T>(IEventListener<T> listener, IEnumerable<int> types) where T : IEvent
         {
             LocalListen(listener, TypesToArray(types));
         }
 
         /** <inheritDoc /> */
-        public bool StopLocalListen<T>(IEventFilter<T> listener, params int[] types) where T : IEvent
+        public bool StopLocalListen<T>(IEventListener<T> listener, params int[] types) where T : IEvent
         {
             lock (_localFilters)
             {
@@ -271,7 +271,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
-        public bool StopLocalListen<T>(IEventFilter<T> listener, IEnumerable<int> types) where T : IEvent
+        public bool StopLocalListen<T>(IEventListener<T> listener, IEnumerable<int> types) where T : IEvent
         {
             return StopLocalListen(listener, TypesToArray(types));
         }
@@ -415,7 +415,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <typeparam name="T">Type of events.</typeparam>
         /// <param name="listener">Predicate that is called on each received event.</param>
         /// <param name="type">Event type for which this listener will be notified</param>
-        private void LocalListen<T>(IEventFilter<T> listener, int type) where T : IEvent
+        private void LocalListen<T>(IEventListener<T> listener, int type) where T : IEvent
         {
             lock (_localFilters)
             {
@@ -432,7 +432,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
                 if (!filters.TryGetValue(type, out localFilter))
                 {
-                    localFilter = CreateLocalFilter(listener, type);
+                    localFilter = CreateLocalListener(listener, type);
 
                     filters[type] = localFilter;
                 }
@@ -448,10 +448,10 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="listener">Listener.</param>
         /// <param name="type">Event type.</param>
         /// <returns>Created wrapper.</returns>
-        private LocalHandledEventFilter CreateLocalFilter<T>(IEventFilter<T> listener, int type) where T : IEvent
+        private LocalHandledEventFilter CreateLocalListener<T>(IEventListener<T> listener, int type) where T : IEvent
         {
             var result = new LocalHandledEventFilter(
-                stream => InvokeLocalFilter(stream, listener),
+                stream => InvokeLocalListener(stream, listener),
                 unused =>
                 {
                     lock (_localFilters)
@@ -484,8 +484,21 @@ namespace Apache.Ignite.Core.Impl.Events
         {
             var evt = EventReader.Read<T>(Marshaller.StartUnmarshal(stream));
 
-            // No guid in local mode
-            return listener.Invoke(Guid.Empty, evt);
+            return listener.Invoke(evt);
+        }
+
+        /// <summary>
+        /// Invokes local filter using data from specified stream.
+        /// </summary>
+        /// <typeparam name="T">Event object type.</typeparam>
+        /// <param name="stream">The stream.</param>
+        /// <param name="listener">The listener.</param>
+        /// <returns>Filter invocation result.</returns>
+        private bool InvokeLocalListener<T>(IPortableStream stream, IEventListener<T> listener) where T : IEvent
+        {
+            var evt = EventReader.Read<T>(Marshaller.StartUnmarshal(stream));
+
+            return listener.Invoke(evt);
         }
 
         /// <summary>

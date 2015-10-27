@@ -118,7 +118,11 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         cfg.setClientMode(client);
 
-        cfg.setCommunicationSpi(new TestCommunicationSpi());
+        TestCommunicationSpi commSpi = new TestCommunicationSpi();
+
+        commSpi.setSharedMemoryPort(-1);
+
+        cfg.setCommunicationSpi(commSpi);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -1409,6 +1413,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testAtomicClockPutAllMultinode() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1685");
+
         multinode(CLOCK, TestType.PUT_ALL);
     }
 

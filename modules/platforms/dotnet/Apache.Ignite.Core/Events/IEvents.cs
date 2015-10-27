@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Events
     using Apache.Ignite.Core.Common;
 
     /// <summary>
-    /// Provides functionality for local and remote event notifications on nodes defined by <see cref="ClusterGroup"/>.
+    /// Provides functionality for event notifications on nodes defined by <see cref="ClusterGroup"/>.
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// </summary>
@@ -57,91 +57,6 @@ namespace Apache.Ignite.Core.Events
         [AsyncSupported]
         ICollection<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, IEnumerable<int> types = null) 
             where T : IEvent;
-
-        /// <summary>
-        /// Adds event listener for specified events to all nodes in the cluster group (possibly including local node 
-        /// if it belongs to the cluster group as well). This means that all events occurring on any node within this 
-        /// cluster group that pass remote filter will be sent to local node for local listener notifications.
-        /// <para/>
-        /// The listener can be unsubscribed automatically if local node stops, if localListener callback 
-        /// returns false or if <see cref="StopRemoteListen"/> is called.
-        /// </summary>
-        /// <typeparam name="T">Type of events.</typeparam>
-        /// <param name="bufSize">Remote events buffer size. Events from remote nodes won't be sent until buffer
-        /// is full or time interval is exceeded.</param>
-        /// <param name="interval">Maximum time interval after which events from remote node will be sent. Events
-        /// from remote nodes won't be sent until buffer is full or time interval is exceeded.</param>
-        /// <param name="autoUnsubscribe">Flag indicating that event listeners on remote nodes should be automatically 
-        /// unregistered if master node (node that initiated event listening) leaves topology. 
-        /// If this flag is false, listeners will be unregistered only when <see cref="StopRemoteListen"/>
-        /// method is called, or the localListener returns false.</param>
-        /// <param name="localListener"> Listener callback that is called on local node. If null, these events will 
-        /// be handled on remote nodes by passed in remoteFilter.</param>
-        /// <param name="remoteFilter">
-        /// Filter callback that is called on remote node. Only events that pass the remote filter will be 
-        /// sent to local node. If null, all events of specified types will be sent to local node. 
-        /// This remote filter can be used to pre-handle events remotely, before they are passed in to local callback.
-        /// It will be auto-unsubscribed on the node where event occurred in case if it returns false.
-        /// </param>
-        /// <param name="types">
-        /// Types of events to listen for. If not provided, all events that pass the provided remote filter 
-        /// will be sent to local node.
-        /// </param>
-        /// <returns>
-        /// Operation ID that can be passed to <see cref="StopRemoteListen"/> method to stop listening.
-        /// </returns>
-        [AsyncSupported]
-        Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
-            IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, params int[] types) 
-            where T : IEvent;
-
-        /// <summary>
-        /// Adds event listener for specified events to all nodes in the cluster group (possibly including local node 
-        /// if it belongs to the cluster group as well). This means that all events occurring on any node within this 
-        /// cluster group that pass remote filter will be sent to local node for local listener notifications.
-        /// <para/>
-        /// The listener can be unsubscribed automatically if local node stops, if localListener callback 
-        /// returns false or if <see cref="StopRemoteListen"/> is called.
-        /// </summary>
-        /// <typeparam name="T">Type of events.</typeparam>
-        /// <param name="bufSize">Remote events buffer size. Events from remote nodes won't be sent until buffer
-        /// is full or time interval is exceeded.</param>
-        /// <param name="interval">Maximum time interval after which events from remote node will be sent. Events
-        /// from remote nodes won't be sent until buffer is full or time interval is exceeded.</param>
-        /// <param name="autoUnsubscribe">Flag indicating that event listeners on remote nodes should be automatically 
-        /// unregistered if master node (node that initiated event listening) leaves topology. 
-        /// If this flag is false, listeners will be unregistered only when <see cref="StopRemoteListen"/>
-        /// method is called, or the localListener returns false.</param>
-        /// <param name="localListener"> Listener callback that is called on local node. If null, these events will 
-        /// be handled on remote nodes by passed in remoteFilter.</param>
-        /// <param name="remoteFilter">
-        /// Filter callback that is called on remote node. Only events that pass the remote filter will be 
-        /// sent to local node. If null, all events of specified types will be sent to local node. 
-        /// This remote filter can be used to pre-handle events remotely, before they are passed in to local callback.
-        /// It will be auto-unsubscribed on the node where event occurred in case if it returns false.
-        /// </param>
-        /// <param name="types">
-        /// Types of events to listen for. If not provided, all events that pass the provided remote filter 
-        /// will be sent to local node.
-        /// </param>
-        /// <returns>
-        /// Operation ID that can be passed to <see cref="StopRemoteListen"/> method to stop listening.
-        /// </returns>
-        [AsyncSupported]
-        Guid? RemoteListen<T>(int bufSize = 1, TimeSpan? interval = null, bool autoUnsubscribe = true,
-            IEventFilter<T> localListener = null, IEventFilter<T> remoteFilter = null, IEnumerable<int> types = null)
-            where T : IEvent;
-
-        /// <summary>
-        /// Stops listening to remote events. This will unregister all listeners identified with provided operation ID 
-        /// on all nodes defined by <see cref="ClusterGroup"/>.
-        /// </summary>
-        /// <param name="opId">
-        /// Operation ID that was returned from 
-        /// <see cref="RemoteListen{T}(int, TimeSpan?, bool, IEventFilter{T},IEventFilter{T},int[])"/>.
-        /// </param>
-        [AsyncSupported]
-        void StopRemoteListen(Guid opId);
 
         /// <summary>
         /// Waits for the specified events.
@@ -205,7 +120,7 @@ namespace Apache.Ignite.Core.Events
         /// Attempt to record internal event with this method will cause <see cref="ArgumentException"/> to be thrown.
         /// </summary>
         /// <param name="evt">Locally generated event.</param>
-        /// <exception cref="ArgumentException">If event type is within Ignite reserved range (1 � 1000)</exception>
+        /// <exception cref="ArgumentException">If event type is within Ignite reserved range (1 to 1000)</exception>
         void RecordLocal(IEvent evt);
 
         /// <summary>
@@ -216,7 +131,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="listener">Predicate that is called on each received event. If predicate returns false,
         /// it will be unregistered and will stop receiving events.</param>
         /// <param name="types">Event types for which this listener will be notified, should not be empty.</param>
-        void LocalListen<T>(IEventFilter<T> listener, params int[] types) where T : IEvent;
+        void LocalListen<T>(IEventListener<T> listener, params int[] types) where T : IEvent;
 
         /// <summary>
         /// Adds an event listener for local events. Note that listener will be added regardless of whether 
@@ -226,7 +141,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="listener">Predicate that is called on each received event. If predicate returns false,
         /// it will be unregistered and will stop receiving events.</param>
         /// <param name="types">Event types for which this listener will be notified, should not be empty.</param>
-        void LocalListen<T>(IEventFilter<T> listener, IEnumerable<int> types) where T : IEvent;
+        void LocalListen<T>(IEventListener<T> listener, IEnumerable<int> types) where T : IEvent;
 
         /// <summary>
         /// Removes local event listener.
@@ -236,7 +151,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="types">Types of events for which to remove listener. If not specified, then listener
         /// will be removed for all types it was registered for.</param>
         /// <returns>True if listener was removed, false otherwise.</returns>
-        bool StopLocalListen<T>(IEventFilter<T> listener, params int[] types) where T : IEvent;
+        bool StopLocalListen<T>(IEventListener<T> listener, params int[] types) where T : IEvent;
 
         /// <summary>
         /// Removes local event listener.
@@ -246,7 +161,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="types">Types of events for which to remove listener. If not specified, then listener
         /// will be removed for all types it was registered for.</param>
         /// <returns>True if listener was removed, false otherwise.</returns>
-        bool StopLocalListen<T>(IEventFilter<T> listener, IEnumerable<int> types) where T : IEvent;
+        bool StopLocalListen<T>(IEventListener<T> listener, IEnumerable<int> types) where T : IEvent;
 
         /// <summary>
         /// Enables provided events. Allows to start recording events that were disabled before. 

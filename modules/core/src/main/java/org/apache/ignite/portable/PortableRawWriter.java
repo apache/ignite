@@ -191,6 +191,12 @@ public interface PortableRawWriter {
      * @param val Value to write.
      * @throws PortableException In case of error.
      */
+    public void writeTimestampArray(@Nullable Timestamp[] val) throws PortableException;
+
+    /**
+     * @param val Value to write.
+     * @throws PortableException In case of error.
+     */
     public void writeObjectArray(@Nullable Object[] val) throws PortableException;
 
     /**

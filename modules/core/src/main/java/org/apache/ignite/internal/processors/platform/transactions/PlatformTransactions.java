@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.transactions;
 
+import java.sql.Timestamp;
 import java.util.Date;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -245,8 +246,8 @@ public class PlatformTransactions extends PlatformAbstractTarget {
             case OP_METRICS:
                 TransactionMetrics metrics = txs.metrics();
 
-                writer.writeDate(new Date(metrics.commitTime()));
-                writer.writeDate(new Date(metrics.rollbackTime()));
+                writer.writeTimestamp(new Timestamp(metrics.commitTime()));
+                writer.writeTimestamp(new Timestamp(metrics.rollbackTime()));
                 writer.writeInt(metrics.txCommits());
                 writer.writeInt(metrics.txRollbacks());
 

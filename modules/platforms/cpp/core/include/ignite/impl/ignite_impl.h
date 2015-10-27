@@ -26,13 +26,13 @@
 #include "ignite/impl/utils.h"
 
 namespace ignite 
-{    
+{
     namespace impl 
-    {            
+    {
         /**
          * Ignite implementation.
          */
-        class IgniteImpl
+        class IGNITE_FRIEND_EXPORT IgniteImpl
         {
             friend class Ignite;
         public:
@@ -55,6 +55,13 @@ namespace ignite
              * @param Name.
              */
             const char* GetName() const;
+
+            /**
+             * Get JNI context associated with this instance.
+             *
+             * @return JNI context for this instance.
+             */
+            common::java::JniContext* GetContext();
 
             /**
              * Get cache.
@@ -130,6 +137,19 @@ namespace ignite
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
+
+            /**
+             * Get instance of the implementation from the proxy class.
+             * Internal method. Should not be used by user.
+             *
+             * @param proxy Proxy instance containing IgniteImpl.
+             * @return IgniteImpl instance associated with the proxy or null-pointer.
+             */
+            template<typename T>
+            static IgniteImpl* GetFromProxy(T& proxy)
+            {
+                return proxy.impl.Get();
+            }
         private:
             /** Environment. */
             ignite::common::concurrent::SharedPointer<IgniteEnvironment> env;
@@ -140,7 +160,6 @@ namespace ignite
             IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl)
         };
     }
-    
 }
 
 #endif

@@ -207,7 +207,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /** <inheritDoc /> */
-        public ComputeJobResultPolicy Result(IComputeJobResult<int> res, IList<IComputeJobResult<int>> rcvd)
+        public ComputeJobResultPolicy OnResult(IComputeJobResult<int> res, IList<IComputeJobResult<int>> rcvd)
         {
             return ComputeJobResultPolicy.Wait;
         }
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** <inheritDoc /> */
         public int Reduce(IList<IComputeJobResult<int>> results)
         {
-            return results.Count == 0 ? 0 : results[0].Data();
+            return results.Count == 0 ? 0 : results[0].Data;
         }
     }
 

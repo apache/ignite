@@ -60,9 +60,9 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// <returns>
         /// Result policy that dictates how to process further upcoming job results.
         /// </returns>
-        public ComputeJobResultPolicy Result(IComputeJobResult<T> res, IList<IComputeJobResult<T>> rcvd)
+        public ComputeJobResultPolicy OnResult(IComputeJobResult<T> res, IList<IComputeJobResult<T>> rcvd)
         {
-            Exception err = res.Exception();
+            Exception err = res.Exception;
 
             if (err != null)
             {

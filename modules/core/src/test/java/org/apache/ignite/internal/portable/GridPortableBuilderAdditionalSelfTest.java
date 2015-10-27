@@ -258,6 +258,24 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    public void testTimestampArrayModification() {
+        TestObjectAllTypes obj = new TestObjectAllTypes();
+
+        obj.tsArr = new Timestamp[] {new Timestamp(111222333), new Timestamp(222333444)};
+
+        PortableBuilderImpl mutObj = wrap(obj);
+
+        Timestamp[] arr = mutObj.getField("tsArr");
+        arr[0] = new Timestamp(333444555);
+
+        TestObjectAllTypes res = mutObj.build().deserialize();
+
+        Assert.assertArrayEquals(new Timestamp[] {new Timestamp(333444555), new Timestamp(222333444)}, res.tsArr);
+    }
+
+    /**
+     *
+     */
     public void testUUIDArrayModification() {
         TestObjectAllTypes obj = new TestObjectAllTypes();
 
@@ -1012,6 +1030,19 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         PortableBuilderImpl mutableObj = wrap(obj);
 
+        assertEquals(Date.class, mutableObj.getField("foo").getClass());
+    }
+
+    /**
+     *
+     */
+    public void testTimestampInObjectField() {
+        TestObjectContainer obj = new TestObjectContainer();
+
+        obj.foo = new Timestamp(100020003);
+
+        PortableBuilderImpl mutableObj = wrap(obj);
+
         assertEquals(Timestamp.class, mutableObj.getField("foo").getClass());
     }
 
@@ -1022,6 +1053,19 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
         TestObjectContainer obj = new TestObjectContainer();
 
         obj.foo = Lists.newArrayList(new Date());
+
+        PortableBuilderImpl mutableObj = wrap(obj);
+
+        assertEquals(Date.class, ((List<?>)mutableObj.getField("foo")).get(0).getClass());
+    }
+
+    /**
+     *
+     */
+    public void testTimestampInCollection() {
+        TestObjectContainer obj = new TestObjectContainer();
+
+        obj.foo = Lists.newArrayList(new Timestamp(100020003));
 
         PortableBuilderImpl mutableObj = wrap(obj);
 
@@ -1037,13 +1081,32 @@ public class GridPortableBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         PortableBuilderImpl mutableObj = wrap(obj);
 
-        Date[] arr = {new Date()};
+        Date[] arr = { new Date() };
 
         mutableObj.setField("foo", arr);
 
         TestObjectContainer res = mutableObj.build().deserialize();
 
         assertEquals(Date[].class, res.foo.getClass());
+        assertTrue(Objects.deepEquals(arr, res.foo));
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
+    public void testTimestampArrayOverride() {
+        TestObjectContainer obj = new TestObjectContainer();
+
+        PortableBuilderImpl mutableObj = wrap(obj);
+
+        Timestamp[] arr = { new Timestamp(100020003) };
+
+        mutableObj.setField("foo", arr);
+
+        TestObjectContainer res = mutableObj.build().deserialize();
+
+        assertEquals(Timestamp[].class, res.foo.getClass());
         assertTrue(Objects.deepEquals(arr, res.foo));
     }
 

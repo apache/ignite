@@ -518,6 +518,66 @@ namespace ignite
                 int32_t ReadCollection(const char* fieldName, ignite::portable::CollectionType* typ, int32_t* size);
 
                 /**
+                 * Read values and insert them to specified position.
+                 *
+                 * @param out Output iterator to the initial position in the destination sequence.
+                 * @return Actual amount of elements read.
+                 */
+                template<typename T, typename OutputIterator>
+                int32_t ReadCollection(OutputIterator out)
+                {
+                    int32_t size;
+                    int32_t id = StartContainerSession(true, IGNITE_TYPE_COLLECTION, &size);
+
+                    // Reading collection type. We don't need it here but it should be read.
+                    if (size != -1)
+                        stream->ReadInt8();
+
+                    while (HasNextElement(id))
+                    {
+                        *out = ReadElement<T>(id);
+                        ++out;
+                    }
+
+                    return size;
+                }
+
+                /**
+                 * Read values and insert them to specified position.
+                 *
+                 * @param fieldName Field name.
+                 * @param out Output iterator to the initial position in the destination sequence.
+                 * @return Actual amount of elements read.
+                 */
+                template<typename T, typename OutputIterator>
+                int32_t ReadCollection(const char* fieldName, OutputIterator out)
+                {
+                    CheckRawMode(false);
+                    CheckSingleMode(true);
+
+                    int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
+                    int32_t fieldLen = SeekField(fieldId);
+
+                    if (fieldLen <= 0)
+                        return -1;
+
+                    int32_t size;
+                    int32_t id = StartContainerSession(false, IGNITE_TYPE_COLLECTION, &size);
+
+                    // Reading collection type. We don't need it here but it should be read.
+                    if (size != -1)
+                        stream->ReadInt8();
+
+                    while (HasNextElement(id))
+                    {
+                        *out = ReadElement<T>(id);
+                        ++out;
+                    }
+
+                    return size;
+                }
+
+                /**
                  * Start map read.
                  *
                  * @param typ Map type.
@@ -535,6 +595,36 @@ namespace ignite
                  * @return Read session ID.
                  */
                 int32_t ReadMap(const char* fieldName, ignite::portable::MapType* typ, int32_t* size);
+
+                /**
+                 * Read type of the collection.
+                 *
+                 * @return Collection type.
+                 */
+                ignite::portable::CollectionType ReadCollectionType();
+
+                /**
+                 * Read type of the collection.
+                 *
+                 * @param fieldName Field name.
+                 * @return Collection type.
+                 */
+                ignite::portable::CollectionType ReadCollectionType(const char* fieldName);
+
+                /**
+                 * Read size of the collection.
+                 *
+                 * @return Collection size.
+                 */
+                int32_t ReadCollectionSize();
+
+                /**
+                 * Read size of the collection.
+                 *
+                 * @param fieldName Field name.
+                 * @return Collection size.
+                 */
+                int32_t ReadCollectionSize(const char* fieldName);
 
                 /**
                  * Check whether next value exists.
@@ -657,22 +747,34 @@ namespace ignite
                     }
                     else
                     {
-                        bool usrType = stream->ReadBool();
-                        int32_t typeId = stream->ReadInt32();
-                        int32_t hashCode = stream->ReadInt32();
-                        int32_t len = stream->ReadInt32();
-                        int32_t rawOff = stream->ReadInt32();
+                        if (hdr != IGNITE_HDR_FULL) {
+                            IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_PORTABLE, "Unexpected header during deserialization: ", hdr);
+                        }
+                        else {
+                            int8_t protoVer = stream->ReadInt8();
 
-                        ignite::portable::PortableType<T> type;
-                        TemplatedPortableIdResolver<T> idRslvr(type);
-                        PortableReaderImpl readerImpl(stream, &idRslvr, pos, usrType, typeId, hashCode, len, rawOff);
-                        ignite::portable::PortableReader reader(&readerImpl);
+                            if (protoVer != IGNITE_PROTO_VER) {
+                                IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_PORTABLE, "Unsupported portable protocol version: ", protoVer);
+                            }
+                            else {
+                                bool usrType = stream->ReadBool();
+                                int32_t typeId = stream->ReadInt32();
+                                int32_t hashCode = stream->ReadInt32();
+                                int32_t len = stream->ReadInt32();
+                                int32_t rawOff = stream->ReadInt32();
 
-                        T val = type.Read(reader);
+                                ignite::portable::PortableType<T> type;
+                                TemplatedPortableIdResolver<T> idRslvr(type);
+                                PortableReaderImpl readerImpl(stream, &idRslvr, pos, usrType, typeId, hashCode, len, rawOff);
+                                ignite::portable::PortableReader reader(&readerImpl);
 
-                        stream->Position(pos + len);
+                                T val = type.Read(reader);
 
-                        return val;
+                                stream->Position(pos + len);
+
+                                return val;
+                            }
+                        }
                     }
                 }
 
@@ -1012,6 +1114,20 @@ namespace ignite
                  * @return Real array length.
                  */
                 int32_t ReadStringInternal(char* res, const int32_t len);
+
+                /**
+                 * Read type of the collection. Do not preserve stream position.
+                 *
+                 * @return Collection type.
+                 */
+                ignite::portable::CollectionType ReadCollectionTypeUnprotected();
+
+                /**
+                 * Read size of the collection. Do not preserve stream position.
+                 *
+                 * @return Collection size.
+                 */
+                int32_t ReadCollectionSizeUnprotected();
 
                 /**
                  * Read value.

@@ -17,6 +17,13 @@
 
 package org.apache.ignite.configuration;
 
+import java.io.Serializable;
+import java.util.Collection;
+import javax.cache.Cache;
+import javax.cache.configuration.CompleteConfiguration;
+import javax.cache.configuration.Factory;
+import javax.cache.configuration.MutableConfiguration;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
@@ -446,7 +453,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setName(String name) {
-        A.ensure(name == null || !name.isEmpty(), "Name cannot be null or empty.");
+        A.ensure(name == null || !name.isEmpty(), "Name cannot be empty.");
 
         this.name = name;
 

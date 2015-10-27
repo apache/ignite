@@ -788,7 +788,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             return SafeCall(() =>
             {
-                MessageFilterHolder holder = MessageFilterHolder.CreateRemote(_ignite, memPtr);
+                MessageListenerHolder holder = MessageListenerHolder.CreateRemote(_ignite, memPtr);
 
                 return _ignite.HandleRegistry.AllocateSafe(holder);
             });
@@ -798,7 +798,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             return SafeCall(() =>
             {
-                var holder = _ignite.HandleRegistry.Get<MessageFilterHolder>(ptr, false);
+                var holder = _ignite.HandleRegistry.Get<MessageListenerHolder>(ptr, false);
                 
                 if (holder == null)
                     return 0;
@@ -978,7 +978,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                    var filter = (IClusterNodeFilter) reader.ReadObject<PortableOrSerializableObjectHolder>().Item;
+                    var filter = reader.ReadObject<IClusterNodeFilter>();
 
                     return filter.Invoke(_ignite.GetNode(reader.ReadGuid())) ? 1 : 0;
                 }

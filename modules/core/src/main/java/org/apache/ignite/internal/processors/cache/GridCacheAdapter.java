@@ -129,6 +129,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -149,7 +150,6 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
@@ -1057,44 +1057,52 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Split clearLocally all task into multiple runnables.
      *
+     * @param srv Whether to clear server cache.
+     * @param near Whether to clear near cache.
+     * @param readers Whether to clear readers.
      * @return Split runnables.
      */
-    public List<GridCacheClearAllRunnable<K, V>> splitClearLocally() {
-        assert CLEAR_ALL_SPLIT_THRESHOLD > 0;
+    public List<GridCacheClearAllRunnable<K, V>> splitClearLocally(boolean srv, boolean near, boolean readers) {
+        if ((isNear() && near) || (!isNear() && srv)) {
+            int keySize = size();
 
-        int keySize = size();
+            int cnt = Math.min(keySize / CLEAR_ALL_SPLIT_THRESHOLD + (keySize % CLEAR_ALL_SPLIT_THRESHOLD != 0 ? 1 : 0),
+                    Runtime.getRuntime().availableProcessors());
 
-        int cnt = Math.min(keySize / CLEAR_ALL_SPLIT_THRESHOLD + (keySize % CLEAR_ALL_SPLIT_THRESHOLD != 0 ? 1 : 0),
-            Runtime.getRuntime().availableProcessors());
+            if (cnt == 0)
+                cnt = 1; // Still perform cleanup since there could be entries in swap.
 
-        if (cnt == 0)
-            cnt = 1; // Still perform cleanup since there could be entries in swap.
+            GridCacheVersion obsoleteVer = ctx.versions().next();
 
-        GridCacheVersion obsoleteVer = ctx.versions().next();
+            List<GridCacheClearAllRunnable<K, V>> res = new ArrayList<>(cnt);
 
-        List<GridCacheClearAllRunnable<K, V>> res = new ArrayList<>(cnt);
+            for (int i = 0; i < cnt; i++)
+                res.add(new GridCacheClearAllRunnable<>(this, obsoleteVer, i, cnt, readers));
 
-        for (int i = 0; i < cnt; i++)
-            res.add(new GridCacheClearAllRunnable<>(this, obsoleteVer, i, cnt));
-
-        return res;
+            return res;
+        }
+        else
+            return null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean clearLocally(K key) {
-        return clearLocally0(key);
+        return clearLocally0(key, false);
     }
 
     /** {@inheritDoc} */
-    @Override public void clearLocallyAll(Set<? extends K> keys) {
-        clearLocally0(keys);
+    @Override public void clearLocallyAll(Set<? extends K> keys, boolean srv, boolean near, boolean readers) {
+        if (keys != null && ((isNear() && near) || (!isNear() && srv))) {
+            for (K key : keys)
+                clearLocally0(key, readers);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void clearLocally() {
+    @Override public void clearLocally(boolean srv, boolean near, boolean readers) {
         ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
-        List<GridCacheClearAllRunnable<K, V>> jobs = splitClearLocally();
+        List<GridCacheClearAllRunnable<K, V>> jobs = splitClearLocally(srv, near, readers);
 
         if (!F.isEmpty(jobs)) {
             ExecutorService execSvc = null;
@@ -1128,6 +1136,77 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void clear() throws IgniteCheckedException {
+        clear((Set<? extends K>)null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clear(K key) throws IgniteCheckedException {
+        clear(Collections.singleton(key));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearAll(Set<? extends K> keys) throws IgniteCheckedException {
+        clear(keys);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> clearAsync() {
+        return clearAsync((Set<? extends K>)null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> clearAsync(K key) {
+        return clearAsync(Collections.singleton(key));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> clearAllAsync(Set<? extends K> keys) {
+        return clearAsync(keys);
+    }
+
+    /**
+     * @param keys Keys to clear.
+     * @throws IgniteCheckedException In case of error.
+     */
+    private void clear(@Nullable Set<? extends K> keys) throws IgniteCheckedException {
+        executeClearTask(keys, false).get();
+        executeClearTask(keys, true).get();
+    }
+
+    /**
+     * @param keys Keys to clear or {@code null} if all cache should be cleared.
+     * @return Future.
+     */
+    private IgniteInternalFuture<?> clearAsync(@Nullable final Set<? extends K> keys) {
+        return executeClearTask(keys, false).chain(new CX1<IgniteInternalFuture<?>, Object>() {
+            @Override public Object applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
+                executeClearTask(keys, true).get();
+
+                return null;
+            }
+        });
+    }
+
+    /**
+     * @param keys Keys to clear.
+     * @param near Near cache flag.
+     * @return Future.
+     */
+    private IgniteInternalFuture<?> executeClearTask(@Nullable Set<? extends K> keys, boolean near) {
+        Collection<ClusterNode> srvNodes = ctx.grid().cluster().forCacheNodes(name(), !near, near, false).nodes();
+
+        if (!srvNodes.isEmpty()) {
+            ctx.kernalContext().task().setThreadContext(TC_SUBGRID, srvNodes);
+
+            return ctx.kernalContext().task().execute(
+                new ClearTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), keys, near), null);
+        }
+        else
+            return new GridFinishedFuture<>();
+    }
+
     /**
      * @param keys Keys.
      * @param readers Readers flag.
@@ -1150,110 +1229,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     ex);
             }
         }
-    }
-
-    /**
-     * Clears entry from cache.
-     *
-     * @param obsoleteVer Obsolete version to set.
-     * @param key Key to clearLocally.
-     * @param filter Optional filter.
-     * @return {@code True} if cleared.
-     */
-    private boolean clearLocally(GridCacheVersion obsoleteVer, K key, @Nullable CacheEntryPredicate[] filter) {
-        try {
-            KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
-
-            GridCacheEntryEx entry = ctx.isSwapOrOffheapEnabled() ? entryEx(cacheKey) : peekEx(cacheKey);
-
-            if (entry != null)
-                return entry.clear(obsoleteVer, false, filter);
-        }
-        catch (GridDhtInvalidPartitionException ignored) {
-            return false;
-        }
-        catch (IgniteCheckedException ex) {
-            U.error(log, "Failed to clearLocally entry for key: " + key, ex);
-        }
-
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clear() throws IgniteCheckedException {
-        // Clear local cache synchronously.
-        clearLocally();
-
-        clearRemotes(0, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clear(K key) throws IgniteCheckedException {
-        // Clear local cache synchronously.
-        clearLocally(key);
-
-        clearRemotes(0, Collections.singleton(key));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clearAll(Set<? extends K> keys) throws IgniteCheckedException {
-        // Clear local cache synchronously.
-        clearLocallyAll(keys);
-
-        clearRemotes(0, keys);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> clearAsync(K key) {
-        return clearKeysAsync(Collections.singleton(key));
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> clearAsync(Set<? extends K> keys) {
-        return clearKeysAsync(keys);
-    }
-
-    /**
-     * @param timeout Timeout for clearLocally all task in milliseconds (0 for never).
-     *      Set it to larger value for large caches.
-     * @param keys Keys to clear or {@code null} if all cache should be cleared.
-     * @throws IgniteCheckedException In case of cache could not be cleared on any of the nodes.
-     */
-    private void clearRemotes(long timeout, @Nullable final Set<? extends K> keys) throws IgniteCheckedException {
-        // Send job to remote nodes only.
-        Collection<ClusterNode> nodes =
-            ctx.grid().cluster().forCacheNodes(name(), true, true, false).forRemotes().nodes();
-
-        if (!nodes.isEmpty()) {
-            ctx.kernalContext().task().setThreadContext(TC_TIMEOUT, timeout);
-
-            ctx.kernalContext().task().setThreadContext(TC_SUBGRID, nodes);
-
-            ctx.kernalContext().task().execute(
-                new ClearTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), keys), null).get();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> clearAsync() {
-        return clearKeysAsync(null);
-    }
-
-    /**
-     * @param keys Keys to clear or {@code null} if all cache should be cleared.
-     * @return Future.
-     */
-    private IgniteInternalFuture<?> clearKeysAsync(final Set<? extends K> keys) {
-        Collection<ClusterNode> nodes = ctx.grid().cluster().forCacheNodes(name(), true, true, false).nodes();
-
-        if (!nodes.isEmpty()) {
-            ctx.kernalContext().task().setThreadContext(TC_SUBGRID, nodes);
-
-            return ctx.kernalContext().task().execute(
-                new ClearTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), keys), null);
-        }
-        else
-            return new GridFinishedFuture<>();
     }
 
     /**
@@ -4427,39 +4402,33 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * @param keys Keys.
-     * @param filter Filters to evaluate.
-     */
-    public void clearLocally0(Collection<? extends K> keys,
-        @Nullable CacheEntryPredicate... filter) {
-        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
-
-        if (F.isEmpty(keys))
-            return;
-
-        if (keyCheck)
-            validateCacheKeys(keys);
-
-        GridCacheVersion obsoleteVer = ctx.versions().next();
-
-        for (K k : keys)
-            clearLocally(obsoleteVer, k, filter);
-    }
-
-    /**
      * @param key Key.
-     * @param filter Filters to evaluate.
-     * @return {@code True} if cleared.
+     * @param readers Whether to clear readers.
      */
-    public boolean clearLocally0(K key, @Nullable CacheEntryPredicate... filter) {
-        A.notNull(key, "key");
+    private boolean clearLocally0(K key, boolean readers) {
+        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
         if (keyCheck)
             validateCacheKey(key);
 
-        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
+        GridCacheVersion obsoleteVer = ctx.versions().next();
 
-        return clearLocally(ctx.versions().next(), key, filter);
+        try {
+            KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
+
+            GridCacheEntryEx entry = ctx.isSwapOrOffheapEnabled() ? entryEx(cacheKey) : peekEx(cacheKey);
+
+            if (entry != null)
+                return entry.clear(obsoleteVer, readers, null);
+        }
+        catch (GridDhtInvalidPartitionException ignored) {
+            // No-op.
+        }
+        catch (IgniteCheckedException ex) {
+            U.error(log, "Failed to clearLocally entry for key: " + key, ex);
+        }
+
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -5178,9 +5147,23 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** {@inheritDoc} */
         @Nullable @Override public Object localExecute(@Nullable IgniteInternalCache cache) {
             if (cache != null)
-                cache.clearLocally();
+                cache.clearLocally(clearServerCache(), clearNearCache(), true);
 
             return null;
+        }
+
+        /**
+         * @return Whether to clear server cache.
+         */
+        protected boolean clearServerCache() {
+            return true;
+        }
+
+        /**
+         * @return Whether to clear near cache.
+         */
+        protected boolean clearNearCache() {
+            return false;
         }
     }
 
@@ -5209,9 +5192,86 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** {@inheritDoc} */
         @Nullable @Override public Object localExecute(@Nullable IgniteInternalCache cache) {
             if (cache != null)
-                cache.clearLocallyAll(keys);
+                cache.clearLocallyAll(keys, clearServerCache(), clearNearCache(), true);
 
             return null;
+        }
+
+        /**
+         * @return Whether to clear server cache.
+         */
+        protected boolean clearServerCache() {
+            return true;
+        }
+
+        /**
+         * @return Whether to clear near cache.
+         */
+        protected boolean clearNearCache() {
+            return false;
+        }
+    }
+
+    /**
+     * Global clear all for near cache.
+     */
+    @GridInternal
+    private static class GlobalClearAllNearJob extends GlobalClearAllJob {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * @param cacheName Cache name.
+         * @param topVer Affinity topology version.
+         */
+        private GlobalClearAllNearJob(String cacheName, AffinityTopologyVersion topVer) {
+            super(cacheName, topVer);
+        }
+
+        /**
+         * @return Whether to clear server cache.
+         */
+        @Override protected boolean clearServerCache() {
+            return false;
+        }
+
+        /**
+         * @return Whether to clear near cache.
+         */
+        @Override protected boolean clearNearCache() {
+            return true;
+        }
+    }
+
+    /**
+     * Global clear keys for near cache.
+     */
+    @GridInternal
+    private static class GlobalClearKeySetNearJob<K> extends GlobalClearKeySetJob<K> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * @param cacheName Cache name.
+         * @param topVer Affinity topology version.
+         * @param keys Keys to clear.
+         */
+        private GlobalClearKeySetNearJob(String cacheName, AffinityTopologyVersion topVer, Set<? extends K> keys) {
+            super(cacheName, topVer, keys);
+        }
+
+        /**
+         * @return Whether to clear server cache.
+         */
+        protected boolean clearServerCache() {
+            return false;
+        }
+
+        /**
+         * @return Whether to clear near cache.
+         */
+        protected boolean clearNearCache() {
+            return true;
         }
     }
 
@@ -5972,6 +6032,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        public static final IgniteProductVersion NEAR_JOB_SINCE = IgniteProductVersion.fromString("1.5.0");
+
         /** Cache name. */
         private final String cacheName;
 
@@ -5981,26 +6044,40 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** Keys to clear. */
         private final Set<? extends K> keys;
 
+        /** Near cache flag. */
+        private final boolean near;
+
         /**
          * @param cacheName Cache name.
          * @param topVer Affinity topology version.
          * @param keys Keys to clear.
+         * @param near Near cache flag.
          */
-        public ClearTask(String cacheName, AffinityTopologyVersion topVer, Set<? extends K> keys) {
+        public ClearTask(String cacheName, AffinityTopologyVersion topVer, Set<? extends K> keys, boolean near) {
             this.cacheName = cacheName;
             this.topVer = topVer;
             this.keys = keys;
+            this.near = near;
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) throws IgniteException {
-            Map<ComputeJob, ClusterNode> jobs = new HashMap();
+            Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
             for (ClusterNode node : subgrid) {
-                jobs.put(keys == null ? new GlobalClearAllJob(cacheName, topVer) :
-                        new GlobalClearKeySetJob<K>(cacheName, topVer, keys),
-                    node);
+                ComputeJob job;
+
+                if (near && node.version().compareTo(NEAR_JOB_SINCE) >= 0) {
+                    job = keys == null ? new GlobalClearAllNearJob(cacheName, topVer) :
+                        new GlobalClearKeySetNearJob<>(cacheName, topVer, keys);
+                }
+                else {
+                    job = keys == null ? new GlobalClearAllJob(cacheName, topVer) :
+                        new GlobalClearKeySetJob<>(cacheName, topVer, keys);
+                }
+
+                jobs.put(job, node);
             }
 
             return jobs;

@@ -144,13 +144,22 @@
                                     </fileset>
                                 </copy>
 
-                                <copy file="${settings.localRepository}/com/sun/mail/javax.mail/1.5.2/javax.mail-1.5.2.jar" todir="${basedir}/target/classes/lib" />
+                                <copy file="${settings.localRepository}/com/sun/mail/javax.mail/1.5.2/javax.mail-1.5.2.jar" todir="${basedir}/target/libs" />
 
                                 <zip destfile="${basedir}/target/classes/lib/depend.jar" encoding="UTF-8">
                                     <zipfileset dir="modules/uri-dependency/target/classes" />
                                 </zip>
 
+                                <copy file="${basedir}/target/classes/lib/depend.jar" todir="${basedir}/target/libs" />
+
+                                <mkdir dir="${basedir}/target/deploy_tmp/"/>
+
                                 <taskdef name="gar" classname="org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask" />
+
+                                <gar destfile="${basedir}/target/deploy/uri-classes.gar" basedir="${basedir}/target/classes" />
+                                <gar destfile="${basedir}/target/deploy/uri-libs.gar" basedir="${basedir}/target/libs" />
+
+                                <copy file="${settings.localRepository}/com/sun/mail/javax.mail/1.5.2/javax.mail-1.5.2.jar" todir="${basedir}/target/classes/lib" />
 
                                 <gar destfile="${basedir}/target/deploy/uri.gar" basedir="${basedir}/target/classes" />
 

@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Linq;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Datastream;
@@ -505,7 +504,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             AddSystemType(PortableUtils.TypeNativeJobHolder, w => new ComputeJobHolder(w));
             AddSystemType(PortableUtils.TypeComputeJobWrapper, w => new ComputeJobWrapper(w));
-            AddSystemType(PortableUtils.TypePortableJobResHolder, w => new PortableResultWrapper(w));
             AddSystemType(PortableUtils.TypeIgniteProxy, w => new IgniteProxy());
             AddSystemType(PortableUtils.TypeComputeOutFuncJob, w => new ComputeOutFuncJob(w));
             AddSystemType(PortableUtils.TypeComputeOutFuncWrapper, w => new ComputeOutFuncWrapper(w));
@@ -514,10 +512,10 @@ namespace Apache.Ignite.Core.Impl.Portable
             AddSystemType(PortableUtils.TypeComputeActionJob, w => new ComputeActionJob(w));
             AddSystemType(PortableUtils.TypeContinuousQueryRemoteFilterHolder, w => new ContinuousQueryFilterHolder(w));
             AddSystemType(PortableUtils.TypeSerializableHolder, w => new SerializableObjectHolder(w));
+            AddSystemType(PortableUtils.TypeDateTimeHolder, w => new DateTimeHolder(w));
             AddSystemType(PortableUtils.TypeCacheEntryProcessorHolder, w => new CacheEntryProcessorHolder(w));
             AddSystemType(PortableUtils.TypeCacheEntryPredicateHolder, w => new CacheEntryFilterHolder(w));
-            AddSystemType(PortableUtils.TypeMessageFilterHolder, w => new MessageFilterHolder(w));
-            AddSystemType(PortableUtils.TypePortableOrSerializableHolder, w => new PortableOrSerializableObjectHolder(w));
+            AddSystemType(PortableUtils.TypeMessageListenerHolder, w => new MessageListenerHolder(w));
             AddSystemType(PortableUtils.TypeStreamReceiverHolder, w => new StreamReceiverHolder(w));
         }
 

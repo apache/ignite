@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Common
     /// <summary>
     /// Ignite guid with additional local ID.
     /// </summary>
+    [Serializable]
     public struct IgniteGuid : IEquatable<IgniteGuid>
     {
         /** Global id. */
@@ -89,20 +90,10 @@ namespace Apache.Ignite.Core.Common
         }
 
         /// <summary>
-        /// Writes this object to the given writer.
-        /// </summary> 
-        /// <param name="w">Writer.</param>
-        public void WritePortable(IPortableRawWriter w)
-        {
-            w.WriteGuid(GlobalId);
-            w.WriteLong(LocalId);
-        }
-
-        /// <summary>
         /// Reads this object from the given reader.
         /// </summary> 
         /// <param name="r">Reader.</param>
-        public static IgniteGuid? ReadPortable(IPortableRawReader r)
+        internal static IgniteGuid? ReadPortable(IPortableRawReader r)
         {
             var guid = r.ReadGuid();
 

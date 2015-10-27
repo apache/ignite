@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Collections;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
@@ -46,10 +47,13 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private readonly long _order;
 
         /** Local flag. */
-        private readonly bool _local;
+        private readonly bool _isLocal;
 
         /** Daemon flag. */
-        private readonly bool _daemon;
+        private readonly bool _isDaemon;
+
+        /** Client flag. */
+        private readonly bool _isClient;
 
         /** Metrics. */
         private volatile ClusterMetricsImpl _metrics;
@@ -69,12 +73,13 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
             _id = id.Value;
 
-            _attrs = reader.ReadGenericDictionary<string, object>().AsReadOnly();
-            _addrs = reader.ReadGenericCollection<string>().AsReadOnly();
-            _hosts = reader.ReadGenericCollection<string>().AsReadOnly();
+            _attrs = reader.ReadDictionaryAsGeneric<string, object>().AsReadOnly();
+            _addrs = reader.ReadCollectionAsList<string>().AsReadOnly();
+            _hosts = reader.ReadCollectionAsList<string>().AsReadOnly();
             _order = reader.ReadLong();
-            _local = reader.ReadBoolean();
-            _daemon = reader.ReadBoolean();
+            _isLocal = reader.ReadBoolean();
+            _isDaemon = reader.ReadBoolean();
+            _isClient = reader.ReadBoolean();
 
             _metrics = reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
         }
@@ -120,46 +125,31 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public ICollection<string> Addresses
         {
-            get
-            {
-                return _addrs;
-            }
+            get { return _addrs; }
         }
 
         /** <inheritDoc /> */
         public ICollection<string> HostNames
         {
-            get
-            {
-                return _hosts;
-            }
+            get { return _hosts; }
         }
 
         /** <inheritDoc /> */
         public long Order
         {
-            get
-            {
-                return _order;
-            }
+            get { return _order; }
         }
 
         /** <inheritDoc /> */
         public bool IsLocal
         {
-            get
-            {
-                return _local;
-            }
+            get { return _isLocal; }
         }
 
         /** <inheritDoc /> */
         public bool IsDaemon
         {
-            get
-            {
-                return _daemon;
-            }
+            get { return _isDaemon; }
         }
 
         /** <inheritDoc /> */
@@ -189,7 +179,13 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
             return oldMetrics;
         }
-        
+
+        /** <inheritDoc /> */
+        public bool IsClient
+        {
+            get { return _isClient; }
+        }
+
         /** <inheritDoc /> */
         public override string ToString()
         {

@@ -849,7 +849,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                     GridCacheContext cctx0 = cand.parent().context();
 
                     GridDistributedCacheEntry e =
-                        (GridDistributedCacheEntry)cctx0.cache().peekEx(cand.key());
+                        (GridDistributedCacheEntry)cctx0.cache().peekEx(cand.parent().key());
 
                     if (e != null)
                         e.recheck();

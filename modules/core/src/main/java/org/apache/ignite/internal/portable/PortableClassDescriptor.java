@@ -88,9 +88,6 @@ public class PortableClassDescriptor {
     private final Method readResolveMtd;
 
     /** */
-    private final boolean useTs;
-
-    /** */
     private final Map<String, String> fieldsMeta;
 
     /** */
@@ -113,7 +110,6 @@ public class PortableClassDescriptor {
      * @param typeName Type name.
      * @param idMapper ID mapper.
      * @param serializer Serializer.
-     * @param useTs Use timestamp flag.
      * @param metaDataEnabled Metadata enabled flag.
      * @param keepDeserialized Keep deserialized flag.
      * @param registered Whether typeId has been successfully registered by MarshallerContext or not.
@@ -128,7 +124,6 @@ public class PortableClassDescriptor {
         String typeName,
         @Nullable PortableIdMapper idMapper,
         @Nullable PortableSerializer serializer,
-        boolean useTs,
         boolean metaDataEnabled,
         boolean keepDeserialized,
         boolean registered,
@@ -143,7 +138,6 @@ public class PortableClassDescriptor {
         this.typeId = typeId;
         this.typeName = typeName;
         this.serializer = serializer;
-        this.useTs = useTs;
         this.keepDeserialized = keepDeserialized;
         this.registered = registered;
 
@@ -169,6 +163,7 @@ public class PortableClassDescriptor {
             case STRING:
             case UUID:
             case DATE:
+            case TIMESTAMP:
             case BYTE_ARR:
             case SHORT_ARR:
             case INT_ARR:
@@ -181,6 +176,7 @@ public class PortableClassDescriptor {
             case STRING_ARR:
             case UUID_ARR:
             case DATE_ARR:
+            case TIMESTAMP_ARR:
             case OBJ_ARR:
             case COL:
             case MAP:
@@ -277,13 +273,6 @@ public class PortableClassDescriptor {
      */
     Map<String, String> fieldsMeta() {
         return fieldsMeta;
-    }
-
-    /**
-     * @return Use timestamp flag.
-     */
-    boolean isUseTimestamp() {
-        return useTs;
     }
 
     /**
@@ -405,10 +394,12 @@ public class PortableClassDescriptor {
                 break;
 
             case DATE:
-                if (obj instanceof Timestamp)
-                    writer.doWriteTimestamp((Timestamp)obj);
-                else
-                    writer.doWriteDate((Date)obj);
+                writer.doWriteDate((Date)obj);
+
+                break;
+
+            case TIMESTAMP:
+                writer.doWriteTimestamp((Timestamp)obj);
 
                 break;
 
@@ -469,6 +460,11 @@ public class PortableClassDescriptor {
 
             case DATE_ARR:
                 writer.doWriteDateArray((Date[])obj);
+
+                break;
+
+            case TIMESTAMP_ARR:
+                writer.doWriteTimestampArray((Timestamp[]) obj);
 
                 break;
 
@@ -653,6 +649,7 @@ public class PortableClassDescriptor {
         int pos = writer.position();
 
         writer.doWriteByte(GridPortableMarshaller.OBJ);
+        writer.doWriteByte(GridPortableMarshaller.PROTO_VER);
         writer.doWriteBoolean(userType);
         writer.doWriteInt(registered ? typeId : GridPortableMarshaller.UNREGISTERED_TYPE_ID);
         writer.doWriteInt(obj instanceof CacheObjectImpl ? 0 : obj.hashCode());
@@ -766,8 +763,10 @@ public class PortableClassDescriptor {
             return Mode.STRING;
         else if (cls == UUID.class)
             return Mode.UUID;
-        else if (cls == Timestamp.class || cls == Date.class)
+        else if (cls == Date.class)
             return Mode.DATE;
+        else if (cls == Timestamp.class)
+            return Mode.TIMESTAMP;
         else if (cls == byte[].class)
             return Mode.BYTE_ARR;
         else if (cls == short[].class)
@@ -792,6 +791,8 @@ public class PortableClassDescriptor {
             return Mode.UUID_ARR;
         else if (cls == Date[].class)
             return Mode.DATE_ARR;
+        else if (cls == Timestamp[].class)
+            return Mode.TIMESTAMP_ARR;
         else if (cls.isArray())
             return cls.getComponentType().isEnum() ? Mode.ENUM_ARR : Mode.OBJ_ARR;
         else if (cls == PortableObjectImpl.class)
@@ -926,10 +927,12 @@ public class PortableClassDescriptor {
                     break;
 
                 case DATE:
-                    if (val instanceof Timestamp)
-                        writer.writeTimestampField((Timestamp)val);
-                    else
-                        writer.writeDateField((Date)val);
+                    writer.writeDateField((Date)val);
+
+                    break;
+
+                case TIMESTAMP:
+                    writer.writeTimestampField((Timestamp)val);
 
                     break;
 
@@ -990,6 +993,11 @@ public class PortableClassDescriptor {
 
                 case DATE_ARR:
                     writer.writeDateArrayField((Date[])val);
+
+                    break;
+
+                case TIMESTAMP_ARR:
+                    writer.writeTimestampArrayField((Timestamp[]) val);
 
                     break;
 
@@ -1110,7 +1118,12 @@ public class PortableClassDescriptor {
                     break;
 
                 case DATE:
-                    val = field.getType() == Timestamp.class ? reader.readTimestamp(id) : reader.readDate(id);
+                    val = reader.readDate(id);
+
+                    break;
+
+                case TIMESTAMP:
+                    val = reader.readTimestamp(id);
 
                     break;
 
@@ -1171,6 +1184,11 @@ public class PortableClassDescriptor {
 
                 case DATE_ARR:
                     val = reader.readDateArray(id);
+
+                    break;
+
+                case TIMESTAMP_ARR:
+                    val = reader.readTimestampArray(id);
 
                     break;
 
@@ -1274,6 +1292,9 @@ public class PortableClassDescriptor {
         DATE("Date"),
 
         /** */
+        TIMESTAMP("Timestamp"),
+
+        /** */
         BYTE_ARR("byte[]"),
 
         /** */
@@ -1308,6 +1329,9 @@ public class PortableClassDescriptor {
 
         /** */
         DATE_ARR("Date[]"),
+
+        /** */
+        TIMESTAMP_ARR("Timestamp[]"),
 
         /** */
         OBJ_ARR("Object[]"),

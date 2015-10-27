@@ -268,7 +268,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             if (tx.onePhaseCommit()) {
                 finishOnePhase();
 
-                tx.tmFinish(err == null);
+                tx.tmFinish(commit && err == null);
             }
 
             Throwable th = this.err.get();
@@ -333,7 +333,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * Initializes future.
      */
     void finish() {
-        if (tx.needCheckBackup()) {
+        if (tx.onNeedCheckBackup()) {
             assert tx.onePhaseCommit();
 
             checkBackup();
