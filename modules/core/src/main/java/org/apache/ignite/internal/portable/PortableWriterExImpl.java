@@ -125,9 +125,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     // TODO: Optimize.
     private List<Integer> schema;
 
-    /** Schema ID. */
-    private int schemaId;
-
     /**
      * @param ctx Context.
      */
@@ -319,7 +316,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      *
      * @param userType User type flag.
      */
-    public void postWrite(boolean userType) {
+    public void postWrite(int schemaId, boolean userType) {
         if (schema != null) {
             // Write schema ID.
             out.writeInt(start + SCHEMA_ID_POS, schemaId);
@@ -1714,8 +1711,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
         schema.add(id);
         schema.add(off);
-
-        schemaId = 31 * schemaId + id;
     }
 
      /**

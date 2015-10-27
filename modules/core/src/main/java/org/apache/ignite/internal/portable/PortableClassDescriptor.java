@@ -81,6 +81,9 @@ public class PortableClassDescriptor {
     /** */
     private final Collection<FieldInfo> fields;
 
+    /** Schema ID for constant-time lookup. */
+    private final int schemaId;
+
     /** */
     private final Method writeReplaceMtd;
 
@@ -140,6 +143,8 @@ public class PortableClassDescriptor {
         this.serializer = serializer;
         this.keepDeserialized = keepDeserialized;
         this.registered = registered;
+
+        int schemaId = 0;
 
         excluded = MarshallerExclusions.isExcluded(cls);
 
@@ -233,6 +238,9 @@ public class PortableClassDescriptor {
 
                             if (metaDataEnabled)
                                 fieldsMeta.put(name, fieldInfo.fieldMode().typeName());
+
+                            // Track schema ID.
+                            schemaId = 31 * schemaId + fieldId;
                         }
                     }
                 }
@@ -252,6 +260,8 @@ public class PortableClassDescriptor {
             readResolveMtd = null;
             writeReplaceMtd = null;
         }
+
+        this.schemaId = schemaId;
     }
 
     /**
@@ -515,7 +525,7 @@ public class PortableClassDescriptor {
                     else
                         ((PortableMarshalAware)obj).writePortable(writer);
 
-                    writer.postWrite(userType);
+                    writer.postWrite(schemaId, userType);
 
                     if (obj.getClass() != PortableMetaDataImpl.class
                         && ctx.isMetaDataChanged(typeId, writer.metaDataHashSum())) {
@@ -543,7 +553,7 @@ public class PortableClassDescriptor {
                         throw new PortableException("Failed to write Externalizable object: " + obj, e);
                     }
 
-                    writer.postWrite(userType);
+                    writer.postWrite(schemaId, userType);
                 }
 
                 break;
@@ -553,7 +563,7 @@ public class PortableClassDescriptor {
                     for (FieldInfo info : fields)
                         info.write(obj, writer);
 
-                    writer.postWrite(userType);
+                    writer.postWrite(schemaId, userType);
                 }
 
                 break;

@@ -376,7 +376,7 @@ public class PortableBuilderImpl implements PortableBuilder {
             reader.position(start + PortableUtils.length(reader, start));
         }
 
-        writer.postWrite(true);
+        writer.postWrite(0, true);
     }
 
     /** {@inheritDoc} */
