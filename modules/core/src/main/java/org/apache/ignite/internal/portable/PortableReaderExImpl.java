@@ -2566,7 +2566,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (id0 == id) {
                 int offset = in.readIntPositioned(searchHead + 4);
 
-                in.position(start + offset + 4); // TODO: "+4" will be removed soon.
+                in.position(start + offset);
 
                 return true;
             }

@@ -100,9 +100,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     private final int start;
 
     /** */
-    private int mark;
-
-    /** */
     private Class<?> cls;
 
     /** */
@@ -310,25 +307,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         out.position(pos + bytes);
 
         return pos;
-    }
-
-    /**
-     * @param bytes Number of bytes to reserve.
-     * @return Offset.
-     */
-    public int reserveAndMark(int bytes) {
-        int off0 = reserve(bytes);
-
-        mark = out.position();
-
-        return off0;
-    }
-
-    /**
-     * @param off Offset.
-     */
-    public void writeDelta(int off) {
-        out.writeInt(off, out.position() - mark);
     }
 
     /**
@@ -954,8 +932,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param val Value.
      */
     void writeByteField(@Nullable Byte val) {
-        doWriteInt(val != null ? 2 : 1);
-
         if (val == null)
             doWriteByte(NULL);
         else {
@@ -968,19 +944,13 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param val Class.
      */
     void writeClassField(@Nullable Class val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteClass(val);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeShortField(@Nullable Short val) {
-        doWriteInt(val != null ? 3 : 1);
-
         if (val == null)
             doWriteByte(NULL);
         else {
@@ -993,8 +963,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param val Value.
      */
     void writeIntField(@Nullable Integer val) {
-        doWriteInt(val != null ? 5 : 1);
-
         if (val == null)
             doWriteByte(NULL);
         else {
@@ -1007,8 +975,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param val Value.
      */
     void writeLongField(@Nullable Long val) {
-        doWriteInt(val != null ? 9 : 1);
-
         if (val == null)
             doWriteByte(NULL);
         else {
@@ -1021,8 +987,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param val Value.
      */
     void writeFloatField(@Nullable Float val) {
-        doWriteInt(val != null ? 5 : 1);
-
         if (val == null)
             doWriteByte(NULL);
         else {
@@ -1035,8 +999,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param val Value.
      */
     void writeDoubleField(@Nullable Double val) {
-        doWriteInt(val != null ? 9 : 1);
-
         if (val == null)
             doWriteByte(NULL);
         else {
@@ -1049,8 +1011,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param val Value.
      */
     void writeCharField(@Nullable Character val) {
-        doWriteInt(val != null ? 3 : 1);
-
         if (val == null)
             doWriteByte(NULL);
         else {
@@ -1063,8 +1023,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param val Value.
      */
     void writeBooleanField(@Nullable Boolean val) {
-        doWriteInt(val != null ? 2 : 1);
-
         if (val == null)
             doWriteByte(NULL);
         else {
@@ -1077,29 +1035,20 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param val Value.
      */
     void writeDecimalField(@Nullable BigDecimal val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteDecimal(val);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeStringField(@Nullable String val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteString(val);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeUuidField(@Nullable UUID val) {
-        doWriteInt(val != null ? 17 : 1);
         doWriteUuid(val);
     }
 
@@ -1107,7 +1056,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param val Value.
      */
     void writeDateField(@Nullable Date val) {
-        doWriteInt(val != null ? 9 : 1);
         doWriteDate(val);
     }
 
@@ -1115,7 +1063,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param val Value.
      */
     void writeTimestampField(@Nullable Timestamp val) {
-        doWriteInt(val != null ? 13 : 1);
         doWriteTimestamp(val);
     }
 
@@ -1124,154 +1071,98 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @throws PortableException In case of error.
      */
     void writeObjectField(@Nullable Object obj) throws PortableException {
-        int lenPos = reserveAndMark(4);
-
         doWriteObject(obj);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeByteArrayField(@Nullable byte[] val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteByteArray(val);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeShortArrayField(@Nullable short[] val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteShortArray(val);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeIntArrayField(@Nullable int[] val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteIntArray(val);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeLongArrayField(@Nullable long[] val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteLongArray(val);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeFloatArrayField(@Nullable float[] val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteFloatArray(val);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeDoubleArrayField(@Nullable double[] val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteDoubleArray(val);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeCharArrayField(@Nullable char[] val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteCharArray(val);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeBooleanArrayField(@Nullable boolean[] val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteBooleanArray(val);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeDecimalArrayField(@Nullable BigDecimal[] val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteDecimalArray(val);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeStringArrayField(@Nullable String[] val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteStringArray(val);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeUuidArrayField(@Nullable UUID[] val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteUuidArray(val);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeDateArrayField(@Nullable Date[] val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteDateArray(val);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeTimestampArrayField(@Nullable Timestamp[] val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteTimestampArray(val);
-
-        writeDelta(lenPos);
     }
 
     /**
@@ -1279,11 +1170,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @throws PortableException In case of error.
      */
     void writeObjectArrayField(@Nullable Object[] val) throws PortableException {
-        int lenPos = reserveAndMark(4);
-
         doWriteObjectArray(val);
-
-        writeDelta(lenPos);
     }
 
     /**
@@ -1291,11 +1178,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @throws PortableException In case of error.
      */
     void writeCollectionField(@Nullable Collection<?> col) throws PortableException {
-        int lenPos = reserveAndMark(4);
-
         doWriteCollection(col);
-
-        writeDelta(lenPos);
     }
 
     /**
@@ -1303,11 +1186,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @throws PortableException In case of error.
      */
     void writeMapField(@Nullable Map<?, ?> map) throws PortableException {
-        int lenPos = reserveAndMark(4);
-
         doWriteMap(map);
-
-        writeDelta(lenPos);
     }
 
     /**
@@ -1315,33 +1194,21 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @throws PortableException In case of error.
      */
     void writeMapEntryField(@Nullable Map.Entry<?, ?> e) throws PortableException {
-        int lenPos = reserveAndMark(4);
-
         doWriteMapEntry(e);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeEnumField(@Nullable Enum<?> val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteEnum(val);
-
-        writeDelta(lenPos);
     }
 
     /**
      * @param val Value.
      */
     void writeEnumArrayField(@Nullable Object[] val) {
-        int lenPos = reserveAndMark(4);
-
         doWriteEnumArray(val);
-
-        writeDelta(lenPos);
     }
 
     /**
@@ -1349,11 +1216,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @throws PortableException In case of error.
      */
     void writePortableObjectField(@Nullable PortableObjectImpl po) throws PortableException {
-        int lenPos = reserveAndMark(4);
-
         doWritePortableObject(po);
-
-        writeDelta(lenPos);
     }
 
     /** {@inheritDoc} */
@@ -1739,6 +1602,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("NullableProblems")
     @Override public void writeBytes(String s) throws IOException {
         int len = s.length();
 
@@ -1749,6 +1613,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("NullableProblems")
     @Override public void writeChars(String s) throws IOException {
         int len = s.length();
 
@@ -1759,6 +1624,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("NullableProblems")
     @Override public void writeUTF(String s) throws IOException {
         writeString(s);
     }

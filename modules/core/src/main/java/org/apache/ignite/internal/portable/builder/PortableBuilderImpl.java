@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.portable.builder;
 
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableObjectImpl;
 import org.apache.ignite.internal.portable.PortableObjectOffheapImpl;
@@ -240,8 +239,6 @@ public class PortableBuilderImpl implements PortableBuilder {
                 int fieldId = reader.readIntPositioned(footerPos);
                 int fieldLen = fieldPositionAndLength(footerPos, footerEnd, rawPos).get2();
 
-                reader.skip(4); // TODO: This must be removed.
-
                 footerPos += 8;
 
                 if (assignedFldsById.containsKey(fieldId)) {
@@ -252,11 +249,7 @@ public class PortableBuilderImpl implements PortableBuilder {
                     if (assignedVal != REMOVED_FIELD_MARKER) {
                         writer.writeFieldId(fieldId);
 
-                        int lenPos = writer.reserveAndMark(4);
-
                         serializer.writeValue(writer, assignedVal);
-
-                        writer.writeDelta(lenPos);
                     }
                 }
                 else {
@@ -264,7 +257,6 @@ public class PortableBuilderImpl implements PortableBuilder {
 
                     if (fieldLen != 0 && !PortableUtils.isPlainArrayType(type) && PortableUtils.isPlainType(type)) {
                         writer.writeFieldId(fieldId);
-                        writer.writeInt(fieldLen);
                         writer.write(reader.array(), reader.position(), fieldLen);
 
                         reader.skip(fieldLen);
@@ -289,11 +281,7 @@ public class PortableBuilderImpl implements PortableBuilder {
                             reader.skip(fieldLen);
                         }
 
-                        int lenPos = writer.reserveAndMark(4);
-
                         serializer.writeValue(writer, val);
-
-                        writer.writeDelta(lenPos);
                     }
                 }
             }
@@ -324,11 +312,7 @@ public class PortableBuilderImpl implements PortableBuilder {
 
                 writer.writeFieldId(fldId);
 
-                int lenPos = writer.reserveAndMark(4);
-
                 serializer.writeValue(writer, val);
-
-                writer.writeDelta(lenPos);
 
                 if (metadataEnabled) {
                     String oldFldTypeName = metadata == null ? null : metadata.fieldTypeName(name);
@@ -411,7 +395,7 @@ public class PortableBuilderImpl implements PortableBuilder {
      */
     private IgniteBiTuple<Integer, Integer> fieldPositionAndLength(int footerPos, int footerEnd, int rawPos) {
         int fieldOffset = reader.readIntPositioned(footerPos + 4);
-        int fieldPos = start + fieldOffset + 4; // TODO: 4 is to be removed.
+        int fieldPos = start + fieldOffset;
 
         // Get field length.
         int fieldLen;
@@ -423,7 +407,7 @@ public class PortableBuilderImpl implements PortableBuilder {
             // Field is somewhere in the middle, get difference with the next offset.
             int nextFieldOffset = reader.readIntPositioned(footerPos + 8 + 4);
 
-            fieldLen = nextFieldOffset - fieldOffset - 4; // TODO: 4 is to be removed.
+            fieldLen = nextFieldOffset - fieldOffset;
         }
 
         return F.t(fieldPos, fieldLen);
@@ -461,7 +445,8 @@ public class PortableBuilderImpl implements PortableBuilder {
     }
 
     /** {@inheritDoc} */
-    @Override public <F> F getField(String name) {
+    @SuppressWarnings("unchecked")
+    @Override public <T> T getField(String name) {
         Object val;
 
         if (assignedVals != null && assignedVals.containsKey(name)) {
@@ -478,7 +463,7 @@ public class PortableBuilderImpl implements PortableBuilder {
             val = readCache.get(fldId);
         }
 
-        return (F)PortableUtils.unwrapLazy(val);
+        return (T)PortableUtils.unwrapLazy(val);
     }
 
     /** {@inheritDoc} */
