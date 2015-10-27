@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Tests
                 }
             });
 
-            _cache = grid.GetCache<object, object>(null).WithAsync();
+            _cache = grid.GetCache<object, object>(null);
 
             _compute = grid.GetCompute();
         }
@@ -74,13 +74,9 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestToTask()
         {
-            _cache.Put(1, 1);
+            _cache.PutAsync(1, 1).Wait();
 
-            _cache.GetFuture().ToTask().Wait();
-
-            _cache.Get(1);
-
-            var task1 = _cache.GetFuture<int>().ToTask();
+            var task1 = _cache.GetAsync(1);
 
             Assert.AreEqual(1, task1.Result);
 
@@ -121,13 +117,9 @@ namespace Apache.Ignite.Core.Tests
         {
             var key = typeof(T).Name;
 
-            _cache.Put(key, value);
+            _cache.PutAsync(key, value).Wait();
 
-            _cache.GetFuture().Get();
-
-            _cache.Get(key);
-
-            Assert.AreEqual(value, _cache.GetFuture<T>().Get());
+            Assert.AreEqual(value, _cache.GetAsync(key).Result);
         }
 
         /// <summary>

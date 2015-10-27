@@ -217,9 +217,6 @@ namespace Apache.Ignite.Core.Tests
             {
                 var cache = grid.GetCache<TK, int>("partitioned_atomic").WithNoRetries();
 
-                if (async)
-                    cache = cache.WithAsync();
-
                 if (typeof (TK) == typeof (IPortableObject))
                     cache = cache.WithKeepPortable<TK, int>();
 
@@ -231,10 +228,12 @@ namespace Apache.Ignite.Core.Tests
                         // Do a lot of puts so that one fails during Ignite stop
                         for (var i = 0; i < 1000000; i++)
                         {
-                            cache.PutAll(Enumerable.Range(1, 100).ToDictionary(k => keyFunc(k, grid), k => i));
+                            var dict = Enumerable.Range(1, 100).ToDictionary(k => keyFunc(k, grid), k => i);
 
                             if (async)
-                                cache.GetFuture().Get();
+                                cache.PutAllAsync(dict).Wait();
+                            else
+                                cache.PutAll(dict);
                         }
                     }
                     catch (CachePartialUpdateException ex)
