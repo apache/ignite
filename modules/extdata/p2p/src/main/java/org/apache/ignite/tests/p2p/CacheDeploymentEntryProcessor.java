@@ -15,23 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.java8.examples;
+package org.apache.ignite.tests.p2p;
 
-//import org.apache.ignite.examples.java8.datagrid.hibernate.*;
-
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.cache.CacheEntryProcessor;
 
 /**
- * Tests the {@link org.apache.ignite.examples.java8.datagrid.hibernate.HibernateL2CacheExample}.
+ * Entry processor for {@code GridCacheEntryProcessorDeploymentSelfTest}.
  */
-public class HibernateL2CacheExampleSelfTest extends GridAbstractExamplesTest {
-    /**
-     * TODO: IGNITE-711 next example(s) should be implemented for java 8
-     * or testing method(s) should be removed if example(s) does not applicable for java 8.
-     *
-     * @throws Exception If failed.
-     */
-//    public void testHibernateL2CacheExample() throws Exception {
-//        HibernateL2CacheExample.main(EMPTY_ARGS);
-//    }
+public class CacheDeploymentEntryProcessor implements CacheEntryProcessor<String, CacheDeploymentTestValue, Boolean> {
+    /** {@inheritDoc} */
+    @Override public Boolean process(MutableEntry<String, CacheDeploymentTestValue> entry,
+        Object... arguments) throws EntryProcessorException {
+        CacheDeploymentTestValue val = entry.getValue();
+
+        return true;
+    }
 }

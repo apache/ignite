@@ -15,15 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.java8.examples;
+package org.apache.ignite.spi.discovery.tcp.ipfinder.zk;
+
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * Multi-node test for {@link org.apache.ignite.examples.java8.datagrid.hibernate.HibernateL2CacheExample}.
+ * Zookeeper IP Finder tests.
  */
-public class HibernateL2CacheExampleMultiNodeSelfTest extends HibernateL2CacheExampleSelfTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        for (int i = 0; i < RMT_NODES_CNT; i++)
-            startGrid("node-" + i, "examples/config/example-ignite.xml");
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    ZookeeperIpFinderTest.class
+})
+public class ZookeeperIpFinderTestSuite {
+
 }

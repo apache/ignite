@@ -17,18 +17,15 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
@@ -118,6 +115,43 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         System.setProperty(PREFER_IPV4, "false");
 
         startGrid(2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testUseDefaultSuid() throws Exception {
+        doTestUseDefaultSuid(true, false, true);
+        doTestUseDefaultSuid(false, true, true);
+        doTestUseDefaultSuid(true, true, false);
+        doTestUseDefaultSuid(false, false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestUseDefaultSuid(Boolean first, Boolean second, boolean fail) throws Exception {
+        try {
+            GridTestUtils.setFieldValue(null, OptimizedMarshaller.class, "USE_DFLT_SUID", first);
+
+            startGrid(0);
+
+            GridTestUtils.setFieldValue(null, OptimizedMarshaller.class, "USE_DFLT_SUID", second);
+
+            try {
+                startGrid(1);
+
+                if (fail)
+                    fail("Node should not join");
+            }
+            catch (Exception e) {
+                if (!fail)
+                    fail("Node should join");
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**

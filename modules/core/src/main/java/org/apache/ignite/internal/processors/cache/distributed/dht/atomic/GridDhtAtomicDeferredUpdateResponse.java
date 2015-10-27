@@ -58,13 +58,21 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
     /**
      * Constructor.
      *
+     * @param cacheId Cache ID.
      * @param futVers Future versions.
+     * @param addDepInfo Deployment info.
      */
-    public GridDhtAtomicDeferredUpdateResponse(int cacheId, Collection<GridCacheVersion> futVers) {
+    public GridDhtAtomicDeferredUpdateResponse(int cacheId, Collection<GridCacheVersion> futVers, boolean addDepInfo) {
         assert !F.isEmpty(futVers);
 
         this.cacheId = cacheId;
         this.futVers = futVers;
+        this.addDepInfo = addDepInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
     /**

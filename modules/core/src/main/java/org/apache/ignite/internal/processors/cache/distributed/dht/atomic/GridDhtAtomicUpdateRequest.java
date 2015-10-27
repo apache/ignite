@@ -159,6 +159,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
      * @param forceTransformBackups Force transform backups flag.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
+     * @param addDepInfo Deployment info.
      */
     public GridDhtAtomicUpdateRequest(
         int cacheId,
@@ -170,7 +171,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         boolean forceTransformBackups,
         UUID subjId,
         int taskNameHash,
-        Object[] invokeArgs
+        Object[] invokeArgs,
+        boolean addDepInfo
     ) {
         assert invokeArgs == null || forceTransformBackups;
 
@@ -184,6 +186,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.invokeArgs = invokeArgs;
+        this.addDepInfo = addDepInfo;
 
         keys = new ArrayList<>();
 
@@ -546,13 +549,16 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         prepareMarshalCacheObjects(nearVals, cctx);
 
         if (forceTransformBackups) {
-            invokeArgsBytes = marshalInvokeArguments(invokeArgs, ctx);
+            // force addition of deployment info for entry processors if P2P is enabled globally.
+            if (!addDepInfo && ctx.deploymentEnabled())
+                addDepInfo = true;
 
-            entryProcessorsBytes = marshalCollection(entryProcessors, ctx);
+            invokeArgsBytes = marshalInvokeArguments(invokeArgs, cctx);
+
+            entryProcessorsBytes = marshalCollection(entryProcessors, cctx);
+
+            nearEntryProcessorsBytes = marshalCollection(nearEntryProcessors, cctx);
         }
-
-        if (forceTransformBackups)
-            nearEntryProcessorsBytes = marshalCollection(nearEntryProcessors, ctx);
     }
 
     /** {@inheritDoc} */
@@ -577,6 +583,11 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
 
         if (forceTransformBackups)
             nearEntryProcessors = unmarshalCollection(nearEntryProcessorsBytes, ctx, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
     /** {@inheritDoc} */

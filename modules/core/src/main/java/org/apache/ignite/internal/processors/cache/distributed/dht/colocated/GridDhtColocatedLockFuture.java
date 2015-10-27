@@ -849,7 +849,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                         inTx() ? tx.taskNameHash() : 0,
                                         read ? accessTtl : -1L,
                                         skipStore,
-                                        clientFirst);
+                                        clientFirst,
+                                        cctx.deploymentEnabled());
 
                                     mapping.request(req);
                                 }

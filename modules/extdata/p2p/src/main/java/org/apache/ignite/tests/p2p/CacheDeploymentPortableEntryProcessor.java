@@ -15,8 +15,21 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.tests.p2p;
+
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.cache.CacheEntryProcessor;
+
 /**
- * <!-- Package description. -->
- * Demonstrates usage of cron-based scheduler.
+ * Entry processor used by {@code GridCacheEntryProcessorDeploymentSelfTest}.
  */
-package org.apache.ignite.examples.java8.misc.schedule;
+public class CacheDeploymentPortableEntryProcessor implements CacheEntryProcessor<String, String, Boolean> {
+    /** {@inheritDoc} */
+    @Override public Boolean process(MutableEntry<String, String> entry, Object... arguments)
+        throws EntryProcessorException {
+        String val = entry.getKey();
+
+        return true;
+    }
+}
