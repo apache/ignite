@@ -1974,7 +1974,7 @@ consoleModule.controller('agent-download', [
             else
                 $window.location = _agentDownloadModal.backLink;
 
-            $scope.checkConnection = false;
+            _stopInterval();
 
             _agentDownloadModal.hide()
         };
