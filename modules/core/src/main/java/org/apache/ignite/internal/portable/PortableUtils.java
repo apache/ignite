@@ -578,9 +578,9 @@ public class PortableUtils {
      * @return Footer start.
      */
     public static int footerStartRelative(PortablePositionReadable in, int start) {
-        int schemaId = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_ID_POS);
+        short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
 
-        if (schemaId == 0)
+        if (PortableUtils.isRawOnly(flags))
             // No schema, footer start equals to object end.
             return length(in, start);
         else
