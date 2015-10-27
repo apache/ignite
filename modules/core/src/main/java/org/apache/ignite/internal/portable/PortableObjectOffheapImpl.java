@@ -136,7 +136,18 @@ public class PortableObjectOffheapImpl extends PortableObjectEx implements Exter
             start,
             null);
 
-        return (F)reader.unmarshal(fieldName);
+        return (F)reader.unmarshalField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Nullable @Override public <F> F field(int fieldId) throws PortableException {
+        PortableReaderExImpl reader = new PortableReaderExImpl(ctx,
+            new PortableOffheapInputStream(ptr, size, false),
+            start,
+            null);
+
+        return (F)reader.unmarshalField(fieldId);
     }
 
     /** {@inheritDoc} */
@@ -148,7 +159,7 @@ public class PortableObjectOffheapImpl extends PortableObjectEx implements Exter
             null,
             rCtx);
 
-        return (F)reader.unmarshal(fieldName);
+        return (F)reader.unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */

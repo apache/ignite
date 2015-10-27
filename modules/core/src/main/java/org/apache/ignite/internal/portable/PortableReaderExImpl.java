@@ -260,15 +260,6 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     }
 
     /**
-     * @param fieldName Field name.
-     * @return Unmarshalled value.
-     * @throws PortableException In case of error.
-     */
-    @Nullable Object unmarshal(String fieldName) throws PortableException {
-        return hasField(fieldName) ? unmarshal() : null;
-    }
-
-    /**
      * @param offset Offset in the array.
      * @return Unmarshalled value.
      * @throws PortableException In case of error.
@@ -277,6 +268,26 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         in.position(offset);
 
         return in.position() >= 0 ? unmarshal() : null;
+    }
+
+    /**
+     * @param fieldName Field name.
+     * @return Unmarshalled value.
+     * @throws PortableException In case of error.
+     */
+    @Nullable Object unmarshalField(String fieldName) throws PortableException {
+        return hasField(fieldName) ? unmarshal() : null;
+    }
+
+    /**
+     * @param fieldId Field ID.
+     * @return Unmarshalled value.
+     * @throws PortableException In case of error.
+     */
+    @Nullable Object unmarshalField(int fieldId) throws PortableException {
+        parseHeaderIfNeeded();
+
+        return hasField(fieldId) ? unmarshal() : null;
     }
 
     /**

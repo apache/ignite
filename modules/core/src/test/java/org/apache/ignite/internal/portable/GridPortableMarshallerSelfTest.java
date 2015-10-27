@@ -823,11 +823,11 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         CustomMappedObject1 obj1 = new CustomMappedObject1(10, "str");
 
-        PortableObject po1 = marshal(obj1, marsh);
+        PortableObjectEx po1 = marshal(obj1, marsh);
 
         assertEquals(11111, po1.typeId());
-        assertEquals(22222, intFromPortable(po1, GridPortableMarshaller.DFLT_HDR_LEN));
-        assertEquals(33333, intFromPortable(po1, GridPortableMarshaller.DFLT_HDR_LEN + 13));
+        assertEquals(10, po1.field(22222));
+        assertEquals("str", po1.field(33333));
 
         assertEquals(10, po1.<CustomMappedObject1>deserialize().val1);
         assertEquals("str", po1.<CustomMappedObject1>deserialize().val2);
@@ -882,22 +882,22 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         CustomMappedObject1 obj1 = new CustomMappedObject1(10, "str1");
 
-        PortableObject po1 = marshal(obj1, marsh);
+        PortableObjectEx po1 = marshal(obj1, marsh);
 
         assertEquals(11111, po1.typeId());
-        assertEquals(22222, intFromPortable(po1, GridPortableMarshaller.DFLT_HDR_LEN));
-        assertEquals(33333, intFromPortable(po1, GridPortableMarshaller.DFLT_HDR_LEN + 13));
+        assertEquals(10, po1.field(22222));
+        assertEquals("str1", po1.field(33333));
 
         assertEquals(10, po1.<CustomMappedObject1>deserialize().val1);
         assertEquals("str1", po1.<CustomMappedObject1>deserialize().val2);
 
         CustomMappedObject2 obj2 = new CustomMappedObject2(20, "str2");
 
-        PortableObject po2 = marshal(obj2, marsh);
+        PortableObjectEx po2 = marshal(obj2, marsh);
 
         assertEquals(44444, po2.typeId());
-        assertEquals(55555, intFromPortable(po2, GridPortableMarshaller.DFLT_HDR_LEN));
-        assertEquals(66666, intFromPortable(po2, GridPortableMarshaller.DFLT_HDR_LEN + 13));
+        assertEquals(20, po2.field(55555));
+        assertEquals("str2", po2.field(66666));
 
         assertEquals(20, po2.<CustomMappedObject2>deserialize().val1);
         assertEquals("str2", po2.<CustomMappedObject2>deserialize().val2);
