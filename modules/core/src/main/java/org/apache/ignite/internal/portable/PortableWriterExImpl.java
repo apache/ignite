@@ -1825,8 +1825,6 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
         int off = out.position() - start;
 
         saveFieldInfo(fieldId, off);
-
-        doWriteInt(fieldId);
     }
 
      /**

@@ -240,7 +240,7 @@ public class PortableBuilderImpl implements PortableBuilder {
                 int fieldId = reader.readIntPositioned(footerPos);
                 int fieldLen = fieldPositionAndLength(footerPos, footerEnd, rawPos).get2();
 
-                reader.skip(8); // TODO: This must be removed.
+                reader.skip(4); // TODO: This must be removed.
 
                 footerPos += 8;
 
@@ -411,7 +411,7 @@ public class PortableBuilderImpl implements PortableBuilder {
      */
     private IgniteBiTuple<Integer, Integer> fieldPositionAndLength(int footerPos, int footerEnd, int rawPos) {
         int fieldOffset = reader.readIntPositioned(footerPos + 4);
-        int fieldPos = start + fieldOffset + 8; // TODO: 8 is to be removed.
+        int fieldPos = start + fieldOffset + 4; // TODO: 4 is to be removed.
 
         // Get field length.
         int fieldLen;
@@ -423,7 +423,7 @@ public class PortableBuilderImpl implements PortableBuilder {
             // Field is somewhere in the middle, get difference with the next offset.
             int nextFieldOffset = reader.readIntPositioned(footerPos + 8 + 4);
 
-            fieldLen = nextFieldOffset - fieldOffset - 8; // TODO: 8 is to be removed.
+            fieldLen = nextFieldOffset - fieldOffset - 4; // TODO: 4 is to be removed.
         }
 
         return F.t(fieldPos, fieldLen);
