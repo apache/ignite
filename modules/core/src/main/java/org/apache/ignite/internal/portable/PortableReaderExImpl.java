@@ -2529,8 +2529,6 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         int searchHead = footerStart;
         int searchTail = footerEnd;
 
-        // TODO: Opto.
-
         while (true) {
             if (searchHead >= searchTail)
                 return false;
