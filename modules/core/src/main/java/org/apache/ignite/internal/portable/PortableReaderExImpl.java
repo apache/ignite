@@ -1626,9 +1626,6 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             in.position(in.position() + strLen);
 
-            // TODO: Opto.
-            //in.position(in.position() + strLen);
-
             return res;
         }
         else
