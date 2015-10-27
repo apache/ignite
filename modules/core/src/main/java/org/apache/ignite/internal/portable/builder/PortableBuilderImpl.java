@@ -365,6 +365,7 @@ public class PortableBuilderImpl implements PortableBuilder {
         }
 
         if (reader != null) {
+            // Write raw data if any.
             int rawOff = start + PortableUtils.rawOffset(reader, start);
             int footerStart = start + PortableUtils.footerStart(reader, start);
 
