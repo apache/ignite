@@ -236,15 +236,15 @@ namespace Apache.Ignite.Core.Tests
                                 cache.PutAll(dict);
                         }
                     }
+                    catch (AggregateException ex)
+                    {
+                        CheckPartialUpdateException<TK>((CachePartialUpdateException) ex.InnerException);
+
+                        return;
+                    }
                     catch (CachePartialUpdateException ex)
                     {
-                        var failedKeys = ex.GetFailedKeys<TK>();
-
-                        Assert.IsTrue(failedKeys.Any());
-
-                        var failedKeysObj = ex.GetFailedKeys<object>();
-
-                        Assert.IsTrue(failedKeysObj.Any());
+                        CheckPartialUpdateException<TK>(ex);
 
                         return;
                     }
@@ -264,6 +264,20 @@ namespace Apache.Ignite.Core.Tests
                         return;
                 }
             }
+        }
+
+        /// <summary>
+        /// Checks the partial update exception.
+        /// </summary>
+        private static void CheckPartialUpdateException<TK>(CachePartialUpdateException ex)
+        {
+            var failedKeys = ex.GetFailedKeys<TK>();
+
+            Assert.IsTrue(failedKeys.Any());
+
+            var failedKeysObj = ex.GetFailedKeys<object>();
+
+            Assert.IsTrue(failedKeysObj.Any());
         }
 
         /// <summary>
