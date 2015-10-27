@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// Initializes a new async instance.
         /// </summary>
         /// <param name="cache">The cache.</param>
-        private CacheImpl(CacheImpl<TK, TV> cache) : base(cache.Target, cache.Marshaller)
+        private CacheImpl(CacheImpl<TK, TV> cache) : base(UU.CacheWithAsync(cache.Target), cache.Marshaller)
         {
             _ignite = cache._ignite;
             _flagSkipStore = cache._flagSkipStore;
