@@ -746,7 +746,11 @@
           "items": "writeSynchronizationMode",
           "tip": [
             "Write synchronization mode",
-            "This mode controls whether the main caller should wait for update on other nodes to complete or not"
+            "<ul>",
+            "  <li>FULL_SYNC - Ignite will wait for write or commit replies from all nodes</li>",
+            "  <li>FULL_ASYNC - Ignite will not wait for write or commit responses from participating nodes</li>",
+            "  <li>PRIMARY_SYNC - Makes sense for PARTITIONED mode. Ignite will wait for write or commit to complete on primary node</li>",
+            "</ul>"
           ]
         }
       ]

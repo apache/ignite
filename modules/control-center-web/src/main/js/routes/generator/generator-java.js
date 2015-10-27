@@ -575,8 +575,8 @@ $generatorJava.clusterDiscovery = function (disco, res) {
         res.needEmptyLine = false;
     }
 
-    $generatorJava.property(res, 'discovery', disco, 'socketTimeout');
-    $generatorJava.property(res, 'discovery', disco, 'ackTimeout');
+    $generatorJava.property(res, 'discovery', disco, 'socketTimeout', undefined, undefined, 5000);
+    $generatorJava.property(res, 'discovery', disco, 'ackTimeout', undefined, undefined, 5000);
     $generatorJava.property(res, 'discovery', disco, 'maxAckTimeout', undefined, undefined, 600000);
     $generatorJava.property(res, 'discovery', disco, 'networkTimeout', undefined, undefined, 5000);
     $generatorJava.property(res, 'discovery', disco, 'joinTimeout', undefined, undefined, 0);
@@ -1588,6 +1588,8 @@ $generatorJava.igfsFragmentizer = function(igfs, varName, res) {
 
         res.needEmptyLine = true;
     }
+    else
+        $generatorJava.property(res, varName, igfs, 'fragmentizerEnabled');
 
     return res;
 };

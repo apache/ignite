@@ -99,6 +99,7 @@ consoleModule.controller('clustersController', [
             deployment: {xml: '', java: '', allDefaults: true},
             discovery: {xml: '', java: '', allDefaults: true},
             events: {xml: '', java: '', allDefaults: true},
+            igfs: {xml: '', java: '', allDefaults: true},
             marshaller: {xml: '', java: '', allDefaults: true},
             metrics: {xml: '', java: '', allDefaults: true},
             swap: {xml: '', java: '', allDefaults: true},
@@ -234,6 +235,12 @@ consoleModule.controller('clustersController', [
 
                                 var srcItem = $scope.selectedItem ? $scope.selectedItem : prepareNewItem();
 
+                                var igfss = _.map(_.filter($scope.igfss, function(igfs) {
+                                    return _.indexOf(val.igfss, igfs.value) >= 0;
+                                }), function(igfs) {
+                                    return igfs.igfs;
+                                });
+
                                 $scope.ui.checkDirty(val, srcItem);
 
                                 $scope.preview.general.xml = $generatorXml.clusterCaches(clusterCaches, null, $generatorXml.clusterGeneral(val)).asString();
@@ -259,6 +266,10 @@ consoleModule.controller('clustersController', [
                                 $scope.preview.events.xml = $generatorXml.clusterEvents(val).asString();
                                 $scope.preview.events.java = $generatorJava.clusterEvents(val).asString();
                                 $scope.preview.events.allDefaults = $common.isEmptyString($scope.preview.events.xml);
+
+                                $scope.preview.igfs.xml = $generatorXml.igfss(igfss).asString();
+                                $scope.preview.igfs.java = $generatorJava.igfss(igfss, 'cfg').asString();
+                                $scope.preview.igfs.allDefaults = $common.isEmptyString($scope.preview.igfs.xml);
 
                                 $scope.preview.marshaller.xml = $generatorXml.clusterMarshaller(val).asString();
                                 $scope.preview.marshaller.java = $generatorJava.clusterMarshaller(val).asString();

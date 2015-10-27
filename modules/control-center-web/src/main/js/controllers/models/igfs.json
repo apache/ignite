@@ -217,6 +217,7 @@
           "id": "dualModePutExecutorService",
           "type": "text",
           "model": "dualModePutExecutorService",
+          "placeholder": "Enter fully qualified class name",
           "tip": [
             "DUAL mode put operation executor service"
           ]
@@ -226,7 +227,6 @@
           "id": "dualModePutExecutorServiceShutdown",
           "type": "check",
           "model": "dualModePutExecutorServiceShutdown",
-          "placeholder": "Enter fully qualified class name",
           "tip": [
             "DUAL mode put operation executor service shutdown flag"
           ]
@@ -299,21 +299,6 @@
           ]
         },
         {
-          "label": "Path modes",
-          "id": "pathModes",
-          "ui": "table-pair",
-          "type": "pathModes",
-          "model": "pathModes",
-          "keyName": "path",
-          "valueName": "mode",
-          "focusId": "PathMode",
-          "addTip": "Add path mode",
-          "removeTip": "Remove path",
-          "tip": [
-            "Map of path prefixes to IGFS modes used for them"
-          ]
-        },
-        {
           "label": "Per node batch size",
           "id": "perNodeBatchSize",
           "type": "number",
@@ -361,6 +346,21 @@
           "placeholder": 1000,
           "tip": [
             "Maximum timeout awaiting for trash purging in case data cache oversize is detected"
+          ]
+        },
+        {
+          "label": "Path modes",
+          "id": "pathModes",
+          "ui": "table-pair",
+          "type": "pathModes",
+          "model": "pathModes",
+          "keyName": "path",
+          "valueName": "mode",
+          "focusId": "PathMode",
+          "addTip": "Add path mode",
+          "removeTip": "Remove path",
+          "tip": [
+            "Map of path prefixes to IGFS modes used for them"
           ]
         }
       ]

@@ -458,6 +458,7 @@
           "type": "text",
           "path": "communication",
           "model": "listener",
+          "placeholder": "Enter fully qualified class name",
           "tip": [
             "Communication listener"
           ]
@@ -665,6 +666,7 @@
           "type": "number",
           "path": "communication",
           "model": "selectorsCount",
+          "placeholder": 4,
           "tip": [
             "Count of selectors te be used in TCP server"
           ]
@@ -675,6 +677,7 @@
           "type": "text",
           "path": "communication",
           "model": "addressResolver",
+          "placeholder": "Enter fully qualified class name",
           "tip": [
             "Address resolver"
           ]
@@ -803,6 +806,7 @@
           "type": "text",
           "path": "discovery",
           "model": "addressResolver",
+          "placeholder": "Enter fully qualified class name",
           "tip": [
             "Class name of resolution between external and internal addresses provider"
           ]
@@ -813,6 +817,7 @@
           "type": "number",
           "path": "discovery",
           "model": "socketTimeout",
+          "placeholder": 5000,
           "tip": [
             "Socket operations timeout"
           ]
@@ -823,6 +828,7 @@
           "type": "number",
           "path": "discovery",
           "model": "ackTimeout",
+          "placeholder": 5000,
           "tip": [
             "Message acknowledgement timeout"
           ]
@@ -921,6 +927,7 @@
           "type": "text",
           "path": "discovery",
           "model": "listener",
+          "placeholder": "Enter fully qualified class name",
           "tip": [
             "Grid discovery listener"
           ]
@@ -931,6 +938,7 @@
           "type": "text",
           "path": "discovery",
           "model": "dataExchange",
+          "placeholder": "Enter fully qualified class name",
           "tip": [
             "Class name of handler for initial data exchange between Ignite nodes"
           ]
@@ -941,6 +949,7 @@
           "type": "text",
           "path": "discovery",
           "model": "metricsProvider",
+          "placeholder": "Enter fully qualified class name",
           "tip": [
             "Class name of metric provider to discovery SPI"
           ]
@@ -984,6 +993,7 @@
           "type": "text",
           "path": "discovery",
           "model": "authenticator",
+          "placeholder": "Enter fully qualified class name",
           "tip": [
             "Node authenticator"
           ]
@@ -1231,6 +1241,7 @@
           "model": "keyStoreFilePath",
           "required": true,
           "hide": "!backupItem.sslEnabled",
+          "placeholder": "Path to the key store file",
           "tip": [
             "Path to the key store file",
             "This is a mandatory parameter since ssl context could not be initialized without key manager"
@@ -1283,6 +1294,7 @@
           "path": "sslContextFactory",
           "model": "trustStoreFilePath",
           "hide": "!backupItem.sslEnabled || trustManagersConfigured()",
+          "placeholder": "Path to the trust store file",
           "tip": [
             "Path to the trust store file"
           ]
@@ -1556,6 +1568,7 @@
           "type": "text",
           "path": "transactionConfiguration",
           "model": "txManagerLookupClassName",
+          "placeholder": "Enter fully qualified class name",
           "tip": [
             "Class name of transaction manager finder for integration for JEE app servers"
           ]

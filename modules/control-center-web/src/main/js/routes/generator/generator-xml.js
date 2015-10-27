@@ -447,8 +447,8 @@ $generatorXml.clusterDiscovery = function (disco, res) {
     $generatorXml.property(res, disco, 'localPortRange', undefined, 100);
     if ($commonUtils.isDefinedAndNotEmpty(disco.addressResolver))
         $generatorXml.beanProperty(res, disco, 'addressResolver', {className: disco.addressResolver}, true);
-    $generatorXml.property(res, disco, 'socketTimeout');
-    $generatorXml.property(res, disco, 'ackTimeout');
+    $generatorXml.property(res, disco, 'socketTimeout', undefined, 5000);
+    $generatorXml.property(res, disco, 'ackTimeout', undefined, 5000);
     $generatorXml.property(res, disco, 'maxAckTimeout', undefined, 600000);
     $generatorXml.property(res, disco, 'discoNetworkTimeout', 'setNetworkTimeout', 5000);
     $generatorXml.property(res, disco, 'joinTimeout', undefined, 0);
@@ -1158,6 +1158,8 @@ $generatorXml.igfsFragmentizer = function(igfs, res) {
 
         res.needEmptyLine = true;
     }
+    else
+        $generatorXml.property(res, igfs, 'fragmentizerEnabled');
 
     return res;
 };

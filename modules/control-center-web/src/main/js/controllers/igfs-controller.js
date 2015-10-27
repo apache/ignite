@@ -94,6 +94,20 @@ consoleModule.controller('igfsController', [
             };
 
             $scope.tablePairValid = function (item, field, index) {
+                var pairValue = $table.tablePairValue(field, index);
+
+                var model = item[field.model];
+
+                if ($common.isDefined(model)) {
+                    var idx = _.findIndex(model, function (pair) {
+                        return pair.path == pairValue.key
+                    });
+
+                    // Found duplicate.
+                    if (idx >= 0 && idx != index)
+                        return showPopoverMessage(null, null, $table.tableFieldId(index, 'KeyPathMode'), 'Such path already exists!');
+                }
+
                 return true;
             };
 
@@ -170,7 +184,7 @@ consoleModule.controller('igfsController', [
 
                                     $scope.preview.misc.xml = $generatorXml.igfsMisc(val).asString();
                                     $scope.preview.misc.java = $generatorJava.igfsMisc(val, varName).asString();
-                                    $scope.preview.misc.allDefaults = $common.isEmptyString($scope.preview.general.xml);
+                                    $scope.preview.misc.allDefaults = $common.isEmptyString($scope.preview.misc.xml);
                                 }
                             }, true);
                         })
