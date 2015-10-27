@@ -588,5 +588,15 @@ consoleModule.controller('clustersController', [
             $common.resetItem($scope.backupItem, resetTo, $scope.general, group);
             $common.resetItem($scope.backupItem, resetTo, $scope.advanced, group);
         };
+
+        $scope.resetAll = function() {
+            _.forEach($scope.general, function(group) {
+                $scope.resetItem(group.group);
+            });
+
+            _.forEach($scope.advanced, function(group) {
+                $scope.resetItem(group.group);
+            });
+        };
     }]
 );

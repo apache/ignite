@@ -1293,6 +1293,12 @@ consoleModule.controller('metadataController', [
                     resetTo = prepareNewItem();
 
                 $common.resetItem($scope.backupItem, resetTo, $scope.metadata, group);
-            }
+            };
+
+            $scope.resetAll = function() {
+                _.forEach($scope.metadata, function(group) {
+                    $scope.resetItem(group.group);
+                });
+            };
         }]
 );
