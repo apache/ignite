@@ -2512,8 +2512,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private boolean hasField(int id) {
         assert hdrLen != 0;
 
-        int searchHead = start + hdrLen;
-        int searchTail = start + PortableUtils.rawOffset(in, start);
+        int searchHead = start + footerStart;
+        int searchTail = start + footerEnd;
 
         // TODO: Opto.
 
@@ -2554,14 +2554,14 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             int id0 = in.readIntPositioned(searchHead);
 
             if (id0 == id) {
-                in.position(searchHead + 8);
+                int offset = in.readIntPositioned(searchHead + 4);
+
+                in.position(start + offset + 8); // TODO: "+8" will be removed soon.
 
                 return true;
             }
 
-            int len = in.readIntPositioned(searchHead + 4);
-
-            searchHead += (8 + len);
+            searchHead += 8;
         }
     }
 
