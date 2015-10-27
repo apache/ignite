@@ -146,6 +146,16 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
     }
 
     /** {@inheritDoc} */
+    @Override public short readShortPositioned(int pos) {
+        int delta = pos + 2 - this.pos;
+
+        if (delta > 0)
+            ensureEnoughData(delta);
+
+        return UNSAFE.getShort(data + pos);
+    }
+
+    /** {@inheritDoc} */
     @Override public int readIntPositioned(int pos) {
         int delta = pos + 4 - this.pos;
 

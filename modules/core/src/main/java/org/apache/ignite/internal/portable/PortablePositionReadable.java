@@ -22,6 +22,14 @@ package org.apache.ignite.internal.portable;
  */
 public interface PortablePositionReadable {
     /**
+     * Read short at the given position.
+     *
+     * @param pos Position.
+     * @return Value.
+     */
+    public short readShortPositioned(int pos);
+
+    /**
      * Read integer at the given position.
      *
      * @param pos Position.

@@ -65,6 +65,11 @@ public class PlatformBigEndianInputStreamImpl extends PlatformInputStreamImpl {
     }
 
     /** {@inheritDoc} */
+    @Override public short readShortPositioned(int pos) {
+        return Short.reverseBytes(super.readShortPositioned(pos));
+    }
+
+    /** {@inheritDoc} */
     @Override public int readIntPositioned(int pos) {
         return Integer.reverseBytes(super.readIntPositioned(pos));
     }

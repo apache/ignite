@@ -131,11 +131,13 @@ public class PortableBuilderReader implements PortablePositionReadable {
         return PRIM.readByte(arr, pos);
     }
 
-    /**
-     * @param pos Position in the source array.
-     * @return Read int value.
-     */
-    public int readIntPositioned(int pos) {
+    /** {@inheritDoc} */
+    @Override public short readShortPositioned(int pos) {
+        return PRIM.readShort(arr, pos);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int readIntPositioned(int pos) {
         return PRIM.readInt(arr, pos);
     }
 

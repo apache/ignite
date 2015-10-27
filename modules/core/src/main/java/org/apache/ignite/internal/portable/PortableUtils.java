@@ -626,9 +626,10 @@ public class PortableUtils {
      */
     public static int rawOffsetAbsolute(PortablePositionReadable in, int start) {
         int len = length(in, start);
-        int schemaId = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_ID_POS);
 
-        if (schemaId == 0)
+        short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
+
+        if (PortableUtils.isRawOnly(flags))
             // No schema, raw offset is located on schema offset position.
             return in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
         else {
