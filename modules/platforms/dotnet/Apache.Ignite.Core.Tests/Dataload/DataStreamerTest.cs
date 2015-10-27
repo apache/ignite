@@ -32,13 +32,13 @@ namespace Apache.Ignite.Core.Tests.Dataload
     /// <summary>
     /// Data streamer tests.
     /// </summary>
-    public class DataStreamerTest
+    public sealed class DataStreamerTest
     {
         /** Node name. */
-        protected const string GridName = "grid";
+        private const string GridName = "grid";
 
         /** Cache name. */
-        protected const string CacheName = "partitioned";
+        private const string CacheName = "partitioned";
 
         /** Node. */
         private IIgnite _grid;
@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// Initialization routine.
         /// </summary>
         [TestFixtureSetUp]
-        public virtual void InitClient()
+        public void InitClient()
         {
             _grid = Ignition.Start(GetIgniteConfiguration(GridName));
 
@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         ///
         /// </summary>
         [TestFixtureTearDown]
-        public virtual void StopGrids()
+        public void StopGrids()
         {
             Ignition.StopAll(true);
         }
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         ///
         /// </summary>
         [SetUp]
-        public virtual void BeforeTest()
+        public void BeforeTest()
         {
             Console.WriteLine("Test started: " + TestContext.CurrentContext.Test.Name);
 
