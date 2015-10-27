@@ -57,6 +57,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.ENUM;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.ENUM_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLAGS_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT;
@@ -315,8 +316,10 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * - writing schema ID;
      * - writing schema offset;
      * - writing schema to the tail.
+     *
+     * @param userType User type flag.
      */
-    public void postWrite() {
+    public void postWrite(boolean userType) {
         if (schema != null) {
             // Write schema ID.
             out.writeInt(start + SCHEMA_ID_POS, schemaId);
@@ -332,9 +335,15 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             if (rawOffPos != 0)
                 out.writeInt(rawOffPos - start);
         }
-        else
+        else {
+            // Write raw-only flag is needed.
+            int flags = (userType ? PortableUtils.FLAG_USR_TYP : 0) | PortableUtils.FLAG_RAW_ONLY;
+
+            out.writeShort(start + FLAGS_POS, (short)flags);
+
             // If there are no schema, we are free to write raw offset to schema offset.
             out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, (rawOffPos == 0 ? out.position() : rawOffPos) - start);
+        }
 
         // 5. Write length.
         out.writeInt(start + TOTAL_LEN_POS, out.position() - start);
@@ -1636,17 +1645,17 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
     /** {@inheritDoc} */
     @Override public void writeShort(int v) throws IOException {
-        doWriteShort((short)v);
+        doWriteShort((short) v);
     }
 
     /** {@inheritDoc} */
     @Override public void writeChar(int v) throws IOException {
-        doWriteChar((char)v);
+        doWriteChar((char) v);
     }
 
     /** {@inheritDoc} */
     @Override public void write(int b) throws IOException {
-        doWriteByte((byte)b);
+        doWriteByte((byte) b);
     }
 
     /** {@inheritDoc} */

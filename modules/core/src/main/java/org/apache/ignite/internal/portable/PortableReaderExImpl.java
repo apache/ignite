@@ -1714,7 +1714,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
                 PortableUtils.checkProtocolVersion(in.readByte());
 
-                boolean userType = PortableUtils.isUserType(PortableUtils.readFlags(this));
+                boolean userType = PortableUtils.isUserType(this.readShort());
 
                 // Skip typeId and hash code.
                 in.position(in.position() + 8);

@@ -95,7 +95,10 @@ public class PortableUtils {
     private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
 
     /** Flag: user type. */
-    private static final short FLAG_USR_TYP = 0x1;
+    public static final short FLAG_USR_TYP = 0x1;
+
+    /** Flag: only raw data exists. */
+    public static final short FLAG_RAW_ONLY = 0x2;
 
     /**
      * Write flags.
@@ -113,16 +116,6 @@ public class PortableUtils {
     }
 
     /**
-     * Read flags.
-     *
-     * @param reader Reader.
-     * @return Flags.
-     */
-    public static short readFlags(PortableReaderExImpl reader) {
-        return reader.readShort();
-    }
-
-    /**
      * Check if user type flag is set.
      *
      * @param flags Flags.
@@ -130,6 +123,16 @@ public class PortableUtils {
      */
     public static boolean isUserType(short flags) {
         return (flags & FLAG_USR_TYP) == FLAG_USR_TYP;
+    }
+
+    /**
+     * Check if raw-only flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean isRawOnly(short flags) {
+        return (flags & FLAG_RAW_ONLY) == FLAG_RAW_ONLY;
     }
 
     /**

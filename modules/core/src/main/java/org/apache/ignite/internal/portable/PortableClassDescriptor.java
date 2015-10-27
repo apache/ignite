@@ -515,7 +515,7 @@ public class PortableClassDescriptor {
                     else
                         ((PortableMarshalAware)obj).writePortable(writer);
 
-                    writer.postWrite();
+                    writer.postWrite(userType);
 
                     if (obj.getClass() != PortableMetaDataImpl.class
                         && ctx.isMetaDataChanged(typeId, writer.metaDataHashSum())) {
@@ -543,7 +543,7 @@ public class PortableClassDescriptor {
                         throw new PortableException("Failed to write Externalizable object: " + obj, e);
                     }
 
-                    writer.postWrite();
+                    writer.postWrite(userType);
                 }
 
                 break;
@@ -553,7 +553,7 @@ public class PortableClassDescriptor {
                     for (FieldInfo info : fields)
                         info.write(obj, writer);
 
-                    writer.postWrite();
+                    writer.postWrite(userType);
                 }
 
                 break;

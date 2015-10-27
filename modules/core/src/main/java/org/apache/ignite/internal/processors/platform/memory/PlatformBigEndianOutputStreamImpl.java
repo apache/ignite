@@ -99,6 +99,11 @@ public class PlatformBigEndianOutputStreamImpl extends PlatformOutputStreamImpl 
     }
 
     /** {@inheritDoc} */
+    @Override public void writeShort(int pos, short val) {
+        super.writeShort(pos, Short.reverseBytes(val));
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeInt(int pos, int val) {
         super.writeInt(pos, Integer.reverseBytes(val));
     }

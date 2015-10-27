@@ -120,6 +120,13 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
     }
 
     /** {@inheritDoc} */
+    @Override public void writeShort(int pos, short val) {
+        ensureCapacity(pos + 2);
+
+        UNSAFE.putShort(data + pos, val);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeInt(int pos, int val) {
         ensureCapacity(pos + 4);
 
