@@ -124,7 +124,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testCrossCacheTxOperationsFairAffinity() throws Exception {
+    public void testCrossCacheTxOperationsFairAffinity() throws Exception {
         txOperations(PARTITIONED, FULL_SYNC, true, true);
     }
 

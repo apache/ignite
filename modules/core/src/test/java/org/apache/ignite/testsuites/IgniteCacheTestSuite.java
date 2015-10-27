@@ -22,10 +22,10 @@ import junit.framework.TestSuite;
 import org.apache.ignite.GridCacheAffinityBackupsSelfTest;
 import org.apache.ignite.IgniteCacheAffinitySelfTest;
 import org.apache.ignite.cache.IgniteWarmupClosureSelfTest;
-import org.apache.ignite.cache.affinity.IgniteClientNodeAffinityTest;
-import org.apache.ignite.cache.affinity.fair.GridFairAffinityFunctionNodesSelfTest;
-import org.apache.ignite.cache.affinity.fair.GridFairAffinityFunctionSelfTest;
-import org.apache.ignite.cache.affinity.fair.IgniteFairAffinityDynamicCacheSelfTest;
+import org.apache.ignite.cache.affinity.AffinityClientNodeSelfTest;
+import org.apache.ignite.cache.affinity.fair.FairAffinityDynamicCacheSelfTest;
+import org.apache.ignite.cache.affinity.fair.FairAffinityFunctionNodesSelfTest;
+import org.apache.ignite.cache.affinity.fair.FairAffinityFunctionSelfTest;
 import org.apache.ignite.cache.store.GridCacheBalancingStoreSelfTest;
 import org.apache.ignite.cache.store.GridCacheLoadOnlyStoreAdapterSelfTest;
 import org.apache.ignite.cache.store.StoreResourceInjectionSelfTest;
@@ -183,12 +183,12 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteWarmupClosureSelfTest.class);
 
         // Affinity tests.
-        suite.addTestSuite(GridFairAffinityFunctionNodesSelfTest.class);
-        suite.addTestSuite(GridFairAffinityFunctionSelfTest.class);
-        suite.addTestSuite(IgniteFairAffinityDynamicCacheSelfTest.class);
+        suite.addTestSuite(FairAffinityFunctionNodesSelfTest.class);
+        suite.addTestSuite(FairAffinityFunctionSelfTest.class);
+        suite.addTestSuite(FairAffinityDynamicCacheSelfTest.class);
         suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
         suite.addTestSuite(IgniteCacheAffinitySelfTest.class);
-        suite.addTestSuite(IgniteClientNodeAffinityTest.class);
+        suite.addTestSuite(AffinityClientNodeSelfTest.class);
 
         // Swap tests.
         suite.addTestSuite(GridCacheSwapPreloadSelfTest.class);
