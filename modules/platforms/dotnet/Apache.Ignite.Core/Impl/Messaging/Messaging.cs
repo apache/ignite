@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         private readonly Ignite _ignite;
         
         /** Async instance. */
-        private readonly Messaging _asyncInstance;
+        private readonly Lazy<Messaging> _asyncInstance;
 
         /** Async flag. */
         private readonly bool _isAsync;
@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
 
             _ignite = (Ignite) prj.Ignite;
 
-            _asyncInstance = new Messaging(this);
+            _asyncInstance = new Lazy<Messaging>(() => new Messaging(this));
         }
 
         /// <summary>
@@ -100,6 +100,14 @@ namespace Apache.Ignite.Core.Impl.Messaging
         public IClusterGroup ClusterGroup
         {
             get { return _clusterGroup; }
+        }
+
+        /// <summary>
+        /// Gets the asynchronous instance.
+        /// </summary>
+        private Messaging AsyncInstance
+        {
+            get { return _asyncInstance.Value; }
         }
 
         /** <inheritdoc /> */
@@ -245,9 +253,9 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public Task<Guid> RemoteListenAsync<T>(IMessageListener<T> listener, object topic = null)
         {
-            _asyncInstance.RemoteListen(listener, topic);
+            AsyncInstance.RemoteListen(listener, topic);
 
-            return _asyncInstance.GetTask<Guid>();
+            return AsyncInstance.GetTask<Guid>();
         }
 
         /** <inheritdoc /> */
@@ -262,9 +270,9 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public Task StopRemoteListenAsync(Guid opId)
         {
-            _asyncInstance.StopRemoteListen(opId);
+            AsyncInstance.StopRemoteListen(opId);
 
-            return _asyncInstance.GetTask();
+            return AsyncInstance.GetTask();
         }
 
         /// <summary>

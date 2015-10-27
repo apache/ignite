@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Impl.Events
         private readonly IClusterGroup _clusterGroup;
         
         /** Async instance. */
-        private readonly Events _asyncInstance;
+        private readonly Lazy<Events> _asyncInstance;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Events" /> class.
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
             _clusterGroup = clusterGroup;
 
-            _asyncInstance = new Events(this);
+            _asyncInstance = new Lazy<Events>(() => new Events(this));
         }
 
         /// <summary>
@@ -100,6 +100,14 @@ namespace Apache.Ignite.Core.Impl.Events
         private Ignite Ignite
         {
             get { return (Ignite) ClusterGroup.Ignite; }
+        }
+
+        /// <summary>
+        /// Gets the asynchronous instance.
+        /// </summary>
+        private Events AsyncInstance
+        {
+            get { return _asyncInstance.Value; }
         }
 
         /** <inheritDoc /> */
@@ -124,9 +132,9 @@ namespace Apache.Ignite.Core.Impl.Events
         public Task<ICollection<T>> RemoteQueryAsync<T>(IEventFilter<T> filter, TimeSpan? timeout = null, 
             params int[] types) where T : IEvent
         {
-            _asyncInstance.RemoteQuery(filter, timeout, types);
+            AsyncInstance.RemoteQuery(filter, timeout, types);
 
-            return GetFuture((futId, futTyp) => UU.TargetListenFutureForOperation(_asyncInstance.Target, futId, futTyp,
+            return GetFuture((futId, futTyp) => UU.TargetListenFutureForOperation(AsyncInstance.Target, futId, futTyp,
                 (int) Op.RemoteQuery), convertFunc: ReadEvents<T>).Task;
         }
 
@@ -241,9 +249,9 @@ namespace Apache.Ignite.Core.Impl.Events
 
             try
             {
-                _asyncInstance.WaitForLocal0(filter, ref hnd, types);
+                AsyncInstance.WaitForLocal0(filter, ref hnd, types);
 
-                var fut = GetFuture((futId, futTyp) => UU.TargetListenFutureForOperation(_asyncInstance.Target, futId,
+                var fut = GetFuture((futId, futTyp) => UU.TargetListenFutureForOperation(AsyncInstance.Target, futId,
                     futTyp, (int) Op.WaitForLocal), convertFunc: reader => (T) EventReader.Read<IEvent>(reader));
 
                 if (filter != null)
