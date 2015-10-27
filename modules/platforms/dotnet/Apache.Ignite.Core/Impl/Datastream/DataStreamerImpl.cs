@@ -326,7 +326,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
-        public Task Future
+        public Task Task
         {
             get
             {

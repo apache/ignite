@@ -353,11 +353,7 @@ namespace Apache.Ignite.Core.Impl
         /// </returns>
         public ICache<TK, TV> Cache<TK, TV>(IUnmanagedTarget nativeCache, bool keepPortable = false)
         {
-            var cacheImpl = new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepPortable, false, false);
-
-            // TODO
-            return cacheImpl;
-            //return new CacheProxyImpl<TK, TV>(cacheImpl);
+            return new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepPortable, false, false);
         }
 
         /** <inheritdoc /> */

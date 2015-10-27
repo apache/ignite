@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Datastream
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Store;
-    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Data streamer is responsible for loading external data into cache. It achieves it by
@@ -131,10 +130,10 @@ namespace Apache.Ignite.Core.Datastream
         long AutoFlushFrequency { get; set; }
 
         /// <summary>
-        /// Gets future for this loading process. This future completes whenever method
+        /// Gets the task for this loading process. This task completes whenever method
         /// <see cref="IDataStreamer{K,V}.Close(bool)"/> completes.
         /// </summary>
-        Task Future { get; }  // TODO
+        Task Task { get; }
 
         /// <summary>
         /// Gets or sets custom stream receiver.
