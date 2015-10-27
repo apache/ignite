@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private readonly ThreadLocal<object> _invokeAllConverter = new ThreadLocal<object>();
 
         /** Async instance. */
-        private readonly CacheImpl<TK, TV> _asyncInstance;
+        private readonly Lazy<CacheImpl<TK, TV>> _asyncInstance;
 
         /// <summary>
         /// Constructor.
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             _flagAsync = flagAsync;
             _flagNoRetries = flagNoRetries;
 
-            _asyncInstance = new CacheImpl<TK, TV>(this);
+            _asyncInstance = new Lazy<CacheImpl<TK, TV>>(() => new CacheImpl<TK, TV>(this));
         }
 
         /// <summary>
@@ -255,9 +255,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task LoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            _asyncInstance.LoadCache(p, args);
+            AsyncInstance.LoadCache(p, args);
 
-            return _asyncInstance.GetTask(CacheOp.LoadCache);
+            return AsyncInstance.GetTask(CacheOp.LoadCache);
         }
 
         /** <inheritDoc /> */
@@ -269,9 +269,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            _asyncInstance.LocalLoadCache(p, args);
+            AsyncInstance.LocalLoadCache(p, args);
 
-            return _asyncInstance.GetTask(CacheOp.LocLoadCache);
+            return AsyncInstance.GetTask(CacheOp.LocLoadCache);
         }
 
         /// <summary>
@@ -306,9 +306,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> ContainsKeyAsync(TK key)
         {
-            _asyncInstance.ContainsKey(key);
+            AsyncInstance.ContainsKey(key);
 
-            return _asyncInstance.GetTask<bool>(CacheOp.ContainsKey);
+            return AsyncInstance.GetTask<bool>(CacheOp.ContainsKey);
         }
 
         /** <inheritDoc /> */
@@ -322,9 +322,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> ContainsKeysAsync(IEnumerable<TK> keys)
         {
-            _asyncInstance.ContainsKeys(keys);
+            AsyncInstance.ContainsKeys(keys);
 
-            return _asyncInstance.GetTask<bool>(CacheOp.ContainsKeys);
+            return AsyncInstance.GetTask<bool>(CacheOp.ContainsKeys);
         }
 
         /** <inheritDoc /> */
@@ -398,9 +398,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<TV> GetAsync(TK key)
         {
-            _asyncInstance.Get(key);
+            AsyncInstance.Get(key);
 
-            return _asyncInstance.GetTask<TV>(CacheOp.Get);
+            return AsyncInstance.GetTask<TV>(CacheOp.Get);
         }
 
         /** <inheritDoc /> */
@@ -423,9 +423,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            _asyncInstance.Get(key);
+            AsyncInstance.Get(key);
 
-            return _asyncInstance.GetTask(CacheOp.Get, GetCacheResult<CacheResult<TV>>);
+            return AsyncInstance.GetTask(CacheOp.Get, GetCacheResult<CacheResult<TV>>);
         }
 
         /** <inheritDoc /> */
@@ -446,9 +446,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<IDictionary<TK, TV>> GetAllAsync(IEnumerable<TK> keys)
         {
-            _asyncInstance.GetAll(keys);
+            AsyncInstance.GetAll(keys);
 
-            return _asyncInstance.GetTask<IDictionary<TK, TV>>(CacheOp.GetAll);
+            return AsyncInstance.GetTask<IDictionary<TK, TV>>(CacheOp.GetAll);
         }
 
         /** <inheritdoc /> */
@@ -464,9 +464,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task PutAsync(TK key, TV val)
         {
-            _asyncInstance.Put(key, val);
+            AsyncInstance.Put(key, val);
 
-            return _asyncInstance.GetTask(CacheOp.Put);
+            return AsyncInstance.GetTask(CacheOp.Put);
         }
 
         /** <inheritDoc /> */
@@ -482,9 +482,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> GetAndPutAsync(TK key, TV val)
         {
-            _asyncInstance.GetAndPut(key, val);
+            AsyncInstance.GetAndPut(key, val);
 
-            return _asyncInstance.GetTask<CacheResult<TV>>(CacheOp.GetAndPut);
+            return AsyncInstance.GetTask<CacheResult<TV>>(CacheOp.GetAndPut);
         }
 
         /** <inheritDoc /> */
@@ -500,9 +500,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> GetAndReplaceAsync(TK key, TV val)
         {
-            _asyncInstance.GetAndReplace(key, val);
+            AsyncInstance.GetAndReplace(key, val);
 
-            return _asyncInstance.GetTask<CacheResult<TV>>(CacheOp.GetAndReplace);
+            return AsyncInstance.GetTask<CacheResult<TV>>(CacheOp.GetAndReplace);
         }
 
         /** <inheritDoc /> */
@@ -516,9 +516,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> GetAndRemoveAsync(TK key)
         {
-            _asyncInstance.GetAndRemove(key);
+            AsyncInstance.GetAndRemove(key);
 
-            return _asyncInstance.GetTask<CacheResult<TV>>(CacheOp.GetAndRemove);
+            return AsyncInstance.GetTask<CacheResult<TV>>(CacheOp.GetAndRemove);
         }
 
         /** <inheritdoc /> */
@@ -534,9 +534,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> PutIfAbsentAsync(TK key, TV val)
         {
-            _asyncInstance.PutIfAbsent(key, val);
+            AsyncInstance.PutIfAbsent(key, val);
 
-            return _asyncInstance.GetTask<bool>(CacheOp.PutIfAbsent);
+            return AsyncInstance.GetTask<bool>(CacheOp.PutIfAbsent);
         }
 
         /** <inheritdoc /> */
@@ -552,9 +552,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> GetAndPutIfAbsentAsync(TK key, TV val)
         {
-            _asyncInstance.GetAndPutIfAbsent(key, val);
+            AsyncInstance.GetAndPutIfAbsent(key, val);
 
-            return _asyncInstance.GetTask<CacheResult<TV>>(CacheOp.GetAndPutIfAbsent);
+            return AsyncInstance.GetTask<CacheResult<TV>>(CacheOp.GetAndPutIfAbsent);
         }
 
         /** <inheritdoc /> */
@@ -570,9 +570,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> ReplaceAsync(TK key, TV val)
         {
-            _asyncInstance.Replace(key, val);
+            AsyncInstance.Replace(key, val);
 
-            return _asyncInstance.GetTask<bool>(CacheOp.Replace2);
+            return AsyncInstance.GetTask<bool>(CacheOp.Replace2);
         }
 
         /** <inheritdoc /> */
@@ -590,9 +590,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> ReplaceAsync(TK key, TV oldVal, TV newVal)
         {
-            _asyncInstance.Replace(key, oldVal, newVal);
+            AsyncInstance.Replace(key, oldVal, newVal);
 
-            return _asyncInstance.GetTask<bool>(CacheOp.Replace3);
+            return AsyncInstance.GetTask<bool>(CacheOp.Replace3);
         }
 
         /** <inheritdoc /> */
@@ -606,9 +606,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task PutAllAsync(IDictionary<TK, TV> vals)
         {
-            _asyncInstance.PutAll(vals);
+            AsyncInstance.PutAll(vals);
 
-            return _asyncInstance.GetTask(CacheOp.PutAll);
+            return AsyncInstance.GetTask(CacheOp.PutAll);
         }
 
         /** <inheritdoc /> */
@@ -628,9 +628,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task ClearAsync()
         {
-            _asyncInstance.Clear();
+            AsyncInstance.Clear();
 
-            return _asyncInstance.GetTask();
+            return AsyncInstance.GetTask();
         }
 
         /** <inheritdoc /> */
@@ -644,9 +644,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task ClearAsync(TK key)
         {
-            _asyncInstance.Clear(key);
+            AsyncInstance.Clear(key);
 
-            return _asyncInstance.GetTask(CacheOp.Clear);
+            return AsyncInstance.GetTask(CacheOp.Clear);
         }
 
         /** <inheritdoc /> */
@@ -660,9 +660,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task ClearAllAsync(IEnumerable<TK> keys)
         {
-            _asyncInstance.ClearAll(keys);
+            AsyncInstance.ClearAll(keys);
 
-            return _asyncInstance.GetTask(CacheOp.ClearAll);
+            return AsyncInstance.GetTask(CacheOp.ClearAll);
         }
 
         /** <inheritdoc /> */
@@ -692,9 +692,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> RemoveAsync(TK key)
         {
-            _asyncInstance.Remove(key);
+            AsyncInstance.Remove(key);
 
-            return _asyncInstance.GetTask<bool>(CacheOp.RemoveObj);
+            return AsyncInstance.GetTask<bool>(CacheOp.RemoveObj);
         }
 
         /** <inheritDoc /> */
@@ -710,9 +710,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> RemoveAsync(TK key, TV val)
         {
-            _asyncInstance.Remove(key, val);
+            AsyncInstance.Remove(key, val);
 
-            return _asyncInstance.GetTask<bool>(CacheOp.RemoveBool);
+            return AsyncInstance.GetTask<bool>(CacheOp.RemoveBool);
         }
 
         /** <inheritDoc /> */
@@ -726,9 +726,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task RemoveAllAsync(IEnumerable<TK> keys)
         {
-            _asyncInstance.RemoveAll(keys);
+            AsyncInstance.RemoveAll(keys);
 
-            return _asyncInstance.GetTask(CacheOp.RemoveAll);
+            return AsyncInstance.GetTask(CacheOp.RemoveAll);
         }
 
         /** <inheritDoc /> */
@@ -740,9 +740,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task RemoveAllAsync()
         {
-            _asyncInstance.RemoveAll();
+            AsyncInstance.RemoveAll();
 
-            return _asyncInstance.GetTask();
+            return AsyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -760,9 +760,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<int> GetSizeAsync(params CachePeekMode[] modes)
         {
-            _asyncInstance.GetSize(modes);
+            AsyncInstance.GetSize(modes);
 
-            return _asyncInstance.GetTask<int>();
+            return AsyncInstance.GetTask<int>();
         }
 
         /// <summary>
@@ -807,9 +807,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<TRes> InvokeAsync<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
-            _asyncInstance.Invoke(key, processor, arg);
+            AsyncInstance.Invoke(key, processor, arg);
 
-            return _asyncInstance.GetTask<TRes>(CacheOp.Invoke);
+            return AsyncInstance.GetTask<TRes>(CacheOp.Invoke);
         }
 
         /** <inheritdoc /> */
@@ -841,9 +841,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
-            _asyncInstance.InvokeAll(keys, processor, arg);
+            AsyncInstance.InvokeAll(keys, processor, arg);
 
-            return _asyncInstance.GetTask<IDictionary<TK, ICacheEntryProcessorResult<TRes>>>(CacheOp.InvokeAll);
+            return AsyncInstance.GetTask<IDictionary<TK, ICacheEntryProcessorResult<TRes>>>(CacheOp.InvokeAll);
         }
 
         /** <inheritdoc /> */
@@ -908,11 +908,11 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /// <summary>
-        /// Gets a value indicating whether this instance is in no-retries mode.
+        /// Gets the asynchronous instance.
         /// </summary>
-        internal bool IsNoRetries
+        private CacheImpl<TK, TV> AsyncInstance
         {
-            get { return _flagNoRetries; }
+            get { return _asyncInstance.Value; }
         }
 
         #region Queries
