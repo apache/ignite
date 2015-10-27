@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         internal Task CommitAsync(TransactionImpl tx)
         {
-            return GetFuture<object>((futId, futTyp) => UU.TransactionsCommitAsync(Target, tx.Id, futId)).ToTask();
+            return GetFuture<object>((futId, futTyp) => UU.TransactionsCommitAsync(Target, tx.Id, futId)).Task;
         }
 
         /// <summary>
@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         internal Task RollbackAsync(TransactionImpl tx)
         {
-            return GetFuture<object>((futId, futTyp) => UU.TransactionsRollbackAsync(Target, tx.Id, futId)).ToTask();
+            return GetFuture<object>((futId, futTyp) => UU.TransactionsRollbackAsync(Target, tx.Id, futId)).Task;
         }
  
         /// <summary>

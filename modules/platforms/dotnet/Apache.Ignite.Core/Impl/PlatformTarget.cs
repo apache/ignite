@@ -664,7 +664,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         protected Task<T> GetTask<T>()
         {
-            return GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp)).ToTask();
+            return GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp)).Task;
         }
 
         #endregion

@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Impl.Events
             _asyncInstance.RemoteQuery(filter, timeout, types);
 
             return GetFuture((futId, futTyp) => UU.TargetListenFutureForOperation(_asyncInstance.Target, futId, futTyp,
-                (int) Op.RemoteQuery), convertFunc: ReadEvents<T>).ToTask();
+                (int) Op.RemoteQuery), convertFunc: ReadEvents<T>).Task;
         }
 
         /** <inheritDoc /> */
@@ -252,7 +252,7 @@ namespace Apache.Ignite.Core.Impl.Events
                     fut.Listen(() => Ignite.HandleRegistry.Release(hnd));
                 }
 
-                return fut.ToTask();
+                return fut.Task;
             }
             catch (Exception)
             {

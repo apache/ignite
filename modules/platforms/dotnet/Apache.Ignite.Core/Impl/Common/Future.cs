@@ -159,9 +159,9 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /** <inheritdoc/> */
-        public Task<T> ToTask()
+        public Task<T> Task
         {
-            return _taskCompletionSource.Task;
+            get { return _taskCompletionSource.Task; }
         }
 
         /** <inheritdoc /> */

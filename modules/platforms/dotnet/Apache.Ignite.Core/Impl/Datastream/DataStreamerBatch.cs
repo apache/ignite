@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// </summary>
         public Task Task
         {
-            get { return _fut.ToTask(); }
+            get { return _fut.Task; }
         }
 
         /// <summary>

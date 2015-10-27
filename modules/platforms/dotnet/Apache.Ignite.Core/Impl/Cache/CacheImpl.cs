@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             _invokeAllConverter.Value = null;
 
             return GetFuture((futId, futTypeId) => UU.TargetListenFutureForOperation(Target, futId, futTypeId, 
-                (int) lastAsyncOp), _flagKeepPortable, converter).ToTask();
+                (int) lastAsyncOp), _flagKeepPortable, converter).Task;
         }
 
         /** <inheritDoc /> */
@@ -845,7 +845,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task Rebalance()
         {
-            return GetFuture<object>((futId, futTyp) => UU.CacheRebalance(Target, futId)).ToTask();
+            return GetFuture<object>((futId, futTyp) => UU.CacheRebalance(Target, futId)).Task;
         }
 
         /** <inheritDoc /> */

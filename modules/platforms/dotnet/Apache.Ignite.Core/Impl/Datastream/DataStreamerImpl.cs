@@ -332,7 +332,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             {
                 ThrowIfDisposed();
 
-                return _closeFut.ToTask();
+                return _closeFut.Task;
             }
         }
 
