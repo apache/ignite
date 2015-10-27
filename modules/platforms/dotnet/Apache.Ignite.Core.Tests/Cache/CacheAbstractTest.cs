@@ -525,7 +525,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGetAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             cache.Put(1, 1);
             cache.Put(2, 2);
