@@ -249,14 +249,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
                 return;
             }
 
-            Class<?> replacedCls = replacedObj.getClass();
-
-            boolean replace = cls != replacedCls;
-
-            if (replace)
-                cls = replacedCls;
-
-            marshal(replacedObj, detached, replace);
+            marshal(replacedObj, detached, false);
 
             return;
         }
