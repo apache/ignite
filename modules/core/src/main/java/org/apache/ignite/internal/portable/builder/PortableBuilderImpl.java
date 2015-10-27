@@ -44,7 +44,6 @@ import java.util.Set;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DFLT_HDR_LEN;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.HASH_CODE_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER_POS;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.TOTAL_LEN_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TYPE_ID_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
 
@@ -225,11 +224,19 @@ public class PortableBuilderImpl implements PortableBuilder {
             else
                 assignedFldsById = Collections.emptyMap();
 
-            int rawOff = start + PortableUtils.rawOffset(reader, start);
+            // Get footer details.
+            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footer(reader, start);
 
+            int footerPos = footer.get1();
+            int footerEnd = footer.get2();
+
+            // Get raw position.
+            int rawPos = start + PortableUtils.rawOffset(reader, start);
+
+            // Position reader on data.
             reader.position(start + hdrLen);
 
-            while (reader.position() < rawOff) {
+            while (reader.position() < rawPos) {
                 int fieldId = reader.readInt();
                 int fieldLen = reader.readInt();
 
