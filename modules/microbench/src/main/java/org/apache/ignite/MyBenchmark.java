@@ -123,12 +123,12 @@ public class MyBenchmark {
     private static final Address addr = new Address();
 
     public static void main(String[] args) throws Exception {
-        setup();
-        while (true)
-            marsh.unmarshal(marshAddrBytes, null);
+//        setup();
+//        while (true)
+//            marsh.unmarshal(marshAddrBytes, null);
 
-//        Options opts = new OptionsBuilder().include(MyBenchmark.class.getSimpleName()).build();
-//        new Runner(opts).run();
+        Options opts = new OptionsBuilder().include(MyBenchmark.class.getSimpleName()).build();
+        new Runner(opts).run();
     }
 
     enum Sex { MALE, FEMALE }

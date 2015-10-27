@@ -32,11 +32,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -94,6 +92,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /** */
     private static final int INIT_CAP = 1024;
 
+    /** Thread-local schema. */
+    private static final ThreadLocal<SchemaHolder> SCHEMA = new ThreadLocal<>();
+
     /** */
     private final PortableContext ctx;
 
@@ -121,9 +122,11 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /** Output stream. */
     private PortableOutputStream out;
 
-    /** Field infos. */
-    // TODO: Optimize.
-    private List<Integer> schema;
+    /** Schema. */
+    private SchemaHolder schema;
+
+    /** Amount of written fields. */
+    private int fieldCnt;
 
     /**
      * @param ctx Context.
@@ -325,8 +328,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, out.position() - start);
 
             // Write the schema.
-            for (Integer val : schema)
-                out.writeInt(val);
+            schema.writeAndPop(this, fieldCnt);
 
             // Write raw offset if needed.
             if (rawOffPos != 0)
@@ -1694,23 +1696,21 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param fieldId Field ID.
      */
     public void writeFieldId(int fieldId) {
-        int off = out.position() - start;
+        int fieldOff = out.position() - start;
 
-        saveFieldInfo(fieldId, off);
-    }
+        if (schema == null) {
+            schema = SCHEMA.get();
 
-     /**
-      * Save field info.
-      *
-      * @param id Field ID.
-      * @param off Offset starting from object head.
-      */
-    private void saveFieldInfo(int id, int off) {
-        if (schema == null)
-            schema = new ArrayList<>(2);
+            if (schema == null) {
+                schema = new SchemaHolder();
 
-        schema.add(id);
-        schema.add(off);
+                SCHEMA.set(schema);
+            }
+        }
+
+        schema.push(fieldId, fieldOff);
+
+        fieldCnt++;
     }
 
      /**
@@ -1750,5 +1750,73 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      */
     public PortableContext context() {
         return ctx;
+    }
+
+    /**
+     * Schema holder.
+     */
+    private static class SchemaHolder {
+        /** Grow step. */
+        private static final int GROW_STEP = 16;
+
+        /** Maximum stable size. */
+        private static final int MAX_SIZE = 256;
+
+        /** Data. */
+        private int[] data;
+
+        /** Index. */
+        private int idx;
+
+        /**
+         * Constructor.
+         */
+        public SchemaHolder() {
+            data = new int[GROW_STEP];
+        }
+
+        /**
+         * Push another frame.
+         *
+         * @param id Field ID.
+         * @param off Field offset.
+         */
+        public void push(int id, int off) {
+            if (idx == data.length) {
+                int[] data0 = new int[data.length + GROW_STEP];
+
+                System.arraycopy(data, 0, data0, 0, data.length);
+
+                data = data0;
+            }
+
+            data[idx] = id;
+            data[idx + 1] = off;
+
+            idx += 2;
+        }
+
+        /**
+         * Write collected frames and pop them.
+         *
+         * @param writer Writer.
+         * @param cnt Count.
+         */
+        public void writeAndPop(PortableWriterExImpl writer, int cnt) {
+            int startIdx = idx - cnt * 2;
+
+            assert startIdx >= 0;
+
+            for (int idx0 = startIdx; idx0 < idx;) {
+                writer.writeInt(data[idx0++]);
+                writer.writeInt(data[idx0++]);
+            }
+
+            idx = startIdx;
+
+            // Shrink data array if needed.
+            if (idx == 0 && data.length > MAX_SIZE)
+                data = new int[MAX_SIZE];
+        }
     }
 }
