@@ -86,19 +86,22 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
 
     /**
      * @param cnt Count of keys references in list of candidates.
+     * @param addDepInfo Deployment info flag.
      */
-    protected GridDistributedBaseMessage(int cnt) {
+    protected GridDistributedBaseMessage(int cnt, boolean addDepInfo) {
         assert cnt >= 0;
 
         this.cnt = cnt;
+        this.addDepInfo = addDepInfo;
     }
 
     /**
      * @param ver Either lock or transaction version.
      * @param cnt Key count.
+     * @param addDepInfo Deployment info flag.
      */
-    protected GridDistributedBaseMessage(GridCacheVersion ver, int cnt) {
-        this(cnt);
+    protected GridDistributedBaseMessage(GridCacheVersion ver, int cnt, boolean addDepInfo) {
+        this(cnt, addDepInfo);
 
         assert ver != null;
 
@@ -120,6 +123,11 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
 
         if (candsByIdxBytes != null)
             candsByIdx = ctx.marshaller().unmarshal(candsByIdxBytes, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
     /**

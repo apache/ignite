@@ -169,15 +169,15 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgnitePutAllUpdateNonPreloadedPartitionSelfTest.class);
 
         // User's class loader tests.
-        suite.addTestSuite(IgniteCacheAtomicExecutionContextTest.class);
-        suite.addTestSuite(IgniteCachePartitionedExecutionContextTest.class);
-        suite.addTestSuite(IgniteCacheReplicatedExecutionContextTest.class);
-        suite.addTestSuite(IgniteCacheTxExecutionContextTest.class);
-        suite.addTestSuite(IgniteCacheContinuousExecutionContextTest.class);
-        suite.addTestSuite(IgniteCacheIsolatedExecutionContextTest.class);
-        suite.addTestSuite(IgniteCacheP2PDisableExecutionContextTest.class);
-        suite.addTestSuite(IgniteCachePrivateExecutionContextTest.class);
-        suite.addTestSuite(IgniteCacheSharedExecutionContextTest.class);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheAtomicExecutionContextTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCachePartitionedExecutionContextTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheReplicatedExecutionContextTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheTxExecutionContextTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheContinuousExecutionContextTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheIsolatedExecutionContextTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2PDisableExecutionContextTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCachePrivateExecutionContextTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheSharedExecutionContextTest.class, ignoredTests);
 
         // Warmup closure tests.
         suite.addTestSuite(IgniteWarmupClosureSelfTest.class);

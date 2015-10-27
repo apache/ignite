@@ -120,6 +120,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param taskNameHash Task name hash code.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param addDepInfo Deployment info flag.
      */
     public GridDhtLockRequest(
         int cacheId,
@@ -141,7 +142,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         @Nullable UUID subjId,
         int taskNameHash,
         long accessTtl,
-        boolean skipStore
+        boolean skipStore,
+        boolean addDepInfo
     ) {
         super(cacheId,
             nodeId,
@@ -156,7 +158,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             timeout,
             dhtCnt == 0 ? nearCnt : dhtCnt,
             txSize,
-            skipStore);
+            skipStore,
+            addDepInfo);
 
         this.topVer = topVer;
 

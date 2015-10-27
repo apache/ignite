@@ -15,27 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.cache.CacheEntryProcessor;
 
 /**
- * Tests deployment with off-heap storage.
+ * Entry processor used by {@code GridCacheEntryProcessorDeploymentSelfTest}.
  */
-public class GridCacheDeploymentOffHeapSelfTest extends GridCacheDeploymentSelfTest {
+public class CacheDeploymentPortableEntryProcessor implements CacheEntryProcessor<String, String, Boolean> {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration() throws Exception {
-        CacheConfiguration cacheCfg = super.cacheConfiguration();
+    @Override public Boolean process(MutableEntry<String, String> entry, Object... arguments)
+        throws EntryProcessorException {
+        String val = entry.getKey();
 
-        cacheCfg.setMemoryMode(OFFHEAP_VALUES);
-        cacheCfg.setOffHeapMaxMemory(0);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setNearConfiguration(new NearCacheConfiguration());
-
-        return cacheCfg;
+        return true;
     }
 }

@@ -408,7 +408,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean cancelled = false;
 
         try {
-            res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), cnt);
+            res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), cnt,
+                ctx.deploymentEnabled());
 
             dhtTx = startRemoteTx(nodeId, req, res);
             nearTx = isNearEnabled(cacheCfg) ? near().startRemoteTx(nodeId, req) : null;
@@ -435,7 +436,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             U.error(log, err, e);
 
             res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(),
-                new IgniteTxRollbackCheckedException(err, e));
+                new IgniteTxRollbackCheckedException(err, e), ctx.deploymentEnabled());
 
             fail = true;
         }
@@ -448,7 +449,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.version(),
                 req.futureId(),
                 req.miniId(),
-                new IgniteCheckedException(err, e));
+                new IgniteCheckedException(err, e), ctx.deploymentEnabled());
 
             fail = true;
         }
@@ -1035,7 +1036,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             false,
             0,
             null,
-            topVer);
+            topVer,
+            ctx.deploymentEnabled());
 
         try {
             ctx.io().send(nearNode, res, ctx.ioPolicy());
@@ -1080,7 +1082,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 tx != null && tx.onePhaseCommit(),
                 entries.size(),
                 err,
-                null);
+                null,
+                ctx.deploymentEnabled());
 
             if (err == null) {
                 res.pending(localDhtPendingVersions(entries, mappedVer));
@@ -1196,7 +1199,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 false,
                 entries.size(),
                 e,
-                null);
+                null,
+                ctx.deploymentEnabled());
         }
     }
 
@@ -1522,7 +1526,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             List<KeyCacheObject> keyBytes = entry.getValue();
 
-            GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size());
+            GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size(),
+                ctx.deploymentEnabled());
 
             req.version(dhtVer);
 
@@ -1556,7 +1561,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             if (!dhtMap.containsKey(n)) {
                 List<KeyCacheObject> keyBytes = entry.getValue();
 
-                GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size());
+                GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size(),
+                    ctx.deploymentEnabled());
 
                 req.version(dhtVer);
 

@@ -131,15 +131,17 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      * @param writes Write entries.
      * @param txNodes Transaction nodes mapping.
      * @param onePhaseCommit One phase commit flag.
+     * @param addDepInfo Deployment info flag.
      */
     public GridDistributedTxPrepareRequest(
         IgniteInternalTx tx,
         @Nullable Collection<IgniteTxEntry> reads,
         Collection<IgniteTxEntry> writes,
         Map<UUID, Collection<UUID>> txNodes,
-        boolean onePhaseCommit
+        boolean onePhaseCommit,
+        boolean addDepInfo
     ) {
-        super(tx.xidVersion(), 0);
+        super(tx.xidVersion(), 0, addDepInfo);
 
         writeVer = tx.writeVersion();
         threadId = tx.threadId();
@@ -334,6 +336,11 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
         if (txNodesBytes != null)
             txNodes = ctx.marshaller().unmarshal(txNodesBytes, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo || forceAddDepInfo;
     }
 
     /** {@inheritDoc} */

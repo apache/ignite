@@ -164,6 +164,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     /** Implicit transaction result. */
     protected GridCacheReturn implicitRes;
 
+    /** Flag indicating whether deployment is enabled for caches from this transaction or not. */
+    private boolean depEnabled;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -273,6 +276,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      */
     @Override public Collection<Integer> activeCacheIds() {
         return activeCacheIds;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean activeCachesDeploymentEnabled() {
+        return depEnabled;
     }
 
     /** {@inheritDoc} */
@@ -3234,6 +3242,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             }
             else
                 activeCacheIds.add(cacheId);
+
+            if (activeCacheIds.size() == 1)
+                depEnabled = cacheCtx.deploymentEnabled();
         }
     }
 

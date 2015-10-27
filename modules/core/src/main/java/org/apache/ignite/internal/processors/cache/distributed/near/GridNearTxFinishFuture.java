@@ -452,7 +452,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         null,
                         0,
                         null,
-                        0);
+                        0,
+                        tx.activeCachesDeploymentEnabled());
 
                     finishReq.checkCommitted(true);
 
@@ -574,7 +575,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             null,
             tx.size(),
             tx.subjectId(),
-            tx.taskNameHash()
+            tx.taskNameHash(),
+            tx.activeCachesDeploymentEnabled()
         );
 
         // If this is the primary node for the keys.

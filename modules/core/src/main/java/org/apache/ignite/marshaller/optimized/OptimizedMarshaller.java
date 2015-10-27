@@ -288,7 +288,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
      *
      * @param ldr Class loader being undeployed.
      */
-    public void onUndeploy(ClassLoader ldr) {
+    @Override public void onUndeploy(ClassLoader ldr) {
         for (Class<?> cls : clsMap.keySet()) {
             if (ldr.equals(cls.getClassLoader()))
                 clsMap.remove(cls);

@@ -41,13 +41,15 @@ public class CacheObjectPortableContext extends CacheObjectContext {
      * @param portableEnabled Portable enabled flag.
      * @param cpyOnGet Copy on get flag.
      * @param storeVal {@code True} if should store unmarshalled value in cache.
+     * @param depEnabled {@code true} if deployment is enabled for the given cache.
      */
     public CacheObjectPortableContext(GridKernalContext kernalCtx,
         boolean cpyOnGet,
         boolean storeVal,
-        boolean portableEnabled) {
+        boolean portableEnabled,
+        boolean depEnabled) {
         super(kernalCtx, portableEnabled ? new CacheDefaultPortableAffinityKeyMapper() :
-            new GridCacheDefaultAffinityKeyMapper(), cpyOnGet, storeVal);
+            new GridCacheDefaultAffinityKeyMapper(), cpyOnGet, storeVal, depEnabled);
 
         this.portableEnabled = portableEnabled;
     }
