@@ -227,8 +227,8 @@ public class PortableBuilderImpl implements PortableBuilder {
             // Get footer details.
             IgniteBiTuple<Integer, Integer> footer = PortableUtils.footer(reader, start);
 
-            int footerPos = footer.get1();
-            int footerEnd = footer.get2();
+            int footerPos = start + footer.get1();
+            int footerEnd = start + footer.get2();
 
             // Get raw position.
             int rawPos = start + PortableUtils.rawOffset(reader, start);
@@ -239,6 +239,14 @@ public class PortableBuilderImpl implements PortableBuilder {
             while (reader.position() < rawPos) {
                 int fieldId = reader.readInt();
                 int fieldLen = reader.readInt();
+
+                int footerFieldId = reader.readIntPositioned(footerPos);
+                footerPos += 8;
+
+                System.out.println("id=" + fieldId + ", footerId=" + footerFieldId + ", len=" + fieldLen);
+
+                if (fieldId != footerFieldId)
+                    throw new PortableException("ID mismatch!");
 
                 if (assignedFldsById.containsKey(fieldId)) {
                     Object assignedVal = assignedFldsById.remove(fieldId);
@@ -434,8 +442,8 @@ public class PortableBuilderImpl implements PortableBuilder {
 
             IgniteBiTuple<Integer, Integer> footer = PortableUtils.footer(reader, start);
 
-            int footerPos = footer.get1();
-            int footerEnd = footer.get2();
+            int footerPos = start + footer.get1();
+            int footerEnd = start + footer.get2();
 
             int rawPos = start + PortableUtils.rawOffset(reader, start);
 
