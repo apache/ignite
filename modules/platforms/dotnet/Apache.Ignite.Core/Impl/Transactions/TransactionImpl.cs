@@ -390,7 +390,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <summary>
         /// Gets a value indicating whether this transaction is closed.
         /// </summary>
-        internal bool IsClosed
+        private bool IsClosed
         {
             get { return _state != null; }
         }
