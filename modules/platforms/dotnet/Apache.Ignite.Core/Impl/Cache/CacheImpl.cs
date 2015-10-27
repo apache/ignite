@@ -28,7 +28,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Cache.Query;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Common;
@@ -136,7 +135,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <exception cref="System.InvalidOperationException">Asynchronous mode is disabled</exception>
         internal Task GetTask(CacheOp lastAsyncOp)
         {
-            return GetTask<object>();
+            return GetTask<object>(lastAsyncOp);
         }
 
         /// <summary>
