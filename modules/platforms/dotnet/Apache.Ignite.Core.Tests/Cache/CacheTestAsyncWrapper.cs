@@ -17,9 +17,11 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
@@ -39,35 +41,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <param name="cache">The cache to be wrapped.</param>
         public CacheTestAsyncWrapper(ICache<TK, TV> cache)
         {
-            Debug.Assert(cache.IsAsync, "GridCacheTestAsyncWrapper only works with async caches.");
+            Debug.Assert(cache != null);
 
             _cache = cache;
-        }
-
-        /** <inheritDoc /> */
-        public ICache<TK, TV> WithAsync()
-        {
-            return this;
-        }
-
-        /** <inheritDoc /> */
-        public bool IsAsync
-        {
-            get { return true; }
-        }
-
-        /** <inheritDoc /> */
-        public IFuture GetFuture()
-        {
-            Debug.Fail("GridCacheTestAsyncWrapper.Future() should not be called. It always returns null.");
-            return null;
-        }
-
-        /** <inheritDoc /> */
-        public IFuture<TResult> GetFuture<TResult>()
-        {
-            Debug.Fail("GridCacheTestAsyncWrapper.Future() should not be called. It always returns null.");
-            return null;
         }
 
         /** <inheritDoc /> */
@@ -116,22 +92,19 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public void LoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            _cache.LoadCache(p, args);
-            WaitResult();
+            WaitResult(_cache.LoadCacheAsync(p, args));
         }
 
         /** <inheritDoc /> */
         public void LocalLoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            _cache.LocalLoadCache(p, args);
-            WaitResult();
+            WaitResult(_cache.LocalLoadCacheAsync(p, args));
         }
 
         /** <inheritDoc /> */
         public bool ContainsKey(TK key)
         {
-            _cache.ContainsKey(key);
-            return GetResult<bool>();
+            return GetResult(_cache.ContainsKeyAsync(key));
         }
 
         /** <inheritDoc /> */
@@ -144,8 +117,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public TV LocalPeek(TK key, params CachePeekMode[] modes)
         {
-            _cache.LocalPeek(key, modes);
-            return GetResult<TV>();
+            return _cache.LocalPeek(key, modes);
         }
 
         /** <inheritDoc /> */
@@ -164,8 +136,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public TV Get(TK key)
         {
-            _cache.Get(key);
-            return GetResult<TV>();
+            return GetResult(_cache.GetAsync(key));
         }
 
         /** <inheritDoc /> */
@@ -177,22 +148,19 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public IDictionary<TK, TV> GetAll(IEnumerable<TK> keys)
         {
-            _cache.GetAll(keys);
-            return GetResult<IDictionary<TK, TV>>();
+            return GetResult(_cache.GetAllAsync(keys));
         }
 
         /** <inheritDoc /> */
         public void Put(TK key, TV val)
         {
-            _cache.Put(key, val);
-            WaitResult();
+            WaitResult(_cache.PutAsync(key, val));
         }
 
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndPut(TK key, TV val)
         {
-            _cache.GetAndPut(key, val);
-            return GetResult<CacheResult<TV>>();
+            return GetResult(_cache.GetAndPutAsync(key, val));
         }
 
         /** <inheritDoc /> */
@@ -423,20 +391,28 @@ namespace Apache.Ignite.Core.Tests.Cache
             return GetEnumerator();
         }
 
-        /// <summary>
-        /// Waits for the async result.
-        /// </summary>
-        private void WaitResult()
+        private static void WaitResult(Task task)
         {
-            GetResult<object>();
+            try
+            {
+                task.Wait();
+            }
+            catch (AggregateException ex)
+            {
+                throw ex.InnerException;
+            }
         }
 
-        /// <summary>
-        /// Gets the async result.
-        /// </summary>
-        private T GetResult<T>()
+        private static T GetResult<T>(Task<T> task)
         {
-            return _cache.GetFuture<T>().Get();
+            try
+            {
+                return task.Result;
+            }
+            catch (Exception ex)
+            {
+                throw ex.InnerException;
+            }
         }
     }
 
