@@ -234,6 +234,7 @@
     <Compile Include="Impl\Messaging\MessageListenerHolder.cs" />
     <Compile Include="Impl\Messaging\Messaging.cs" />
     <Compile Include="Impl\NativeMethods.cs" />
+    <Compile Include="Impl\Portable\DateTimeHolder.cs" />
     <Compile Include="Impl\Portable\IO\IPortableStream.cs" />
     <Compile Include="Impl\Portable\IO\PortableAbstractStream.cs" />
     <Compile Include="Impl\Portable\IO\PortableHeapStream.cs" />

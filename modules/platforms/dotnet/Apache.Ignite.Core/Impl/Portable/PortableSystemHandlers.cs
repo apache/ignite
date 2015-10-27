@@ -42,10 +42,50 @@ namespace Apache.Ignite.Core.Impl.Portable
             new Dictionary<Type, PortableSystemWriteDelegate>();
 
         /** Mutex for write handlers update. */
-        private static readonly Object WriteHandlersMux = new Object();
+        private static readonly object WriteHandlersMux = new object();
 
         /** Read handlers. */
         private static readonly IPortableSystemReader[] ReadHandlers = new IPortableSystemReader[255];
+
+        /** Type ids. */
+        private static readonly Dictionary<Type, byte> TypeIds = new Dictionary<Type, byte>
+        {
+            {typeof (bool), PortableUtils.TypeBool},
+            {typeof (byte), PortableUtils.TypeByte},
+            {typeof (sbyte), PortableUtils.TypeByte},
+            {typeof (short), PortableUtils.TypeShort},
+            {typeof (ushort), PortableUtils.TypeShort},
+            {typeof (char), PortableUtils.TypeChar},
+            {typeof (int), PortableUtils.TypeInt},
+            {typeof (uint), PortableUtils.TypeInt},
+            {typeof (long), PortableUtils.TypeLong},
+            {typeof (ulong), PortableUtils.TypeLong},
+            {typeof (float), PortableUtils.TypeFloat},
+            {typeof (double), PortableUtils.TypeDouble},
+            {typeof (string), PortableUtils.TypeString},
+            {typeof (decimal), PortableUtils.TypeDecimal},
+            {typeof (Guid), PortableUtils.TypeGuid},
+            {typeof (Guid?), PortableUtils.TypeGuid},
+            {typeof (ArrayList), PortableUtils.TypeCollection},
+            {typeof (Hashtable), PortableUtils.TypeDictionary},
+            {typeof (DictionaryEntry), PortableUtils.TypeMapEntry},
+            {typeof (bool[]), PortableUtils.TypeArrayBool},
+            {typeof (byte[]), PortableUtils.TypeArrayByte},
+            {typeof (sbyte[]), PortableUtils.TypeArrayByte},
+            {typeof (short[]), PortableUtils.TypeArrayShort},
+            {typeof (ushort[]), PortableUtils.TypeArrayShort},
+            {typeof (char[]), PortableUtils.TypeArrayChar},
+            {typeof (int[]), PortableUtils.TypeArrayInt},
+            {typeof (uint[]), PortableUtils.TypeArrayInt},
+            {typeof (long[]), PortableUtils.TypeArrayLong},
+            {typeof (ulong[]), PortableUtils.TypeArrayLong},
+            {typeof (float[]), PortableUtils.TypeArrayFloat},
+            {typeof (double[]), PortableUtils.TypeArrayDouble},
+            {typeof (string[]), PortableUtils.TypeArrayString},
+            {typeof (decimal?[]), PortableUtils.TypeArrayDecimal},
+            {typeof (Guid?[]), PortableUtils.TypeArrayGuid},
+            {typeof (object[]), PortableUtils.TypeArray}
+        };
         
         /// <summary>
         /// Initializes the <see cref="PortableSystemHandlers"/> class.
@@ -214,8 +254,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                     return WriteDecimalArray;
                 if (elemType == typeof(string))
                     return WriteStringArray;
-                if (elemType == typeof(DateTime?))
-                    return WriteTimestampArray;
                 if (elemType == typeof(Guid?))
                     return WriteGuidArray;
                 // Enums.
@@ -231,7 +269,31 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // We know how to write enums.
                 return WriteEnum;
 
+            if (type.IsSerializable)
+                return WriteSerializable;
+
             return null;
+        }
+
+        /// <summary>
+        /// Find write handler for type.
+        /// </summary>
+        /// <param name="type">Type.</param>
+        /// <returns>Write handler or NULL.</returns>
+        public static byte GetTypeId(Type type)
+        {
+            byte res;
+
+            if (TypeIds.TryGetValue(type, out res))
+                return res;
+
+            if (type.IsEnum)
+                return PortableUtils.TypeEnum;
+
+            if (type.IsArray && type.GetElementType().IsEnum)
+                return PortableUtils.TypeArrayEnum;
+
+            return PortableUtils.TypeObject;
         }
 
         /// <summary>
@@ -295,9 +357,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="obj">Value.</param>
         private static void WriteDate(PortableWriterImpl ctx, object obj)
         {
-            ctx.Stream.WriteByte(PortableUtils.TypeTimestamp);
-
-            PortableUtils.WriteTimestamp((DateTime)obj, ctx.Stream);
+            ctx.Write(new DateTimeHolder((DateTime) obj));
         }
         
         /// <summary>
@@ -481,18 +541,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
         
         /// <summary>
-        /// Write nullable date array.
-        /// </summary>
-        /// <param name="ctx">Context.</param>
-        /// <param name="obj">Value.</param>
-        private static void WriteTimestampArray(PortableWriterImpl ctx, object obj)
-        {
-            ctx.Stream.WriteByte(PortableUtils.TypeArrayTimestamp);
-
-            PortableUtils.WriteTimestampArray((DateTime?[])obj, ctx.Stream);
-        }
-
-        /// <summary>
         /// Write string array.
         /// </summary>
         /// <param name="ctx">Context.</param>
@@ -584,6 +632,16 @@ namespace Apache.Ignite.Core.Impl.Portable
             ctx.Stream.WriteByte(PortableUtils.TypeEnum);
 
             PortableUtils.WriteEnum(ctx.Stream, (Enum)obj);
+        }
+
+        /// <summary>
+        /// Writes serializable.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="o">The object.</param>
+        private static void WriteSerializable(PortableWriterImpl writer, object o)
+        {
+            writer.Write(new SerializableObjectHolder(o));
         }
 
         /**
