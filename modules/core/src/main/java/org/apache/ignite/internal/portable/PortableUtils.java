@@ -546,9 +546,7 @@ public class PortableUtils {
         writer.doWriteInt(typeId);
         writer.doWriteInt(hashCode);
 
-        int reserved = writer.reserve(8);
-
-        writer.doWriteInt(0); // TODO: Write schema offset here.
+        int reserved = writer.reserve(12);
 
         if (clsName != null)
             writer.doWriteString(clsName);
