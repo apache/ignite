@@ -355,7 +355,9 @@ namespace Apache.Ignite.Core.Impl
         {
             var cacheImpl = new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepPortable, false, false);
 
-            return new CacheProxyImpl<TK, TV>(cacheImpl);
+            // TODO
+            return cacheImpl;
+            //return new CacheProxyImpl<TK, TV>(cacheImpl);
         }
 
         /** <inheritdoc /> */

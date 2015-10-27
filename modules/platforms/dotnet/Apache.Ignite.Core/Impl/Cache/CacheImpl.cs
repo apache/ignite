@@ -76,6 +76,9 @@ namespace Apache.Ignite.Core.Impl.Cache
          */
         private readonly ThreadLocal<object> _invokeAllConverter = new ThreadLocal<object>();
 
+        /** Async instance. */
+        private readonly CacheImpl<TK, TV> _asyncInstance;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -94,6 +97,21 @@ namespace Apache.Ignite.Core.Impl.Cache
             _flagKeepPortable = flagKeepPortable;
             _flagAsync = flagAsync;
             _flagNoRetries = flagNoRetries;
+
+            _asyncInstance = new CacheImpl<TK, TV>(this);
+        }
+
+        /// <summary>
+        /// Initializes a new async instance.
+        /// </summary>
+        /// <param name="cache">The cache.</param>
+        private CacheImpl(CacheImpl<TK, TV> cache) : base(cache.Target, cache.Marshaller)
+        {
+            _ignite = cache._ignite;
+            _flagSkipStore = cache._flagSkipStore;
+            _flagKeepPortable = cache._flagKeepPortable;
+            _flagAsync = cache._flagAsync;
+            _flagNoRetries = cache._flagNoRetries;
         }
 
         /** <inheritDoc /> */
@@ -245,7 +263,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task LoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            throw new NotImplementedException();
+            _asyncInstance.LoadCache(p, args);
+
+            return _asyncInstance.GetTask(CacheOp.LoadCache);
         }
 
         /** <inheritDoc /> */
@@ -257,7 +277,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            throw new NotImplementedException();
+            _asyncInstance.LocalLoadCache(p, args);
+
+            return _asyncInstance.GetTask(CacheOp.LocLoadCache);
         }
 
         /// <summary>
