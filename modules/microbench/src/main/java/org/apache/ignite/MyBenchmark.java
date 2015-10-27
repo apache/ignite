@@ -110,15 +110,15 @@ public class MyBenchmark {
         System.out.println(data.length);
     }
 
-    @Benchmark
-    public byte[] testAddressWrite() throws Exception {
-        return marsh.marshal(new Address());
-    }
-
 //    @Benchmark
-//    public Address testAddressRead() throws Exception {
-//        return marsh.unmarshal(marshAddrBytes, null);
+//    public byte[] testAddressWrite() throws Exception {
+//        return marsh.marshal(new Address());
 //    }
+
+    @Benchmark
+    public Address testAddressRead() throws Exception {
+        return marsh.unmarshal(marshAddrBytes, null);
+    }
 
     private static final Address addr = new Address();
 
