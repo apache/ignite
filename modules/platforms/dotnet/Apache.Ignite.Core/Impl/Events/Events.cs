@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Events
     /// <summary>
     /// Ignite events.
     /// </summary>
-    internal class Events : PlatformTarget, IEvents
+    internal sealed class Events : PlatformTarget, IEvents
     {
         /// <summary>
         /// Opcodes.
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
-        public virtual ICollection<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, params int[] types)
+        public ICollection<T> RemoteQuery<T>(IEventFilter<T> filter, TimeSpan? timeout = null, params int[] types)
             where T : IEvent
         {
             IgniteArgumentCheck.NotNull(filter, "filter");
@@ -219,7 +219,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritDoc /> */
-        public virtual T WaitForLocal<T>(IEventFilter<T> filter, params int[] types) where T : IEvent
+        public T WaitForLocal<T>(IEventFilter<T> filter, params int[] types) where T : IEvent
         {
             long hnd = 0;
 
@@ -249,7 +249,7 @@ namespace Apache.Ignite.Core.Impl.Events
                 if (filter != null)
                 {
                     // Dispose handle as soon as future ends.
-                    fut.Listen(() => Ignite.HandleRegistry.Release(hnd));
+                    fut.Task.ContinueWith(x => Ignite.HandleRegistry.Release(hnd));
                 }
 
                 return fut.Task;

@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Impl.Datastream
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable;
 
@@ -70,7 +69,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             if (prev != null)
                 Thread.MemoryBarrier(); // Prevent "prev" field escape.
 
-            _fut.Listen(() => ParentsCompleted());
+            _fut.Task.ContinueWith(x => ParentsCompleted());
         }
 
         /// <summary>

@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
@@ -43,9 +42,6 @@ namespace Apache.Ignite.Core.Impl.Common
         /** Done flag. */
         private volatile bool _done;
 
-        /** Listener(s). Either Action or List{Action}. */
-        private object _callbacks;
-
         /** Task completion source. */
         private readonly TaskCompletionSource<T> _taskCompletionSource = new TaskCompletionSource<T>();
 
@@ -67,6 +63,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /** <inheritdoc/> */
         public T Get()
         {
+            // TODO: Get rid of this
             if (!_done)
             {
                 lock (this)
@@ -77,74 +74,6 @@ namespace Apache.Ignite.Core.Impl.Common
             }
 
             return Get0();
-        }
-
-        /** <inheritdoc/> */
-        public T Get(TimeSpan timeout)
-        {
-            long ticks = timeout.Ticks;
-
-            if (ticks < 0)
-                throw new ArgumentException("Timeout cannot be negative.");
-
-            if (ticks == 0)
-                return Get();
-
-            if (!_done)
-            {
-                // Fallback to locked mode.
-                lock (this)
-                {
-                    long endTime = DateTime.Now.Ticks + ticks;
-
-                    if (!_done)
-                    {
-                        while (true)
-                        {
-                            Monitor.Wait(this, timeout);
-
-                            if (_done)
-                                break;
-
-                            ticks = endTime - DateTime.Now.Ticks;
-
-                            if (ticks <= 0)
-                                throw new TimeoutException("Timeout waiting for future completion.");
-
-                            timeout = TimeSpan.FromTicks(ticks);
-                        }
-                    }
-                }
-            }
-
-            return Get0();
-        }
-
-        /** <inheritdoc/> */
-        public void Listen(Action callback)
-        {
-            Listen(fut => callback());
-        }
-
-        /** <inheritdoc/> */
-        public void Listen(Action<Future<T>> callback)
-        {
-            IgniteArgumentCheck.NotNull(callback, "callback");
-
-            if (!_done)
-            {
-                lock (this)
-                {
-                    if (!_done)
-                    {
-                        AddCallback(callback);
-
-                        return;
-                    }
-                }
-            }
-
-            callback(this);
         }
 
         /// <summary>
@@ -220,8 +149,6 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="err">Error.</param>
         public void OnDone(T res, Exception err)
         {
-            object callbacks0 = null;
-
             lock (this)
             {
                 if (!_done)
@@ -232,10 +159,6 @@ namespace Apache.Ignite.Core.Impl.Common
                     _done = true;
 
                     Monitor.PulseAll(this);
-
-                    // Notify listeners outside the lock
-                    callbacks0 = _callbacks;
-                    _callbacks = null;
                 }
             }
 
@@ -243,36 +166,6 @@ namespace Apache.Ignite.Core.Impl.Common
                 _taskCompletionSource.SetException(err);
             else
                 _taskCompletionSource.SetResult(res);
-
-            if (callbacks0 != null)
-            {
-                var list = callbacks0 as List<Action<Future<T>>>;
-
-                if (list != null)
-                    list.ForEach(x => x(this));
-                else
-                    ((Action<Future<T>>) callbacks0)(this);
-            }
-        }
-
-        /// <summary>
-        /// Adds a callback.
-        /// </summary>
-        private void AddCallback(Action<Future<T>> callback)
-        {
-            if (_callbacks == null)
-            {
-                _callbacks = callback;
-
-                return;
-            }
-
-            var list = _callbacks as List<Action<Future<T>>> ??
-                new List<Action<Future<T>>> {(Action<Future<T>>) _callbacks};
-
-            list.Add(callback);
-
-            _callbacks = list;
         }
     }
 }
