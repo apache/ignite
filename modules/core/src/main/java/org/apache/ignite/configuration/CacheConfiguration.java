@@ -1965,6 +1965,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                 txtIdx.setType(QueryEntityIndex.Type.FULLTEXT);
                 txtIdx.setFields(new ArrayList<>(idx.fields()));
+                txtIdx.setName(idxEntry.getKey());
             }
             else {
                 Collection<String> grp = new ArrayList<>();
@@ -1974,8 +1975,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                 QueryEntityIndex sortedIdx = new QueryEntityIndex();
 
-                sortedIdx.setType(QueryEntityIndex.Type.SORTED);
+                sortedIdx.setType(idx.type() == SORTED ? QueryEntityIndex.Type.SORTED : QueryEntityIndex.Type.GEOSPATIAL);
                 sortedIdx.setFields(grp);
+                sortedIdx.setName(idxEntry.getKey());
 
                 idxs.add(sortedIdx);
             }
@@ -2243,8 +2245,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             if (desc == null)
                 desc = addIndex(idxName, SORTED);
 
-            if (!F.eq(_VAL, field))
-                desc.addField(field, orderNum, descending);
+            desc.addField(field, orderNum, descending);
         }
 
         /**

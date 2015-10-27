@@ -60,6 +60,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
@@ -519,10 +520,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (key instanceof GridCacheInternal)
                 return true;
 
-            if (convertPortable()) {
-                key = cctx.unwrapPortableIfNeeded(key, false);
-                val = cctx.unwrapPortableIfNeeded(val, false);
-            }
+            key = cctx.unwrapPortableIfNeeded(key, !convertPortable());
+            val = cctx.unwrapPortableIfNeeded(val, !convertPortable());
 
             if (log.isDebugEnabled())
                 log.debug("Storing value in cache store [key=" + key + ", val=" + val + ']');
@@ -672,7 +671,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         if (store != null) {
-            Collection<Object> keys0 = convertPortable() ? cctx.unwrapPortablesIfNeeded(keys, false) : keys;
+            Collection<Object> keys0 = F.viewReadOnly(keys, new IgniteClosure() {
+                @Override public Object apply(Object o) {
+                    return cctx.unwrapPortableIfNeeded(o, !convertPortable());
+                }
+            });
 
             if (log.isDebugEnabled())
                 log.debug("Removing values from cache store [keys=" + keys0 + ']');
@@ -1084,10 +1087,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
                         Object v = locStore ? e.getValue() : e.getValue().get1();
 
-                        if (convertPortable()) {
-                            k = cctx.unwrapPortableIfNeeded(k, false);
-                            v = cctx.unwrapPortableIfNeeded(v, false);
-                        }
+                        k = cctx.unwrapPortableIfNeeded(k, !convertPortable());
+                        v = cctx.unwrapPortableIfNeeded(v, !convertPortable());
 
                         next = new CacheEntryImpl<>(k, v);
 

@@ -122,9 +122,6 @@ public class CacheObjectContext {
 
     /** {@inheritDoc} */
     public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
-        if (keepPortable)
-            return col;
-
         if (col instanceof ArrayList)
             return unwrapPortables((ArrayList<Object>)col, keepPortable);
 
