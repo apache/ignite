@@ -571,7 +571,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         /** {@inheritDoc} */
         @Override public boolean isPlatformType() {
-            throw new UnsupportedOperationException();
+            return true;
         }
 
         /** {@inheritDoc} */
