@@ -951,6 +951,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Object array.</param>
         public void WriteArray<T>(T[] val)
         {
+            WriteArrayInternal(val);
+        }
+
+        /// <summary>
+        /// Write object array.
+        /// </summary>
+        /// <param name="val">Object array.</param>
+        public void WriteArrayInternal(Array val)
+        {
             if (val == null)
                 WriteNullRawField();
             else
@@ -1025,7 +1034,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write NULL field.
         /// </summary>
-        public void WriteNullField()
+        private void WriteNullField()
         {
             _stream.WriteInt(1);
             _stream.WriteByte(PU.HdrNull);
@@ -1034,7 +1043,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write NULL raw field.
         /// </summary>
-        public void WriteNullRawField()
+        private void WriteNullRawField()
         {
             _stream.WriteByte(PU.HdrNull);
         }
@@ -1173,18 +1182,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             else
             {
                 // Are we dealing with a well-known type?
-                PortableSystemWriteDelegate handler = PortableSystemHandlers.GetWriteHandler(type);
+                var handler = PortableSystemHandlers.GetWriteHandler(type);
 
-                if (handler != null)
-                    handler.Invoke(this, obj);
-                else
-                {
-                    if (type.IsSerializable)
-                        Write(new SerializableObjectHolder(obj));
-                    else
-                    // We did our best, object cannot be marshalled.
-                        throw new PortableException("Unsupported object type [type=" + type + ", object=" + obj + ']');
-                }
+                if (handler == null)  // We did our best, object cannot be marshalled.
+                    throw new PortableException("Unsupported object type [type=" + type + ", object=" + obj + ']');
+                
+                handler(this, obj);
             }
         }
 
@@ -1193,7 +1196,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="val">Object.</param>
         /// <param name="type">Type.</param>
-        public unsafe void WritePrimitive<T>(T val, Type type)
+        private unsafe void WritePrimitive<T>(T val, Type type)
         {
             // .Net defines 14 primitive types. We support 12 - excluding IntPtr and UIntPtr.
             // Types check sequence is designed to minimize comparisons for the most frequent types.
