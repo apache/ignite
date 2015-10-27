@@ -408,17 +408,15 @@ public class PortableBuilderImpl implements PortableBuilder {
                 int fieldOffset = reader.readIntPositioned(footerPos + 4);
                 int fieldPos = start + fieldOffset + 8; // TODO: 8 is to be removed.
 
-                footerPos += 8;
-
                 // Get field length.
                 int len;
 
-                if (footerPos == footerEnd)
+                if (footerPos + 8 == footerEnd)
                     // This is the last field, compare to raw offset.
                     len = rawPos - fieldPos;
                 else {
                     // Field is somewhere in the middle, get difference with the next offset.
-                    int nextFieldOffset = reader.readIntPositioned(footerPos + 4);
+                    int nextFieldOffset = reader.readIntPositioned(footerPos + 8 + 4);
 
                     len = nextFieldOffset - fieldOffset - 8; // TODO: 8 is to be removed.
                 }
@@ -426,6 +424,9 @@ public class PortableBuilderImpl implements PortableBuilder {
                 Object val = reader.getValueQuickly(fieldPos, len);
 
                 readCache.put(fieldId, val);
+
+                // Shift current footer position.
+                footerPos += 8;
             }
 
             this.readCache = readCache;
