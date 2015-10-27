@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableIdMapper;
 import org.apache.ignite.portable.PortableInvalidClassException;
 import org.apache.ignite.portable.PortableObject;
 import org.apache.ignite.portable.PortableRawReader;
@@ -151,6 +152,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** Footer end. */
     private int footerEnd;
+
+    /** ID mapper. */
+    private PortableIdMapper idMapper;
 
     /**
      * @param ctx Context.
@@ -2509,7 +2513,10 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         assert typeId != UNREGISTERED_TYPE_ID;
 
-        return ctx.fieldId(typeId, name);
+        if (idMapper == null)
+            idMapper = ctx.idMapper(typeId);
+
+        return idMapper.fieldId(typeId, name);
     }
 
     /**
