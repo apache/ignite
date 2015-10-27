@@ -2372,7 +2372,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(TransactionState.Committed, tx.State);
 
-            var task = tx.RollbackAsync();  // Illegal, but should not fail here; will fail in future
+            var task = tx.RollbackAsync();  // Illegal, but should not fail here; will fail in task
 
             try
             {

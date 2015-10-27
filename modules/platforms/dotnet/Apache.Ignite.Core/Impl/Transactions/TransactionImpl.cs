@@ -341,11 +341,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
             {
                 ThrowIfClosed();
 
-                var fut = _txs.CommitAsync(this);
-
-                CloseWhenComplete(fut);
-
-                return fut;
+                return CloseWhenComplete(_txs.CommitAsync(this));
             }
         }
 
@@ -358,11 +354,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
             {
                 ThrowIfClosed();
 
-                var fut = _txs.RollbackAsync(this);
-
-                CloseWhenComplete(fut);
-
-                return fut;
+                return CloseWhenComplete(_txs.RollbackAsync(this));
             }
         }
 
@@ -450,9 +442,9 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <summary>
         /// Closes this transaction upon task completion.
         /// </summary>
-        private void CloseWhenComplete(Task task)
+        private Task CloseWhenComplete(Task task)
         {
-            task.ContinueWith(x => Close());
+            return task.ContinueWith(x => Close());
         }
 
         /** <inheritdoc /> */
