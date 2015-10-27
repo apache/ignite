@@ -671,11 +671,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         if (store != null) {
-            Collection<Object> keys0 = F.viewReadOnly(keys, new IgniteClosure() {
-                @Override public Object apply(Object o) {
-                    return cctx.unwrapPortableIfNeeded(o, !convertPortable());
-                }
-            });
+            Collection<Object> keys0 = cctx.unwrapPortablesIfNeeded(keys, !convertPortable());
 
             if (log.isDebugEnabled())
                 log.debug("Removing values from cache store [keys=" + keys0 + ']');
@@ -1082,13 +1078,13 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
                         Object k = e.getKey();
 
-                        if (rmvd != null && rmvd.contains(k))
-                            continue;
-
                         Object v = locStore ? e.getValue() : e.getValue().get1();
 
                         k = cctx.unwrapPortableIfNeeded(k, !convertPortable());
                         v = cctx.unwrapPortableIfNeeded(v, !convertPortable());
+
+                        if (rmvd != null && rmvd.contains(k))
+                            continue;
 
                         next = new CacheEntryImpl<>(k, v);
 
