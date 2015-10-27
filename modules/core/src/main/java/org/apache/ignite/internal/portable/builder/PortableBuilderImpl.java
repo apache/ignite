@@ -25,6 +25,7 @@ import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.portable.PortableWriterExImpl;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
 import org.apache.ignite.internal.util.GridArgumentCheck;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.portable.PortableBuilder;
@@ -390,7 +391,35 @@ public class PortableBuilderImpl implements PortableBuilder {
     }
 
     /**
+     * Get field position and length.
      *
+     * @param footerPos Field position inside the footer (absolute).
+     * @param footerEnd Footer end (absolute).
+     * @param rawPos Raw data position (absolute).
+     * @return Tuple with field position and length.
+     */
+    private IgniteBiTuple<Integer, Integer> fieldPositionAndLength(int footerPos, int footerEnd, int rawPos) {
+        int fieldOffset = reader.readIntPositioned(footerPos + 4);
+        int fieldPos = start + fieldOffset + 8; // TODO: 8 is to be removed.
+
+        // Get field length.
+        int fieldLen;
+
+        if (footerPos + 8 == footerEnd)
+            // This is the last field, compare to raw offset.
+            fieldLen = rawPos - fieldPos;
+        else {
+            // Field is somewhere in the middle, get difference with the next offset.
+            int nextFieldOffset = reader.readIntPositioned(footerPos + 8 + 4);
+
+            fieldLen = nextFieldOffset - fieldOffset - 8; // TODO: 8 is to be removed.
+        }
+
+        return F.t(fieldPos, fieldLen);
+    }
+
+    /**
+     * Initialize read cache if needed.
      */
     private void ensureReadCacheInit() {
         if (readCache == null) {
@@ -405,23 +434,10 @@ public class PortableBuilderImpl implements PortableBuilder {
 
             while (footerPos < footerEnd) {
                 int fieldId = reader.readIntPositioned(footerPos);
-                int fieldOffset = reader.readIntPositioned(footerPos + 4);
-                int fieldPos = start + fieldOffset + 8; // TODO: 8 is to be removed.
 
-                // Get field length.
-                int len;
+                IgniteBiTuple<Integer, Integer> posAndLen = fieldPositionAndLength(footerPos, footerEnd, rawPos);
 
-                if (footerPos + 8 == footerEnd)
-                    // This is the last field, compare to raw offset.
-                    len = rawPos - fieldPos;
-                else {
-                    // Field is somewhere in the middle, get difference with the next offset.
-                    int nextFieldOffset = reader.readIntPositioned(footerPos + 8 + 4);
-
-                    len = nextFieldOffset - fieldOffset - 8; // TODO: 8 is to be removed.
-                }
-
-                Object val = reader.getValueQuickly(fieldPos, len);
+                Object val = reader.getValueQuickly(posAndLen.get1(), posAndLen.get2());
 
                 readCache.put(fieldId, val);
 
