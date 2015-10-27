@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
-    using Apache.Ignite.Core.Common;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable;
@@ -326,13 +326,13 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
-        public IFuture Future
+        public Task Task
         {
             get
             {
                 ThrowIfDisposed();
 
-                return _closeFut;
+                return _closeFut.Task;
             }
         }
 
@@ -396,7 +396,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
-        public IFuture AddData(TK key, TV val)
+        public Task AddData(TK key, TV val)
         {
             ThrowIfDisposed(); 
             
@@ -406,7 +406,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
-        public IFuture AddData(KeyValuePair<TK, TV> pair)
+        public Task AddData(KeyValuePair<TK, TV> pair)
         {
             ThrowIfDisposed();
 
@@ -414,7 +414,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
         
         /** <inheritDoc /> */
-        public IFuture AddData(ICollection<KeyValuePair<TK, TV>> entries)
+        public Task AddData(ICollection<KeyValuePair<TK, TV>> entries)
         {
             ThrowIfDisposed();
 
@@ -424,7 +424,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
-        public IFuture RemoveData(TK key)
+        public Task RemoveData(TK key)
         {
             ThrowIfDisposed();
 
@@ -585,7 +585,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="val">Value.</param>
         /// <param name="cnt">Items count.</param>
         /// <returns>Future.</returns>
-        private IFuture Add0(object val, int cnt)
+        private Task Add0(object val, int cnt)
         {
             int bufSndSize0 = _bufSndSize;
 
@@ -610,7 +610,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     // Batch is too big, schedule flush.
                     Flush0(batch0, false, PlcContinue);
 
-                return batch0.Future;
+                return batch0.Task;
             }
         }
 

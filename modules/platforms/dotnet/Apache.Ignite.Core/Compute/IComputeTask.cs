@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Compute
     ///     </item>
     ///     <item>
     ///         <description>Once all results are received or 
-    ///         <see cref="IComputeTask{A,T,R}.Result(IComputeJobResult{TJobRes}, IList{IComputeJobResult{TJobRes}})"/>
+    ///         <see cref="IComputeTask{A,T,R}.OnResult(IComputeJobResult{TJobRes}, IList{IComputeJobResult{TJobRes}})"/>
     ///         method returned <see cref="ComputeJobResultPolicy.Reduce"/> policy, method 
     ///         <see cref="IComputeTask{A,T,R}.Reduce(IList{IComputeJobResult{TJobRes}})"/>
     ///         is called to aggregate received results into one final result. Once this method is finished the 
