@@ -454,7 +454,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task PutAsync(TK key, TV val)
         {
-            throw new NotImplementedException();
+            _asyncInstance.Put(key, val);
+
+            return _asyncInstance.GetTask(CacheOp.Put);
         }
 
         /** <inheritDoc /> */
@@ -470,7 +472,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> GetAndPutAsync(TK key, TV val)
         {
-            throw new NotImplementedException();
+            _asyncInstance.GetAndPut(key, val);
+
+            return _asyncInstance.GetTask<CacheResult<TV>>(CacheOp.GetAndPut);
         }
 
         /** <inheritDoc /> */
@@ -480,13 +484,15 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOpNullable<TK, TV, TV>((int)CacheOp.GetAndReplace, key, val);
+            return DoOutInOpNullable<TK, TV, TV>((int) CacheOp.GetAndReplace, key, val);
         }
 
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> GetAndReplaceAsync(TK key, TV val)
         {
-            throw new NotImplementedException();
+            _asyncInstance.GetAndReplace(key, val);
+
+            return _asyncInstance.GetTask<CacheResult<TV>>(CacheOp.GetAndReplace);
         }
 
         /** <inheritDoc /> */
@@ -500,7 +506,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<CacheResult<TV>> GetAndRemoveAsync(TK key)
         {
-            throw new NotImplementedException();
+            _asyncInstance.GetAndRemove(key);
+
+            return _asyncInstance.GetTask<CacheResult<TV>>(CacheOp.GetAndRemove);
         }
 
         /** <inheritdoc /> */
@@ -516,7 +524,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> PutIfAbsentAsync(TK key, TV val)
         {
-            throw new NotImplementedException();
+            _asyncInstance.PutIfAbsent(key, val);
+
+            return _asyncInstance.GetTask<bool>(CacheOp.PutIfAbsent);
         }
 
         /** <inheritdoc /> */
