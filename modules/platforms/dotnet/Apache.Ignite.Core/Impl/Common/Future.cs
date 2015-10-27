@@ -47,7 +47,14 @@ namespace Apache.Ignite.Core.Impl.Common
         /** <inheritdoc/> */
         public T Get()
         {
-            return Task.Result;
+            try
+            {
+                return Task.Result;
+            }
+            catch (AggregateException ex)
+            {
+                throw ex.InnerException;
+            }
         }
 
         /** <inheritdoc/> */
@@ -73,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /** <inheritdoc /> */
         public void OnError(Exception err)
         {
-            _taskCompletionSource.SetException(err);
+            _taskCompletionSource.TrySetException(err);
         }
 
         /** <inheritdoc /> */
@@ -102,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="res">Result.</param>
         internal void OnResult(T res)
         {
-            _taskCompletionSource.SetResult(res);
+            _taskCompletionSource.TrySetResult(res);
         }
 
         /// <summary>
