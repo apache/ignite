@@ -17,9 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import javax.cache.CacheException;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
  * Checks behavior on exception while unmarshalling key.
@@ -47,10 +51,36 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
         try {
             jcache(0).query(new SqlQuery<TestKey, String>(String.class, "field like '" + key + "'")).getAll();
 
-            assert false : "p2p marshalling failed, but error response was not sent";
+            fail("p2p marshalling failed, but error response was not sent");
         }
         catch (CacheException e) {
             // No-op
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testResponseMessageOnRequestUnmarshallingFailed() throws Exception {
+        readCnt.set(Integer.MAX_VALUE);
+
+        jcache(0).put(new TestKey(String.valueOf(++key)), "");
+
+        try {
+            jcache().query(new ScanQuery<>(new IgniteBiPredicate<TestKey, String>() {
+                @Override public boolean apply(TestKey key, String val) {
+                    return false;
+                }
+
+                private void readObject(ObjectInputStream is) throws IOException {
+                    throw new IOException();
+                }
+            })).getAll();
+
+            fail("Request unmarshalling failed, but error response was not sent.");
+        }
+        catch (Exception e) {
+            // No-op.
         }
     }
 }
