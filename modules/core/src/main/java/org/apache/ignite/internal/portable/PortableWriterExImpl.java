@@ -22,6 +22,7 @@ import org.apache.ignite.internal.portable.streams.PortableHeapOutputStream;
 import org.apache.ignite.internal.portable.streams.PortableOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableIdMapper;
 import org.apache.ignite.portable.PortableRawWriter;
 import org.apache.ignite.portable.PortableWriter;
 import org.jetbrains.annotations.Nullable;
@@ -127,6 +128,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
     /** Amount of written fields. */
     private int fieldCnt;
+
+    /** ID mapper. */
+    private PortableIdMapper idMapper;
 
     /**
      * @param ctx Context.
@@ -1639,7 +1643,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
     /** {@inheritDoc} */
     @Override public void writeByte(int v) throws IOException {
-        doWriteByte((byte)v);
+        doWriteByte((byte) v);
     }
 
     /** {@inheritDoc} */
@@ -1683,7 +1687,10 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             throw new PortableException("Individual field can't be written after raw writer is acquired " +
                 "via rawWriter() method. Consider fixing serialization logic for class: " + cls.getName());
 
-        int id = ctx.fieldId(typeId, fieldName);
+        if (idMapper == null)
+            idMapper = ctx.idMapper(typeId);
+
+        int id = idMapper.fieldId(typeId, fieldName);
 
         writeFieldId(id);
 
