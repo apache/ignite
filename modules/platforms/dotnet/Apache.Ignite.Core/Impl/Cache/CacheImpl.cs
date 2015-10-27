@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             _ignite = cache._ignite;
             _flagSkipStore = cache._flagSkipStore;
             _flagKeepPortable = cache._flagKeepPortable;
-            _flagAsync = cache._flagAsync;
+            _flagAsync = true;
             _flagNoRetries = cache._flagNoRetries;
         }
 
@@ -238,13 +238,6 @@ namespace Apache.Ignite.Core.Impl.Cache
             }
             
             return DurUnchanged;
-        }
-
-        /** <inheritDoc /> */
-        public ICache<TK, TV> WithAsync()
-        {
-            return _flagAsync ? this : new CacheImpl<TK, TV>(_ignite, UU.CacheWithAsync(Target), Marshaller,
-                _flagSkipStore, _flagKeepPortable, true, _flagNoRetries);
         }
 
         /** <inheritDoc /> */
