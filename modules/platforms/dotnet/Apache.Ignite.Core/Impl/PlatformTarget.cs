@@ -22,8 +22,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
-    using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Common;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Portable;
@@ -631,7 +630,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="keepPortable">Keep portable flag, only applicable to object futures. False by default.</param>
         /// <param name="convertFunc">The function to read future result from stream.</param>
         /// <returns>Created future.</returns>
-        protected IFuture<T> GetFuture<T>(Action<long, int> listenAction, bool keepPortable = false,
+        protected Future<T> GetFuture<T>(Action<long, int> listenAction, bool keepPortable = false,
             Func<PortableReaderImpl, T> convertFunc = null)
         {
             var futType = FutureType.Object;
@@ -650,6 +649,22 @@ namespace Apache.Ignite.Core.Impl
             listenAction(futHnd, (int)futType);
 
             return fut;
+        }
+
+        /// <summary>
+        /// Creates a task to listen for the last async op.
+        /// </summary>
+        protected Task GetTask()
+        {
+            return GetTask<object>();
+        }
+
+        /// <summary>
+        /// Creates a task to listen for the last async op.
+        /// </summary>
+        protected Task<T> GetTask<T>()
+        {
+            return GetFuture<T>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp)).Task;
         }
 
         #endregion

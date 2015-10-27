@@ -26,8 +26,6 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.IO;
     using System.Reflection;
     using System.Runtime.InteropServices;
-    using System.Runtime.Serialization.Formatters.Binary;
-    using System.Security.Policy;
     using System.Text;
 
     using Apache.Ignite.Core.Impl.Common;
@@ -189,8 +187,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Type: Compute job wrapper. */
         public const byte TypeComputeJobWrapper = 86;
 
-        /** Type: Compute job wrapper. */
+        /** Type: Serializable wrapper. */
         public const byte TypeSerializableHolder = 87;
+
+        /** Type: DateTime wrapper. */
+        public const byte TypeDateTimeHolder = 93;
 
         /** Type: action wrapper. */
         public const byte TypeComputeActionJob = 88;
@@ -204,14 +205,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Type: message filter holder. */
         public const byte TypeMessageListenerHolder = 92;
 
-        /** Type: message filter holder. */
-        public const byte TypePortableOrSerializableHolder = 93;
-
         /** Type: stream receiver holder. */
         public const byte TypeStreamReceiverHolder = 94;
-
-        /** Type: DateTime. */
-        public const byte TypeDateTime = 95;
 
         /** Collection: custom. */
         public const byte CollectionCustom = 0;
@@ -1753,7 +1748,11 @@ namespace Apache.Ignite.Core.Impl.Portable
          */
         private static void ToJavaDate(DateTime date, out long high, out int low)
         {
-            long diff = date.ToUniversalTime().Ticks - JavaDateTicks;
+            if (date.Kind != DateTimeKind.Utc)
+                throw new InvalidOperationException(
+                    "DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.");
+
+            long diff = date.Ticks - JavaDateTicks;
 
             high = diff / TimeSpan.TicksPerMillisecond;
 

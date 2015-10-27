@@ -931,9 +931,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastTaskAsync()
         {
-            var gridCompute = _grid1.GetCompute().WithAsync();
-            Assert.IsNull(gridCompute.ExecuteJavaTask<ICollection>(BroadcastTask, null));
-            var res = gridCompute.GetFuture<ICollection>().Get().OfType<Guid>().ToList();
+            var gridCompute = _grid1.GetCompute();
+
+            var res = gridCompute.ExecuteJavaTaskAsync<ICollection>(BroadcastTask, null).Result.OfType<Guid>().ToList();
 
             Assert.AreEqual(3, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
@@ -944,9 +944,8 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(2, prj.GetNodes().Count);
 
-            var compute = prj.GetCompute().WithAsync();
-            Assert.IsNull(compute.ExecuteJavaTask<IList>(BroadcastTask, null));
-            var filteredRes = compute.GetFuture<IList>().Get();
+            var compute = prj.GetCompute();
+            var filteredRes = compute.ExecuteJavaTaskAsync<IList>(BroadcastTask, null).Result;
 
             Assert.AreEqual(2, filteredRes.Count);
             Assert.IsTrue(filteredRes.Contains(res.ElementAt(0)));

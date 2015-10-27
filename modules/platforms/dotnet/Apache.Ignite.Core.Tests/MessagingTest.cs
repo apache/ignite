@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Tests
 
             var senders = Task.Factory.StartNew(() => TestUtils.RunMultiThreaded(() =>
             {
-                messaging.Send((object) NextMessage());
+                messaging.Send(NextMessage());
                 Thread.Sleep(50);
             }, threadCnt, runSeconds));
 
@@ -252,7 +252,7 @@ namespace Apache.Ignite.Core.Tests
 
             var sharedResult = Thread.VolatileRead(ref sharedReceived);
 
-            messaging.Send((object)NextMessage());
+            messaging.Send(NextMessage());
 
             Thread.Sleep(MessagingTestHelper.MessageTimeout);
 
@@ -285,15 +285,14 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests RemoteListen.
         /// </summary>
-        public void TestRemoteListen(object topic, bool async = false)
+        private void TestRemoteListen(object topic, bool async = false)
         {
-            var messaging = async ? _grid1.GetMessaging().WithAsync() : _grid1.GetMessaging();
+            var messaging =_grid1.GetMessaging();
 
             var listener = MessagingTestHelper.GetListener();
-            var listenId = messaging.RemoteListen(listener, topic);
-
-            if (async)
-                listenId = messaging.GetFuture<Guid>().Get();
+            var listenId = async
+                ? messaging.RemoteListenAsync(listener, topic).Result
+                : messaging.RemoteListen(listener, topic);
 
             // Test sending
             CheckSend(topic, msg: messaging, remoteListen: true);
@@ -302,17 +301,16 @@ namespace Apache.Ignite.Core.Tests
             CheckNoMessage(NextId());
 
             // Test multiple subscriptions for the same filter
-            var listenId2 = messaging.RemoteListen(listener, topic);
-
-            if (async)
-                listenId2 = messaging.GetFuture<Guid>().Get();
+            var listenId2 = async
+                ? messaging.RemoteListenAsync(listener, topic).Result
+                : messaging.RemoteListen(listener, topic);
 
             CheckSend(topic, msg: messaging, remoteListen: true, repeatMultiplier: 2); // expect twice the messages
 
-            messaging.StopRemoteListen(listenId2);
-
             if (async)
-                messaging.GetFuture().Get();
+                messaging.StopRemoteListenAsync(listenId2).Wait();
+            else
+                messaging.StopRemoteListen(listenId2);
 
             CheckSend(topic, msg: messaging, remoteListen: true); // back to normal after unsubscription
 
@@ -321,10 +319,10 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("Unable to cast object of type 'System.Double' to type 'System.String'.", ex.Message);
 
             // Test end listen
-            messaging.StopRemoteListen(listenId);
-
             if (async)
-                messaging.GetFuture().Get();
+                messaging.StopRemoteListenAsync(listenId).Wait();
+            else
+                messaging.StopRemoteListen(listenId);
 
             CheckNoMessage(topic);
         }
@@ -371,7 +369,7 @@ namespace Apache.Ignite.Core.Tests
             var senders = Task.Factory.StartNew(() => TestUtils.RunMultiThreaded(() =>
             {
                 MessagingTestHelper.ClearReceived(int.MaxValue);
-                messaging.Send((object) NextMessage());
+                messaging.Send(NextMessage());
                 Thread.Sleep(50);
             }, threadCnt, runSeconds));
 
@@ -390,7 +388,7 @@ namespace Apache.Ignite.Core.Tests
 
             MessagingTestHelper.ListenResult = false;
 
-            messaging.Send((object) NextMessage()); // send a message to make filters return false
+            messaging.Send(NextMessage()); // send a message to make filters return false
 
             Thread.Sleep(MessagingTestHelper.MessageTimeout); // wait for all to unsubscribe
 
@@ -400,7 +398,7 @@ namespace Apache.Ignite.Core.Tests
 
             var sharedResult = MessagingTestHelper.ReceivedMessages.Count;
 
-            messaging.Send((object) NextMessage());
+            messaging.Send(NextMessage());
 
             Thread.Sleep(MessagingTestHelper.MessageTimeout);
 
@@ -439,7 +437,7 @@ namespace Apache.Ignite.Core.Tests
 
             // Single message
             MessagingTestHelper.ClearReceived(expectedRepeat);
-            msg.Send((object) messages[0], topic);
+            msg.Send(messages[0], topic);
             MessagingTestHelper.VerifyReceive(cluster, messages.Take(1), m => m.ToList(), expectedRepeat);
 
             if (single)
