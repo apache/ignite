@@ -568,24 +568,6 @@ public class PortableUtils {
     }
 
     /**
-     * Get object's footer.
-     *
-     * @param in Input stream.
-     * @param start Start position.
-     * @return Footer.
-     */
-    public static IgniteBiTuple<Integer, Integer> footer(PortablePositionReadable in, int start) {
-        int footerStart = footerStart(in, start);
-        int footerEnd = length(in, start);
-
-        // Take in count possible raw offset.
-        if ((((footerEnd - footerStart) >> 2) & 0x1) == 0x1)
-            footerEnd -= 4;
-
-        return F.t(footerStart, footerEnd);
-    }
-
-    /**
      * Get footer start of the object.
      *
      * @param in Input stream.
@@ -604,13 +586,31 @@ public class PortableUtils {
     }
 
     /**
+     * Get object's footer.
+     *
+     * @param in Input stream.
+     * @param start Start position.
+     * @return Footer.
+     */
+    public static IgniteBiTuple<Integer, Integer> footerAbsolute(PortablePositionReadable in, int start) {
+        int footerStart = footerStart(in, start);
+        int footerEnd = length(in, start);
+
+        // Take in count possible raw offset.
+        if ((((footerEnd - footerStart) >> 2) & 0x1) == 0x1)
+            footerEnd -= 4;
+
+        return F.t(start + footerStart, start + footerEnd);
+    }
+
+    /**
      * Get raw offset of the object.
      *
      * @param in Input stream.
      * @param start Object start position inside the stream.
      * @return Raw offset.
      */
-    public static int rawOffset(PortablePositionReadable in, int start) {
+    public static int rawOffsetAbsolute(PortablePositionReadable in, int start) {
         int len = in.readIntPositioned(start + GridPortableMarshaller.TOTAL_LEN_POS);
         int schemaId = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_ID_POS);
 
@@ -623,10 +623,10 @@ public class PortableUtils {
 
             if ((((len - schemaOff) >> 2) & 0x1) == 0x0)
                 // Even amount of records in schema => no raw offset.
-                return schemaOff;
+                return start + schemaOff;
             else
                 // Odd amount of records in schema => raw offset is the very last 4 bytes in object.
-                return in.readIntPositioned(start + len - 4);
+                return start + in.readIntPositioned(start + len - 4);
         }
     }
 }

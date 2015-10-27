@@ -225,13 +225,13 @@ public class PortableBuilderImpl implements PortableBuilder {
                 assignedFldsById = Collections.emptyMap();
 
             // Get footer details.
-            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footer(reader, start);
+            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start);
 
-            int footerPos = start + footer.get1();
-            int footerEnd = start + footer.get2();
+            int footerPos = footer.get1();
+            int footerEnd = footer.get2();
 
             // Get raw position.
-            int rawPos = start + PortableUtils.rawOffset(reader, start);
+            int rawPos = PortableUtils.rawOffsetAbsolute(reader, start);
 
             // Position reader on data.
             reader.position(start + hdrLen);
@@ -378,7 +378,7 @@ public class PortableBuilderImpl implements PortableBuilder {
 
         if (reader != null) {
             // Write raw data if any.
-            int rawOff = start + PortableUtils.rawOffset(reader, start);
+            int rawOff = PortableUtils.rawOffsetAbsolute(reader, start);
             int footerStart = start + PortableUtils.footerStart(reader, start);
 
             if (rawOff < footerStart) {
@@ -436,12 +436,12 @@ public class PortableBuilderImpl implements PortableBuilder {
         if (readCache == null) {
             Map<Integer, Object> readCache = new HashMap<>();
 
-            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footer(reader, start);
+            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start);
 
-            int footerPos = start + footer.get1();
-            int footerEnd = start + footer.get2();
+            int footerPos = footer.get1();
+            int footerEnd = footer.get2();
 
-            int rawPos = start + PortableUtils.rawOffset(reader, start);
+            int rawPos = PortableUtils.rawOffsetAbsolute(reader, start);
 
             while (footerPos < footerEnd) {
                 int fieldId = reader.readIntPositioned(footerPos);

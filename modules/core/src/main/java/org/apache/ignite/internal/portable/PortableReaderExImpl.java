@@ -211,12 +211,12 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         typeId = in.readIntPositioned(start + GridPortableMarshaller.TYPE_ID_POS);
 
-        IgniteBiTuple<Integer, Integer> footer = PortableUtils.footer(in, start);
+        IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(in, start);
 
         footerStart = footer.get1();
         footerEnd = footer.get2();
 
-        rawOff = PortableUtils.rawOffset(in, start);
+        rawOff = PortableUtils.rawOffsetAbsolute(in, start);
 
         if (typeId == UNREGISTERED_TYPE_ID) {
             // Skip to the class name position.
@@ -1403,7 +1403,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Override public PortableRawReader rawReader() {
-        in.position(start + rawOff);
+        in.position(rawOff);
 
         return this;
     }
@@ -2511,8 +2511,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private boolean hasField(int id) {
         assert hdrLen != 0;
 
-        int searchHead = start + footerStart;
-        int searchTail = start + footerEnd;
+        int searchHead = footerStart;
+        int searchTail = footerEnd;
 
         // TODO: Opto.
 
