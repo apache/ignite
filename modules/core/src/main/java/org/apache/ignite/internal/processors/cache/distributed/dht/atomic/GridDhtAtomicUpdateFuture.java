@@ -233,7 +233,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                         forceTransformBackups,
                         this.updateReq.subjectId(),
                         this.updateReq.taskNameHash(),
-                        forceTransformBackups ? this.updateReq.invokeArguments() : null);
+                        forceTransformBackups ? this.updateReq.invokeArguments() : null,
+                        cctx.deploymentEnabled());
 
                     mappings.put(nodeId, updateReq);
                 }
@@ -288,7 +289,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                     forceTransformBackups,
                     this.updateReq.subjectId(),
                     this.updateReq.taskNameHash(),
-                    forceTransformBackups ? this.updateReq.invokeArguments() : null);
+                    forceTransformBackups ? this.updateReq.invokeArguments() : null,
+                    cctx.deploymentEnabled());
 
                 mappings.put(nodeId, updateReq);
             }

@@ -866,7 +866,8 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                         inTx() ? tx.subjectId() : null,
                         inTx() ? tx.taskNameHash() : 0,
                         read ? accessTtl : -1L,
-                        skipStore);
+                        skipStore,
+                        cctx.deploymentEnabled());
 
                     try {
                         for (ListIterator<GridDhtCacheEntry> it = dhtMapping.listIterator(); it.hasNext();) {

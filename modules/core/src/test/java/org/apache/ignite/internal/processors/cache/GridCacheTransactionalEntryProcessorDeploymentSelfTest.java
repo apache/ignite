@@ -17,25 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
 /**
- * Tests deployment with off-heap storage.
+ * Cache EntryProcessor + Deployment for transactional cache.
  */
-public class GridCacheDeploymentOffHeapSelfTest extends GridCacheDeploymentSelfTest {
+public class GridCacheTransactionalEntryProcessorDeploymentSelfTest extends
+    GridCacheAtomicEntryProcessorDeploymentSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration() throws Exception {
-        CacheConfiguration cacheCfg = super.cacheConfiguration();
-
-        cacheCfg.setMemoryMode(OFFHEAP_VALUES);
-        cacheCfg.setOffHeapMaxMemory(0);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setNearConfiguration(new NearCacheConfiguration());
-
-        return cacheCfg;
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 }

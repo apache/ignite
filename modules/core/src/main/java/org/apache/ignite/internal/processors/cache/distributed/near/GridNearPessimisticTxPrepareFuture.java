@@ -207,7 +207,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 m.explicitLock(),
                 tx.subjectId(),
                 tx.taskNameHash(),
-                false);
+                false,
+                tx.activeCachesDeploymentEnabled());
 
             for (IgniteTxEntry txEntry : m.writes()) {
                 if (txEntry.op() == TRANSFORM)

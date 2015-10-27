@@ -694,7 +694,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 GridNearGetResponse res = new GridNearGetResponse(ctx.cacheId(),
                     req.futureId(),
                     req.miniId(),
-                    req.version());
+                    req.version(),
+                    req.deployInfo() != null);
 
                 GridDhtFuture<Collection<GridCacheEntryInfo>> fut =
                     (GridDhtFuture<Collection<GridCacheEntryInfo>>)f;
