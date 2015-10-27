@@ -209,7 +209,7 @@ public class CacheObjectContext {
 
             Object uVal = unwrapPortable(val, keepPortable);
 
-            return (key != uKey || val != uVal) ? F.t(key, val) : o;
+            return (key != uKey || val != uVal) ? F.t(uKey, uVal) : o;
         }
         else if (o instanceof Collection)
             return unwrapPortablesIfNeeded((Collection<Object>)o, keepPortable);
