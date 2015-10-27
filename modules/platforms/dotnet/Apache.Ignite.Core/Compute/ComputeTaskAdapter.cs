@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Compute
 
         /// <summary>
         /// Reduces (or aggregates) results received so far into one compound result to be returned to
-        /// caller via future.
+        /// caller via task.
         /// <para />
         /// Note, that if some jobs did not succeed and could not be failed over then the list of
         /// results passed into this method will include the failed results. Otherwise, failed

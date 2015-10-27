@@ -126,26 +126,24 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /// <summary>
-        /// Gets and resets future for previous asynchronous operation.
+        /// Gets and resets task for previous asynchronous operation.
         /// </summary>
         /// <param name="lastAsyncOp">The last async op id.</param>
         /// <returns>
-        /// Future for previous asynchronous operation.
+        /// Task for previous asynchronous operation.
         /// </returns>
-        /// <exception cref="System.InvalidOperationException">Asynchronous mode is disabled</exception>
         internal Task GetTask(CacheOp lastAsyncOp)
         {
             return GetTask<object>(lastAsyncOp);
         }
 
         /// <summary>
-        /// Gets and resets future for previous asynchronous operation.
+        /// Gets and resets task for previous asynchronous operation.
         /// </summary>
         /// <param name="lastAsyncOp">The last async op id.</param>
         /// <returns>
-        /// Future for previous asynchronous operation.
+        /// Task for previous asynchronous operation.
         /// </returns>
-        /// <exception cref="System.InvalidOperationException">Asynchronous mode is disabled</exception>
         internal Task<TResult> GetTask<TResult>(CacheOp lastAsyncOp) 
         {
             Debug.Assert(_flagAsync);

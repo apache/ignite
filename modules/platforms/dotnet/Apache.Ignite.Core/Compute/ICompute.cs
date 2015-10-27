@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Compute
     /// is obtained from grid projection using <see cref="IClusterGroup.GetCompute"/> method.
     /// <para />
     /// Note that if attempt is made to execute a computation over an empty projection (i.e. projection that does
-    /// not have any alive nodes), <c>ClusterGroupEmptyException</c> will be thrown out of result future.
+    /// not have any alive nodes), <c>ClusterGroupEmptyException</c> will be thrown out of result task.
     /// <para />
     /// Ignite must select a node for a computation to be executed. The node will be selected based on the
     /// underlying <c>GridLoadBalancingSpi</c>, which by default sequentially picks next available node from

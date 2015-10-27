@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Cache
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Cache.Store;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
@@ -820,7 +819,7 @@ namespace Apache.Ignite.Core.Cache
         /// placed on the same place of consistent hash ring as the left nodes, and that nodes are restarted before
         /// rebalanceDelay expires.
         /// </summary>
-        /// <returns>Future that will be completed when rebalancing is finished.</returns>
+        /// <returns>Task that will be completed when rebalancing is finished.</returns>
         Task Rebalance();
 
         /// <summary>
