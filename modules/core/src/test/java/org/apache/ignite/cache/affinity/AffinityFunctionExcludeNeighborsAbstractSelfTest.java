@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.cache.affinity;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,8 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -46,14 +44,14 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
  * Partitioned affinity test.
  */
 @SuppressWarnings({"PointlessArithmeticExpression", "FieldCanBeLocal"})
-public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends GridCommonAbstractTest {
     /** Number of backups. */
     private int backups = 2;
 
-    /** */
+    /** Number of girds. */
     private int gridInstanceNum;
 
-    /** */
+    /** Ip finder. */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
