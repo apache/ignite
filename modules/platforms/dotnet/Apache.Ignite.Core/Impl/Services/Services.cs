@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Services
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -32,7 +33,7 @@ namespace Apache.Ignite.Core.Impl.Services
     /// <summary>
     /// Services implementation.
     /// </summary>
-    internal class Services : PlatformTarget, IServices
+    internal sealed class Services : PlatformTarget, IServices
     {
         /** */
         private const int OpDeploy = 1;
@@ -59,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Services
         private readonly bool _srvKeepPortable;
 
         /** Async instance. */
-        private readonly Services _asyncInstance;
+        private readonly Lazy<Services> _asyncInstance;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Services" /> class.
@@ -78,8 +79,8 @@ namespace Apache.Ignite.Core.Impl.Services
             _clusterGroup = clusterGroup;
             _keepPortable = keepPortable;
             _srvKeepPortable = srvKeepPortable;
-            
-            _asyncInstance = new Services(this);
+
+            _asyncInstance = new Lazy<Services>(() => new Services(this));
         }
 
         /// <summary>
@@ -94,7 +95,7 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
-        public virtual IServices WithKeepPortable()
+        public IServices WithKeepPortable()
         {
             if (_keepPortable)
                 return this;
@@ -103,7 +104,7 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
-        public virtual IServices WithServerKeepPortable()
+        public IServices WithServerKeepPortable()
         {
             if (_srvKeepPortable)
                 return this;
@@ -115,6 +116,14 @@ namespace Apache.Ignite.Core.Impl.Services
         public IClusterGroup ClusterGroup
         {
             get { return _clusterGroup; }
+        }
+
+        /// <summary>
+        /// Gets the asynchronous instance.
+        /// </summary>
+        private Services AsyncInstance
+        {
+            get { return _asyncInstance.Value; }
         }
 
         /** <inheritDoc /> */
@@ -129,9 +138,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployClusterSingletonAsync(string name, IService service)
         {
-            _asyncInstance.DeployClusterSingleton(name, service);
+            AsyncInstance.DeployClusterSingleton(name, service);
 
-            return _asyncInstance.GetTask();
+            return AsyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -146,9 +155,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployNodeSingletonAsync(string name, IService service)
         {
-            _asyncInstance.DeployNodeSingleton(name, service);
+            AsyncInstance.DeployNodeSingleton(name, service);
 
-            return _asyncInstance.GetTask();
+            return AsyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -172,9 +181,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployKeyAffinitySingletonAsync<TK>(string name, IService service, string cacheName, TK affinityKey)
         {
-            _asyncInstance.DeployKeyAffinitySingleton(name, service, cacheName, affinityKey);
+            AsyncInstance.DeployKeyAffinitySingleton(name, service, cacheName, affinityKey);
 
-            return _asyncInstance.GetTask();
+            return AsyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -195,9 +204,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployMultipleAsync(string name, IService service, int totalCount, int maxPerNodeCount)
         {
-            _asyncInstance.DeployMultiple(name, service, totalCount, maxPerNodeCount);
+            AsyncInstance.DeployMultiple(name, service, totalCount, maxPerNodeCount);
 
-            return _asyncInstance.GetTask();
+            return AsyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -224,9 +233,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployAsync(ServiceConfiguration configuration)
         {
-            _asyncInstance.Deploy(configuration);
+            AsyncInstance.Deploy(configuration);
 
-            return _asyncInstance.GetTask();
+            return AsyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -240,9 +249,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task CancelAsync(string name)
         {
-            _asyncInstance.Cancel(name);
+            AsyncInstance.Cancel(name);
 
-            return _asyncInstance.GetTask();
+            return AsyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -254,9 +263,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task CancelAllAsync()
         {
-            _asyncInstance.CancelAll();
+            AsyncInstance.CancelAll();
 
-            return _asyncInstance.GetTask();
+            return AsyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
