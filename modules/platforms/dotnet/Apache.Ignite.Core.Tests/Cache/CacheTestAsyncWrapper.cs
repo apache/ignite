@@ -174,6 +174,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public Task<CacheResult<TV>> TryGetAsync(TK key)
+        {
+            return _cache.TryGetAsync(key);
+        }
+
+        /** <inheritDoc /> */
         public IDictionary<TK, TV> GetAll(IEnumerable<TK> keys)
         {
             return GetResult(_cache.GetAllAsync(keys));

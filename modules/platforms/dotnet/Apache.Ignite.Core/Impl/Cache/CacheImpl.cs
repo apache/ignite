@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>
         /// Task for previous asynchronous operation.
         /// </returns>
-        internal Task GetTask(CacheOp lastAsyncOp)
+        private Task GetTask(CacheOp lastAsyncOp)
         {
             return GetTask<object>(lastAsyncOp);
         }
@@ -140,15 +140,17 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Gets and resets task for previous asynchronous operation.
         /// </summary>
+        /// <typeparam name="TResult">The type of the result.</typeparam>
         /// <param name="lastAsyncOp">The last async op id.</param>
+        /// <param name="converter">The converter.</param>
         /// <returns>
         /// Task for previous asynchronous operation.
         /// </returns>
-        internal Task<TResult> GetTask<TResult>(CacheOp lastAsyncOp) 
+        private Task<TResult> GetTask<TResult>(CacheOp lastAsyncOp, Func<PortableReaderImpl, TResult> converter = null)
         {
             Debug.Assert(_flagAsync);
 
-            var converter = GetFutureResultConverter<TResult>(lastAsyncOp);
+            converter = converter ?? GetFutureResultConverter<TResult>(lastAsyncOp);
 
             _invokeAllConverter.Value = null;
 
@@ -414,6 +416,16 @@ namespace Apache.Ignite.Core.Impl.Cache
             value = res.Value;
 
             return res.Success;
+        }
+
+        /** <inheritDoc /> */
+        public Task<CacheResult<TV>> TryGetAsync(TK key)
+        {
+            IgniteArgumentCheck.NotNull(key, "key");
+
+            _asyncInstance.Get(key);
+
+            return _asyncInstance.GetTask(CacheOp.Get, GetCacheResult<CacheResult<TV>>);
         }
 
         /** <inheritDoc /> */
@@ -1219,17 +1231,22 @@ namespace Apache.Ignite.Core.Impl.Cache
                 case CacheOp.GetAndPutIfAbsent:
                 case CacheOp.GetAndRemove:
                 case CacheOp.GetAndReplace:
-                    return reader =>
-                    {
-                        var res = reader == null
-                            ? new CacheResult<TV>()
-                            : new CacheResult<TV>(reader.ReadObject<TV>());
-
-                        return TypeCaster<TResult>.Cast(res);
-                    };
+                    return GetCacheResult<TResult>;
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Gets the cache result.
+        /// </summary>
+        private static TResult GetCacheResult<TResult>(PortableReaderImpl reader)
+        {
+            var res = reader == null
+                ? new CacheResult<TV>()
+                : new CacheResult<TV>(reader.ReadObject<TV>());
+
+            return TypeCaster<TResult>.Cast(res);
         }
 
         /// <summary>

@@ -534,6 +534,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(2, cache.Get(2));
             Assert.IsFalse(cache.ContainsKey(3));
             Assert.Throws<KeyNotFoundException>(() => cache.Get(3));
+
+            Assert.AreEqual(1, Cache().TryGetAsync(1).Result.Value);
+            Assert.IsFalse(Cache().TryGetAsync(3).Result.Success);
         }
 
         [Test]
