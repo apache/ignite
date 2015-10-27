@@ -211,7 +211,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         typeId = in.readIntPositioned(start + GridPortableMarshaller.TYPE_ID_POS);
 
         footerStart = PortableUtils.footerStart(in, start);
-        footerEnd = in.readIntPositioned(start + GridPortableMarshaller.TOTAL_LEN_POS);
+        footerEnd = PortableUtils.length(in, start);
 
         // Take in count possible raw offset.
         if ((((footerEnd - footerStart) >> 2) & 0x1) == 0x1)

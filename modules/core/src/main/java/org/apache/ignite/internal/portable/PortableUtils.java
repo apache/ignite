@@ -557,6 +557,17 @@ public class PortableUtils {
     }
 
     /**
+     * Get portable object length.
+     *
+     * @param in Input stream.
+     * @param start Start position.
+     * @return Length.
+     */
+    public static int length(PortablePositionReadable in, int start) {
+        return in.readIntPositioned(start + GridPortableMarshaller.TOTAL_LEN_POS);
+    }
+
+    /**
      * Get footer start of the object.
      *
      * @param in Input stream.

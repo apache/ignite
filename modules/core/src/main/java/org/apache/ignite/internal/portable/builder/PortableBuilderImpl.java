@@ -394,23 +394,36 @@ public class PortableBuilderImpl implements PortableBuilder {
         if (readCache == null) {
             Map<Integer, Object> readCache = new HashMap<>();
 
-            int pos = start + hdrLen;
-            int end = start + PortableUtils.rawOffset(reader, start);
+            int rawPos = start + PortableUtils.rawOffset(reader, start);
+            int footerPos = start + PortableUtils.footerStart(reader, start);
+            int footerEnd = start + PortableUtils.length(reader, start);
 
-            while (pos < end) {
-                int fieldId = reader.readIntPositioned(pos);
+            if ((((footerEnd - footerPos) >> 2) & 0x1) == 0x1)
+                footerEnd -= 4;
 
-                pos += 4;
+            while (footerPos < footerEnd) {
+                int fieldId = reader.readIntPositioned(footerPos);
+                int fieldOffset = reader.readIntPositioned(footerPos + 4);
+                int fieldPos = start + fieldOffset + 8; // TODO: 8 is to be removed.
 
-                int len = reader.readIntPositioned(pos);
+                footerPos += 8;
 
-                pos += 4;
+                // Get field length.
+                int len;
 
-                Object val = reader.getValueQuickly(pos, len);
+                if (footerPos == footerEnd)
+                    // This is the last field, compare to raw offset.
+                    len = rawPos - fieldPos;
+                else {
+                    // Field is somewhere in the middle, get difference with the next offset.
+                    int nextFieldOffset = reader.readIntPositioned(footerPos + 4);
+
+                    len = nextFieldOffset - fieldOffset - 8; // TODO: 8 is to be removed.
+                }
+
+                Object val = reader.getValueQuickly(fieldPos, len);
 
                 readCache.put(fieldId, val);
-
-                pos += len;
             }
 
             this.readCache = readCache;
