@@ -93,14 +93,6 @@ consoleModule.controller('igfsController', [
                 misc: {xml: '', java: '', allDefaults: true}
             };
 
-            $scope.required = function (field) {
-                return false;
-            };
-
-            $scope.tableSimpleValid = function (item, field, fx, index) {
-                return true;
-            };
-
             $scope.tablePairValid = function (item, field, index) {
                 return true;
             };
@@ -249,6 +241,9 @@ consoleModule.controller('igfsController', [
             function validate(item) {
                 if ($common.isEmptyString(item.name))
                     return showPopoverMessage($scope.panels, 'general', 'igfsName', 'Name should not be empty');
+
+                if (!item.affinnityGroupSize || item.affinnityGroupSize < 1)
+                    return showPopoverMessage($scope.panels, 'general', 'affinnityGroupSize', 'Group size should be specified and more or equal to 1');
 
                 if (!$common.isEmptyString(item.dualModePutExecutorService) &&
                     !$common.isValidJavaClass('Put executor service', item.dualModePutExecutorService, false, 'dualModePutExecutorService', false, $scope.panels, 'dualMode'))

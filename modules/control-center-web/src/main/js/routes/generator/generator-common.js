@@ -242,6 +242,28 @@ $generatorCommon.jdbcDialectClassName = function(db) {
     return dialectClsName ? dialectClsName : 'Unknown database: ' + db;
 };
 
+// Generate default data cache for specified igfs instance.
+$generatorCommon.igfsDataCache = function(igfs) {
+    return {
+        name: igfs.name + '-data',
+        cacheMode: 'PARTITIONED',
+        atomicityMode: 'TRANSACTIONAL',
+        writeSynchronizationMode: 'FULL_SYNC',
+        backups: 0,
+        igfsAffinnityGroupSize: igfs.affinnityGroupSize
+    };
+};
+
+// Generate default meta cache for specified igfs instance.
+$generatorCommon.igfsMetaCache = function(igfs) {
+    return {
+        name: igfs.name + '-meta',
+        cacheMode: 'REPLICATED',
+        atomicityMode: 'TRANSACTIONAL',
+        writeSynchronizationMode: 'FULL_SYNC'
+    };
+};
+
 // Pairs of supported databases and their data sources.
 $generatorCommon.DATA_SOURCES = {
     Oracle: 'oracle.jdbc.pool.OracleDataSource',

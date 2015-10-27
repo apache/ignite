@@ -767,6 +767,7 @@ $generatorXml.cacheConcurrency = function(cache, res) {
     $generatorXml.property(res, cache, 'maxConcurrentAsyncOperations');
     $generatorXml.property(res, cache, 'defaultLockTimeout');
     $generatorXml.property(res, cache, 'atomicWriteOrderMode');
+    $generatorXml.property(res, cache, 'writeSynchronizationMode');
 
     res.needEmptyLine = true;
 
@@ -788,6 +789,14 @@ $generatorXml.cacheRebalance = function(cache, res) {
         $generatorXml.property(res, cache, 'rebalanceThrottle');
 
         res.needEmptyLine = true;
+    }
+
+    if (cache.igfsAffinnityGroupSize) {
+        res.startBlock('<property name="affinityMapper">');
+        res.startBlock('<bean class="org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper">');
+        res.line('<constructor-arg value="' + cache.igfsAffinnityGroupSize + '"/>');
+        res.endBlock('</bean>');
+        res.endBlock('</property>');
     }
 
     return res;
@@ -1074,11 +1083,11 @@ $generatorXml.clusterCaches = function(caches, igfss, res) {
         });
 
         _.forEach(igfss, function(igfs) {
-            $generatorXml.cache({name: igfs.name + '-data', cacheMode: 'PARTITIONED', atomicityMode: 'TRANSACTIONAL'}, res);
+            $generatorXml.cache($generatorCommon.igfsDataCache(igfs), res);
 
             res.needEmptyLine = true;
 
-            $generatorXml.cache({name: igfs.name + '-meta', cacheMode: 'REPLICATED', atomicityMode: 'TRANSACTIONAL'}, res);
+            $generatorXml.cache($generatorCommon.igfsMetaCache(igfs), res);
 
             res.needEmptyLine = true;
         });
@@ -1177,8 +1186,8 @@ $generatorXml.igfsGeneral = function(igfs, res) {
         res = $generatorCommon.builder();
 
     if ($commonUtils.isDefinedAndNotEmpty(igfs.name)) {
-        igfs.dataCacheName = igfs.name + '-data';
-        igfs.metaCacheName = igfs.name + '-meta';
+        igfs.dataCacheName = $generatorCommon.igfsDataCache(igfs).name;
+        igfs.metaCacheName = $generatorCommon.igfsMetaCache(igfs).name;
 
         $generatorXml.property(res, igfs, 'name');
         $generatorXml.property(res, igfs, 'dataCacheName');

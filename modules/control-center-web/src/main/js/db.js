@@ -173,6 +173,8 @@ var CacheSchema = new Schema({
 
     invalidate: Boolean,
     defaultLockTimeout: Number,
+    atomicWriteOrderMode: {type: String, enum: ['CLOCK', 'PRIMARY']},
+    writeSynchronizationMode: {type: String, enum: ['FULL_SYNC', 'FULL_ASYNC', 'PRIMARY_SYNC']},
 
     sqlEscapeAll: Boolean,
     sqlOnheapRowCacheSize: Number,
@@ -223,6 +225,7 @@ var IgfsSchema = new Schema({
     space: {type: ObjectId, ref: 'Space'},
     name: String,
     clusters: [{type: ObjectId, ref: 'Cluster'}],
+    affinnityGroupSize: Number,
     blockSize: Number,
     streamBufferSize: Number,
     dataCacheName: String,

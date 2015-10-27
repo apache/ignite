@@ -74,6 +74,8 @@ consoleModule.controller('cachesController', [
 
             $scope.atomicWriteOrderModes = $common.mkOptions(['CLOCK', 'PRIMARY']);
 
+            $scope.writeSynchronizationMode = $common.mkOptions(['FULL_SYNC', 'FULL_ASYNC', 'PRIMARY_SYNC']);
+
             $scope.memoryModes = $common.mkOptions(['ONHEAP_TIERED', 'OFFHEAP_TIERED', 'OFFHEAP_VALUES']);
 
             $scope.evictionPolicies = [

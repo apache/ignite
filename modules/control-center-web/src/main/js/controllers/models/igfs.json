@@ -50,6 +50,19 @@
             "label": "Add cluster(s)",
             "ref": "/configuration/clusters?new"
           }
+        },
+        {
+          "label": "Group size",
+          "id": "affinnityGroupSize",
+          "type": "number",
+          "model": "affinnityGroupSize",
+          "required": true,
+          "placeholder": "512",
+          "min": 1,
+          "tip": [
+            "Size of the group in blocks",
+            "Required for construction of affinity mapper in IGFS data cache"
+          ]
         }
       ]
     }
@@ -213,6 +226,7 @@
           "id": "dualModePutExecutorServiceShutdown",
           "type": "check",
           "model": "dualModePutExecutorServiceShutdown",
+          "placeholder": "Enter fully qualified class name",
           "tip": [
             "DUAL mode put operation executor service shutdown flag"
           ]

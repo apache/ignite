@@ -921,7 +921,8 @@ $generatorJava.cacheConcurrency = function (cache, varName, res) {
 
     $generatorJava.property(res, varName, cache, 'maxConcurrentAsyncOperations');
     $generatorJava.property(res, varName, cache, 'defaultLockTimeout');
-    $generatorJava.property(res, varName, cache, 'atomicWriteOrderMode');
+    $generatorJava.property(res, varName, cache, 'atomicWriteOrderMode', res.importClass('org.apache.ignite.cache.CacheAtomicWriteOrderMode'));
+    $generatorJava.property(res, varName, cache, 'writeSynchronizationMode', res.importClass('org.apache.ignite.cache.CacheWriteSynchronizationMode'));
 
     res.needEmptyLine = true;
 
@@ -941,6 +942,12 @@ $generatorJava.cacheRebalance = function (cache, varName, res) {
         $generatorJava.property(res, varName, cache, 'rebalanceDelay');
         $generatorJava.property(res, varName, cache, 'rebalanceTimeout');
         $generatorJava.property(res, varName, cache, 'rebalanceThrottle');
+
+        res.needEmptyLine = true;
+    }
+
+    if (cache.igfsAffinnityGroupSize) {
+        res.line(varName + '.setAffinityMapper(new ' + res.importClass('org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper') + '(' + cache.igfsAffinnityGroupSize + '));');
 
         res.needEmptyLine = true;
     }
@@ -1224,8 +1231,8 @@ $generatorJava.clusterCaches = function (caches, igfss, res) {
         res.emptyLineIfNeeded();
 
         _.forEach(igfss, function (igfs) {
-            clusterCache(res, {name: igfs.name + '-data', cacheMode: 'PARTITIONED', atomicityMode: 'TRANSACTIONAL'}, names);
-            clusterCache(res, {name: igfs.name + '-meta', cacheMode: 'REPLICATED', atomicityMode: 'TRANSACTIONAL'}, names);
+            clusterCache(res, $generatorCommon.igfsDataCache(igfs), names);
+            clusterCache(res, $generatorCommon.igfsMetaCache(igfs), names);
         });
 
         res.needEmptyLine = true;
@@ -1606,8 +1613,8 @@ $generatorJava.igfsGeneral = function(igfs, varName, res) {
         res = $generatorCommon.builder();
 
     if ($commonUtils.isDefinedAndNotEmpty(igfs.name)) {
-        igfs.dataCacheName = igfs.name + '-data';
-        igfs.metaCacheName = igfs.name + '-meta';
+        igfs.dataCacheName = $generatorCommon.igfsDataCache(igfs).name;
+        igfs.metaCacheName = $generatorCommon.igfsMetaCache(igfs).name;
 
         $generatorJava.property(res, varName, igfs, 'name');
         $generatorJava.property(res, varName, igfs, 'dataCacheName');
@@ -1633,7 +1640,7 @@ $generatorJava.igfsMisc = function(igfs, varName, res) {
     if (igfs.pathModes && igfs.pathModes.length > 0) {
         res.needEmptyLine = true;
 
-        $generatorJava.declareVariable(res, true, 'pathModes', 'java.util.HashMap<String, ' + res.importClass('org.apache.ignite.igfs.IgfsMode') + '>');
+        $generatorJava.declareVariable(res, true, 'pathModes', 'java.util.Map', 'java.util.HashMap', 'String', 'org.apache.ignite.igfs.IgfsMode');
 
         _.forEach(igfs.pathModes, function (pair) {
             res.line('pathModes.put("' + pair.path + '", IgfsMode.' + pair.mode +');');

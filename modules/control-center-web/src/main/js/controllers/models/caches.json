@@ -736,6 +736,18 @@
             "  <li>PRIMARY - in this mode version is assigned only on primary node. This means that sender will only send write request to primary node, which in turn will assign write version and forward it to backups</li>",
             "</ul>"
           ]
+        },
+        {
+          "label": "Write synchronization mode",
+          "id": "writeSynchronizationMode",
+          "type": "dropdown",
+          "model": "writeSynchronizationMode",
+          "placeholder": "Choose write synchronization mode",
+          "items": "writeSynchronizationMode",
+          "tip": [
+            "Write synchronization mode",
+            "This mode controls whether the main caller should wait for update on other nodes to complete or not"
+          ]
         }
       ]
     },
