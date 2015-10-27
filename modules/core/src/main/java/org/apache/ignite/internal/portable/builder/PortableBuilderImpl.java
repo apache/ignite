@@ -237,16 +237,12 @@ public class PortableBuilderImpl implements PortableBuilder {
             reader.position(start + hdrLen);
 
             while (reader.position() < rawPos) {
-                int fieldId = reader.readInt();
-                int fieldLen = reader.readInt();
+                int fieldId = reader.readIntPositioned(footerPos);
+                int fieldLen = fieldPositionAndLength(footerPos, footerEnd, rawPos).get2();
 
-                int footerFieldId = reader.readIntPositioned(footerPos);
+                reader.skip(8); // TODO: This must be removed.
+
                 footerPos += 8;
-
-                System.out.println("id=" + fieldId + ", footerId=" + footerFieldId + ", len=" + fieldLen);
-
-                if (fieldId != footerFieldId)
-                    throw new PortableException("ID mismatch!");
 
                 if (assignedFldsById.containsKey(fieldId)) {
                     Object assignedVal = assignedFldsById.remove(fieldId);
