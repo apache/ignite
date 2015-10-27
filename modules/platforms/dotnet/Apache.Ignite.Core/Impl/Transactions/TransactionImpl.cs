@@ -405,20 +405,20 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /// <summary>
-        /// Creates a future via provided factory if IsClosed is false; otherwise, return a future with an error.
+        /// Creates a task via provided factory if IsClosed is false; otherwise, return a task with an error.
         /// </summary>
-        internal Task GetFutureOrError(Func<Task> operationFactory)
+        internal Task GetTask(Func<Task> operationFactory)
         {
             lock (this)
             {
-                return IsClosed ? GetExceptionFuture() : operationFactory();
+                return IsClosed ? GetExceptionTask() : operationFactory();
             }
         }
 
         /// <summary>
-        /// Gets the future that throws an exception.
+        /// Gets the task that throws an exception.
         /// </summary>
-        private Task GetExceptionFuture()
+        private Task GetExceptionTask()
         {
             var tcs = new TaskCompletionSource<object>();
             
@@ -448,7 +448,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /// <summary>
-        /// Closes this transaction upon future completion.
+        /// Closes this transaction upon task completion.
         /// </summary>
         private void CloseWhenComplete(Task task)
         {

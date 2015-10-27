@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** <inheritDoc /> */
         public Task CommitAsync()
         {
-            return _tx.GetFutureOrError(() => _tx.CommitAsync());
+            return _tx.GetTask(() => _tx.CommitAsync());
         }
 
         /** <inheritDoc /> */
@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** <inheritDoc /> */
         public Task RollbackAsync()
         {
-            return _tx.GetFutureOrError(() => _tx.RollbackAsync());
+            return _tx.GetTask(() => _tx.RollbackAsync());
         }
 
         /** <inheritDoc /> */
