@@ -110,8 +110,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public bool ContainsKeys(IEnumerable<TK> keys)
         {
-            _cache.ContainsKeys(keys);
-            return GetResult<bool>();
+            return GetResult(_cache.ContainsKeysAsync(keys));
         }
 
         /** <inheritDoc /> */
@@ -166,50 +165,43 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndReplace(TK key, TV val)
         {
-            _cache.GetAndReplace(key, val);
-            return GetResult<CacheResult<TV>>();
+            return GetResult(_cache.GetAndReplaceAsync(key, val));
         }
 
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndRemove(TK key)
         {
-            _cache.GetAndRemove(key);
-            return GetResult<CacheResult<TV>>();
+            return GetResult(_cache.GetAndRemoveAsync(key));
         }
 
         /** <inheritDoc /> */
         public bool PutIfAbsent(TK key, TV val)
         {
-            _cache.PutIfAbsent(key, val);
-            return GetResult<bool>();
+            return GetResult(_cache.PutIfAbsentAsync(key, val));
         }
 
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndPutIfAbsent(TK key, TV val)
         {
-            _cache.GetAndPutIfAbsent(key, val);
-            return GetResult<CacheResult<TV>>();
+            return GetResult(_cache.GetAndPutIfAbsentAsync(key, val));
         }
 
         /** <inheritDoc /> */
         public bool Replace(TK key, TV val)
         {
-            _cache.Replace(key, val);
-            return GetResult<bool>();
+            return GetResult(_cache.ReplaceAsync(key, val));
         }
 
         /** <inheritDoc /> */
         public bool Replace(TK key, TV oldVal, TV newVal)
         {
-            _cache.Replace(key, oldVal, newVal);
-            return GetResult<bool>();
+            return GetResult(_cache.ReplaceAsync(key, oldVal, newVal));
         }
 
         /** <inheritDoc /> */
         public void PutAll(IDictionary<TK, TV> vals)
         {
-            _cache.PutAll(vals);
-            WaitResult();
+            WaitResult(_cache.PutAllAsync(vals));
         }
 
         /** <inheritDoc /> */
@@ -221,20 +213,19 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public void Clear()
         {
-            _cache.Clear();
-            WaitResult();
+            WaitResult(_cache.ClearAsync());
         }
 
         /** <inheritDoc /> */
         public void Clear(TK key)
         {
-            _cache.Clear(key);
+            WaitResult(_cache.ClearAsync(key));
         }
 
         /** <inheritDoc /> */
         public void ClearAll(IEnumerable<TK> keys)
         {
-            _cache.ClearAll(keys);
+            WaitResult(_cache.ClearAllAsync(keys));
         }
 
         /** <inheritDoc /> */
@@ -252,29 +243,25 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public bool Remove(TK key)
         {
-            _cache.Remove(key);
-            return GetResult<bool>();
+            return GetResult(_cache.RemoveAsync(key));
         }
 
         /** <inheritDoc /> */
         public bool Remove(TK key, TV val)
         {
-            _cache.Remove(key, val);
-            return GetResult<bool>();
+            return GetResult(_cache.RemoveAsync(key, val));
         }
 
         /** <inheritDoc /> */
         public void RemoveAll(IEnumerable<TK> keys)
         {
-            _cache.RemoveAll(keys);
-            WaitResult();
+            WaitResult(_cache.RemoveAllAsync(keys));
         }
 
         /** <inheritDoc /> */
         public void RemoveAll()
         {
-            _cache.RemoveAll();
-            WaitResult();
+            WaitResult(_cache.RemoveAllAsync());
         }
 
         /** <inheritDoc /> */
@@ -286,8 +273,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public int GetSize(params CachePeekMode[] modes)
         {
-            _cache.GetSize(modes);
-            return GetResult<int>();
+            return GetResult(_cache.GetSizeAsync(modes));
         }
 
         /** <inheritDoc /> */
@@ -329,18 +315,14 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public TRes Invoke<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
-            _cache.Invoke(key, processor, arg);
-            
-            return GetResult<TRes>();
+            return GetResult(_cache.InvokeAsync(key, processor, arg));
         }
 
         /** <inheritDoc /> */
         public IDictionary<TK, ICacheEntryProcessorResult<TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys, 
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
-            _cache.InvokeAll(keys, processor, arg);
-
-            return GetResult<IDictionary<TK, ICacheEntryProcessorResult<TRes>>>();
+            return GetResult(_cache.InvokeAllAsync(keys, processor, arg));
         }
 
         /** <inheritDoc /> */
@@ -391,6 +373,10 @@ namespace Apache.Ignite.Core.Tests.Cache
             return GetEnumerator();
         }
 
+        /// <summary>
+        /// Waits the result of a task, unwraps exceptions.
+        /// </summary>
+        /// <param name="task">The task.</param>
         private static void WaitResult(Task task)
         {
             try
@@ -403,6 +389,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
+        /// <summary>
+        /// Gets the result of a task, unwraps exceptions.
+        /// </summary>
         private static T GetResult<T>(Task<T> task)
         {
             try
