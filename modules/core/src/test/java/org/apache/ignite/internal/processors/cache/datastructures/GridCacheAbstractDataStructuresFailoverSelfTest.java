@@ -449,7 +449,15 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
             IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
                 @Override public Object apply(Ignite ignite) {
-                    assert ignite.<Integer>queue(STRUCTURE_NAME, 0, null).peek() > 0;
+                    IgniteQueue<Integer> queue = ignite.queue(STRUCTURE_NAME, 0, null);
+
+                    assertNotNull(queue);
+
+                    Integer val = queue.peek();
+
+                    assertNotNull(val);
+
+                    assert val > 0;
 
                     return null;
                 }

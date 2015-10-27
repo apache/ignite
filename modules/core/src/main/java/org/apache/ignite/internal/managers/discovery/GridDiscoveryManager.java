@@ -102,6 +102,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
+import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -1764,6 +1765,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * Failure detection timeout used by discovery SPI. If the timeout is disabled then a value of the
+     * network timeout is returned.
+     *
+     * @return .
+     */
+    public long failureDetectionTimeout() {
+        return getSpi().failureDetectionTimeoutEnabled() ? ctx.config().getFailureDetectionTimeout() :
+            ctx.config().getNetworkTimeout();
     }
 
     /**

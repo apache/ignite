@@ -710,8 +710,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 final AffinityTopologyVersion updTopVer =
                     new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
+
                 final GridFutureRemapTimeoutObject timeout = new GridFutureRemapTimeoutObject(this,
-                    cctx.kernalContext().config().getNetworkTimeout(),
+                    cctx.discovery().failureDetectionTimeout(),
                     updTopVer,
                     e);
 
