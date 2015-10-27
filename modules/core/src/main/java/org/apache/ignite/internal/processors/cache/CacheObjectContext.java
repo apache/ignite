@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
@@ -27,12 +26,11 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.portable.PortableObject;
 
 /**
  *
  */
-public class CacheObjectContext {
+@SuppressWarnings("TypeMayBeWeakened") public class CacheObjectContext {
     /** */
     private GridKernalContext kernalCtx;
 
@@ -62,11 +60,11 @@ public class CacheObjectContext {
         boolean cpyOnGet,
         boolean storeVal) {
         this.kernalCtx = kernalCtx;
-        this.p2pEnabled = kernalCtx.config().isPeerClassLoadingEnabled();
         this.dfltAffMapper = dfltAffMapper;
         this.cpyOnGet = cpyOnGet;
         this.storeVal = storeVal;
 
+        p2pEnabled = kernalCtx.config().isPeerClassLoadingEnabled();
         proc = kernalCtx.cacheObjects();
     }
 
@@ -114,24 +112,34 @@ public class CacheObjectContext {
 
     /** {@inheritDoc} */
     public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
+        return unwrapPortableIfNeeded(o, keepPortable, true);
+    }
+
+    /** {@inheritDoc} */
+    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable, boolean cpy) {
         if (o == null)
             return null;
 
-        return unwrapPortable(o, keepPortable);
+        return unwrapPortable(o, keepPortable, cpy);
     }
 
     /** {@inheritDoc} */
     public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
+        return unwrapPortablesIfNeeded(col, keepPortable, true);
+    }
+
+    /** {@inheritDoc} */
+    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable, boolean cpy) {
         if (col instanceof ArrayList)
-            return unwrapPortables((ArrayList<Object>)col, keepPortable);
+            return unwrapPortables((ArrayList<Object>)col, keepPortable, cpy);
 
         if (col instanceof Set)
-            return unwrapPortables((Set<Object>)col, keepPortable);
+            return unwrapPortables((Set<Object>)col, keepPortable, cpy);
 
         Collection<Object> col0 = new ArrayList<>(col.size());
 
         for (Object obj : col)
-            col0.add(unwrapPortable(obj, keepPortable));
+            col0.add(unwrapPortable(obj, keepPortable, cpy));
 
         return col0;
     }
@@ -143,14 +151,14 @@ public class CacheObjectContext {
      * @param keepPortable Keep portable flag.
      * @return Unwrapped collection.
      */
-    public Map<Object, Object> unwrapPortablesIfNeeded(Map<Object, Object> map, boolean keepPortable) {
+    private Map<Object, Object> unwrapPortablesIfNeeded(Map<Object, Object> map, boolean keepPortable, boolean cpy) {
         if (keepPortable)
             return map;
 
         Map<Object, Object> map0 = PortableUtils.newMap(map);
 
         for (Map.Entry<Object, Object> e : map.entrySet())
-            map0.put(unwrapPortable(e.getKey(), keepPortable), unwrapPortable(e.getValue(), keepPortable));
+            map0.put(unwrapPortable(e.getKey(), keepPortable, cpy), unwrapPortable(e.getValue(), keepPortable, cpy));
 
         return map0;
     }
@@ -161,13 +169,13 @@ public class CacheObjectContext {
      * @param col List to unwrap.
      * @return Unwrapped list.
      */
-    private Collection<Object> unwrapPortables(ArrayList<Object> col, boolean keepPortable) {
+    private Collection<Object> unwrapPortables(ArrayList<Object> col, boolean keepPortable, boolean cpy) {
         int size = col.size();
 
         for (int i = 0; i < size; i++) {
             Object o = col.get(i);
 
-            Object unwrapped = unwrapPortable(o, keepPortable);
+            Object unwrapped = unwrapPortable(o, keepPortable, cpy);
 
             if (o != unwrapped)
                 col.set(i, unwrapped);
@@ -182,13 +190,11 @@ public class CacheObjectContext {
      * @param set Set to unwrap.
      * @return Unwrapped set.
      */
-    private Set<Object> unwrapPortables(Set<Object> set, boolean keepPortable) {
+    private Set<Object> unwrapPortables(Set<Object> set, boolean keepPortable, boolean cpy) {
         Set<Object> set0 = PortableUtils.newSet(set);
 
-        Iterator<Object> iter = set.iterator();
-
-        while (iter.hasNext())
-            set0.add(unwrapPortable(iter.next(), keepPortable));
+        for (Object obj : set)
+            set0.add(unwrapPortable(obj, keepPortable, cpy));
 
         return set0;
     }
@@ -197,29 +203,29 @@ public class CacheObjectContext {
      * @param o Object to unwrap.
      * @return Unwrapped object.
      */
-    private Object unwrapPortable(Object o, boolean keepPortable) {
+    private Object unwrapPortable(Object o, boolean keepPortable, boolean cpy) {
         if (o instanceof Map.Entry) {
             Map.Entry entry = (Map.Entry)o;
 
             Object key = entry.getKey();
 
-            Object uKey = unwrapPortable(key, keepPortable);
+            Object uKey = unwrapPortable(key, keepPortable, cpy);
 
             Object val = entry.getValue();
 
-            Object uVal = unwrapPortable(val, keepPortable);
+            Object uVal = unwrapPortable(val, keepPortable, cpy);
 
             return (key != uKey || val != uVal) ? F.t(uKey, uVal) : o;
         }
         else if (o instanceof Collection)
-            return unwrapPortablesIfNeeded((Collection<Object>)o, keepPortable);
+            return unwrapPortablesIfNeeded((Collection<Object>)o, keepPortable, cpy);
         else if (o instanceof Map)
-            return unwrapPortablesIfNeeded((Map<Object, Object>)o, keepPortable);
+            return unwrapPortablesIfNeeded((Map<Object, Object>)o, keepPortable, cpy);
         else if (o instanceof CacheObject) {
             CacheObject co = (CacheObject)o;
 
             if (!keepPortable || co.isPlatformType())
-                return unwrapPortable(co.value(this, true), keepPortable);
+                return unwrapPortable(co.value(this, true), keepPortable, cpy);
         }
 
         return o;

@@ -2146,9 +2146,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             res.addFailedKeys(putMap != null ? putMap.keySet() : rmvKeys, e, ctx);
         }
 
-        // TODO ignite-950
-//        if (storeErr != null)
-//            res.addFailedKeys(storeErr.failedKeys(), storeErr.getCause(), ctx);
+        if (storeErr != null) {
+            ArrayList<KeyCacheObject> failed = new ArrayList<>(storeErr.failedKeys().size());
+
+            for (Object failedKey : storeErr.failedKeys())
+                failed.add(ctx.toCacheKeyObject(failedKey));
+
+            res.addFailedKeys(failed, storeErr.getCause(), ctx);
+        }
 
         return dhtFut;
     }
