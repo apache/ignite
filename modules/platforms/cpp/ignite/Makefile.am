@@ -17,7 +17,23 @@
 
 ACLOCAL_AMFLAGS = "-Im4"
 
-nobase_include_HEADERS = ignite/common/concurrent.h \
-                         ignite/common/java.h \
-                         ignite/common/exports.h \
-                         ignite/common/utils.h
+SUBDIRS = .
+DIST_SUBDIRS = .
+
+AM_CPPFLAGS = -I$(srcdir)/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -DIGNITE_IMPL
+AM_CXXFLAGS = -Wall -std=c++0x
+
+noinst_PROGRAMS = ignite
+
+ignite_SOURCES = src/ignite.cpp
+
+ignite_LDFLAGS = -static-libtool-libs -L/usr/local/lib -lignite
+
+run-check: check
+	./ignite
+
+clean-local: clean-check
+	$(RM) *.gcno *.gcda
+
+clean-check:
+	$(RM) $(ignite_OBJECTS)
