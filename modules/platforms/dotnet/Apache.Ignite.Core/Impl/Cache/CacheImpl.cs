@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
@@ -66,14 +65,6 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** Flag: no-retries.*/
         private readonly bool _flagNoRetries;
-
-        /** 
-         * Result converter for async InvokeAll operation. 
-         * In future result processing there is only one TResult generic argument, 
-         * and we can't get the type of ICacheEntryProcessorResult at compile time from it.
-         * This field caches converter for the last InvokeAll operation to avoid using reflection.
-         */
-        private readonly ThreadLocal<object> _invokeAllConverter = new ThreadLocal<object>();
 
         /** Async instance. */
         private readonly Lazy<CacheImpl<TK, TV>> _asyncInstance;
@@ -149,10 +140,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         private Task<TResult> GetTask<TResult>(CacheOp lastAsyncOp, Func<PortableReaderImpl, TResult> converter = null)
         {
             Debug.Assert(_flagAsync);
-
-            converter = converter ?? GetFutureResultConverter<TResult>(lastAsyncOp);
-
-            _invokeAllConverter.Value = null;
 
             return GetFuture((futId, futTypeId) => UU.TargetListenFutureForOperation(Target, futId, futTypeId, 
                 (int) lastAsyncOp), _flagKeepPortable, converter).Task;
@@ -400,7 +387,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             AsyncInstance.Get(key);
 
-            return AsyncInstance.GetTask<TV>(CacheOp.Get);
+            return AsyncInstance.GetTask(CacheOp.Get, reader =>
+            {
+                if (reader != null)
+                    return reader.ReadObject<TV>();
+
+                throw GetKeyNotFoundException();
+            });
         }
 
         /** <inheritDoc /> */
@@ -425,7 +418,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             AsyncInstance.Get(key);
 
-            return AsyncInstance.GetTask(CacheOp.Get, GetCacheResult<CacheResult<TV>>);
+            return AsyncInstance.GetTask(CacheOp.Get, GetCacheResult);
         }
 
         /** <inheritDoc /> */
@@ -448,7 +441,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             AsyncInstance.GetAll(keys);
 
-            return AsyncInstance.GetTask<IDictionary<TK, TV>>(CacheOp.GetAll);
+            return AsyncInstance.GetTask(CacheOp.GetAll, r => r == null ? null : ReadGetAllDictionary(r));
         }
 
         /** <inheritdoc /> */
@@ -484,7 +477,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             AsyncInstance.GetAndPut(key, val);
 
-            return AsyncInstance.GetTask<CacheResult<TV>>(CacheOp.GetAndPut);
+            return AsyncInstance.GetTask(CacheOp.GetAndPut, GetCacheResult);
         }
 
         /** <inheritDoc /> */
@@ -502,7 +495,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             AsyncInstance.GetAndReplace(key, val);
 
-            return AsyncInstance.GetTask<CacheResult<TV>>(CacheOp.GetAndReplace);
+            return AsyncInstance.GetTask(CacheOp.GetAndReplace, GetCacheResult);
         }
 
         /** <inheritDoc /> */
@@ -518,7 +511,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             AsyncInstance.GetAndRemove(key);
 
-            return AsyncInstance.GetTask<CacheResult<TV>>(CacheOp.GetAndRemove);
+            return AsyncInstance.GetTask(CacheOp.GetAndRemove, GetCacheResult);
         }
 
         /** <inheritdoc /> */
@@ -554,7 +547,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             AsyncInstance.GetAndPutIfAbsent(key, val);
 
-            return AsyncInstance.GetTask<CacheResult<TV>>(CacheOp.GetAndPutIfAbsent);
+            return AsyncInstance.GetTask(CacheOp.GetAndPutIfAbsent, GetCacheResult);
         }
 
         /** <inheritdoc /> */
@@ -809,7 +802,18 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             AsyncInstance.Invoke(key, processor, arg);
 
-            return AsyncInstance.GetTask<TRes>(CacheOp.Invoke);
+            return AsyncInstance.GetTask(CacheOp.Invoke, r =>
+            {
+                if (r == null)
+                    return default(TRes);
+
+                var hasError = r.ReadBoolean();
+
+                if (hasError)
+                    throw ReadException(r.Stream);
+
+                return r.ReadObject<TRes>();
+            });
         }
 
         /** <inheritdoc /> */
@@ -823,19 +827,13 @@ namespace Apache.Ignite.Core.Impl.Cache
             var holder = new CacheEntryProcessorHolder(processor, arg,
                 (e, a) => processor.Process((IMutableCacheEntry<TK, TV>)e, (TArg)a), typeof(TK), typeof(TV));
 
-            return DoOutInOp((int)CacheOp.InvokeAll, writer =>
-            {
-                WriteEnumerable(writer, keys);
-                writer.Write(holder);
-            },
-            input =>
-            {
-                if (IsAsync)
-                    _invokeAllConverter.Value = (Func<PortableReaderImpl, IDictionary<TK, ICacheEntryProcessorResult<TRes>>>)
-                        (reader => ReadInvokeAllResults<TRes>(reader.Stream));
-
-                return ReadInvokeAllResults<TRes>(input);
-            });
+            return DoOutInOp((int) CacheOp.InvokeAll,
+                writer =>
+                {
+                    WriteEnumerable(writer, keys);
+                    writer.Write(holder);
+                },
+                input => ReadInvokeAllResults<TRes>(input));
         }
 
         /** <inheritDoc /> */
@@ -843,7 +841,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             AsyncInstance.InvokeAll(keys, processor, arg);
 
-            return AsyncInstance.GetTask<IDictionary<TK, ICacheEntryProcessorResult<TRes>>>(CacheOp.InvokeAll);
+            return AsyncInstance.GetTask(CacheOp.InvokeAll, reader => ReadInvokeAllResults<TRes>(reader.Stream));
         }
 
         /** <inheritdoc /> */
@@ -1189,64 +1187,15 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /// <summary>
-        /// Gets the future result converter based on the last operation id.
-        /// </summary>
-        /// <typeparam name="TResult">The type of the future result.</typeparam>
-        /// <param name="lastAsyncOpId">The last op id.</param>
-        /// <returns>Future result converter.</returns>
-        private Func<PortableReaderImpl, TResult> GetFutureResultConverter<TResult>(CacheOp lastAsyncOpId)
-        {
-            switch (lastAsyncOpId)
-            {
-                case CacheOp.Get:
-                    return reader =>
-                    {
-                        if (reader != null)
-                            return reader.ReadObject<TResult>();
-
-                        throw GetKeyNotFoundException();
-                    };
-
-                case CacheOp.GetAll:
-                    return reader => reader == null ? default(TResult) : (TResult) ReadGetAllDictionary(reader);
-
-                case CacheOp.Invoke:
-                    return reader =>
-                    {
-                        if (reader == null)
-                            return default(TResult);
-
-                        var hasError = reader.ReadBoolean();
-
-                        if (hasError)
-                            throw ReadException(reader.Stream);
-
-                        return reader.ReadObject<TResult>();
-                    };
-
-                case CacheOp.InvokeAll:
-                    return _invokeAllConverter.Value as Func<PortableReaderImpl, TResult>;
-
-                case CacheOp.GetAndPut:
-                case CacheOp.GetAndPutIfAbsent:
-                case CacheOp.GetAndRemove:
-                case CacheOp.GetAndReplace:
-                    return GetCacheResult<TResult>;
-            }
-
-            return null;
-        }
-
-        /// <summary>
         /// Gets the cache result.
         /// </summary>
-        private static TResult GetCacheResult<TResult>(PortableReaderImpl reader)
+        private static CacheResult<TV> GetCacheResult(PortableReaderImpl reader)
         {
             var res = reader == null
                 ? new CacheResult<TV>()
                 : new CacheResult<TV>(reader.ReadObject<TV>());
 
-            return TypeCaster<TResult>.Cast(res);
+            return res;
         }
 
         /// <summary>
