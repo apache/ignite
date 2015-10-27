@@ -574,12 +574,12 @@ public class PortableUtils {
      * @param start Object start position inside the stream.
      * @return Footer start.
      */
-    public static int footerStart(PortablePositionReadable in, int start) {
+    public static int footerStartRelative(PortablePositionReadable in, int start) {
         int schemaId = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_ID_POS);
 
         if (schemaId == 0)
             // No schema, footer start equals to object end.
-            return in.readIntPositioned(start + GridPortableMarshaller.TOTAL_LEN_POS);
+            return length(in, start);
         else
             // Schema exists, use offset.
             return in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
@@ -590,10 +590,21 @@ public class PortableUtils {
      *
      * @param in Input stream.
      * @param start Start position.
+     * @return Footer start.
+     */
+    public static int footerStartAbsolute(PortablePositionReadable in, int start) {
+        return footerStartRelative(in, start) + start;
+    }
+
+    /**
+     * Get object's footer.
+     *
+     * @param in Input stream.
+     * @param start Start position.
      * @return Footer.
      */
     public static IgniteBiTuple<Integer, Integer> footerAbsolute(PortablePositionReadable in, int start) {
-        int footerStart = footerStart(in, start);
+        int footerStart = footerStartRelative(in, start);
         int footerEnd = length(in, start);
 
         // Take in count possible raw offset.
@@ -611,7 +622,7 @@ public class PortableUtils {
      * @return Raw offset.
      */
     public static int rawOffsetAbsolute(PortablePositionReadable in, int start) {
-        int len = in.readIntPositioned(start + GridPortableMarshaller.TOTAL_LEN_POS);
+        int len = length(in, start);
         int schemaId = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_ID_POS);
 
         if (schemaId == 0)

@@ -379,7 +379,7 @@ public class PortableBuilderImpl implements PortableBuilder {
         if (reader != null) {
             // Write raw data if any.
             int rawOff = PortableUtils.rawOffsetAbsolute(reader, start);
-            int footerStart = start + PortableUtils.footerStart(reader, start);
+            int footerStart = PortableUtils.footerStartAbsolute(reader, start);
 
             if (rawOff < footerStart) {
                 writer.rawWriter();
@@ -388,7 +388,7 @@ public class PortableBuilderImpl implements PortableBuilder {
             }
 
             // Shift reader to the end of the object.
-            reader.position(start + reader.readIntPositioned(start + GridPortableMarshaller.TOTAL_LEN_POS));
+            reader.position(start + PortableUtils.length(reader, start));
         }
 
         writer.postWrite();
