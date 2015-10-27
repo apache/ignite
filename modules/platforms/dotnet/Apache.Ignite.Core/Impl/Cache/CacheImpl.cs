@@ -797,7 +797,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<TRes> InvokeAsync<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
-            _asyncInstance.InvokeAsync(key, processor, arg);
+            _asyncInstance.Invoke(key, processor, arg);
 
             return _asyncInstance.GetTask<TRes>(CacheOp.Invoke);
         }
