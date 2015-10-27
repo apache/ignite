@@ -589,7 +589,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     void* res = IGNITION_START(ctx.NativeContext, cfgPath0, gridName0, InteropFactoryId,
                         mem.SynchronizeOutput());
 
-                    return new UnmanagedTarget(ctx, res);
+                    return new UnmanagedTarget(ctx.NativeContext, res);
                 }
                 finally
                 {
@@ -1176,7 +1176,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             void* target0 = ACQUIRE(ctx.NativeContext, target);
 
-            return new UnmanagedTarget(ctx, target0);
+            return new UnmanagedTarget(ctx.NativeContext, target0);
         }
 
         internal static void Release(IUnmanagedTarget target)

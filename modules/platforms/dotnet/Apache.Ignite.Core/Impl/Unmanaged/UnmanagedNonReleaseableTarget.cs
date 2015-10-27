@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** <inheritdoc /> */
         public IUnmanagedTarget ChangeTarget(void* target)
         {
-            throw new NotSupportedException();
+            return new UnmanagedTarget(_ctx, target);
         }
 
         /** <inheritdoc /> */

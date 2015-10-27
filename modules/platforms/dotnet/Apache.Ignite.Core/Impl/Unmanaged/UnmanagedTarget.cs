@@ -27,14 +27,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     internal unsafe sealed class UnmanagedTarget : CriticalHandle, IUnmanagedTarget
     {
         /** Context. */
-        private readonly UnmanagedContext _ctx;
+        private readonly void* _ctx;
         
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="target">Target.</param>
-        public UnmanagedTarget(UnmanagedContext ctx, void* target)
+        public UnmanagedTarget(void* ctx, void* target)
             : base(IntPtr.Zero)
         {
             _ctx = ctx;
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** <inheritdoc /> */
         public void* Context
         {
-            get { return _ctx.NativeContext; }
+            get { return _ctx; }
         }
 
         /** <inheritdoc /> */
