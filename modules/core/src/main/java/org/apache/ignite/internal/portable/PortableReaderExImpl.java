@@ -2527,36 +2527,6 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         // TODO: Opto.
 
-//        int searchPos = in.position();
-//
-//        while (searchPos < searchTail) {
-//            int id0 = in.readInt(searchPos);
-//
-//            if (id0 == id)
-//                return searchPos + 8;
-//
-//            int len = in.readInt(searchPos + 4);
-//
-//            searchPos += (8 + len);
-//        }
-//
-//        if (in.position() != searchHead) {
-//            searchPos = searchHead;
-//
-//            while (searchPos < in.position()) {
-//                int id0 = in.readInt(searchPos);
-//
-//                if (id0 == id)
-//                    return searchPos + 8;
-//
-//                int len = in.readInt(searchPos + 4);
-//
-//                searchPos += (8 + len);
-//            }
-//        }
-//
-//        return -1;
-
         while (true) {
             if (searchHead >= searchTail)
                 return false;
