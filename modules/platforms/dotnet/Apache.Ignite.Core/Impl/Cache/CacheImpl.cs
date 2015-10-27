@@ -313,7 +313,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> ContainsKeyAsync(TK key)
         {
-            throw new NotImplementedException();
+            _asyncInstance.ContainsKey(key);
+
+            return _asyncInstance.GetTask<bool>(CacheOp.ContainsKey);
         }
 
         /** <inheritDoc /> */
@@ -327,7 +329,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<bool> ContainsKeysAsync(IEnumerable<TK> keys)
         {
-            throw new NotImplementedException();
+            _asyncInstance.ContainsKeys(keys);
+
+            return _asyncInstance.GetTask<bool>(CacheOp.ContainsKeys);
         }
 
         /** <inheritDoc /> */
@@ -401,7 +405,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<TV> GetAsync(TK key)
         {
-            throw new NotImplementedException();
+            _asyncInstance.Get(key);
+
+            return _asyncInstance.GetTask<TV>(CacheOp.Get);
         }
 
         /** <inheritDoc /> */
@@ -437,7 +443,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<IDictionary<TK, TV>> GetAllAsync(IEnumerable<TK> keys)
         {
-            throw new NotImplementedException();
+            _asyncInstance.GetAll(keys);
+
+            return _asyncInstance.GetTask<IDictionary<TK, TV>>(CacheOp.GetAll);
         }
 
         /** <inheritdoc /> */
