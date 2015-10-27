@@ -26,6 +26,7 @@ import org.apache.ignite.internal.portable.PortableWriterExImpl;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.portable.PortableBuilder;
 import org.apache.ignite.portable.PortableException;
 import org.apache.ignite.portable.PortableInvalidClassException;
@@ -394,12 +395,12 @@ public class PortableBuilderImpl implements PortableBuilder {
         if (readCache == null) {
             Map<Integer, Object> readCache = new HashMap<>();
 
-            int rawPos = start + PortableUtils.rawOffset(reader, start);
-            int footerPos = start + PortableUtils.footerStart(reader, start);
-            int footerEnd = start + PortableUtils.length(reader, start);
+            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footer(reader, start);
 
-            if ((((footerEnd - footerPos) >> 2) & 0x1) == 0x1)
-                footerEnd -= 4;
+            int footerPos = footer.get1();
+            int footerEnd = footer.get2();
+
+            int rawPos = start + PortableUtils.rawOffset(reader, start);
 
             while (footerPos < footerEnd) {
                 int fieldId = reader.readIntPositioned(footerPos);

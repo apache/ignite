@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.GridEnumCache;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.portable.PortableException;
 import org.apache.ignite.portable.PortableInvalidClassException;
 import org.apache.ignite.portable.PortableObject;
@@ -210,12 +211,10 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         typeId = in.readIntPositioned(start + GridPortableMarshaller.TYPE_ID_POS);
 
-        footerStart = PortableUtils.footerStart(in, start);
-        footerEnd = PortableUtils.length(in, start);
+        IgniteBiTuple<Integer, Integer> footer = PortableUtils.footer(in, start);
 
-        // Take in count possible raw offset.
-        if ((((footerEnd - footerStart) >> 2) & 0x1) == 0x1)
-            footerEnd -= 4;
+        footerStart = footer.get1();
+        footerEnd = footer.get2();
 
         rawOff = PortableUtils.rawOffset(in, start);
 

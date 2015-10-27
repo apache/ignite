@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.portable;
 
 import org.apache.ignite.internal.portable.builder.PortableLazyValue;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.portable.PortableException;
 import org.apache.ignite.portable.PortableObject;
 import org.jetbrains.annotations.Nullable;
@@ -563,6 +565,24 @@ public class PortableUtils {
      */
     public static int length(PortablePositionReadable in, int start) {
         return in.readIntPositioned(start + GridPortableMarshaller.TOTAL_LEN_POS);
+    }
+
+    /**
+     * Get object's footer.
+     *
+     * @param in Input stream.
+     * @param start Start position.
+     * @return Footer.
+     */
+    public static IgniteBiTuple<Integer, Integer> footer(PortablePositionReadable in, int start) {
+        int footerStart = footerStart(in, start);
+        int footerEnd = length(in, start);
+
+        // Take in count possible raw offset.
+        if ((((footerEnd - footerStart) >> 2) & 0x1) == 0x1)
+            footerEnd -= 4;
+
+        return F.t(footerStart, footerEnd);
     }
 
     /**
