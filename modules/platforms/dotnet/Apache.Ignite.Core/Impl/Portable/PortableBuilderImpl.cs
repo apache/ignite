@@ -377,8 +377,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 _portables.Marshaller.FinishMarshal(writer);
 
                 // Create portable object once metadata is processed.
-                return new PortableUserObject(_portables.Marshaller, outStream.InternalArray, 0,
-                    _desc.TypeId, _hashCode);
+                return new PortableUserObject(_portables.Marshaller, outStream.InternalArray, 0, 
+                    PortableObjectHeader.Read(outStream, 0));
             }
             finally
             {
