@@ -1369,7 +1369,7 @@ consoleModule.service('$preview', ['$timeout', '$interval', function ($timeout, 
         var newContent = content.lines;
 
         if (content.action == 'remove')
-            prevContent = content.lines;
+            prevContent = newContent;
         else if (prevContent.length > 0 && newContent.length > 0 && editor.attractAttention) {
             if (clearPromise) {
                 $timeout.cancel(clearPromise);
@@ -1469,7 +1469,6 @@ consoleModule.service('$preview', ['$timeout', '$interval', function ($timeout, 
         }
         else
             editor.attractAttention = true;
-
     }
 
     return {
@@ -1478,7 +1477,7 @@ consoleModule.service('$preview', ['$timeout', '$interval', function ($timeout, 
             preview.setOption('highlightActiveLine', false);
             preview.setAutoScrollEditorIntoView(true);
             preview.$blockScrolling = Infinity;
-            preview.attractAttention = true;
+            preview.attractAttention = false;
 
             var renderer = preview.renderer;
 
