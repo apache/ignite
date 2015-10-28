@@ -22,9 +22,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -42,6 +40,7 @@ import org.h2.engine.DbObject;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.Index;
+import org.h2.index.IndexLookupBatch;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
@@ -949,13 +948,8 @@ public class GridH2Table extends TableBase {
         }
 
         /** {@inheritDoc} */
-        @Override public int getPreferedLookupBatchSize() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<Future<Cursor>> findBatched(TableFilter tableFilter, List<SearchRow> list) {
-            throw new IllegalStateException("Must never be called.");
+        @Override public IndexLookupBatch createLookupBatch(TableFilter filter) {
+            return delegate.createLookupBatch(filter);
         }
 
         /** {@inheritDoc} */

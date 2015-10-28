@@ -46,6 +46,8 @@ public class GridH2IndexRangeResponse implements Message {
     private long qryId;
 
     /** */
+    private int batchLookupId;
+
     /** */
     @GridDirectCollection(Message.class)
     private List<GridH2RowRange> ranges;
@@ -124,6 +126,20 @@ public class GridH2IndexRangeResponse implements Message {
      */
     public byte status() {
         return status;
+    }
+
+    /**
+     * @param batchLookupId Batch lookup ID.
+     */
+    public void batchLookupId(int batchLookupId) {
+        this.batchLookupId = batchLookupId;
+    }
+
+    /**
+     * @return Batch lookup ID.
+     */
+    public int batchLookupId() {
+        return batchLookupId;
     }
 
     /** {@inheritDoc} */

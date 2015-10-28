@@ -6575,6 +6575,19 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Swaps two objects in array.
+     *
+     * @param arr Array.
+     * @param a Index of the first object.
+     * @param b Index of the second object.
+     */
+    public static void swap(Object[] arr, int a, int b) {
+        Object tmp = arr[a];
+        arr[a] = arr[b];
+        arr[b] = tmp;
+    }
+
+    /**
      * Returns array which is the union of two arrays
      * (array of elements contained in any of provided arrays).
      * <p/>

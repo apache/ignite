@@ -37,6 +37,9 @@ public class GridH2IndexRangeRequest implements Message {
     private long qryId;
 
     /** */
+    private int batchLookupId;
+
+    /** */
     @GridDirectCollection(Message.class)
     private List<GridH2RowRangeBounds> bounds;
 
@@ -80,6 +83,20 @@ public class GridH2IndexRangeRequest implements Message {
      */
     public void queryId(long qryId) {
         this.qryId = qryId;
+    }
+
+    /**
+     * @param batchLookupId Batch lookup ID.
+     */
+    public void batchLookupId(int batchLookupId) {
+        this.batchLookupId = batchLookupId;
+    }
+
+    /**
+     * @return Batch lookup ID.
+     */
+    public int batchLookupId() {
+        return batchLookupId;
     }
 
     /** {@inheritDoc} */

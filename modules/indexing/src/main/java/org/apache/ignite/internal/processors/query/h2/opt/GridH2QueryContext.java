@@ -51,10 +51,13 @@ public class GridH2QueryContext {
     private Map<Long, Object> snapshots;
 
     /** Range streams for indexes. */
-    private final ConcurrentMap<Long, Object> streams = new ConcurrentHashMap8<>();
+    private Map<Integer, Object> streams;
 
     /** Range sources for indexes. */
-    private final ConcurrentMap<Long, Object> sources = new ConcurrentHashMap8<>();
+    private Map<SourceKey, Object> sources;
+
+    /** */
+    private byte batchLookupIdGen;
 
     /** */
     private IndexingQueryFilter filter;
@@ -195,7 +198,7 @@ public class GridH2QueryContext {
      */
     public void putSnapshot(long idxId, Object snapshot) {
         assert snapshot != null;
-        assert get() == null : "snapshot indexes before setting query context";
+        assert get() == null : "need to snapshot indexes before setting query context for correct visibility";
 
         if (snapshot instanceof GridReservable && !((GridReservable)snapshot).reserve())
             throw new IllegalStateException("Must be already reserved before.");
@@ -213,44 +216,71 @@ public class GridH2QueryContext {
      */
     @SuppressWarnings("unchecked")
     public <T> T getSnapshot(long idxId) {
+        if (snapshots == null)
+            return null;
+
         return (T)snapshots.get(idxId);
     }
 
     /**
-     * @param idxId Index ID.
+     * @param batchLookupId Batch lookup ID.
      * @param streams Range streams.
      */
-    public void putStreams(long idxId, Object streams) {
-        this.streams.put(idxId, streams);
+    public synchronized void putStreams(int batchLookupId, Object streams) {
+        if (this.streams == null)
+            this.streams = new HashMap<>();
+
+        this.streams.put(batchLookupId, streams);
     }
 
     /**
-     * @param idxId Index ID.
+     * @param batchLookupId Batch lookup ID.
      * @return Range streams.
      */
     @SuppressWarnings("unchecked")
-    public <T> T getStreams(long idxId) {
-        return (T)streams.get(idxId);
+    public synchronized <T> T getStreams(int batchLookupId) {
+        if (streams == null)
+            return null;
+
+        return (T)streams.get(batchLookupId);
     }
 
     /**
-     * @param idxId Index ID.
+     * @param ownerId Owner node ID.
+     * @param batchLookupId Batch lookup ID.
      * @param src Range source.
      */
-    public void putSource(long idxId, Object src) {
-        if (src != null)
-            sources.put(idxId, src);
-        else
-            sources.remove(idxId);
+    public synchronized void putSource(UUID ownerId, int batchLookupId, Object src) {
+        SourceKey srcKey = new SourceKey(ownerId, batchLookupId);
+
+        if (src != null) {
+            if (sources == null)
+                sources = new HashMap<>();
+
+            sources.put(srcKey, src);
+        }
+        else if (sources != null)
+            sources.remove(srcKey);
     }
 
     /**
-     * @param idxId Index ID.
+     * @param ownerId Owner node ID.
+     * @param batchLookupId Batch lookup ID.
      * @return Range source.
      */
     @SuppressWarnings("unchecked")
-    public <T> T getSource(long idxId) {
-        return (T)sources.get(idxId);
+    public synchronized <T> T getSource(UUID ownerId, int batchLookupId) {
+        if (sources == null)
+            return null;
+
+        return (T)sources.get(new SourceKey(ownerId, batchLookupId));
+    }
+
+    /**
+     * @return Next batch ID.
+     */
+    public byte nextBatchLookupId() {
+        return ++batchLookupIdGen;
     }
 
     /**
@@ -442,6 +472,38 @@ public class GridH2QueryContext {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(Key.class, this);
+        }
+    }
+
+    /**
+     * Key for source.
+     */
+    private static class SourceKey {
+        /** */
+        UUID ownerId;
+
+        /** */
+        int batchLookupId;
+
+        /**
+         * @param ownerId Owner node ID.
+         * @param batchLookupId Batch lookup ID.
+         */
+        SourceKey(UUID ownerId, int batchLookupId) {
+            this.ownerId = ownerId;
+            this.batchLookupId = batchLookupId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            SourceKey sourceKey = (SourceKey)o;
+
+            return batchLookupId == sourceKey.batchLookupId && ownerId.equals(sourceKey.ownerId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return 31 * ownerId.hashCode() + batchLookupId;
         }
     }
 }
