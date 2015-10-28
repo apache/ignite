@@ -27,7 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -86,10 +90,9 @@ import org.apache.ignite.transactions.Transaction;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
 /**
  *
@@ -172,7 +175,45 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
      * @return Write order mode for atomic cache.
      */
     protected CacheAtomicWriteOrderMode writeOrderMode() {
-        return CLOCK;
+        return PRIMARY;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFirstFilteredEvent() throws Exception {
+        this.backups = 2;
+
+        final int SRV_NODES = 4;
+
+        startGridsMultiThreaded(SRV_NODES);
+
+        client = true;
+
+        Ignite qryClient = startGrid(SRV_NODES);
+
+        client = false;
+
+        IgniteCache<Object, Object> qryClnCache = qryClient.cache(null);
+
+        final CacheEventListener3 lsnr = new CacheEventListener3();
+
+        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+        qry.setLocalListener(lsnr);
+
+        qry.setRemoteFilter(new CacheEventFilter());
+
+        try (QueryCursor<?> cur = qryClnCache.query(qry)) {
+            List<Integer> keys = testKeys(grid(0).cache(null), 1);
+
+            for (Integer key : keys)
+                qryClnCache.put(key, -1);
+
+            qryClnCache.put(keys.get(0), 100);
+        }
+
+        assertEquals(lsnr.evts.size(), 1);
     }
 
     /**
@@ -1222,7 +1263,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                     startGrid(idx);
 
-                    Thread.sleep(3000);
+                    Thread.sleep(200);
 
                     log.info("Stop node: " + idx);
 
@@ -1435,7 +1476,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                     startGrid(idx);
 
-                    Thread.sleep(3000);
+                    Thread.sleep(200);
 
                     log.info("Stop node: " + idx);
 
@@ -1591,7 +1632,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testFailoverStartStopBackup() throws Exception {
-        failoverStartStopFilter(atomicityMode() == CacheAtomicityMode.ATOMIC ? 1 : 2);
+        failoverStartStopFilter(2);
     }
 
     /**
@@ -1698,13 +1739,17 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                     stopGrid(idx);
 
-                    Thread.sleep(100);
+                    awaitPartitionMapExchange();
+
+                    Thread.sleep(200);
 
                     log.info("Start node: " + idx);
 
                     startGrid(idx);
 
                     CountDownLatch latch = new CountDownLatch(1);
+
+                    awaitPartitionMapExchange();
 
                     assertTrue(checkLatch.compareAndSet(null, latch));
 
@@ -1728,7 +1773,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
         final List<T3<Object, Object, Object>> expEvtsLsnr = new ArrayList<>();
 
         try {
-            long stopTime = System.currentTimeMillis() + 10_000;
+            long stopTime = System.currentTimeMillis() + 60_000;
 
             // Start new filter each 5 sec.
             long startFilterTime = System.currentTimeMillis() + 5_000;
@@ -1752,7 +1797,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
                     if (dinQry != null) {
                         dinQry.close();
 
-                        log.error("Continuous query listener closed.");
+                        log.info("Continuous query listener closed.");
 
                         checkEvents(expEvtsNewLsnr, dinLsnr, backups == 0);
                     }
@@ -1767,7 +1812,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                     dinQry = qryClnCache.query(newQry);
 
-                    log.error("Continuous query listener started.");
+                    log.info("Continuous query listener started.");
 
                     startFilterTime = System.currentTimeMillis() + 5_000;
                 }

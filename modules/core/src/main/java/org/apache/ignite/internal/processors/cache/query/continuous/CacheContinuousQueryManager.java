@@ -256,7 +256,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         throws IgniteCheckedException {
         assert e != null;
         assert key != null;
-        assert Thread.holdsLock(e) : e;
 
         if (e.isInternal())
             return;

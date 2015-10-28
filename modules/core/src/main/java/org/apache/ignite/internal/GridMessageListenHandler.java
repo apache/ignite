@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -99,6 +100,11 @@ public class GridMessageListenHandler implements GridContinuousHandler {
     /** {@inheritDoc} */
     @Override public String cacheName() {
         throw new IllegalStateException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateIdx(Map<Integer, Long> idx) {
+        // No-op.
     }
 
     /** {@inheritDoc} */

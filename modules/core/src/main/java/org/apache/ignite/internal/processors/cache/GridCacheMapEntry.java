@@ -1768,12 +1768,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         CacheObject oldVal;
         CacheObject updated;
 
-        if (!primary) {
-            int z = 0;
-
-            ++z;
-        }
-
         GridCacheVersion enqueueVer = null;
 
         GridCacheVersionConflictContext<?, ?> conflictCtx = null;
@@ -1990,7 +1984,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                 @Override public void apply(IgniteInternalFuture<Void> voidIgniteInternalFuture) {
                                     try {
                                         cctx.continuousQueries().onEntryUpdated(GridCacheMapEntry.this, key, evtVal0,
-                                                prevVal0, primary0, false, updateIdx00, topVer0);
+                                            prevVal0, primary0, false, updateIdx00, topVer0);
                                     }
                                     catch (IgniteCheckedException e) {
                                         // No-op.
@@ -2412,12 +2406,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 final CacheObject oldVal0 = oldVal;
                 final AffinityTopologyVersion topVer0 = topVer;
                 final long updateIdx00 = updateIdx0;
+                final CacheObject val0 = val;
 
                 contQryNtf = new CI1<IgniteInternalFuture<Void>>() {
                     @Override public void apply(IgniteInternalFuture<Void> voidIgniteInternalFuture) {
                         try {
-                            cctx.continuousQueries().onEntryUpdated(GridCacheMapEntry.this, key, val, oldVal0, primary0,
-                                false, updateIdx00, topVer0);
+                            cctx.continuousQueries().onEntryUpdated(GridCacheMapEntry.this, key, val0, oldVal0,
+                                primary0, false, updateIdx00, topVer0);
                         }
                         catch (IgniteCheckedException e) {
                             // No-op.

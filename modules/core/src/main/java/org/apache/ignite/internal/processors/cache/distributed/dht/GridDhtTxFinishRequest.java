@@ -191,6 +191,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param updateIdxs Partition update idxs.
+     * @param addDepInfo Deployment info flag.
      */
     public GridDhtTxFinishRequest(
         UUID nearNodeId,
@@ -215,11 +216,12 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
+        boolean addDepInfo,
         Collection<Long> updateIdxs
     ) {
         this(nearNodeId, futId, miniId, topVer, xidVer, commitVer, threadId, isolation, commit, invalidate, sys, plc,
             sysInvalidate, syncCommit, syncRollback, baseVer, committedVers, rolledbackVers, pendingVers, txSize,
-            subjId, taskNameHash);
+            subjId, taskNameHash, addDepInfo);
 
         if (updateIdxs != null && !updateIdxs.isEmpty()) {
             partUpdateCnt = new GridLongList(updateIdxs.size());

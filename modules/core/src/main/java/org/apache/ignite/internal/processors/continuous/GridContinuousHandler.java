@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.continuous;
 
 import java.io.Externalizable;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -145,4 +146,9 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
      * @return Cache name if this is a continuous query handler.
      */
     public String cacheName();
+
+    /**
+     * @param idx Init state for partition indexies.
+     */
+    public void updateIdx(Map<Integer, Long> idx);
 }

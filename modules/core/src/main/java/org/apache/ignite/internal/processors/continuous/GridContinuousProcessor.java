@@ -205,8 +205,14 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     StartFuture fut = startFuts.remove(msg.routineId());
 
                     if (fut != null) {
-                        if (msg.errs().isEmpty())
+                        if (msg.errs().isEmpty()) {
+                            LocalRoutineInfo routine = locInfos.get(msg.routineId());
+
+                            if (routine != null)
+                                routine.handler().updateIdx(msg.updateIdxs());
+
                             fut.onRemoteRegistered();
+                        }
                         else {
                             IgniteCheckedException firstEx = F.first(msg.errs().values());
 
@@ -685,7 +691,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      */
     public void addNotification(UUID nodeId,
         final UUID routineId,
-        Object obj,
+        @Nullable Object obj,
         @Nullable Object orderedTopic,
         boolean sync,
         boolean msg)
@@ -854,6 +860,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 U.error(log, "Failed to register handler [nodeId=" + node.id() + ", routineId=" + routineId + ']', e);
             }
+        }
+
+        if (ctx.cache() != null && ctx.cache().internalCache(hnd.cacheName()) != null) {
+            Map<Integer, Long> idx = ctx.cache().internalCache(hnd.cacheName()).context().topology().updateCounters();
+
+            req.addUpdateIdxs(idx);
         }
 
         if (err != null)

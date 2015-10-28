@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import javax.cache.processor.EntryProcessor;
-
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;

@@ -97,7 +97,8 @@ public class CacheContinuousQueryBatchAck extends GridCacheMessage {
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMap("updateIdxs", updateIdxs, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
+                if (!writer.writeMap("updateIdxs", updateIdxs, MessageCollectionItemType.INT,
+                    MessageCollectionItemType.LONG))
                     return false;
 
                 writer.incrementState();
@@ -127,7 +128,8 @@ public class CacheContinuousQueryBatchAck extends GridCacheMessage {
                 reader.incrementState();
 
             case 4:
-                updateIdxs = reader.readMap("updateIdxs", MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
+                updateIdxs = reader.readMap("updateIdxs", MessageCollectionItemType.INT, MessageCollectionItemType.LONG,
+                    false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -137,6 +139,11 @@ public class CacheContinuousQueryBatchAck extends GridCacheMessage {
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 
     /** {@inheritDoc} */

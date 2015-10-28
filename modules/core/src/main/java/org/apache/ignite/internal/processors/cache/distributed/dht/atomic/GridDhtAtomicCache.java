@@ -1804,7 +1804,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         dhtFut.listen(new CI1<IgniteInternalFuture<Void>>() {
                             @Override public void apply(IgniteInternalFuture<Void> f) {
                                 if (f.isDone() && f.error() == null)
-                                        updRes.contQryNtfy().apply(f);
+                                    updRes.contQryNtfy().apply(f);
                                 }
                             });
                     }
@@ -2557,7 +2557,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             /*event*/true,
                             /*metrics*/true,
                             /*primary*/false,
-                            /*check version*/op != TRANSFORM || !req.forceTransformBackups(),
+                            /*check version*/!req.forceTransformBackups(),
                             req.topologyVersion(),
                             CU.empty0(),
                             replicate ? DR_BACKUP : DR_NONE,
@@ -2614,7 +2614,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
         catch (ClusterTopologyCheckedException ignored) {
             U.warn(log, "Failed to send DHT atomic update response to node because it left grid: " +
-                nodeId);
+                req.nodeId());
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send DHT atomic update response (did node leave grid?) [nodeId=" + nodeId +

@@ -182,6 +182,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private byte flags;
 
     /** Partition update index. */
+    @GridDirectTransient
     private long partIdx;
 
     /** */
@@ -953,11 +954,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
                 writer.incrementState();
 
-            case 12:
-                if (!writer.writeLong("partIdx", partIdx))
-                    return false;
-
-                writer.incrementState();
         }
 
         return true;
@@ -1067,14 +1063,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
                 reader.incrementState();
 
-            case 12:
-                partIdx = reader.readLong("partIdx");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return reader.afterMessageRead(IgniteTxEntry.class);
@@ -1087,7 +1075,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 12;
     }
 
     /** {@inheritDoc} */

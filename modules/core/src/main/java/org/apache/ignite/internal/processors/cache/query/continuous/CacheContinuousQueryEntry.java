@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -93,8 +94,10 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
     /** */
     @GridToStringInclude
-    @GridDirectTransient
     private AffinityTopologyVersion topVer;
+
+    /** Filtered events. */
+    private GridLongList filteredEvts;
 
     /**
      * Required by {@link Message}.
@@ -179,6 +182,10 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      */
     void markFiltered() {
         flags |= FILTERED_ENTRY;
+        newVal = null;
+        oldVal = null;
+        key = null;
+        depInfo = null;
     }
 
     /**
@@ -191,8 +198,22 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     /**
      * @return {@code True} if entry was filtered.
      */
-    boolean filtered() {
+    boolean isFiltered() {
         return (flags & FILTERED_ENTRY) != 0;
+    }
+
+    /**
+     * @param idxs Filtered indexes.
+     */
+    void filteredEvents(GridLongList idxs) {
+        filteredEvts = idxs;
+    }
+
+    /**
+     * @return previous filtered events.
+     */
+    long[] filteredEvents() {
+        return filteredEvts == null ? null : filteredEvts.array();
     }
 
     /**
@@ -217,13 +238,15 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @throws IgniteCheckedException In case of error.
      */
     void unmarshal(GridCacheContext cctx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
-        key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
+        if (!isFiltered()) {
+            key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
 
-        if (newVal != null)
-            newVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
+            if (newVal != null)
+                newVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
 
-        if (oldVal != null)
-            oldVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
+            if (oldVal != null)
+                oldVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
+        }
     }
 
     /**
@@ -322,6 +345,18 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
                 writer.incrementState();
 
+            case 8:
+                if (!writer.writeMessage("filteredEvts", filteredEvts))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
+                if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -403,6 +438,22 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
                 reader.incrementState();
 
+            case 8:
+                filteredEvts = reader.readMessage("filteredEvts");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
+                topVer = reader.readMessage("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(CacheContinuousQueryEntry.class);
@@ -410,7 +461,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 10;
     }
 
     /** {@inheritDoc} */

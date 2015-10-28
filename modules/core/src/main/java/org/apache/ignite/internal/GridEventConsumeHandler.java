@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -126,6 +127,11 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     /** {@inheritDoc} */
     @Override public String cacheName() {
         throw new IllegalStateException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateIdx(Map<Integer, Long> idx) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
