@@ -836,53 +836,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>True in case the field was found and position adjusted, false otherwise.</returns>
         private bool SeekField(int fieldId)
         {
-            // TODO: Seek in footer
+            Stream.Seek(_curFooterStart, SeekOrigin.Begin);
 
-            // This method is expected to be called when stream pointer is set either before
-            // the field or on raw data offset.
-            int start = _curPos + PortableUtils.FullHdrLen;
-            int end = _curPos + _curRawOffset;
-
-            int initial = Stream.Position;
-
-            int cur = initial;
-
-            while (cur < end)
+            while (Stream.Position < _curFooterEnd)
             {
-                int id = Stream.ReadInt();
+                var id = Stream.ReadInt();
 
-                if (fieldId == id)
+                if (id == fieldId)
                 {
-                    // Field is found, return.
-                    Stream.Seek(4, SeekOrigin.Current);
-
+                    Stream.Seek(_curPos + Stream.ReadInt(), SeekOrigin.Begin);
                     return true;
                 }
-                
-                Stream.Seek(Stream.ReadInt(), SeekOrigin.Current);
 
-                cur = Stream.Position;
-            }
-
-            Stream.Seek(start, SeekOrigin.Begin);
-
-            cur = start;
-
-            while (cur < initial)
-            {
-                int id = Stream.ReadInt();
-
-                if (fieldId == id)
-                {
-                    // Field is found, return.
-                    Stream.Seek(4, SeekOrigin.Current);
-
-                    return true;
-                }
-                
-                Stream.Seek(Stream.ReadInt(), SeekOrigin.Current);
-
-                cur = Stream.Position;
+                Stream.Seek(4, SeekOrigin.Current);
             }
 
             return false;
