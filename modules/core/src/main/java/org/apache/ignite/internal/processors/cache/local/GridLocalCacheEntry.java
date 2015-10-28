@@ -67,6 +67,8 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
      *
      * @param threadId Owning thread ID.
      * @param ver Lock version.
+     * @param serOrder Version for serializable transactions ordering.
+     * @param serReadVer Optional read entry version for optimistic serializable transaction.
      * @param timeout Timeout to acquire lock.
      * @param reenter Reentry flag.
      * @param tx Transaction flag.
@@ -77,6 +79,8 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
     @Nullable public GridCacheMvccCandidate addLocal(
         long threadId,
         GridCacheVersion ver,
+        @Nullable GridCacheVersion serOrder,
+        @Nullable GridCacheVersion serReadVer,
         long timeout,
         boolean reenter,
         boolean tx,
@@ -91,6 +95,11 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
         synchronized (this) {
             checkObsolete();
 
+            if (serReadVer != null) {
+                if (!checkSerializableReadVersion(serReadVer))
+                    return null;
+            }
+
             GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc == null) {
@@ -103,12 +112,16 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
 
             cand = mvcc.addLocal(
                 this,
+                /*nearNodeId*/null,
+                /*nearVer*/null,
                 threadId,
                 ver,
                 timeout,
+                serOrder,
                 reenter,
                 tx,
-                implicitSingle
+                implicitSingle,
+                /*dht-local*/false
             );
 
             owner = mvcc.localOwner();
@@ -191,10 +204,16 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tmLock(IgniteInternalTx tx, long timeout) throws GridCacheEntryRemovedException {
+    @Override public boolean tmLock(IgniteInternalTx tx,
+        long timeout,
+        @Nullable GridCacheVersion serOrder,
+        GridCacheVersion serReadVer)
+        throws GridCacheEntryRemovedException {
         GridCacheMvccCandidate cand = addLocal(
             tx.threadId(),
             tx.xidVersion(),
+            serOrder,
+            serReadVer,
             timeout,
             /*reenter*/false,
             /*tx*/true,

@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -742,7 +743,10 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tmLock(IgniteInternalTx tx, long timeout)
+    @Override public boolean tmLock(IgniteInternalTx tx,
+        long timeout,
+        @Nullable GridCacheVersion serOrder,
+        GridCacheVersion serReadVer)
         throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (tx.local())
             // Null is returned if timeout is negative and there is other lock owner.
@@ -751,8 +755,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                 tx.xidVersion(),
                 tx.topologyVersion(),
                 timeout,
-                false,
-                true,
+                /*reenter*/false,
+                /*tx*/true,
                 tx.implicitSingle()) != null;
 
         try {
@@ -762,7 +766,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                 tx.threadId(),
                 tx.xidVersion(),
                 tx.timeout(),
-                true,
+                /*tx*/true,
                 tx.implicitSingle(),
                 tx.ownedVersion(txKey())
             );

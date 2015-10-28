@@ -33,12 +33,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class IgniteFairAffinityDynamicCacheSelfTest extends GridCommonAbstractTest {
+public class FairAffinityDynamicCacheSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    public IgniteFairAffinityDynamicCacheSelfTest(){
+    public FairAffinityDynamicCacheSelfTest(){
         super(false);
     }
 
@@ -71,6 +71,8 @@ public class IgniteFairAffinityDynamicCacheSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testStartStopCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-647");
+
         CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>();
 
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);

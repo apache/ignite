@@ -88,6 +88,9 @@ public abstract class IgniteCacheAbstractBenchmark extends IgniteAbstractBenchma
         /** */
         final int max;
 
+        /** */
+        final ThreadLocalRandom rnd;
+
         /**
          * @param min Min.
          * @param max Max.
@@ -95,13 +98,15 @@ public abstract class IgniteCacheAbstractBenchmark extends IgniteAbstractBenchma
         private ThreadRange(int min, int max) {
             this.min = min;
             this.max = max;
+
+            rnd = ThreadLocalRandom.current();
         }
 
         /**
          * @return Next random key.
          */
         int nextRandom() {
-            return ThreadLocalRandom.current().nextInt(min, max);
+            return rnd.nextInt(min, max);
         }
     }
 }

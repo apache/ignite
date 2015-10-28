@@ -284,6 +284,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /**
      * Sends response on failed message.
+     *
      * @param nodeId node id.
      * @param res response.
      * @param cctx shared context.
@@ -302,6 +303,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /**
      * Processes failed messages.
+     *
      * @param nodeId niode id.
      * @param msg message.
      * @throws IgniteCheckedException If failed.
@@ -332,7 +334,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.version(),
                     req.futureId(),
                     req.miniId(),
-                    0);
+                    0,
+                    ctx.deploymentEnabled());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
             }
@@ -345,7 +348,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtTxPrepareResponse res = new GridDhtTxPrepareResponse(
                     req.version(),
                     req.futureId(),
-                    req.miniId());
+                    req.miniId(),
+                    req.deployInfo() != null);
 
                 res.error(req.classError());
 
@@ -359,7 +363,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
                     ctx.cacheId(),
-                    req.futureVersion());
+                    req.futureVersion(),
+                    ctx.deploymentEnabled());
 
                 res.onError(req.classError());
 
@@ -374,7 +379,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
                     ctx.cacheId(),
                     nodeId,
-                    req.futureVersion());
+                    req.futureVersion(),
+                    ctx.deploymentEnabled());
 
                 res.error(req.classError());
 
@@ -389,7 +395,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
                     ctx.cacheId(),
                     req.futureId(),
-                    req.miniId()
+                    req.miniId(),
+                    ctx.deploymentEnabled()
                 );
 
                 res.error(req.classError());
@@ -414,7 +421,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     ctx.cacheId(),
                     req.futureId(),
                     req.miniId(),
-                    req.version());
+                    req.version(),
+                    req.deployInfo() != null);
 
                 res.error(req.classError());
 
@@ -456,7 +464,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     false,
                     0,
                     req.classError(),
-                    null);
+                    null,
+                    ctx.deploymentEnabled());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
             }
@@ -474,7 +483,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.version(),
                     null,
                     null,
-                    null);
+                    null,
+                    req.deployInfo() != null);
 
                 res.error(req.classError());
 
@@ -540,7 +550,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         if (destNodeId == null || !cctx.localNodeId().equals(destNodeId)) {
             msg.prepareMarshal(cctx);
 
-            if (depEnabled && msg instanceof GridCacheDeployable)
+            if (msg instanceof GridCacheDeployable && msg.addDeploymentInfo())
                 cctx.deploy().prepare((GridCacheDeployable)msg);
         }
 
@@ -766,8 +776,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @return ID that auto-grows based on local counter and counters received
-     *      from other nodes.
+     * @return ID that auto-grows based on local counter and counters received from other nodes.
      */
     public long nextIoId() {
         return idGen.incrementAndGet();
@@ -784,8 +793,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     public void sendNoRetry(ClusterNode node,
         GridCacheMessage msg,
         byte plc)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         assert node != null;
         assert msg != null;
 

@@ -38,7 +38,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
-public class IgniteClientNodeAffinityTest extends GridCommonAbstractTest {
+public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
     /** */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 

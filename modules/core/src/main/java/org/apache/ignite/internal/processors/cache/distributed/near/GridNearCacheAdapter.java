@@ -221,34 +221,9 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         return true;
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "RedundantCast"})
-    @Override public IgniteInternalFuture<Object> readThroughAllAsync(
-        Collection<KeyCacheObject> keys,
-        boolean reload,
-        boolean skipVals,
-        IgniteInternalTx tx,
-        @Nullable UUID subjId,
-        String taskName,
-        IgniteBiInClosure<KeyCacheObject, Object> vis
-    ) {
-        return (IgniteInternalFuture)loadAsync(tx,
-            keys,
-            reload,
-            /*force primary*/false,
-            subjId,
-            taskName,
-            /*deserialize portable*/true,
-            /*expiry policy*/null,
-            skipVals,
-            /*skip store*/false,
-            /*can remap*/true);
-    }
-
     /**
      * @param tx Transaction.
      * @param keys Keys to load.
-     * @param reload Reload flag.
      * @param forcePrimary Force primary flag.
      * @param subjId Subject ID.
      * @param taskName Task name.
@@ -256,11 +231,11 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param expiryPlc Expiry policy.
      * @param skipVal Skip value flag.
      * @param skipStore Skip store flag.
+     * @param canRemap Can remap flag.
      * @return Loaded values.
      */
     public IgniteInternalFuture<Map<K, V>> loadAsync(@Nullable IgniteInternalTx tx,
         @Nullable Collection<KeyCacheObject> keys,
-        boolean reload,
         boolean forcePrimary,
         @Nullable UUID subjId,
         String taskName,
@@ -280,7 +255,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
             !skipStore,
-            reload,
             forcePrimary,
             txx,
             subjId,
@@ -288,7 +262,9 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             deserializePortable,
             expiry,
             skipVal,
-            canRemap);
+            canRemap,
+            false,
+            false);
 
         // init() will register future for responses if future has remote mappings.
         fut.init();

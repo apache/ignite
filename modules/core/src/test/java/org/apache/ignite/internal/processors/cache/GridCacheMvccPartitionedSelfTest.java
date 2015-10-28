@@ -595,6 +595,170 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testSerializableLocks() throws Exception {
+        checkSerializableAdd(false);
+
+        checkSerializableAdd(true);
+
+        checkNonSerializableConflict();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkNonSerializableConflict() throws Exception {
+        GridCacheAdapter<String, String> cache = grid.internalCache();
+
+        UUID nodeId = UUID.randomUUID();
+
+        GridCacheMvcc mvcc = new GridCacheMvcc(cache.context());
+
+        GridCacheTestEntryEx e = new GridCacheTestEntryEx(cache.context(), "1");
+
+        GridCacheMvccCandidate cand1 = mvcc.addLocal(e,
+            nodeId,
+            null,
+            1,
+            version(1),
+            0,
+            null,
+            false,
+            true,
+            false,
+            true
+        );
+
+        assertNotNull(cand1);
+
+        GridCacheMvccCandidate cand2 = mvcc.addLocal(e,
+            nodeId,
+            null,
+            1,
+            version(2),
+            0,
+            new GridCacheVersion(0, 0, 30, 1),
+            false,
+            true,
+            false,
+            true
+        );
+
+        assertNull(cand2);
+    }
+
+    /**
+     * @param incVer If {@code true} lock version is incremented.
+     * @throws Exception If failed.
+     */
+    private void checkSerializableAdd(boolean incVer) throws Exception {
+        GridCacheAdapter<String, String> cache = grid.internalCache();
+
+        UUID nodeId = UUID.randomUUID();
+
+        GridCacheMvcc mvcc = new GridCacheMvcc(cache.context());
+
+        GridCacheTestEntryEx e = new GridCacheTestEntryEx(cache.context(), "1");
+
+        GridCacheVersion serOrder1 = new GridCacheVersion(0, 0, 10, 1);
+        GridCacheVersion serOrder2 = new GridCacheVersion(0, 0, 20, 1);
+        GridCacheVersion serOrder3 = new GridCacheVersion(0, 0, 15, 1);
+        GridCacheVersion serOrder4 = new GridCacheVersion(0, 0, 30, 1);
+
+        GridCacheVersion ver1 = incVer ? version(1) : version(4);
+        GridCacheVersion ver2 = incVer ? version(2) : version(3);
+        GridCacheVersion ver3 = incVer ? version(3) : version(2);
+        GridCacheVersion ver4 = incVer ? version(4) : version(1);
+
+        GridCacheMvccCandidate cand1 = mvcc.addLocal(e,
+            nodeId,
+            null,
+            1,
+            ver1,
+            0,
+            serOrder1,
+            false,
+            true,
+            false,
+            true
+            );
+
+        assertNotNull(cand1);
+
+        GridCacheMvccCandidate cand2 = mvcc.addLocal(e,
+            nodeId,
+            null,
+            2,
+            ver2,
+            0,
+            serOrder2,
+            false,
+            true,
+            false,
+            true
+        );
+
+        assertNotNull(cand2);
+
+        GridCacheMvccCandidate cand3 = mvcc.addLocal(e,
+            nodeId,
+            null,
+            3,
+            ver3,
+            0,
+            serOrder3,
+            false,
+            true,
+            false,
+            true
+        );
+
+        assertNull(cand3);
+
+        GridCacheMvccCandidate cand4 = mvcc.addLocal(e,
+            nodeId,
+            null,
+            4,
+            ver4,
+            0,
+            serOrder4,
+            false,
+            true,
+            false,
+            true
+        );
+
+        assertNotNull(cand4);
+
+        GridCacheMvccCandidate owner = mvcc.recheck();
+
+        assertNull(owner);
+
+        cand2.setReady();
+
+        owner = mvcc.recheck();
+
+        assertNull(owner);
+
+        cand1.setReady();
+
+        owner = mvcc.recheck();
+
+        assertSame(cand1, owner);
+
+        owner = mvcc.recheck();
+
+        assertSame(cand1, owner);
+
+        mvcc.remove(cand1.version());
+
+        owner = mvcc.recheck();
+
+        assertSame(cand2, owner);
+    }
+
+    /**
      * Gets version based on order.
      *
      * @param order Order.

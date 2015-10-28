@@ -15,18 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.cache.CacheEntryProcessor;
 
 /**
- * Tests exclude neighbors flag for rendezvous affinity function.
+ * Entry processor used by {@code GridCacheEntryProcessorDeploymentSelfTest}.
  */
-public class GridCacheRendezvousAffinityFunctionExcludeNeighborsSelfTest extends
-    GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest {
+public class CacheDeploymentPortableEntryProcessor implements CacheEntryProcessor<String, String, Boolean> {
     /** {@inheritDoc} */
-    @Override protected AffinityFunction affinityFunction() {
-        return new RendezvousAffinityFunction(true);
+    @Override public Boolean process(MutableEntry<String, String> entry, Object... arguments)
+        throws EntryProcessorException {
+        String val = entry.getKey();
+
+        return true;
     }
 }
