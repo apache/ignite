@@ -66,6 +66,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Current type structure tracker. */
         private PortableStructureTracker _curStruct;
 
+        /** */
+        private int _curFooterStart;
+
+        /** */
+        private int _curFooterEnd;
+
 
         /// <summary>
         /// Constructor.
@@ -669,10 +675,14 @@ namespace Apache.Ignite.Core.Impl.Portable
                     int oldRawOffset = _curRawOffset;
                     var oldStruct = _curStruct;
                     bool oldRaw = _curRaw;
+                    var oldFooterStart = _curFooterStart;
+                    var oldFooterEnd = _curFooterEnd;
 
                     // Set new frame.
                     _curTypeId = hdr.TypeId;
                     _curPos = pos;
+                    _curFooterStart = pos + hdr.SchemaOffset;
+                    _curFooterEnd = pos + hdr.Length;
                             
                     _curRawOffset = hdr.SchemaOffset;
 
@@ -681,6 +691,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         // Odd amount of records in schema => raw offset is the very last 4 bytes in object.
                         Stream.Seek(pos + hdr.Length - 4, SeekOrigin.Begin);
                         _curRawOffset = Stream.ReadInt();
+                        _curFooterEnd -= 4;
                     }
 
                     _curStruct = new PortableStructureTracker(desc, desc.ReaderTypeStructure);
@@ -721,6 +732,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _curRawOffset = oldRawOffset;
                     _curStruct = oldStruct;
                     _curRaw = oldRaw;
+                    _curFooterStart = oldFooterStart;
+                    _curFooterEnd = oldFooterEnd;
 
                     // Process wrappers. We could introduce a common interface, but for only 2 if-else is faster.
                     var wrappedSerializable = obj as SerializableObjectHolder;
