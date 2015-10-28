@@ -1174,24 +1174,18 @@ namespace Apache.Ignite.Core.Impl.Portable
                 desc.Serializer.WritePortable(obj, this);
 
                 // Write schema
-                bool hasSchema = _curSchema.Count > 0;
-                int schemaOffset = hasSchema ? _stream.Position - pos : sizeof(PortableObjectHeader);
+                var hasSchema = _curSchema.Count > 0;
+                var schemaOffset = hasSchema ? _stream.Position - pos : sizeof(PortableObjectHeader);
 
                 if (hasSchema)
                     PortableObjectSchemaField.WriteArray(_curSchema.Array, _stream, _curSchema.Count);
 
                 // Calculate and write header.
-                int len = _stream.Position - pos;
-                
                 if (hasSchema && _curRawPos > 0)
-                {
-                    // raw offset is in the last 4 bytes
-                    int rawOff = _curRawPos - pos;
-                    len += 4;
-                    _stream.WriteInt(rawOff);
-                }
+                    _stream.WriteInt(_curRawPos - pos); // raw offset is in the last 4 bytes
 
-                // Write header
+                var len = _stream.Position - pos;
+
                 var header = new PortableObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len, _curSchemaId,
                     schemaOffset, !hasSchema);
 

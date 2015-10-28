@@ -623,8 +623,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         [SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals", MessageId = "hashCode")]
         private unsafe T ReadFullObject<T>(int pos)
         {
-            var hdr = new PortableObjectHeader();
-            Stream.Read((byte*) &hdr, pos, sizeof (PortableObjectHeader));
+            var hdr = PortableObjectHeader.Read(Stream, pos);
 
             // Validate protocol version.
             PortableUtils.ValidateProtocolVersion(hdr.Version);
