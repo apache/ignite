@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
+    using System.IO;
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Impl.Portable.IO;
 
@@ -29,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         public readonly byte Header;
         public readonly byte Version;
-        public readonly ushort Flags;
+        public readonly short Flags;
         public readonly int Length;
         public readonly int TypeId;
         public readonly int HashCode;
@@ -38,7 +39,16 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         private PortableObjectHeader(IPortableStream stream, int position)
         {
-            throw new NotImplementedException();
+            stream.Seek(position, SeekOrigin.Begin);
+
+            Header = stream.ReadByte();
+            Version = stream.ReadByte();
+            Flags = stream.ReadShort();
+            Length = stream.ReadInt();
+            TypeId = stream.ReadInt();
+            HashCode = stream.ReadInt();
+            SchemaId = stream.ReadInt();
+            SchemaOffset = stream.ReadInt();
         }
 
         public bool IsUserType
