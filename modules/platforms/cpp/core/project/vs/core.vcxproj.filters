@@ -82,6 +82,9 @@
     <ClCompile Include="..\..\src\impl\portable\portable_metadata_updater_impl.cpp">
       <Filter>Code\impl\portable</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\portable\portable_schema.cpp">
+      <Filter>Code\impl\portable</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h">
@@ -215,6 +218,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_stream_position_guard.h">
       <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\portable\portable_schema.h">
+      <Filter>Code\impl\portable</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

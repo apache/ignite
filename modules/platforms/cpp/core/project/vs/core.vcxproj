@@ -221,6 +221,7 @@
     <ClInclude Include="..\..\include\ignite\impl\portable\portable_metadata_updater.h" />
     <ClInclude Include="..\..\include\ignite\impl\portable\portable_metadata_updater_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\portable\portable_reader_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\portable\portable_schema.h" />
     <ClInclude Include="..\..\include\ignite\impl\portable\portable_utils.h" />
     <ClInclude Include="..\..\include\ignite\impl\portable\portable_writer_impl.h" />
     <ClInclude Include="..\..\include\ignite\portable\portable.h" />
@@ -253,6 +254,7 @@
     <ClCompile Include="..\..\src\impl\portable\portable_metadata_updater.cpp" />
     <ClCompile Include="..\..\src\impl\portable\portable_metadata_updater_impl.cpp" />
     <ClCompile Include="..\..\src\impl\portable\portable_reader_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\portable\portable_schema.cpp" />
     <ClCompile Include="..\..\src\impl\portable\portable_utils.cpp" />
     <ClCompile Include="..\..\src\impl\portable\portable_writer_impl.cpp" />
     <ClCompile Include="..\..\src\portable\portable_containers.cpp" />

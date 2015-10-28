@@ -30,6 +30,7 @@
 #include "ignite/impl/portable/portable_id_resolver.h"
 #include "ignite/impl/portable/portable_metadata_manager.h"
 #include "ignite/impl/portable/portable_utils.h"
+#include "ignite/impl/portable/portable_schema.h"
 #include "ignite/portable/portable_consts.h"
 #include "ignite/portable/portable_type.h"
 #include "ignite/guid.h"
@@ -618,24 +619,22 @@ namespace ignite
 
                         type.Write(writer, obj);
 
-                        int32_t schemaOrRawOffset = stream->Position() - pos;
+                        int32_t lenWithoutSchema = stream->Position() - pos;
 
-                        if (writerImpl.fieldsInfo)
+                        if (writerImpl.schema.Empty())
                         {
                             stream->Position(pos + IGNITE_OFFSET_FLAGS);
                             stream->WriteInt16(IGNITE_PORTABLE_FLAG_USER_OBJECT | IGNITE_PORTABLE_FLAG_RAW_ONLY);
 
-                            stream->WriteInt32(pos + IGNITE_OFFSET_LEN, schemaOrRawOffset);
+                            stream->WriteInt32(pos + IGNITE_OFFSET_LEN, lenWithoutSchema);
                             stream->WriteInt32(pos + IGNITE_OFFSET_SCHEMA_ID, 0);
                             stream->WriteInt32(pos + IGNITE_OFFSET_SCHEMA_OR_RAW_OFF, writerImpl.GetRawPosition() - pos);
                         }
                         else
                         {
-                            for (size_t i = 0; i != fieldsNum; ++i)
-                            {
-                                stream->WriteInt32(writerImpl.fieldsInfo[i].id);
-                                stream->WriteInt32(writerImpl.fieldsInfo[i].offset);
-                            }
+                            int32_t schemaId = writerImpl.schema.GetId();
+
+                            writerImpl.WriteAndClearSchema();
 
                             if (writerImpl.rawPos > 0)
                                 stream->WriteInt32(rawPos - pos);
@@ -643,8 +642,8 @@ namespace ignite
                             int32_t length = stream->Position() - pos;
 
                             stream->WriteInt32(pos + IGNITE_OFFSET_LEN, length);
-                            stream->WriteInt32(pos + IGNITE_OFFSET_SCHEMA_ID, writerImpl.schemaId);
-                            stream->WriteInt32(pos + IGNITE_OFFSET_SCHEMA_OR_RAW_OFF, schemaOrRawOffset);
+                            stream->WriteInt32(pos + IGNITE_OFFSET_SCHEMA_ID, schemaId);
+                            stream->WriteInt32(pos + IGNITE_OFFSET_SCHEMA_OR_RAW_OFF, lenWithoutSchema);
                         }
 
                         if (metaMgr)
@@ -653,18 +652,25 @@ namespace ignite
                 }
 
                 /**
+                 * Check if the writer has object schema.
+                 *
+                 * @return True if has schema.
+                 */
+                bool HasSchema() const;
+
+                
+                /**
+                 * Writes contating schema and clears current schema.
+                 */
+                void WriteAndClearSchema();
+
+                /**
                  * Get underlying stream.
                  *
                  * @return Stream.
                  */
                 impl::interop::InteropOutputStream* GetStream();
             private:
-                struct FieldInfo
-                {
-                    int32_t id;
-                    int32_t offset;
-                };
-
                 /** Underlying stream. */
                 ignite::impl::interop::InteropOutputStream* stream; 
                 
@@ -695,14 +701,8 @@ namespace ignite
                 /** Raw data offset. */
                 int32_t rawPos;
 
-                /** Information about written fields. */
-                FieldInfo* fieldsInfo;
-
-                /** Number of written fields. */
-                size_t fieldsNum;
-
-                /** Schema ID. */
-                int32_t schemaId;
+                /** Schema of the current object. */
+                PortableSchema schema;
 
                 IGNITE_NO_COPY_ASSIGNMENT(PortableWriterImpl)
 

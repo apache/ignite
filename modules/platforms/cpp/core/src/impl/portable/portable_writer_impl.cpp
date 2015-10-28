@@ -591,6 +591,18 @@ namespace ignite
                 WriteTopObject0<Guid>(obj, PortableUtils::WriteGuid, IGNITE_TYPE_UUID);
             }
 
+            bool PortableWriterImpl::HasSchema() const
+            {
+                return !schema.Empty();
+            }
+
+            void PortableWriterImpl::WriteAndClearSchema()
+            {
+                schema.Write(*stream);
+                    
+                schema.Clear();
+            }
+
             InteropOutputStream* PortableWriterImpl::GetStream()
             {
                 return stream;

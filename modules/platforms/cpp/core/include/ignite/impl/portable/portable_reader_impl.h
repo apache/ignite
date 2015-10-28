@@ -25,7 +25,7 @@
 #include "ignite/impl/interop/interop_input_stream.h"
 #include "ignite/impl/portable/portable_common.h"
 #include "ignite/impl/portable/portable_id_resolver.h"
-#include "ignite/impl/portable/portable_utils.h"
+#include "ignite/impl/portable/portable_schema.h"
 #include "ignite/impl/utils.h"
 #include "ignite/portable/portable_consts.h"
 #include "ignite/portable/portable_type.h"
