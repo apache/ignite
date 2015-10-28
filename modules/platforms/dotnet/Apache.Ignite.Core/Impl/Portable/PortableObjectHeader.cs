@@ -31,9 +31,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         public readonly byte Header;
         public readonly byte Version;
         public readonly short Flags;
-        public readonly int Length;
         public readonly int TypeId;
         public readonly int HashCode;
+        public readonly int Length;
         public readonly int SchemaId;
         public readonly int SchemaOffset;
 
