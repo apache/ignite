@@ -689,7 +689,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _curRaw = false;
 
                     // Read object.
-                    Stream.Seek(pos + sizeof (PortableObjectHeader), SeekOrigin.Begin);
+                    Stream.Seek(pos + PortableObjectHeader.Size, SeekOrigin.Begin);
 
                     object obj;
 

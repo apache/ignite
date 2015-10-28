@@ -1146,7 +1146,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     return;
 
                 // Skip header length as not everything is known now
-                _stream.Seek(sizeof(PortableObjectHeader), SeekOrigin.Current);
+                _stream.Seek(PortableObjectHeader.Size, SeekOrigin.Current);
 
                 // Preserve old frame.
                 int oldTypeId = _curTypeId;
@@ -1175,7 +1175,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 // Write schema
                 var hasSchema = _curSchema != null;
-                var schemaOffset = hasSchema ? _stream.Position - pos : sizeof(PortableObjectHeader);
+                var schemaOffset = hasSchema ? _stream.Position - pos : PortableObjectHeader.Size;
 
                 if (hasSchema)
                     PortableObjectSchemaField.WriteArray(_curSchema.Array, _stream, _curSchema.Count);

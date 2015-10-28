@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 fixed (PortableObjectSchemaField* ptr = &fields[0])
                 {
-                    stream.Write((byte*) ptr, sizeof (PortableObjectSchemaField) * count);
+                    stream.Write((byte*)ptr, PortableObjectHeader.Size * count);
                 }
             }
             else

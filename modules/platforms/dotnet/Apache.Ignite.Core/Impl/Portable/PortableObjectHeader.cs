@@ -25,6 +25,8 @@ namespace Apache.Ignite.Core.Impl.Portable
     [StructLayout(LayoutKind.Sequential)]
     internal struct PortableObjectHeader : IEquatable<PortableObjectHeader>
     {
+        public const int Size = 12;
+
         private const int FlagUserType = 0x1;
         private const int FlagRawOnly = 0x2;
 
@@ -109,7 +111,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             return stream.ReadInt();
         }
 
-        public unsafe int SchemaFieldCount
+        public int SchemaFieldCount
         {
             get
             {
@@ -121,7 +123,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (HasRawOffset)
                     schemaSize -= 4;
 
-                return schemaSize / sizeof (PortableObjectSchemaField);
+                return schemaSize / Size;
             }
         }
 
@@ -130,7 +132,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             stream.Seek(position, SeekOrigin.Begin);
 
             if (BitConverter.IsLittleEndian)
-                stream.Write((byte*) hdr, sizeof (PortableObjectHeader));
+                stream.Write((byte*) hdr, Size);
             else
                 hdr->Write(stream);
         }
@@ -143,7 +145,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 
                 var hdr = new PortableObjectHeader();
 
-                stream.Read((byte*) &hdr, sizeof (PortableObjectHeader));
+                stream.Read((byte*) &hdr, Size);
 
                 return hdr;
             }

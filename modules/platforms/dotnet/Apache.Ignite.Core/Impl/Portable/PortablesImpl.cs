@@ -164,7 +164,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Empty portable object.</returns>
         private unsafe PortableUserObject PortableFromDescriptor(IPortableTypeDescriptor desc)
         {
-            var len = sizeof (PortableObjectHeader);
+            var len = PortableObjectHeader.Size;
 
             var hdr = new PortableObjectHeader(desc.UserType, desc.TypeId, 0, len, 0, len, true);
 

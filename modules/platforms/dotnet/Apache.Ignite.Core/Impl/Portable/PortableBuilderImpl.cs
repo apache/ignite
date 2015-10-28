@@ -350,16 +350,16 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public IPortableObject Build()
+        public unsafe IPortableObject Build()
         {
             PortableHeapStream inStream = new PortableHeapStream(_obj.Data);
 
             inStream.Seek(_obj.Offset, SeekOrigin.Begin);
 
             // Assume that resulting length will be no less than header + [fields_cnt] * 12;
-            int len = PortableUtils.FullHdrLen + (_vals == null ? 0 : _vals.Count * 12);
+            int estimatedCapacity = PortableObjectHeader.Size + (_vals == null ? 0 : _vals.Count*12);
 
-            PortableHeapStream outStream = new PortableHeapStream(len);
+            PortableHeapStream outStream = new PortableHeapStream(estimatedCapacity);
 
             PortableWriterImpl writer = _portables.Marshaller.StartMarshal(outStream);
 
