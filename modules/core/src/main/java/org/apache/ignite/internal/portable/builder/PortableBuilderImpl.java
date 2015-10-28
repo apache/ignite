@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.portable.builder;
 
-import org.apache.ignite.internal.portable.PortableClassDescriptor;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableObjectImpl;
 import org.apache.ignite.internal.portable.PortableObjectOffheapImpl;
@@ -376,7 +375,7 @@ public class PortableBuilderImpl implements PortableBuilder {
             reader.position(start + PortableUtils.length(reader, start));
         }
 
-        writer.postWrite(0, true);
+        writer.postWrite(true);
     }
 
     /** {@inheritDoc} */

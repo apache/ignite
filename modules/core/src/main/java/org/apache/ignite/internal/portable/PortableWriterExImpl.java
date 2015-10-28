@@ -93,6 +93,12 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /** */
     private static final int INIT_CAP = 1024;
 
+    /** FNV1 hash offset basis. */
+    private static final int FNV1_OFFSET_BASIS = 0x811C9DC5;
+
+    /** FNV1 hash prime. */
+    private static final int FNV1_PRIME = 0x01000193;
+
     /** Thread-local schema. */
     private static final ThreadLocal<SchemaHolder> SCHEMA = new ThreadLocal<>();
 
@@ -125,6 +131,9 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
     /** Schema. */
     private SchemaHolder schema;
+
+    /** Schema ID. */
+    private int schemaId;
 
     /** Amount of written fields. */
     private int fieldCnt;
@@ -317,13 +326,12 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /**
      * Perform post-write activity. This includes:
      * - writing object length;
-     * - writing schema ID;
      * - writing schema offset;
      * - writing schema to the tail.
      *
      * @param userType User type flag.
      */
-    public void postWrite(int schemaId, boolean userType) {
+    public void postWrite(boolean userType) {
         if (schema != null) {
             // Write schema ID.
             out.writeInt(start + SCHEMA_ID_POS, schemaId);
@@ -1713,7 +1721,22 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
                 SCHEMA.set(schema);
             }
+
+            // Initialize offset when the first field is written.
+            schemaId = FNV1_OFFSET_BASIS;
         }
+
+        // Advance schema hash.
+        int schemaId0 = schemaId ^ (fieldId & 0xFF);
+        schemaId0 = schemaId0 * FNV1_PRIME;
+        schemaId0 = schemaId0 ^ ((fieldId >> 8) & 0xFF);
+        schemaId0 = schemaId0 * FNV1_PRIME;
+        schemaId0 = schemaId0 ^ ((fieldId >> 16) & 0xFF);
+        schemaId0 = schemaId0 * FNV1_PRIME;
+        schemaId0 = schemaId0 ^ ((fieldId >> 24) & 0xFF);
+        schemaId0 = schemaId0 * FNV1_PRIME;
+
+        schemaId = schemaId0;
 
         schema.push(fieldId, fieldOff);
 
