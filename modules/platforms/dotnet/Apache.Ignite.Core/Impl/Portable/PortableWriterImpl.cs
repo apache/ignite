@@ -1167,14 +1167,14 @@ namespace Apache.Ignite.Core.Impl.Portable
                 _curPos = pos;
 
                 _curStruct = new PortableStructureTracker(desc, desc.WriterTypeStructure);
-                _curSchema = new ResizeableArray<PortableObjectSchemaField>(4);
+                _curSchema = null;
                 _curSchemaId = Fnv1OffsetBasis;
 
                 // Write object fields.
                 desc.Serializer.WritePortable(obj, this);
 
                 // Write schema
-                var hasSchema = _curSchema.Count > 0;
+                var hasSchema = _curSchema != null;
                 var schemaOffset = hasSchema ? _stream.Position - pos : sizeof(PortableObjectHeader);
 
                 if (hasSchema)
@@ -1471,6 +1471,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 _curSchemaId = schemaId0;
             }
+
+            _curSchema = _curSchema ?? new ResizeableArray<PortableObjectSchemaField>(4);
 
             _curSchema.Add(new PortableObjectSchemaField(fieldId, _stream.Position - _curPos));
         }
