@@ -17,7 +17,10 @@
 
 namespace Apache.Ignite.Core.Impl.Portable
 {
+    using System;
+    using System.Diagnostics;
     using System.Runtime.InteropServices;
+    using Apache.Ignite.Core.Impl.Portable.IO;
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct PortableObjectSchemaField
@@ -29,6 +32,28 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             Id = id;
             Offset = offset;
+        }
+
+        public static unsafe void WriteArray(PortableObjectSchemaField[] fields, IPortableStream stream)
+        {
+            Debug.Assert(fields != null);
+            Debug.Assert(fields.Length > 0);
+
+            if (BitConverter.IsLittleEndian)
+            {
+                fixed (PortableObjectSchemaField* ptr = &fields[0])
+                {
+                    stream.Write((byte*) ptr, sizeof (PortableObjectSchemaField) * fields.Length);
+                }
+            }
+            else
+            {
+                foreach (var field in fields)
+                {
+                    stream.WriteInt(field.Id);
+                    stream.WriteInt(field.Offset);
+                }
+            }
         }
     }
 }

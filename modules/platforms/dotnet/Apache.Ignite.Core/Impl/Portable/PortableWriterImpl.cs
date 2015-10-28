@@ -64,14 +64,24 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Current raw position. */
         private int _curRawPos;
 
+        /** Whether we are currently detaching an object. */
+        private bool _detaching;
+
         /** Current type structure tracker, */
         private PortableStructureTracker _curStruct;
 
         /** Current schema. */
         private ResizeableArray<PortableObjectSchemaField> _curSchema;
 
-        /** Whether we are currently detaching an object. */
-        private bool _detaching;
+        /** Current schema id. */
+        private int _curSchemaId;
+
+        /** FNV1 basis. */
+        private const int Fnv1OffsetBasis = unchecked((int) 0x811C9DC5);
+
+        /** FNV1 offset. */
+        private const int Fnv1Prime = 0x01000193;
+
 
         /// <summary>
         /// Gets the marshaller.
@@ -1147,6 +1157,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 
                 var oldStruct = _curStruct;
                 var oldSchema = _curSchema;
+                var oldSchemaId = _curSchemaId;
 
                 // Push new frame.
                 _curTypeId = desc.TypeId;
@@ -1157,17 +1168,16 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 _curStruct = new PortableStructureTracker(desc, desc.WriterTypeStructure);
                 _curSchema = new ResizeableArray<PortableObjectSchemaField>(4);
+                _curSchemaId = Fnv1OffsetBasis;
 
                 // Write object fields.
                 desc.Serializer.WritePortable(obj, this);
 
                 // Write schema
                 bool hasSchema = _curSchema.Count > 0;
-                int schemaPos = _stream.Position;
-                int schemaOffset = hasSchema ? schemaPos - pos : sizeof(PortableObjectHeader);
+                int schemaOffset = hasSchema ? _stream.Position - pos : sizeof(PortableObjectHeader);
 
-                // ..schema goes here..
-                _curSchema.Count
+                PortableObjectSchemaField.WriteArray(_curSchema.Array, _stream);
 
                 // Calculate and write header.
                 int len = _stream.Position - pos;
@@ -1181,8 +1191,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 }
 
                 // Write header
-                var header = new PortableObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len, 0,
-                    schemaOffset); // TODO: SchemaId
+                var header = new PortableObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len, _curSchemaId,
+                    schemaOffset);
 
                 PortableObjectHeader.Write(&header, _stream, pos);
 
@@ -1198,6 +1208,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 _curStruct = oldStruct;
                 _curSchema = oldSchema;
+                _curSchemaId = oldSchemaId;
             }
             else
             {
@@ -1436,7 +1447,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             return true;
         }
-        
+
         /// <summary>
         /// Write field ID.
         /// </summary>
@@ -1447,8 +1458,24 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_curRawPos != 0)
                 throw new PortableException("Cannot write named fields after raw data is written.");
 
-            _curSchema.Add(new PortableObjectSchemaField(_curStruct.GetFieldId(fieldName, fieldTypeId), 
-                _stream.Position - _curPos));
+            var fieldId = _curStruct.GetFieldId(fieldName, fieldTypeId);
+
+            unchecked
+            {
+                var schemaId0 = _curSchemaId ^ (fieldId & 0xFF);
+
+                schemaId0 = schemaId0 * Fnv1Prime;
+                schemaId0 = schemaId0 ^ ((fieldId >> 8) & 0xFF);
+                schemaId0 = schemaId0 * Fnv1Prime;
+                schemaId0 = schemaId0 ^ ((fieldId >> 16) & 0xFF);
+                schemaId0 = schemaId0 * Fnv1Prime;
+                schemaId0 = schemaId0 ^ ((fieldId >> 24) & 0xFF);
+                schemaId0 = schemaId0 * Fnv1Prime;
+
+                _curSchemaId = schemaId0;
+            }
+
+            _curSchema.Add(new PortableObjectSchemaField(fieldId, _stream.Position - _curPos));
         }
 
         /// <summary>
