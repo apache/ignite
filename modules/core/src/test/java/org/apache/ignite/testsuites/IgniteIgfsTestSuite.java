@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsSizeSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsStartCacheTest;
 import org.apache.ignite.internal.processors.igfs.IgfsStreamsSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsTaskSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsWriteFailoverCleanupSelfTest;
 import org.apache.ignite.internal.processors.igfs.split.IgfsByteDelimiterRecordResolverSelfTest;
 import org.apache.ignite.internal.processors.igfs.split.IgfsFixedLengthRecordResolverSelfTest;
 import org.apache.ignite.internal.processors.igfs.split.IgfsNewLineDelimiterRecordResolverSelfTest;
@@ -122,6 +123,7 @@ public class IgniteIgfsTestSuite extends TestSuite {
         suite.addTestSuite(IgfsBackupsDualAsyncSelfTest.class);
 
         suite.addTestSuite(IgfsBackupFailoverSelfTest.class);
+        suite.addTestSuite(IgfsWriteFailoverCleanupSelfTest.class);
 
         return suite;
     }
