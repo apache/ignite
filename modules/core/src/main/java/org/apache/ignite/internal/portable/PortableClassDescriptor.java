@@ -38,6 +38,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
@@ -62,6 +63,9 @@ public class PortableClassDescriptor {
 
     /** */
     private final PortableSerializer serializer;
+
+    /** ID mapper. */
+    private final PortableIdMapper idMapper;
 
     /** */
     private final Mode mode;
@@ -102,6 +106,9 @@ public class PortableClassDescriptor {
     /** */
     private final boolean excluded;
 
+    /** Object schemas. */
+    private volatile Object schemas;
+
     /**
      * @param ctx Context.
      * @param cls Class.
@@ -138,6 +145,7 @@ public class PortableClassDescriptor {
         this.typeId = typeId;
         this.typeName = typeName;
         this.serializer = serializer;
+        this.idMapper = idMapper;
         this.keepDeserialized = keepDeserialized;
         this.registered = registered;
 
@@ -307,6 +315,74 @@ public class PortableClassDescriptor {
     }
 
     /**
+     * Get ID mapper.
+     *
+     * @return ID mapper.
+     */
+    public PortableIdMapper idMapper() {
+        return idMapper;
+    }
+
+    /**
+     * Get schema for the given schema ID.
+     *
+     * @param schemaId Schema ID.
+     * @return Schema or {@code null} if there are no such schema.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable public PortableObjectSchema schema(int schemaId) {
+        Object schemas0 = schemas;
+
+        if (schemas0 instanceof IgniteBiTuple) {
+            // The most common case goes first.
+            IgniteBiTuple<Integer, PortableObjectSchema> curSchema =
+                (IgniteBiTuple<Integer, PortableObjectSchema>)schemas0;
+
+            if (curSchema.get1() == schemaId)
+                return curSchema.get2();
+        }
+        else if (schemas0 instanceof Map) {
+            Map<Integer, PortableObjectSchema> curSchemas = (Map<Integer, PortableObjectSchema>)schemas0;
+
+            return curSchemas.get(schemaId);
+        }
+
+        return null;
+    }
+
+    /**
+     * Add schema.
+     *
+     * @param schemaId Schema ID.
+     * @param fields Fields.
+     */
+    @SuppressWarnings("unchecked")
+    public void addSchema(int schemaId, Map<Integer, Integer> fields) {
+        synchronized (this) {
+            if (schemas == null)
+                schemas = new IgniteBiTuple<>(schemaId, new PortableObjectSchema(schemaId, fields));
+            else if (schemas instanceof IgniteBiTuple) {
+                IgniteBiTuple<Integer, PortableObjectSchema> curSchema =
+                    (IgniteBiTuple<Integer, PortableObjectSchema>)schemas;
+
+                if (curSchema.get1() != schemaId) {
+                    Map newSchemas = new HashMap();
+
+                    newSchemas.put(curSchema.get1(), curSchema.get2());
+                    newSchemas.put(schemaId, new PortableObjectSchema(schemaId, fields));
+
+                    schemas = newSchemas;
+                }
+            }
+            else {
+                Map<Integer, PortableObjectSchema> curSchemas = (Map<Integer, PortableObjectSchema>)schemas;
+
+                curSchemas.put(schemaId, new PortableObjectSchema(schemaId, fields));
+            }
+        }
+    }
+
+    /**
      * @return portableWriteReplace() method
      */
     @Nullable Method getWriteReplaceMethod() {
@@ -409,57 +485,57 @@ public class PortableClassDescriptor {
                 break;
 
             case SHORT_ARR:
-                writer.doWriteShortArray((short[])obj);
+                writer.doWriteShortArray((short[]) obj);
 
                 break;
 
             case INT_ARR:
-                writer.doWriteIntArray((int[])obj);
+                writer.doWriteIntArray((int[]) obj);
 
                 break;
 
             case LONG_ARR:
-                writer.doWriteLongArray((long[])obj);
+                writer.doWriteLongArray((long[]) obj);
 
                 break;
 
             case FLOAT_ARR:
-                writer.doWriteFloatArray((float[])obj);
+                writer.doWriteFloatArray((float[]) obj);
 
                 break;
 
             case DOUBLE_ARR:
-                writer.doWriteDoubleArray((double[])obj);
+                writer.doWriteDoubleArray((double[]) obj);
 
                 break;
 
             case CHAR_ARR:
-                writer.doWriteCharArray((char[])obj);
+                writer.doWriteCharArray((char[]) obj);
 
                 break;
 
             case BOOLEAN_ARR:
-                writer.doWriteBooleanArray((boolean[])obj);
+                writer.doWriteBooleanArray((boolean[]) obj);
 
                 break;
 
             case DECIMAL_ARR:
-                writer.doWriteDecimalArray((BigDecimal[])obj);
+                writer.doWriteDecimalArray((BigDecimal[]) obj);
 
                 break;
 
             case STRING_ARR:
-                writer.doWriteStringArray((String[])obj);
+                writer.doWriteStringArray((String[]) obj);
 
                 break;
 
             case UUID_ARR:
-                writer.doWriteUuidArray((UUID[])obj);
+                writer.doWriteUuidArray((UUID[]) obj);
 
                 break;
 
             case DATE_ARR:
-                writer.doWriteDateArray((Date[])obj);
+                writer.doWriteDateArray((Date[]) obj);
 
                 break;
 
@@ -927,57 +1003,57 @@ public class PortableClassDescriptor {
                     break;
 
                 case SHORT_ARR:
-                    writer.writeShortArrayField((short[])val);
+                    writer.writeShortArrayField((short[]) val);
 
                     break;
 
                 case INT_ARR:
-                    writer.writeIntArrayField((int[])val);
+                    writer.writeIntArrayField((int[]) val);
 
                     break;
 
                 case LONG_ARR:
-                    writer.writeLongArrayField((long[])val);
+                    writer.writeLongArrayField((long[]) val);
 
                     break;
 
                 case FLOAT_ARR:
-                    writer.writeFloatArrayField((float[])val);
+                    writer.writeFloatArrayField((float[]) val);
 
                     break;
 
                 case DOUBLE_ARR:
-                    writer.writeDoubleArrayField((double[])val);
+                    writer.writeDoubleArrayField((double[]) val);
 
                     break;
 
                 case CHAR_ARR:
-                    writer.writeCharArrayField((char[])val);
+                    writer.writeCharArrayField((char[]) val);
 
                     break;
 
                 case BOOLEAN_ARR:
-                    writer.writeBooleanArrayField((boolean[])val);
+                    writer.writeBooleanArrayField((boolean[]) val);
 
                     break;
 
                 case DECIMAL_ARR:
-                    writer.writeDecimalArrayField((BigDecimal[])val);
+                    writer.writeDecimalArrayField((BigDecimal[]) val);
 
                     break;
 
                 case STRING_ARR:
-                    writer.writeStringArrayField((String[])val);
+                    writer.writeStringArrayField((String[]) val);
 
                     break;
 
                 case UUID_ARR:
-                    writer.writeUuidArrayField((UUID[])val);
+                    writer.writeUuidArrayField((UUID[]) val);
 
                     break;
 
                 case DATE_ARR:
-                    writer.writeDateArrayField((Date[])val);
+                    writer.writeDateArrayField((Date[]) val);
 
                     break;
 

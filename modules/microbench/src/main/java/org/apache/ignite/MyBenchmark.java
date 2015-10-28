@@ -31,16 +31,20 @@
 
 package org.apache.ignite;
 
+import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableMetaDataHandler;
+import org.apache.ignite.internal.portable.PortableObjectImpl;
 import org.apache.ignite.internal.portable.streams.PortableSimpleMemoryAllocator;
 import org.apache.ignite.internal.util.IgniteUtils;
 
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.portable.PortableException;
 import org.apache.ignite.portable.PortableMarshalAware;
 import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.portable.PortableObject;
 import org.apache.ignite.portable.PortableReader;
 import org.apache.ignite.portable.PortableWriter;
 import org.apache.ignite.util.MarshallerContextMicrobenchImpl;
@@ -84,7 +88,7 @@ public class MyBenchmark {
 
     private static byte[] marshAddrBytes;
 
-    private static byte[] optMarshAddrBytes;
+    private static PortableObject marshPortable;
 
     @Setup
     public static void setup() throws Exception {
@@ -104,7 +108,9 @@ public class MyBenchmark {
         optMarsh.setContext(new MarshallerContextMicrobenchImpl(null));
 
         marshAddrBytes = marsh.marshal(new Address());
-        optMarshAddrBytes = optMarsh.marshal(new Address());
+
+        marshPortable = new PortableObjectImpl(U.<GridPortableMarshaller>field(marsh, "impl").context(),
+            marshAddrBytes, 0);
 
         byte[] data = marsh.marshal(new Address());
 
@@ -116,9 +122,14 @@ public class MyBenchmark {
 //        return marsh.marshal(new Address());
 //    }
 
+//    @Benchmark
+//    public Address testAddressRead() throws Exception {
+//        return marsh.unmarshal(marshAddrBytes, null);
+//    }
+
     @Benchmark
-    public Address testAddressRead() throws Exception {
-        return marsh.unmarshal(marshAddrBytes, null);
+    public Object testFieldRead() throws Exception {
+        return marshPortable.field("street");
     }
 
     private static final Address addr = new Address();
