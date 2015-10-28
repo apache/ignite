@@ -3493,6 +3493,15 @@ public class IgfsMetaManager extends IgfsManager {
                                                     "[fileName=" + name + ", fileId=" + lowermostExistingInfo.id()
                                                     + ", lockId=" + lockId + ']');
 
+                                        if (lowermostExistingInfo.lockId() != null) {
+                                            // This case means that the existing file has a stale lock.
+                                            // This file should be *unlocked* before moving to trash, because
+                                            // otherwise it will not be picked up by the deletion worker.
+                                            EntryProcessorResult<IgfsFileInfo> result
+                                                = id2InfoPrj.invoke(lowermostExistingInfo.id(),
+                                                    new LockFileProcessor(null));
+                                        }
+
                                         final IgfsListingEntry deletedEntry = lockedInfos.get(parentId).listing()
                                                 .get(name);
 
@@ -3787,9 +3796,7 @@ public class IgfsMetaManager extends IgfsManager {
         /**
          * Constructor.
          */
-        public LockFileProcessor(IgniteUuid newLockId) {
-            assert newLockId != null;
-
+        public LockFileProcessor(@Nullable IgniteUuid newLockId) {
             this.newLockId = newLockId;
         }
 
@@ -3807,11 +3814,14 @@ public class IgfsMetaManager extends IgfsManager {
 
             assert info != null;
 
-            // Note: info.lockId() may be null there, since since in some cases we lock
+            // Note: info.lockId() may be null there, since in some cases we lock
             // files locked by a "stale" lock.
 
+            long newReservedDelta =
+                newLockId == null ? 0L : calculateNextReservedDelta(info.blockSize(), info.length(), 0L);
+
             IgfsFileInfo newInfo = IgfsFileInfo.builder(new IgfsFileInfo(info, newLockId, info.modificationTime()))
-                .reservedDelta(calculateNextReservedDelta(info.blockSize(), info.length(), 0L)).build();
+                .reservedDelta(newReservedDelta).build();
 
             entry.setValue(newInfo);
 
@@ -3839,7 +3849,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return {@code null} if there is no lock, or if can safely delete the lock.
      */
     private IgniteUuid getAliveLock(IgfsFileInfo info) throws IgniteCheckedException {
-        assert validTxState(true); // Currently invoked only inside a transaction.
+        assert validTxState(true); // Currently invoked only inside a meta cache transaction.
 
         IgniteUuid lockId = info.lockId();
 
@@ -3859,7 +3869,7 @@ public class IgfsMetaManager extends IgfsManager {
             return lockId;
         }
 
-        // Node is dead, so we can safely clean up the data and delete the write lock.
+        // Owning node is dead, so we can safely clean up the data and delete the write lock.
         igfsCtx.data().cleanUpReservedFileData(info);
 
         return null;

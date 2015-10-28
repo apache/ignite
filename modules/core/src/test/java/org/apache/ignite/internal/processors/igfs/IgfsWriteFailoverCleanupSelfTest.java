@@ -19,9 +19,17 @@ package org.apache.ignite.internal.processors.igfs;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
@@ -31,10 +39,12 @@ import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,7 +55,8 @@ import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.aw
 import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.checkExist;
 import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.checkFileContent;
 import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.clear;
-import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.createFile;
+import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.getDataCache;
+import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.getMetaCache;
 import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.paths;
 import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.writeFileChunks;
 
@@ -64,16 +75,16 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
     protected final int numIgfsNodes = 5;
 
     /** Number of backup copies of data (aka replication). */
-    protected final int numBackups = 0; //numIgfsNodes - 1;
+    protected int numBackups = 0;
 
-    /** */
-    private final int fileSize = 11 * 1024;
-
-    /** */
-    private final int files = 51; // was: 500
+    /** Number of files used in test. */
+    private final int files = 51;
 
     /** File block size. Use Very small blocks to ensure uniform data distribution among the nodes. */
     protected int igfsBlockSize = 31;
+
+    /** */
+    private final int fileSize = 77 * igfsBlockSize + 17;
 
     /** Affinity group size (see IgfsGroupDataBlocksKeyMapper). */
     protected int affGrpSize = 1;
@@ -83,10 +94,6 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
 
     /** Node data structures. */
     protected NodeFsData[] nodeDatas;
-
-//    @Override protected boolean isMultiJvm() {
-//        return true;
-//    }
 
     /**
      * Structure to hold Ignite IGFS node data.
@@ -105,7 +112,14 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+    }
 
+    /**
+     * Performs init.
+     *
+     * @throws Exception On error.
+     */
+    protected void startUp() throws Exception {
         nodeDatas = new NodeFsData[numIgfsNodes];
 
         for (int i = 0; i<numIgfsNodes; i++) {
@@ -204,269 +218,24 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
         return new IgfsPath(SUBDIR, "file" + j);
     }
 
-//    /**
-//     * Checks correct data read *after* N-1 nodes are stopped.
-//     *
-//     * @throws Exception On error.
-//     */
-//    public void testReadFailoverAfterStopMultipleNodes() throws Exception {
-//        final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
-//
-//        clear(igfs0);
-//
-//        IgfsAbstractSelfTest.create(igfs0, paths(DIR, SUBDIR), null);
-//
-//        // Create files through the 0th node:
-//        for (int f=0; f<files; f++) {
-//            final byte[] data = createChunk(fileSize, f);
-//
-//            createFile(igfs0, filePath(f), true, -1/*block size unused*/, data);
-//        }
-//
-//        // Check files:
-//        for (int f=0; f<files; f++) {
-//            IgfsPath path = filePath(f);
-//            byte[] data = createChunk(fileSize, f);
-//
-//            // Check through 0th node:
-//            checkExist(igfs0, path);
-//
-//            checkFileContent(igfs0, path, data);
-//
-//            // Check the same file through other nodes:
-//            for (int n=1; n<numIgfsNodes; n++) {
-//                checkExist(nodeDatas[n].igfsImpl, path);
-//
-//                checkFileContent(nodeDatas[n].igfsImpl, path, data);
-//            }
-//        }
-//
-//        // Now stop all the nodes but the 1st:
-//        for (int n=1; n<numIgfsNodes; n++)
-//            stopGrid(n);
-//
-//        // Check files again:
-//        for (int f=0; f<files; f++) {
-//            IgfsPath path = filePath(f);
-//
-//            byte[] data = createChunk(fileSize, f);
-//
-//            // Check through 0th node:
-//            checkExist(igfs0, path);
-//
-//            checkFileContent(igfs0, path, data);
-//        }
-//    }
-
-//    /**
-//     * Checks correct data read *while* N-1 nodes are being concurrently stopped.
-//     *
-//     * @throws Exception On error.
-//     */
-//    public void testReadFailoverWhileStoppingMultipleNodes() throws Exception {
-//        final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
-//
-//        clear(igfs0);
-//
-//        IgfsAbstractSelfTest.create(igfs0, paths(DIR, SUBDIR), null);
-//
-//        // Create files:
-//        for (int f = 0; f < files; f++) {
-//            final byte[] data = createChunk(fileSize, f);
-//
-//            createFile(igfs0, filePath(f), true, -1/*block size unused*/, data);
-//        }
-//
-//        // Check files:
-//        for (int f = 0; f < files; f++) {
-//            IgfsPath path = filePath(f);
-//            byte[] data = createChunk(fileSize, f);
-//
-//            // Check through 1st node:
-//            checkExist(igfs0, path);
-//
-//            checkFileContent(igfs0, path, data);
-//
-//            // Check the same file through other nodes:
-//            for (int n = 1; n < numIgfsNodes; n++) {
-//                checkExist(nodeDatas[n].igfsImpl, path);
-//
-//                checkFileContent(nodeDatas[n].igfsImpl, path, data);
-//            }
-//        }
-//
-//        final AtomicBoolean stop = new AtomicBoolean();
-//
-//        GridTestUtils.runMultiThreadedAsync(new Callable() {
-//            @Override public Object call() throws Exception {
-//                Thread.sleep(1_000); // Some delay to ensure read is in progress.
-//
-//                // Now stop all the nodes but the 1st:
-//                for (int n = 1; n < numIgfsNodes; n++) {
-//                    stopGrid(n);
-//
-//                    X.println("grid " + n + " stopped.");
-//                }
-//
-//                Thread.sleep(1_000);
-//
-//                stop.set(true);
-//
-//                return null;
-//            }
-//        }, 1, "igfs-node-stopper");
-//
-//        // Read the files repeatedly, while the nodes are being stopped:
-//        while (!stop.get()) {
-//            // Check files while the nodes are being stopped:
-//            for (int f = 0; f < files; f++) {
-//                IgfsPath path = filePath(f);
-//
-//                byte[] data = createChunk(fileSize, f);
-//
-//                // Check through 1st node:
-//                checkExist(igfs0, path);
-//
-//                checkFileContent(igfs0, path, data);
-//            }
-//        }
-//    }
-
-//    /**
-//     * Checks possibility to append the data to files *after* N-1 nodes are stopped.
-//     * First, some data written to files.
-//     * After that N-1 nodes are stopped.
-//     * Then data are attempted to append to the streams opened before the nodes stop.
-//     * If failed, the streams are attempted to reopen and the files are attempted to append.
-//     * After that the read operation is performed to check data correctness.
-//     *
-//     * @throws Exception On error.
-//     */
-//    public void testWriteFailoverAfterStopMultipleNodes() throws Exception {
-//        final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
-//
-//        clear(igfs0);
-//
-//        IgfsAbstractSelfTest.create(igfs0, paths(DIR, SUBDIR), null);
-//
-//        final IgfsOutputStream[] outStreams = new IgfsOutputStream[files];
-//
-//        // Create files:
-//        for (int f = 0; f < files; f++) {
-//            final byte[] data = createChunk(fileSize, f);
-//
-//            IgfsOutputStream os = null;
-//
-//            try {
-//                os = igfs0.create(filePath(f), 256, true, null, 0, -1, null);
-//
-//                assert os != null;
-//
-//                writeFileChunks(os, data);
-//            }
-//            finally {
-//                if (os != null)
-//                    os.flush();
-//            }
-//
-//            outStreams[f] = os;
-//
-//            X.println("write #1 completed: " + f);
-//        }
-//
-//        // Now stop all the nodes but the 1st:
-//        for (int n = 1; n < numIgfsNodes; n++) {
-//            stopGrid(n);
-//
-//            X.println("#### grid " + n + " stopped.");
-//        }
-//
-//        // Create files:
-//        for (int f0 = 0; f0 < files; f0++) {
-//            final IgfsOutputStream os = outStreams[f0];
-//
-//            assert os != null;
-//
-//            final int f = f0;
-//
-//            int att = doWithRetries(1, new Callable<Void>() {
-//                @Override public Void call() throws Exception {
-//                    IgfsOutputStream ios = os;
-//
-//                    try {
-//                        writeChunks0(igfs0, ios, f);
-//                    }
-//                    catch (IOException ioe) {
-//                        log().warning("Attempt to append the data to existing stream failed: ", ioe);
-//
-//                        ios = igfs0.append(filePath(f), false);
-//
-//                        assert ios != null;
-//
-//                        writeChunks0(igfs0, ios, f);
-//                    }
-//
-//                    return null;
-//                }
-//            });
-//
-//            assert att == 1;
-//
-//            X.println("write #2 completed: " + f0 + " in " + att + " attempts.");
-//        }
-//
-//        // Check files:
-//        for (int f = 0; f < files; f++) {
-//            IgfsPath path = filePath(f);
-//
-//            byte[] data = createChunk(fileSize, f);
-//
-//            // Check through 1st node:
-//            checkExist(igfs0, path);
-//
-//            assertEquals("File length mismatch.", data.length * 2, igfs0.size(path));
-//
-//            checkFileContent(igfs0, path, data, data);
-//
-//            X.println("Read test completed: " + f);
-//        }
-//    }
-
     /**
      *
      * @throws Exception
      */
-    public void testWriteFailoverWhileStoppingMultipleNodes() throws Exception {
+    public void testCleanupAfterStoppingMultipleNodesCreate() throws Exception {
+        // In this test we have *no* backups, and crash all the nodes but one,
+        // so likely all the files are destroyed.
+        // But there is nothing bad in that since the files are overwritten with "create(overwrite=true)" operation:
+        // old files should be unlocked and moved to TRASH, while new files should be created.
+        numBackups = 0;
+
+        startUp();
+
         final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
 
         clear(igfs0);
 
         IgfsAbstractSelfTest.create(igfs0, paths(DIR, SUBDIR), null);
-
-
-        final AtomicBoolean stop = new AtomicBoolean();
-
-        GridTestUtils.runMultiThreadedAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                Thread.sleep(10_000); // Some delay to ensure read is in progress.
-
-                // Now stop all the nodes but the 1st:
-                for (int n = 0; n < 1/*numIgfsNodes - 1*/; n++) {
-                    stopGrid(n);
-
-                    X.println("#### grid " + n + " stopped.");
-                }
-
-                //Thread.sleep(10_000);
-
-                stop.set(true);
-
-                return null;
-            }
-        }, 1, "igfs-node-stopper");
-
-
-        final IgfsOutputStream[] outStreams = new IgfsOutputStream[files];
 
         // Create files:
         for (int f = 0; f < files; f++) {
@@ -490,39 +259,86 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
             finally {
                 U.closeQuiet(os); // Also ignore exceptions there.
             }
-
-            outStreams[f] = os;
-
-            X.println("write #1 completed: " + f);
         }
+
+        boolean ok = checkIgfsIntegrity(igfs0);
+
+        assert ok;
+
+        final AtomicBoolean nodesStopped = new AtomicBoolean();
+
+        final AtomicInteger cnt = new AtomicInteger();
+
+        GridTestUtils.runMultiThreadedAsync(new Callable() {
+            @Override public Object call() throws Exception {
+                assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        return cnt.get() >= 10;
+                    }
+                }, 60_000);
+
+                // Now stop all the nodes but the 1st:
+                for (int n = 0; n < numIgfsNodes - 1; n++) {
+                    stopGrid(n);
+
+                    X.println("Node " + n + " stopped.");
+                }
+
+                boolean set = nodesStopped.compareAndSet(false, true);
+
+                assert set;
+
+                return null;
+            }
+        }, 1, "igfs-node-stopper");
+
+        // Create files:
+        for (int f = 0; f < files; f++) {
+            final byte[] data = createChunk(fileSize, f);
+
+            IgfsOutputStream os = null;
+
+            try {
+                os = igfs0.append(filePath(f), false);
+
+                assert os != null;
+
+                writeFileChunks(os, data);
+
+                os.flush();
+            }
+            catch (Exception e) {
+                // Ignore the exception there because there are no backups.
+                X.println("" + e);
+            }
+            finally {
+                U.closeQuiet(os); // Also ignore exceptions there.
+            }
+
+            cnt.incrementAndGet();
+
+            // Wait all nodes are stopped, then continue:
+            if (cnt.get() == (3 * files) / 4) {
+                X.println("Waiting all nodes to stop..");
+
+                assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        return nodesStopped.get();
+                    }
+                }, 60_000);
+            }
+        }
+
+        assert nodesStopped.get(); // it must have happened.
 
         final IgfsImpl igfs1 = nodeDatas[numIgfsNodes - 1].igfsImpl;
 
         // Write #2:
         for (int f0 = 0; f0 < files; f0++) {
-            //final IgfsOutputStream os = outStreams[f0];
-
-            //assert os != null;
-
             final int f = f0;
 
-            int att = doWithRetries(2, new Callable<Void>() {
+            int att = doWithRetries(3, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    //IgfsOutputStream ios = os;
-
-//                    try {
-//                        writeChunks0(igfs0, ios, f);
-//                    }
-//                    catch (IOException ioe) {
-//                        log().warning("Attempt to append the data to existing stream failed: ", ioe);
-//
-//                        ios = igfs0.append(filePath(f), false);
-//
-//                        assert ios != null;
-//
-//                        writeChunks0(igfs0, ios, f);
-//                    }
-
                     // Any way should be able to write over the files , even if they are corrupted:
                     IgfsOutputStream ios = igfs1.create(filePath(f), true/*overwrite*/);
 
@@ -534,16 +350,9 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
                 }
             });
 
-            //assert att == 1;
-
-            X.println("write #2 completed: " + f0 + " in " + att + " attempts.");
+            if (att > 1)
+                X.println("write #2 completed: " + f0 + " in " + att + " attempts.");
         }
-
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return stop.get();
-            }
-        }, 25_000);
 
         // Check files:
         for (int f = 0; f < files; f++) {
@@ -557,9 +366,328 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
             assertEquals("File length mismatch.", data.length, igfs1.size(path));
 
             checkFileContent(igfs1, path, data, data);
-
-            X.println("Read test completed: " + f);
         }
+
+        igfs1.awaitDeletesAsync().get();
+
+        X.println("Deletions completed.");
+
+        ok = checkIgfsIntegrity(igfs1);
+
+        assert ok;
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    public void testCleanupAfterStoppingMultipleNodesAppend() throws Exception {
+        // In this test we have a backup for each file block, and stop only one (the 0-th) node,
+        // so no data should be lost.
+        numBackups = 3; // Normally should be 1, but for some reason it works only for 3 and above.
+
+        startUp();
+
+        final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
+
+        clear(igfs0);
+
+        IgfsAbstractSelfTest.create(igfs0, paths(DIR, SUBDIR), null);
+
+        // Create files:
+        for (int f = 0; f < files; f++) {
+            final byte[] data = createChunk(fileSize, f);
+
+            IgfsOutputStream os = null;
+
+            try {
+                os = igfs0.create(filePath(f), 256, true, null, 0, -1, null);
+
+                assert os != null;
+
+                writeFileChunks(os, data);
+
+                os.flush();
+            }
+            catch (Exception e) {
+                // Ignore the exception there because there are no backups.
+                X.println("" + e);
+            }
+            finally {
+                U.closeQuiet(os); // Also ignore exceptions there.
+            }
+        }
+
+        assert checkIgfsIntegrity(igfs0);
+
+        final AtomicBoolean nodesStopped = new AtomicBoolean();
+
+        final AtomicInteger cnt = new AtomicInteger();
+
+        GridTestUtils.runMultiThreadedAsync(new Callable() {
+            @Override public Object call() throws Exception {
+                assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                    return cnt.get() >= 10;
+                    }
+                }, 60_000);
+
+                // Now stop *only* the 1st node:
+                stopGrid(0);
+
+                X.println("#### Node 0 stopped.");
+
+                boolean set = nodesStopped.compareAndSet(false, true);
+
+                assert set;
+
+                return null;
+            }
+        }, 1, "igfs-node-stopper");
+
+        // Create files:
+        for (int f = 0; f < files; f++) {
+            final byte[] data = createChunk(fileSize, f);
+
+            IgfsOutputStream os = null;
+
+            try {
+                os = igfs0.append(filePath(f), false);
+
+                assert os != null;
+
+                writeFileChunks(os, data);
+
+                os.flush();
+            }
+            catch (Exception e) {
+                // Ignore the exception there because there are no backups.
+                X.println("" + e);
+            }
+            finally {
+                U.closeQuiet(os); // Also ignore exceptions there.
+            }
+
+            cnt.incrementAndGet();
+
+            // Wait all nodes are stopped, then continue:
+            if (cnt.get() == (3 * files) / 4) {
+                X.println("Waiting all nodes to stop..");
+
+                assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        return nodesStopped.get();
+                    }
+                }, 60_000);
+            }
+        }
+
+        assert nodesStopped.get(); // it must have happened.
+
+        final IgfsImpl igfs1 = nodeDatas[numIgfsNodes - 1].igfsImpl;
+
+        // Write #2: append:
+        for (int f0 = 0; f0 < files; f0++) {
+            final int f = f0;
+
+            int att = doWithRetries(3, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    // Any way should be able to write over the files , even if they are corrupted:
+                    IgfsOutputStream ios = igfs1.append(filePath(f), false/*create*/);
+
+                    assert ios != null;
+
+                    writeChunks0(igfs1, ios, f);
+
+                    return null;
+                }
+            });
+
+            if (att > 1)
+                X.println("write #2 completed: " + f0 + " in " + att + " attempts.");
+        }
+
+        X.println("================ Finished append after node stop.");
+
+        igfs1.awaitDeletesAsync().get();
+
+        X.println("Deletions completed.");
+
+        boolean ok = checkIgfsIntegrity(igfs1);
+
+        assert ok;
+    }
+
+    /**
+     * Checks integrity of IGFS: several audit rules on Meta and Data caches.
+     * Note: currently the IGFS content expected to be known and equal to
+     * pre-defined set of files.
+     *
+     * @param igfs The IGFS to check.
+     * @return If the check is passed.
+     * @throws IgniteCheckedException On error.
+     */
+    private boolean checkIgfsIntegrity(IgfsImpl igfs) throws IgniteCheckedException {
+        assert igfs != null;
+
+        GridCacheAdapter<IgfsBlockKey, byte[]> dataCache = getDataCache(igfs);
+
+        assert dataCache != null;
+
+        boolean ok = true;
+
+        // Compose data map grouping all the data cache entries by their file key:
+        Map<IgniteUuid, SortedMap<IgfsBlockKey, byte[]>> dataMap = new HashMap<>();
+
+        IgfsBlockKey key;
+
+        for (Cache.Entry<IgfsBlockKey, byte[]> e: dataCache.entrySet()) {
+            key = e.getKey();
+
+            assert key.affinityKey() == null; // now this is the case
+
+            IgniteUuid fileId = key.getFileId();
+
+            SortedMap<IgfsBlockKey, byte[]> blockMap = dataMap.get(fileId);
+
+            if (blockMap == null) {
+                blockMap = new TreeMap<>(new Comparator<IgfsBlockKey>() {
+                    @Override public int compare(IgfsBlockKey k1, IgfsBlockKey k2) {
+                        long diff = k1.getBlockId() - k2.getBlockId();
+
+                        if (diff == 0)
+                            return 0;
+
+                        return diff > 0 ? 1 : -1;
+                    }
+                });
+
+                dataMap.put(fileId, blockMap);
+            }
+
+            blockMap.put(key, e.getValue());
+        }
+
+        X.println("Files found in data cache: " + dataMap.size());
+
+        GridCacheAdapter<IgniteUuid, IgfsFileInfo> metaCache = getMetaCache(igfs);
+
+        IgfsMetaManager meta = igfs.getMeta();
+
+        Map<IgniteUuid, IgfsPath> id2path = new HashMap<>();
+
+        for (int i=0; i< files; i++) {
+            IgfsPath path = filePath(i);
+
+            IgniteUuid id = meta.fileId(path);
+
+            assert id != null;
+
+            id2path.put(id, path);
+        }
+
+        assert id2path.size() == files;
+
+        IgniteUuid fileId;
+
+        IgfsFileInfo fi;
+
+        for (Cache.Entry<IgniteUuid, IgfsFileInfo> e: metaCache.entrySet()) {
+            fileId = e.getKey();
+            fi = e.getValue();
+
+            ok &= checkFile(fileId, fi, dataMap.remove(fileId));
+
+            if (fi.isFile() && id2path.get(fileId) == null) {
+                X.println(" ! File " + fileId + " not present in path map");
+
+                ok = false;
+            }
+        }
+
+        if (dataMap.isEmpty())
+            X.println("All data cache files are present in meta cache.");
+        else {
+            ok = false;
+
+            X.println("! Lost entries (present only in data cache):");
+
+            for (Map.Entry<IgniteUuid, SortedMap<IgfsBlockKey, byte[]>> e : dataMap.entrySet())
+                X.println("   k = " + e.getKey() + ", map = " + e.getValue().keySet());
+        }
+
+        return ok;
+    }
+
+    /**
+     * Checks one file integrity.
+     * @param fileId The id.
+     * @param fi The FileInfo.
+     * @param blockMap The block map of this file.
+     * @return If the file is okay.
+     */
+    private boolean checkFile(IgniteUuid fileId, IgfsFileInfo fi, SortedMap<IgfsBlockKey, byte[]> blockMap) {
+        if (!fi.isFile())
+            return true; // Ignore directories
+
+        boolean ok = true;
+
+        if (fi.lockId() != null) {
+            X.println(fileId + " ! lockId: " + fi.lockId());
+
+            ok = false;
+        }
+
+        long infoDeclaredLen = fi.length();
+
+        long reserved = fi.reservedDelta();
+
+        assert reserved == 0;
+
+        long expBlockId = 0;
+
+        long actualLen = 0;
+
+        for (Map.Entry <IgfsBlockKey, byte[]> e : blockMap.entrySet()) {
+            IgfsBlockKey key = e.getKey();
+
+            byte[] val = e.getValue();
+
+            if (key.getBlockId() != expBlockId) {
+                X.println(fileId + " Expected blockId: " + expBlockId + " ! actual block id: " + key.getBlockId());
+
+                ok = false;
+            }
+
+            assert key.getFileId().equals(fileId);
+            assert key.affinityKey() == null;
+
+            actualLen += val.length;
+
+            expBlockId++;
+        }
+
+        if (infoDeclaredLen != actualLen) {
+            X.println(fileId + " ! Length declared in file info = " + infoDeclaredLen + ", actual len (block sum) = " + actualLen);
+
+            ok = false;
+        }
+
+        if (actualLen % fileSize != 0 ) {
+            X.println(" ! Remainder: " + actualLen % fileSize);
+
+            ok = false;
+        }
+
+        long x = actualLen / fileSize;
+
+        if (x == 0 || x > 3) {
+            X.println(" ! Frac: " + x);
+
+            ok = false;
+        }
+
+        return ok;
     }
 
     /**

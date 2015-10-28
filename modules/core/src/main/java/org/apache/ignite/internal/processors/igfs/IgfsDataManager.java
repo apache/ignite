@@ -985,8 +985,10 @@ public class IgfsDataManager extends IgfsManager {
      * @param data Data to write.
      * @throws IgniteCheckedException If update failed.
      */
-    private void processPartialBlockWrite(IgfsBlockKey colocatedKey, int startOff,
+    private void processPartialBlockWrite(final IgfsBlockKey colocatedKey, int startOff,
         byte[] data) throws IgniteCheckedException {
+        assert validTxState(false);
+
         // No affinity key present, just concat and return.
         if (colocatedKey.affinityKey() == null) {
             dataCachePrj.invoke(colocatedKey, new UpdateProcessor(startOff, data));
@@ -1356,8 +1358,9 @@ public class IgfsDataManager extends IgfsManager {
          */
         private UpdateProcessor(int start, byte[] data) {
             assert start >= 0;
-            assert data != null;
-            assert start + data.length >= 0 : "Too much data [start=" + start + ", data.length=" + data.length + ']';
+            //assert data != null;
+            assert start + (data == null ? 0 : data.length) >= 0 : "Too much data [start=" + start
+                + ", data.length=" + (data == null ? 0 : data.length) + ']';
 
             this.start = start;
             this.data = data;
@@ -1366,6 +1369,20 @@ public class IgfsDataManager extends IgfsManager {
         /** {@inheritDoc} */
         @Override public Void process(MutableEntry<IgfsBlockKey, byte[]> entry, Object... args) {
             byte[] e = entry.getValue();
+
+            if (data == null) {
+                // In this case we don't write any new data,
+                // just truncate the existing entry data to "start" length, if needed:
+                if (e != null && e.length > start) {
+                    byte[] tmp = new byte[start];
+
+                    U.arrayCopy(e, 0, tmp, 0, start);
+
+                    entry.setValue(tmp);
+                }
+
+                return null;
+            }
 
             final int size = data.length;
 
@@ -1588,7 +1605,7 @@ public class IgfsDataManager extends IgfsManager {
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
-            assert completedBlocksCnt.get() == 0;
+            assert err != null || completedBlocksCnt.get() == 0;
 
             if (!isDone()) {
                 pendingWrites.remove(fileId, this);
@@ -1679,23 +1696,21 @@ public class IgfsDataManager extends IgfsManager {
      * @param info The info to clean up the data for.
      */
     void cleanUpReservedFileData(IgfsFileInfo info) throws IgniteCheckedException {
-        System.out.println("########################## data clean up.");
-
         long reservedSizeDelta = info.reservedDelta();
 
         if (reservedSizeDelta == 0)
-            return;
+            return; // Nothing to do.
 
-        // Synchronize file ending.
+        assert reservedSizeDelta > 0;
+
         long len = info.length();
+
         int blockSize = info.blockSize();
 
-        int blockIdx1 = (int)(len / blockSize);
+        int blockIdx1 = lastBlockIdx(len, blockSize);
 
-        int blockIdx2 = (int)((len + reservedSizeDelta) / blockSize);
+        int blockIdx2 = lastBlockIdx(len + reservedSizeDelta, blockSize);
 
-        // TODO: 1. remainder: what if both the old & new length boundaries end up in the same block? How to clean
-        // up in that case?
         // TODO: 2. Should we deal with affinityRanges there? See #createBlockKey() method.
 
         if (blockIdx2 > blockIdx1) {
@@ -1706,5 +1721,31 @@ public class IgfsDataManager extends IgfsManager {
 
             dataCachePrj.removeAll(list);
         }
+
+        // Now truncate the last block removing any reserved data from it, if needed:
+        int lastBlockLen = (int)(len % blockSize);
+
+        if (lastBlockLen > 0) {
+            IgfsBlockKey lastKey = blockKey(blockIdx1, info);
+
+            dataCachePrj.invoke(lastKey, new UpdateProcessor(lastBlockLen, null));
+        }
+    }
+
+    /**
+     * Gets 0-based index of the last block in the file.
+     * @param len The file length (bytes).
+     * @param blockSize The block size (bytes).
+     * @return The last blcok index.
+     */
+    private int lastBlockIdx(long len, long blockSize) {
+        long wholeBlocks = len / blockSize;
+
+        long remainder = len % blockSize;
+
+        if (remainder == 0)
+            return (int)(wholeBlocks - 1);
+        else
+            return (int)wholeBlocks;
     }
 }

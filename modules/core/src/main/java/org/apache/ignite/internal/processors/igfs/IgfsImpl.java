@@ -1970,4 +1970,13 @@ public final class IgfsImpl implements IgfsEx {
             return t;
         }
     }
+
+    /**
+     * Getter to be used by tests only.
+     *
+     * @return The meta manager.
+     */
+    IgfsMetaManager getMeta() {
+        return meta;
+    }
 }
