@@ -605,6 +605,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             else if (inHdr == PortableUtils.HdrFull)
             {
+                // TODO: PortableObjectHeader
                 PortableUtils.ValidateProtocolVersion(inStream.ReadByte());
 
                 byte inUsrFlag = inStream.ReadByte();
