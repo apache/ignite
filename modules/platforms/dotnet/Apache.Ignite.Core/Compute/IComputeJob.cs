@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Compute
     /// <para />
     /// Once job execution is complete, the return value will be sent back to parent task and will 
     /// be passed into 
-    /// <see cref="IComputeTask{A,T,R}.Result(IComputeJobResult{T}, IList{IComputeJobResult{T}})"/>
+    /// <see cref="IComputeTask{TA,T,TR}.OnResult"/>
     /// method via <see cref="IComputeJobResult{T}"/> instance. 
     /// <para />
     /// Ignite job implementation can be injected with <see cref="IIgnite"/> using 
@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Compute
         /// </summary>
         /// <returns>Job execution result (possibly <c>null</c>). This result will be returned
         /// in <see cref="IComputeJobResult{T}"/> object passed into 
-        /// <see cref="IComputeTask{A,T,R}.Result(IComputeJobResult{T}, IList{IComputeJobResult{T}})"/>
+        /// <see cref="IComputeTask{TA,T,TR}.OnResult"/>
         /// on caller node.</returns>
         TRes Execute();
 

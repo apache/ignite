@@ -22,8 +22,8 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Unmanaged;
@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Impl.Services
     /// <summary>
     /// Services implementation.
     /// </summary>
-    internal class Services : PlatformTarget, IServices
+    internal sealed class Services : PlatformTarget, IServices
     {
         /** */
         private const int OpDeploy = 1;
@@ -54,10 +54,13 @@ namespace Apache.Ignite.Core.Impl.Services
         private readonly IClusterGroup _clusterGroup;
 
         /** Invoker portable flag. */
-        protected readonly bool KeepPortable;
+        private readonly bool _keepPortable;
 
         /** Server portable flag. */
-        protected readonly bool SrvKeepPortable;
+        private readonly bool _srvKeepPortable;
+
+        /** Async instance. */
+        private readonly Lazy<Services> _asyncInstance;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Services" /> class.
@@ -74,56 +77,53 @@ namespace Apache.Ignite.Core.Impl.Services
             Debug.Assert(clusterGroup  != null);
 
             _clusterGroup = clusterGroup;
-            KeepPortable = keepPortable;
-            SrvKeepPortable = srvKeepPortable;
+            _keepPortable = keepPortable;
+            _srvKeepPortable = srvKeepPortable;
+
+            _asyncInstance = new Lazy<Services>(() => new Services(this));
+        }
+
+        /// <summary>
+        /// Initializes a new async instance.
+        /// </summary>
+        /// <param name="services">The services.</param>
+        private Services(Services services) : base(UU.ServicesWithAsync(services.Target), services.Marshaller)
+        {
+            _clusterGroup = services.ClusterGroup;
+            _keepPortable = services._keepPortable;
+            _srvKeepPortable = services._srvKeepPortable;
         }
 
         /** <inheritDoc /> */
-        public virtual IServices WithKeepPortable()
+        public IServices WithKeepPortable()
         {
-            if (KeepPortable)
+            if (_keepPortable)
                 return this;
 
-            return new Services(Target, Marshaller, _clusterGroup, true, SrvKeepPortable);
+            return new Services(Target, Marshaller, _clusterGroup, true, _srvKeepPortable);
         }
 
         /** <inheritDoc /> */
-        public virtual IServices WithServerKeepPortable()
+        public IServices WithServerKeepPortable()
         {
-            if (SrvKeepPortable)
+            if (_srvKeepPortable)
                 return this;
 
-            return new Services(UU.ServicesWithServerKeepPortable(Target), Marshaller, _clusterGroup, KeepPortable, true);
-        }
-
-        /** <inheritDoc /> */
-        public virtual IServices WithAsync()
-        {
-            return new ServicesAsync(UU.ServicesWithAsync(Target), Marshaller, _clusterGroup, KeepPortable, SrvKeepPortable);
-        }
-
-        /** <inheritDoc /> */
-        public virtual bool IsAsync
-        {
-            get { return false; }
-        }
-
-        /** <inheritDoc /> */
-        public virtual IFuture GetFuture()
-        {
-            throw new InvalidOperationException("Asynchronous mode is disabled");
-        }
-
-        /** <inheritDoc /> */
-        public virtual IFuture<TResult> GetFuture<TResult>()
-        {
-            throw new InvalidOperationException("Asynchronous mode is disabled");
+            return new Services(UU.ServicesWithServerKeepPortable(Target), Marshaller, _clusterGroup, _keepPortable, true);
         }
 
         /** <inheritDoc /> */
         public IClusterGroup ClusterGroup
         {
             get { return _clusterGroup; }
+        }
+
+        /// <summary>
+        /// Gets the asynchronous instance.
+        /// </summary>
+        private Services AsyncInstance
+        {
+            get { return _asyncInstance.Value; }
         }
 
         /** <inheritDoc /> */
@@ -136,12 +136,28 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
+        public Task DeployClusterSingletonAsync(string name, IService service)
+        {
+            AsyncInstance.DeployClusterSingleton(name, service);
+
+            return AsyncInstance.GetTask();
+        }
+
+        /** <inheritDoc /> */
         public void DeployNodeSingleton(string name, IService service)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNull(service, "service");
 
             DeployMultiple(name, service, 0, 1);
+        }
+
+        /** <inheritDoc /> */
+        public Task DeployNodeSingletonAsync(string name, IService service)
+        {
+            AsyncInstance.DeployNodeSingleton(name, service);
+
+            return AsyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -163,6 +179,14 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
+        public Task DeployKeyAffinitySingletonAsync<TK>(string name, IService service, string cacheName, TK affinityKey)
+        {
+            AsyncInstance.DeployKeyAffinitySingleton(name, service, cacheName, affinityKey);
+
+            return AsyncInstance.GetTask();
+        }
+
+        /** <inheritDoc /> */
         public void DeployMultiple(string name, IService service, int totalCount, int maxPerNodeCount)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
@@ -175,6 +199,14 @@ namespace Apache.Ignite.Core.Impl.Services
                 w.WriteInt(totalCount);
                 w.WriteInt(maxPerNodeCount);
             });
+        }
+
+        /** <inheritDoc /> */
+        public Task DeployMultipleAsync(string name, IService service, int totalCount, int maxPerNodeCount)
+        {
+            AsyncInstance.DeployMultiple(name, service, totalCount, maxPerNodeCount);
+
+            return AsyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -192,10 +224,18 @@ namespace Apache.Ignite.Core.Impl.Services
                 w.WriteObject(configuration.AffinityKey);
 
                 if (configuration.NodeFilter != null)
-                    w.WriteObject(new PortableOrSerializableObjectHolder(configuration.NodeFilter));
+                    w.WriteObject(configuration.NodeFilter);
                 else
-                    w.WriteObject<PortableOrSerializableObjectHolder>(null);
+                    w.WriteObject<object>(null);
             });
+        }
+
+        /** <inheritDoc /> */
+        public Task DeployAsync(ServiceConfiguration configuration)
+        {
+            AsyncInstance.Deploy(configuration);
+
+            return AsyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -207,9 +247,25 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
+        public Task CancelAsync(string name)
+        {
+            AsyncInstance.Cancel(name);
+
+            return AsyncInstance.GetTask();
+        }
+
+        /** <inheritDoc /> */
         public void CancelAll()
         {
             UU.ServicesCancelAll(Target);
+        }
+
+        /** <inheritDoc /> */
+        public Task CancelAllAsync()
+        {
+            AsyncInstance.CancelAll();
+
+            return AsyncInstance.GetTask();
         }
 
         /** <inheritDoc /> */
@@ -217,7 +273,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             return DoInOp(OpDescriptors, stream =>
             {
-                var reader = Marshaller.StartUnmarshal(stream, KeepPortable);
+                var reader = Marshaller.StartUnmarshal(stream, _keepPortable);
 
                 var size = reader.ReadInt();
 
@@ -310,7 +366,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             return DoOutInOp(OpInvokeMethod,
                 writer => ServiceProxySerializer.WriteProxyMethod(writer, method, args),
-                stream => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, KeepPortable), proxy.Target);
+                stream => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepPortable), proxy.Target);
         }
     }
 }

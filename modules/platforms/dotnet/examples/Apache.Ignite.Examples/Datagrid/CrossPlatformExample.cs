@@ -118,15 +118,13 @@ namespace Apache.Ignite.Examples.Datagrid
         /// Gets entry put by Java client. In order for entry to be in cache, Java client example
         /// must be run before this example.
         /// </summary>
-        /// <param name="Ignite">Ignite instance.</param>
+        /// <param name="ignite">Ignite instance.</param>
         private static void GetFromJava(IIgnite ignite)
         {
             var cache = ignite.GetOrCreateCache<int, IPortableObject>(CacheName)
-                .WithKeepPortable<int, IPortableObject>().WithAsync();
+                .WithKeepPortable<int, IPortableObject>();
 
-            cache.Get(KeyJava);
-
-            var orgPortable = cache.GetFuture<IPortableObject>().ToTask().Result;
+            var orgPortable = cache.GetAsync(KeyJava).Result;
 
             if (orgPortable == null)
             {
@@ -149,11 +147,9 @@ namespace Apache.Ignite.Examples.Datagrid
         private static void GetFromCpp(IIgnite ignite)
         {
             var cache = ignite.GetOrCreateCache<int, IPortableObject>(CacheName)
-                .WithKeepPortable<int, IPortableObject>().WithAsync();
+                .WithKeepPortable<int, IPortableObject>();
 
-            cache.Get(KeyCpp);
-
-            var orgPortable = cache.GetFuture<IPortableObject>().Get();
+            var orgPortable = cache.GetAsync(KeyCpp).Result;
 
             Console.WriteLine();
 

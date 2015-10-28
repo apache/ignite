@@ -292,7 +292,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 IUnmanagedTarget cb0 = null;
 
                 if ((long) cb != 0)
-                    cb0 = new UnmanagedNonReleaseableTarget(_ctx.NativeContext, cb);
+                    cb0 = new UnmanagedNonReleaseableTarget(_ctx, cb);
 
                 using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
@@ -618,7 +618,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                                    portableReceiver.Deserialize<StreamReceiverHolder>();
 
                     if (receiver != null)
-                        receiver.Receive(_ignite, new UnmanagedNonReleaseableTarget(_ctx.NativeContext, cache), stream,
+                        receiver.Receive(_ignite, new UnmanagedNonReleaseableTarget(_ctx, cache), stream,
                             keepPortable != 0);
                 }
             });
@@ -978,7 +978,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                    var filter = (IClusterNodeFilter) reader.ReadObject<PortableOrSerializableObjectHolder>().Item;
+                    var filter = reader.ReadObject<IClusterNodeFilter>();
 
                     return filter.Invoke(_ignite.GetNode(reader.ReadGuid())) ? 1 : 0;
                 }

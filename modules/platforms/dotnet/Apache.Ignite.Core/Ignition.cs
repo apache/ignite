@@ -335,7 +335,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Lifecycle bean.</returns>
-        internal static ILifecycleBean CreateLifecycleBean(PortableReaderImpl reader)
+        private static ILifecycleBean CreateLifecycleBean(PortableReaderImpl reader)
         {
             // 1. Instantiate.
             string assemblyName = reader.ReadString();
@@ -344,7 +344,7 @@ namespace Apache.Ignite.Core
             object bean = IgniteUtils.CreateInstance(assemblyName, clsName);
 
             // 2. Set properties.
-            IDictionary<string, object> props = reader.ReadGenericDictionary<string, object>();
+            var props = reader.ReadDictionaryAsGeneric<string, object>();
 
             IgniteUtils.SetProperties(bean, props);
 

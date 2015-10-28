@@ -71,8 +71,8 @@ namespace Apache.Ignite.Benchmarks.Model
             writer.WriteDoubleArray("DoubleArray", DoubleArray);
             writer.WriteDecimal("Decimal", Decimal);
             writer.WriteDecimalArray("DecimalArray", DecimalArray);
-            writer.WriteDate("Date", Date);
-            writer.WriteDateArray("DateArray", DateArray);
+            writer.WriteTimestamp("Date", Date);
+            writer.WriteTimestampArray("DateArray", DateArray);
             writer.WriteString("String", String);
             writer.WriteStringArray("StringArray", StringArray);
             writer.WriteGuid("Guid", Guid);
@@ -100,8 +100,8 @@ namespace Apache.Ignite.Benchmarks.Model
             DoubleArray = reader.ReadDoubleArray("DoubleArray");
             Decimal = reader.ReadDecimal("Decimal");
             DecimalArray = reader.ReadDecimalArray("DecimalArray");
-            Date = reader.ReadDate("Date");
-            DateArray = reader.ReadDateArray("DateArray");
+            Date = reader.ReadTimestamp("Date");
+            DateArray = reader.ReadTimestampArray("DateArray");
             String = reader.ReadString("String");
             StringArray = reader.ReadStringArray("StringArray");
             Guid = reader.ReadObject<Guid>("Guid");

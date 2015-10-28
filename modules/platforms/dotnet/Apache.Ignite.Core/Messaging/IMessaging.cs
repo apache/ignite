@@ -19,8 +19,8 @@ namespace Apache.Ignite.Core.Messaging
 {
     using System;
     using System.Collections;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Provides functionality for topic-based message exchange among nodes defined by <see cref="IClusterGroup"/>.
@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Messaging
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// </summary>
-    public interface IMessaging : IAsyncSupport<IMessaging>
+    public interface IMessaging
     {
         /// <summary>
         /// Gets the cluster group to which this instance belongs.
@@ -95,14 +95,34 @@ namespace Apache.Ignite.Core.Messaging
         /// <returns>
         /// Operation ID that can be passed to <see cref="StopRemoteListen"/> method to stop listening.
         /// </returns>
-        [AsyncSupported]
         Guid RemoteListen<T>(IMessageListener<T> listener, object topic = null);
+
+        /// <summary>
+        /// Adds a message listener for a given topic to all nodes in the cluster group (possibly including
+        /// this node if it belongs to the cluster group as well). This means that any node within this cluster
+        /// group can send a message for a given topic and all nodes within the cluster group will receive
+        /// listener notifications.
+        /// </summary>
+        /// <param name="listener">
+        /// Predicate that is called on each received message. If predicate returns false,
+        /// then it will be unsubscribed from any further notifications.
+        /// </param>
+        /// <param name="topic">Topic to unsubscribe from.</param>
+        /// <returns>
+        /// Operation ID that can be passed to <see cref="StopRemoteListen"/> method to stop listening.
+        /// </returns>
+        Task<Guid> RemoteListenAsync<T>(IMessageListener<T> listener, object topic = null);
 
         /// <summary>
         /// Unregisters all listeners identified with provided operation ID on all nodes in the cluster group.
         /// </summary>
         /// <param name="opId">Operation ID that was returned from <see cref="RemoteListen{T}"/> method.</param>
-        [AsyncSupported]
         void StopRemoteListen(Guid opId);
+
+        /// <summary>
+        /// Unregisters all listeners identified with provided operation ID on all nodes in the cluster group.
+        /// </summary>
+        /// <param name="opId">Operation ID that was returned from <see cref="RemoteListen{T}"/> method.</param>
+        Task StopRemoteListenAsync(Guid opId);
     }
 }

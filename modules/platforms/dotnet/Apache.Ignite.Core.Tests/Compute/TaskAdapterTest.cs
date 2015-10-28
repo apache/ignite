@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 HashSet<Guid> nodes = new HashSet<Guid>();
 
                 foreach (var res in results) {
-                    Guid id = res.Data();
+                    Guid id = res.Data;
 
                     Assert.NotNull(id);
 
@@ -168,7 +168,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 Assert.AreEqual(1, results.Count);
 
-                Assert.IsTrue(results[0].Data());
+                Assert.IsTrue(results[0].Data);
 
                 return true;
             }

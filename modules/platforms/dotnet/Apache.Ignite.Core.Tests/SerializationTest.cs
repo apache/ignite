@@ -195,7 +195,7 @@ namespace Apache.Ignite.Core.Tests
             return subgrid.ToDictionary(x => (IComputeJob<string>) new ToStringJob {Arg = arg}, x => x);
         }
 
-        public ComputeJobResultPolicy Result(IComputeJobResult<string> res, IList<IComputeJobResult<string>> rcvd)
+        public ComputeJobResultPolicy OnResult(IComputeJobResult<string> res, IList<IComputeJobResult<string>> rcvd)
         {
             return ComputeJobResultPolicy.Wait;
         }
@@ -204,7 +204,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var result = new SerializableXmlDoc();
 
-            result.LoadXml(CombineStrings(results.Select(x => x.Data())));
+            result.LoadXml(CombineStrings(results.Select(x => x.Data)));
 
             return result;
         }

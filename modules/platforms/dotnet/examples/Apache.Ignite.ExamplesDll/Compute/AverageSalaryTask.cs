@@ -72,7 +72,7 @@ namespace Apache.Ignite.ExamplesDll.Compute
             long sum = 0;
             int count = 0;
 
-            foreach (var t in results.Select(result => result.Data()))
+            foreach (var t in results.Select(result => result.Data))
             {
                 sum += t.Item1;
                 count += t.Item2;

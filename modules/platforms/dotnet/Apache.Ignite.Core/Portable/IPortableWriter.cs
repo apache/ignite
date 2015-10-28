@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Portable
 {
     using System;
     using System.Collections;
-    using System.Collections.Generic;
 
     /// <summary>
     /// Writer for portable objects. 
@@ -157,14 +156,14 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Date value.</param>
-        void WriteDate(string fieldName, DateTime? val);
+        void WriteTimestamp(string fieldName, DateTime? val);
 
         /// <summary>
         /// Write named date array.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Date array.</param>
-        void WriteDateArray(string fieldName, DateTime?[] val);
+        void WriteTimestampArray(string fieldName, DateTime?[] val);
 
         /// <summary>
         /// Write named string value.
@@ -220,35 +219,33 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Object array.</param>
-        void WriteObjectArray<T>(string fieldName, T[] val);
+        void WriteArray<T>(string fieldName, T[] val);
 
         /// <summary>
-        /// Write named collection.
+        /// Writes a named collection in interoperable form.
+        /// 
+        /// Use this method to communicate with other platforms 
+        /// or with nodes that need to read collection elements in portable form.
+        /// 
+        /// When there is no need for portables or interoperability, please use <see cref="WriteObject{T}" />,
+        /// which will properly preserve generic collection type.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Collection.</param>
         void WriteCollection(string fieldName, ICollection val);
 
         /// <summary>
-        /// Write named generic collection.
-        /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <param name="val">Collection.</param>
-        void WriteGenericCollection<T>(string fieldName, ICollection<T> val);
-
-        /// <summary>
-        /// Write named dictionary.
+        /// Writes a named dictionary in interoperable form.
+        /// 
+        /// Use this method to communicate with other platforms 
+        /// or with nodes that need to read dictionary elements in portable form.
+        /// 
+        /// When there is no need for portables or interoperability, please use <see cref="WriteObject{T}" />,
+        /// which will properly preserve generic dictionary type.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Dictionary.</param>
         void WriteDictionary(string fieldName, IDictionary val);
-
-        /// <summary>
-        /// Write named generic dictionary.
-        /// </summary>
-        /// <param name="fieldName">Field name.</param>
-        /// <param name="val">Dictionary.</param>
-        void WriteGenericDictionary<TK, TV>(string fieldName, IDictionary<TK, TV> val);
 
         /// <summary>
         /// Get raw writer. 

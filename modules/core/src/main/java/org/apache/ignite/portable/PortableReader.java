@@ -222,6 +222,13 @@ public interface PortableReader {
 
     /**
      * @param fieldName Field name.
+     * @return Timestamp array.
+     * @throws PortableException In case of error.
+     */
+    @Nullable public Timestamp[] readTimestampArray(String fieldName) throws PortableException;
+
+    /**
+     * @param fieldName Field name.
      * @return Object array.
      * @throws PortableException In case of error.
      */

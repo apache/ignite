@@ -33,6 +33,12 @@
     <PlatformTarget>x86</PlatformTarget>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>Apache.Ignite.ExamplesDll.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Apache.Ignite.Core">
       <HintPath>..\..\Apache.Ignite\bin\$(Platform)\$(Configuration)\Apache.Ignite.Core.dll</HintPath>
@@ -61,6 +67,9 @@
     <Compile Include="Portable\OrganizationType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\MapService.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Apache.Ignite.ExamplesDll.snk" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.

@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Tests
     using System.Collections.Generic;
     using System.Threading;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Portable;
     using NUnit.Framework;
@@ -57,9 +56,9 @@ namespace Apache.Ignite.Core.Tests
                 }
             });
 
-            _cache = grid.GetCache<object, object>(null).WithAsync();
+            _cache = grid.GetCache<object, object>(null);
 
-            _compute = grid.GetCompute().WithAsync();
+            _compute = grid.GetCompute();
         }
 
         /// <summary>
@@ -71,72 +70,19 @@ namespace Apache.Ignite.Core.Tests
             TestUtils.KillProcesses();
         }
 
-        [Test]
-        public void TestListen()
-        {
-            // Listen(Action callback)
-            TestListen((fut, act) => fut.Listen(act));
-
-            // Listen(Action<IFuture> callback)
-            TestListen((fut, act) => ((IFuture)fut).Listen(f =>
-            {
-                Assert.AreEqual(f, fut);
-                act();
-            }));
-
-            // Listen(Action<IFuture<T>> callback)
-            TestListen((fut, act) => fut.Listen(f =>
-            {
-                Assert.AreEqual(f, fut);
-                act();
-            }));
-        }
-
-        private void TestListen(Action<IFuture<object>, Action> listenAction)
-        {
-            _compute.Broadcast(new SleepAction());
-
-            var fut = _compute.GetFuture<object>();
-
-            var listenCount = 0;
-
-            // Multiple subscribers before completion
-            for (var i = 0; i < 10; i++)
-                listenAction(fut, () => Interlocked.Increment(ref listenCount));
-
-            Assert.IsFalse(fut.IsDone);
-
-            Assert.IsNull(fut.Get());
-
-            Thread.Sleep(100);  // wait for future completion thread
-
-            Assert.AreEqual(10, listenCount);
-
-            // Multiple subscribers after completion
-            for (var i = 0; i < 10; i++)
-                listenAction(fut, () => Interlocked.Decrement(ref listenCount));
-
-            Assert.AreEqual(0, listenCount);
-        }
 
         [Test]
         public void TestToTask()
         {
-            _cache.Put(1, 1);
+            _cache.PutAsync(1, 1).Wait();
 
-            _cache.GetFuture().ToTask().Wait();
-
-            _cache.Get(1);
-
-            var task1 = _cache.GetFuture<int>().ToTask();
+            var task1 = _cache.GetAsync(1);
 
             Assert.AreEqual(1, task1.Result);
 
             Assert.IsTrue(task1.IsCompleted);
 
-            _compute.Broadcast(new SleepAction());
-
-            var task2 = _compute.GetFuture().ToTask();
+            var task2 = _compute.BroadcastAsync(new SleepAction());
 
             Assert.IsFalse(task2.IsCompleted);
 
@@ -145,38 +91,6 @@ namespace Apache.Ignite.Core.Tests
             task2.Wait();
 
             Assert.IsTrue(task2.IsCompleted);
-
-            Assert.AreEqual(null, task2.Result);
-        }
-
-        [Test]
-        public void TestGetWithTimeout()
-        {
-            _compute.Broadcast(new SleepAction());
-
-            var fut = _compute.GetFuture();
-
-            Assert.Throws<TimeoutException>(() => fut.Get(TimeSpan.FromMilliseconds(100)));
-
-            fut.Get(TimeSpan.FromSeconds(1));
-
-            Assert.IsTrue(fut.IsDone);
-        }
-
-        [Test]
-        public void TestToAsyncResult()
-        {
-            _compute.Broadcast(new SleepAction());
-
-            IFuture fut = _compute.GetFuture();
-
-            var asyncRes = fut.ToAsyncResult();
-
-            Assert.IsFalse(asyncRes.IsCompleted);
-
-            Assert.IsTrue(asyncRes.AsyncWaitHandle.WaitOne(1000));
-
-            Assert.IsTrue(asyncRes.IsCompleted);
         }
 
         [Test]
@@ -203,13 +117,9 @@ namespace Apache.Ignite.Core.Tests
         {
             var key = typeof(T).Name;
 
-            _cache.Put(key, value);
+            _cache.PutAsync(key, value).Wait();
 
-            _cache.GetFuture().Get();
-
-            _cache.Get(key);
-
-            Assert.AreEqual(value, _cache.GetFuture<T>().Get());
+            Assert.AreEqual(value, _cache.GetAsync(key).Result);
         }
 
         /// <summary>

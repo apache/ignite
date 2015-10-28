@@ -132,6 +132,12 @@ public class GridPortableMarshaller {
     /** */
     public static final byte CLASS = 32;
 
+    /** Timestamp. */
+    public static final byte TIMESTAMP = 33;
+
+    /** Timestamp array. */
+    public static final byte TIMESTAMP_ARR = 34;
+
     /** */
     public static final byte NULL = (byte)101;
 

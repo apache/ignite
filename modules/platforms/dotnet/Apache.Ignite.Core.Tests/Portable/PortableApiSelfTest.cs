@@ -256,7 +256,8 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(1, portObj.Deserialize<ToPortableNoMeta>().Val);
 
             // 5. Object array.
-            IPortableObject[] portObjArr = api.ToPortable<IPortableObject[]>(new[] { new ToPortable(1) });
+            var portObjArr = api.ToPortable<object[]>(new object[] {new ToPortable(1)})
+                .OfType<IPortableObject>().ToArray();
 
             Assert.AreEqual(1, portObjArr.Length);
             Assert.AreEqual(1, portObjArr[0].GetField<int>("Val"));
@@ -447,7 +448,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             IPortableBuilder builderItem =
                 _grid.GetPortables().GetBuilder(typeof(BuilderCollectionItem)).SetField("val", 1);
 
-            builderCol.SetField<ICollection>("col", new List<IPortableBuilder> { builderItem });
+            builderCol.SetCollectionField("col", new ArrayList { builderItem });
 
             IPortableObject portCol = builderCol.Build();
 
@@ -458,11 +459,11 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual("col", meta.Fields.First());
             Assert.AreEqual(PortableTypeNames.TypeNameCollection, meta.GetFieldTypeName("col"));
 
-            ICollection<IPortableObject> portColItems = portCol.GetField<ICollection<IPortableObject>>("col");
+            var portColItems = portCol.GetField<ArrayList>("col");
 
             Assert.AreEqual(1, portColItems.Count);
 
-            IPortableObject portItem = portColItems.First();
+            var portItem = (IPortableObject) portColItems[0];
 
             meta = portItem.GetMetadata();
 
@@ -475,7 +476,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.IsNotNull(col.Col);
             Assert.AreEqual(1, col.Col.Count);
-            Assert.AreEqual(1, col.Col.First().Val);
+            Assert.AreEqual(1, ((BuilderCollectionItem) col.Col[0]).Val);
 
             // Add more portable objects to collection.
             builderCol = _grid.GetPortables().GetBuilder(portCol);
@@ -498,10 +499,10 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(4, col.Col.Count);
 
-            BuilderCollectionItem item0 = col.Col.ElementAt(0);
-            BuilderCollectionItem item1 = col.Col.ElementAt(1);
-            BuilderCollectionItem item2 = col.Col.ElementAt(2);
-            BuilderCollectionItem item3 = col.Col.ElementAt(3);
+            var item0 = (BuilderCollectionItem) col.Col[0];
+            var item1 = (BuilderCollectionItem) col.Col[1];
+            var item2 = (BuilderCollectionItem) col.Col[2];
+            var item3 = (BuilderCollectionItem) col.Col[3];
 
             Assert.AreEqual(2, item0.Val);
 
@@ -525,8 +526,8 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             col = portCol.Deserialize<BuilderCollection>();
 
-            item0 = col.Col.ElementAt(0);
-            item1 = col.Col.ElementAt(1);
+            item0 = (BuilderCollectionItem) col.Col[0];
+            item1 = (BuilderCollectionItem) col.Col[1];
 
             Assert.AreEqual(3, item0.Val);
             Assert.AreSame(item0, item1);
@@ -800,22 +801,18 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestStringDateGuidEnum()
         {
-            DateTime date = DateTime.Now.ToUniversalTime();
-            DateTime? nDate = DateTime.Now.ToUniversalTime();
+            DateTime? nDate = DateTime.Now;
 
-            Guid guid = Guid.NewGuid();
             Guid? nGuid = Guid.NewGuid();
 
             IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(StringDateGuidEnum))
                 .SetField("fStr", "str")
-                .SetField("fDate", date)
                 .SetField("fNDate", nDate)
-                .SetField("fGuid", guid)
-                .SetField("fNGuid", nGuid)
+                .SetGuidField("fNGuid", nGuid)
                 .SetField("fEnum", TestEnum.One)
                 .SetField("fStrArr", new[] { "str" })
-                .SetField("fDateArr", new[] { nDate })
-                .SetField("fGuidArr", new[] { nGuid })
+                .SetArrayField("fDateArr", new[] { nDate })
+                .SetGuidArrayField("fGuidArr", new[] { nGuid })
                 .SetField("fEnumArr", new[] { TestEnum.One })
                 .SetHashCode(100)
                 .Build();
@@ -826,23 +823,19 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(typeof(StringDateGuidEnum).Name, meta.TypeName);
 
-            Assert.AreEqual(10, meta.Fields.Count);
+            Assert.AreEqual(8, meta.Fields.Count);
 
             Assert.AreEqual(PortableTypeNames.TypeNameString, meta.GetFieldTypeName("fStr"));
-            Assert.AreEqual(PortableTypeNames.TypeNameDate, meta.GetFieldTypeName("fDate"));
-            Assert.AreEqual(PortableTypeNames.TypeNameDate, meta.GetFieldTypeName("fNDate"));
-            Assert.AreEqual(PortableTypeNames.TypeNameGuid, meta.GetFieldTypeName("fGuid"));
+            Assert.AreEqual(PortableTypeNames.TypeNameObject, meta.GetFieldTypeName("fNDate"));
             Assert.AreEqual(PortableTypeNames.TypeNameGuid, meta.GetFieldTypeName("fNGuid"));
             Assert.AreEqual(PortableTypeNames.TypeNameEnum, meta.GetFieldTypeName("fEnum"));
             Assert.AreEqual(PortableTypeNames.TypeNameArrayString, meta.GetFieldTypeName("fStrArr"));
-            Assert.AreEqual(PortableTypeNames.TypeNameArrayDate, meta.GetFieldTypeName("fDateArr"));
+            Assert.AreEqual(PortableTypeNames.TypeNameArrayObject, meta.GetFieldTypeName("fDateArr"));
             Assert.AreEqual(PortableTypeNames.TypeNameArrayGuid, meta.GetFieldTypeName("fGuidArr"));
             Assert.AreEqual(PortableTypeNames.TypeNameArrayEnum, meta.GetFieldTypeName("fEnumArr"));
 
             Assert.AreEqual("str", portObj.GetField<string>("fStr"));
-            Assert.AreEqual(date, portObj.GetField<DateTime>("fDate"));
             Assert.AreEqual(nDate, portObj.GetField<DateTime?>("fNDate"));
-            Assert.AreEqual(guid, portObj.GetField<Guid>("fGuid"));
             Assert.AreEqual(nGuid, portObj.GetField<Guid?>("fNGuid"));
             Assert.AreEqual(TestEnum.One, portObj.GetField<TestEnum>("fEnum"));
             Assert.AreEqual(new[] { "str" }, portObj.GetField<string[]>("fStrArr"));
@@ -853,9 +846,42 @@ namespace Apache.Ignite.Core.Tests.Portable
             StringDateGuidEnum obj = portObj.Deserialize<StringDateGuidEnum>();
 
             Assert.AreEqual("str", obj.FStr);
-            Assert.AreEqual(date, obj.FDate);
             Assert.AreEqual(nDate, obj.FnDate);
-            Assert.AreEqual(guid, obj.FGuid);
+            Assert.AreEqual(nGuid, obj.FnGuid);
+            Assert.AreEqual(TestEnum.One, obj.FEnum);
+            Assert.AreEqual(new[] { "str" }, obj.FStrArr);
+            Assert.AreEqual(new[] { nDate }, obj.FDateArr);
+            Assert.AreEqual(new[] { nGuid }, obj.FGuidArr);
+            Assert.AreEqual(new[] { TestEnum.One }, obj.FEnumArr);
+
+            // Check builder field caching.
+            var builder = _grid.GetPortables().GetBuilder(portObj);
+
+            Assert.AreEqual("str", builder.GetField<string>("fStr"));
+            Assert.AreEqual(nDate, builder.GetField<DateTime?>("fNDate"));
+            Assert.AreEqual(nGuid, builder.GetField<Guid?>("fNGuid"));
+            Assert.AreEqual(TestEnum.One, builder.GetField<TestEnum>("fEnum"));
+            Assert.AreEqual(new[] { "str" }, builder.GetField<string[]>("fStrArr"));
+            Assert.AreEqual(new[] { nDate }, builder.GetField<DateTime?[]>("fDateArr"));
+            Assert.AreEqual(new[] { nGuid }, builder.GetField<Guid?[]>("fGuidArr"));
+            Assert.AreEqual(new[] { TestEnum.One }, builder.GetField<TestEnum[]>("fEnumArr"));
+
+            // Check reassemble.
+            portObj = builder.Build();
+
+            Assert.AreEqual("str", portObj.GetField<string>("fStr"));
+            Assert.AreEqual(nDate, portObj.GetField<DateTime?>("fNDate"));
+            Assert.AreEqual(nGuid, portObj.GetField<Guid?>("fNGuid"));
+            Assert.AreEqual(TestEnum.One, portObj.GetField<TestEnum>("fEnum"));
+            Assert.AreEqual(new[] { "str" }, portObj.GetField<string[]>("fStrArr"));
+            Assert.AreEqual(new[] { nDate }, portObj.GetField<DateTime?[]>("fDateArr"));
+            Assert.AreEqual(new[] { nGuid }, portObj.GetField<Guid?[]>("fGuidArr"));
+            Assert.AreEqual(new[] { TestEnum.One }, portObj.GetField<TestEnum[]>("fEnumArr"));
+
+            obj = portObj.Deserialize<StringDateGuidEnum>();
+
+            Assert.AreEqual("str", obj.FStr);
+            Assert.AreEqual(nDate, obj.FnDate);
             Assert.AreEqual(nGuid, obj.FnGuid);
             Assert.AreEqual(TestEnum.One, obj.FEnum);
             Assert.AreEqual(new[] { "str" }, obj.FStrArr);
@@ -864,21 +890,16 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(new[] { TestEnum.One }, obj.FEnumArr);
 
             // Overwrite.
-            date = DateTime.Now.ToUniversalTime();
             nDate = DateTime.Now.ToUniversalTime();
-
-            guid = Guid.NewGuid();
             nGuid = Guid.NewGuid();
 
-            portObj = _grid.GetPortables().GetBuilder(typeof(StringDateGuidEnum))
+            portObj = builder
                 .SetField("fStr", "str2")
-                .SetField("fDate", date)
-                .SetField("fNDate", nDate)
-                .SetField("fGuid", guid)
+                .SetTimestampField("fNDate", nDate)
                 .SetField("fNGuid", nGuid)
                 .SetField("fEnum", TestEnum.Two)
                 .SetField("fStrArr", new[] { "str2" })
-                .SetField("fDateArr", new[] { nDate })
+                .SetArrayField("fDateArr", new[] { nDate })
                 .SetField("fGuidArr", new[] { nGuid })
                 .SetField("fEnumArr", new[] { TestEnum.Two })
                 .SetHashCode(200)
@@ -887,9 +908,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(200, portObj.GetHashCode());
 
             Assert.AreEqual("str2", portObj.GetField<string>("fStr"));
-            Assert.AreEqual(date, portObj.GetField<DateTime>("fDate"));
             Assert.AreEqual(nDate, portObj.GetField<DateTime?>("fNDate"));
-            Assert.AreEqual(guid, portObj.GetField<Guid>("fGuid"));
             Assert.AreEqual(nGuid, portObj.GetField<Guid?>("fNGuid"));
             Assert.AreEqual(TestEnum.Two, portObj.GetField<TestEnum>("fEnum"));
             Assert.AreEqual(new[] { "str2" }, portObj.GetField<string[]>("fStrArr"));
@@ -900,9 +919,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             obj = portObj.Deserialize<StringDateGuidEnum>();
 
             Assert.AreEqual("str2", obj.FStr);
-            Assert.AreEqual(date, obj.FDate);
             Assert.AreEqual(nDate, obj.FnDate);
-            Assert.AreEqual(guid, obj.FGuid);
             Assert.AreEqual(nGuid, obj.FnGuid);
             Assert.AreEqual(TestEnum.Two, obj.FEnum);
             Assert.AreEqual(new[] { "str2" }, obj.FStrArr);
@@ -918,7 +935,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestCompositeArray()
         {
             // 1. Test simple array.
-            CompositeInner[] inArr = { new CompositeInner(1) };
+            object[] inArr = { new CompositeInner(1) };
 
             IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(CompositeArray)).SetHashCode(100)
                 .SetField("inArr", inArr).Build();
@@ -931,7 +948,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(100, portObj.GetHashCode());
 
-            IPortableObject[] portInArr = portObj.GetField<IPortableObject[]>("inArr");
+            IPortableObject[] portInArr = portObj.GetField<object[]>("inArr").Cast<IPortableObject>().ToArray();
 
             Assert.AreEqual(1, portInArr.Length);
             Assert.AreEqual(1, portInArr[0].GetField<int>("val"));
@@ -940,17 +957,15 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.IsNull(arr.OutArr);
             Assert.AreEqual(1, arr.InArr.Length);
-            Assert.AreEqual(1, arr.InArr[0].Val);
+            Assert.AreEqual(1, ((CompositeInner) arr.InArr[0]).Val);
 
             // 2. Test addition to array.
-            portInArr = new[] { portInArr[0], null };
-
             portObj = _grid.GetPortables().GetBuilder(portObj).SetHashCode(200)
-                .SetField("inArr", portInArr).Build();
+                .SetField("inArr", new object[] { portInArr[0], null }).Build();
 
             Assert.AreEqual(200, portObj.GetHashCode());
 
-            portInArr = portObj.GetField<IPortableObject[]>("inArr");
+            portInArr = portObj.GetField<object[]>("inArr").Cast<IPortableObject>().ToArray();
 
             Assert.AreEqual(2, portInArr.Length);
             Assert.AreEqual(1, portInArr[0].GetField<int>("val"));
@@ -960,17 +975,17 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.IsNull(arr.OutArr);
             Assert.AreEqual(2, arr.InArr.Length);
-            Assert.AreEqual(1, arr.InArr[0].Val);
+            Assert.AreEqual(1, ((CompositeInner) arr.InArr[0]).Val);
             Assert.IsNull(arr.InArr[1]);
 
             portInArr[1] = _grid.GetPortables().GetBuilder(typeof(CompositeInner)).SetField("val", 2).Build();
 
             portObj = _grid.GetPortables().GetBuilder(portObj).SetHashCode(300)
-                .SetField("inArr", portInArr).Build();
+                .SetField("inArr", portInArr.OfType<object>().ToArray()).Build();
 
             Assert.AreEqual(300, portObj.GetHashCode());
 
-            portInArr = portObj.GetField<IPortableObject[]>("inArr");
+            portInArr = portObj.GetField<object[]>("inArr").Cast<IPortableObject>().ToArray();
 
             Assert.AreEqual(2, portInArr.Length);
             Assert.AreEqual(1, portInArr[0].GetField<int>("val"));
@@ -980,20 +995,20 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.IsNull(arr.OutArr);
             Assert.AreEqual(2, arr.InArr.Length);
-            Assert.AreEqual(1, arr.InArr[0].Val);
-            Assert.AreEqual(2, arr.InArr[1].Val);
+            Assert.AreEqual(1, ((CompositeInner)arr.InArr[0]).Val);
+            Assert.AreEqual(2, ((CompositeInner)arr.InArr[1]).Val);
 
             // 3. Test top-level handle inversion.
             CompositeInner inner = new CompositeInner(1);
 
-            inArr = new[] { inner, inner };
+            inArr = new object[] { inner, inner };
 
             portObj = _grid.GetPortables().GetBuilder(typeof(CompositeArray)).SetHashCode(100)
                 .SetField("inArr", inArr).Build();
 
             Assert.AreEqual(100, portObj.GetHashCode());
 
-            portInArr = portObj.GetField<IPortableObject[]>("inArr");
+            portInArr = portObj.GetField<object[]>("inArr").Cast<IPortableObject>().ToArray();
 
             Assert.AreEqual(2, portInArr.Length);
             Assert.AreEqual(1, portInArr[0].GetField<int>("val"));
@@ -1003,17 +1018,17 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.IsNull(arr.OutArr);
             Assert.AreEqual(2, arr.InArr.Length);
-            Assert.AreEqual(1, arr.InArr[0].Val);
-            Assert.AreEqual(1, arr.InArr[1].Val);
+            Assert.AreEqual(1, ((CompositeInner)arr.InArr[0]).Val);
+            Assert.AreEqual(1, ((CompositeInner)arr.InArr[1]).Val);
 
             portInArr[0] = _grid.GetPortables().GetBuilder(typeof(CompositeInner)).SetField("val", 2).Build();
 
             portObj = _grid.GetPortables().GetBuilder(portObj).SetHashCode(200)
-                .SetField("inArr", portInArr).Build();
+                .SetField("inArr", portInArr.ToArray<object>()).Build();
 
             Assert.AreEqual(200, portObj.GetHashCode());
 
-            portInArr = portObj.GetField<IPortableObject[]>("inArr");
+            portInArr = portObj.GetField<object[]>("inArr").Cast<IPortableObject>().ToArray();
 
             Assert.AreEqual(2, portInArr.Length);
             Assert.AreEqual(2, portInArr[0].GetField<int>("val"));
@@ -1023,14 +1038,14 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.IsNull(arr.OutArr);
             Assert.AreEqual(2, arr.InArr.Length);
-            Assert.AreEqual(2, arr.InArr[0].Val);
-            Assert.AreEqual(1, arr.InArr[1].Val);
+            Assert.AreEqual(2, ((CompositeInner)arr.InArr[0]).Val);
+            Assert.AreEqual(1, ((CompositeInner)arr.InArr[1]).Val);
 
             // 4. Test nested object handle inversion.
             CompositeOuter[] outArr = { new CompositeOuter(inner), new CompositeOuter(inner) };
 
             portObj = _grid.GetPortables().GetBuilder(typeof(CompositeArray)).SetHashCode(100)
-                .SetField("outArr", outArr).Build();
+                .SetField("outArr", outArr.ToArray<object>()).Build();
 
             meta = portObj.GetMetadata();
 
@@ -1041,7 +1056,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(100, portObj.GetHashCode());
 
-            IPortableObject[] portOutArr = portObj.GetField<IPortableObject[]>("outArr");
+            var portOutArr = portObj.GetField<object[]>("outArr").Cast<IPortableObject>().ToArray();
 
             Assert.AreEqual(2, portOutArr.Length);
             Assert.AreEqual(1, portOutArr[0].GetField<IPortableObject>("inner").GetField<int>("val"));
@@ -1051,18 +1066,18 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.IsNull(arr.InArr);
             Assert.AreEqual(2, arr.OutArr.Length);
-            Assert.AreEqual(1, arr.OutArr[0].Inner.Val);
-            Assert.AreEqual(1, arr.OutArr[1].Inner.Val);
+            Assert.AreEqual(1, ((CompositeOuter) arr.OutArr[0]).Inner.Val);
+            Assert.AreEqual(1, ((CompositeOuter) arr.OutArr[0]).Inner.Val);
 
             portOutArr[0] = _grid.GetPortables().GetBuilder(typeof(CompositeOuter))
                 .SetField("inner", new CompositeInner(2)).Build();
 
             portObj = _grid.GetPortables().GetBuilder(portObj).SetHashCode(200)
-                .SetField("outArr", portOutArr).Build();
+                .SetField("outArr", portOutArr.ToArray<object>()).Build();
 
             Assert.AreEqual(200, portObj.GetHashCode());
 
-            portInArr = portObj.GetField<IPortableObject[]>("outArr");
+            portInArr = portObj.GetField<object[]>("outArr").Cast<IPortableObject>().ToArray();
 
             Assert.AreEqual(2, portInArr.Length);
             Assert.AreEqual(2, portOutArr[0].GetField<IPortableObject>("inner").GetField<int>("val"));
@@ -1072,8 +1087,8 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.IsNull(arr.InArr);
             Assert.AreEqual(2, arr.OutArr.Length);
-            Assert.AreEqual(2, arr.OutArr[0].Inner.Val);
-            Assert.AreEqual(1, arr.OutArr[1].Inner.Val);
+            Assert.AreEqual(2, ((CompositeOuter)arr.OutArr[0]).Inner.Val);
+            Assert.AreEqual(1, ((CompositeOuter)arr.OutArr[1]).Inner.Val);
         }
 
         /// <summary>
@@ -1083,45 +1098,31 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestCompositeContainer()
         {
             ArrayList col = new ArrayList();
-            ICollection<CompositeInner> gCol = new List<CompositeInner>();
             IDictionary dict = new Hashtable();
-            IDictionary<int, CompositeInner> gDict = new Dictionary<int, CompositeInner>();
 
             col.Add(new CompositeInner(1));
-            gCol.Add(new CompositeInner(2));
             dict[3] = new CompositeInner(3);
-            gDict[4] = new CompositeInner(4);
 
             IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(CompositeContainer)).SetHashCode(100)
-                .SetField<ICollection>("col", col)
-                .SetField("gCol", gCol)
-                .SetField("dict", dict)
-                .SetField("gDict", gDict).Build();
+                .SetCollectionField("col", col)
+                .SetDictionaryField("dict", dict).Build();
 
             // 1. Check meta.
             IPortableMetadata meta = portObj.GetMetadata();
 
             Assert.AreEqual(typeof(CompositeContainer).Name, meta.TypeName);
 
-            Assert.AreEqual(4, meta.Fields.Count);
+            Assert.AreEqual(2, meta.Fields.Count);
             Assert.AreEqual(PortableTypeNames.TypeNameCollection, meta.GetFieldTypeName("col"));
-            Assert.AreEqual(PortableTypeNames.TypeNameCollection, meta.GetFieldTypeName("gCol"));
             Assert.AreEqual(PortableTypeNames.TypeNameMap, meta.GetFieldTypeName("dict"));
-            Assert.AreEqual(PortableTypeNames.TypeNameMap, meta.GetFieldTypeName("gDict"));
 
             // 2. Check in portable form.
             Assert.AreEqual(1, portObj.GetField<ICollection>("col").Count);
             Assert.AreEqual(1, portObj.GetField<ICollection>("col").OfType<IPortableObject>().First()
                 .GetField<int>("val"));
 
-            Assert.AreEqual(1, portObj.GetField<ICollection<IPortableObject>>("gCol").Count);
-            Assert.AreEqual(2, portObj.GetField<ICollection<IPortableObject>>("gCol").First().GetField<int>("val"));
-
             Assert.AreEqual(1, portObj.GetField<IDictionary>("dict").Count);
             Assert.AreEqual(3, ((IPortableObject) portObj.GetField<IDictionary>("dict")[3]).GetField<int>("val"));
-
-            Assert.AreEqual(1, portObj.GetField<IDictionary<int, IPortableObject>>("gDict").Count);
-            Assert.AreEqual(4, portObj.GetField<IDictionary<int, IPortableObject>>("gDict")[4].GetField<int>("val"));
 
             // 3. Check in deserialized form.
             CompositeContainer obj = portObj.Deserialize<CompositeContainer>();
@@ -1129,14 +1130,8 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(1, obj.Col.Count);
             Assert.AreEqual(1, obj.Col.OfType<CompositeInner>().First().Val);
 
-            Assert.AreEqual(1, obj.GCol.Count);
-            Assert.AreEqual(2, obj.GCol.First().Val);
-
             Assert.AreEqual(1, obj.Dict.Count);
             Assert.AreEqual(3, ((CompositeInner) obj.Dict[3]).Val);
-
-            Assert.AreEqual(1, obj.GDict.Count);
-            Assert.AreEqual(4, obj.GDict[4].Val);
         }
 
         /// <summary>
@@ -1481,9 +1476,7 @@ namespace Apache.Ignite.Core.Tests.Portable
     public class StringDateGuidEnum
     {
         public string FStr;
-        public DateTime FDate;
         public DateTime? FnDate;
-        public Guid FGuid;
         public Guid? FnGuid;
         public TestEnum FEnum;
 
@@ -1587,8 +1580,8 @@ namespace Apache.Ignite.Core.Tests.Portable
     /// </summary>
     public class CompositeArray
     {
-        public CompositeInner[] InArr;
-        public CompositeOuter[] OutArr;
+        public object[] InArr;
+        public object[] OutArr;
     }
 
     /// <summary>
@@ -1597,10 +1590,7 @@ namespace Apache.Ignite.Core.Tests.Portable
     public class CompositeContainer
     {
         public ICollection Col;
-        public ICollection<CompositeInner> GCol;
-
         public IDictionary Dict;
-        public IDictionary<int, CompositeInner> GDict;
     }
 
     /// <summary>
@@ -1719,13 +1709,13 @@ namespace Apache.Ignite.Core.Tests.Portable
     public class BuilderCollection
     {
         /** */
-        public ICollection<BuilderCollectionItem> Col;
+        public readonly ArrayList Col;
 
         /// <summary>
         ///
         /// </summary>
         /// <param name="col"></param>
-        public BuilderCollection(ICollection<BuilderCollectionItem> col)
+        public BuilderCollection(ArrayList col)
         {
             Col = col;
         }

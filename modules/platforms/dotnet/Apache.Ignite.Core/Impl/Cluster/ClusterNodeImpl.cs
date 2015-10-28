@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Collections;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
@@ -72,9 +73,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
             _id = id.Value;
 
-            _attrs = reader.ReadGenericDictionary<string, object>().AsReadOnly();
-            _addrs = reader.ReadGenericCollection<string>().AsReadOnly();
-            _hosts = reader.ReadGenericCollection<string>().AsReadOnly();
+            _attrs = reader.ReadDictionaryAsGeneric<string, object>().AsReadOnly();
+            _addrs = reader.ReadCollectionAsList<string>().AsReadOnly();
+            _hosts = reader.ReadCollectionAsList<string>().AsReadOnly();
             _order = reader.ReadLong();
             _isLocal = reader.ReadBoolean();
             _isDaemon = reader.ReadBoolean();

@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Native interface manager.
     /// </summary>
-    internal static unsafe class IgniteManager
+    public static unsafe class IgniteManager
     {
         /** Java Command line argument: Xms. Case sensitive. */
         private const string CmdJvmMinMemJava = "-Xms";
@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Destroy JVM.
+        /// Blocks until JVM stops.
         /// </summary>
         public static void DestroyJvm()
         {

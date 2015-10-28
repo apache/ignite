@@ -18,8 +18,9 @@
 namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
+    using System.Diagnostics;
     using System.IO;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -31,11 +32,9 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// </summary>
     internal class PortableBuilderImpl : IPortableBuilder
     {
-        /** Type IDs for metadata. */
-        private static readonly IDictionary<Type, int> TypeIds;
-
         /** Cached dictionary with no values. */
-        private static readonly IDictionary<int, object> EmptyVals = new Dictionary<int, object>();
+        private static readonly IDictionary<int, PortableBuilderField> EmptyVals =
+            new Dictionary<int, PortableBuilderField>();
         
         /** Portables. */
         private readonly PortablesImpl _portables;
@@ -53,59 +52,29 @@ namespace Apache.Ignite.Core.Impl.Portable
         private IDictionary<string, PortableBuilderField> _vals;
 
         /** Contextual fields. */
-        private IDictionary<int, object> _cache;
+        private IDictionary<int, PortableBuilderField> _cache;
 
         /** Hash code. */
         private int _hashCode;
         
         /** Current context. */
         private Context _ctx;
-        
-        /// <summary>
-        /// Static initializer.
-        /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
-        static PortableBuilderImpl()
-        {
-            TypeIds = new Dictionary<Type, int>();
 
-            // 1. Primitives.
-            TypeIds[typeof(byte)] = PortableUtils.TypeByte;
-            TypeIds[typeof(bool)] = PortableUtils.TypeBool;
-            TypeIds[typeof(short)] = PortableUtils.TypeShort;
-            TypeIds[typeof(char)] = PortableUtils.TypeChar;
-            TypeIds[typeof(int)] = PortableUtils.TypeInt;
-            TypeIds[typeof(long)] = PortableUtils.TypeLong;
-            TypeIds[typeof(float)] = PortableUtils.TypeFloat;
-            TypeIds[typeof(double)] = PortableUtils.TypeDouble;
-            TypeIds[typeof(decimal)] = PortableUtils.TypeDecimal;
+        /** Write array action. */
+        private static readonly Action<PortableWriterImpl, object> WriteArrayAction = 
+            (w, o) => w.WriteArrayInternal((Array) o);
 
-            TypeIds[typeof(byte[])] = PortableUtils.TypeArrayByte;
-            TypeIds[typeof(bool[])] = PortableUtils.TypeArrayBool;
-            TypeIds[typeof(short[])] = PortableUtils.TypeArrayShort;
-            TypeIds[typeof(char[])] = PortableUtils.TypeArrayChar;
-            TypeIds[typeof(int[])] = PortableUtils.TypeArrayInt;
-            TypeIds[typeof(long[])] = PortableUtils.TypeArrayLong;
-            TypeIds[typeof(float[])] = PortableUtils.TypeArrayFloat;
-            TypeIds[typeof(double[])] = PortableUtils.TypeArrayDouble;
-            TypeIds[typeof(decimal?[])] = PortableUtils.TypeArrayDecimal;
+        /** Write collection action. */
+        private static readonly Action<PortableWriterImpl, object> WriteCollectionAction = 
+            (w, o) => w.WriteCollection((ICollection) o);
 
-            // 2. String.
-            TypeIds[typeof(string)] = PortableUtils.TypeString;
-            TypeIds[typeof(string[])] = PortableUtils.TypeArrayString;
+        /** Write timestamp action. */
+        private static readonly Action<PortableWriterImpl, object> WriteTimestampAction = 
+            (w, o) => w.WriteTimestamp((DateTime?) o);
 
-            // 3. Guid.
-            TypeIds[typeof(Guid)] = PortableUtils.TypeGuid;
-            TypeIds[typeof(Guid?)] = PortableUtils.TypeGuid;
-            TypeIds[typeof(Guid[])] = PortableUtils.TypeArrayGuid;
-            TypeIds[typeof(Guid?[])] = PortableUtils.TypeArrayGuid;
-
-            // 4. Date.
-            TypeIds[typeof(DateTime)] = PortableUtils.TypeDate;
-            TypeIds[typeof(DateTime?)] = PortableUtils.TypeDate;
-            TypeIds[typeof(DateTime[])] = PortableUtils.TypeArrayDate;
-            TypeIds[typeof(DateTime?[])] = PortableUtils.TypeArrayDate;
-        }
+        /** Write timestamp array action. */
+        private static readonly Action<PortableWriterImpl, object> WriteTimestampArrayAction = 
+            (w, o) => w.WriteTimestampArray((DateTime?[])o);
 
         /// <summary>
         /// Constructor.
@@ -117,6 +86,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         public PortableBuilderImpl(PortablesImpl portables, PortableBuilderImpl parent, 
             PortableUserObject obj, IPortableTypeDescriptor desc)
         {
+            Debug.Assert(portables != null);
+            Debug.Assert(obj != null);
+            Debug.Assert(desc != null);
+
             _portables = portables;
             _parent = parent ?? this;
             _obj = obj;
@@ -139,22 +112,236 @@ namespace Apache.Ignite.Core.Impl.Portable
             PortableBuilderField field;
 
             if (_vals != null && _vals.TryGetValue(name, out field))
-                return field != PortableBuilderField.RmvMarker ? (T)field.Value : default(T);
-            T val = _obj.Field<T>(name, this);
+                return field != PortableBuilderField.RmvMarker ? (T) field.Value : default(T);
 
-            if (_vals == null)
-                _vals = new Dictionary<string, PortableBuilderField>(2);
+            int pos;
 
-            _vals[name] = new PortableBuilderField(typeof(T), val);
+            if (!_obj.TryGetFieldPosition(name, out pos))
+                return default(T);
+
+            T val;
+
+            if (TryGetCachedField(pos, out val))
+                return val;
+
+            val = _obj.GetField<T>(pos, this);
+
+            var fld = CacheField(pos, val);
+
+            SetField0(name, fld);
 
             return val;
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder SetField<T>(string name, T val)
+        public IPortableBuilder SetField<T>(string fieldName, T val)
         {
-            return SetField0(name, new PortableBuilderField(typeof(T), val));
+            return SetField0(fieldName,
+                new PortableBuilderField(typeof (T), val, PortableSystemHandlers.GetTypeId(typeof (T))));
         }
+
+        /** <inheritDoc /> */
+        public IPortableBuilder SetArrayField<T>(string fieldName, T[] val)
+        {
+            return SetField0(fieldName,
+                new PortableBuilderField(typeof (T[]), val, PortableUtils.TypeArray, WriteArrayAction));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetBooleanField(string fieldName, bool val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (bool), val, PortableUtils.TypeBool, 
+                (w, o) => w.WriteBoolean((bool) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetBooleanArrayField(string fieldName, bool[] val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (bool[]), val, PortableUtils.TypeArrayBool,
+                (w, o) => w.WriteBooleanArray((bool[]) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetByteField(string fieldName, byte val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (byte), val, PortableUtils.TypeByte,
+                (w, o) => w.WriteByte((byte) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetByteArrayField(string fieldName, byte[] val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (byte[]), val, PortableUtils.TypeArrayByte,
+                (w, o) => w.WriteByteArray((byte[]) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetCharField(string fieldName, char val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (char), val, PortableUtils.TypeChar,
+                (w, o) => w.WriteChar((char) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetCharArrayField(string fieldName, char[] val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (char[]), val, PortableUtils.TypeArrayChar,
+                (w, o) => w.WriteCharArray((char[]) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetCollectionField(string fieldName, ICollection val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (ICollection), val, PortableUtils.TypeCollection,
+                WriteCollectionAction));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetDecimalField(string fieldName, decimal? val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (decimal?), val, PortableUtils.TypeDecimal,
+                (w, o) => w.WriteDecimal((decimal?) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetDecimalArrayField(string fieldName, decimal?[] val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (decimal?[]), val, PortableUtils.TypeArrayDecimal,
+                (w, o) => w.WriteDecimalArray((decimal?[]) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetDictionaryField(string fieldName, IDictionary val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (IDictionary), val, PortableUtils.TypeDictionary,
+                (w, o) => w.WriteDictionary((IDictionary) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetDoubleField(string fieldName, double val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (double), val, PortableUtils.TypeDouble,
+                (w, o) => w.WriteDouble((double) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetDoubleArrayField(string fieldName, double[] val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (double[]), val, PortableUtils.TypeArrayDouble,
+                (w, o) => w.WriteDoubleArray((double[]) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetEnumField<T>(string fieldName, T val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (T), val, PortableUtils.TypeEnum,
+                (w, o) => w.WriteEnum((T) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetEnumArrayField<T>(string fieldName, T[] val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (T[]), val, PortableUtils.TypeArrayEnum,
+                (w, o) => w.WriteEnumArray((T[]) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetFloatField(string fieldName, float val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (float), val, PortableUtils.TypeFloat,
+                (w, o) => w.WriteFloat((float) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetFloatArrayField(string fieldName, float[] val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (float[]), val, PortableUtils.TypeArrayFloat,
+                (w, o) => w.WriteFloatArray((float[]) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetGuidField(string fieldName, Guid? val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (Guid?), val, PortableUtils.TypeGuid,
+                (w, o) => w.WriteGuid((Guid?) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetGuidArrayField(string fieldName, Guid?[] val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (Guid?[]), val, PortableUtils.TypeArrayGuid,
+                (w, o) => w.WriteGuidArray((Guid?[]) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetIntField(string fieldName, int val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (int), val, PortableUtils.TypeInt,
+                (w, o) => w.WriteInt((int) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetIntArrayField(string fieldName, int[] val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (int[]), val, PortableUtils.TypeArrayInt,
+                (w, o) => w.WriteIntArray((int[]) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetLongField(string fieldName, long val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (long), val, PortableUtils.TypeLong,
+                (w, o) => w.WriteLong((long) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetLongArrayField(string fieldName, long[] val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (long[]), val, PortableUtils.TypeArrayLong,
+                (w, o) => w.WriteLongArray((long[]) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetShortField(string fieldName, short val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (short), val, PortableUtils.TypeShort,
+                (w, o) => w.WriteShort((short) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetShortArrayField(string fieldName, short[] val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (short[]), val, PortableUtils.TypeArrayShort,
+                (w, o) => w.WriteShortArray((short[]) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetStringField(string fieldName, string val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (string), val, PortableUtils.TypeString,
+                (w, o) => w.WriteString((string) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetStringArrayField(string fieldName, string[] val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (string[]), val, PortableUtils.TypeArrayString,
+                (w, o) => w.WriteStringArray((string[]) o)));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetTimestampField(string fieldName, DateTime? val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (DateTime?), val, PortableUtils.TypeTimestamp,
+                WriteTimestampAction));
+        }
+ 
+        /** <inheritDoc /> */
+        public IPortableBuilder SetTimestampArrayField(string fieldName, DateTime?[] val)
+        {
+            return SetField0(fieldName, new PortableBuilderField(typeof (DateTime?[]), val, PortableUtils.TypeArrayTimestamp,
+                WriteTimestampArrayAction));
+        } 
 
         /** <inheritDoc /> */
         public IPortableBuilder RemoveField(string name)
@@ -176,7 +363,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             PortableWriterImpl writer = _portables.Marshaller.StartMarshal(outStream);
 
-            writer.Builder(this);
+            writer.SetBuilder(this);
 
             // All related builders will work in this context with this writer.
             _parent._ctx = new Context(writer);
@@ -218,15 +405,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="pos">Position.</param>
         /// <param name="val">Value.</param>
         /// <returns><c>true</c> if value is found in cache.</returns>
-        public bool CachedField<T>(int pos, out T val)
+        public bool TryGetCachedField<T>(int pos, out T val)
         {
             if (_parent._cache != null)
             {
-                object res;
+                PortableBuilderField res;
 
                 if (_parent._cache.TryGetValue(pos, out res))
                 {
-                    val = res != null ? (T)res : default(T);
+                    val = res != null ? (T) res.Value : default(T);
 
                     return true;
                 }
@@ -242,12 +429,46 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="pos">Position.</param>
         /// <param name="val">Value.</param>
-        public void CacheField(int pos, object val)
+        public PortableBuilderField CacheField<T>(int pos, T val)
         {
             if (_parent._cache == null)
-                _parent._cache = new Dictionary<int, object>(2);
+                _parent._cache = new Dictionary<int, PortableBuilderField>(2);
 
-            _parent._cache[pos] = val;
+            var hdr = _obj.Data[pos];
+
+            var field = new PortableBuilderField(typeof(T), val, hdr, GetWriteAction(hdr));
+            
+            _parent._cache[pos] = field;
+
+            return field;
+        }
+
+        /// <summary>
+        /// Gets the write action by header.
+        /// </summary>
+        /// <param name="header">The header.</param>
+        /// <returns>Write action.</returns>
+        private static Action<PortableWriterImpl, object> GetWriteAction(byte header)
+        {
+            // We need special actions for all cases where SetField(X) produces different result from SetSpecialField(X)
+            // Arrays, Collections, Dates
+
+            switch (header)
+            {
+                case PortableUtils.TypeArray:
+                    return WriteArrayAction;
+
+                case PortableUtils.TypeCollection:
+                    return WriteCollectionAction;
+
+                case PortableUtils.TypeTimestamp:
+                    return WriteTimestampAction;
+
+                case PortableUtils.TypeArrayTimestamp:
+                    return WriteTimestampArrayAction;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -274,7 +495,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="desc">Portable type descriptor.</param>
         /// <param name="hashCode">Hash code.</param>
         /// <param name="vals">Values.</param>
-        internal void Mutate(
+        private void Mutate(
             PortableHeapStream inStream,
             PortableHeapStream outStream,
             IPortableTypeDescriptor desc,
@@ -282,7 +503,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             IDictionary<string, PortableBuilderField> vals)
         {
             // Set correct builder to writer frame.
-            PortableBuilderImpl oldBuilder = _parent._ctx.Writer.Builder(_parent);
+            PortableBuilderImpl oldBuilder = _parent._ctx.Writer.SetBuilder(_parent);
 
             int streamPos = inStream.Position;
             
@@ -291,13 +512,13 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Prepare fields.
                 IPortableMetadataHandler metaHnd = _portables.Marshaller.GetMetadataHandler(desc);
 
-                IDictionary<int, object> vals0;
+                IDictionary<int, PortableBuilderField> vals0;
 
                 if (vals == null || vals.Count == 0)
                     vals0 = EmptyVals;
                 else
                 {
-                    vals0 = new Dictionary<int, object>(vals.Count);
+                    vals0 = new Dictionary<int, PortableBuilderField>(vals.Count);
 
                     foreach (KeyValuePair<string, PortableBuilderField> valEntry in vals)
                     {
@@ -307,12 +528,12 @@ namespace Apache.Ignite.Core.Impl.Portable
                             throw new IgniteException("Collision in field ID detected (change field name or " +
                                 "define custom ID mapper) [fieldName=" + valEntry.Key + ", fieldId=" + fieldId + ']');
 
-                        vals0[fieldId] = valEntry.Value.Value;
+                        vals0[fieldId] = valEntry.Value;
 
                         // Write metadata if: 1) it is enabled for type; 2) type is not null (i.e. it is neither 
                         // remove marker, nor a field read through "GetField" method.
                         if (metaHnd != null && valEntry.Value.Type != null)
-                            metaHnd.OnFieldWrite(fieldId, valEntry.Key, TypeId(valEntry.Value.Type));
+                            metaHnd.OnFieldWrite(fieldId, valEntry.Key, valEntry.Value.TypeId);
                     }
                 }
 
@@ -331,7 +552,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             finally
             {
                 // Restore builder frame.
-                _parent._ctx.Writer.Builder(oldBuilder);
+                _parent._ctx.Writer.SetBuilder(oldBuilder);
 
                 inStream.Seek(streamPos, SeekOrigin.Begin);
             }
@@ -348,7 +569,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="vals">Values to be replaced.</param>
         /// <returns>Mutated object.</returns>
         private void Mutate0(Context ctx, PortableHeapStream inStream, IPortableStream outStream,
-            bool changeHash, int hash, IDictionary<int, object> vals)
+            bool changeHash, int hash, IDictionary<int, PortableBuilderField> vals)
         {
             int inStartPos = inStream.Position;
             int outStartPos = outStream.Position;
@@ -397,10 +618,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (ctx.AddOldToNew(inStartPos, outStartPos, out hndPos))
                 {
                     // Object could be cached in parent builder.
-                    object cachedVal;
+                    PortableBuilderField cachedVal;
 
                     if (_parent._cache != null && _parent._cache.TryGetValue(inStartPos, out cachedVal)) {
-                        ctx.Writer.Write(cachedVal);
+                        WriteField(ctx, cachedVal);
                     }
                     else
                     {
@@ -421,11 +642,11 @@ namespace Apache.Ignite.Core.Impl.Portable
                             int inFieldLen = inStream.ReadInt();
                             int inFieldDataPos = inStream.Position;
 
-                            object fieldVal;
+                            PortableBuilderField fieldVal;
 
                             bool fieldFound = vals.TryGetValue(inFieldId, out fieldVal);
 
-                            if (!fieldFound || fieldVal != PortableBuilderField.RmvMarkerObj)
+                            if (!fieldFound || fieldVal != PortableBuilderField.RmvMarker)
                             {
                                 outStream.WriteInt(inFieldId);
 
@@ -436,8 +657,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                                 if (fieldFound)
                                 {
                                     // Replace field with new value.
-                                    if (fieldVal != PortableBuilderField.RmvMarkerObj)
-                                        ctx.Writer.Write(fieldVal);
+                                    if (fieldVal != PortableBuilderField.RmvMarker)
+                                        WriteField(ctx, fieldVal);
 
                                     vals.Remove(inFieldId);
                                 }
@@ -445,9 +666,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                                 {
                                     // If field was requested earlier, then we must write tracked value
                                     if (_parent._cache != null && _parent._cache.TryGetValue(inFieldDataPos, out fieldVal))
-                                        ctx.Writer.Write(fieldVal);
+                                        WriteField(ctx, fieldVal);
                                     else
-                                        // Filed is not tracked, re-write as is.
+                                        // Field is not tracked, re-write as is.
                                         Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);                                    
                                 }
 
@@ -463,9 +684,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                         }
 
                         // Write remaining new fields.
-                        foreach (KeyValuePair<int, object> valEntry in vals)
+                        foreach (var valEntry in vals)
                         {
-                            if (valEntry.Value != PortableBuilderField.RmvMarkerObj)
+                            if (valEntry.Value != PortableBuilderField.RmvMarker)
                             {
                                 outStream.WriteInt(valEntry.Key);
 
@@ -473,7 +694,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                                 outStream.Seek(4, SeekOrigin.Current);
 
-                                ctx.Writer.Write(valEntry.Value);
+                                WriteField(ctx, valEntry.Value);
 
                                 int fieldEndPos = outStream.Position;
 
@@ -518,6 +739,19 @@ namespace Apache.Ignite.Core.Impl.Portable
                     throw new IgniteException("Unexpected header [position=" + (inStream.Position - 1) +
                         ", header=" + inHdr + ']');
             }
+        }
+
+        /// <summary>
+        /// Writes the specified field.
+        /// </summary>
+        private static void WriteField(Context ctx, PortableBuilderField field)
+        {
+            var action = field.WriteAction;
+
+            if (action != null)
+                action(ctx.Writer, field.Value);
+            else
+                ctx.Writer.Write(field.Value);
         }
 
         /// <summary>
@@ -631,7 +865,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     break;
 
-                case PortableUtils.TypeDate:
+                case PortableUtils.TypeTimestamp:
                     TransferBytes(inStream, outStream, 12);
 
                     break;
@@ -679,7 +913,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 case PortableUtils.TypeArrayDecimal:
                 case PortableUtils.TypeArrayString:
                 case PortableUtils.TypeArrayGuid:
-                case PortableUtils.TypeArrayDate:
+                case PortableUtils.TypeArrayTimestamp:
                 case PortableUtils.TypeArrayEnum:
                 case PortableUtils.TypeArray:
                     int arrLen = inStream.ReadInt();
@@ -740,27 +974,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             return true;
-        }
-
-        /// <summary>
-        /// Get's metadata field type ID for the given type.
-        /// </summary>
-        /// <param name="type">Type.</param>
-        /// <returns>Type ID.</returns>
-        private static int TypeId(Type type)
-        {
-            int typeId;
-
-            if (TypeIds.TryGetValue(type, out typeId))
-                return typeId;
-            if (type.IsEnum)
-                return PortableUtils.TypeEnum;
-            if (type.IsArray)
-                return type.GetElementType().IsEnum ? PortableUtils.TypeArrayEnum : PortableUtils.TypeArray;
-            PortableCollectionInfo colInfo = PortableCollectionInfo.Info(type);
-
-            return colInfo.IsAny ? colInfo.IsCollection || colInfo.IsGenericCollection ?
-                PortableUtils.TypeCollection : PortableUtils.TypeDictionary : PortableUtils.TypeObject;
         }
 
         /// <summary>

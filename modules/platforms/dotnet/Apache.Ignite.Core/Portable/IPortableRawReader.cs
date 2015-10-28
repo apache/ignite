@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Portable
 {
     using System;
     using System.Collections;
-    using System.Collections.Generic;
 
     /// <summary>
     /// Raw reader for portable objects. 
@@ -135,31 +134,17 @@ namespace Apache.Ignite.Core.Portable
         decimal?[] ReadDecimalArray();
 
         /// <summary>
-        /// Read date value in UTC form. Shortcut for <c>ReadDate(false)</c>.
+        /// Read date value in UTC form. Shortcut for <c>ReadTimestamp(false)</c>.
         /// </summary>
         /// <returns>Date value.</returns>
-        DateTime? ReadDate();
-
+        DateTime? ReadTimestamp();
+        
         /// <summary>
-        /// Read date value.
-        /// </summary>
-        /// <param name="local">Whether to read date in local (<c>true</c>) or UTC (<c>false</c>) form.</param>
-        /// <returns></returns>
-        DateTime? ReadDate(bool local);
-
-        /// <summary>
-        /// Read date array in UTC form. Shortcut for <c>ReadDateArray(false)</c>.
+        /// Read date array in UTC form. Shortcut for <c>ReadTimestampArray(false)</c>.
         /// </summary>
         /// <returns>Date array.</returns>
-        DateTime?[] ReadDateArray();
-
-        /// <summary>
-        /// Read date array.
-        /// </summary>
-        /// <param name="local">Whether to read date array in local (<c>true</c>) or UTC (<c>false</c>) form.</param>
-        /// <returns>Date array.</returns>
-        DateTime?[] ReadDateArray(bool local);
-
+        DateTime?[] ReadTimestampArray();
+        
         /// <summary>
         /// Read string value. 
         /// </summary>
@@ -206,10 +191,10 @@ namespace Apache.Ignite.Core.Portable
         /// Read object array. 
         /// </summary>
         /// <returns>Object array.</returns>
-        T[] ReadObjectArray<T>();
+        T[] ReadArray<T>();
 
         /// <summary>
-        /// Read collection. 
+        /// Read collection.
         /// </summary>
         /// <returns>Collection.</returns>
         ICollection ReadCollection();
@@ -223,19 +208,6 @@ namespace Apache.Ignite.Core.Portable
         ICollection ReadCollection(PortableCollectionFactory factory, PortableCollectionAdder adder);
 
         /// <summary>
-        /// Read generic collection. 
-        /// </summary>
-        /// <returns>Collection.</returns>
-        ICollection<T> ReadGenericCollection<T>();
-
-        /// <summary>
-        /// Read generic collection.
-        /// </summary>
-        /// <param name="factory">Factory.</param>
-        /// <returns>Collection.</returns>
-        ICollection<T> ReadGenericCollection<T>(PortableGenericCollectionFactory<T> factory);
-
-        /// <summary>
         /// Read dictionary. 
         /// </summary>
         /// <returns>Dictionary.</returns>
@@ -247,18 +219,5 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="factory">Factory.</param>
         /// <returns>Dictionary.</returns>
         IDictionary ReadDictionary(PortableDictionaryFactory factory);
-
-        /// <summary>
-        /// Read generic dictionary. 
-        /// </summary>
-        /// <returns>Dictionary.</returns>
-        IDictionary<TK, TV> ReadGenericDictionary<TK, TV>();
-
-        /// <summary>
-        /// Read generic dictionary.
-        /// </summary>
-        /// <param name="factory">Factory.</param>
-        /// <returns>Dictionary.</returns>
-        IDictionary<TK, TV> ReadGenericDictionary<TK, TV>(PortableGenericDictionaryFactory<TK, TV> factory);
     }
 }

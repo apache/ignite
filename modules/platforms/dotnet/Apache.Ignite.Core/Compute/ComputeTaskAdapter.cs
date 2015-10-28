@@ -42,10 +42,10 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="res">Received remote Ignite executable result.</param>
         /// <param name="rcvd">All previously received results.</param>
         /// <returns>Result policy that dictates how to process further upcoming job results.</returns>
-        public virtual ComputeJobResultPolicy Result(IComputeJobResult<TJobRes> res,
+        public virtual ComputeJobResultPolicy OnResult(IComputeJobResult<TJobRes> res,
             IList<IComputeJobResult<TJobRes>> rcvd)
         {
-            Exception err = res.Exception();
+            Exception err = res.Exception;
 
             if (err != null)
             {
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Compute
 
         /// <summary>
         /// Reduces (or aggregates) results received so far into one compound result to be returned to
-        /// caller via future.
+        /// caller via task.
         /// <para />
         /// Note, that if some jobs did not succeed and could not be failed over then the list of
         /// results passed into this method will include the failed results. Otherwise, failed

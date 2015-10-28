@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Compute
     ///     </item>
     ///     <item>
     ///         <description>Once all results are received or 
-    ///         <see cref="IComputeTask{A,T,R}.Result(IComputeJobResult{TJobRes}, IList{IComputeJobResult{TJobRes}})"/>
+    ///         <see cref="IComputeTask{A,T,R}.OnResult(IComputeJobResult{TJobRes}, IList{IComputeJobResult{TJobRes}})"/>
     ///         method returned <see cref="ComputeJobResultPolicy.Reduce"/> policy, method 
     ///         <see cref="IComputeTask{A,T,R}.Reduce(IList{IComputeJobResult{TJobRes}})"/>
     ///         is called to aggregate received results into one final result. Once this method is finished the 
@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="rcvd">All previously received results. Note that if task class has
         /// <see cref="ComputeTaskNoResultCacheAttribute"/> attribute, then this list will be empty.</param>
         /// <returns>Result policy that dictates how to process further upcoming job results.</returns>
-        ComputeJobResultPolicy Result(IComputeJobResult<TJobRes> res, IList<IComputeJobResult<TJobRes>> rcvd);
+        ComputeJobResultPolicy OnResult(IComputeJobResult<TJobRes> res, IList<IComputeJobResult<TJobRes>> rcvd);
 
         /// <summary>
         /// Reduces (or aggregates) results received so far into one compound result to be returned to 

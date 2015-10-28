@@ -260,6 +260,11 @@ class PortableBuilderReader {
                 break;
 
             case GridPortableMarshaller.DATE:
+                len = 8;
+
+                break;
+
+            case GridPortableMarshaller.TIMESTAMP:
                 len = 8 + 4;
 
                 break;
@@ -284,6 +289,7 @@ class PortableBuilderReader {
 
             case GridPortableMarshaller.DECIMAL_ARR:
             case GridPortableMarshaller.DATE_ARR:
+            case GridPortableMarshaller.TIMESTAMP_ARR:
             case GridPortableMarshaller.OBJ_ARR:
             case GridPortableMarshaller.ENUM_ARR:
             case GridPortableMarshaller.UUID_ARR:
@@ -404,6 +410,7 @@ class PortableBuilderReader {
             case GridPortableMarshaller.STRING:
             case GridPortableMarshaller.UUID:
             case GridPortableMarshaller.DATE:
+            case GridPortableMarshaller.TIMESTAMP:
                 return new PortablePlainLazyValue(this, pos, len);
 
             case GridPortableMarshaller.BYTE_ARR:
@@ -416,6 +423,7 @@ class PortableBuilderReader {
             case GridPortableMarshaller.BOOLEAN_ARR:
             case GridPortableMarshaller.DECIMAL_ARR:
             case GridPortableMarshaller.DATE_ARR:
+            case GridPortableMarshaller.TIMESTAMP_ARR:
             case GridPortableMarshaller.UUID_ARR:
             case GridPortableMarshaller.STRING_ARR:
             case GridPortableMarshaller.ENUM_ARR:
@@ -554,6 +562,11 @@ class PortableBuilderReader {
                 break;
 
             case GridPortableMarshaller.DATE:
+                plainLazyValLen = 8;
+
+                break;
+
+            case GridPortableMarshaller.TIMESTAMP:
                 plainLazyValLen = 8 + 4;
 
                 break;
@@ -626,18 +639,39 @@ class PortableBuilderReader {
 
                     pos += 8;
 
-                    if (ctx.isUseTimestamp()) {
-                        Timestamp ts = new Timestamp(time);
+                    res[i] = new Date(time);
+                }
 
-                        ts.setNanos(ts.getNanos() + readInt());
+                return res;
+            }
 
-                        res[i] = ts;
-                    }
-                    else {
-                        res[i] = new Date(time);
+            case GridPortableMarshaller.TIMESTAMP_ARR: {
+                int size = readInt();
 
-                        pos += 4;
-                    }
+                Timestamp[] res = new Timestamp[size];
+
+                for (int i = 0; i < res.length; i++) {
+                    byte flag = arr[pos++];
+
+                    if (flag == GridPortableMarshaller.NULL)
+                        continue;
+
+                    if (flag != GridPortableMarshaller.TIMESTAMP)
+                        throw new PortableException("Invalid flag value: " + flag);
+
+                    long time = PRIM.readLong(arr, pos);
+
+                    pos += 8;
+
+                    int nano = PRIM.readInt(arr, pos);
+
+                    pos += 4;
+
+                    Timestamp ts = new Timestamp(time);
+
+                    ts.setNanos(ts.getNanos() + nano);
+
+                    res[i] = ts;
                 }
 
                 return res;

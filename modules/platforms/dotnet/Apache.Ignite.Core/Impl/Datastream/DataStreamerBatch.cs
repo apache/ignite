@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
-    using Apache.Ignite.Core.Common;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable;
 
@@ -69,15 +69,15 @@ namespace Apache.Ignite.Core.Impl.Datastream
             if (prev != null)
                 Thread.MemoryBarrier(); // Prevent "prev" field escape.
 
-            _fut.Listen(() => ParentsCompleted());
+            _fut.Task.ContinueWith(x => ParentsCompleted());
         }
 
         /// <summary>
-        /// Gets the future.
+        /// Gets the task.
         /// </summary>
-        public IFuture Future
+        public Task Task
         {
-            get { return _fut; }
+            get { return _fut.Task; }
         }
 
         /// <summary>
@@ -264,7 +264,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     return false;
             }
 
-            return _fut.IsDone;
+            return _fut.Task.IsCompleted;
         }
     }
 }

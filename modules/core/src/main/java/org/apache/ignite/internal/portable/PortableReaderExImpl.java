@@ -17,6 +17,21 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
+import org.apache.ignite.internal.portable.streams.PortableInputStream;
+import org.apache.ignite.internal.util.GridEnumCache;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableInvalidClassException;
+import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.portable.PortableRawReader;
+import org.apache.ignite.portable.PortableReader;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
@@ -38,21 +53,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
-import org.apache.ignite.internal.portable.streams.PortableInputStream;
-import org.apache.ignite.internal.util.GridEnumCache;
-import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableInvalidClassException;
-import org.apache.ignite.portable.PortableObject;
-import org.apache.ignite.portable.PortableRawReader;
-import org.apache.ignite.portable.PortableReader;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.ARR_LIST;
@@ -102,6 +102,8 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TREE_MAP;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TREE_SET;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
@@ -556,7 +558,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             if (flag == NULL)
                 return null;
 
-            if (flag != DATE)
+            if (flag != TIMESTAMP)
                 throw new PortableException("Invalid flag value: " + flag);
 
             return doReadTimestamp(false);
@@ -883,6 +885,32 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 throw new PortableException("Invalid flag value: " + flag);
 
             return doReadDateArray(false);
+        }
+        else
+            return null;
+    }
+
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws PortableException In case of error.
+     */
+    @Nullable Timestamp[] readTimestampArray(int fieldId) throws PortableException {
+        off = fieldOffset(fieldId);
+
+        if (off >= 0) {
+            byte flag = doReadByte(false);
+
+            if (flag == NULL)
+                return null;
+
+            if (flag == HANDLE)
+                return readHandleField();
+
+            if (flag != TIMESTAMP_ARR)
+                throw new PortableException("Invalid flag value: " + flag);
+
+            return doReadTimestampArray(false);
         }
         else
             return null;
@@ -1318,7 +1346,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         if (flag == NULL)
             return null;
 
-        if (flag != DATE)
+        if (flag != TIMESTAMP)
             throw new PortableException("Invalid flag value: " + flag);
 
         return doReadTimestamp(true);
@@ -1544,6 +1572,11 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public Timestamp[] readTimestampArray(String fieldName) throws PortableException {
+        return readTimestampArray(fieldId(fieldName));
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public Date[] readDateArray() throws PortableException {
         byte flag = doReadByte(true);
 
@@ -1554,6 +1587,19 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             throw new PortableException("Invalid flag value: " + flag);
 
         return doReadDateArray(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Timestamp[] readTimestampArray() throws PortableException {
+        byte flag = doReadByte(true);
+
+        if (flag == NULL)
+            return null;
+
+        if (flag != TIMESTAMP_ARR)
+            throw new PortableException("Invalid flag value: " + flag);
+
+        return doReadTimestampArray(true);
     }
 
     /** {@inheritDoc} */
@@ -1803,7 +1849,10 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 return doReadUuid(raw);
 
             case DATE:
-                return isUseTimestamp() ? doReadTimestamp(raw) : doReadDate(raw);
+                return doReadDate(raw);
+
+            case TIMESTAMP:
+                return doReadTimestamp(raw);
 
             case BYTE_ARR:
                 return doReadByteArray(raw);
@@ -1840,6 +1889,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             case DATE_ARR:
                 return doReadDateArray(raw);
+
+            case TIMESTAMP_ARR:
+                return doReadTimestampArray(raw);
 
             case OBJ_ARR:
                 return doReadObjectArray(raw, false);
@@ -2072,12 +2124,6 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private Date doReadDate(boolean raw) {
         long time = doReadLong(raw);
 
-        // Skip remainder.
-        if (raw)
-            rawOff += 4;
-        else
-            off += 4;
-
         return new Date(time);
     }
 
@@ -2087,7 +2133,6 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      */
     private Timestamp doReadTimestamp(boolean raw) {
         long time = doReadLong(raw);
-
         int nanos = doReadInt(raw);
 
         Timestamp ts = new Timestamp(time);
@@ -2225,7 +2270,12 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 break;
 
             case DATE:
-                obj = isUseTimestamp() ? doReadTimestamp(true) : doReadDate(true);
+                obj = doReadDate(true);
+
+                break;
+
+            case TIMESTAMP:
+                obj = doReadTimestamp(true);
 
                 break;
 
@@ -2286,6 +2336,11 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             case DATE_ARR:
                 obj = doReadDateArray(true);
+
+                break;
+
+            case TIMESTAMP_ARR:
+                obj = doReadTimestampArray(true);
 
                 break;
 
@@ -2358,26 +2413,6 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             len = rawOff - start;
 
         return obj;
-    }
-
-    /**
-     * @return Use timestamp flag.
-     * @throws PortableInvalidClassException If fails to find object type descriptor.
-     */
-    private boolean isUseTimestamp() throws PortableInvalidClassException {
-        in.position(start);
-
-        boolean dateObj = in.readByte() == DATE;
-
-        if (!dateObj) {
-            in.position(start + GridPortableMarshaller.TYPE_ID_POS);
-
-            int typeId = in.readInt(start + GridPortableMarshaller.TYPE_ID_POS);
-
-            return ctx.isUseTimestamp(typeId);
-        }
-
-        return ctx.isUseTimestamp();
     }
 
     /**
@@ -2690,6 +2725,36 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                     throw new PortableException("Invalid flag value: " + flag);
 
                 arr[i] = doReadDate(raw);
+            }
+        }
+
+        return arr;
+    }
+
+    /**
+     * @param raw Raw flag.
+     * @return Value.
+     * @throws PortableException In case of error.
+     */
+    private Timestamp[] doReadTimestampArray(boolean raw) throws PortableException {
+        int hPos = (raw ? rawOff : off) - 1;
+
+        int len = doReadInt(raw);
+
+        Timestamp[] arr = new Timestamp[len];
+
+        setHandler(arr, hPos);
+
+        for (int i = 0; i < len; i++) {
+            byte flag = doReadByte(raw);
+
+            if (flag == NULL)
+                arr[i] = null;
+            else {
+                if (flag != TIMESTAMP)
+                    throw new PortableException("Invalid flag value: " + flag);
+
+                arr[i] = doReadTimestamp(raw);
             }
         }
 

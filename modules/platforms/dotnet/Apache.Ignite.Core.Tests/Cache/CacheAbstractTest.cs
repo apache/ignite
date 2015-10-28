@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using System.Runtime.Serialization;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -526,7 +525,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGetAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             cache.Put(1, 1);
             cache.Put(2, 2);
@@ -535,6 +534,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(2, cache.Get(2));
             Assert.IsFalse(cache.ContainsKey(3));
             Assert.Throws<KeyNotFoundException>(() => cache.Get(3));
+
+            Assert.AreEqual(1, Cache().TryGetAsync(1).Result.Value);
+            Assert.IsFalse(Cache().TryGetAsync(3).Result.Success);
         }
 
         [Test]
@@ -559,7 +561,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGetAllAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             cache.Put(1, 1);
             cache.Put(2, 2);
@@ -632,7 +634,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGetAndPutAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             Assert.AreEqual(false, cache.ContainsKey(1));
 
@@ -662,7 +664,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestPutxAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             cache.Put(1, 1);
 
@@ -704,7 +706,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGetAndPutIfAbsentAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             Assert.IsFalse(cache.ContainsKey(1));
 
@@ -724,7 +726,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestPutIfAbsentAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             Assert.Throws<KeyNotFoundException>(() => cache.Get(1));
             Assert.IsFalse(cache.ContainsKey(1));
@@ -773,7 +775,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGetAndReplaceAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             Assert.IsFalse(cache.ContainsKey(1));
 
@@ -825,7 +827,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestReplaceAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             Assert.IsFalse(cache.ContainsKey(1));
 
@@ -857,7 +859,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestPutAllAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             cache.PutAll(new Dictionary<int, int> { { 1, 1 }, { 2, 2 }, { 3, 3 } });
 
@@ -1208,7 +1210,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGetAndRemoveAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             cache.Put(1, 1);
 
@@ -1252,7 +1254,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestRemoveAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             cache.Put(1, 1);
 
@@ -1289,7 +1291,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestRemoveAllAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             List<int> keys = PrimaryKeysForCache(cache, 2);
 
@@ -1332,7 +1334,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestRemoveAllKeysAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             Assert.AreEqual(0, cache.GetSize());
 
@@ -1573,7 +1575,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestPutGetPortableAsync()
         {
-            var cache = Cache<int, PortablePerson>().WithAsync().WrapAsync();
+            var cache = Cache<int, PortablePerson>().WrapAsync();
 
             PortablePerson obj1 = new PortablePerson("obj1", 1);
 
@@ -1602,28 +1604,22 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGetAsync2()
         {
-            var cache = Cache().WithAsync();
+            var cache = Cache();
 
             for (int i = 0; i < 100; i++)
-            {
                 cache.Put(i, i);
 
-                cache.GetFuture<object>().Get();
-            }
-
-            var futs = new List<IFuture<int>>();
+            var futs = new List<Task<int>>();
 
             for (int i = 0; i < 1000; i++)
             {
-                cache.Get(i % 100);
-
-                futs.Add(cache.GetFuture<int>());
+                futs.Add(cache.GetAsync(i % 100));
             }
 
             for (int i = 0; i < 1000; i++) {
-                Assert.AreEqual(i % 100, futs[i].Get(), "Unexpected result: " + i);
+                Assert.AreEqual(i % 100, futs[i].Result, "Unexpected result: " + i);
 
-                Assert.IsTrue(futs[i].IsDone);
+                Assert.IsTrue(futs[i].IsCompleted);
             }
         }
 
@@ -1631,30 +1627,22 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Category(TestUtils.CategoryIntensive)]
         public void TestGetAsyncMultithreaded()
         {
-            var cache = Cache().WithAsync();
+            var cache = Cache();
 
             for (int i = 0; i < 100; i++)
-            {
                 cache.Put(i, i);
-
-                cache.GetFuture<object>().Get();
-            }
 
             TestUtils.RunMultiThreaded(() =>
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    var futs = new List<IFuture<int>>();
+                    var futs = new List<Task<int>>();
 
                     for (int j = 0; j < 100; j++)
-                    {
-                        cache.Get(j);
-
-                        futs.Add(cache.GetFuture<int>());
-                    }
+                        futs.Add(cache.GetAsync(j));
 
                     for (int j = 0; j < 100; j++)
-                        Assert.AreEqual(j, futs[j].Get());
+                        Assert.AreEqual(j, futs[j].Result);
                 }
             }, 10);
         }
@@ -1663,7 +1651,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Category(TestUtils.CategoryIntensive)]
         public void TestPutxAsyncMultithreaded()
         {
-            var cache = Cache().WithAsync();
+            var cache = Cache();
 
             TestUtils.RunMultiThreaded(() =>
             {
@@ -1671,17 +1659,13 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 for (int i = 0; i < 50; i++)
                 {
-                    var futs = new List<IFuture<object>>();
+                    var futs = new List<Task>();
 
                     for (int j = 0; j < 10; j++)
-                    {
-                        cache.Put(rnd.Next(1000), i);
-
-                        futs.Add(cache.GetFuture<object>());
-                    }
+                        futs.Add(cache.PutAsync(rnd.Next(1000), i));
 
                     foreach (var fut in futs)
-                        fut.Get();
+                        fut.Wait();
                 }
             }, 5);
         }
@@ -1690,7 +1674,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Category(TestUtils.CategoryIntensive)]
         public void TestPutGetAsyncMultithreaded()
         {
-            var cache = Cache<CacheTestKey, PortablePerson>().WithAsync();
+            var cache = Cache<CacheTestKey, PortablePerson>();
 
             const int threads = 10;
             const int objPerThread = 1000;
@@ -1702,22 +1686,20 @@ namespace Apache.Ignite.Core.Tests.Cache
                 // ReSharper disable once AccessToModifiedClosure
                 int threadIdx = Interlocked.Increment(ref cntr);
 
-                var futs = new List<IFuture<object>>();
+                var futs = new List<Task>();
 
                 for (int i = 0; i < objPerThread; i++)
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Put(new CacheTestKey(key), new PortablePerson("Person-" + key, key));
-
-                    futs.Add(cache.GetFuture<object>());
+                    futs.Add(cache.PutAsync(new CacheTestKey(key), new PortablePerson("Person-" + key, key)));
                 }
 
                 foreach (var fut in futs)
                 {
-                    fut.Get();
+                    fut.Wait();
 
-                    Assert.IsTrue(fut.IsDone);
+                    Assert.IsTrue(fut.IsCompleted);
                 }
             }, threads);
 
@@ -1729,8 +1711,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Get(new CacheTestKey(key));
-                    var p = cache.GetFuture<PortablePerson>().Get();
+                    var p = cache.GetAsync(new CacheTestKey(key)).Result;
 
                     Assert.IsNotNull(p);
                     Assert.AreEqual(key, p.Age);
@@ -1748,9 +1729,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Put(new CacheTestKey(key), new PortablePerson("Person-" + key, key));
-
-                    cache.GetFuture<object>().Get();
+                    cache.PutAsync(new CacheTestKey(key), new PortablePerson("Person-" + key, key)).Wait();
                 }
             }, threads);
 
@@ -1760,15 +1739,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 int threadIdx = Interlocked.Increment(ref cntr);
 
-                var futs = new List<IFuture<PortablePerson>>();
+                var futs = new List<Task<PortablePerson>>();
 
                 for (int i = 0; i < objPerThread; i++)
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Get(new CacheTestKey(key));
-
-                    futs.Add(cache.GetFuture<PortablePerson>());
+                    futs.Add(cache.GetAsync(new CacheTestKey(key)));
                 }
 
                 for (int i = 0; i < objPerThread; i++)
@@ -1777,7 +1754,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                     int key = threadIdx * objPerThread + i;
 
-                    var p = fut.Get();
+                    var p = fut.Result;
 
                     Assert.IsNotNull(p);
                     Assert.AreEqual(key, p.Age);
@@ -1790,8 +1767,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         //[Category(TestUtils.CATEGORY_INTENSIVE)]
         public void TestAsyncMultithreadedKeepPortable()
         {
-            var cache = Cache().WithAsync().WithKeepPortable<CacheTestKey, PortablePerson>();
-            var portCache = Cache().WithAsync().WithKeepPortable<CacheTestKey, IPortableObject>();
+            var cache = Cache().WithKeepPortable<CacheTestKey, PortablePerson>();
+            var portCache = Cache().WithKeepPortable<CacheTestKey, IPortableObject>();
 
             const int threads = 10;
             const int objPerThread = 1000;
@@ -1803,19 +1780,19 @@ namespace Apache.Ignite.Core.Tests.Cache
                 // ReSharper disable once AccessToModifiedClosure
                 int threadIdx = Interlocked.Increment(ref cntr);
 
-                var futs = new List<IFuture<object>>();
+                var futs = new List<Task>();
 
                 for (int i = 0; i < objPerThread; i++)
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Put(new CacheTestKey(key), new PortablePerson("Person-" + key, key));
+                    var task = cache.PutAsync(new CacheTestKey(key), new PortablePerson("Person-" + key, key));
 
-                    futs.Add(cache.GetFuture<object>());
+                    futs.Add(task);
                 }
 
                 foreach (var fut in futs)
-                    Assert.IsNull(fut.Get());
+                    fut.Wait();
             }, threads);
 
             for (int i = 0; i < threads; i++)
@@ -1840,15 +1817,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 int threadIdx = Interlocked.Increment(ref cntr);
 
-                var futs = new List<IFuture<IPortableObject>>();
+                var futs = new List<Task<IPortableObject>>();
 
                 for (int i = 0; i < objPerThread; i++)
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    portCache.Get(new CacheTestKey(key));
-
-                    futs.Add(cache.GetFuture<IPortableObject>());
+                    futs.Add(portCache.GetAsync(new CacheTestKey(key)));
                 }
 
                 for (int i = 0; i < objPerThread; i++)
@@ -1857,7 +1832,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                     int key = threadIdx * objPerThread + i;
 
-                    var p = fut.Get();
+                    var p = fut.Result;
 
                     Assert.IsNotNull(p);
                     Assert.AreEqual(key, p.GetField<int>("age"));
@@ -1871,22 +1846,20 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 int threadIdx = Interlocked.Increment(ref cntr);
 
-                var futs = new List<IFuture<bool>>();
+                var futs = new List<Task<bool>>();
 
                 for (int i = 0; i < objPerThread; i++)
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Remove(new CacheTestKey(key));
-
-                    futs.Add(cache.GetFuture<bool>());
+                    futs.Add(cache.RemoveAsync(new CacheTestKey(key)));
                 }
 
                 for (int i = 0; i < objPerThread; i++)
                 {
                     var fut = futs[i];
 
-                    Assert.AreEqual(true, fut.Get());
+                    Assert.IsTrue(fut.Result);
                 }
             }, threads);
         }
@@ -2051,16 +2024,11 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 if (async)
                 {
-                    var asyncTx = tx.WithAsync();
-                    
-                    asyncTx.Commit();
+                    var task = tx.CommitAsync();
 
-                    var fut = asyncTx.GetFuture();
+                    task.Wait();
 
-                    fut.Get();
-
-                    Assert.IsTrue(fut.IsDone);
-                    Assert.AreEqual(fut.Get(), null);
+                    Assert.IsTrue(task.IsCompleted);
                 }
                 else
                     tx.Commit();
@@ -2399,24 +2367,22 @@ namespace Apache.Ignite.Core.Tests.Cache
                 // Expected
             }
 
-            tx = Transactions.TxStart().WithAsync();
+            tx = Transactions.TxStart();
 
             Assert.AreEqual(TransactionState.Active, tx.State);
 
-            tx.Commit();
-
-            tx.GetFuture().Get();
+            tx.CommitAsync().Wait();
 
             Assert.AreEqual(TransactionState.Committed, tx.State);
 
-            tx.Rollback();  // Illegal, but should not fail here; will fail in future
+            var task = tx.RollbackAsync();  // Illegal, but should not fail here; will fail in task
 
             try
             {
-                tx.GetFuture<object>().Get();
+                task.Wait();
                 Assert.Fail();
             }
-            catch (InvalidOperationException)
+            catch (AggregateException)
             {
                 // Expected
             }
@@ -2493,22 +2459,21 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Category(TestUtils.CategoryIntensive)]
         public void TestFuturesGc()
         {
-            var cache = Cache().WithAsync();
+            var cache = Cache();
 
-            cache.Put(1, 1);
+            cache.PutAsync(1, 1);
 
             for (int i = 0; i < 10; i++)
             {
                 TestUtils.RunMultiThreaded(() =>
                 {
                     for (int j = 0; j < 1000; j++)
-                        cache.Get(1);
+                        cache.GetAsync(1);
                 }, 5);
 
                 GC.Collect();
 
-                cache.Get(1);
-                Assert.AreEqual(1, cache.GetFuture<int>().Get());
+                Assert.AreEqual(1, cache.GetAsync(1).Result);
             }
 
             Thread.Sleep(2000);
@@ -2828,6 +2793,22 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
+        public void TestSerializableKeepPortable()
+        {
+            var cache = Cache<int, TestSerializableObject>();
+
+            var obj = new TestSerializableObject {Name = "Vasya", Id = 128};
+
+            cache.Put(1, obj);
+
+            var portableResult = cache.WithKeepPortable<int, IPortableObject>().Get(1);
+
+            var resultObj = portableResult.Deserialize<TestSerializableObject>();
+
+            Assert.AreEqual(obj, resultObj);
+        }
+
+        [Test]
         public void TestInvoke()
         {
             TestInvoke(false);
@@ -2849,7 +2830,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 TestInvoke<NonSerializableCacheEntryProcessor>(async);
                 Assert.Fail();
             }
-            catch (SerializationException)
+            catch (PortableException)
             {
                 // Expected
             }
@@ -2857,7 +2838,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         private void TestInvoke<T>(bool async) where T: AddArgCacheEntryProcessor, new()
         {
-            var cache = async ? Cache().WithAsync().WrapAsync() : Cache();
+            var cache = async ? Cache().WrapAsync() : Cache();
 
             cache.Clear();
 
@@ -2884,7 +2865,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             AssertThrowsCacheEntryProcessorException(
                 () => cache.Invoke(key, new T {ThrowErrPortable = true}, arg));
             AssertThrowsCacheEntryProcessorException(
-                () => cache.Invoke(key, new T { ThrowErrNonSerializable = true }, arg), "SerializationException");
+                () => cache.Invoke(key, new T { ThrowErrNonSerializable = true }, arg), "PortableException");
         }
 
         private static void AssertThrowsCacheEntryProcessorException(Action action, string containsText = null)
@@ -2930,7 +2911,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     TestInvokeAll<NonSerializableCacheEntryProcessor>(async, i);
                     Assert.Fail();
                 }
-                catch (SerializationException)
+                catch (PortableException)
                 {
                     // Expected
                 }
@@ -2939,7 +2920,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         public void TestInvokeAll<T>(bool async, int entryCount) where T : AddArgCacheEntryProcessor, new()
         {
-            var cache = async ? Cache().WithAsync().WrapAsync() : Cache();
+            var cache = async ? Cache().WrapAsync() : Cache();
 
             var entries = Enumerable.Range(1, entryCount).ToDictionary(x => x, x => x + 1);
 
@@ -2978,7 +2959,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             TestInvokeAllException(cache, entries, new T { ThrowErrPortable = true, ThrowOnKey = errKey }, 
                 arg, errKey);
             TestInvokeAllException(cache, entries, new T { ThrowErrNonSerializable = true, ThrowOnKey = errKey }, 
-                arg, errKey, "SerializationException");
+                arg, errKey, "PortableException");
 
         }
 
@@ -3003,26 +2984,25 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestSkipStore()
         {
-            CacheProxyImpl<int, int> cache = (CacheProxyImpl<int, int>)Cache();
+            var cache = (CacheImpl<int, int>) Cache();
 
-            Assert.IsFalse(cache.SkipStore);
+            Assert.IsFalse(cache.IsSkipStore);
 
             // Ensure correct flag set.
-            CacheProxyImpl<int, int> cacheSkipStore1 = (CacheProxyImpl<int, int>)cache.WithSkipStore();
+            var cacheSkipStore1 = (CacheImpl<int, int>) cache.WithSkipStore();
 
             Assert.AreNotSame(cache, cacheSkipStore1);
-            Assert.IsFalse(cache.SkipStore);
-            Assert.IsTrue(cacheSkipStore1.SkipStore);
+            Assert.IsFalse(cache.IsSkipStore);
+            Assert.IsTrue(cacheSkipStore1.IsSkipStore);
 
             // Ensure that the same instance is returned if flag is already set.
-            CacheProxyImpl<int, int> cacheSkipStore2 = (CacheProxyImpl<int, int>)cacheSkipStore1.WithSkipStore();
+            var cacheSkipStore2 = (CacheImpl<int, int>) cacheSkipStore1.WithSkipStore();
 
-            Assert.IsTrue(cacheSkipStore2.SkipStore);
+            Assert.IsTrue(cacheSkipStore2.IsSkipStore);
             Assert.AreSame(cacheSkipStore1, cacheSkipStore2);
 
             // Ensure other flags are preserved.
-            Assert.IsTrue(((CacheProxyImpl<int, int>)cache.WithKeepPortable<int, int>().WithSkipStore()).IsKeepPortable);
-            Assert.IsTrue(cache.WithAsync().WithSkipStore().IsAsync);
+            Assert.IsTrue(((CacheImpl<int, int>) cache.WithKeepPortable<int, int>().WithSkipStore()).IsKeepPortable);
         }
 
         [Test]
@@ -3046,7 +3026,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             var fut = cache.Rebalance();
 
-            Assert.IsNull(fut.Get());
+            
         }
 
         [Test]
@@ -3110,7 +3090,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         private void TestKeepPortableFlag(bool async)
         {
-            var cache0 = async ? Cache().WithAsync().WrapAsync() : Cache();
+            var cache0 = async ? Cache().WrapAsync() : Cache();
 
             var cache = cache0.WithKeepPortable<int, PortablePerson>();
 

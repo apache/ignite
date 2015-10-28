@@ -15,53 +15,54 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Common
+namespace Apache.Ignite.Core.Impl.Portable
 {
-    using Apache.Ignite.Core.Impl.Portable;
+    using System;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
-    /// Simple wrapper over result to handle marshalling properly.
+    /// Wraps Serializable item in a portable.
     /// </summary>
-    internal class PortableResultWrapper : IPortableWriteAware
+    internal class DateTimeHolder : IPortableWriteAware
     {
         /** */
-        private readonly object _result;
+        private readonly DateTime _item;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PortableResultWrapper"/> class.
+        /// Constructor.
         /// </summary>
-        /// <param name="reader">The reader.</param>
-        public PortableResultWrapper(IPortableReader reader)
+        /// <param name="item">The item to wrap.</param>
+        public DateTimeHolder(DateTime item)
         {
-            var reader0 = (PortableReaderImpl)reader.GetRawReader();
-
-            _result = PortableUtils.ReadPortableOrSerializable<object>(reader0);
+            _item = item;
         }
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="res">Result.</param>
-        public PortableResultWrapper(object res)
+        /// <param name="reader">The reader.</param>
+        public DateTimeHolder(IPortableReader reader)
         {
-            _result = res;
+            Debug.Assert(reader != null);
+
+            _item = DateTime.FromBinary(reader.GetRawReader().ReadLong());
         }
 
         /// <summary>
-        /// Result.
+        /// Gets the item to wrap.
         /// </summary>
-        public object Result
+        public DateTime Item
         {
-            get { return _result; }
+            get { return _item; }
         }
 
         /** <inheritDoc /> */
         public void WritePortable(IPortableWriter writer)
         {
-            var writer0 = (PortableWriterImpl) writer.GetRawWriter();
+            Debug.Assert(writer != null);
 
-            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, Result));
+            writer.GetRawWriter().WriteLong(_item.ToBinary());
         }
     }
 }
