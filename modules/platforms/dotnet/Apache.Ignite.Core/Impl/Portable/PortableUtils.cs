@@ -1596,7 +1596,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="rawDataOffset">Raw data offset.</param>
          * <returns>Dictionary with field ID as key and field position as value.</returns>
          */
-        public static IDictionary<int, int> ObjectFields(IPortableStream stream, int typeId, int rawDataOffset)
+        public static IDictionary<int, int> GetObjectFields(IPortableStream stream, int typeId, int rawDataOffset)
         {
             int endPos = stream.Position + rawDataOffset - FullHdrLen;
 

@@ -180,7 +180,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 int rawDataOffset = stream.ReadInt();
 
-                _fields = PortableUtils.ObjectFields(stream, _typeId, rawDataOffset);
+                _fields = PortableUtils.GetObjectFields(stream, _typeId, rawDataOffset);
             }
         }
 
