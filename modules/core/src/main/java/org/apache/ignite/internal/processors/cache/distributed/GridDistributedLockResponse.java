@@ -72,12 +72,14 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param lockVer Lock version.
      * @param futId Future ID.
      * @param cnt Key count.
+     * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
-        int cnt) {
-        super(lockVer, cnt);
+        int cnt,
+        boolean addDepInfo) {
+        super(lockVer, cnt, addDepInfo);
 
         assert futId != null;
 
@@ -92,12 +94,14 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param lockVer Lock ID.
      * @param futId Future ID.
      * @param err Error.
+     * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
-        Throwable err) {
-        super(lockVer, 0);
+        Throwable err,
+        boolean addDepInfo) {
+        super(lockVer, 0, addDepInfo);
 
         assert futId != null;
 
@@ -112,13 +116,15 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param futId Future ID.
      * @param cnt Count.
      * @param err Error.
+     * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
         int cnt,
-        Throwable err) {
-        super(lockVer, cnt);
+        Throwable err,
+        boolean addDepInfo) {
+        super(lockVer, cnt, addDepInfo);
 
         assert futId != null;
 

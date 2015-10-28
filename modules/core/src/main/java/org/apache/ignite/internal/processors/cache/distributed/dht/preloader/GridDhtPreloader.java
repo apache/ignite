@@ -372,7 +372,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
                 cctx.cacheId(),
                 msg.futureId(),
-                msg.miniId());
+                msg.miniId(),
+                cctx.deploymentEnabled());
 
             for (KeyCacheObject k : msg.keys()) {
                 int p = cctx.affinity().partition(k);

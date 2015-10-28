@@ -266,9 +266,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             }
 
             if (tx.onePhaseCommit()) {
-                finishOnePhase();
+                boolean commit = this.commit && err == null;
 
-                tx.tmFinish(commit && err == null);
+                finishOnePhase(commit);
+
+                tx.tmFinish(commit);
             }
 
             Throwable th = this.err.get();
@@ -452,7 +454,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         null,
                         0,
                         null,
-                        0);
+                        0,
+                        tx.activeCachesDeploymentEnabled());
 
                     finishReq.checkCommitted(true);
 
@@ -509,9 +512,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     }
 
     /**
-     *
+     * @param commit Commit flag.
      */
-    private void finishOnePhase() {
+    private void finishOnePhase(boolean commit) {
         // No need to send messages as transaction was already committed on remote node.
         // Finish local mapping only as we need send commit message to backups.
         for (GridDistributedTxMapping m : mappings.values()) {
@@ -521,6 +524,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 // Add new future.
                 if (fut != null)
                     add(fut);
+
+                break;
             }
         }
     }
@@ -574,7 +579,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             null,
             tx.size(),
             tx.subjectId(),
-            tx.taskNameHash()
+            tx.taskNameHash(),
+            tx.activeCachesDeploymentEnabled()
         );
 
         // If this is the primary node for the keys.

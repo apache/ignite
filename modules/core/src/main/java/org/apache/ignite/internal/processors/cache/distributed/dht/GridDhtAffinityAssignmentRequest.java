@@ -52,6 +52,11 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean partitionExchangeMessage() {
         return true;
     }

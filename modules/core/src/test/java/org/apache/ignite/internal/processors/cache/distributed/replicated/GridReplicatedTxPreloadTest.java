@@ -30,4 +30,9 @@ public class GridReplicatedTxPreloadTest extends IgniteTxPreloadAbstractTest {
     @Override protected CacheMode cacheMode() {
         return REPLICATED;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testLocalTxPreloadingOptimistic() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1755");
+    }
 }
