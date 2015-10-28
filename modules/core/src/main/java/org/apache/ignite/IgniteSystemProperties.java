@@ -17,9 +17,11 @@
 
 package org.apache.ignite;
 
+import java.io.Serializable;
 import java.lang.management.RuntimeMXBean;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -361,6 +363,13 @@ public final class IgniteSystemProperties {
 
     /** JDBC driver cursor remove delay. */
     public static final String IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY = "IGNITE_JDBC_DRIVER_CURSOR_RMV_DELAY";
+
+    /**
+     * Manages {@link OptimizedMarshaller} behavior of {@code serialVersionUID} computation for
+     * {@link Serializable} classes.
+     * */
+    public static final String IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID =
+        "IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID";
 
     /**
      * Enforces singleton.

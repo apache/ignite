@@ -22,8 +22,6 @@ import org.junit.runners.Suite;
 
 /**
  * MQTT streamer tests.
- *
- * @author Raul Kripalani
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({

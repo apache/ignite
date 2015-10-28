@@ -33,12 +33,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class IgniteFairAffinityDynamicCacheSelfTest extends GridCommonAbstractTest {
+public class FairAffinityDynamicCacheSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    public IgniteFairAffinityDynamicCacheSelfTest(){
+    public FairAffinityDynamicCacheSelfTest(){
         super(false);
     }
 

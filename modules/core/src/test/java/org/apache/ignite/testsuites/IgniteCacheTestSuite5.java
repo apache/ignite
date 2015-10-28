@@ -15,18 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.testsuites;
 
-import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheNearReaderUpdateTest;
+import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
 
 /**
- * Tests exclude neighbors flag for rendezvous affinity function.
+ * Test suite.
  */
-public class GridCacheRendezvousAffinityFunctionExcludeNeighborsSelfTest extends
-    GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected AffinityFunction affinityFunction() {
-        return new RendezvousAffinityFunction(true);
+public class IgniteCacheTestSuite5 extends TestSuite {
+    /**
+     * @return IgniteCache test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("IgniteCache Test Suite part 5");
+
+        suite.addTestSuite(CacheSerializableTransactionsTest.class);
+        suite.addTestSuite(CacheNearReaderUpdateTest.class);
+
+        return suite;
     }
 }

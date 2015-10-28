@@ -68,6 +68,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
+import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -417,7 +418,8 @@ public class IgniteTxHandler {
 
             if (tx.isRollbackOnly()) {
                 try {
-                    tx.rollback();
+                    if (tx.state() != TransactionState.ROLLED_BACK && tx.state() != TransactionState.ROLLING_BACK)
+                        tx.rollback();
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to rollback transaction: " + tx, e);
