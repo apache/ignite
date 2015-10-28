@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private IPortableIdMapper _curMapper;
         
         /** Current raw position. */
-        private long _curRawPos;
+        private int _curRawPos;
 
         /** Current type structure tracker, */
         private PortableStructureTracker _curStruct;
@@ -1091,7 +1091,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write object.
         /// </summary>
         /// <param name="obj">Object.</param>
-        public void Write<T>(T obj)
+        public unsafe void Write<T>(T obj)
         {
             // Handle special case for null.
             if (obj == null)
@@ -1129,21 +1129,14 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (!(desc.Serializer is IPortableSystemTypeSerializer) && WriteHandle(pos, obj))
                     return;
 
-                // Write header.
-                _stream.WriteByte(PU.HdrFull);
-                _stream.WriteByte(PU.ProtoVer);
-                _stream.WriteBool(desc.UserType);
-                _stream.WriteInt(desc.TypeId);
-                _stream.WriteInt(obj.GetHashCode());
-
-                // Skip length as it is not known in the first place.
-                _stream.Seek(8, SeekOrigin.Current);
+                // Skip header length as not everything is known now
+                _stream.Seek(sizeof(PortableObjectHeader), SeekOrigin.Current);
 
                 // Preserve old frame.
                 int oldTypeId = _curTypeId;
                 IPortableNameMapper oldConverter = _curConverter;
                 IPortableIdMapper oldMapper = _curMapper;
-                long oldRawPos = _curRawPos;
+                int oldRawPos = _curRawPos;
                 
                 var oldStruct = _curStruct;
 
@@ -1158,15 +1151,29 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Write object fields.
                 desc.Serializer.WritePortable(obj, this);
 
-                // Calculate and write length.
-                int len = _stream.Position - pos;
+                // TODO: Write schema
+                bool hasSchema = true;  // TODO:
+                int schemaPos = _stream.Position;
+                int schemaOffset = hasSchema ? schemaPos - pos : sizeof(PortableObjectHeader);
 
-                _stream.WriteInt(pos + PU.OffsetLen, len);
+                // ..schema goes here..
+
+                // Calculate and write header.
+                int len = _stream.Position - pos;
                 
-                if (_curRawPos != 0)
-                    _stream.WriteInt(pos + PU.OffsetRaw, (int)(_curRawPos - pos));
-                else
-                    _stream.WriteInt(pos + PU.OffsetRaw, len);
+                if (hasSchema)
+                {
+                    // raw offset is in last 4 bytes
+                    int rawOff = _curRawPos == 0 ? len : _curRawPos - pos;
+                    len += 4;
+                    _stream.WriteInt(rawOff);
+                }
+
+                // Write header
+                var header = new PortableObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len, 0,
+                    schemaOffset); // TODO: SchemaId
+
+                PortableObjectHeader.Write(&header, _stream, pos);
 
                 // Apply structure updates if any.
                 _curStruct.UpdateWriterStructure(this);

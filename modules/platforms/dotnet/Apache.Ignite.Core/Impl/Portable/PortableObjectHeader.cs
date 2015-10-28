@@ -37,6 +37,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         public readonly int SchemaId;
         public readonly int SchemaOffset;
 
+        public PortableObjectHeader(bool userType, int typeId, int hashCode, int length, int schemaId, int schemaOffset)
+        {
+            Header = PortableUtils.HdrFull;
+            Version = PortableUtils.ProtoVer;
+            Flags = (short) (userType ? FlagUserType : 0);
+
+            TypeId = typeId;
+            HashCode = hashCode;
+            Length = length;
+            SchemaId = schemaId;
+            SchemaOffset = schemaOffset;
+        }
+
         private PortableObjectHeader(IPortableStream stream, int position)
         {
             stream.Seek(position, SeekOrigin.Begin);
@@ -51,6 +64,18 @@ namespace Apache.Ignite.Core.Impl.Portable
             SchemaOffset = stream.ReadInt();
         }
 
+        private void Write(IPortableStream stream)
+        {
+            stream.WriteByte(Header);
+            stream.WriteByte(Version);
+            stream.WriteShort(Flags);
+            stream.WriteInt(Length);
+            stream.WriteInt(TypeId);
+            stream.WriteInt(HashCode);
+            stream.WriteInt(SchemaId);
+            stream.WriteInt(SchemaOffset);
+        }
+
         public bool IsUserType
         {
             get { return (Flags & FlagUserType) == FlagUserType; }
@@ -61,18 +86,28 @@ namespace Apache.Ignite.Core.Impl.Portable
             get { return (Flags & FlagRawOnly) == FlagRawOnly; }
         }
 
-        public static PortableObjectHeader Read(IPortableStream stream, int position)
-        {
-            if (!BitConverter.IsLittleEndian) 
-                return new PortableObjectHeader(stream, position);
 
-            unsafe
+        public static unsafe void Write(PortableObjectHeader* hdr, IPortableStream stream, int position)
+        {
+            stream.Seek(position, SeekOrigin.Begin);
+
+            if (BitConverter.IsLittleEndian)
+                stream.Write((byte*) hdr, sizeof (PortableObjectHeader));
+            else
+                hdr->Write(stream);
+        }
+
+        public static unsafe PortableObjectHeader Read(IPortableStream stream, int position)
+        {
+            if (BitConverter.IsLittleEndian)
             {
                 var hdr = new PortableObjectHeader();
-                stream.Read((byte*)&hdr, position, sizeof(PortableObjectHeader));
+                stream.Read((byte*) &hdr, position, sizeof (PortableObjectHeader));
 
                 return hdr;
             }
+
+            return new PortableObjectHeader(stream, position);
         }
     }
 }
