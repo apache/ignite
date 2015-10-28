@@ -568,7 +568,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="hash">New hash.</param>
         /// <param name="vals">Values to be replaced.</param>
         /// <returns>Mutated object.</returns>
-        private void Mutate0(Context ctx, PortableHeapStream inStream, IPortableStream outStream,
+        private unsafe void Mutate0(Context ctx, PortableHeapStream inStream, IPortableStream outStream,
             bool changeHash, int hash, IDictionary<int, PortableBuilderField> vals)
         {
             int inStartPos = inStream.Position;
@@ -605,14 +605,11 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             else if (inHdr == PortableUtils.HdrFull)
             {
-                // TODO: PortableObjectHeader
-                PortableUtils.ValidateProtocolVersion(inStream.ReadByte());
+                var inHeader = PortableObjectHeader.Read(inStream, inStartPos);
+                
+                PortableUtils.ValidateProtocolVersion(inHeader.Version);
 
-                byte inUsrFlag = inStream.ReadByte();
-                int inTypeId = inStream.ReadInt();
-                int inHash = inStream.ReadInt();
-                int inLen = inStream.ReadInt();
-                int inRawOff = inStream.ReadInt();
+                int inRawOff = PortableObjectHeader.GetRawOffset(inHeader, inStartPos, inStream);
 
                 int hndPos;
 
@@ -627,11 +624,14 @@ namespace Apache.Ignite.Core.Impl.Portable
                     else
                     {
                         // New object, write in full form.
-                        outStream.WriteByte(PortableUtils.HdrFull);
-                        outStream.WriteByte(PortableUtils.ProtoVer);
-                        outStream.WriteByte(inUsrFlag);
-                        outStream.WriteInt(inTypeId);
-                        outStream.WriteInt(changeHash ? hash : inHash);
+                        // TODO: Postpone this till the end
+                        if (changeHash)
+                        {
+                            var outHeader = inHeader.ChangeHashCode(hash);
+                            PortableObjectHeader.Write(&outHeader, outStream);
+                        }
+                        else
+                            PortableObjectHeader.Write(&inHeader, outStream);
 
                         // Skip length and raw offset as they are not known at this point.
                         outStream.Seek(8, SeekOrigin.Current);

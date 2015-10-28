@@ -39,6 +39,18 @@ namespace Apache.Ignite.Core.Impl.Portable
         public readonly int SchemaId;
         public readonly int SchemaOffset;
 
+        public PortableObjectHeader(byte header, byte version, short flags, int typeId, int hashCode, int length, int schemaId, int schemaOffset)
+        {
+            Header = header;
+            Version = version;
+            Flags = flags;
+            TypeId = typeId;
+            HashCode = hashCode;
+            Length = length;
+            SchemaId = schemaId;
+            SchemaOffset = schemaOffset;
+        }
+
         public PortableObjectHeader(bool userType, int typeId, int hashCode, int length, int schemaId, int schemaOffset, bool rawOnly)
         {
             Header = PortableUtils.HdrFull;
@@ -127,10 +139,20 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
+        public PortableObjectHeader ChangeHashCode(int hashCode)
+        {
+            return new PortableObjectHeader(Header, Version, Flags, TypeId, hashCode, Length, SchemaId, SchemaOffset);
+        }
+
         public static unsafe void Write(PortableObjectHeader* hdr, IPortableStream stream, int position)
         {
             stream.Seek(position, SeekOrigin.Begin);
 
+            Write(hdr, stream);
+        }
+
+        public static unsafe void Write(PortableObjectHeader* hdr, IPortableStream stream)
+        {
             if (BitConverter.IsLittleEndian)
                 stream.Write((byte*) hdr, Size);
             else
