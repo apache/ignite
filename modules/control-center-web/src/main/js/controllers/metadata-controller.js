@@ -142,12 +142,14 @@ consoleModule.controller('metadataController', [
             var jdbcDrivers = [];
 
             function _findPreset(jdbcDriverJar) {
+                var jdbcDriverClass = '';
+
                 var idx = _.findIndex(jdbcDrivers, function (jdbcDriver) {
                     return  jdbcDriver.jdbcDriverJar == jdbcDriverJar;
                 });
 
                 if (idx >= 0) {
-                    var jdbcDriverClass = jdbcDrivers[idx].jdbcDriverClass;
+                    jdbcDriverClass = jdbcDrivers[idx].jdbcDriverClass;
 
                     idx = _.findIndex(presets, function (preset) {
                         return preset.jdbcDriverClass == jdbcDriverClass;
@@ -159,7 +161,7 @@ consoleModule.controller('metadataController', [
 
                 return {
                     db: 'unknown',
-                    jdbcDriverClass: '',
+                    jdbcDriverClass: jdbcDriverClass,
                     jdbcDriverJar: '',
                     jdbcUrl: 'jdbc:[database]',
                     user: 'sa'
