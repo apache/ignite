@@ -47,6 +47,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
@@ -156,6 +157,12 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     /** ID mapper. */
     private PortableIdMapper idMapper;
 
+    /** Schema Id. */
+    private int schemaId;
+
+    /** Object schema. */
+    private PortableObjectSchema schema;
+
     /**
      * @param ctx Context.
      * @param arr Array.
@@ -219,6 +226,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         footerStart = footer.get1();
         footerEnd = footer.get2();
+
+        schemaId = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_ID_POS);
 
         rawOff = PortableUtils.rawOffsetAbsolute(in, start);
 
@@ -2524,6 +2533,43 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Field offset.
      */
     private boolean hasField(int id) {
+        // TODO: Move to IGNITE-1803.
+//        if (schema == null) {
+//            PortableObjectSchema schema0 = ctx.schema(typeId, schemaId);
+//
+//            if (schema0 == null) {
+//                Map<Integer, Integer> fields = new HashMap<>(256, 0.5f);
+//
+//                int searchPos = footerStart;
+//
+//                while (searchPos < footerEnd) {
+//                    int fieldId = in.readIntPositioned(searchPos);
+//
+//                    fields.put(fieldId, searchPos + 4 - footerStart);
+//
+//                    searchPos += 8;
+//                }
+//
+//                schema0 = new PortableObjectSchema(schemaId, fields);
+//
+//                ctx.addSchema(typeId, schemaId, schema0);
+//            }
+//
+//            schema = schema0;
+//        }
+//
+//        int fieldOffsetPos = schema.fieldOffsetPosition(id);
+//
+//        if (fieldOffsetPos != 0) {
+//            int fieldOffset = in.readIntPositioned(start + footerStart + fieldOffsetPos);
+//
+//            in.position(start + fieldOffset);
+//
+//            return true;
+//        }
+//        else
+//            return false;
+
         assert hdrLen != 0;
 
         int searchHead = footerStart;
@@ -2635,7 +2681,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Override public long skip(long n) throws IOException {
-        return skipBytes((int)n);
+        return skipBytes((int) n);
     }
 
     /** {@inheritDoc} */

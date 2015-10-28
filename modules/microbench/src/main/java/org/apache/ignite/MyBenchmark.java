@@ -31,16 +31,20 @@
 
 package org.apache.ignite;
 
+import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableMetaDataHandler;
+import org.apache.ignite.internal.portable.PortableObjectImpl;
 import org.apache.ignite.internal.portable.streams.PortableSimpleMemoryAllocator;
 import org.apache.ignite.internal.util.IgniteUtils;
 
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.portable.PortableException;
 import org.apache.ignite.portable.PortableMarshalAware;
 import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.portable.PortableObject;
 import org.apache.ignite.portable.PortableReader;
 import org.apache.ignite.portable.PortableWriter;
 import org.apache.ignite.util.MarshallerContextMicrobenchImpl;
@@ -84,7 +88,7 @@ public class MyBenchmark {
 
     private static byte[] marshAddrBytes;
 
-    private static byte[] optMarshAddrBytes;
+    private static PortableObject marshPortable;
 
     @Setup
     public static void setup() throws Exception {
@@ -103,12 +107,10 @@ public class MyBenchmark {
         optMarsh = new OptimizedMarshaller();
         optMarsh.setContext(new MarshallerContextMicrobenchImpl(null));
 
-        marshAddrBytes = marsh.marshal(new Address());
-        optMarshAddrBytes = optMarsh.marshal(new Address());
+        marshAddrBytes = marsh.marshal(new ManyFields());
 
-        byte[] data = marsh.marshal(new Address());
-
-        System.out.println(data.length);
+        marshPortable = new PortableObjectImpl(U.<GridPortableMarshaller>field(marsh, "impl").context(),
+            marshAddrBytes, 0);
     }
 
 //    @Benchmark
@@ -117,16 +119,25 @@ public class MyBenchmark {
 //    }
 
     @Benchmark
-    public Address testAddressRead() throws Exception {
+    public Object testRead() throws Exception {
         return marsh.unmarshal(marshAddrBytes, null);
     }
+
+//    @Benchmark
+//    public Object testFieldRead() throws Exception {
+//        return marshPortable.field("street");
+//    }
 
     private static final Address addr = new Address();
 
     public static void main(String[] args) throws Exception {
 //        setup();
-//        while (true)
+//        while (true) {
 //            marsh.unmarshal(marshAddrBytes, null);
+////            String val = marshPortable.field("street");
+////
+////            System.out.println(val);
+//        }
 
         Options opts = new OptionsBuilder().include(MyBenchmark.class.getSimpleName()).build();
         new Runner(opts).run();
@@ -153,6 +164,21 @@ public class MyBenchmark {
         customer.emailAddress = "email." + customer.name + "@gmail.com";
         //customer.longArray = new long[100];
         return customer;
+    }
+
+    static class ManyFields {
+        public int field1 = 1;
+        public int field2 = 2;
+        public int field3 = 3;
+        public int field4 = 4;
+        public int field5 = 5;
+
+        public int field6 = 6;
+        public int field7 = 7;
+        public int field8 = 8;
+        public int field9 = 9;
+        public int field10 = 10;
+
     }
 
     static class Address implements PortableMarshalAware, Externalizable {
