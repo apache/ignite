@@ -673,11 +673,12 @@ namespace Apache.Ignite.Core.Impl.Portable
                     // Set new frame.
                     _curTypeId = hdr.TypeId;
                     _curPos = pos;
+                            
+                    _curRawOffset = hdr.SchemaOffset;
 
-                    if (hdr.IsRawOnly)
-                        _curRawOffset = hdr.SchemaOffset;
-                    else
+                    if (!hdr.IsRawOnly && (((hdr.Length - hdr.SchemaOffset) >> 2) & 0x1) != 0x0)
                     {
+                        // Odd amount of records in schema => raw offset is the very last 4 bytes in object.
                         Stream.Seek(pos + hdr.Length - 4, SeekOrigin.Begin);
                         _curRawOffset = Stream.ReadInt();
                     }
