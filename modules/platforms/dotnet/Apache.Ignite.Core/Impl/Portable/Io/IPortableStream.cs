@@ -277,6 +277,14 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="dest">Destination.</param>
         /// <param name="cnt">Count.</param>
         void Read(byte* dest, int cnt);
+
+        /// <summary>
+        /// Read arbitrary data.
+        /// </summary>
+        /// <param name="dest">Destination.</param>
+        /// <param name="pos">Stream position to read from.</param>
+        /// <param name="cnt">Count.</param>
+        void Read(byte* dest, int pos, int cnt);
         
         /// <summary>
         /// Position.

@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
+    using System.Runtime.InteropServices;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -615,9 +616,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Reads the full object.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals", MessageId = "hashCode")]
-        private T ReadFullObject<T>(int pos)
+        private unsafe T ReadFullObject<T>(int pos)
         {
             // TODO: Get header as a struct.
+            var hdr = new ObjectHeader();
+            Stream.Read((byte*) &hdr, pos, sizeof (ObjectHeader));
 
             // Validate protocol version.
             PortableUtils.ValidateProtocolVersion(Stream);
@@ -959,6 +962,19 @@ namespace Apache.Ignite.Core.Impl.Portable
             var hash = Stream.ReadInt();
 
             return new PortableUserObject(_marsh, bytes, offs, id, hash);
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct ObjectHeader
+        {
+            public byte Header;
+            public byte Version;
+            public ushort Flags;
+            public int Length;
+            public int TypeId;
+            public int HashCode;
+            public int SchemaId;
+            public int SchemaOffset;
         }
     }
 }

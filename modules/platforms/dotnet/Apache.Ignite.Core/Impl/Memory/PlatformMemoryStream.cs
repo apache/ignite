@@ -435,6 +435,16 @@ namespace Apache.Ignite.Core.Impl.Memory
             CopyToAndShift(dest, cnt);
         }
 
+        /** <inheritdoc /> */
+        public void Read(byte* dest, int pos, int cnt)
+        {
+            if (pos + cnt > _len)
+                throw new EndOfStreamException("Not enough data in stream [expected=" + cnt +
+                                               ", remaining=" + (_len - pos) + ']');
+
+            PlatformMemoryUtils.CopyMemory(_data + pos, dest, cnt);
+        }
+
         #endregion 
 
         #region MISC
