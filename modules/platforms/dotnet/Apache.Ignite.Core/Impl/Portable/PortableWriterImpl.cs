@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Collections;
     using System.Collections.Generic;
     using System.IO;
-
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Portable.Metadata;
     using Apache.Ignite.Core.Impl.Portable.Structure;
@@ -58,12 +58,18 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Current mapper. */
         private IPortableIdMapper _curMapper;
         
+        /** Current object start position. */
+        private int _curPos;
+
         /** Current raw position. */
         private int _curRawPos;
 
         /** Current type structure tracker, */
         private PortableStructureTracker _curStruct;
-        
+
+        /** Current schema. */
+        private ResizeableArray<PortableObjectSchemaField> _curSchema;
+
         /** Whether we are currently detaching an object. */
         private bool _detaching;
 
@@ -1137,26 +1143,31 @@ namespace Apache.Ignite.Core.Impl.Portable
                 IPortableNameMapper oldConverter = _curConverter;
                 IPortableIdMapper oldMapper = _curMapper;
                 int oldRawPos = _curRawPos;
+                var oldPos = _curPos;
                 
                 var oldStruct = _curStruct;
+                var oldSchema = _curSchema;
 
                 // Push new frame.
                 _curTypeId = desc.TypeId;
                 _curConverter = desc.NameConverter;
                 _curMapper = desc.Mapper;
                 _curRawPos = 0;
+                _curPos = pos;
 
                 _curStruct = new PortableStructureTracker(desc, desc.WriterTypeStructure);
+                _curSchema = new ResizeableArray<PortableObjectSchemaField>(4);
 
                 // Write object fields.
                 desc.Serializer.WritePortable(obj, this);
 
-                // TODO: Write schema
-                bool hasSchema = true;  // TODO:
+                // Write schema
+                bool hasSchema = _curSchema.Count > 0;
                 int schemaPos = _stream.Position;
                 int schemaOffset = hasSchema ? schemaPos - pos : sizeof(PortableObjectHeader);
 
                 // ..schema goes here..
+                _curSchema.Count
 
                 // Calculate and write header.
                 int len = _stream.Position - pos;
@@ -1183,8 +1194,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                 _curConverter = oldConverter;
                 _curMapper = oldMapper;
                 _curRawPos = oldRawPos;
+                _curPos = oldPos;
 
                 _curStruct = oldStruct;
+                _curSchema = oldSchema;
             }
             else
             {
@@ -1434,7 +1447,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_curRawPos != 0)
                 throw new PortableException("Cannot write named fields after raw data is written.");
 
-            _stream.WriteInt(_curStruct.GetFieldId(fieldName, fieldTypeId));
+            _curSchema.Add(new PortableObjectSchemaField(_curStruct.GetFieldId(fieldName, fieldTypeId), 
+                _stream.Position - _curPos));
         }
 
         /// <summary>

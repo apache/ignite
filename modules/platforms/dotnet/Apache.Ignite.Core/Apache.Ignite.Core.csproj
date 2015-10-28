@@ -179,6 +179,7 @@
     <Compile Include="Impl\Common\IFutureInternal.cs" />
     <Compile Include="Impl\Common\IgniteHome.cs" />
     <Compile Include="Impl\Common\LoadedAssembliesResolver.cs" />
+    <Compile Include="Impl\Common\ResizeableArray.cs" />
     <Compile Include="Impl\Common\TypeCaster.cs" />
     <Compile Include="Impl\Compute\Closure\ComputeAbstractClosureTask.cs" />
     <Compile Include="Impl\Compute\Closure\ComputeActionJob.cs" />
@@ -254,6 +255,7 @@
     <Compile Include="Impl\Portable\PortableMode.cs" />
     <Compile Include="Impl\Portable\PortableObjectHandle.cs" />
     <Compile Include="Impl\Portable\PortableObjectHeader.cs" />
+    <Compile Include="Impl\Portable\PortableObjectSchemaField.cs" />
     <Compile Include="Impl\Portable\PortableReaderExtensions.cs" />
     <Compile Include="Impl\Portable\PortableReaderHandleDictionary.cs" />
     <Compile Include="Impl\Portable\PortableReaderImpl.cs" />
