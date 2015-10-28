@@ -600,16 +600,14 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 var pos = portableBytesPos + offs;
 
-                if (!doDetach)
-                    return GetPortableUserObject(pos, pos, Stream.GetArray());
-                
-                Stream.Seek(pos + PortableUtils.OffsetLen, SeekOrigin.Begin);
+                var hdr = PortableObjectHeader.Read(Stream, pos);
 
-                var len = Stream.ReadInt();
+                if (!doDetach)
+                    return new PortableUserObject(_marsh, Stream.GetArray(), pos, hdr.TypeId, hdr.HashCode);
 
                 Stream.Seek(pos, SeekOrigin.Begin);
 
-                return GetPortableUserObject(pos, 0, Stream.ReadByteArray(len));
+                return new PortableUserObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr.TypeId, hdr.HashCode);
             }
             finally
             {
@@ -686,9 +684,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                             
                     _curRawOffset = hdr.SchemaOffset;
 
-                    if (!hdr.IsRawOnly && (((hdr.Length - hdr.SchemaOffset) >> 2) & 0x1) != 0x0)
+                    if (hdr.HasRawOffset)
                     {
-                        // Odd amount of records in schema => raw offset is the very last 4 bytes in object.
                         Stream.Seek(pos + hdr.Length - 4, SeekOrigin.Begin);
                         _curRawOffset = Stream.ReadInt();
                         _curFooterEnd -= 4;
@@ -927,19 +924,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         private T Read<T>(Func<IPortableStream, T> readFunc, byte expHdr)
         {
             return IsNotNullHeader(expHdr) ? readFunc(Stream) : default(T);
-        }
-
-        /// <summary>
-        /// Gets the portable user object from a byte array.
-        /// </summary>
-        /// <param name="pos">Position in the current stream.</param>
-        /// <param name="offs">Offset in the byte array.</param>
-        /// <param name="bytes">Bytes.</param>
-        private PortableUserObject GetPortableUserObject(int pos, int offs, byte[] bytes)
-        {
-            var hdr = PortableObjectHeader.Read(Stream, pos);
-
-            return new PortableUserObject(_marsh, bytes, offs, hdr.TypeId, hdr.HashCode);
         }
     }
 }

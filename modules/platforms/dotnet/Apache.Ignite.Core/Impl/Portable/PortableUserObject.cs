@@ -31,6 +31,9 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// </summary>
     internal class PortableUserObject : IPortableObject
     {
+        /** Cache empty dictionary. */
+        private static readonly IDictionary<int, int> EmptyFields = new Dictionary<int, int>();
+
         /** Marshaller. */
         private readonly PortableMarshaller _marsh;
 
@@ -172,16 +175,26 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private void InitializeFields()
         {
-            if (_fields == null)
-            {
-                IPortableStream stream = new PortableHeapStream(_data);
+            if (_fields != null) 
+                return;
 
-                stream.Seek(_offset + PortableUtils.OffsetRaw, SeekOrigin.Begin);
+            _fields = EmptyFields;
 
-                int rawDataOffset = stream.ReadInt();
+            var stream = new PortableHeapStream(_data);
 
-                _fields = PortableUtils.GetObjectFields(stream, _typeId, rawDataOffset);
-            }
+            var hdr = PortableObjectHeader.Read(stream, _offset);
+
+            var fieldCount = hdr.SchemaFieldCount;
+
+            if (fieldCount == 0)
+                return;
+
+            stream.Seek(_offset + hdr.SchemaOffset, SeekOrigin.Begin);
+
+            _fields = new Dictionary<int, int>(fieldCount);
+
+            for (var i = 0; i < fieldCount; i++)
+                _fields.Add(stream.ReadInt(), stream.ReadInt());
         }
 
         /** <inheritdoc /> */

@@ -284,7 +284,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="dest">Destination.</param>
         /// <param name="pos">Stream position to read from.</param>
         /// <param name="cnt">Count.</param>
-        void Read(byte* dest, int pos, int cnt);
+        void Read(byte* dest, int pos, int cnt);   // TODO: Remove me
         
         /// <summary>
         /// Position.

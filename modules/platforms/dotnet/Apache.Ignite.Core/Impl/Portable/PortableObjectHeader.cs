@@ -90,6 +90,30 @@ namespace Apache.Ignite.Core.Impl.Portable
             get { return (Flags & FlagRawOnly) == FlagRawOnly; }
         }
 
+        public bool HasRawOffset
+        {
+            get
+            {
+                // Odd amount of records in schema => raw offset is the very last 4 bytes in object.
+                return !IsRawOnly && (((Length - SchemaOffset) >> 2) & 0x1) != 0x0;
+            }
+        }
+
+        public unsafe int SchemaFieldCount
+        {
+            get
+            {
+                if (IsRawOnly)
+                    return 0;
+
+                var schemaSize = Length - SchemaOffset;
+
+                if (HasRawOffset)
+                    schemaSize -= 4;
+
+                return schemaSize / sizeof (PortableObjectSchemaField);
+            }
+        }
 
         public static unsafe void Write(PortableObjectHeader* hdr, IPortableStream stream, int position)
         {
@@ -105,8 +129,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             if (BitConverter.IsLittleEndian)
             {
+                stream.Seek(position, SeekOrigin.Begin);
+                
                 var hdr = new PortableObjectHeader();
-                stream.Read((byte*) &hdr, position, sizeof (PortableObjectHeader));
+
+                stream.Read((byte*) &hdr, sizeof (PortableObjectHeader));
 
                 return hdr;
             }
