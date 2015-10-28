@@ -31,10 +31,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  *
  */
 public class IgniteCacheTxExecutionContextTest extends IgniteCacheAbstractExecutionContextTest {
-    static {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, PortableMarshaller.class.getName());
-    }
-
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return CacheMode.PARTITIONED;
