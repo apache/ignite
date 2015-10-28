@@ -15,24 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.yardstick.cache.model;
 
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.IgniteTxExceptionAbstractSelfTest;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import java.io.Serializable;
 
 /**
- * Tests near cache.
+ *
  */
-public class GridCacheNearTxExceptionSelfTest extends IgniteTxExceptionAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
+public class Account implements Serializable {
+    /** */
+    private final int balance;
+
+    /**
+     * @param balance Balance.
+     */
+    public Account(int balance) {
+        this.balance = balance;
     }
 
-    /** {@inheritDoc} */
-    @Override public void testTransformBackup(){
-        fail("https://issues.apache.org/jira/browse/IGNITE-1601");
+    /**
+     * @return Balance.
+     */
+    public int balance() {
+        return balance;
     }
 }

@@ -30,6 +30,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -37,9 +39,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -48,11 +52,18 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Tests that removes are not lost when topology changes.
@@ -155,29 +166,54 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testPutAndRemove() throws Exception {
-        putAndRemove(DUR, GridTestUtils.TestMemoryMode.HEAP);
+        putAndRemove(DUR, null, null, GridTestUtils.TestMemoryMode.HEAP);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAndRemovePessimisticTx() throws Exception {
+        if (atomicityMode() != CacheAtomicityMode.TRANSACTIONAL)
+            return;
+
+        putAndRemove(30_000, PESSIMISTIC, REPEATABLE_READ, GridTestUtils.TestMemoryMode.HEAP);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAndRemoveOptimisticSerializableTx() throws Exception {
+        if (atomicityMode() != CacheAtomicityMode.TRANSACTIONAL)
+            return;
+
+        putAndRemove(30_000, OPTIMISTIC, SERIALIZABLE, GridTestUtils.TestMemoryMode.HEAP);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutAndRemoveOffheapEvict() throws Exception {
-        putAndRemove(30_000, GridTestUtils.TestMemoryMode.OFFHEAP_EVICT);
+        putAndRemove(30_000, null, null, GridTestUtils.TestMemoryMode.OFFHEAP_EVICT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutAndRemoveOffheapEvictSwap() throws Exception {
-        putAndRemove(30_000, GridTestUtils.TestMemoryMode.OFFHEAP_EVICT_SWAP);
+        putAndRemove(30_000, null, null, GridTestUtils.TestMemoryMode.OFFHEAP_EVICT_SWAP);
     }
 
     /**
      * @param duration Test duration.
+     * @param txConcurrency Transaction concurrency if test explicit transaction.
+     * @param txIsolation Transaction isolation if test explicit transaction.
      * @param memMode Memory mode.
      * @throws Exception If failed.
      */
-    private void putAndRemove(long duration, GridTestUtils.TestMemoryMode memMode) throws Exception {
+    private void putAndRemove(long duration,
+        final TransactionConcurrency txConcurrency,
+        final TransactionIsolation txIsolation,
+        GridTestUtils.TestMemoryMode memMode) throws Exception {
         assertEquals(testClientNode(), (boolean) grid(0).configuration().isClientMode());
 
         grid(0).destroyCache(null);
@@ -216,6 +252,8 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
 
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
+                IgniteTransactions txs = sndCache0.unwrap(Ignite.class).transactions();
+
                 while (!stop.get()) {
                     for (int i = 0; i < 100; i++) {
                         int key = rnd.nextInt(KEYS_CNT);
@@ -225,14 +263,54 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
                         while (true) {
                             try {
                                 if (put) {
-                                    sndCache0.put(key, i);
+                                    boolean failed = false;
 
-                                    expVals.put(key, F.t(i));
+                                    if (txConcurrency != null) {
+                                        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+                                            sndCache0.put(key, i);
+
+                                            tx.commit();
+                                        }
+                                        catch (CacheException | IgniteException e) {
+                                            if (!X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                                                log.error("Unexpected error: " + e);
+
+                                                throw e;
+                                            }
+
+                                            failed = true;
+                                        }
+                                    }
+                                    else
+                                        sndCache0.put(key, i);
+
+                                    if (!failed)
+                                        expVals.put(key, F.t(i));
                                 }
                                 else {
-                                    sndCache0.remove(key);
+                                    boolean failed = false;
 
-                                    expVals.put(key, F.<Integer>t(null));
+                                    if (txConcurrency != null) {
+                                        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+                                            sndCache0.remove(key);
+
+                                            tx.commit();
+                                        }
+                                        catch (CacheException | IgniteException e) {
+                                            if (!X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                                                log.error("Unexpected error: " + e);
+
+                                                throw e;
+                                            }
+
+                                            failed = true;
+                                        }
+                                    }
+                                    else
+                                        sndCache0.remove(key);
+
+                                    if (!failed)
+                                        expVals.put(key, F.<Integer>t(null));
                                 }
 
                                 break;

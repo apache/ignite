@@ -15,24 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.IgniteTxExceptionAbstractSelfTest;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxMultiThreadedSelfTest;
 
 /**
- * Tests near cache.
+ *
  */
-public class GridCacheNearTxExceptionSelfTest extends IgniteTxExceptionAbstractSelfTest {
+public class GridCachePartitionedNearDisabledTxMultiThreadedSelfTest
+    extends GridCachePartitionedTxMultiThreadedSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testTransformBackup(){
-        fail("https://issues.apache.org/jira/browse/IGNITE-1601");
+    @Override protected boolean nearEnabled() {
+        return false;
     }
 }

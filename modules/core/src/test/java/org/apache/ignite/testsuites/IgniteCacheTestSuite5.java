@@ -15,24 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.testsuites;
 
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.IgniteTxExceptionAbstractSelfTest;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheNearReaderUpdateTest;
+import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
 
 /**
- * Tests near cache.
+ * Test suite.
  */
-public class GridCacheNearTxExceptionSelfTest extends IgniteTxExceptionAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
+public class IgniteCacheTestSuite5 extends TestSuite {
+    /**
+     * @return IgniteCache test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("IgniteCache Test Suite part 5");
 
-    /** {@inheritDoc} */
-    @Override public void testTransformBackup(){
-        fail("https://issues.apache.org/jira/browse/IGNITE-1601");
+        suite.addTestSuite(CacheSerializableTransactionsTest.class);
+        suite.addTestSuite(CacheNearReaderUpdateTest.class);
+
+        return suite;
     }
 }
