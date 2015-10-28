@@ -20,7 +20,7 @@ package org.apache.ignite.stream.flume;
 import junit.framework.TestSuite;
 
 /**
- * Apache Flume streamer tests.
+ * Tests for a Flume sink for Ignite.
  */
 public class IgniteFlumeSinkTestSuite extends TestSuite {
     /**
