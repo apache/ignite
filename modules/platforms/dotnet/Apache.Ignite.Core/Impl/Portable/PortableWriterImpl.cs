@@ -1197,6 +1197,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 PortableObjectHeader.Write(&header, _stream, pos);
 
+                Stream.Seek(pos + len, SeekOrigin.Begin);  // Seek to the end
+
                 // Apply structure updates if any.
                 _curStruct.UpdateWriterStructure(this);
 
