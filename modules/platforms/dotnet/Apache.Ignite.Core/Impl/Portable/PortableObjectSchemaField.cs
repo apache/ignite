@@ -34,22 +34,24 @@ namespace Apache.Ignite.Core.Impl.Portable
             Offset = offset;
         }
 
-        public static unsafe void WriteArray(PortableObjectSchemaField[] fields, IPortableStream stream)
+        public static unsafe void WriteArray(PortableObjectSchemaField[] fields, IPortableStream stream, int count)
         {
             Debug.Assert(fields != null);
-            Debug.Assert(fields.Length > 0);
+            Debug.Assert(count > 0);
 
             if (BitConverter.IsLittleEndian)
             {
                 fixed (PortableObjectSchemaField* ptr = &fields[0])
                 {
-                    stream.Write((byte*) ptr, sizeof (PortableObjectSchemaField) * fields.Length);
+                    stream.Write((byte*) ptr, sizeof (PortableObjectSchemaField) * count);
                 }
             }
             else
             {
-                foreach (var field in fields)
+                for (int i = 0; i < count; i++)
                 {
+                    var field = fields[i];
+
                     stream.WriteInt(field.Id);
                     stream.WriteInt(field.Offset);
                 }
