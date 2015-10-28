@@ -681,8 +681,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     // Set new frame.
                     _curTypeId = hdr.TypeId;
                     _curPos = pos;
-                    _curFooterStart = pos + hdr.SchemaOffset;
                     _curFooterEnd = pos + hdr.Length;
+                    _curFooterStart = hdr.IsRawOnly ? _curFooterEnd : pos + hdr.SchemaOffset;
                             
                     _curRawOffset = hdr.SchemaOffset;
 
