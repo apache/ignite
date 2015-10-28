@@ -1692,7 +1692,9 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
             res.line(res.importClass('java.net.URL') + ' res = IgniteConfiguration.class.getResource("/secret.properties");');
             res.line(res.importClass('java.io.File') + ' propsFile = new File(res.toURI());');
             res.line(res.importClass('java.util.Properties') + ' props = new Properties();');
-            res.line('props.load(new ' + res.importClass('java.io.FileInputStream') + '(propsFile));');
+            res.startBlock('try (' + res.importClass('java.io.InputStream') + ' in = new ' + res.importClass('java.io.FileInputStream') + '(propsFile)) {');
+            res.line('props.load(in);');
+            res.endBlock('}');
 
             res.needEmptyLine = true;
         }
