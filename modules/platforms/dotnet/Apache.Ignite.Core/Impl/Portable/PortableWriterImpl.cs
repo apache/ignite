@@ -1182,10 +1182,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Calculate and write header.
                 int len = _stream.Position - pos;
                 
-                if (hasSchema)
+                if (hasSchema && _curRawPos > 0)
                 {
-                    // raw offset is in last 4 bytes
-                    int rawOff = _curRawPos == 0 ? len : _curRawPos - pos;
+                    // raw offset is in the last 4 bytes
+                    int rawOff = _curRawPos - pos;
                     len += 4;
                     _stream.WriteInt(rawOff);
                 }
