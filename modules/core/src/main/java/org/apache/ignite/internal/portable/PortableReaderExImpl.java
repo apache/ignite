@@ -2533,63 +2533,64 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Field offset.
      */
     private boolean hasField(int id) {
-        if (schema == null) {
-            PortableObjectSchema schema0 = ctx.schema(typeId, schemaId);
-
-            if (schema0 == null) {
-                Map<Integer, Integer> fields = new HashMap<>(256, 0.5f);
-
-                int searchPos = footerStart;
-
-                while (searchPos < footerEnd) {
-                    int fieldId = in.readIntPositioned(searchPos);
-
-                    fields.put(fieldId, searchPos + 4 - footerStart);
-
-                    searchPos += 8;
-                }
-
-                schema0 = new PortableObjectSchema(schemaId, fields);
-
-                ctx.addSchema(typeId, schemaId, schema0);
-            }
-
-            schema = schema0;
-        }
-
-        int fieldOffsetPos = schema.fieldOffsetPosition(id);
-
-        if (fieldOffsetPos != 0) {
-            int fieldOffset = in.readIntPositioned(start + footerStart + fieldOffsetPos);
-
-            in.position(start + fieldOffset);
-
-            return true;
-        }
-        else
-            return false;
-
-//        assert hdrLen != 0;
+        // TODO: Move to IGNITE-1803.
+//        if (schema == null) {
+//            PortableObjectSchema schema0 = ctx.schema(typeId, schemaId);
 //
-//        int searchHead = footerStart;
-//        int searchTail = footerEnd;
+//            if (schema0 == null) {
+//                Map<Integer, Integer> fields = new HashMap<>(256, 0.5f);
 //
-//        while (true) {
-//            if (searchHead >= searchTail)
-//                return false;
+//                int searchPos = footerStart;
 //
-//            int id0 = in.readIntPositioned(searchHead);
+//                while (searchPos < footerEnd) {
+//                    int fieldId = in.readIntPositioned(searchPos);
 //
-//            if (id0 == id) {
-//                int offset = in.readIntPositioned(searchHead + 4);
+//                    fields.put(fieldId, searchPos + 4 - footerStart);
 //
-//                in.position(start + offset);
+//                    searchPos += 8;
+//                }
 //
-//                return true;
+//                schema0 = new PortableObjectSchema(schemaId, fields);
+//
+//                ctx.addSchema(typeId, schemaId, schema0);
 //            }
 //
-//            searchHead += 8;
+//            schema = schema0;
 //        }
+//
+//        int fieldOffsetPos = schema.fieldOffsetPosition(id);
+//
+//        if (fieldOffsetPos != 0) {
+//            int fieldOffset = in.readIntPositioned(start + footerStart + fieldOffsetPos);
+//
+//            in.position(start + fieldOffset);
+//
+//            return true;
+//        }
+//        else
+//            return false;
+
+        assert hdrLen != 0;
+
+        int searchHead = footerStart;
+        int searchTail = footerEnd;
+
+        while (true) {
+            if (searchHead >= searchTail)
+                return false;
+
+            int id0 = in.readIntPositioned(searchHead);
+
+            if (id0 == id) {
+                int offset = in.readIntPositioned(searchHead + 4);
+
+                in.position(start + offset);
+
+                return true;
+            }
+
+            searchHead += 8;
+        }
     }
 
     /** {@inheritDoc} */
