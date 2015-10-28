@@ -177,6 +177,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             try {
                 IgniteCache<Integer, Integer> cache = ignite0.createCache(ccfg);
 
+                awaitPartitionMapExchange();
+
                 List<Integer> keys = testKeys(cache);
 
                 for (Integer key : keys)
