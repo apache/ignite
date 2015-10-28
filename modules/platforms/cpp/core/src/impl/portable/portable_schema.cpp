@@ -18,6 +18,12 @@
 #include "ignite/impl/portable/portable_schema.h"
 #include "ignite/impl/portable/portable_writer_impl.h"
 
+/** FNV1 hash offset basis. */
+enum { FNV1_OFFSET_BASIS = 0x811C9DC5 };
+
+/** FNV1 hash prime. */
+enum { FNV1_PRIME = 0x01000193 };
+
 namespace ignite
 {
     namespace impl
@@ -34,9 +40,27 @@ namespace ignite
                 delete fieldsInfo;
             }
 
-            void PortableSchema::AddField(int32_t id, int32_t offset)
+            void PortableSchema::AddField(int32_t fieldId, int32_t offset)
             {
-                PortableSchemaFieldInfo info = { id, offset };
+                if (!id)
+                {
+                    // Initialize offset when the first field is written.
+                    id = FNV1_OFFSET_BASIS;
+                }
+
+                // Advance schema hash.
+                int32_t idAccumulator = id ^ (fieldId & 0xFF);
+                idAccumulator *= FNV1_PRIME;
+                idAccumulator ^= (fieldId >> 8) & 0xFF;
+                idAccumulator *= FNV1_PRIME;
+                idAccumulator ^= (fieldId >> 16) & 0xFF;
+                idAccumulator *= FNV1_PRIME;
+                idAccumulator ^= (fieldId >> 24) & 0xFF;
+                idAccumulator *= FNV1_PRIME;
+
+                id = idAccumulator;
+
+                PortableSchemaFieldInfo info = { fieldId, offset };
                 fieldsInfo->push_back(info);
             }
 

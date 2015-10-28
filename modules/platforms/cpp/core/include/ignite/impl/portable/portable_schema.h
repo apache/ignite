@@ -55,7 +55,7 @@ namespace ignite
                  * @param id Field id.
                  * @param offset Field offset.
                  */
-                void AddField(int32_t id, int32_t offset);
+                void AddField(int32_t fieldId, int32_t offset);
 
                 /**
                  * Write Schema to stream.
