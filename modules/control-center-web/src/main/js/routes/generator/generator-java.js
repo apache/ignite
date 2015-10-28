@@ -872,18 +872,18 @@ $generatorJava.cacheStore = function (cache, varName, res) {
 
                     switch (storeFactory.dialect) {
                         case 'DB2':
-                            res.line(dsVarName + '.setServerName("_SERVER_NAME_");');
-                            res.line('// ' + dsVarName + '.setPortNumber("_PORT_NUMBER_"); // 50000 by default');
-                            res.line(dsVarName + '.setDatabaseName("_DATABASE_NAME_");');
-                            res.line('// ' + dsVarName + '.setDriverType(_DRIVER_TYPE_); // 4 by default');
+                            res.line(dsVarName + '.setServerName(props.getProperty("' + dataSourceBean + '.jdbc.server_name"));');
+                            res.line(dsVarName + '.setPortNumber(props.getProperty("' + dataSourceBean + '.jdbc.port_number"));');
+                            res.line(dsVarName + '.setDatabaseName(props.getProperty("' + dataSourceBean + '.jdbc.database_name"));');
+                            res.line(dsVarName + '.setDriverType(props.getProperty("' + dataSourceBean + '.jdbc.driver_type"));');
                             break;
 
                         default:
-                            res.line(dsVarName + '.setURL("_URL_");');
+                            res.line(dsVarName + '.setURL(props.getProperty("' + dataSourceBean + '.jdbc.url"));');
                     }
 
-                    res.line(dsVarName + '.setUser("_USER_NAME_");');
-                    res.line(dsVarName + '.setPassword("_PASSWORD_");');
+                    res.line(dsVarName + '.setUser(props.getProperty("' + dataSourceBean + '.jdbc.username"));');
+                    res.line(dsVarName + '.setPassword(props.getProperty("' + dataSourceBean + '.jdbc.password"));');
                 }
             }
 
@@ -1508,11 +1508,10 @@ $generatorJava.clusterSsl = function(cluster, res) {
         res = $generatorCommon.builder();
 
     if (cluster.sslEnabled && $commonUtils.isDefined(cluster.sslContextFactory)) {
-        cluster.sslContextFactory.keyStorePassword =
-            ($commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.keyStoreFilePath)) ? '_Key_Storage_Password_' : undefined;
+        cluster.sslContextFactory.keyStorePassword = 'props.getProperty("ssl.key.storage.password")';
 
         cluster.sslContextFactory.trustStorePassword = ($commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath)) ?
-            '_Trust_Storage_Password_' : undefined;
+            'props.getProperty("ssl.trust.storage.password")' : undefined;
 
         var propsDesc = $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustManagers) ?
             $generatorCommon.SSL_CONFIGURATION_TRUST_MANAGER_FACTORY.fields :
@@ -1687,6 +1686,15 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
             res.line(' * @throws Exception If failed to construct Ignite configuration instance.');
             res.line(' */');
             res.startBlock('public static IgniteConfiguration createConfiguration() throws Exception {');
+        }
+
+        if (res.datasources.length > 0 || cluster.sslEnabled) {
+            res.line(res.importClass('java.net.URL') + ' res = IgniteConfiguration.class.getResource("/secret.properties");');
+            res.line(res.importClass('java.io.File') + ' propsFile = new File(res.toURI());');
+            res.line(res.importClass('java.util.Properties') + ' props = new Properties();');
+            res.line('props.load(new ' + res.importClass('java.io.FileInputStream') + '(propsFile));');
+
+            res.needEmptyLine = true;
         }
 
         $generatorJava.clusterGeneral(cluster, clientNearCfg, res);
