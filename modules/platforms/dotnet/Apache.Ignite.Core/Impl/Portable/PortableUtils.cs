@@ -1731,13 +1731,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Validate protocol version.
         /// </summary>
-        /// <param name="stream">Stream.</param>
-        public static void ValidateProtocolVersion(IPortableStream stream)
+        /// <param name="version">The version.</param>
+        public static void ValidateProtocolVersion(byte version)
         {
-            byte ver = stream.ReadByte();
-
-            if (ver != ProtoVer)
-                throw new PortableException("Unsupported protocol version: " + ver);
+            if (version != ProtoVer)
+                throw new PortableException("Unsupported protocol version: " + version);
         }
 
         /**

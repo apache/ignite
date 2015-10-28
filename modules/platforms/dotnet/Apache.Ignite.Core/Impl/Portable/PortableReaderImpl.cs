@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
-    using System.Runtime.InteropServices;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -618,20 +617,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         [SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals", MessageId = "hashCode")]
         private unsafe T ReadFullObject<T>(int pos)
         {
-            // TODO: Get header as a struct.
-            var hdr = new ObjectHeader();
-            Stream.Read((byte*) &hdr, pos, sizeof (ObjectHeader));
+            var hdr = new PortableObjectHeader();
+            Stream.Read((byte*) &hdr, pos, sizeof (PortableObjectHeader));
 
             // Validate protocol version.
-            PortableUtils.ValidateProtocolVersion(Stream);
-
-            // Read header.
-            bool userType = Stream.ReadBool();
-            int typeId = Stream.ReadInt();
-            // ReSharper disable once UnusedVariable
-            int hashCode = Stream.ReadInt();
-            int len = Stream.ReadInt();
-            int rawOffset = Stream.ReadInt();
+            PortableUtils.ValidateProtocolVersion(hdr.Version);
 
             try
             {
@@ -641,7 +631,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (_hnds != null && _hnds.TryGetValue(pos, out hndObj))
                     return (T) hndObj;
 
-                if (userType && _mode == PortableMode.ForcePortable)
+                if (hdr.IsUserType && _mode == PortableMode.ForcePortable)
                 {
                     PortableUserObject portObj;
 
@@ -649,7 +639,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     {
                         Stream.Seek(pos, SeekOrigin.Begin);
 
-                        portObj = GetPortableUserObject(pos, 0, Stream.ReadByteArray(len));
+                        portObj = GetPortableUserObject(pos, 0, Stream.ReadByteArray(hdr.Length));
                     }
                     else
                         portObj = GetPortableUserObject(pos, pos, Stream.GetArray());
@@ -665,8 +655,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     // Find descriptor.
                     IPortableTypeDescriptor desc;
 
-                    if (!_descs.TryGetValue(PortableUtils.TypeKey(userType, typeId), out desc))
-                        throw new PortableException("Unknown type ID: " + typeId);
+                    if (!_descs.TryGetValue(PortableUtils.TypeKey(hdr.IsUserType, hdr.TypeId), out desc))
+                        throw new PortableException("Unknown type ID: " + hdr.TypeId);
 
                     // Instantiate object. 
                     if (desc.Type == null)
@@ -681,13 +671,18 @@ namespace Apache.Ignite.Core.Impl.Portable
                     bool oldRaw = _curRaw;
 
                     // Set new frame.
-                    _curTypeId = typeId;
+                    _curTypeId = hdr.TypeId;
                     _curPos = pos;
-                    _curRawOffset = rawOffset;
+
+                    Stream.Seek(pos + hdr.Length - 4, SeekOrigin.Begin);
+                    _curRawOffset = Stream.ReadInt();
+
                     _curStruct = new PortableStructureTracker(desc, desc.ReaderTypeStructure);
                     _curRaw = false;
 
                     // Read object.
+                    Stream.Seek(pos + sizeof (PortableObjectHeader), SeekOrigin.Begin);
+
                     object obj;
 
                     var sysSerializer = desc.Serializer as IPortableSystemTypeSerializer;
@@ -738,7 +733,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             finally
             {
                 // Advance stream pointer.
-                Stream.Seek(pos + len, SeekOrigin.Begin);
+                Stream.Seek(pos + hdr.Length, SeekOrigin.Begin);
             }
         }
 
@@ -962,19 +957,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             var hash = Stream.ReadInt();
 
             return new PortableUserObject(_marsh, bytes, offs, id, hash);
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct ObjectHeader
-        {
-            public byte Header;
-            public byte Version;
-            public ushort Flags;
-            public int Length;
-            public int TypeId;
-            public int HashCode;
-            public int SchemaId;
-            public int SchemaOffset;
         }
     }
 }
