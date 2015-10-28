@@ -274,13 +274,13 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             StringBuilder sb;
 
-            IPortableTypeDescriptor desc = _marsh.GetDescriptor(true, _typeId);
+            IPortableTypeDescriptor desc = _marsh.GetDescriptor(true, _header.TypeId);
 
             IPortableMetadata meta;
 
             try
             {
-                meta = _marsh.GetMetadata(_typeId);
+                meta = _marsh.GetMetadata(_header.TypeId);
             }
             catch (IgniteException)
             {
@@ -288,7 +288,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             if (meta == null)
-                sb = new StringBuilder("PortableObject [typeId=").Append(_typeId).Append(", idHash=" + idHash);
+                sb = new StringBuilder("PortableObject [typeId=").Append(_header.TypeId).Append(", idHash=" + idHash);
             else
             {
                 sb = new StringBuilder(meta.TypeName).Append(" [idHash=" + idHash);
@@ -303,7 +303,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     {
                         sb.Append(", ");
 
-                        int fieldId = PortableUtils.FieldId(_typeId, fieldName, desc.NameConverter, desc.Mapper);
+                        int fieldId = PortableUtils.FieldId(_header.TypeId, fieldName, desc.NameConverter, desc.Mapper);
 
                         int fieldPos;
 
