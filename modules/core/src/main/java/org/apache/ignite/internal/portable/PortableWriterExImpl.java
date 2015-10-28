@@ -326,13 +326,12 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /**
      * Perform post-write activity. This includes:
      * - writing object length;
-     * - writing schema ID;
      * - writing schema offset;
      * - writing schema to the tail.
      *
      * @param userType User type flag.
      */
-    public void postWrite(int schemaId, boolean userType) {
+    public void postWrite(boolean userType) {
         if (schema != null) {
             // Write schema ID.
             out.writeInt(start + SCHEMA_ID_POS, schemaId);
