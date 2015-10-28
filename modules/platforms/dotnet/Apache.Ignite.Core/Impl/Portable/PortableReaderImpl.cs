@@ -603,11 +603,11 @@ namespace Apache.Ignite.Core.Impl.Portable
                 var hdr = PortableObjectHeader.Read(Stream, pos);
 
                 if (!doDetach)
-                    return new PortableUserObject(_marsh, Stream.GetArray(), pos, hdr.TypeId, hdr.HashCode);
+                    return new PortableUserObject(_marsh, Stream.GetArray(), pos, hdr);
 
                 Stream.Seek(pos, SeekOrigin.Begin);
 
-                return new PortableUserObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr.TypeId, hdr.HashCode);
+                return new PortableUserObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
             }
             finally
             {
@@ -642,11 +642,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                     {
                         Stream.Seek(pos, SeekOrigin.Begin);
 
-                        portObj = new PortableUserObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr.TypeId,
-                            hdr.HashCode);
+                        portObj = new PortableUserObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
                     }
                     else
-                        portObj = new PortableUserObject(_marsh, Stream.GetArray(), pos, hdr.TypeId, hdr.HashCode);
+                        portObj = new PortableUserObject(_marsh, Stream.GetArray(), pos, hdr);
 
                     T obj = _builder == null ? TypeCaster<T>.Cast(portObj) : TypeCaster<T>.Cast(_builder.Child(portObj));
 
@@ -680,17 +679,12 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _curTypeId = hdr.TypeId;
                     _curPos = pos;
                     _curFooterEnd = pos + hdr.Length;
-                    _curFooterStart = hdr.IsRawOnly ? _curFooterEnd : pos + hdr.SchemaOffset;
-                            
-                    _curRawOffset = hdr.SchemaOffset;
-
+                    
                     if (hdr.HasRawOffset)
-                    {
-                        Stream.Seek(pos + hdr.Length - 4, SeekOrigin.Begin);
-                        _curRawOffset = Stream.ReadInt();
                         _curFooterEnd -= 4;
-                    }
 
+                    _curFooterStart = hdr.IsRawOnly ? _curFooterEnd : pos + hdr.SchemaOffset;
+                    _curRawOffset = PortableObjectHeader.GetRawOffset(hdr, pos, Stream);
                     _curStruct = new PortableStructureTracker(desc, desc.ReaderTypeStructure);
                     _curRaw = false;
 

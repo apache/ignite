@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using Apache.Ignite.Core.Impl.Portable.IO;
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct PortableObjectHeader
+    internal struct PortableObjectHeader : IEquatable<PortableObjectHeader>
     {
         private const int FlagUserType = 0x1;
         private const int FlagRawOnly = 0x2;
@@ -99,6 +99,16 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
+        public static int GetRawOffset(PortableObjectHeader header, int position, IPortableStream stream)
+        {
+            if (!header.HasRawOffset)
+                return header.SchemaOffset;
+
+            stream.Seek(position + header.Length - 4, SeekOrigin.Begin);
+
+            return stream.ReadInt();
+        }
+
         public unsafe int SchemaFieldCount
         {
             get
@@ -139,6 +149,50 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             return new PortableObjectHeader(stream, position);
+        }
+
+        public bool Equals(PortableObjectHeader other)
+        {
+            return Header == other.Header &&
+                   Version == other.Version &&
+                   Flags == other.Flags &&
+                   TypeId == other.TypeId &&
+                   HashCode == other.HashCode &&
+                   Length == other.Length &&
+                   SchemaId == other.SchemaId &&
+                   SchemaOffset == other.SchemaOffset;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is PortableObjectHeader && Equals((PortableObjectHeader) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = Header.GetHashCode();
+                hashCode = (hashCode*397) ^ Version.GetHashCode();
+                hashCode = (hashCode*397) ^ Flags.GetHashCode();
+                hashCode = (hashCode*397) ^ TypeId;
+                hashCode = (hashCode*397) ^ HashCode;
+                hashCode = (hashCode*397) ^ Length;
+                hashCode = (hashCode*397) ^ SchemaId;
+                hashCode = (hashCode*397) ^ SchemaOffset;
+                return hashCode;
+            }
+        }
+
+        public static bool operator ==(PortableObjectHeader left, PortableObjectHeader right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(PortableObjectHeader left, PortableObjectHeader right)
+        {
+            return !left.Equals(right);
         }
     }
 }
