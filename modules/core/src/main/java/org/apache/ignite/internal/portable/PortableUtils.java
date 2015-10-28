@@ -631,7 +631,7 @@ public class PortableUtils {
 
         if (PortableUtils.isRawOnly(flags))
             // No schema, raw offset is located on schema offset position.
-            return in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+            return start + in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
         else {
             // Schema exists.
             int schemaOff = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
