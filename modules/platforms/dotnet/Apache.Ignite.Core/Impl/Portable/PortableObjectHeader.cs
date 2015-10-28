@@ -37,11 +37,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         public readonly int SchemaId;
         public readonly int SchemaOffset;
 
-        public PortableObjectHeader(bool userType, int typeId, int hashCode, int length, int schemaId, int schemaOffset)
+        public PortableObjectHeader(bool userType, int typeId, int hashCode, int length, int schemaId, int schemaOffset, bool rawOnly)
         {
             Header = PortableUtils.HdrFull;
             Version = PortableUtils.ProtoVer;
+            
             Flags = (short) (userType ? FlagUserType : 0);
+
+            if (rawOnly)
+                Flags = (short) (Flags | FlagRawOnly);
 
             TypeId = typeId;
             HashCode = hashCode;

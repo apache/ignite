@@ -1192,7 +1192,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 // Write header
                 var header = new PortableObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len, _curSchemaId,
-                    schemaOffset);
+                    schemaOffset, !hasSchema);
 
                 PortableObjectHeader.Write(&header, _stream, pos);
 
