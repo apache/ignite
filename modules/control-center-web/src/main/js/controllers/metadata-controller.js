@@ -1296,9 +1296,10 @@ consoleModule.controller('metadataController', [
             };
 
             $scope.resetAll = function() {
-                _.forEach($scope.metadata, function(group) {
-                    $scope.resetItem(group.group);
-                });
+                $confirm.confirm('Are you sure you want to reset current metadata?')
+                    .then(function() {
+                        $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
+                    });
             };
         }]
 );

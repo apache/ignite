@@ -594,13 +594,10 @@ consoleModule.controller('cachesController', [
             };
 
             $scope.resetAll = function() {
-                _.forEach($scope.general, function(group) {
-                    $scope.resetItem(group.group);
-                });
-
-                _.forEach($scope.advanced, function(group) {
-                    $scope.resetItem(group.group);
-                });
+                $confirm.confirm('Are you sure you want to reset current cache?')
+                    .then(function() {
+                        $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
+                    });
             };
         }]
 );
