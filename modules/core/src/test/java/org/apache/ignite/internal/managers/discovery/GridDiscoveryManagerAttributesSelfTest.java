@@ -25,9 +25,9 @@ import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
@@ -121,22 +121,29 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testUseDefaultSuid() throws Exception {
-        doTestUseDefaultSuid(true, false, true);
-        doTestUseDefaultSuid(false, true, true);
-        doTestUseDefaultSuid(true, true, false);
-        doTestUseDefaultSuid(false, false, false);
+        try {
+            doTestUseDefaultSuid(Boolean.TRUE.toString(), Boolean.FALSE.toString(), true);
+            doTestUseDefaultSuid(Boolean.FALSE.toString(), Boolean.TRUE.toString(), true);
+
+            doTestUseDefaultSuid(Boolean.TRUE.toString(), Boolean.TRUE.toString(), false);
+            doTestUseDefaultSuid(Boolean.FALSE.toString(), Boolean.FALSE.toString(), false);
+        }
+        finally {
+            System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID,
+                String.valueOf(OptimizedMarshaller.USE_DFLT_SUID));
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void doTestUseDefaultSuid(Boolean first, Boolean second, boolean fail) throws Exception {
+    private void doTestUseDefaultSuid(String first, String second, boolean fail) throws Exception {
         try {
-            GridTestUtils.setFieldValue(null, OptimizedMarshaller.class, "USE_DFLT_SUID", first);
+            System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, first);
 
             startGrid(0);
 
-            GridTestUtils.setFieldValue(null, OptimizedMarshaller.class, "USE_DFLT_SUID", second);
+            System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, second);
 
             try {
                 startGrid(1);
