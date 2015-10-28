@@ -31,14 +31,14 @@ namespace ignite
             PortableWriterImpl::PortableWriterImpl(InteropOutputStream* stream, PortableIdResolver* idRslvr, 
                 PortableMetadataManager* metaMgr, PortableMetadataHandler* metaHnd) :
                 stream(stream), idRslvr(idRslvr), metaMgr(metaMgr), metaHnd(metaHnd), typeId(idRslvr->GetTypeId()),
-                elemIdGen(0), elemId(0), elemCnt(0), elemPos(-1), rawPos(-1)
+                elemIdGen(0), elemId(0), elemCnt(0), elemPos(-1), rawPos(-1), start(stream->Position())
             {
                 // No-op.
             }
             
             PortableWriterImpl::PortableWriterImpl(InteropOutputStream* stream, PortableMetadataManager* metaMgr) :
                 stream(stream), idRslvr(NULL), metaMgr(metaMgr), metaHnd(NULL), typeId(0), 
-                elemIdGen(0), elemId(0), elemCnt(0), elemPos(-1), rawPos(0)
+                elemIdGen(0), elemId(0), elemCnt(0), elemPos(-1), rawPos(0), start(stream->Position())
             {
                 // No-op.
             }
@@ -516,8 +516,9 @@ namespace ignite
             void PortableWriterImpl::WriteFieldId(const char* fieldName, int32_t fieldTypeId)
             {
                 int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
-                
-                stream->WriteInt32(fieldId);
+                int32_t fieldOff = stream->Position() - start;
+
+                schema.AddField(fieldId, fieldOff);
 
                 if (metaHnd)
                     metaHnd->OnFieldWritten(fieldId, fieldName, fieldTypeId);
@@ -589,6 +590,36 @@ namespace ignite
             void PortableWriterImpl::WriteTopObject<Guid>(const Guid& obj)
             {
                 WriteTopObject0<Guid>(obj, PortableUtils::WriteGuid, IGNITE_TYPE_UUID);
+            }
+
+            void PortableWriterImpl::PostWrite()
+            {
+                int32_t lenWithoutSchema = stream->Position() - start;
+
+                if (schema.Empty())
+                {
+                    stream->Position(start + IGNITE_OFFSET_FLAGS);
+                    stream->WriteInt16(IGNITE_PORTABLE_FLAG_USER_OBJECT | IGNITE_PORTABLE_FLAG_RAW_ONLY);
+
+                    stream->WriteInt32(start + IGNITE_OFFSET_LEN, lenWithoutSchema);
+                    stream->WriteInt32(start + IGNITE_OFFSET_SCHEMA_ID, 0);
+                    stream->WriteInt32(start + IGNITE_OFFSET_SCHEMA_OR_RAW_OFF, GetRawPosition() - start);
+                }
+                else
+                {
+                    int32_t schemaId = schema.GetId();
+
+                    WriteAndClearSchema();
+
+                    if (rawPos > 0)
+                        stream->WriteInt32(rawPos - start);
+
+                    int32_t length = stream->Position() - start;
+
+                    stream->WriteInt32(start + IGNITE_OFFSET_LEN, length);
+                    stream->WriteInt32(start + IGNITE_OFFSET_SCHEMA_ID, schemaId);
+                    stream->WriteInt32(start + IGNITE_OFFSET_SCHEMA_OR_RAW_OFF, lenWithoutSchema);
+                }
             }
 
             bool PortableWriterImpl::HasSchema() const

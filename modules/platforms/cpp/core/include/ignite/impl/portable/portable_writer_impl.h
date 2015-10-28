@@ -520,7 +520,7 @@ namespace ignite
                 void WriteElement(int32_t id, K key, V val)
                 {
                     CheckSession(id);
-                    
+
                     WriteTopObject<K>(key);
                     WriteTopObject<V>(val);
 
@@ -556,8 +556,8 @@ namespace ignite
                 template<typename T>
                 void WriteObject(const char* fieldName, T val)
                 {
-                    CheckRawMode(false); 
-                        
+                    CheckRawMode(false);
+
                     // 1. Write field ID.
                     WriteFieldId(fieldName, IGNITE_TYPE_OBJECT);
 
@@ -619,37 +619,22 @@ namespace ignite
 
                         type.Write(writer, obj);
 
-                        int32_t lenWithoutSchema = stream->Position() - pos;
-
-                        if (writerImpl.schema.Empty())
-                        {
-                            stream->Position(pos + IGNITE_OFFSET_FLAGS);
-                            stream->WriteInt16(IGNITE_PORTABLE_FLAG_USER_OBJECT | IGNITE_PORTABLE_FLAG_RAW_ONLY);
-
-                            stream->WriteInt32(pos + IGNITE_OFFSET_LEN, lenWithoutSchema);
-                            stream->WriteInt32(pos + IGNITE_OFFSET_SCHEMA_ID, 0);
-                            stream->WriteInt32(pos + IGNITE_OFFSET_SCHEMA_OR_RAW_OFF, writerImpl.GetRawPosition() - pos);
-                        }
-                        else
-                        {
-                            int32_t schemaId = writerImpl.schema.GetId();
-
-                            writerImpl.WriteAndClearSchema();
-
-                            if (writerImpl.rawPos > 0)
-                                stream->WriteInt32(rawPos - pos);
-
-                            int32_t length = stream->Position() - pos;
-
-                            stream->WriteInt32(pos + IGNITE_OFFSET_LEN, length);
-                            stream->WriteInt32(pos + IGNITE_OFFSET_SCHEMA_ID, schemaId);
-                            stream->WriteInt32(pos + IGNITE_OFFSET_SCHEMA_OR_RAW_OFF, lenWithoutSchema);
-                        }
+                        writerImpl.PostWrite();
 
                         if (metaMgr)
                             metaMgr->SubmitHandler(type.GetTypeName(), idRslvr.GetTypeId(), metaHnd.Get());
                     }
                 }
+
+                /**
+                 * Perform all nessasary post-write operations.
+                 * Includes:
+                 * - writing object length;
+                 * - writing schema offset;
+                 * - writing schema id;
+                 * - writing schema to the tail.
+                 */
+                void PostWrite();
 
                 /**
                  * Check if the writer has object schema.
@@ -703,6 +688,9 @@ namespace ignite
 
                 /** Schema of the current object. */
                 PortableSchema schema;
+
+                /** Writing start position. */
+                int32_t start;
 
                 IGNITE_NO_COPY_ASSIGNMENT(PortableWriterImpl)
 
