@@ -560,10 +560,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             var len = Stream.ReadInt();
 
-            var portablePos = Stream.Position;
+            var portableBytesPos = Stream.Position;
 
             if (_mode != PortableMode.Deserialize)
-                return TypeCaster<T>.Cast(ReadAsPortable(portablePos, len, doDetach));
+                return TypeCaster<T>.Cast(ReadAsPortable(portableBytesPos, len, doDetach));
 
             Stream.Seek(len, SeekOrigin.Current);
 
@@ -571,7 +571,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var retPos = Stream.Position;
 
-            Stream.Seek(portablePos + offset, SeekOrigin.Begin);
+            Stream.Seek(portableBytesPos + offset, SeekOrigin.Begin);
 
             _mode = PortableMode.KeepPortable;
 
@@ -590,15 +590,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Reads the portable object in portable form.
         /// </summary>
-        private PortableUserObject ReadAsPortable(int dataPos, int dataLen, bool doDetach)
+        private PortableUserObject ReadAsPortable(int portableBytesPos, int dataLen, bool doDetach)
         {
             try
             {
-                Stream.Seek(dataLen + dataPos, SeekOrigin.Begin);
+                Stream.Seek(dataLen + portableBytesPos, SeekOrigin.Begin);
 
                 var offs = Stream.ReadInt(); // offset inside data
 
-                var pos = dataPos + offs;
+                var pos = portableBytesPos + offs;
 
                 if (!doDetach)
                     return GetPortableUserObject(pos, pos, Stream.GetArray());
@@ -613,7 +613,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             finally
             {
-                Stream.Seek(dataPos + dataLen + 4, SeekOrigin.Begin);
+                Stream.Seek(portableBytesPos + dataLen + 4, SeekOrigin.Begin);
             }
         }
 
@@ -644,10 +644,11 @@ namespace Apache.Ignite.Core.Impl.Portable
                     {
                         Stream.Seek(pos, SeekOrigin.Begin);
 
-                        portObj = GetPortableUserObject(pos, 0, Stream.ReadByteArray(hdr.Length));
+                        portObj = new PortableUserObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr.TypeId,
+                            hdr.HashCode);
                     }
                     else
-                        portObj = GetPortableUserObject(pos, pos, Stream.GetArray());
+                        portObj = new PortableUserObject(_marsh, Stream.GetArray(), pos, hdr.TypeId, hdr.HashCode);
 
                     T obj = _builder == null ? TypeCaster<T>.Cast(portObj) : TypeCaster<T>.Cast(_builder.Child(portObj));
 
@@ -936,13 +937,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="bytes">Bytes.</param>
         private PortableUserObject GetPortableUserObject(int pos, int offs, byte[] bytes)
         {
-            Stream.Seek(pos + PortableUtils.OffsetTypeId, SeekOrigin.Begin);
+            var hdr = PortableObjectHeader.Read(Stream, pos);
 
-            var id = Stream.ReadInt();
-
-            var hash = Stream.ReadInt();
-
-            return new PortableUserObject(_marsh, bytes, offs, id, hash);
+            return new PortableUserObject(_marsh, bytes, offs, hdr.TypeId, hdr.HashCode);
         }
     }
 }
