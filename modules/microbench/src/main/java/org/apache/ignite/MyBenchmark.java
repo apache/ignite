@@ -35,7 +35,7 @@ import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableMetaDataHandler;
 import org.apache.ignite.internal.portable.streams.PortableSimpleMemoryAllocator;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.marshaller.MarshallerContextTestImpl;
+
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.portable.PortableException;
@@ -43,6 +43,7 @@ import org.apache.ignite.portable.PortableMarshalAware;
 import org.apache.ignite.portable.PortableMetadata;
 import org.apache.ignite.portable.PortableReader;
 import org.apache.ignite.portable.PortableWriter;
+import org.apache.ignite.util.MarshallerContextMicrobenchImpl;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -96,16 +97,16 @@ public class MyBenchmark {
 
         marsh = new PortableMarshaller();
         PortableContext ctx = new PortableContext(metaHnd, null);
-        marsh.setContext(new MarshallerContextTestImpl(null));
+        marsh.setContext(new MarshallerContextMicrobenchImpl(null));
         IgniteUtils.invoke(PortableMarshaller.class, marsh, "setPortableContext", ctx);
 
         optMarsh = new OptimizedMarshaller();
-        optMarsh.setContext(new MarshallerContextTestImpl(null));
+        optMarsh.setContext(new MarshallerContextMicrobenchImpl(null));
 
         marshAddrBytes = marsh.marshal(new Address());
         optMarshAddrBytes = optMarsh.marshal(new Address());
 
-        byte[] data = marsh.marshal(newCustomer(1));
+        byte[] data = marsh.marshal(new Address());
 
         System.out.println(data.length);
     }
