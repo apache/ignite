@@ -1173,7 +1173,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                             if (rec && !entry.isInternal())
                                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
                                     (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
-                                    false, null, null, null);
+                                    false, null, null, null, false);
                         }
                     }
                     catch (IgniteCheckedException e) {

@@ -98,7 +98,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             hasOldVal,
             subjId,
             cloClsName,
-            taskName);
+            taskName,
+            false);
     }
 
     /**
@@ -118,7 +119,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             false,
             null,
             null,
-            null);
+            null,
+            false);
     }
 
     /**
@@ -148,7 +150,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasOldVal,
         UUID subjId,
         String cloClsName,
-        String taskName)
+        String taskName,
+        boolean keepPortable)
     {
         addEvent(part,
             key,
@@ -161,7 +164,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             hasOldVal,
             subjId,
             cloClsName,
-            taskName);
+            taskName,
+            keepPortable);
     }
 
     /**
@@ -205,7 +209,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             hasOldVal,
             subjId,
             cloClsName,
-            taskName);
+            taskName,
+            false);
     }
 
     /**
@@ -236,7 +241,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasOldVal,
         UUID subjId,
         @Nullable String cloClsName,
-        @Nullable String taskName
+        @Nullable String taskName,
+        boolean keepPortable
     ) {
         assert key != null || type == EVT_CACHE_STARTED || type == EVT_CACHE_STOPPED;
 
@@ -265,9 +271,9 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 key == null ? null : key.value(cctx.cacheObjectContext(), false),
                 xid,
                 lockId,
-                newVal == null ? null : newVal.value(cctx.cacheObjectContext(), false),
+                cctx.cacheObjectContext().unwrapPortableIfNeeded(newVal, keepPortable, true),
                 hasNewVal,
-                oldVal == null ? null : oldVal.value(cctx.cacheObjectContext(), false),
+                cctx.cacheObjectContext().unwrapPortableIfNeeded(oldVal, keepPortable, true),
                 hasOldVal,
                 subjId,
                 cloClsName,

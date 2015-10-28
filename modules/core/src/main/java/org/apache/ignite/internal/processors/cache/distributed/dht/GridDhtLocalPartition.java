@@ -658,7 +658,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                                     cached.hasValue(),
                                     null,
                                     null,
-                                    null);
+                                    null,
+                                    false);
                             }
                         }
                     }

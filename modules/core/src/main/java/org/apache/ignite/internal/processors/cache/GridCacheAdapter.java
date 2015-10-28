@@ -945,13 +945,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (doomed != null && ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
             // Event notification.
             ctx.events().addEvent(doomed.partition(), doomed.key(), locNodeId, (IgniteUuid)null, null,
-                EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null, null, null);
+                EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null, null, null, false);
 
         if (created != null) {
             // Event notification.
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_CREATED))
                 ctx.events().addEvent(created.partition(), created.key(), locNodeId, (IgniteUuid)null, null,
-                    EVT_CACHE_ENTRY_CREATED, null, false, null, false, null, null, null);
+                    EVT_CACHE_ENTRY_CREATED, null, false, null, false, null, null, null, false);
 
             if (touch)
                 ctx.evicts().touch(cur, topVer);
@@ -1046,7 +1046,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
                 // Event notification.
                 ctx.events().addEvent(entry.partition(), entry.key(), locNodeId, (IgniteUuid)null, null,
-                    EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null, null, null);
+                    EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null, null, null, false);
         }
         else if (log.isDebugEnabled())
             log.debug("Remove will not be done for key (obsolete entry got replaced or removed): " + key);
