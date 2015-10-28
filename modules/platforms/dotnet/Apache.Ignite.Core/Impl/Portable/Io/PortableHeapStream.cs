@@ -378,19 +378,20 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         }
 
         /** <inheritdoc /> */
-        public override int Remaining()
+
+        public override int Remaining
         {
-            return Data.Length - Pos;
+            get { return Data.Length - Pos; }
         }
 
         /** <inheritdoc /> */
-        public override byte[] Array()
+        public override byte[] GetArray()
         {
             return Data;
         }
 
         /** <inheritdoc /> */
-        public override byte[] ArrayCopy()
+        public override byte[] GetArrayCopy()
         {
             byte[] copy = new byte[Pos];
 

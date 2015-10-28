@@ -633,9 +633,10 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritdoc /> */
-        public int Remaining()
+
+        public int Remaining
         {
-            return _len - _pos;
+            get { return _len - _pos; }
         }
 
         /** <inheritdoc /> */
@@ -675,13 +676,13 @@ namespace Apache.Ignite.Core.Impl.Memory
         #region ARRAYS
 
         /** <inheritdoc /> */
-        public byte[] Array()
+        public byte[] GetArray()
         {
-            return ArrayCopy();
+            return GetArrayCopy();
         }
 
         /** <inheritdoc /> */
-        public byte[] ArrayCopy()
+        public byte[] GetArrayCopy()
         {
             byte[] res = new byte[_mem.Length];
 

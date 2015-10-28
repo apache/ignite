@@ -595,7 +595,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 var pos = dataPos + offs;
 
                 if (!doDetach)
-                    return GetPortableUserObject(pos, pos, Stream.Array());
+                    return GetPortableUserObject(pos, pos, Stream.GetArray());
                 
                 Stream.Seek(pos + PortableUtils.OffsetLen, SeekOrigin.Begin);
 
@@ -649,7 +649,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         portObj = GetPortableUserObject(pos, 0, Stream.ReadByteArray(len));
                     }
                     else
-                        portObj = GetPortableUserObject(pos, pos, Stream.Array());
+                        portObj = GetPortableUserObject(pos, pos, Stream.GetArray());
 
                     T obj = _builder == null ? TypeCaster<T>.Cast(portObj) : TypeCaster<T>.Cast(_builder.Child(portObj));
 

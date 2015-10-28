@@ -1082,7 +1082,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <returns>Amount of bytes written.</returns>
         protected void ReadInternal(byte* dest, int cnt, byte* data)
         {
-            int cnt0 = Math.Min(Remaining(), cnt);
+            int cnt0 = Math.Min(Remaining, cnt);
 
             CopyMemory(data + Pos, dest, cnt0);
 
@@ -1100,10 +1100,10 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <summary>
         /// Gets remaining bytes in the stream.
         /// </summary>
-        /// <returns>
-        /// Remaining bytes.
-        /// </returns>
-        public abstract int Remaining();
+        /// <value>
+        ///     Remaining bytes.
+        /// </value>
+        public abstract int Remaining { get; }
 
         /// <summary>
         /// Gets underlying array, avoiding copying if possible.
@@ -1111,7 +1111,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <returns>
         /// Underlying array.
         /// </returns>
-        public abstract byte[] Array();
+        public abstract byte[] GetArray();
 
         /// <summary>
         /// Gets underlying data in a new array.
@@ -1119,7 +1119,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <returns>
         /// New array with data.
         /// </returns>
-        public abstract byte[] ArrayCopy();
+        public abstract byte[] GetArrayCopy();
 
         /// <summary>
         /// Check whether array passed as argument is the same as the stream hosts.
