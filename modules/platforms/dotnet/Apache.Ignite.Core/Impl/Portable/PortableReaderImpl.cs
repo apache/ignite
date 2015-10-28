@@ -617,6 +617,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         [SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals", MessageId = "hashCode")]
         private T ReadFullObject<T>(int pos)
         {
+            // TODO: Get header as a struct.
+
             // Validate protocol version.
             PortableUtils.ValidateProtocolVersion(Stream);
 
@@ -817,6 +819,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>True in case the field was found and position adjusted, false otherwise.</returns>
         private bool SeekField(int fieldId)
         {
+            // TODO: Seek in footer
+
             // This method is expected to be called when stream pointer is set either before
             // the field or on raw data offset.
             int start = _curPos + PortableUtils.FullHdrLen;
