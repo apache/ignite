@@ -150,6 +150,9 @@ public class PortableContext implements Externalizable {
     /** */
     private boolean keepDeserialized;
 
+    /** Object schemas. */
+    private volatile Map<Integer, Object> schemas;
+
     /**
      * For {@link Externalizable}.
      */
@@ -829,6 +832,98 @@ public class PortableContext implements Externalizable {
      */
     public boolean isConvertString() {
         return convertStrings;
+    }
+
+    /**
+     * Get schema for the given schema ID.
+     *
+     * @param schemaId Schema ID.
+     * @return Schema or {@code null} if there are no such schema.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable public PortableObjectSchema schema(int typeId, int schemaId) {
+        Map<Integer, Object> schemas0 = schemas;
+
+        if (schemas0 != null) {
+            Object typeSchemas = schemas0.get(typeId);
+
+            if (typeSchemas instanceof IgniteBiTuple) {
+                // The most common case goes first.
+                IgniteBiTuple<Integer, PortableObjectSchema> schema =
+                    (IgniteBiTuple<Integer, PortableObjectSchema>)typeSchemas;
+
+                if (schema.get1() == schemaId)
+                    return schema.get2();
+            }
+            else if (typeSchemas instanceof Map) {
+                Map<Integer, PortableObjectSchema> curSchemas = (Map<Integer, PortableObjectSchema>)typeSchemas;
+
+                return curSchemas.get(schemaId);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Add schema.
+     *
+     * @param schemaId Schema ID.
+     * @param newTypeSchema New schema.
+     */
+    @SuppressWarnings("unchecked")
+    public void addSchema(int typeId, int schemaId, PortableObjectSchema newTypeSchema) {
+        synchronized (this) {
+            if (schemas == null) {
+                // This is the very first schema recorded.
+                Map<Integer, Object> newSchemas = new HashMap<>();
+
+                newSchemas.put(typeId, new IgniteBiTuple<>(schemaId, newTypeSchema));
+
+                schemas = newSchemas;
+            }
+            else {
+                Object typeSchemas = schemas.get(typeId);
+
+                if (typeSchemas == null) {
+                    // This is the very first object schema.
+                    Map<Integer, Object> newSchemas = new HashMap<>(schemas);
+
+                    newSchemas.put(typeId, new IgniteBiTuple<>(schemaId, newTypeSchema));
+
+                    schemas = newSchemas;
+                }
+                else if (typeSchemas instanceof IgniteBiTuple) {
+                    IgniteBiTuple<Integer, PortableObjectSchema> typeSchema =
+                        (IgniteBiTuple<Integer, PortableObjectSchema>)typeSchemas;
+
+                    if (typeSchema.get1() != schemaId) {
+                        Map<Integer, PortableObjectSchema> newTypeSchemas = new HashMap();
+
+                        newTypeSchemas.put(typeSchema.get1(), typeSchema.get2());
+                        newTypeSchemas.put(schemaId, newTypeSchema);
+
+                        Map<Integer, Object> newSchemas = new HashMap<>(schemas);
+
+                        newSchemas.put(typeId, newTypeSchemas);
+
+                        schemas = newSchemas;
+                    }
+                }
+                else {
+                    Map<Integer, PortableObjectSchema> newTypeSchemas =
+                        new HashMap((Map<Integer, PortableObjectSchema>)typeSchemas);
+
+                    newTypeSchemas.put(schemaId, newTypeSchema);
+
+                    Map<Integer, Object> newSchemas = new HashMap<>(schemas);
+
+                    newSchemas.put(typeId, newTypeSchemas);
+
+                    schemas = newSchemas;
+                }
+            }
+        }
     }
 
     /**

@@ -47,6 +47,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
@@ -156,6 +157,12 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     /** ID mapper. */
     private PortableIdMapper idMapper;
 
+    /** Schema Id. */
+    private int schemaId;
+
+    /** Object schema. */
+    private PortableObjectSchema schema;
+
     /**
      * @param ctx Context.
      * @param arr Array.
@@ -219,6 +226,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         footerStart = footer.get1();
         footerEnd = footer.get2();
+
+        schemaId = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_ID_POS);
 
         rawOff = PortableUtils.rawOffsetAbsolute(in, start);
 
@@ -2524,27 +2533,63 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Field offset.
      */
     private boolean hasField(int id) {
-        assert hdrLen != 0;
+        if (schema == null) {
+            PortableObjectSchema schema0 = ctx.schema(typeId, schemaId);
 
-        int searchHead = footerStart;
-        int searchTail = footerEnd;
+            if (schema0 == null) {
+                Map<Integer, Integer> fields = new HashMap<>(256, 0.5f);
 
-        while (true) {
-            if (searchHead >= searchTail)
-                return false;
+                int searchPos = footerStart;
 
-            int id0 = in.readIntPositioned(searchHead);
+                while (searchPos < footerEnd) {
+                    int fieldId = in.readIntPositioned(searchPos);
 
-            if (id0 == id) {
-                int offset = in.readIntPositioned(searchHead + 4);
+                    fields.put(fieldId, searchPos + 4 - footerStart);
 
-                in.position(start + offset);
+                    searchPos += 8;
+                }
 
-                return true;
+                schema0 = new PortableObjectSchema(schemaId, fields);
+
+                ctx.addSchema(typeId, schemaId, schema0);
             }
 
-            searchHead += 8;
+            schema = schema0;
         }
+
+        int fieldOffsetPos = schema.fieldOffsetPosition(id);
+
+        if (fieldOffsetPos != 0) {
+            int fieldOffset = in.readIntPositioned(start + footerStart + fieldOffsetPos);
+
+            in.position(start + fieldOffset);
+
+            return true;
+        }
+        else
+            return false;
+
+//        assert hdrLen != 0;
+//
+//        int searchHead = footerStart;
+//        int searchTail = footerEnd;
+//
+//        while (true) {
+//            if (searchHead >= searchTail)
+//                return false;
+//
+//            int id0 = in.readIntPositioned(searchHead);
+//
+//            if (id0 == id) {
+//                int offset = in.readIntPositioned(searchHead + 4);
+//
+//                in.position(start + offset);
+//
+//                return true;
+//            }
+//
+//            searchHead += 8;
+//        }
     }
 
     /** {@inheritDoc} */
@@ -2635,7 +2680,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** {@inheritDoc} */
     @Override public long skip(long n) throws IOException {
-        return skipBytes((int)n);
+        return skipBytes((int) n);
     }
 
     /** {@inheritDoc} */

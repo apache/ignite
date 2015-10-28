@@ -107,14 +107,10 @@ public class MyBenchmark {
         optMarsh = new OptimizedMarshaller();
         optMarsh.setContext(new MarshallerContextMicrobenchImpl(null));
 
-        marshAddrBytes = marsh.marshal(new Address());
+        marshAddrBytes = marsh.marshal(new ManyFields());
 
         marshPortable = new PortableObjectImpl(U.<GridPortableMarshaller>field(marsh, "impl").context(),
             marshAddrBytes, 0);
-
-        byte[] data = marsh.marshal(new Address());
-
-        System.out.println(data.length);
     }
 
 //    @Benchmark
@@ -122,22 +118,26 @@ public class MyBenchmark {
 //        return marsh.marshal(new Address());
 //    }
 
-//    @Benchmark
-//    public Address testAddressRead() throws Exception {
-//        return marsh.unmarshal(marshAddrBytes, null);
-//    }
-
     @Benchmark
-    public Object testFieldRead() throws Exception {
-        return marshPortable.field("street");
+    public Object testRead() throws Exception {
+        return marsh.unmarshal(marshAddrBytes, null);
     }
+
+//    @Benchmark
+//    public Object testFieldRead() throws Exception {
+//        return marshPortable.field("street");
+//    }
 
     private static final Address addr = new Address();
 
     public static void main(String[] args) throws Exception {
 //        setup();
-//        while (true)
+//        while (true) {
 //            marsh.unmarshal(marshAddrBytes, null);
+////            String val = marshPortable.field("street");
+////
+////            System.out.println(val);
+//        }
 
         Options opts = new OptionsBuilder().include(MyBenchmark.class.getSimpleName()).build();
         new Runner(opts).run();
@@ -164,6 +164,21 @@ public class MyBenchmark {
         customer.emailAddress = "email." + customer.name + "@gmail.com";
         //customer.longArray = new long[100];
         return customer;
+    }
+
+    static class ManyFields {
+        public int field1 = 1;
+        public int field2 = 2;
+        public int field3 = 3;
+        public int field4 = 4;
+        public int field5 = 5;
+
+        public int field6 = 6;
+        public int field7 = 7;
+        public int field8 = 8;
+        public int field9 = 9;
+        public int field10 = 10;
+
     }
 
     static class Address implements PortableMarshalAware, Externalizable {

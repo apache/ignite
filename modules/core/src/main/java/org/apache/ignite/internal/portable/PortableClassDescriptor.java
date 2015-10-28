@@ -106,9 +106,6 @@ public class PortableClassDescriptor {
     /** */
     private final boolean excluded;
 
-    /** Object schemas. */
-    private volatile Object schemas;
-
     /**
      * @param ctx Context.
      * @param cls Class.
@@ -321,65 +318,6 @@ public class PortableClassDescriptor {
      */
     public PortableIdMapper idMapper() {
         return idMapper;
-    }
-
-    /**
-     * Get schema for the given schema ID.
-     *
-     * @param schemaId Schema ID.
-     * @return Schema or {@code null} if there are no such schema.
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable public PortableObjectSchema schema(int schemaId) {
-        Object schemas0 = schemas;
-
-        if (schemas0 instanceof IgniteBiTuple) {
-            // The most common case goes first.
-            IgniteBiTuple<Integer, PortableObjectSchema> curSchema =
-                (IgniteBiTuple<Integer, PortableObjectSchema>)schemas0;
-
-            if (curSchema.get1() == schemaId)
-                return curSchema.get2();
-        }
-        else if (schemas0 instanceof Map) {
-            Map<Integer, PortableObjectSchema> curSchemas = (Map<Integer, PortableObjectSchema>)schemas0;
-
-            return curSchemas.get(schemaId);
-        }
-
-        return null;
-    }
-
-    /**
-     * Add schema.
-     *
-     * @param schemaId Schema ID.
-     * @param fields Fields.
-     */
-    @SuppressWarnings("unchecked")
-    public void addSchema(int schemaId, Map<Integer, Integer> fields) {
-        synchronized (this) {
-            if (schemas == null)
-                schemas = new IgniteBiTuple<>(schemaId, new PortableObjectSchema(schemaId, fields));
-            else if (schemas instanceof IgniteBiTuple) {
-                IgniteBiTuple<Integer, PortableObjectSchema> curSchema =
-                    (IgniteBiTuple<Integer, PortableObjectSchema>)schemas;
-
-                if (curSchema.get1() != schemaId) {
-                    Map newSchemas = new HashMap();
-
-                    newSchemas.put(curSchema.get1(), curSchema.get2());
-                    newSchemas.put(schemaId, new PortableObjectSchema(schemaId, fields));
-
-                    schemas = newSchemas;
-                }
-            }
-            else {
-                Map<Integer, PortableObjectSchema> curSchemas = (Map<Integer, PortableObjectSchema>)schemas;
-
-                curSchemas.put(schemaId, new PortableObjectSchema(schemaId, fields));
-            }
-        }
     }
 
     /**
