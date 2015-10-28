@@ -599,7 +599,7 @@ namespace ignite
                         TemplatedPortableIdResolver<T> idRslvr(type);
                         ignite::common::concurrent::SharedPointer<PortableMetadataHandler> metaHnd;
 
-                        if (metaMgr)                        
+                        if (metaMgr)
                             metaHnd = metaMgr->GetHandler(idRslvr.GetTypeId());
 
                         PortableWriterImpl writerImpl(stream, &idRslvr, metaMgr, metaHnd.Get());
@@ -609,18 +609,43 @@ namespace ignite
 
                         stream->WriteInt8(IGNITE_HDR_FULL);
                         stream->WriteInt8(IGNITE_PROTO_VER);
-                        stream->WriteBool(true);
+                        stream->WriteInt16(IGNITE_PORTABLE_FLAG_USER_OBJECT);
                         stream->WriteInt32(idRslvr.GetTypeId());
                         stream->WriteInt32(type.GetHashCode(obj));
 
-                        stream->Position(pos + IGNITE_FULL_HDR_LEN);
+                        // Reserve space for the Object Lenght, Schema ID and Schema or Raw Offsett.
+                        stream->Reserve(12);
 
                         type.Write(writer, obj);
 
-                        int32_t len = stream->Position() - pos;
+                        int32_t schemaOrRawOffset = stream->Position() - pos;
 
-                        stream->WriteInt32(pos + IGNITE_OFFSET_LEN, len);
-                        stream->WriteInt32(pos + IGNITE_OFFSET_RAW, writerImpl.GetRawPosition() - pos);
+                        if (writerImpl.fieldsInfo)
+                        {
+                            stream->Position(pos + IGNITE_OFFSET_FLAGS);
+                            stream->WriteInt16(IGNITE_PORTABLE_FLAG_USER_OBJECT | IGNITE_PORTABLE_FLAG_RAW_ONLY);
+
+                            stream->WriteInt32(pos + IGNITE_OFFSET_LEN, schemaOrRawOffset);
+                            stream->WriteInt32(pos + IGNITE_OFFSET_SCHEMA_ID, 0);
+                            stream->WriteInt32(pos + IGNITE_OFFSET_SCHEMA_OR_RAW_OFF, writerImpl.GetRawPosition() - pos);
+                        }
+                        else
+                        {
+                            for (size_t i = 0; i != fieldsNum; ++i)
+                            {
+                                stream->WriteInt32(writerImpl.fieldsInfo[i].id);
+                                stream->WriteInt32(writerImpl.fieldsInfo[i].offset);
+                            }
+
+                            if (writerImpl.rawPos > 0)
+                                stream->WriteInt32(rawPos - pos);
+
+                            int32_t length = stream->Position() - pos;
+
+                            stream->WriteInt32(pos + IGNITE_OFFSET_LEN, length);
+                            stream->WriteInt32(pos + IGNITE_OFFSET_SCHEMA_ID, writerImpl.schemaId);
+                            stream->WriteInt32(pos + IGNITE_OFFSET_SCHEMA_OR_RAW_OFF, schemaOrRawOffset);
+                        }
 
                         if (metaMgr)
                             metaMgr->SubmitHandler(type.GetTypeName(), idRslvr.GetTypeId(), metaHnd.Get());
@@ -634,35 +659,50 @@ namespace ignite
                  */
                 impl::interop::InteropOutputStream* GetStream();
             private:
+                struct FieldInfo
+                {
+                    int32_t id;
+                    int32_t offset;
+                };
+
                 /** Underlying stream. */
                 ignite::impl::interop::InteropOutputStream* stream; 
                 
                 /** ID resolver. */
-                PortableIdResolver* idRslvr;                     
+                PortableIdResolver* idRslvr;
                 
                 /** Metadata manager. */
-                PortableMetadataManager* metaMgr;                   
+                PortableMetadataManager* metaMgr;
                 
                 /** Metadata handler. */
-                PortableMetadataHandler* metaHnd;                  
+                PortableMetadataHandler* metaHnd;
 
                 /** Type ID. */
-                int32_t typeId;                                       
+                int32_t typeId;
 
                 /** Elements write session ID generator. */
-                int32_t elemIdGen;                                   
+                int32_t elemIdGen;
                 
                 /** Elements write session ID. */
-                int32_t elemId;                                       
+                int32_t elemId;
                 
                 /** Elements count. */
-                int32_t elemCnt;                                      
+                int32_t elemCnt;
                 
                 /** Elements start position. */
-                int32_t elemPos;                                      
+                int32_t elemPos;
 
                 /** Raw data offset. */
-                int32_t rawPos;                                       
+                int32_t rawPos;
+
+                /** Information about written fields. */
+                FieldInfo* fieldsInfo;
+
+                /** Number of written fields. */
+                size_t fieldsNum;
+
+                /** Schema ID. */
+                int32_t schemaId;
 
                 IGNITE_NO_COPY_ASSIGNMENT(PortableWriterImpl)
 

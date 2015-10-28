@@ -656,7 +656,7 @@ namespace ignite
                     }
                 }
 
-                stream->Position(pos + IGNITE_FULL_HDR_LEN);
+                stream->Position(pos + IGNITE_DFLT_HDR_LEN);
 
                 for (int32_t curPos = stream->Position(); curPos < marker;)
                 {

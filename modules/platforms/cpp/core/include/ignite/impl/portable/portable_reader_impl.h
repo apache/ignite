@@ -726,54 +726,73 @@ namespace ignite
                     int32_t pos = stream->Position();
                     int8_t hdr = stream->ReadInt8();
 
-                    if (hdr == IGNITE_HDR_NULL)
-                        return GetNull<T>();
-                    else if (hdr == IGNITE_HDR_HND) {
-                        IGNITE_ERROR_1(ignite::IgniteError::IGNITE_ERR_PORTABLE, "Circular references are not supported.");
-                    }
-                    else if (hdr == IGNITE_TYPE_PORTABLE)
+                    switch (hdr)
                     {
-                        int32_t portLen = stream->ReadInt32(); // Total length of portable object.
-                        int32_t curPos = stream->Position();
-                        int32_t portOff = stream->ReadInt32(curPos + portLen);
-
-                        stream->Position(curPos + portOff); // Position stream right on the object.
-
-                        T val = ReadTopObject<T>();
-
-                        stream->Position(curPos + portLen + 4); // Position stream after portable.
-
-                        return val;
-                    }
-                    else
-                    {
-                        if (hdr != IGNITE_HDR_FULL) {
-                            IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_PORTABLE, "Unexpected header during deserialization: ", hdr);
+                        case IGNITE_HDR_NULL:
+                        {
+                            return GetNull<T>();
                         }
-                        else {
+
+                        case IGNITE_HDR_HND:
+                        {
+                            IGNITE_ERROR_1(ignite::IgniteError::IGNITE_ERR_PORTABLE, 
+                                           "Circular references are not supported.");
+                            break;
+                        }
+
+                        case IGNITE_TYPE_PORTABLE:
+                        {
+                            int32_t portLen = stream->ReadInt32(); // Total length of portable object.
+                            int32_t curPos = stream->Position();
+                            int32_t portOff = stream->ReadInt32(curPos + portLen);
+
+                            stream->Position(curPos + portOff); // Position stream right on the object.
+
+                            T val = ReadTopObject<T>();
+
+                            stream->Position(curPos + portLen + 4); // Position stream after portable.
+
+                            return val;
+                        }
+
+                        case IGNITE_HDR_FULL:
+                        {
                             int8_t protoVer = stream->ReadInt8();
 
                             if (protoVer != IGNITE_PROTO_VER) {
-                                IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_PORTABLE, "Unsupported portable protocol version: ", protoVer);
+                                IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_PORTABLE, 
+                                               "Unsupported portable protocol version: ", protoVer);
+                                break;
                             }
-                            else {
-                                bool usrType = stream->ReadBool();
-                                int32_t typeId = stream->ReadInt32();
-                                int32_t hashCode = stream->ReadInt32();
-                                int32_t len = stream->ReadInt32();
-                                int32_t rawOff = stream->ReadInt32();
 
-                                ignite::portable::PortableType<T> type;
-                                TemplatedPortableIdResolver<T> idRslvr(type);
-                                PortableReaderImpl readerImpl(stream, &idRslvr, pos, usrType, typeId, hashCode, len, rawOff);
-                                ignite::portable::PortableReader reader(&readerImpl);
+                            int16_t flags = stream->ReadInt16();
+                            int32_t len = stream->ReadInt32();
+                            int32_t typeId = stream->ReadInt32();
+                            int32_t hashCode = stream->ReadInt32();
+                            int32_t schemaId = stream->ReadInt32();
+                            int32_t schemaOff = stream->ReadInt32();
+                            int32_t rawOff = stream->ReadInt32();
 
-                                T val = type.Read(reader);
+                            bool usrType = flags & IGNITE_PORTABLE_FLAG_USER_OBJECT;
 
-                                stream->Position(pos + len);
+                            ignite::portable::PortableType<T> type;
+                            TemplatedPortableIdResolver<T> idRslvr(type);
+                            PortableReaderImpl readerImpl(stream, &idRslvr, pos, usrType, 
+                                                            typeId, hashCode, len, rawOff);
+                            ignite::portable::PortableReader reader(&readerImpl);
 
-                                return val;
-                            }
+                            T val = type.Read(reader);
+
+                            stream->Position(pos + len);
+
+                            return val;
+                        }
+
+                        default:
+                        {
+                            IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_PORTABLE, 
+                                           "Unexpected header during deserialization: ", hdr);
+                            break;
                         }
                     }
                 }

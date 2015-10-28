@@ -180,6 +180,17 @@ namespace ignite
                 pos = val;
             }
 
+            int32_t InteropOutputStream::Reserve(int32_t num)
+            {
+                EnsureCapacity(pos + num);
+
+                int32_t res = pos;
+
+                Shift(num);
+
+                return res;
+            }
+
             void InteropOutputStream::Synchronize()
             {
                 mem->Length(pos);
