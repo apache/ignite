@@ -650,7 +650,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                                 if (!fieldFound)
                                     fieldFound = _parent._cache != null &&
-                                                 _parent._cache.TryGetValue(inField.Offset, out fieldVal);
+                                                 _parent._cache.TryGetValue(inField.Offset + inStartPos, out fieldVal);
 
                                 if (fieldFound)
                                 {
