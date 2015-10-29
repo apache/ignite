@@ -702,7 +702,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                             outSchemaOff = outStream.Position - outStartPos;
 
                             PortableObjectSchemaField.WriteArray(outSchema.Array, outStream, outSchema.Count);
-                            outStream.WriteInt(outRawOff);
+
+                            if (inRawLen > 0)
+                                outStream.WriteInt(outRawOff);
 
                             outSchemaId = PortableUtils.GetSchemaId(outSchema.Array);
                         }
