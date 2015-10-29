@@ -645,6 +645,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                                 if (fieldFound && fieldVal == PortableBuilderField.RmvMarker)
                                     continue;
 
+                                // ReSharper disable once PossibleNullReferenceException (can't be null)
+                                outSchema.Add(new PortableObjectSchemaField(inField.Id, outStream.Position - outStartPos));
+
                                 if (!fieldFound)
                                     fieldFound = _parent._cache != null &&
                                                  _parent._cache.TryGetValue(inField.Offset, out fieldVal);
@@ -662,10 +665,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                                     Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
                                 }
-
-                                // ReSharper disable once PossibleNullReferenceException (can't be null)
-                                outSchema.Add(new PortableObjectSchemaField(inField.Id, outStream.Position - outStartPos));
-
                             }
                         }
 
@@ -675,12 +674,14 @@ namespace Apache.Ignite.Core.Impl.Portable
                             if (valEntry.Value == PortableBuilderField.RmvMarker) 
                                 continue;
 
-                            WriteField(ctx, valEntry.Value);
-                            
                             // ReSharper disable once PossibleNullReferenceException (can't be null)
                             outSchema.Add(new PortableObjectSchemaField(valEntry.Key, outStream.Position - outStartPos));
 
+                            WriteField(ctx, valEntry.Value);
                         }
+
+                        if (outSchema != null && outSchema.Count == 0)
+                            outSchema = null;
 
                         // Write raw data.
                         int outRawOff = outStream.Position - outStartPos;
