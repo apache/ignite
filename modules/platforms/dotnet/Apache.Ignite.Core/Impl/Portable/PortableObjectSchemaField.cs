@@ -25,18 +25,30 @@ namespace Apache.Ignite.Core.Impl.Portable
     [StructLayout(LayoutKind.Sequential)]
     internal struct PortableObjectSchemaField
     {
-        public const int Size = 8;
+        /** Record structure */
+        public readonly int Id;      // FieldId
+        public readonly int Offset;  // Offset from object start
 
-        public readonly int Id;
-        public readonly int Offset;
+        /** Size, equals to sizeof(PortableObjectSchemaField) */
+        private const int Size = 8;
 
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PortableObjectSchemaField"/> struct.
+        /// </summary>
+        /// <param name="id">The id.</param>
+        /// <param name="offset">The offset.</param>
         public PortableObjectSchemaField(int id, int offset)
         {
             Id = id;
             Offset = offset;
         }
 
+        /// <summary>
+        /// Writes an array of fields to a stream.
+        /// </summary>
+        /// <param name="fields">Fields.</param>
+        /// <param name="stream">Stream.</param>
+        /// <param name="count">Field count to write.</param>
         public static unsafe void WriteArray(PortableObjectSchemaField[] fields, IPortableStream stream, int count)
         {
             Debug.Assert(fields != null);
@@ -62,6 +74,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
+        /// <summary>
+        /// Reads an array of fields from a stream.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="count">Count.</param>
+        /// <returns></returns>
         public static unsafe PortableObjectSchemaField[] ReadArray(IPortableStream stream, int count)
         {
             Debug.Assert(stream != null);
