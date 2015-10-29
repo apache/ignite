@@ -1027,8 +1027,6 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="data">Data (dsetination).</param>
         protected void WriteInternal(byte* src, int cnt, byte* data)
         {
-            IgniteArgumentCheck.NonNegative(cnt, "cnt");
-
             CopyMemory(src, data + Pos, cnt);
         }
 
