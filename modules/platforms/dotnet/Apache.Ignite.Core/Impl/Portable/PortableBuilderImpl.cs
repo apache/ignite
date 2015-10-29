@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Diagnostics;
     using System.IO;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Portable.Metadata;
     using Apache.Ignite.Core.Portable;
@@ -606,6 +607,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             else if (inHdr == PortableUtils.HdrFull)
             {
                 var inHeader = PortableObjectHeader.Read(inStream);
+                var schema = new ResizeableArray<PortableObjectSchemaField>(4);
                 
                 PortableUtils.ValidateProtocolVersion(inHeader.Version);
 
@@ -618,7 +620,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                     // Object could be cached in parent builder.
                     PortableBuilderField cachedVal;
 
-                    if (_parent._cache != null && _parent._cache.TryGetValue(inStartPos, out cachedVal)) {
+                    if (_parent._cache != null && _parent._cache.TryGetValue(inStartPos, out cachedVal))
+                    {
+                        // TODO: Where is field id and length?
                         WriteField(ctx, cachedVal);
                     }
                     else
@@ -630,6 +634,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         // Write regular fields.
                         while (inStream.Position < inStartPos + inRawOff)
                         {
+                            // TODO: Read inSchema
                             int inFieldId = inStream.ReadInt();
                             int inFieldLen = inStream.ReadInt();
                             int inFieldDataPos = inStream.Position;
@@ -640,7 +645,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                             if (!fieldFound || fieldVal != PortableBuilderField.RmvMarker)
                             {
-                                outStream.WriteInt(inFieldId);  // field id
+                                outStream.WriteInt(inFieldId); // field id
 
                                 int fieldLenPos = outStream.Position; // Here we will write length later.
 
@@ -657,11 +662,12 @@ namespace Apache.Ignite.Core.Impl.Portable
                                 else
                                 {
                                     // If field was requested earlier, then we must write tracked value
-                                    if (_parent._cache != null && _parent._cache.TryGetValue(inFieldDataPos, out fieldVal))
+                                    if (_parent._cache != null &&
+                                        _parent._cache.TryGetValue(inFieldDataPos, out fieldVal))
                                         WriteField(ctx, fieldVal);
                                     else
-                                        // Field is not tracked, re-write as is.
-                                        Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);                                    
+                                    // Field is not tracked, re-write as is.
+                                        Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
                                 }
 
                                 int fieldEndPos = outStream.Position;
@@ -680,7 +686,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         {
                             if (valEntry.Value != PortableBuilderField.RmvMarker)
                             {
-                                outStream.WriteInt(valEntry.Key);  // field id
+                                outStream.WriteInt(valEntry.Key); // field id
 
                                 int fieldLenPos = outStream.Position; // Here we will write length later.
 
