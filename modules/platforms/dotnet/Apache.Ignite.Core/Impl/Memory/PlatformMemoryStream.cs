@@ -93,6 +93,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public void WriteByteArray(byte[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             fixed (byte* val0 = val)
             {
                 CopyFromAndShift(val0, val.Length);
@@ -108,6 +110,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public void WriteBoolArray(bool[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             fixed (bool* val0 = val)
             {
                 CopyFromAndShift((byte*)val0, val.Length);
@@ -125,6 +129,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual void WriteShortArray(short[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             fixed (short* val0 = val)
             {
                 CopyFromAndShift((byte*)val0, val.Length << Shift2);
@@ -142,6 +148,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual void WriteCharArray(char[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             fixed (char* val0 = val)
             {
                 CopyFromAndShift((byte*)val0, val.Length << Shift2);
@@ -168,6 +176,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual void WriteIntArray(int[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             fixed (int* val0 = val)
             {
                 CopyFromAndShift((byte*)val0, val.Length << Shift4);
@@ -185,6 +195,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual void WriteLongArray(long[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             fixed (long* val0 = val)
             {
                 CopyFromAndShift((byte*)val0, val.Length << Shift8);
@@ -202,6 +214,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual void WriteFloatArray(float[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             fixed (float* val0 = val)
             {
                 CopyFromAndShift((byte*)val0, val.Length << Shift4);
@@ -219,6 +233,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual void WriteDoubleArray(double[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             fixed (double* val0 = val)
             {
                 CopyFromAndShift((byte*)val0, val.Length << Shift8);
@@ -228,6 +244,9 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public int WriteString(char* chars, int charCnt, int byteCnt, Encoding encoding)
         {
+            IgniteArgumentCheck.Ensure(charCnt > 0, "charCnt", "should be greater than 0.");
+            IgniteArgumentCheck.Ensure(byteCnt > 0, "byteCnt", "should be greater than 0.");
+            
             int curPos = EnsureWriteCapacityAndShift(byteCnt);
 
             return encoding.GetBytes(chars, charCnt, _data + curPos, byteCnt);
@@ -237,9 +256,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         public void Write(byte[] src, int off, int cnt)
         {
             IgniteArgumentCheck.NotNull(src, "src");
-
-            if (cnt < 0)
-                throw new ArgumentOutOfRangeException("cnt", "Byte count can't be negative.");
+            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
 
             fixed (byte* src0 = src)
             {
@@ -250,6 +267,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public void Write(byte* src, int cnt)
         {
+            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+
             CopyFromAndShift(src, cnt);
         }
         
@@ -266,9 +285,10 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritdoc /> */
-
         public byte[] ReadByteArray(int cnt)
         {
+            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0."); 
+            
             int curPos = EnsureReadCapacityAndShift(cnt);
 
             byte[] res = new byte[cnt];
@@ -290,6 +310,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public bool[] ReadBoolArray(int cnt)
         {
+            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+
             bool[] res = new bool[cnt];
 
             fixed (bool* res0 = res)
@@ -311,6 +333,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual short[] ReadShortArray(int cnt)
         {
+            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+
             short[] res = new short[cnt];
 
             fixed (short* res0 = res)
@@ -332,6 +356,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual char[] ReadCharArray(int cnt)
         {
+            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+
             char[] res = new char[cnt];
 
             fixed (char* res0 = res)
@@ -353,6 +379,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual int[] ReadIntArray(int cnt)
         {
+            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+
             int[] res = new int[cnt];
 
             fixed (int* res0 = res)
@@ -374,6 +402,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual long[] ReadLongArray(int cnt)
         {
+            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+
             long[] res = new long[cnt];
 
             fixed (long* res0 = res)
@@ -395,6 +425,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual float[] ReadFloatArray(int cnt)
         {
+            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+
             float[] res = new float[cnt];
 
             fixed (float* res0 = res)
@@ -416,6 +448,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual double[] ReadDoubleArray(int cnt)
         {
+            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+
             double[] res = new double[cnt];
 
             fixed (double* res0 = res)
@@ -429,6 +463,9 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public void Read(byte[] dest, int off, int cnt)
         {
+            IgniteArgumentCheck.NotNull(dest, "dest");
+            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+
             fixed (byte* dest0 = dest)
             {
                 Read(dest0 + off, cnt);
@@ -438,12 +475,17 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public void Read(byte* dest, int cnt)
         {
+            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+
             CopyToAndShift(dest, cnt);
         }
 
         /** <inheritdoc /> */
         public void Read(byte* dest, int pos, int cnt)
         {
+            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+            IgniteArgumentCheck.Ensure(pos >= 0, "pos", "should be positive.");
+
             if (pos + cnt > _len)
                 throw new EndOfStreamException("Not enough data in stream [expected=" + cnt +
                                                ", remaining=" + (_len - pos) + ']');
