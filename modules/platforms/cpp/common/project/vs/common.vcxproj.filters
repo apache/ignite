@@ -28,6 +28,9 @@
     <ClInclude Include="targetver.h">
       <Filter>Misc</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\utils.h">
+      <Filter>Code</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\common.cpp">

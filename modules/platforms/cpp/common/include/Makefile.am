@@ -19,4 +19,5 @@ ACLOCAL_AMFLAGS = "-Im4"
 
 nobase_include_HEADERS = ignite/common/concurrent.h \
                          ignite/common/java.h \
-                         ignite/common/exports.h
+                         ignite/common/exports.h \
+                         ignite/common/utils.h

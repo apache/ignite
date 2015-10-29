@@ -24,28 +24,34 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// </summary>
     internal class PortableBuilderField
     {
-        /** Remove marker object. */
-        public static readonly object RmvMarkerObj = new object();
-
         /** Remove marker. */
-        public static readonly PortableBuilderField RmvMarker = 
-            new PortableBuilderField(null, RmvMarkerObj);
+        public static readonly PortableBuilderField RmvMarker = new PortableBuilderField(null, null, 0);
 
         /** Type. */
-        private readonly Type _typ;
+        private readonly Type _type;
 
         /** Value. */
-        private readonly object _val;
+        private readonly object _value;
+        
+        /** Write action. */
+        private readonly Action<PortableWriterImpl, object> _writeAction;
+        
+        /** Type id. */
+        private readonly byte _typeId;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="typ">Type.</param>
-        /// <param name="val">Value.</param>
-        public PortableBuilderField(Type typ, object val)
+        /// <param name="type">Type.</param>
+        /// <param name="value">Value.</param>
+        /// <param name="typeId">The type identifier.</param>
+        /// <param name="writeAction">Optional write action.</param>
+        public PortableBuilderField(Type type, object value, byte typeId, Action<PortableWriterImpl, object> writeAction = null)
         {
-            _typ = typ;
-            _val = val;
+            _type = type;
+            _value = value;
+            _typeId = typeId;
+            _writeAction = writeAction;
         }
 
         /// <summary>
@@ -53,10 +59,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public Type Type
         {
-            get
-            {
-                return _typ;
-            }
+            get { return _type; }
         }
 
         /// <summary>
@@ -64,10 +67,23 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         public object Value
         {
-            get
-            {
-                return _val;
-            }
+            get { return _value; }
+        }
+
+        /// <summary>
+        /// Gets the write action.
+        /// </summary>
+        public Action<PortableWriterImpl, object> WriteAction
+        {
+            get { return _writeAction; }
+        }
+
+        /// <summary>
+        /// Gets the type identifier.
+        /// </summary>
+        public byte TypeId
+        {
+            get { return _typeId; }
         }
     }
 }

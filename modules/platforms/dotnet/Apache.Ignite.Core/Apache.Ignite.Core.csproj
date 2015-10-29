@@ -35,11 +35,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>false</SignAssembly>
+    <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>
-    </AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>Apache.Ignite.Core.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <DelaySign>false</DelaySign>
@@ -91,8 +90,6 @@
     <Compile Include="Cluster\IClusterNode.cs" />
     <Compile Include="Cluster\IClusterNodeFilter.cs" />
     <Compile Include="Common\IgniteException.cs" />
-    <Compile Include="Common\IAsyncSupport.cs" />
-    <Compile Include="Common\IFuture.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Compute\ComputeExecutionRejectedException.cs" />
     <Compile Include="Compute\ComputeJobAdapter.cs" />
@@ -134,7 +131,6 @@
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="IgniteConfiguration.cs" />
     <Compile Include="Ignition.cs" />
-    <Compile Include="Common\AsyncSupportedAttribute.cs" />
     <Compile Include="IIgnite.cs" />
     <Compile Include="Impl\Cache\CacheAffinityImpl.cs" />
     <Compile Include="Impl\Cache\CacheEntry.cs" />
@@ -149,7 +145,6 @@
     <Compile Include="Impl\Cache\CacheLock.cs" />
     <Compile Include="Impl\Cache\CacheMetricsImpl.cs" />
     <Compile Include="Impl\Cache\CacheOp.cs" />
-    <Compile Include="Impl\Cache\CacheProxyImpl.cs" />
     <Compile Include="Impl\Cache\Event\CacheEntryCreateEvent.cs" />
     <Compile Include="Impl\Cache\Event\CacheEntryRemoveEvent.cs" />
     <Compile Include="Impl\Cache\Event\CacheEntryUpdateEvent.cs" />
@@ -172,9 +167,7 @@
     <Compile Include="Impl\Collections\MultiValueDictionary.cs" />
     <Compile Include="Impl\Collections\ReadOnlyCollection.cs" />
     <Compile Include="Impl\Collections\ReadOnlyDictionary.cs" />
-    <Compile Include="Impl\Common\AsyncResult.cs" />
     <Compile Include="Impl\Common\Classpath.cs" />
-    <Compile Include="Impl\Common\CompletedAsyncResult.cs" />
     <Compile Include="Impl\Common\CopyOnWriteConcurrentDictionary.cs" />
     <Compile Include="Impl\Common\DelegateConverter.cs" />
     <Compile Include="Impl\Common\DelegateTypeDescriptor.cs" />
@@ -196,7 +189,6 @@
     <Compile Include="Impl\Compute\Closure\ComputeSingleClosureTask.cs" />
     <Compile Include="Impl\Compute\Closure\IComputeResourceInjector.cs" />
     <Compile Include="Impl\Compute\Compute.cs" />
-    <Compile Include="Impl\Compute\ComputeAsync.cs" />
     <Compile Include="Impl\Compute\ComputeFunc.cs" />
     <Compile Include="Impl\Compute\ComputeImpl.cs" />
     <Compile Include="Impl\Compute\ComputeJob.cs" />
@@ -212,7 +204,6 @@
     <Compile Include="Impl\Datastream\StreamReceiverHolder.cs" />
     <Compile Include="Impl\DataStructures\AtomicLong.cs" />
     <Compile Include="Impl\Events\Events.cs" />
-    <Compile Include="Impl\Events\EventsAsync.cs" />
     <Compile Include="Impl\Events\RemoteListenEventFilter.cs" />
     <Compile Include="Impl\ExceptionUtils.cs" />
     <Compile Include="Impl\IgniteConfigurationEx.cs" />
@@ -241,8 +232,8 @@
     <Compile Include="Impl\Memory\PlatformUnpooledMemory.cs" />
     <Compile Include="Impl\Messaging\MessageListenerHolder.cs" />
     <Compile Include="Impl\Messaging\Messaging.cs" />
-    <Compile Include="Impl\Messaging\MessagingAsync.cs" />
     <Compile Include="Impl\NativeMethods.cs" />
+    <Compile Include="Impl\Portable\DateTimeHolder.cs" />
     <Compile Include="Impl\Portable\IO\IPortableStream.cs" />
     <Compile Include="Impl\Portable\IO\PortableAbstractStream.cs" />
     <Compile Include="Impl\Portable\IO\PortableHeapStream.cs" />
@@ -293,8 +284,6 @@
     <Compile Include="Impl\Services\ServiceProxyInvoker.cs" />
     <Compile Include="Impl\Services\ServiceProxySerializer.cs" />
     <Compile Include="Impl\Services\Services.cs" />
-    <Compile Include="Impl\Services\ServicesAsync.cs" />
-    <Compile Include="Impl\Transactions\AsyncTransaction.cs" />
     <Compile Include="Impl\Transactions\Transaction.cs" />
     <Compile Include="Impl\Transactions\TransactionImpl.cs" />
     <Compile Include="Impl\Transactions\TransactionMetricsImpl.cs" />
@@ -371,6 +360,9 @@
     <EmbeddedResource Include="$(SolutionDir)\Win32\Release\ignite.common.dll">
       <Link>resources\release\x86\ignite.common.dll</Link>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Apache.Ignite.Core.snk" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

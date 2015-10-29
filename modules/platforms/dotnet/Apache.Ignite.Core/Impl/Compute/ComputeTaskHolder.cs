@@ -379,7 +379,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <summary>
         /// Task completion future.
         /// </summary>
-        internal IFuture<TR> Future
+        internal Future<TR> Future
         {
             get { return _fut; }
         }

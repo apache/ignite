@@ -415,14 +415,5 @@ namespace Apache.Ignite.Core.Impl
 
             return res;
         }
-
-        /// <summary>
-        /// Gets the asynchronous mode disabled exception.
-        /// </summary>
-        /// <returns>Asynchronous mode disabled exception.</returns>
-        public static InvalidOperationException GetAsyncModeDisabledException()
-        {
-            return new InvalidOperationException("Asynchronous mode is disabled");
-        }
     }
 }

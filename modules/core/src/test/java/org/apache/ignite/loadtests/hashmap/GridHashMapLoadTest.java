@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Tests hashmap load.
@@ -81,7 +82,10 @@ public class GridHashMapLoadTest extends GridCommonAbstractTest {
 
             map.put(key, new GridCacheMapEntry(ctx, ctx.toCacheKeyObject(key),
                 key.hashCode(), ctx.toCacheObject(val), null, 1) {
-                @Override public boolean tmLock(IgniteInternalTx tx, long timeout) {
+                @Override public boolean tmLock(IgniteInternalTx tx,
+                    long timeout,
+                    @Nullable GridCacheVersion serOrder,
+                    GridCacheVersion serReadVer) {
                     return false;
                 }
 

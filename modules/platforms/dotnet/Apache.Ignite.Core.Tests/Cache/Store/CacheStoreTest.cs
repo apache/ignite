@@ -222,26 +222,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestLoadCacheAsync()
         {
-            var cache = Cache().WithAsync();
+            var cache = Cache();
 
             Assert.AreEqual(0, cache.GetSize());
 
-            cache.LocalLoadCache(new CacheEntryFilter(), 100, 10);
+            cache.LocalLoadCacheAsync(new CacheEntryFilter(), 100, 10).Wait();
 
-            var fut = cache.GetFuture<object>();
-
-            fut.Get();
-
-            Assert.IsTrue(fut.IsDone);
-
-            cache.GetSize();
-            Assert.AreEqual(5, cache.GetFuture<int>().ToTask().Result);
+            Assert.AreEqual(5, cache.GetSizeAsync().Result);
 
             for (int i = 105; i < 110; i++)
             {
-                cache.Get(i);
-
-                Assert.AreEqual("val_" + i, cache.GetFuture<string>().ToTask().Result);
+                Assert.AreEqual("val_" + i, cache.GetAsync(i).Result);
             }
         }
 

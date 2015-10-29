@@ -80,7 +80,24 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public T GetField<T>(string fieldName)
         {
-            return Field<T>(fieldName, null);
+            int pos;
+
+            return TryGetFieldPosition(fieldName, out pos) ? GetField<T>(pos, null) : default(T);
+        }
+
+        /// <summary>
+        /// Gets field value on the given object.
+        /// </summary>
+        /// <param name="pos">Position.</param>
+        /// <param name="builder">Builder.</param>
+        /// <returns>Field value.</returns>
+        public T GetField<T>(int pos, PortableBuilderImpl builder)
+        {
+            IPortableStream stream = new PortableHeapStream(_data);
+
+            stream.Seek(pos, SeekOrigin.Begin);
+
+            return _marsh.Unmarshal<T>(stream, PortableMode.ForcePortable, builder);
         }
 
         /** <inheritdoc /> */
@@ -139,42 +156,15 @@ namespace Apache.Ignite.Core.Impl.Portable
             get { return _offset; }
         }
 
-        /// <summary>
-        /// Get field with builder.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="fieldName"></param>
-        /// <param name="builder"></param>
-        /// <returns></returns>
-        public T Field<T>(string fieldName, PortableBuilderImpl builder)
+        public bool TryGetFieldPosition(string fieldName, out int pos)
         {
-            IPortableTypeDescriptor desc = _marsh.GetDescriptor(true, _typeId);
+            var desc = _marsh.GetDescriptor(true, _typeId);
 
             InitializeFields();
 
             int fieldId = PortableUtils.FieldId(_typeId, fieldName, desc.NameConverter, desc.Mapper);
 
-            int pos;
-
-            if (_fields.TryGetValue(fieldId, out pos))
-            {
-                if (builder != null)
-                {
-                    // Read in scope of build process.
-                    T res;
-
-                    if (!builder.CachedField(pos, out res))
-                    {
-                        res = Field0<T>(pos, builder);
-
-                        builder.CacheField(pos, res);
-                    }
-
-                    return res;
-                }
-                return Field0<T>(pos, null);
-            }
-            return default(T);
+            return _fields.TryGetValue(fieldId, out pos);
         }
 
         /// <summary>
@@ -192,21 +182,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 _fields = PortableUtils.ObjectFields(stream, _typeId, rawDataOffset);
             }
-        }
-
-        /// <summary>
-        /// Gets field value on the given object.
-        /// </summary>
-        /// <param name="pos">Position.</param>
-        /// <param name="builder">Builder.</param>
-        /// <returns>Field value.</returns>
-        private T Field0<T>(int pos, PortableBuilderImpl builder)
-        {
-            IPortableStream stream = new PortableHeapStream(_data);
-
-            stream.Seek(pos, SeekOrigin.Begin);
-
-            return _marsh.Unmarshal<T>(stream, PortableMode.ForcePortable, builder);
         }
 
         /** <inheritdoc /> */
@@ -247,8 +222,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     // 3. Check if objects have the same field values.
                     foreach (KeyValuePair<int, int> field in _fields)
                     {
-                        object fieldVal = Field0<object>(field.Value, null);
-                        object thatFieldVal = that.Field0<object>(that._fields[field.Key], null);
+                        object fieldVal = GetField<object>(field.Value, null);
+                        object thatFieldVal = that.GetField<object>(that._fields[field.Key], null);
 
                         if (!Equals(fieldVal, thatFieldVal))
                             return false;
@@ -332,7 +307,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         {
                             sb.Append(fieldName).Append('=');
 
-                            ToString0(sb, Field0<object>(fieldPos, null), handled);
+                            ToString0(sb, GetField<object>(fieldPos, null), handled);
                         }
                     }
                 }
