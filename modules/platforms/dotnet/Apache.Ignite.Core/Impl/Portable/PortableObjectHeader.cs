@@ -68,10 +68,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             SchemaOffset = schemaOffset;
         }
 
-        private PortableObjectHeader(IPortableStream stream, int position)
+        private PortableObjectHeader(IPortableStream stream)
         {
-            stream.Seek(position, SeekOrigin.Begin);
-
             Header = stream.ReadByte();
             Version = stream.ReadByte();
             Flags = stream.ReadShort();
@@ -159,12 +157,17 @@ namespace Apache.Ignite.Core.Impl.Portable
                 hdr->Write(stream);
         }
 
-        public static unsafe PortableObjectHeader Read(IPortableStream stream, int position)
+        public static PortableObjectHeader Read(IPortableStream stream, int position)
+        {
+            stream.Seek(position, SeekOrigin.Begin);
+
+            return Read(stream);
+        }
+
+        public static unsafe PortableObjectHeader Read(IPortableStream stream)
         {
             if (BitConverter.IsLittleEndian)
             {
-                stream.Seek(position, SeekOrigin.Begin);
-                
                 var hdr = new PortableObjectHeader();
 
                 stream.Read((byte*) &hdr, Size);
@@ -172,7 +175,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 return hdr;
             }
 
-            return new PortableObjectHeader(stream, position);
+            return new PortableObjectHeader(stream);
         }
 
         public bool Equals(PortableObjectHeader other)
