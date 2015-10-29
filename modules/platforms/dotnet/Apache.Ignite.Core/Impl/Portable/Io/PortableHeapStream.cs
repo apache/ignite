@@ -147,6 +147,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override void WriteShortArray(short[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             int cnt = val.Length << 1;
 
             int pos0 = EnsureWriteCapacityAndShift(cnt);
@@ -160,6 +162,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override short[] ReadShortArray(int cnt)
         {
+            IgniteArgumentCheck.NonNegative(cnt, "cnt");
+
             int cnt0 = cnt << 1;
 
             int pos0 = EnsureReadCapacityAndShift(cnt0);
@@ -173,6 +177,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override void WriteCharArray(char[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             int cnt = val.Length << 1;
 
             int pos0 = EnsureWriteCapacityAndShift(cnt);
@@ -186,6 +192,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override char[] ReadCharArray(int cnt)
         {
+            IgniteArgumentCheck.NonNegative(cnt, "cnt");
+
             int cnt0 = cnt << 1;
 
             int pos0 = EnsureReadCapacityAndShift(cnt0);
@@ -210,6 +218,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override void WriteInt(int writePos, int val)
         {
+            IgniteArgumentCheck.NonNegative(writePos, "writePos");
+
             EnsureWriteCapacity(writePos + 4);
 
             fixed (byte* data0 = _data)
@@ -232,6 +242,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override void WriteIntArray(int[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             int cnt = val.Length << 2;
 
             int pos0 = EnsureWriteCapacityAndShift(cnt);
@@ -245,6 +257,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override int[] ReadIntArray(int cnt)
         {
+            IgniteArgumentCheck.NonNegative(cnt, "cnt");
+
             int cnt0 = cnt << 2;
 
             int pos0 = EnsureReadCapacityAndShift(cnt0);
@@ -258,6 +272,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override void WriteFloatArray(float[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             int cnt = val.Length << 2;
 
             int pos0 = EnsureWriteCapacityAndShift(cnt);
@@ -271,6 +287,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override float[] ReadFloatArray(int cnt)
         {
+            IgniteArgumentCheck.NonNegative(cnt, "cnt");
+
             int cnt0 = cnt << 2;
 
             int pos0 = EnsureReadCapacityAndShift(cnt0);
@@ -306,6 +324,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override void WriteLongArray(long[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             int cnt = val.Length << 3;
 
             int pos0 = EnsureWriteCapacityAndShift(cnt);
@@ -319,6 +339,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override long[] ReadLongArray(int cnt)
         {
+            IgniteArgumentCheck.NonNegative(cnt, "cnt");
+
             int cnt0 = cnt << 3;
 
             int pos0 = EnsureReadCapacityAndShift(cnt0);
@@ -332,6 +354,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override void WriteDoubleArray(double[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             int cnt = val.Length << 3;
 
             int pos0 = EnsureWriteCapacityAndShift(cnt);
@@ -345,6 +369,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override double[] ReadDoubleArray(int cnt)
         {
+            IgniteArgumentCheck.NonNegative(cnt, "cnt");
+
             int cnt0 = cnt << 3;
 
             int pos0 = EnsureReadCapacityAndShift(cnt0);
@@ -358,6 +384,9 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override int WriteString(char* chars, int charCnt, int byteCnt, Encoding encoding)
         {
+            IgniteArgumentCheck.NonNegative(charCnt, "charCnt");
+            IgniteArgumentCheck.NonNegative(charCnt, "charCnt");
+
             int pos0 = EnsureWriteCapacityAndShift(byteCnt);
 
             int written;
@@ -373,6 +402,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override void Write(byte* src, int cnt)
         {
+            IgniteArgumentCheck.NonNegative(cnt, "cnt");
+
             EnsureWriteCapacity(Pos + cnt);
 
             fixed (byte* data0 = _data)
@@ -386,6 +417,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override void Read(byte* dest, int cnt)
         {
+            IgniteArgumentCheck.NonNegative(cnt, "cnt");
+
             fixed (byte* data0 = _data)
             {
                 ReadInternal(data0, dest, cnt);
@@ -395,6 +428,9 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override void Read(byte* dest, int pos, int cnt)
         {
+            IgniteArgumentCheck.NonNegative(pos, "pos");
+            IgniteArgumentCheck.NonNegative(cnt, "cnt");
+
             fixed (byte* data0 = _data)
             {
                 int cnt0 = Math.Min(_data.Length - pos, cnt);
