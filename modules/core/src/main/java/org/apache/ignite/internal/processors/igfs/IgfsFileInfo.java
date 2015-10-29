@@ -452,7 +452,7 @@ public final class IgfsFileInfo implements Externalizable {
     /**
      * @param affKey Affinity key used for single-node file collocation.
      */
-    public void affinityKey(IgniteUuid affKey) {
+    void affinityKey(IgniteUuid affKey) {
         this.affKey = affKey;
     }
 

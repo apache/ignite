@@ -1011,26 +1011,29 @@ public class IgfsDataManager extends IgfsManager {
             // Lock keys.
             Map<IgfsBlockKey, byte[]> vals = dataCachePrj.getAll(F.asList(colocatedKey, key));
 
-            boolean hasVal = false;
+            boolean hasVal1 = false;
+            boolean hasVal2 = false;
 
             UpdateProcessor transformClos = new UpdateProcessor(startOff, data);
 
             if (vals.get(colocatedKey) != null) {
                 dataCachePrj.invoke(colocatedKey, transformClos);
 
-                hasVal = true;
+                hasVal1 = true;
             }
 
             if (vals.get(key) != null) {
                 dataCachePrj.invoke(key, transformClos);
 
-                hasVal = true;
+                hasVal2 = true;
             }
 
-            if (!hasVal)
+            if (!hasVal1 && !hasVal2)
                 throw new IgniteCheckedException("Failed to write partial block (no previous data was found in cache) " +
                     "[key=" + colocatedKey + ", relaxedKey=" + key + ", startOff=" + startOff +
                     ", dataLen=" + data.length + ']');
+
+            assert !(hasVal1 && hasVal2) : "Both collocated and non-collocated keys are present.";
 
             tx.commit();
         }
@@ -1372,7 +1375,7 @@ public class IgfsDataManager extends IgfsManager {
 
             if (data == null) {
                 // In this case we don't write any new data,
-                // just truncate the existing entry data to "start" length, if needed:
+                // just truncate the existing entry data to have "start" length, if needed:
                 if (e != null && e.length > start) {
                     byte[] tmp = new byte[start];
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.igfs;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,6 +42,7 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -65,6 +67,11 @@ import static org.apache.ignite.internal.processors.igfs.IgfsAbstractSelfTest.wr
  * The operations to check are read, write or both.
  */
 public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
+    /**  */
+    protected static final Map<String,String> PREF_LOCAL_WRITES_FILE_PROPS
+        = Collections.unmodifiableMap(
+            F.asMap(IgfsEx.PROP_PREFER_LOCAL_WRITES, "true"));
+
     /** Directory. */
     protected static final IgfsPath DIR = new IgfsPath("/dir");
 
@@ -83,6 +90,9 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
     /** File block size. Use Very small blocks to ensure uniform data distribution among the nodes. */
     protected int igfsBlockSize = 31;
 
+    /** If fragmentizer enabled. */
+    protected boolean fragmentizerEnabled = false;
+
     /** */
     private final int fileSize = 77 * igfsBlockSize + 17;
 
@@ -94,6 +104,9 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
 
     /** Node data structures. */
     protected NodeFsData[] nodeDatas;
+
+    /** Properties for created files. */
+    protected Map<String,String> fileProps;
 
     /**
      * Structure to hold Ignite IGFS node data.
@@ -107,11 +120,6 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
 
         /**  */
         IgfsImpl igfsImpl;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
     }
 
     /**
@@ -157,6 +165,7 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setBlockSize(igfsBlockSize);
         igfsCfg.setDefaultMode(mode);
         igfsCfg.setSecondaryFileSystem(secondaryFs);
+        igfsCfg.setFragmentizerEnabled(fragmentizerEnabled);
 
         CacheConfiguration<?,?> dataCacheCfg = defaultCacheConfiguration();
 
@@ -229,6 +238,37 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
         // old files should be unlocked and moved to TRASH, while new files should be created.
         numBackups = 0;
 
+        fragmentizerEnabled = false;
+
+        fileProps = null;
+
+        createTest0();
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    public void testCleanupAfterStoppingMultipleNodesCreateSpecialAffinity() throws Exception {
+        // In this test we have *no* backups, and crash all the nodes but one,
+        // so likely all the files are destroyed.
+        // But there is nothing bad in that since the files are overwritten with "create(overwrite=true)" operation:
+        // old files should be unlocked and moved to TRASH, while new files should be created.
+        numBackups = 0;
+
+        fragmentizerEnabled = true;
+
+        fileProps = PREF_LOCAL_WRITES_FILE_PROPS;
+
+        createTest0();
+    }
+
+    /**
+     * Create test implementation.
+     *
+     * @throws Exception On error.
+     */
+    protected void createTest0() throws Exception {
         startUp();
 
         final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
@@ -386,6 +426,35 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
         // so no data should be lost.
         numBackups = 3; // Normally should be 1, but for some reason it works only for 3 and above.
 
+        fragmentizerEnabled = false;
+
+        fileProps = null;
+
+        appendTest0();
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    public void testCleanupAfterStoppingMultipleNodesAppendSpecialAffinity() throws Exception {
+        // In this test we have a backup for each file block, and stop only one (the 0-th) node,
+        // so no data should be lost.
+        numBackups = 3; // Normally should be 1, but for some reason it works only for 3 and above.
+
+        fragmentizerEnabled = true;
+
+        fileProps = PREF_LOCAL_WRITES_FILE_PROPS;
+
+        appendTest0();
+    }
+
+    /**
+     * Append test implementation.
+     *
+     * @throws Exception On error.
+     */
+    protected void appendTest0() throws Exception {
         startUp();
 
         final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
@@ -401,7 +470,7 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
             IgfsOutputStream os = null;
 
             try {
-                os = igfs0.create(filePath(f), 256, true, null, 0, -1, null);
+                os = igfs0.create(filePath(f), 256, true, null, 0, -1, fileProps);
 
                 assert os != null;
 
@@ -428,7 +497,7 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
             @Override public Object call() throws Exception {
                 assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
-                    return cnt.get() >= 10;
+                        return cnt.get() >= 10;
                     }
                 }, 60_000);
 
@@ -544,8 +613,6 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
         for (Cache.Entry<IgfsBlockKey, byte[]> e: dataCache.entrySet()) {
             key = e.getKey();
 
-            assert key.affinityKey() == null; // now this is the case
-
             IgniteUuid fileId = key.getFileId();
 
             SortedMap<IgfsBlockKey, byte[]> blockMap = dataMap.get(fileId);
@@ -633,7 +700,7 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
         boolean ok = true;
 
         if (fi.lockId() != null) {
-            X.println(fileId + " ! lockId: " + fi.lockId());
+            X.println(fileId + " ! lockId is present: " + fi.lockId());
 
             ok = false;
         }
@@ -654,13 +721,12 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
             byte[] val = e.getValue();
 
             if (key.getBlockId() != expBlockId) {
-                X.println(fileId + " Expected blockId: " + expBlockId + " ! actual block id: " + key.getBlockId());
+                X.println(fileId + " ! Expected blockId: " + expBlockId + " != actual block id: " + key.getBlockId());
 
                 ok = false;
             }
 
             assert key.getFileId().equals(fileId);
-            assert key.affinityKey() == null;
 
             actualLen += val.length;
 
@@ -668,13 +734,14 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
         }
 
         if (infoDeclaredLen != actualLen) {
-            X.println(fileId + " ! Length declared in file info = " + infoDeclaredLen + ", actual len (block sum) = " + actualLen);
+            X.println(fileId + " ! Length declared in file info " + infoDeclaredLen + " != actual len (block sum) = "
+                + actualLen);
 
             ok = false;
         }
 
         if (actualLen % fileSize != 0 ) {
-            X.println(" ! Remainder: " + actualLen % fileSize);
+            X.println(" ! Non zero remainder: " + actualLen % fileSize);
 
             ok = false;
         }
@@ -682,7 +749,7 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
         long x = actualLen / fileSize;
 
         if (x == 0 || x > 3) {
-            X.println(" ! Frac: " + x);
+            X.println(" ! Unexpected fraction value: " + x);
 
             ok = false;
         }
@@ -742,6 +809,6 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 20 * 60 * 1000;
+        return 5 * 60 * 1000;
     }
 }
