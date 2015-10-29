@@ -25,8 +25,11 @@ namespace Apache.Ignite.Core.Impl.Portable
     [StructLayout(LayoutKind.Sequential)]
     internal struct PortableObjectSchemaField
     {
+        public const int Size = 8;
+
         public readonly int Id;
         public readonly int Offset;
+
 
         public PortableObjectSchemaField(int id, int offset)
         {
@@ -44,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 fixed (PortableObjectSchemaField* ptr = &fields[0])
                 {
-                    stream.Write((byte*) ptr, count << 3); // 8 == sizeof (PortableObjectSchemaField)
+                    stream.Write((byte*) ptr, count * Size);
                 }
             }
             else
@@ -59,25 +62,23 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
-        public static unsafe PortableObjectSchemaField[] ReadArray(IPortableStream stream, int size)
+        public static unsafe PortableObjectSchemaField[] ReadArray(IPortableStream stream, int count)
         {
             Debug.Assert(stream != null);
-            Debug.Assert(size > 0);
+            Debug.Assert(count > 0);
 
-            int fieldCount = size >> 3; // 8 == sizeof (PortableObjectSchemaField)
-
-            var res = new PortableObjectSchemaField[fieldCount];
+            var res = new PortableObjectSchemaField[count];
 
             if (BitConverter.IsLittleEndian)
             {
                 fixed (PortableObjectSchemaField* ptr = &res[0])
                 {
-                    stream.Read((byte*) ptr, size); 
+                    stream.Read((byte*) ptr, count * Size);
                 }
             }
             else
             {
-                for (int i = 0; i < fieldCount >> 3; i++) 
+                for (int i = 0; i < count; i++) 
                 {
                     res[i] = new PortableObjectSchemaField(stream.ReadInt(), stream.ReadInt());
                 }

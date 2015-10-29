@@ -130,7 +130,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
-        public int SchemaSize
+        public int SchemaFieldCount
         {
             get
             {
@@ -142,7 +142,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (HasRawOffset)
                     schemaSize -= 4;
 
-                return schemaSize;
+                return schemaSize >> 3;  // 8 == PortableObjectSchemaField.Size
             }
         }
 
@@ -177,7 +177,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             Debug.Assert(stream != null);
 
-            var schemaSize = SchemaSize;
+            var schemaSize = SchemaFieldCount;
 
             if (schemaSize == 0)
                 return null;
@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             Debug.Assert(stream != null);
 
-            var schemaSize = SchemaSize;
+            var schemaSize = SchemaFieldCount;
 
             if (schemaSize == 0)
                 return null;
