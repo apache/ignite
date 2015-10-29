@@ -27,4 +27,9 @@ public class GridCacheAtomicNearEnabledMultiNodeFullApiSelfTest extends GridCach
     @Override protected NearCacheConfiguration nearConfiguration() {
         return new NearCacheConfiguration();
     }
+
+    /** {@inheritDoc} */
+    @Override public void testIgniteCacheIterator() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1756");
+    }
 }
