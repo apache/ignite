@@ -244,8 +244,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public int WriteString(char* chars, int charCnt, int byteCnt, Encoding encoding)
         {
-            IgniteArgumentCheck.Ensure(charCnt > 0, "charCnt", "should be greater than 0.");
-            IgniteArgumentCheck.Ensure(byteCnt > 0, "byteCnt", "should be greater than 0.");
+            IgniteArgumentCheck.Ensure(charCnt >= 0, "charCnt", "can't be negative.");
+            IgniteArgumentCheck.Ensure(byteCnt >= 0, "byteCnt", "can't be negative.");
             
             int curPos = EnsureWriteCapacityAndShift(byteCnt);
 
@@ -256,7 +256,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         public void Write(byte[] src, int off, int cnt)
         {
             IgniteArgumentCheck.NotNull(src, "src");
-            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+            IgniteArgumentCheck.Ensure(cnt >= 0, "cnt", "can't be negative.");
 
             fixed (byte* src0 = src)
             {
@@ -267,7 +267,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public void Write(byte* src, int cnt)
         {
-            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+            IgniteArgumentCheck.Ensure(cnt >= 0, "cnt", "can't be negative.");
 
             CopyFromAndShift(src, cnt);
         }
@@ -287,7 +287,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public byte[] ReadByteArray(int cnt)
         {
-            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0."); 
+            IgniteArgumentCheck.Ensure(cnt >= 0, "cnt", "can't be negative.");
             
             int curPos = EnsureReadCapacityAndShift(cnt);
 
@@ -310,7 +310,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public bool[] ReadBoolArray(int cnt)
         {
-            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+            IgniteArgumentCheck.Ensure(cnt >= 0, "cnt", "can't be negative.");
 
             bool[] res = new bool[cnt];
 
@@ -333,7 +333,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual short[] ReadShortArray(int cnt)
         {
-            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+            IgniteArgumentCheck.Ensure(cnt >= 0, "cnt", "can't be negative.");
 
             short[] res = new short[cnt];
 
@@ -356,7 +356,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual char[] ReadCharArray(int cnt)
         {
-            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+            IgniteArgumentCheck.Ensure(cnt >= 0, "cnt", "can't be negative.");
 
             char[] res = new char[cnt];
 
@@ -379,7 +379,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual int[] ReadIntArray(int cnt)
         {
-            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+            IgniteArgumentCheck.Ensure(cnt >= 0, "cnt", "can't be negative.");
 
             int[] res = new int[cnt];
 
@@ -402,7 +402,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual long[] ReadLongArray(int cnt)
         {
-            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+            IgniteArgumentCheck.Ensure(cnt >= 0, "cnt", "can't be negative.");
 
             long[] res = new long[cnt];
 
@@ -425,7 +425,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual float[] ReadFloatArray(int cnt)
         {
-            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+            IgniteArgumentCheck.Ensure(cnt >= 0, "cnt", "can't be negative.");
 
             float[] res = new float[cnt];
 
@@ -448,7 +448,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual double[] ReadDoubleArray(int cnt)
         {
-            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+            IgniteArgumentCheck.Ensure(cnt >= 0, "cnt", "can't be negative.");
 
             double[] res = new double[cnt];
 
@@ -464,7 +464,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         public void Read(byte[] dest, int off, int cnt)
         {
             IgniteArgumentCheck.NotNull(dest, "dest");
-            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+            IgniteArgumentCheck.Ensure(cnt >= 0, "cnt", "can't be negative.");
 
             fixed (byte* dest0 = dest)
             {
@@ -475,7 +475,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public void Read(byte* dest, int cnt)
         {
-            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
+            IgniteArgumentCheck.Ensure(cnt >= 0, "cnt", "can't be negative.");
 
             CopyToAndShift(dest, cnt);
         }
@@ -483,8 +483,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public void Read(byte* dest, int pos, int cnt)
         {
-            IgniteArgumentCheck.Ensure(cnt > 0, "cnt", "should be greater than 0.");
-            IgniteArgumentCheck.Ensure(pos >= 0, "pos", "should be positive.");
+            IgniteArgumentCheck.Ensure(cnt >= 0, "cnt", "can't be negative.");
+            IgniteArgumentCheck.Ensure(pos >= 0, "pos", "can't be negative.");
 
             if (pos + cnt > _len)
                 throw new EndOfStreamException("Not enough data in stream [expected=" + cnt +
