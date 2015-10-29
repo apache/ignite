@@ -219,19 +219,12 @@ namespace Apache.Ignite.Core.Impl.Portable
                 hdr.Write(stream);
         }
 
-        public static PortableObjectHeader Read(IPortableStream stream, int position)
+        public static unsafe PortableObjectHeader Read(IPortableStream stream, int position)
         {
             Debug.Assert(stream != null);
             Debug.Assert(position >= 0);
 
             stream.Seek(position, SeekOrigin.Begin);
-
-            return Read(stream);
-        }
-
-        public static unsafe PortableObjectHeader Read(IPortableStream stream)
-        {
-            Debug.Assert(stream != null);
 
             if (BitConverter.IsLittleEndian)
             {
