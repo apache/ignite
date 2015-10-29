@@ -25,9 +25,11 @@ namespace Apache.Ignite.Core.Impl.Portable
     [StructLayout(LayoutKind.Sequential)]
     internal struct PortableObjectSchemaField
     {
-        /** Record structure */
-        public readonly int Id;      // FieldId
-        public readonly int Offset;  // Offset from object start
+        /* Field ID */
+        public readonly int Id;
+
+        /** Offset. */
+        public readonly int Offset;
 
         /** Size, equals to sizeof(PortableObjectSchemaField) */
         private const int Size = 8;

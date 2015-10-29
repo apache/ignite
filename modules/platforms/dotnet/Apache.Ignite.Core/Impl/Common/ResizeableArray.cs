@@ -24,24 +24,41 @@ namespace Apache.Ignite.Core.Impl.Common
     /// </summary>
     internal class ResizeableArray<T>
     {
+        /** Array. */
         private T[] _arr;
+
+        /** Items count. */
         private int _count;
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="capacity">Capacity.</param>
         public ResizeableArray(int capacity)
         {
             _arr = new T[capacity];
         }
 
+        /// <summary>
+        /// Array.
+        /// </summary>
         public T[] Array
         {
             get { return _arr; }
         }
 
+        /// <summary>
+        /// Count.
+        /// </summary>
         public int Count
         {
             get { return _count; }
         }
 
+        /// <summary>
+        /// Add element.
+        /// </summary>
+        /// <param name="element">Element.</param>
         public void Add(T element)
         {
             if (_count == _arr.Length)
