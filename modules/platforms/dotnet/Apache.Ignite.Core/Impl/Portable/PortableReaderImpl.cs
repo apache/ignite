@@ -831,7 +831,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 if (id == fieldId)
                 {
-                    var fieldOffset = Stream.ReadInt() + 4;  // skip field length
+                    var fieldOffset = Stream.ReadInt();
 
                     Stream.Seek(_curPos + fieldOffset, SeekOrigin.Begin);
                     return true;

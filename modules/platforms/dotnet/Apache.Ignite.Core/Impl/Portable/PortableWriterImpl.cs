@@ -100,7 +100,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             WriteFieldId(fieldName, PU.TypeBool);
 
-            _stream.WriteInt(PU.LengthTypeId + 1);
             _stream.WriteByte(PU.TypeBool);
             _stream.WriteBool(val);
         }
@@ -127,7 +126,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                _stream.WriteInt(PU.LengthTypeId + PU.LengthArraySize + val.Length);
                 _stream.WriteByte(PU.TypeArrayBool);
                 PU.WriteBooleanArray(val, _stream);
             }
@@ -157,7 +155,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             WriteFieldId(fieldName, PU.TypeBool);
 
-            _stream.WriteInt(PU.LengthTypeId + 1);
             _stream.WriteByte(PU.TypeByte);
             _stream.WriteByte(val);
         }
@@ -184,7 +181,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                _stream.WriteInt(PU.LengthTypeId + PU.LengthArraySize + val.Length);
                 _stream.WriteByte(PU.TypeArrayByte);
                 PU.WriteByteArray(val, _stream);
             }
@@ -214,7 +210,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             WriteFieldId(fieldName, PU.TypeShort);
 
-            _stream.WriteInt(PU.LengthTypeId + 2);
             _stream.WriteByte(PU.TypeShort);
             _stream.WriteShort(val);
         }
@@ -241,7 +236,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                _stream.WriteInt(PU.LengthTypeId + PU.LengthArraySize + (val.Length << 1));
                 _stream.WriteByte(PU.TypeArrayShort);
                 PU.WriteShortArray(val, _stream);
             }
@@ -271,7 +265,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             WriteFieldId(fieldName, PU.TypeChar);
 
-            _stream.WriteInt(PU.LengthTypeId + 2);
             _stream.WriteByte(PU.TypeChar);
             _stream.WriteChar(val);
         }
@@ -298,7 +291,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                _stream.WriteInt(PU.LengthTypeId + PU.LengthArraySize + (val.Length << 1));
                 _stream.WriteByte(PU.TypeArrayChar);
                 PU.WriteCharArray(val, _stream);
             }
@@ -328,7 +320,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             WriteFieldId(fieldName, PU.TypeInt);
 
-            _stream.WriteInt(PU.LengthTypeId + 4);
             _stream.WriteByte(PU.TypeInt);
             _stream.WriteInt(val);
         }
@@ -355,7 +346,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                _stream.WriteInt(PU.LengthTypeId + PU.LengthArraySize + (val.Length << 2));
                 _stream.WriteByte(PU.TypeArrayInt);
                 PU.WriteIntArray(val, _stream);
             }
@@ -385,7 +375,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             WriteFieldId(fieldName, PU.TypeLong);
 
-            _stream.WriteInt(PU.LengthTypeId + 8);
             _stream.WriteByte(PU.TypeLong);
             _stream.WriteLong(val);
         }
@@ -412,7 +401,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                _stream.WriteInt(PU.LengthTypeId + PU.LengthArraySize + (val.Length << 3));
                 _stream.WriteByte(PU.TypeArrayLong);
                 PU.WriteLongArray(val, _stream);
             }
@@ -442,7 +430,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             WriteFieldId(fieldName, PU.TypeFloat);
 
-            _stream.WriteInt(PU.LengthTypeId + 4);
             _stream.WriteByte(PU.TypeFloat);
             _stream.WriteFloat(val);
         }
@@ -469,7 +456,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                _stream.WriteInt(PU.LengthTypeId + PU.LengthArraySize + (val.Length << 2));
                 _stream.WriteByte(PU.TypeArrayFloat);
                 PU.WriteFloatArray(val, _stream);
             }
@@ -499,7 +485,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             WriteFieldId(fieldName, PU.TypeDouble);
 
-            _stream.WriteInt(PU.LengthTypeId + 8);
             _stream.WriteByte(PU.TypeDouble);
             _stream.WriteDouble(val);
         }
@@ -526,7 +511,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                _stream.WriteInt(PU.LengthTypeId + PU.LengthArraySize + (val.Length << 3));
                 _stream.WriteByte(PU.TypeArrayDouble);
                 PU.WriteDoubleArray(val, _stream);
             }
@@ -560,12 +544,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                int pos = SkipFieldLength();
-
                 _stream.WriteByte(PU.TypeDecimal);
                 PortableUtils.WriteDecimal(val.Value, _stream);
-
-                WriteFieldLength(_stream, pos);
             }
         }
 
@@ -597,12 +577,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                int pos = SkipFieldLength();
-
                 _stream.WriteByte(PU.TypeArrayDecimal);
                 PU.WriteDecimalArray(val, _stream);
-
-                WriteFieldLength(_stream, pos);
             }
         }
         
@@ -634,8 +610,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                _stream.WriteInt(PU.LengthTypeId + 12);
-
                 _stream.WriteByte(PortableUtils.TypeTimestamp);
                 PortableUtils.WriteTimestamp(val.Value, _stream);
             }
@@ -669,12 +643,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                int pos = SkipFieldLength();
-
                 _stream.WriteByte(PortableUtils.TypeArrayTimestamp);
                 PortableUtils.WriteTimestampArray(val, _stream);
-
-                WriteFieldLength(_stream, pos);
             }
         }
 
@@ -706,12 +676,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                int pos = SkipFieldLength();
-
                 _stream.WriteByte(PU.TypeString);
                 PU.WriteString(val, _stream);
-
-                WriteFieldLength(_stream, pos);
             }
         }
 
@@ -743,12 +709,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                int pos = SkipFieldLength();
-
                 _stream.WriteByte(PU.TypeArrayString);
                 PU.WriteStringArray(val, _stream);
-
-                WriteFieldLength(_stream, pos);
             }
         }
 
@@ -780,8 +742,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                _stream.WriteInt(PU.LengthTypeId + 16);
-
                 _stream.WriteByte(PU.TypeGuid);
                 PU.WriteGuid(val.Value, _stream);
             }
@@ -815,12 +775,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                int pos = SkipFieldLength();
-
                 _stream.WriteByte(PU.TypeArrayGuid);
                 PU.WriteGuidArray(val, _stream);
-
-                WriteFieldLength(_stream, pos);
             }
         }
 
@@ -848,8 +804,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         public void WriteEnum<T>(string fieldName, T val)
         {
             WriteFieldId(fieldName, PU.TypeEnum);
-
-            _stream.WriteInt(PU.LengthTypeId + 16);
 
             _stream.WriteByte(PU.TypeEnum);
             PortableUtils.WriteEnum(_stream, (Enum)(object)val);
@@ -880,12 +834,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                int pos = SkipFieldLength();
-
                 _stream.WriteByte(PU.TypeArrayEnum);
                 PortableUtils.WriteArray(val, this);
-
-                WriteFieldLength(_stream, pos);
             }
         }
 
@@ -918,13 +868,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (val == null)
                 WriteNullField();
             else
-            {
-                int pos = SkipFieldLength();
-
                 Write(val);
-
-                WriteFieldLength(_stream, pos);
-            }
         }
 
         /// <summary>
@@ -951,12 +895,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullField();
             else
             {
-                int pos = SkipFieldLength();
-
                 _stream.WriteByte(PU.TypeArray);
                 PortableUtils.WriteArray(val, this);
-
-                WriteFieldLength(_stream, pos);
             }
         }
 
@@ -997,13 +937,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (val == null)
                 WriteNullField();
             else
-            {
-                int pos = SkipFieldLength();
-
                 WriteCollection(val);
-
-                WriteFieldLength(_stream, pos);
-            }
         }
 
         /// <summary>
@@ -1028,13 +962,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (val == null)
                 WriteNullField();
             else
-            {
-                int pos = SkipFieldLength();
-
                 WriteDictionary(val);
-
-                WriteFieldLength(_stream, pos);
-            }
         }
 
         /// <summary>
@@ -1477,31 +1405,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             _curSchema.Add(new PortableObjectSchemaField(fieldId, _stream.Position - _curPos));
         }
 
-        /// <summary>
-        /// Skip field lenght and return position where it is to be written.
-        /// </summary>
-        /// <returns></returns>
-        private int SkipFieldLength()
-        {
-            int pos = _stream.Position;
-
-            _stream.Seek(4, SeekOrigin.Current);
-
-            return pos;
-        }
-
-        /// <summary>
-        /// Write field length.
-        /// </summary>
-        /// <param name="stream">Stream.</param>
-        /// <param name="pos">Position where length should reside</param>
-        private static void WriteFieldLength(IPortableStream stream, int pos)
-        {
-            // Length is is a difference between current position and previously recorder 
-            // length placeholder position minus 4 bytes for the length itself.
-            stream.WriteInt(pos, stream.Position - pos - 4);
-        }
-        
         /// <summary>
         /// Saves metadata for this session.
         /// </summary>

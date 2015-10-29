@@ -235,9 +235,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Indicates object array. */
         public const int ObjTypeId = -1;
 
-        /** Length of tpye ID. */
-        public const int LengthTypeId = 1;
-
         /** Length of array size. */
         public const int LengthArraySize = 4;
 
