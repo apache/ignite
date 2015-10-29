@@ -43,7 +43,17 @@
         <doxygen.exec>doxygen</doxygen.exec>
         <git.exec>git</git.exec>
         <jetty.version>9.2.11.v20150529</jetty.version>
+        <maven.bundle.plugin.version>2.5.4</maven.bundle.plugin.version>
         <javadoc.opts>-XDenableSunApiLintControl</javadoc.opts>
+
+        <!-- OSGI Manifest generation default property values -->
+        <osgi.import.package>*</osgi.import.package>
+        <osgi.export.package>{local-packages}</osgi.export.package>
+        <osgi.private.package></osgi.private.package>
+        <osgi.embed.dependency></osgi.embed.dependency>
+        <osgi.embed.transitive>false</osgi.embed.transitive>
+        <osgi.fail.ok>false</osgi.fail.ok>
+
     </properties>
 
     <groupId>org.apache.ignite</groupId>
@@ -182,6 +192,15 @@
                         </execution>
                     </executions>
                 </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <configuration>
+                        <useDefaultManifestFile>true</useDefaultManifestFile>
+                    </configuration>
+                </plugin>
+
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
@@ -397,6 +416,52 @@
                                 ]]>
                         </bottom>
                     </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-bundle-plugin</artifactId>
+                    <version>${maven.bundle.plugin.version}</version>
+                    <extensions>true</extensions>
+                    <configuration>
+                        <archive>
+                            <addMavenDescriptor>true</addMavenDescriptor>
+                        </archive>
+                        <supportedProjectTypes>
+                            <supportedProjectType>jar</supportedProjectType>
+                            <supportedProjectType>war</supportedProjectType>
+                        </supportedProjectTypes>
+                        <instructions>
+                            <Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
+                            <Bundle-Version>${project.version}</Bundle-Version>
+                            <Bundle-Vendor>${project.organization.name}</Bundle-Vendor>
+                            <Bundle-Description>${project.description}</Bundle-Description>
+                            <Bundle-DocURL>${project.url}</Bundle-DocURL>
+                            <Import-Package>
+                                ${osgi.import.package}
+                            </Import-Package>
+                            <Export-Package>
+                                ${osgi.export.package}
+                            </Export-Package>
+                            <Private-Package>
+                                ${osgi.private.package}
+                            </Private-Package>
+                            <Embed-Dependency>${osgi.embed.dependency}</Embed-Dependency>
+                            <Embed-Directory>lib</Embed-Directory>
+                            <Embed-Transitive>${osgi.embed.transitive}</Embed-Transitive>
+                            <_failok>${osgi.fail.ok}</_failok>
+                            <_invalidfilenames />
+                        </instructions>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>bundle-manifest</id>
+                            <phase>process-classes</phase>
+                            <goals>
+                                <goal>manifest</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -621,6 +686,7 @@
                     </execution>
                 </executions>
             </plugin>
+
         </plugins>
     </build>
 

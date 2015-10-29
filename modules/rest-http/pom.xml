@@ -34,6 +34,13 @@
     <version>1.5.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
+    <properties>
+        <osgi.export.package>
+            org.apache.ignite.internal.processors.rest.protocols.http.jetty,
+            {local-packages}
+        </osgi.export.package>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
@@ -114,4 +121,15 @@
             <version>1.8.3</version>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Generate the OSGi MANIFEST.MF for this bundle. -->
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>

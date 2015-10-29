@@ -38,7 +38,8 @@
     <properties>
         <paho.version>1.0.2</paho.version>
         <activemq.version>5.12.0</activemq.version>
-        <guava-retryier.version>2.0.0</guava-retryier.version>
+        <guava-retrying.version>2.0.0</guava-retrying.version>
+        <guava.version>18.0</guava.version>
     </properties>
 
     <dependencies>
@@ -57,7 +58,13 @@
         <dependency>
             <groupId>com.github.rholder</groupId>
             <artifactId>guava-retrying</artifactId>
-            <version>${guava-retryier.version}</version>
+            <version>${guava-retrying.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
         </dependency>
 
         <dependency>
@@ -110,5 +117,15 @@
             </snapshots>
         </repository>
     </repositories>
+
+    <build>
+        <plugins>
+            <!-- Generate the OSGi MANIFEST.MF for this bundle. -->
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

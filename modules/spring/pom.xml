@@ -118,7 +118,6 @@
             <scope>test</scope>
         </dependency>
 
-
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
@@ -136,5 +135,21 @@
                 </excludes>
             </testResource>
         </testResources>
+
+        <plugins>
+            <!-- Generate the OSGi MANIFEST.MF for this bundle. 
+                 This bundle is a fragment attached to the ignite-core bundle, as it contains and exports classes in the org.apache.ignite
+                 leading to a split package situation in OSGi.
+            -->
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Fragment-Host>org.apache.ignite.ignite-core</Fragment-Host>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 </project>
