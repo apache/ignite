@@ -61,6 +61,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -216,7 +217,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                     ctx.cache().internalCache(routine.handler().cacheName());
 
                                 if (interCache != null && idxs != null && interCache.context() != null
-                                    && !interCache.isLocal()) {
+                                    && !interCache.isLocal() && !CU.clientNode(ctx.grid().localNode())) {
                                     Map<Integer, Long> map = interCache.context().topology().updateCounters();
 
                                     for (Map.Entry<Integer, Long> e : map.entrySet()) {

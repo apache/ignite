@@ -637,7 +637,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         private long lastFiredEvt;
 
         /** */
-        private AffinityTopologyVersion curTop;
+        private AffinityTopologyVersion curTop = AffinityTopologyVersion.NONE;
 
         /** */
         private final Map<Long, CacheContinuousQueryEntry> pendingEvts = new TreeMap<>();
@@ -669,7 +669,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
             synchronized (pendingEvts) {
                 // Received first event.
-                if (curTop == null) {
+                if (curTop == AffinityTopologyVersion.NONE) {
                     lastFiredEvt = entry.updateIndex();
 
                     curTop = entry.topologyVersion();
@@ -678,11 +678,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 }
 
                 if (curTop.compareTo(entry.topologyVersion()) < 0) {
-                    GridCacheAffinityManager aff = cctx.affinity();
-
-                    if (cctx.affinity().backups(entry.partition(), entry.topologyVersion()).isEmpty() &&
-                        !aff.primary(entry.partition(), curTop).id().equals(aff.primary(entry.partition(),
-                            entry.topologyVersion()).id())) {
+                    if (entry.updateIndex() == 1 && !entry.isBackup()) {
                         entries = new ArrayList<>(pendingEvts.size());
 
                         for (CacheContinuousQueryEntry evt : pendingEvts.values()) {

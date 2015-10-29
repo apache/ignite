@@ -94,7 +94,7 @@ public class IgniteCacheContinuousQueryClientReconnectTest extends IgniteClientR
 
         int keyCnt = 100;
 
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < 10; i++) {
             lsnr.latch = new CountDownLatch(keyCnt);
 
             for (int key = 0; key < keyCnt; key++)
