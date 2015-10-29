@@ -162,7 +162,8 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
                     0,
                     true,
                     futureId(),
-                    fut.futureId());
+                    fut.futureId(),
+                    tx.activeCachesDeploymentEnabled());
 
                 try {
                     cctx.io().send(nearNodeId, req, tx.ioPolicy());
@@ -267,7 +268,8 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
                         nodeTransactions(id),
                         false,
                         futureId(),
-                        fut.futureId());
+                        fut.futureId(),
+                        tx.activeCachesDeploymentEnabled());
 
                     try {
                         cctx.io().send(id, req, tx.ioPolicy());
@@ -292,7 +294,8 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
                     nodeTransactions(nodeId),
                     false,
                     futureId(),
-                    fut.futureId());
+                    fut.futureId(),
+                    tx.activeCachesDeploymentEnabled());
 
                 try {
                     cctx.io().send(nodeId, req, tx.ioPolicy());
