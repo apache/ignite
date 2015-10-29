@@ -17,12 +17,12 @@
 
 package org.apache.ignite.portable;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.TreeMap;
 import org.apache.ignite.IgnitePortables;
+import org.apache.ignite.cache.IgniteObject;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.jetbrains.annotations.Nullable;
 
@@ -103,13 +103,13 @@ import org.jetbrains.annotations.Nullable;
  * methods. Having metadata also allows for proper formatting of {@code PortableObject.toString()} method,
  * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
  */
-public interface PortableObject extends Serializable, Cloneable {
+public interface PortableObject extends IgniteObject, Cloneable {
     /**
      * Gets portable object type ID.
      *
      * @return Type ID.
      */
-    public int typeId();
+    @Override public int typeId();
 
     /**
      * Gets meta data for this portable object.
@@ -126,7 +126,7 @@ public interface PortableObject extends Serializable, Cloneable {
      * @return Field value.
      * @throws PortableException In case of any other error.
      */
-    @Nullable public <F> F field(String fieldName) throws PortableException;
+    @Override @Nullable public <F> F field(String fieldName) throws PortableException;
 
     /**
      * Checks whether field is set.
@@ -134,7 +134,7 @@ public interface PortableObject extends Serializable, Cloneable {
      * @param fieldName Field name.
      * @return {@code true} if field is set.
      */
-    public boolean hasField(String fieldName);
+    @Override public boolean hasField(String fieldName);
 
     /**
      * Gets fully deserialized instance of portable object.
@@ -143,7 +143,7 @@ public interface PortableObject extends Serializable, Cloneable {
      * @throws PortableInvalidClassException If class doesn't exist.
      * @throws PortableException In case of any other error.
      */
-    @Nullable public <T> T deserialize() throws PortableException;
+    @Override @Nullable public <T> T deserialize() throws PortableException;
 
     /**
      * Copies this portable object.
