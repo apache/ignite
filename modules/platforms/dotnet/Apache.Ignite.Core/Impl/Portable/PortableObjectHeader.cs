@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Runtime.InteropServices;
@@ -112,6 +113,22 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
+        public int SchemaFieldCount
+        {
+            get
+            {
+                if (IsRawOnly)
+                    return 0;
+
+                var schemaSize = Length - SchemaOffset;
+
+                if (HasRawOffset)
+                    schemaSize -= 4;
+
+                return schemaSize >> 3;   // 8 == sizeof(PortableObjectSchemaField)
+            }
+        }
+
         public int GetSchemaEnd(int position)
         {
             var res = position + Length;
@@ -127,7 +144,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             return IsRawOnly ? GetSchemaEnd(position) : position + SchemaOffset;
         }
 
-        public int GetRawOffset(int position, IPortableStream stream)
+        public int GetRawOffset(IPortableStream stream, int position)
         {
             Debug.Assert(stream != null);
 
@@ -139,20 +156,23 @@ namespace Apache.Ignite.Core.Impl.Portable
             return stream.ReadInt();
         }
 
-        public int SchemaFieldCount
+        public Dictionary<int, int> ReadSchemaAsDictionary(IPortableStream stream, int position)
         {
-            get
-            {
-                if (IsRawOnly)
-                    return 0;
+            Debug.Assert(stream != null);
 
-                var schemaSize = Length - SchemaOffset;
+            var fieldCount = SchemaFieldCount;
 
-                if (HasRawOffset)
-                    schemaSize -= 4;
+            if (fieldCount == 0)
+                return null;
 
-                return schemaSize >> 3;   // 8 == sizeof(PortableObjectSchemaField)
-            }
+            stream.Seek(position + SchemaOffset, SeekOrigin.Begin);
+
+            var schema = new Dictionary<int, int>(fieldCount);
+
+            for (var i = 0; i < fieldCount; i++)
+                schema.Add(stream.ReadInt(), stream.ReadInt());
+
+            return schema;
         }
 
         public PortableObjectHeader ChangeHashCode(int hashCode)
