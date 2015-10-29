@@ -226,11 +226,13 @@ namespace Apache.Ignite.Core.Impl.Portable
                     }
 
                     // 4. Check if objects have the same raw data.
+                    // ReSharper disable ImpureMethodCallOnReadonlyValueField (method is not impure)
                     var stream = new PortableHeapStream(_data);
                     var rawOffset = _header.GetRawOffset(stream, _offset);
 
                     var thatStream = new PortableHeapStream(that._data);
                     var thatRawOffset = that._header.GetRawOffset(thatStream, that._offset);
+                    // ReSharper restore ImpureMethodCallOnReadonlyValueField
 
                     return PortableUtils.CompareArrays(_data, _offset + rawOffset, _header.Length - rawOffset, 
                         that._data, that._offset + thatRawOffset, that._header.Length - thatRawOffset);
