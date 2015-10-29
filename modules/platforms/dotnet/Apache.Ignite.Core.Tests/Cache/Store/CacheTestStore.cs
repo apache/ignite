@@ -61,35 +61,32 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public void LoadCache(Action<object, object> act, params object[] args)
         {
-            throw new Exception("Cache load failed.");
-//            
-//
-//            Debug.Assert(_grid != null);
-//
-//            if (LoadMultithreaded)
-//            {
-//                int cnt = 0;
-//
-//                TestUtils.RunMultiThreaded(() => {
-//                    int i;
-//
-//                    while ((i = Interlocked.Increment(ref cnt) - 1) < 1000)
-//                        act(i, "val_" + i);
-//                }, 8);
-//            }
-//            else
-//            {
-//                int start = (int)args[0];
-//                int cnt = (int)args[1];
-//
-//                for (int i = start; i < start + cnt; i++)
-//                {
-//                    if (LoadObjects)
-//                        act(new Key(i), new Value(i));
-//                    else
-//                        act(i, "val_" + i);
-//                }
-//            }
+            Debug.Assert(_grid != null);
+
+            if (LoadMultithreaded)
+            {
+                int cnt = 0;
+
+                TestUtils.RunMultiThreaded(() => {
+                    int i;
+
+                    while ((i = Interlocked.Increment(ref cnt) - 1) < 1000)
+                        act(i, "val_" + i);
+                }, 8);
+            }
+            else
+            {
+                int start = (int)args[0];
+                int cnt = (int)args[1];
+
+                for (int i = start; i < start + cnt; i++)
+                {
+                    if (LoadObjects)
+                        act(new Key(i), new Value(i));
+                    else
+                        act(i, "val_" + i);
+                }
+            }
         }
 
         public object Load(object key)

@@ -37,9 +37,6 @@ namespace Apache.Ignite.Core.Impl.Portable
      */
     static class PortableUtils
     {
-        /** Cache empty dictionary. */
-        public static readonly IDictionary<int, int> EmptyFields = new Dictionary<int, int>();
-
         /** Header of NULL object. */
         public const byte HdrNull = 101;
 
@@ -51,21 +48,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Protocol versnion. */
         public const byte ProtoVer = 1;
-
-        /** Full header length. */
-        public const int FullHdrLen = 19;
-
-        /** Offset: hash code. */
-        public const int OffsetTypeId = 3;
-
-        /** Offset: hash code. */
-        public const int OffsetHashCode = 7;
-
-        /** Offset: length. */
-        public const int OffsetLen = 11;
-
-        /** Offset: raw data offset. */
-        public const int OffsetRaw = 15;
 
         /** Type: object. */
         public const byte TypeObject = HdrFull;
@@ -252,9 +234,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Indicates object array. */
         public const int ObjTypeId = -1;
-
-        /** Length of tpye ID. */
-        public const int LengthTypeId = 1;
 
         /** Length of array size. */
         public const int LengthArraySize = 4;
@@ -1589,56 +1568,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             return id;
         }
 
-        /**
-         * <summary>Get fields map for the given object.</summary>
-         * <param name="stream">Stream.</param>
-         * <param name="typeId">Type ID.</param>
-         * <param name="rawDataOffset">Raw data offset.</param>
-         * <returns>Dictionary with field ID as key and field position as value.</returns>
-         */
-        public static IDictionary<int, int> ObjectFields(IPortableStream stream, int typeId, int rawDataOffset)
-        {
-            int endPos = stream.Position + rawDataOffset - FullHdrLen;
-
-            // First loop detects amount of fields in the object.
-            int retPos = stream.Position;
-            int cnt = 0;
-
-            while (stream.Position < endPos)
-            {
-                cnt++;
-
-                stream.Seek(4, SeekOrigin.Current);
-                int len = stream.ReadInt();
-
-                stream.Seek(stream.Position + len, SeekOrigin.Begin);
-            }
-
-            if (cnt == 0)
-                return EmptyFields;
-
-            stream.Seek(retPos, SeekOrigin.Begin);
-
-            IDictionary<int, int> fields = new Dictionary<int, int>(cnt);
-
-            // Second loop populates fields.
-            while (stream.Position < endPos)
-            {
-                int id = stream.ReadInt();
-                int len = stream.ReadInt();
-
-                if (fields.ContainsKey(id))
-                    throw new PortableException("Object contains duplicate field IDs [typeId=" +
-                        typeId + ", fieldId=" + id + ']');
-
-                fields[id] = stream.Position; // Add field ID and length.
-
-                stream.Seek(stream.Position + len, SeekOrigin.Begin);
-            }
-
-            return fields;
-        }
-
         /// <summary>
         /// Compare contents of two byte array chunks.
         /// </summary>
@@ -1731,13 +1660,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Validate protocol version.
         /// </summary>
-        /// <param name="stream">Stream.</param>
-        public static void ValidateProtocolVersion(IPortableStream stream)
+        /// <param name="version">The version.</param>
+        public static void ValidateProtocolVersion(byte version)
         {
-            byte ver = stream.ReadByte();
-
-            if (ver != ProtoVer)
-                throw new PortableException("Unsupported protocol version: " + ver);
+            if (version != ProtoVer)
+                throw new PortableException("Unsupported protocol version: " + version);
         }
 
         /**
@@ -1848,6 +1775,28 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             throw new PortableException("Failed to find class: " + typeName);
+        }
+
+        /// <summary>
+        /// Gets the schema id as a Fnv1 hash.
+        /// </summary>
+        /// <param name="schema">The schema.</param>
+        /// <returns>
+        /// Schema id.
+        /// </returns>
+        public static int GetSchemaId(ResizeableArray<PortableObjectSchemaField> schema)
+        {
+            var hash = Fnv1Hash.Basis;
+
+            if (schema == null || schema.Count == 0)
+                return hash;
+
+            var arr = schema.Array;
+
+            for (int i = 0; i < schema.Count; i++)
+                hash = Fnv1Hash.Update(hash, arr[i].Id);
+
+            return hash;
         }
 
         /// <summary>
