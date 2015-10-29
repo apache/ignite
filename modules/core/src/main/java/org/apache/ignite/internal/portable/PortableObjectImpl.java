@@ -235,7 +235,15 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
     @Nullable @Override public <F> F field(String fieldName) throws PortableException {
         PortableReaderExImpl reader = new PortableReaderExImpl(ctx, arr, start, null);
 
-        return (F)reader.unmarshal(fieldName);
+        return (F)reader.unmarshalField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Nullable @Override public <F> F field(int fieldId) throws PortableException {
+        PortableReaderExImpl reader = new PortableReaderExImpl(ctx, arr, start, null);
+
+        return (F)reader.unmarshalField(fieldId);
     }
 
     /** {@inheritDoc} */
@@ -247,7 +255,7 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
             null,
             rCtx);
 
-        return (F)reader.unmarshal(fieldName);
+        return (F)reader.unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */

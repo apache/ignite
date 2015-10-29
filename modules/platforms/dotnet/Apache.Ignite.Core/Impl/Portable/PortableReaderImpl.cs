@@ -66,6 +66,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Current type structure tracker. */
         private PortableStructureTracker _curStruct;
 
+        /** */
+        private int _curFooterStart;
+
+        /** */
+        private int _curFooterEnd;
+
 
         /// <summary>
         /// Constructor.
@@ -554,10 +560,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             var len = Stream.ReadInt();
 
-            var portablePos = Stream.Position;
+            var portableBytesPos = Stream.Position;
 
             if (_mode != PortableMode.Deserialize)
-                return TypeCaster<T>.Cast(ReadAsPortable(portablePos, len, doDetach));
+                return TypeCaster<T>.Cast(ReadAsPortable(portableBytesPos, len, doDetach));
 
             Stream.Seek(len, SeekOrigin.Current);
 
@@ -565,7 +571,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var retPos = Stream.Position;
 
-            Stream.Seek(portablePos + offset, SeekOrigin.Begin);
+            Stream.Seek(portableBytesPos + offset, SeekOrigin.Begin);
 
             _mode = PortableMode.KeepPortable;
 
@@ -584,30 +590,28 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Reads the portable object in portable form.
         /// </summary>
-        private PortableUserObject ReadAsPortable(int dataPos, int dataLen, bool doDetach)
+        private PortableUserObject ReadAsPortable(int portableBytesPos, int dataLen, bool doDetach)
         {
             try
             {
-                Stream.Seek(dataLen + dataPos, SeekOrigin.Begin);
+                Stream.Seek(dataLen + portableBytesPos, SeekOrigin.Begin);
 
                 var offs = Stream.ReadInt(); // offset inside data
 
-                var pos = dataPos + offs;
+                var pos = portableBytesPos + offs;
+
+                var hdr = PortableObjectHeader.Read(Stream, pos);
 
                 if (!doDetach)
-                    return GetPortableUserObject(pos, pos, Stream.Array());
-                
-                Stream.Seek(pos + PortableUtils.OffsetLen, SeekOrigin.Begin);
-
-                var len = Stream.ReadInt();
+                    return new PortableUserObject(_marsh, Stream.GetArray(), pos, hdr);
 
                 Stream.Seek(pos, SeekOrigin.Begin);
 
-                return GetPortableUserObject(pos, 0, Stream.ReadByteArray(len));
+                return new PortableUserObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
             }
             finally
             {
-                Stream.Seek(dataPos + dataLen + 4, SeekOrigin.Begin);
+                Stream.Seek(portableBytesPos + dataLen + 4, SeekOrigin.Begin);
             }
         }
 
@@ -617,16 +621,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         [SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals", MessageId = "hashCode")]
         private T ReadFullObject<T>(int pos)
         {
-            // Validate protocol version.
-            PortableUtils.ValidateProtocolVersion(Stream);
+            var hdr = PortableObjectHeader.Read(Stream, pos);
 
-            // Read header.
-            bool userType = Stream.ReadBool();
-            int typeId = Stream.ReadInt();
-            // ReSharper disable once UnusedVariable
-            int hashCode = Stream.ReadInt();
-            int len = Stream.ReadInt();
-            int rawOffset = Stream.ReadInt();
+            // Validate protocol version.
+            PortableUtils.ValidateProtocolVersion(hdr.Version);
 
             try
             {
@@ -636,7 +634,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (_hnds != null && _hnds.TryGetValue(pos, out hndObj))
                     return (T) hndObj;
 
-                if (userType && _mode == PortableMode.ForcePortable)
+                if (hdr.IsUserType && _mode == PortableMode.ForcePortable)
                 {
                     PortableUserObject portObj;
 
@@ -644,10 +642,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                     {
                         Stream.Seek(pos, SeekOrigin.Begin);
 
-                        portObj = GetPortableUserObject(pos, 0, Stream.ReadByteArray(len));
+                        portObj = new PortableUserObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
                     }
                     else
-                        portObj = GetPortableUserObject(pos, pos, Stream.Array());
+                        portObj = new PortableUserObject(_marsh, Stream.GetArray(), pos, hdr);
 
                     T obj = _builder == null ? TypeCaster<T>.Cast(portObj) : TypeCaster<T>.Cast(_builder.Child(portObj));
 
@@ -660,8 +658,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     // Find descriptor.
                     IPortableTypeDescriptor desc;
 
-                    if (!_descs.TryGetValue(PortableUtils.TypeKey(userType, typeId), out desc))
-                        throw new PortableException("Unknown type ID: " + typeId);
+                    if (!_descs.TryGetValue(PortableUtils.TypeKey(hdr.IsUserType, hdr.TypeId), out desc))
+                        throw new PortableException("Unknown type ID: " + hdr.TypeId);
 
                     // Instantiate object. 
                     if (desc.Type == null)
@@ -674,15 +672,21 @@ namespace Apache.Ignite.Core.Impl.Portable
                     int oldRawOffset = _curRawOffset;
                     var oldStruct = _curStruct;
                     bool oldRaw = _curRaw;
+                    var oldFooterStart = _curFooterStart;
+                    var oldFooterEnd = _curFooterEnd;
 
                     // Set new frame.
-                    _curTypeId = typeId;
+                    _curTypeId = hdr.TypeId;
                     _curPos = pos;
-                    _curRawOffset = rawOffset;
+                    _curFooterEnd = hdr.GetSchemaEnd(pos);
+                    _curFooterStart = hdr.GetSchemaStart(pos);
+                    _curRawOffset = hdr.GetRawOffset(Stream, pos);
                     _curStruct = new PortableStructureTracker(desc, desc.ReaderTypeStructure);
                     _curRaw = false;
 
                     // Read object.
+                    Stream.Seek(pos + PortableObjectHeader.Size, SeekOrigin.Begin);
+
                     object obj;
 
                     var sysSerializer = desc.Serializer as IPortableSystemTypeSerializer;
@@ -715,6 +719,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _curRawOffset = oldRawOffset;
                     _curStruct = oldStruct;
                     _curRaw = oldRaw;
+                    _curFooterStart = oldFooterStart;
+                    _curFooterEnd = oldFooterEnd;
 
                     // Process wrappers. We could introduce a common interface, but for only 2 if-else is faster.
                     var wrappedSerializable = obj as SerializableObjectHolder;
@@ -733,7 +739,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             finally
             {
                 // Advance stream pointer.
-                Stream.Seek(pos + len, SeekOrigin.Begin);
+                Stream.Seek(pos + hdr.Length, SeekOrigin.Begin);
             }
         }
 
@@ -817,51 +823,21 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>True in case the field was found and position adjusted, false otherwise.</returns>
         private bool SeekField(int fieldId)
         {
-            // This method is expected to be called when stream pointer is set either before
-            // the field or on raw data offset.
-            int start = _curPos + PortableUtils.FullHdrLen;
-            int end = _curPos + _curRawOffset;
+            Stream.Seek(_curFooterStart, SeekOrigin.Begin);
 
-            int initial = Stream.Position;
-
-            int cur = initial;
-
-            while (cur < end)
+            while (Stream.Position < _curFooterEnd)
             {
-                int id = Stream.ReadInt();
+                var id = Stream.ReadInt();
 
-                if (fieldId == id)
+                if (id == fieldId)
                 {
-                    // Field is found, return.
-                    Stream.Seek(4, SeekOrigin.Current);
+                    var fieldOffset = Stream.ReadInt();
 
+                    Stream.Seek(_curPos + fieldOffset, SeekOrigin.Begin);
                     return true;
                 }
-                
-                Stream.Seek(Stream.ReadInt(), SeekOrigin.Current);
 
-                cur = Stream.Position;
-            }
-
-            Stream.Seek(start, SeekOrigin.Begin);
-
-            cur = start;
-
-            while (cur < initial)
-            {
-                int id = Stream.ReadInt();
-
-                if (fieldId == id)
-                {
-                    // Field is found, return.
-                    Stream.Seek(4, SeekOrigin.Current);
-
-                    return true;
-                }
-                
-                Stream.Seek(Stream.ReadInt(), SeekOrigin.Current);
-
-                cur = Stream.Position;
+                Stream.Seek(4, SeekOrigin.Current);
             }
 
             return false;
@@ -938,23 +914,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         private T Read<T>(Func<IPortableStream, T> readFunc, byte expHdr)
         {
             return IsNotNullHeader(expHdr) ? readFunc(Stream) : default(T);
-        }
-
-        /// <summary>
-        /// Gets the portable user object from a byte array.
-        /// </summary>
-        /// <param name="pos">Position in the current stream.</param>
-        /// <param name="offs">Offset in the byte array.</param>
-        /// <param name="bytes">Bytes.</param>
-        private PortableUserObject GetPortableUserObject(int pos, int offs, byte[] bytes)
-        {
-            Stream.Seek(pos + PortableUtils.OffsetTypeId, SeekOrigin.Begin);
-
-            var id = Stream.ReadInt();
-
-            var hash = Stream.ReadInt();
-
-            return new PortableUserObject(_marsh, bytes, offs, id, hash);
         }
     }
 }

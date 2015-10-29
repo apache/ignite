@@ -430,7 +430,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
      * @throws PortableException If failed.
      */
     public byte[] marshal(@Nullable Object obj) throws PortableException {
-        byte[] arr = portableMarsh.marshal(obj, 0);
+        byte[] arr = portableMarsh.marshal(obj);
 
         assert arr.length > 0;
 
@@ -515,7 +515,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
             return new GridMapEntry<>(marshalToPortable(e.getKey()), marshalToPortable(e.getValue()));
         }
 
-        byte[] arr = portableMarsh.marshal(obj, 0);
+        byte[] arr = portableMarsh.marshal(obj);
 
         assert arr.length > 0;
 
@@ -721,7 +721,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
         if (!((CacheObjectPortableContext)ctx).portableEnabled() || portableMarsh == null)
             return super.marshal(ctx, val);
 
-        byte[] arr = portableMarsh.marshal(val, 0);
+        byte[] arr = portableMarsh.marshal(val);
 
         assert arr.length > 0;
 
