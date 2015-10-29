@@ -168,8 +168,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         [SuppressMessage("Microsoft.Usage", "CA2233:OperationsShouldNotOverflow", MessageId = "writePos+4")]
         public virtual void WriteInt(int writePos, int val)
         {
-            IgniteArgumentCheck.NonNegative(writePos, "writePos");
-            
             EnsureWriteCapacity(writePos + 4);
 
             *((int*)(_data + writePos)) = val;
@@ -258,8 +256,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         public void Write(byte[] src, int off, int cnt)
         {
             IgniteArgumentCheck.NotNull(src, "src");
-            IgniteArgumentCheck.NonNegative(off, "off");
-            IgniteArgumentCheck.NonNegative(cnt, "cnt");
 
             fixed (byte* src0 = src)
             {
@@ -270,8 +266,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public void Write(byte* src, int cnt)
         {
-            IgniteArgumentCheck.NonNegative(cnt, "cnt");
-
             CopyFromAndShift(src, cnt);
         }
         
@@ -290,8 +284,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public byte[] ReadByteArray(int cnt)
         {
-            IgniteArgumentCheck.NonNegative(cnt, "cnt");
-            
             int curPos = EnsureReadCapacityAndShift(cnt);
 
             byte[] res = new byte[cnt];
@@ -313,8 +305,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public bool[] ReadBoolArray(int cnt)
         {
-            IgniteArgumentCheck.NonNegative(cnt, "cnt");
-
             bool[] res = new bool[cnt];
 
             fixed (bool* res0 = res)
@@ -336,8 +326,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual short[] ReadShortArray(int cnt)
         {
-            IgniteArgumentCheck.NonNegative(cnt, "cnt");
-
             short[] res = new short[cnt];
 
             fixed (short* res0 = res)
@@ -359,8 +347,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual char[] ReadCharArray(int cnt)
         {
-            IgniteArgumentCheck.NonNegative(cnt, "cnt");
-
             char[] res = new char[cnt];
 
             fixed (char* res0 = res)
@@ -382,8 +368,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual int[] ReadIntArray(int cnt)
         {
-            IgniteArgumentCheck.NonNegative(cnt, "cnt");
-
             int[] res = new int[cnt];
 
             fixed (int* res0 = res)
@@ -405,8 +389,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual long[] ReadLongArray(int cnt)
         {
-            IgniteArgumentCheck.NonNegative(cnt, "cnt");
-
             long[] res = new long[cnt];
 
             fixed (long* res0 = res)
@@ -428,8 +410,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual float[] ReadFloatArray(int cnt)
         {
-            IgniteArgumentCheck.NonNegative(cnt, "cnt");
-
             float[] res = new float[cnt];
 
             fixed (float* res0 = res)
@@ -451,8 +431,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public virtual double[] ReadDoubleArray(int cnt)
         {
-            IgniteArgumentCheck.NonNegative(cnt, "cnt");
-
             double[] res = new double[cnt];
 
             fixed (double* res0 = res)
@@ -467,7 +445,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         public void Read(byte[] dest, int off, int cnt)
         {
             IgniteArgumentCheck.NotNull(dest, "dest");
-            IgniteArgumentCheck.NonNegative(cnt, "cnt");
 
             fixed (byte* dest0 = dest)
             {
@@ -478,8 +455,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public void Read(byte* dest, int cnt)
         {
-            IgniteArgumentCheck.NonNegative(cnt, "cnt");
-
             CopyToAndShift(dest, cnt);
         }
 
