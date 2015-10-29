@@ -606,7 +606,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             else if (inHdr == PortableUtils.HdrFull)
             {
-                var inHeader = PortableObjectHeader.Read(inStream);
+                var inHeader = PortableObjectHeader.Read(inStream, inStartPos);
                 
                 PortableUtils.ValidateProtocolVersion(inHeader.Version);
 
