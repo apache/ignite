@@ -980,7 +980,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private void WriteNullField()
         {
-            _stream.WriteInt(1);
             _stream.WriteByte(PU.HdrNull);
         }
 
