@@ -70,7 +70,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
     private final int fileSize = 11 * 1024;
 
     /** */
-    private final int files = 51; // was: 500
+    private final int files = 51;
 
     /** File block size. Use Very small blocks to ensure uniform data distribution among the nodes. */
     protected int igfsBlockSize = 31;
@@ -83,10 +83,6 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
 
     /** Node data structures. */
     protected NodeFsData[] nodeDatas;
-
-//    @Override protected boolean isMultiJvm() {
-//        return true;
-//    }
 
     /**
      * Structure to hold Ignite IGFS node data.
@@ -598,6 +594,6 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 20 * 60 * 1000;
+        return 10 * 60 * 1000;
     }
 }

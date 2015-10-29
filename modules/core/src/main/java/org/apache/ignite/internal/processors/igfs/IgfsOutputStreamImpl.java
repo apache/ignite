@@ -212,7 +212,8 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected synchronized void storeDataBlocks(DataInput in, int len) throws IgniteCheckedException, IOException {
+    @Override protected synchronized void storeDataBlocks(DataInput in, int len) throws IgniteCheckedException,
+        IOException {
         preStoreDataBlocks(in, len);
 
         int blockSize = fileInfo.blockSize();

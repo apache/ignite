@@ -806,9 +806,4 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
             }
         }
     }
-
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 5 * 60 * 1000;
-    }
 }

@@ -3518,8 +3518,9 @@ public class IgfsMetaManager extends IgfsManager {
                                         id2InfoPrj.invoke(lowermostExistingInfo.id(), new UpdatePath(path));
 
                                         // Make a new locked info:
-                                        final IgfsFileInfo newFileInfo = IgfsFileInfo.builder(new IgfsFileInfo(cfg.getBlockSize(), 0L,
-                                            affKey, composeLockId(false), evictExclude, fileProps))
+                                        final IgfsFileInfo newFileInfo = IgfsFileInfo.builder(
+                                            new IgfsFileInfo(cfg.getBlockSize(), 0L,
+                                                affKey, composeLockId(false), evictExclude, fileProps))
                                             .reservedDelta(calculateNextReservedDelta(cfg.getBlockSize(), 0L, 0L))
                                             .build();
 
@@ -3814,9 +3815,6 @@ public class IgfsMetaManager extends IgfsManager {
 
             assert info != null;
 
-            // Note: info.lockId() may be null there, since in some cases we lock
-            // files locked by a "stale" lock.
-
             long newReservedDelta =
                 newLockId == null ? 0L : calculateNextReservedDelta(info.blockSize(), info.length(), 0L);
 
@@ -3845,8 +3843,10 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
+     * Gets a valid file write lock. A lock can be "stale", that is, set by a dead node.
+     * In such case null is returned.
      *
-     * @return {@code null} if there is no lock, or if can safely delete the lock.
+     * @return {@code null} if there is no lock, or if we can safely delete the lock. Valid lock otherwise.
      */
     private IgniteUuid getAliveLock(IgfsFileInfo info) throws IgniteCheckedException {
         assert validTxState(true); // Currently invoked only inside a meta cache transaction.

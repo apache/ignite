@@ -1361,7 +1361,6 @@ public class IgfsDataManager extends IgfsManager {
          */
         private UpdateProcessor(int start, byte[] data) {
             assert start >= 0;
-            //assert data != null;
             assert start + (data == null ? 0 : data.length) >= 0 : "Too much data [start=" + start
                 + ", data.length=" + (data == null ? 0 : data.length) + ']';
 
@@ -1713,8 +1712,6 @@ public class IgfsDataManager extends IgfsManager {
         int blockIdx1 = lastBlockIdx(len, blockSize);
 
         int blockIdx2 = lastBlockIdx(len + reservedSizeDelta, blockSize);
-
-        // TODO: 2. Should we deal with affinityRanges there? See #createBlockKey() method.
 
         if (blockIdx2 > blockIdx1) {
             List<IgfsBlockKey> list = new ArrayList<>(blockIdx2 - blockIdx1);
