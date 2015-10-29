@@ -26,6 +26,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -93,7 +95,14 @@ public class RandomEvictionPolicy<K, V> implements EvictionPolicy<K, V>, RandomE
 
         IgniteCache<K, V> cache = entry.unwrap(IgniteCache.class);
 
-        int size = cache.localSize(CachePeekMode.ONHEAP);
+        GridCacheContext ctx = ((IgniteCacheProxy)cache).context();
+
+        int size;
+
+        if (ctx.isNear())
+            size = ctx.near().nearSize();
+        else
+            size = cache.localSize(CachePeekMode.ONHEAP);
 
         for (int i = max; i < size; i++) {
             Cache.Entry<K, V> e = cache.randomEntry();

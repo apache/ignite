@@ -303,31 +303,6 @@ public class RandomEvictionPolicySelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override public void testPartitionedNearEnabled() throws Exception {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testPartitionedNearDisabledMultiThreaded() throws Exception {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testPartitionedNearDisabledBackupSyncMultiThreaded() throws Exception {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testPartitionedNearEnabledMultiThreaded() throws Exception {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testPartitionedNearEnabledBackupSyncMultiThreaded() throws Exception {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override protected RandomEvictionPolicy<String, String> createPolicy(int plcMax) {
         RandomEvictionPolicy<String, String> plc = new RandomEvictionPolicy<>();
 
@@ -347,11 +322,6 @@ public class RandomEvictionPolicySelfTest extends
 
     /** {@inheritDoc} */
     @Override protected void checkNearPolicies(int nearMax) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void checkPolicies() {
         // No-op.
     }
 }
