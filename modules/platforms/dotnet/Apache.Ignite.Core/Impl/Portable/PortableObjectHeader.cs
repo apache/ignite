@@ -175,6 +175,20 @@ namespace Apache.Ignite.Core.Impl.Portable
             return schema;
         }
 
+        public PortableObjectSchemaField[] ReadSchema(IPortableStream stream, int position)
+        {
+            Debug.Assert(stream != null);
+
+            var fieldCount = SchemaFieldCount;
+
+            if (fieldCount == 0)
+                return null;
+
+            stream.Seek(position + SchemaOffset, SeekOrigin.Begin);
+
+            return PortableObjectSchemaField.ReadArray(stream, fieldCount);
+        }
+
         public PortableObjectHeader ChangeHashCode(int hashCode)
         {
             return new PortableObjectHeader(Header, Version, Flags, TypeId, hashCode, Length, SchemaId, SchemaOffset);

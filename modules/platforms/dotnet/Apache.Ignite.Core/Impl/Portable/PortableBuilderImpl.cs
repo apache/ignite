@@ -607,7 +607,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             else if (inHdr == PortableUtils.HdrFull)
             {
                 var inHeader = PortableObjectHeader.Read(inStream);
-                var schema = new ResizeableArray<PortableObjectSchemaField>(4);
                 
                 PortableUtils.ValidateProtocolVersion(inHeader.Version);
 
@@ -622,84 +621,67 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     if (_parent._cache != null && _parent._cache.TryGetValue(inStartPos, out cachedVal))
                     {
-                        // TODO: Where is field id and length?
                         WriteField(ctx, cachedVal);
                     }
                     else
                     {
                         // New object, write in full form.
+                        var inSchema = inHeader.ReadSchema(inStream, inStartPos);
+
+                        var outSchemaLen = vals.Count + (inSchema == null ? 0 : inSchema.Length);
+                        var outSchema = outSchemaLen > 0 
+                            ? new ResizeableArray<PortableObjectSchemaField>(outSchemaLen)
+                            : null;
+
                         // Skip header as it is not known at this point.
                         outStream.Seek(PortableObjectHeader.Size, SeekOrigin.Current);
 
-                        // Write regular fields.
-                        while (inStream.Position < inStartPos + inRawOff)
+                        if (inSchema != null)
                         {
-                            // TODO: Read inSchema
-                            int inFieldId = inStream.ReadInt();
-                            int inFieldLen = inStream.ReadInt();
-                            int inFieldDataPos = inStream.Position;
-
-                            PortableBuilderField fieldVal;
-
-                            bool fieldFound = vals.TryGetValue(inFieldId, out fieldVal);
-
-                            if (!fieldFound || fieldVal != PortableBuilderField.RmvMarker)
+                            foreach (var inField in inSchema)
                             {
-                                outStream.WriteInt(inFieldId); // field id
+                                PortableBuilderField fieldVal;
 
-                                int fieldLenPos = outStream.Position; // Here we will write length later.
+                                var fieldFound = vals.TryGetValue(inField.Id, out fieldVal);
 
-                                outStream.Seek(4, SeekOrigin.Current);
+                                if (fieldFound && fieldVal == PortableBuilderField.RmvMarker)
+                                    continue;
+
+                                if (!fieldFound)
+                                    fieldFound = _parent._cache != null &&
+                                                 _parent._cache.TryGetValue(inField.Offset, out fieldVal);
 
                                 if (fieldFound)
                                 {
-                                    // Replace field with new value.
-                                    if (fieldVal != PortableBuilderField.RmvMarker)
-                                        WriteField(ctx, fieldVal);
+                                    WriteField(ctx, fieldVal);
 
-                                    vals.Remove(inFieldId);
+                                    vals.Remove(inField.Id);
                                 }
                                 else
                                 {
-                                    // If field was requested earlier, then we must write tracked value
-                                    if (_parent._cache != null &&
-                                        _parent._cache.TryGetValue(inFieldDataPos, out fieldVal))
-                                        WriteField(ctx, fieldVal);
-                                    else
                                     // Field is not tracked, re-write as is.
-                                        Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
+                                    inStream.Seek(inField.Offset + inStartPos, SeekOrigin.Begin);
+
+                                    Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
                                 }
 
-                                int fieldEndPos = outStream.Position;
+                                // ReSharper disable once PossibleNullReferenceException (can't be null)
+                                outSchema.Add(new PortableObjectSchemaField(inField.Id, outStream.Position - outStartPos));
 
-                                outStream.Seek(fieldLenPos, SeekOrigin.Begin);
-                                outStream.WriteInt(fieldEndPos - fieldLenPos - 4);
-                                outStream.Seek(fieldEndPos, SeekOrigin.Begin);
                             }
-
-                            // Position intput stream pointer after the field.
-                            inStream.Seek(inFieldDataPos + inFieldLen, SeekOrigin.Begin);
                         }
 
                         // Write remaining new fields.
                         foreach (var valEntry in vals)
                         {
-                            if (valEntry.Value != PortableBuilderField.RmvMarker)
-                            {
-                                outStream.WriteInt(valEntry.Key); // field id
+                            if (valEntry.Value == PortableBuilderField.RmvMarker) 
+                                continue;
 
-                                int fieldLenPos = outStream.Position; // Here we will write length later.
+                            WriteField(ctx, valEntry.Value);
+                            
+                            // ReSharper disable once PossibleNullReferenceException (can't be null)
+                            outSchema.Add(new PortableObjectSchemaField(valEntry.Key, outStream.Position - outStartPos));
 
-                                outStream.Seek(4, SeekOrigin.Current);
-
-                                WriteField(ctx, valEntry.Value);
-
-                                int fieldEndPos = outStream.Position;
-
-                                outStream.Seek(fieldLenPos, SeekOrigin.Begin);
-                                outStream.WriteInt(fieldEndPos - fieldLenPos - 4);
-                                outStream.Seek(fieldEndPos, SeekOrigin.Begin);
-                            }
                         }
 
                         // Write raw data.
