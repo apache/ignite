@@ -56,7 +56,7 @@ namespace ignite
                  * @param metaHnd Metadata handler.
                  */
                 PortableWriterImpl(ignite::impl::interop::InteropOutputStream* stream, PortableIdResolver* idRslvr, 
-                    PortableMetadataManager* metaMgr, PortableMetadataHandler* metaHnd);
+                    PortableMetadataManager* metaMgr, PortableMetadataHandler* metaHnd, int32_t start);
                 
                 /**
                  * Constructor used to construct light-weight writer allowing only raw operations 
@@ -471,7 +471,7 @@ namespace ignite
                 {
                     StartContainerSession(false);
 
-                    WriteFieldIdSkipLength(fieldName, IGNITE_TYPE_COLLECTION);
+                    WriteFieldId(fieldName, IGNITE_TYPE_COLLECTION);
 
                     WriteCollectionWithinSession(first, last, typ);
                 }
@@ -558,19 +558,9 @@ namespace ignite
                 {
                     CheckRawMode(false);
 
-                    // 1. Write field ID.
                     WriteFieldId(fieldName, IGNITE_TYPE_OBJECT);
 
-                    // 2. Preserve space for length.
-                    int32_t lenPos = stream->Position();
-                    stream->Position(lenPos + 4);
-
-                    // 3. Actual write.
                     WriteTopObject(val);
-
-                    // 4. Write field length.
-                    int32_t len = stream->Position() - lenPos - 4;
-                    stream->WriteInt32(lenPos, len);
                 }
 
                 /**
@@ -603,10 +593,10 @@ namespace ignite
                         if (metaMgr)
                             metaHnd = metaMgr->GetHandler(idRslvr.GetTypeId());
 
-                        PortableWriterImpl writerImpl(stream, &idRslvr, metaMgr, metaHnd.Get());
-                        ignite::portable::PortableWriter writer(&writerImpl);
-
                         int32_t pos = stream->Position();
+
+                        PortableWriterImpl writerImpl(stream, &idRslvr, metaMgr, metaHnd.Get(), pos);
+                        ignite::portable::PortableWriter writer(&writerImpl);
 
                         stream->WriteInt8(IGNITE_HDR_FULL);
                         stream->WriteInt8(IGNITE_PROTO_VER);
@@ -764,7 +754,6 @@ namespace ignite
 
                     WriteFieldId(fieldName, typ);
 
-                    stream->WriteInt32(1 + len);
                     stream->WriteInt8(typ);
 
                     func(stream, val);
@@ -797,14 +786,12 @@ namespace ignite
 
                     if (val)
                     {
-                        stream->WriteInt32(5 + (len << lenShift));
                         stream->WriteInt8(hdr);
                         stream->WriteInt32(len);
                         func(stream, val, len);
                     }
                     else
                     {
-                        stream->WriteInt32(1);
                         stream->WriteInt8(IGNITE_HDR_NULL);
                     }
                 }
@@ -865,23 +852,6 @@ namespace ignite
                  * @param fieldTypeId Field type ID.
                  */
                 void WriteFieldId(const char* fieldName, int32_t fieldTypeId);
-
-                /**
-                 * Write field ID and skip field length.
-                 *
-                 * @param fieldName Field name.
-                 * @param fieldTypeId Field type ID.
-                 */
-                void WriteFieldIdSkipLength(const char* fieldName, int32_t fieldTypeId);
-
-                /**
-                 * Write field ID and length.
-                 *
-                 * @param fieldName Field name.
-                 * @param fieldTypeId Field type ID.
-                 * @param len Length.
-                 */
-                void WriteFieldIdAndLength(const char* fieldName, int32_t fieldTypeId, int32_t len);
 
                 /**
                  * Write primitive value.

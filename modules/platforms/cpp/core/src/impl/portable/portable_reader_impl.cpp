@@ -697,9 +697,7 @@ namespace ignite
                     int32_t currentFieldId = stream->ReadInt32(pos);
 
                     if (fieldId == currentFieldId)
-                    {
-                        return stream->ReadInt32();
-                    }
+                        return stream->ReadInt32(pos + 4);
                 }
 
                 return -1;

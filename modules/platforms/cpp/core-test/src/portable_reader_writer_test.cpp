@@ -41,9 +41,9 @@ void CheckPrimitive(T val)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
     try
@@ -59,13 +59,18 @@ void CheckPrimitive(T val)
 
     Write<T>(writer, "test", val);
 
+    writerImpl.PostWrite();
+
     out.Synchronize();
 
     InteropInputStream in(&mem);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, 100, 100);
+    int32_t footerBegin = IGNITE_DFLT_HDR_LEN + 1 + sizeof(T);
+    int32_t footerEnd = footerBegin + 8;
+
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
     PortableReader reader(&readerImpl);
 
     try
@@ -79,9 +84,16 @@ void CheckPrimitive(T val)
         BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_PORTABLE);
     }
 
-    T readVal = Read<T>(reader, "test");
-    
-    BOOST_REQUIRE(readVal == val);
+    try
+    {
+        T readVal = Read<T>(reader, "test"); 
+
+        BOOST_REQUIRE(readVal == val);
+    }
+    catch (IgniteError& err)
+    {
+        BOOST_FAIL(err.GetText());
+    }
 }
 
 template<typename T>
@@ -94,14 +106,17 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
-    
+
+    int32_t footerBegin = IGNITE_DFLT_HDR_LEN + 5 + sizeof(T) * 2;
+    int32_t footerEnd = footerBegin + 8;
+
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, 100, 100);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
     PortableReader reader(&readerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     try
     {
@@ -118,24 +133,26 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
     {
         BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_PORTABLE);
     }
-    
+
     // 1. Write NULL and see what happens.
     WriteArray<T>(writer, fieldName, NULL, 0);
 
+    writerImpl.PostWrite();
+
     out.Synchronize();
     in.Synchronize();
-    
-    in.Position(19);
+
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 0) == -1);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == -1);
 
     T arr1[2];
     arr1[0] = dflt;
     arr1[1] = dflt;
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 1) == -1);
 
     BOOST_REQUIRE(arr1[0] == dflt);
@@ -146,68 +163,68 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
     arr2[0] = val1;
     arr2[1] = val2;
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
     
     WriteArray<T>(writer, fieldName, arr2, 0);
 
     out.Synchronize();
     in.Synchronize();
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 0) == 0);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == 0);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 0) == 0);
     BOOST_REQUIRE(arr1[0] == dflt);
     BOOST_REQUIRE(arr1[1] == dflt);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 2) == 0);
     BOOST_REQUIRE(arr1[0] == dflt);
     BOOST_REQUIRE(arr1[1] == dflt);
 
     // 3. Partial array write.
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
     
     WriteArray<T>(writer, fieldName, arr2, 1);
 
     out.Synchronize();
     in.Synchronize();
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 0) == 1);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == 1);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 0) == 1);
     BOOST_REQUIRE(arr1[0] == dflt);
     BOOST_REQUIRE(arr1[1] == dflt);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 1) == 1);
     BOOST_REQUIRE(arr1[0] == val1);
     BOOST_REQUIRE(arr1[1] == dflt);
     arr1[0] = dflt;
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 2) == 1);
     BOOST_REQUIRE(arr1[0] == val1);
     BOOST_REQUIRE(arr1[1] == dflt);
     arr1[0] = dflt;
 
     // 4. Full array write.
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
     
     WriteArray<T>(writer, fieldName, arr2, 2);
 
     out.Synchronize();
     in.Synchronize();
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 0) == 2);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == 2);
 
     try
@@ -407,10 +424,10 @@ void CheckCollectionEmpty(CollectionType* colType)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableCollectionWriter<PortableInner> colWriter = colType ?
         writer.WriteCollection<PortableInner>("field1", *colType) : writer.WriteCollection<PortableInner>("field1");
@@ -449,7 +466,7 @@ void CheckCollectionEmpty(CollectionType* colType)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableCollectionReader<PortableInner> colReader = reader.ReadCollection<PortableInner>("field1");
 
@@ -487,10 +504,10 @@ void CheckCollection(CollectionType* colType)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableCollectionWriter<PortableInner> colWriter = colType ?
         writer.WriteCollection<PortableInner>("field1", *colType) : writer.WriteCollection<PortableInner>("field1");
@@ -533,7 +550,7 @@ void CheckCollection(CollectionType* colType)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableCollectionReader<PortableInner> colReader = reader.ReadCollection<PortableInner>("field1");
 
@@ -586,7 +603,7 @@ void CheckCollectionIterators(CollectionType* colType)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
     out.Position(18);
@@ -632,10 +649,10 @@ void CheckMapEmpty(MapType* mapType)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableMapWriter<int8_t, PortableInner> mapWriter = mapType ?
         writer.WriteMap<int8_t, PortableInner>("field1", *mapType) : writer.WriteMap<int8_t, PortableInner>("field1");
@@ -674,7 +691,7 @@ void CheckMapEmpty(MapType* mapType)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableMapReader<int8_t, PortableInner> mapReader = reader.ReadMap<int8_t, PortableInner>("field1");
 
@@ -715,10 +732,10 @@ void CheckMap(MapType* mapType)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableMapWriter<int8_t, PortableInner> mapWriter = mapType ?
         writer.WriteMap<int8_t, PortableInner>("field1", *mapType) : writer.WriteMap<int8_t, PortableInner>("field1");
@@ -761,7 +778,7 @@ void CheckMap(MapType* mapType)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableMapReader<int8_t, PortableInner> mapReader = reader.ReadMap<int8_t, PortableInner>("field1");
 
@@ -913,10 +930,10 @@ BOOST_AUTO_TEST_CASE(TestGuidNull)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     try
     {
@@ -937,7 +954,7 @@ BOOST_AUTO_TEST_CASE(TestGuidNull)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, 100, 100);
     PortableReader reader(&readerImpl);
     
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
     try
     {
@@ -962,10 +979,10 @@ BOOST_AUTO_TEST_CASE(TestString) {
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     const char* writeVal1 = "testtest";
     const char* writeVal2 = "test";
@@ -1016,7 +1033,7 @@ BOOST_AUTO_TEST_CASE(TestString) {
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
     try
     {
@@ -1074,10 +1091,10 @@ BOOST_AUTO_TEST_CASE(TestStringArrayNull)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     writer.WriteNull("field1");
     writer.WriteInt8("field2", 1);
@@ -1088,7 +1105,7 @@ BOOST_AUTO_TEST_CASE(TestStringArrayNull)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableStringArrayReader arrReader = reader.ReadStringArray("field1");
 
@@ -1130,10 +1147,10 @@ BOOST_AUTO_TEST_CASE(TestStringArrayEmpty)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableStringArrayWriter arrWriter = writer.WriteStringArray("field1");
     
@@ -1199,7 +1216,7 @@ BOOST_AUTO_TEST_CASE(TestStringArrayEmpty)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableStringArrayReader arrReader = reader.ReadStringArray("field1");
 
@@ -1245,10 +1262,10 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableStringArrayWriter arrWriter = writer.WriteStringArray("field1");
 
@@ -1320,7 +1337,7 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableStringArrayReader arrReader = reader.ReadStringArray("field1");
 
@@ -1413,10 +1430,10 @@ BOOST_AUTO_TEST_CASE(TestObject)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     writer.WriteObject("field1", writeVal1);
     writer.WriteObject("field2", writeVal2);
@@ -1428,7 +1445,7 @@ BOOST_AUTO_TEST_CASE(TestObject)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableInner readVal1 = reader.ReadObject<PortableInner>("field1");
     BOOST_REQUIRE(writeVal1.GetValue() == readVal1.GetValue());
@@ -1450,10 +1467,10 @@ BOOST_AUTO_TEST_CASE(TestNestedObject)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     writer.WriteObject("field1", writeVal1);
     writer.WriteObject("field2", writeVal2);
@@ -1465,7 +1482,7 @@ BOOST_AUTO_TEST_CASE(TestNestedObject)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableOuter readVal1 = reader.ReadObject<PortableOuter>("field1");
     BOOST_REQUIRE(writeVal1.GetValue() == readVal1.GetValue());
@@ -1487,10 +1504,10 @@ BOOST_AUTO_TEST_CASE(TestArrayNull)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     writer.WriteNull("field1");
     writer.WriteInt8("field2", 1);
@@ -1501,7 +1518,7 @@ BOOST_AUTO_TEST_CASE(TestArrayNull)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableArrayReader<PortableInner> arrReader = reader.ReadArray<PortableInner>("field1");
 
@@ -1530,10 +1547,10 @@ BOOST_AUTO_TEST_CASE(TestArrayEmpty)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableArrayWriter<PortableInner> arrWriter = writer.WriteArray<PortableInner>("field1");
 
@@ -1571,7 +1588,7 @@ BOOST_AUTO_TEST_CASE(TestArrayEmpty)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableArrayReader<PortableInner> arrReader = reader.ReadArray<PortableInner>("field1");
 
@@ -1604,10 +1621,10 @@ BOOST_AUTO_TEST_CASE(TestArray)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableArrayWriter<PortableInner> arrWriter = writer.WriteArray<PortableInner>("field1");
 
@@ -1649,7 +1666,7 @@ BOOST_AUTO_TEST_CASE(TestArray)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableArrayReader<PortableInner> arrReader = reader.ReadArray<PortableInner>("field1");
 
@@ -1690,10 +1707,10 @@ BOOST_AUTO_TEST_CASE(TestCollectionNull)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     writer.WriteNull("field1");
     writer.WriteInt8("field2", 1);
@@ -1704,7 +1721,7 @@ BOOST_AUTO_TEST_CASE(TestCollectionNull)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableCollectionReader<PortableInner> colReader = reader.ReadCollection<PortableInner>("field1");
 
@@ -1770,10 +1787,10 @@ BOOST_AUTO_TEST_CASE(TestMapNull)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     writer.WriteNull("field1");
     writer.WriteInt8("field2", 1);
@@ -1784,7 +1801,7 @@ BOOST_AUTO_TEST_CASE(TestMapNull)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableMapReader<int8_t, PortableInner> mapReader = reader.ReadMap<int8_t, PortableInner>("field1");
 
@@ -1841,10 +1858,10 @@ BOOST_AUTO_TEST_CASE(TestRawMode)
     InteropUnpooledMemory mem(1024);
 
     InteropOutputStream out(&mem);
-    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    out.Position(19);
+    out.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableRawWriter rawWriter = writer.RawWriter();
 
@@ -1869,7 +1886,7 @@ BOOST_AUTO_TEST_CASE(TestRawMode)
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 19, 1000, 1000);
     PortableReader reader(&readerImpl);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableRawReader rawReader = reader.RawReader();
 
@@ -1954,34 +1971,34 @@ BOOST_AUTO_TEST_CASE(TestFieldSeek)
     BOOST_REQUIRE(reader.ReadInt32("val2") == 2);
 
     // 2. Counter closkwise.
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(reader.ReadInt32("val2") == 2);
     BOOST_REQUIRE(reader.ReadInt32("val1") == 1);
     BOOST_REQUIRE(reader.ReadInt32("val2") == 2);
     BOOST_REQUIRE(reader.ReadInt32("val1") == 1);
 
     // 3. Same field twice.
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(reader.ReadInt32("val1") == 1);
     BOOST_REQUIRE(reader.ReadInt32("val1") == 1);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(reader.ReadInt32("val2") == 2);
     BOOST_REQUIRE(reader.ReadInt32("val2") == 2);
     
     // 4. Read missing field in between.
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(reader.ReadInt32("val1") == 1);
     BOOST_REQUIRE(reader.ReadInt32("missing") == 0);
     BOOST_REQUIRE(reader.ReadInt32("val2") == 2);
 
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(reader.ReadInt32("val2") == 2);
     BOOST_REQUIRE(reader.ReadInt32("missing") == 0);
     BOOST_REQUIRE(reader.ReadInt32("val1") == 1);
 
     // 5. Invalid field type.
-    in.Position(19);
+    in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(reader.ReadInt32("val1") == 1);
 
     try

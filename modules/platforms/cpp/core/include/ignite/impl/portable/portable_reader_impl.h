@@ -185,7 +185,7 @@ namespace ignite
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
-                 *      -1 will be returned in case array in stream was null.
+                 *     -1 will be returned in case array in stream was null.
                  */
                 int32_t ReadInt16Array(const char* fieldName, int16_t* res, const int32_t len);
 
@@ -966,7 +966,7 @@ namespace ignite
                             int32_t pos = stream->Position();
 
                             IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_PORTABLE, "Invalid type ID", 
-                                "position", pos, "expected", expHdr, "actual", typeId)
+                                "position", pos, "expected", static_cast<int>(expHdr), "actual", static_cast<int>(typeId))
                         }
 
                         return func(stream);

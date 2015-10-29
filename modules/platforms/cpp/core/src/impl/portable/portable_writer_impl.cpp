@@ -29,9 +29,9 @@ namespace ignite
         namespace portable
         {
             PortableWriterImpl::PortableWriterImpl(InteropOutputStream* stream, PortableIdResolver* idRslvr, 
-                PortableMetadataManager* metaMgr, PortableMetadataHandler* metaHnd) :
+                PortableMetadataManager* metaMgr, PortableMetadataHandler* metaHnd, int32_t start) :
                 stream(stream), idRslvr(idRslvr), metaMgr(metaMgr), metaHnd(metaHnd), typeId(idRslvr->GetTypeId()),
-                elemIdGen(0), elemId(0), elemCnt(0), elemPos(-1), rawPos(-1), start(stream->Position())
+                elemIdGen(0), elemId(0), elemCnt(0), elemPos(-1), rawPos(-1), start(start)
             {
                 // No-op.
             }
@@ -240,7 +240,7 @@ namespace ignite
                 CheckRawMode(false);
                 CheckSingleMode(true);
 
-                WriteFieldIdAndLength(fieldName, IGNITE_TYPE_UUID, 1 + 16);
+                WriteFieldId(fieldName, IGNITE_TYPE_UUID);
 
                 stream->WriteInt8(IGNITE_TYPE_UUID);
 
@@ -256,7 +256,6 @@ namespace ignite
 
                 if (val)
                 {
-                    stream->WriteInt32(5 + len * 17);
                     stream->WriteInt8(IGNITE_TYPE_ARRAY_UUID);
                     stream->WriteInt32(len);
 
@@ -269,7 +268,6 @@ namespace ignite
                 }
                 else
                 {
-                    stream->WriteInt32(1);
                     stream->WriteInt8(IGNITE_HDR_NULL);
                 }
             }
@@ -298,21 +296,15 @@ namespace ignite
                 
                 if (val)
                 {
-                    int32_t lenPos = stream->Position();
-                    stream->Position(lenPos + 4);
-
                     stream->WriteInt8(IGNITE_TYPE_STRING);
                     stream->WriteBool(false);
                     stream->WriteInt32(len);
 
                     for (int i = 0; i < len; i++)
                         stream->WriteUInt16(*(val + i));
-
-                    stream->WriteInt32(lenPos, stream->Position() - lenPos - 4);
                 }
                 else
                 {
-                    stream->WriteInt32(1);
                     stream->WriteInt8(IGNITE_HDR_NULL);
                 }
             }
@@ -331,7 +323,7 @@ namespace ignite
             {
                 StartContainerSession(false);
 
-                WriteFieldIdSkipLength(fieldName, IGNITE_TYPE_ARRAY_STRING);
+                WriteFieldId(fieldName, IGNITE_TYPE_ARRAY_STRING);
 
                 stream->WriteInt8(IGNITE_TYPE_ARRAY_STRING);
                 stream->Position(stream->Position() + 4);
@@ -368,7 +360,7 @@ namespace ignite
                 CheckRawMode(false);
                 CheckSingleMode(true);
 
-                WriteFieldIdAndLength(fieldName, IGNITE_TYPE_OBJECT, 1);
+                WriteFieldId(fieldName, IGNITE_TYPE_OBJECT);
                 stream->WriteInt8(IGNITE_HDR_NULL);
             }
 
@@ -386,7 +378,7 @@ namespace ignite
             {
                 StartContainerSession(false);
 
-                WriteFieldIdSkipLength(fieldName, IGNITE_TYPE_ARRAY);
+                WriteFieldId(fieldName, IGNITE_TYPE_ARRAY);
 
                 stream->WriteInt8(IGNITE_TYPE_ARRAY);
                 stream->Position(stream->Position() + 4);
@@ -409,7 +401,7 @@ namespace ignite
             {
                 StartContainerSession(false);
                 
-                WriteFieldIdSkipLength(fieldName, IGNITE_TYPE_COLLECTION);
+                WriteFieldId(fieldName, IGNITE_TYPE_COLLECTION);
 
                 stream->WriteInt8(IGNITE_TYPE_COLLECTION);
                 stream->Position(stream->Position() + 4);
@@ -433,7 +425,7 @@ namespace ignite
             {
                 StartContainerSession(false);
 
-                WriteFieldIdSkipLength(fieldName, IGNITE_TYPE_MAP);
+                WriteFieldId(fieldName, IGNITE_TYPE_MAP);
                 
                 stream->WriteInt8(IGNITE_TYPE_MAP);
                 stream->Position(stream->Position() + 4);
@@ -447,12 +439,7 @@ namespace ignite
                 CheckSession(id);
 
                 if (rawPos == -1)
-                {
-                    int32_t len = stream->Position() - elemPos - 4;
-
-                    stream->WriteInt32(elemPos + 4, len);
-                    stream->WriteInt32(elemPos + 9, elemCnt);
-                }
+                    stream->WriteInt32(elemPos + 5, elemCnt);
                 else
                     stream->WriteInt32(elemPos + 1, elemCnt);
 
@@ -524,20 +511,6 @@ namespace ignite
                     metaHnd->OnFieldWritten(fieldId, fieldName, fieldTypeId);
             }
 
-            void PortableWriterImpl::WriteFieldIdSkipLength(const char* fieldName, int32_t fieldTypeId)
-            {
-                WriteFieldId(fieldName, fieldTypeId);
-
-                stream->Position(stream->Position() + 4);
-            }
-
-            void PortableWriterImpl::WriteFieldIdAndLength(const char* fieldName, int32_t fieldTypeId, int32_t len)
-            {
-                WriteFieldId(fieldName, fieldTypeId);
-
-                stream->WriteInt32(len);
-            }
-            
             template <>
             void PortableWriterImpl::WriteTopObject<int8_t>(const int8_t& obj)
             {
@@ -630,7 +603,7 @@ namespace ignite
             void PortableWriterImpl::WriteAndClearSchema()
             {
                 schema.Write(*stream);
-                    
+
                 schema.Clear();
             }
 
