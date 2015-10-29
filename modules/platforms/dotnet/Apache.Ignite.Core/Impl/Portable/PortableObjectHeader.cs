@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     [StructLayout(LayoutKind.Sequential)]
     internal struct PortableObjectHeader : IEquatable<PortableObjectHeader>
     {
-        public const int Size = 12;
+        public const int Size = 24;
 
         private const int FlagUserType = 0x1;
         private const int FlagRawOnly = 0x2;
