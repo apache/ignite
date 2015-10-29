@@ -54,6 +54,14 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         }
 
         /// <summary>
+        /// Gets the current structure action.
+        /// </summary>
+        public int CurStructAction
+        {
+            get { return _curStructAction; }
+        }
+
+        /// <summary>
         /// Gets the field ID.
         /// </summary>
         public int GetFieldId(string fieldName, byte fieldTypeId = 0)

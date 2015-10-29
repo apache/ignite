@@ -72,6 +72,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** */
         private int _curFooterEnd;
 
+        /** */
+        private int[] _curSchema;
+
+        /** */
+        private static CopyOnWriteConcurrentDictionary<int, int[]> _schemas =
+            new CopyOnWriteConcurrentDictionary<int, int[]>();
 
         /// <summary>
         /// Constructor.
@@ -674,12 +680,14 @@ namespace Apache.Ignite.Core.Impl.Portable
                     bool oldRaw = _curRaw;
                     var oldFooterStart = _curFooterStart;
                     var oldFooterEnd = _curFooterEnd;
+                    var oldSchema = _curSchema;
 
                     // Set new frame.
                     _curTypeId = hdr.TypeId;
                     _curPos = pos;
                     _curFooterEnd = hdr.GetSchemaEnd(pos);
                     _curFooterStart = hdr.GetSchemaStart(pos);
+                    _curSchema = _schemas.GetOrAdd(hdr.SchemaId, ReadSchema);
                     _curRawOffset = hdr.GetRawOffset(Stream, pos);
                     _curStruct = new PortableStructureTracker(desc, desc.ReaderTypeStructure);
                     _curRaw = false;
@@ -721,6 +729,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _curRaw = oldRaw;
                     _curFooterStart = oldFooterStart;
                     _curFooterEnd = oldFooterEnd;
+                    _curSchema = oldSchema;
 
                     // Process wrappers. We could introduce a common interface, but for only 2 if-else is faster.
                     var wrappedSerializable = obj as SerializableObjectHolder;
@@ -741,6 +750,23 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Advance stream pointer.
                 Stream.Seek(pos + hdr.Length, SeekOrigin.Begin);
             }
+        }
+
+        private int[] ReadSchema(int schemaId)
+        {
+            Stream.Seek(_curFooterStart, SeekOrigin.Begin);
+            
+            var count = (_curFooterEnd - _curFooterStart) >> 3;
+            
+            var res = new int[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                res[i] = Stream.ReadInt();
+                Stream.Seek(4, SeekOrigin.Current);
+            }
+
+            return res;
         }
 
         /// <summary>
@@ -870,8 +896,13 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var fieldId = _curStruct.GetFieldId(fieldName);
 
-            if (!SeekField(fieldId))
-                return false;
+            var actionId = _curStruct.CurStructAction;
+
+            if (_curSchema != null && actionId < _curSchema.Length && fieldId == _curSchema[actionId])
+            {
+                if (!SeekField(fieldId))
+                    return false;
+            }
 
             return IsNotNullHeader(expHdr);
         }
