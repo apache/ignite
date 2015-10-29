@@ -18,8 +18,10 @@
 namespace Apache.Ignite.Core.Impl.Portable.IO
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Text;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
 
     /// <summary>
@@ -36,6 +38,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="cap">Initial capacity.</param>
         public PortableHeapStream(int cap)
         {
+            Debug.Assert(cap >= 0);
+
             _data = new byte[cap];
         }
 
@@ -45,6 +49,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="data">Data array.</param>
         public PortableHeapStream(byte[] data)
         {
+            Debug.Assert(data != null);
+
             _data = data;
         }
 
@@ -67,6 +73,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override void WriteByteArray(byte[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             int pos0 = EnsureWriteCapacityAndShift(val.Length);
 
             fixed (byte* data0 = _data)
@@ -78,6 +86,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override byte[] ReadByteArray(int cnt)
         {
+            IgniteArgumentCheck.NonNegative(cnt, "cnt");
+
             int pos0 = EnsureReadCapacityAndShift(cnt);
 
             fixed (byte* data0 = _data)
@@ -89,6 +99,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override void WriteBoolArray(bool[] val)
         {
+            IgniteArgumentCheck.NotNull(val, "val");
+
             int pos0 = EnsureWriteCapacityAndShift(val.Length);
 
             fixed (byte* data0 = _data)
@@ -100,6 +112,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /** <inheritdoc /> */
         public override bool[] ReadBoolArray(int cnt)
         {
+            IgniteArgumentCheck.NonNegative(cnt, "cnt");
+
             int pos0 = EnsureReadCapacityAndShift(cnt);
 
             fixed (byte* data0 = _data)

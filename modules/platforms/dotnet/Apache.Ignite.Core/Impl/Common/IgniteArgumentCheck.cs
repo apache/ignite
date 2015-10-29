@@ -73,5 +73,17 @@ namespace Apache.Ignite.Core.Impl.Common
                 throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, 
                     "'{0}' argument is invalid: {1}", argName, message), argName);
         }
+
+        /// <summary>
+        /// Throws an ArgumentOutOfRangeException if specified value is negative.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        /// <param name="argName">Name of the argument.</param>
+        public static void NonNegative(int val, string argName)
+        {
+            if (val < 0)
+                throw new ArgumentOutOfRangeException(argName, val,
+                    string.Format("'{0}' argument is invalid: can't be negative", argName));
+        }
     }
 }

@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
     using System;
     using System.IO;
     using System.Text;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
 
     /// <summary>
@@ -980,6 +981,10 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="cnt">Count.</param>
         public void Write(byte[] src, int off, int cnt)
         {
+            IgniteArgumentCheck.NonNegative(off, "off");
+            IgniteArgumentCheck.NonNegative(cnt, "cnt");
+            IgniteArgumentCheck.NotNull(src, "src");
+
             fixed (byte* src0 = src)
             {
                 Write(src0 + off, cnt);
@@ -997,6 +1002,10 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// </returns>
         public void Read(byte[] dest, int off, int cnt)
         {
+            IgniteArgumentCheck.NotNull(dest, "dest");
+            IgniteArgumentCheck.NonNegative(off, "off");
+            IgniteArgumentCheck.NonNegative(cnt, "cnt");
+
             fixed (byte* dest0 = dest)
             {
                 Read(dest0 + off, cnt);
@@ -1018,6 +1027,8 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="data">Data (dsetination).</param>
         protected void WriteInternal(byte* src, int cnt, byte* data)
         {
+            IgniteArgumentCheck.NonNegative(cnt, "cnt");
+
             CopyMemory(src, data + Pos, cnt);
         }
 
