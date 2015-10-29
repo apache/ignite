@@ -1038,9 +1038,6 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <returns></returns>
         public abstract void Read(byte* dest, int cnt);
 
-        /** <inheritdoc /> */
-        public abstract void Read(byte* dest, int pos, int cnt);
-
         /// <summary>
         /// Internal read routine.
         /// </summary>

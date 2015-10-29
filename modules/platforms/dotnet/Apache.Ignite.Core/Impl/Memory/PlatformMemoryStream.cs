@@ -483,19 +483,6 @@ namespace Apache.Ignite.Core.Impl.Memory
             CopyToAndShift(dest, cnt);
         }
 
-        /** <inheritdoc /> */
-        public void Read(byte* dest, int pos, int cnt)
-        {
-            IgniteArgumentCheck.NonNegative(cnt, "cnt");
-            IgniteArgumentCheck.Ensure(pos >= 0, "pos", "can't be negative.");
-
-            if (pos + cnt > _len)
-                throw new EndOfStreamException("Not enough data in stream [expected=" + cnt +
-                                               ", remaining=" + (_len - pos) + ']');
-
-            PlatformMemoryUtils.CopyMemory(_data + pos, dest, cnt);
-        }
-
         #endregion 
 
         #region MISC
@@ -694,7 +681,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritdoc /> */
-
         public int Remaining
         {
             get { return _len - _pos; }

@@ -426,20 +426,6 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         }
 
         /** <inheritdoc /> */
-        public override void Read(byte* dest, int pos, int cnt)
-        {
-            IgniteArgumentCheck.NonNegative(pos, "pos");
-            IgniteArgumentCheck.NonNegative(cnt, "cnt");
-
-            fixed (byte* data0 = _data)
-            {
-                int cnt0 = Math.Min(_data.Length - pos, cnt);
-
-                PlatformMemoryUtils.CopyMemory(data0 + pos, dest, cnt0);
-            }
-        }
-
-        /** <inheritdoc /> */
         public override int Remaining
         {
             get { return _data.Length - Pos; }
