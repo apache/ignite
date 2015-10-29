@@ -687,7 +687,12 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _curPos = pos;
                     _curFooterEnd = hdr.GetSchemaEnd(pos);
                     _curFooterStart = hdr.GetSchemaStart(pos);
-                    _curSchema = _schemas.GetOrAdd(hdr.SchemaId, ReadSchema);
+
+                    if (!_schemas.TryGetValue(hdr.SchemaId, out _curSchema))
+                    {
+                        _curSchema = _schemas.GetOrAdd(hdr.SchemaId, ReadSchema);
+                    }
+
                     _curRawOffset = hdr.GetRawOffset(Stream, pos);
                     _curStruct = new PortableStructureTracker(desc, desc.ReaderTypeStructure);
                     _curRaw = false;
