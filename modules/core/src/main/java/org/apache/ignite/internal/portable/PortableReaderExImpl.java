@@ -47,7 +47,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
@@ -2523,7 +2522,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         assert typeId != UNREGISTERED_TYPE_ID;
 
         if (idMapper == null)
-            idMapper = ctx.idMapper(typeId);
+            idMapper = ctx.userTypeIdMapper(typeId);
 
         return idMapper.fieldId(typeId, name);
     }
@@ -2533,7 +2532,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
      * @return Field offset.
      */
     private boolean hasField(int id) {
-        // TODO: Move to IGNITE-1803.
+        // TODO: Constant-time lookup.
 //        if (schema == null) {
 //            PortableObjectSchema schema0 = ctx.schema(typeId, schemaId);
 //
@@ -2561,7 +2560,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 //        int fieldOffsetPos = schema.fieldOffsetPosition(id);
 //
 //        if (fieldOffsetPos != 0) {
-//            int fieldOffset = in.readIntPositioned(start + footerStart + fieldOffsetPos);
+//            int fieldOffset = in.readIntPositioned(footerStart + fieldOffsetPos);
 //
 //            in.position(start + fieldOffset);
 //

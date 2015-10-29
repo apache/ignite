@@ -107,6 +107,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param firstClientReq {@code True} if first optimistic tx prepare request sent from client node.
+     * @param addDepInfo Deployment info flag.
      */
     public GridNearTxPrepareRequest(
         IgniteUuid futId,
@@ -124,9 +125,10 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean explicitLock,
         @Nullable UUID subjId,
         int taskNameHash,
-        boolean firstClientReq
+        boolean firstClientReq,
+        boolean addDepInfo
     ) {
-        super(tx, reads, writes, txNodes, onePhaseCommit);
+        super(tx, reads, writes, txNodes, onePhaseCommit, addDepInfo);
 
         assert futId != null;
         assert !firstClientReq || tx.optimistic() : tx;

@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -286,12 +287,10 @@ public interface GridCacheEntryEx {
      * @param subjId Subject ID initiated this read.
      * @param transformClo Transform closure to record event.
      * @param taskName Task name.
-     *      together with getting the value is an atomic operation.
      * @param expiryPlc Expiry policy.
      * @return Cached value.
      * @throws IgniteCheckedException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
-     * @throws GridCacheFilterFailedException If filter failed.
      */
     @Nullable public CacheObject innerGet(@Nullable IgniteInternalTx tx,
         boolean readSwap,
@@ -305,7 +304,33 @@ public interface GridCacheEntryEx {
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc)
-        throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException;
+        throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
+     * @param tx Cache transaction.
+     * @param readSwap Flag indicating whether to check swap memory.
+     * @param unmarshal Unmarshal flag.
+     * @param updateMetrics If {@code true} then metrics should be updated.
+     * @param evt Flag to signal event notification.
+     * @param subjId Subject ID initiated this read.
+     * @param transformClo Transform closure to record event.
+     * @param taskName Task name.
+     * @param expiryPlc Expiry policy.
+     * @return Cached value and entry version.
+     * @throws IgniteCheckedException If loading value failed.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     */
+    @Nullable public T2<CacheObject, GridCacheVersion> innerGetVersioned(
+        IgniteInternalTx tx,
+        boolean readSwap,
+        boolean unmarshal,
+        boolean updateMetrics,
+        boolean evt,
+        UUID subjId,
+        Object transformClo,
+        String taskName,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc)
+        throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * Reloads entry from underlying storage.
@@ -334,6 +359,7 @@ public interface GridCacheEntryEx {
      * @param explicitVer Explicit version (if any).
      * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
+     * @param dhtVer Dht version for near cache entry.
      * @return Tuple containing success flag and old value. If success is {@code false},
      *      then value is {@code null}.
      * @throws IgniteCheckedException If storing value failed.
@@ -355,7 +381,8 @@ public interface GridCacheEntryEx {
         long drExpireTime,
         @Nullable GridCacheVersion explicitVer,
         @Nullable UUID subjId,
-        String taskName
+        String taskName,
+        @Nullable GridCacheVersion dhtVer
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -372,6 +399,7 @@ public interface GridCacheEntryEx {
      * @param explicitVer Explicit version (if any).
      * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
+     * @param dhtVer Dht version for near cache entry.
      * @return Tuple containing success flag and old value. If success is {@code false},
      *      then value is {@code null}.
      * @throws IgniteCheckedException If remove failed.
@@ -390,7 +418,8 @@ public interface GridCacheEntryEx {
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer,
         @Nullable UUID subjId,
-        String taskName
+        String taskName,
+        @Nullable GridCacheVersion dhtVer
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -409,6 +438,7 @@ public interface GridCacheEntryEx {
      * @param primary If update is performed on primary node (the one which assigns version).
      * @param checkVer Whether update should check current version and ignore update if current version is
      *      greater than passed in.
+     * @param topVer Topology version.
      * @param filter Optional filter to check.
      * @param drType DR type.
      * @param conflictTtl Conflict TTL (if any).
@@ -510,12 +540,17 @@ public interface GridCacheEntryEx {
      *
      * @param tx Cache transaction.
      * @param timeout Timeout for lock acquisition.
+     * @param serOrder Version for serializable transactions ordering.
+     * @param serReadVer Optional read entry version for optimistic serializable transaction.
      * @return {@code True} if lock was acquired, {@code false} otherwise.
      * @throws GridCacheEntryRemovedException If this entry is obsolete.
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
-    public boolean tmLock(IgniteInternalTx tx, long timeout) throws GridCacheEntryRemovedException,
-        GridDistributedLockCancelledException;
+    public boolean tmLock(IgniteInternalTx tx,
+        long timeout,
+        @Nullable GridCacheVersion serOrder,
+        @Nullable GridCacheVersion serReadVer)
+        throws GridCacheEntryRemovedException, GridDistributedLockCancelledException;
 
     /**
      * Unlocks acquired lock.
@@ -564,6 +599,15 @@ public interface GridCacheEntryEx {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     public GridCacheVersion version() throws GridCacheEntryRemovedException;
+
+    /**
+     * Checks if there was read/write conflict in serializable transaction.
+     *
+     * @param serReadVer Version read in serializable transaction.
+     * @return {@code True} if version check passed.
+     * @throws GridCacheEntryRemovedException If entry has been removed.
+     */
+    public boolean checkSerializableReadVersion(GridCacheVersion serReadVer) throws GridCacheEntryRemovedException;
 
     /**
      * Peeks into entry without loading value or updating statistics.
@@ -653,11 +697,11 @@ public interface GridCacheEntryEx {
      * @param val New value.
      * @param curVer Version to match or {@code null} if match is not required.
      * @param newVer Version to set.
-     * @return {@code True} if versioned matched.
+     * @return Non null version if value was set.
      * @throws IgniteCheckedException If index could not be updated.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public boolean versionedValue(CacheObject val,
+    public GridCacheVersion versionedValue(CacheObject val,
         @Nullable GridCacheVersion curVer,
         @Nullable GridCacheVersion newVer)
         throws IgniteCheckedException, GridCacheEntryRemovedException;

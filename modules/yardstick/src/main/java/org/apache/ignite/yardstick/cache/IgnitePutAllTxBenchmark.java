@@ -41,12 +41,14 @@ public class IgnitePutAllTxBenchmark extends IgniteCacheAbstractBenchmark {
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        ThreadRange r = threadRange();
+
         SortedMap<Integer, Integer> vals = new TreeMap<>();
 
-        ClusterNode node = args.collocated() ? aff.mapKeyToNode(nextRandom(args.range())) : null;
+        ClusterNode node = args.collocated() ? aff.mapKeyToNode(r.nextRandom()) : null;
 
         for (int i = 0; i < args.batch(); ) {
-            int key = nextRandom(args.range());
+            int key = r.nextRandom();
 
             if (args.collocated() && !aff.isPrimary(node, key))
                 continue;

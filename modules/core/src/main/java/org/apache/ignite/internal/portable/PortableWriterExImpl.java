@@ -1696,7 +1696,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
                 "via rawWriter() method. Consider fixing serialization logic for class: " + cls.getName());
 
         if (idMapper == null)
-            idMapper = ctx.idMapper(typeId);
+            idMapper = ctx.userTypeIdMapper(typeId);
 
         int id = idMapper.fieldId(typeId, fieldName);
 
