@@ -695,22 +695,26 @@ namespace Apache.Ignite.Core.Impl.Portable
                         // Write schema
                         int outSchemaOff = outRawOff;
 
+                        int outSchemaId;
+
                         if (outSchema != null)
                         {
                             outSchemaOff = outStream.Position - outStartPos;
 
                             PortableObjectSchemaField.WriteArray(outSchema.Array, outStream, outSchema.Count);
                             outStream.WriteInt(outRawOff);
+
+                            outSchemaId = PortableUtils.GetSchemaId(outSchema.Array);
                         }
+                        else
+                            outSchemaId = PortableUtils.GetSchemaId(null);
 
                         var outLen = outStream.Position - outStartPos;
 
                         var outHash = changeHash ? hash : inHeader.HashCode;
 
-                        var outSchemaId = 0; // TODO: Calculate
-
-                        var outHeader = new PortableObjectHeader(inHeader.IsUserType, inHeader.TypeId, outHash, outLen,
-                            outSchemaId, outSchemaOff, outSchema == null);
+                        var outHeader = new PortableObjectHeader(inHeader.IsUserType, inHeader.TypeId, outHash, 
+                            outLen, outSchemaId, outSchemaOff, outSchema == null);
 
                         outStream.Seek(outStartPos, SeekOrigin.Begin);
 
