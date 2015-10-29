@@ -53,6 +53,7 @@ import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -208,8 +209,27 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         if (msg.errs().isEmpty()) {
                             LocalRoutineInfo routine = locInfos.get(msg.routineId());
 
-                            if (routine != null)
+                            if (routine != null) {
+                                Map<Integer, Long> idxs = msg.updateIdxs();
+
+                                GridCacheAdapter<Object, Object> interCache =
+                                    ctx.cache().internalCache(routine.handler().cacheName());
+
+                                if (interCache != null && idxs != null && interCache.context() != null
+                                    && !interCache.isLocal()) {
+                                    Map<Integer, Long> map = interCache.context().topology().updateCounters();
+
+                                    for (Map.Entry<Integer, Long> e : map.entrySet()) {
+                                        Long cntr0 = idxs.get(e.getKey());
+                                        Long cntr1 = e.getValue();
+
+                                        if (cntr0 == null || cntr1 > cntr0)
+                                            idxs.put(e.getKey(), cntr1);
+                                    }
+                                }
+
                                 routine.handler().updateIdx(msg.updateIdxs());
+                            }
 
                             fut.onRemoteRegistered();
                         }

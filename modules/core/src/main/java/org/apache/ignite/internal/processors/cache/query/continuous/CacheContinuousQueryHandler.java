@@ -247,6 +247,20 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
         assert !skipPrimaryCheck || loc;
 
+        GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+        if (cctx != null && initUpdIdx != null) {
+            Map<Integer, Long> map = cctx.topology().updateCounters();
+
+            for (Map.Entry<Integer, Long> e : map.entrySet()) {
+                Long cntr0 = initUpdIdx.get(e.getKey());
+                Long cntr1 = e.getValue();
+
+                if (cntr0 == null || cntr1 > cntr0)
+                    initUpdIdx.put(e.getKey(), cntr1);
+            }
+        }
+
         CacheContinuousQueryListener<K, V> lsnr = new CacheContinuousQueryListener<K, V>() {
             @Override public void onExecution() {
                 if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
@@ -301,7 +315,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                     if (primary || skipPrimaryCheck) {
                         if (loc) {
                             if (!localCache) {
-                                Collection<CacheContinuousQueryEntry> entries = clientHandleEvent(ctx, entry);
+                                Collection<CacheContinuousQueryEntry> entries = handleEvent(ctx, entry);
 
                                 if (!entries.isEmpty()) {
                                     final IgniteCache cache = cctx.kernalContext().cache().jcache(cctx.name());
@@ -533,7 +547,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         Collection<CacheContinuousQueryEntry> entries0 = new ArrayList<>();
 
         for (CacheContinuousQueryEntry e : entries)
-            entries0.addAll(clientHandleEvent(ctx, e));
+            entries0.addAll(handleEvent(ctx, e));
 
         Iterable<CacheEntryEvent<? extends K, ? extends V>> evts = F.viewReadOnly(entries0,
             new C1<CacheContinuousQueryEntry, CacheEntryEvent<? extends K, ? extends V>>() {
@@ -556,7 +570,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      * @param e entry.
      * @return Entry collection.
      */
-    private Collection<CacheContinuousQueryEntry> clientHandleEvent(GridKernalContext ctx,
+    private Collection<CacheContinuousQueryEntry> handleEvent(GridKernalContext ctx,
         CacheContinuousQueryEntry e) {
         assert e != null;
 
@@ -637,7 +651,8 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
             if (initIdx != null) {
                 this.lastFiredEvt = initIdx;
-                this.curTop = cctx.topology().topologyVersion();
+
+                curTop = cctx.topology().topologyVersion();
             }
         }
 

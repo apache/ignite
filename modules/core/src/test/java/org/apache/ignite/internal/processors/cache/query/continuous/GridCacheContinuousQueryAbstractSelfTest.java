@@ -424,6 +424,59 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    public void testRestartQuery() throws Exception {
+        if (cacheMode() == LOCAL)
+            return;
+
+        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+
+        final int parts = grid(0).affinity(null).partitions();
+
+        final int keyCnt = parts * 2;
+
+        for (int i = 0; i < parts / 2; i++)
+            cache.put(i, i);
+
+        for (int i = 0; i < 10; i++) {
+            if (i % 2 == 0) {
+                final AtomicInteger cntr = new AtomicInteger(0);
+
+                ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
+
+                qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+                    @Override public void onUpdated(
+                        Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                        for (CacheEntryEvent<? extends Integer, ? extends Integer> ignore : evts)
+                            cntr.incrementAndGet();
+                    }
+                });
+
+                QueryCursor<Cache.Entry<Integer, Integer>> query = cache.query(qry);
+
+                for (int key = 0; key < keyCnt; key++)
+                    cache.put(key, key);
+
+                try {
+                    assert GridTestUtils.waitForCondition(new PA() {
+                        @Override public boolean apply() {
+                            return cntr.get() == keyCnt;
+                        }
+                    }, 2000L);
+                }
+                finally {
+                    query.close();
+                }
+            }
+            else {
+                for (int key = 0; key < keyCnt; key++)
+                    cache.put(key, key);
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testEntriesByFilter() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 

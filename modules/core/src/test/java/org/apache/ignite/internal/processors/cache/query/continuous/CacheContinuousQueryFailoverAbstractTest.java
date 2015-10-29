@@ -1624,13 +1624,6 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testFailoverStartStopWithoutBackup() throws Exception {
-        failoverStartStopFilter(0);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testFailoverStartStopBackup() throws Exception {
         failoverStartStopFilter(2);
     }
@@ -1797,7 +1790,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
                     if (dinQry != null) {
                         dinQry.close();
 
-                        log.info("Continuous query listener closed.");
+                        log.info("Continuous query listener closed. Await events: " + expEvtsNewLsnr.size());
 
                         checkEvents(expEvtsNewLsnr, dinLsnr, backups == 0);
                     }
