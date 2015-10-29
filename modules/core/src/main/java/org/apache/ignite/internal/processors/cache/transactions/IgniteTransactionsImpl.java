@@ -147,12 +147,6 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         cctx.kernalContext().gateway().readLock();
 
         try {
-            TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
-
-            if (!cfg.isTxSerializableEnabled() && isolation == SERIALIZABLE)
-                throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +
-                    "'txSerializableEnabled' configuration property)");
-
             IgniteInternalTx tx = cctx.tm().userTx(sysCacheCtx);
 
             if (tx != null)

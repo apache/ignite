@@ -20,6 +20,7 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import java.util.Collection;
 import javax.cache.Cache;
+import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.CompleteConfiguration;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.MutableConfiguration;
@@ -351,7 +352,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         /* No-op. */
     }
 
-    /** Cache name. */
+    /**
+     * @param name Cache name.
+     */
     public CacheConfiguration(String name) {
         this.name = name;
     }
@@ -1847,6 +1850,29 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         this.storeSesLsnrs = storeSesLsnrs;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Iterable<CacheEntryListenerConfiguration<K, V>> getCacheEntryListenerConfigurations() {
+        synchronized (this) {
+            return new HashSet<>(listenerConfigurations);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MutableConfiguration<K, V> addCacheEntryListenerConfiguration(
+        CacheEntryListenerConfiguration<K, V> cacheEntryLsnrCfg) {
+        synchronized (this) {
+            return super.addCacheEntryListenerConfiguration(cacheEntryLsnrCfg);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MutableConfiguration<K, V> removeCacheEntryListenerConfiguration(
+        CacheEntryListenerConfiguration<K, V> cacheEntryLsnrCfg) {
+        synchronized (this) {
+            return super.removeCacheEntryListenerConfiguration(cacheEntryLsnrCfg);
+        }
     }
 
     /**

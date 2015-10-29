@@ -19,17 +19,17 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
 import java.util.Map;
+import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -64,8 +64,6 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     /**
      * @param cacheCtx Cache context.
      * @param keys Keys to get.
-     * @param cached Cached entry if this method is called from entry wrapper
-     *      Cached entry is passed if and only if there is only one key in collection of keys.
      * @param deserializePortable Deserialize portable flag.
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects
@@ -75,7 +73,6 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     public <K, V> IgniteInternalFuture<Map<K, V>> getAllAsync(
         GridCacheContext cacheCtx,
         Collection<KeyCacheObject> keys,
-        @Nullable GridCacheEntryEx cached,
         boolean deserializePortable,
         boolean skipVals,
         boolean keepCacheObjects,
@@ -85,17 +82,13 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      * @param cacheCtx Cache context.
      * @param map Map to put.
      * @param retval Flag indicating whether a value should be returned.
-     * @param cached Cached entry, if any. Will be provided only if map has size 1.
      * @param filter Filter.
-     * @param ttl Time to live for entry. If negative, leave unchanged.
      * @return Future for put operation.
      */
     public <K, V> IgniteInternalFuture<GridCacheReturn> putAllAsync(
         GridCacheContext cacheCtx,
         Map<? extends K, ? extends V> map,
         boolean retval,
-        @Nullable GridCacheEntryEx cached,
-        long ttl,
         CacheEntryPredicate[] filter);
 
     /**
@@ -113,16 +106,16 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      * @param cacheCtx Cache context.
      * @param keys Keys to remove.
      * @param retval Flag indicating whether a value should be returned.
-     * @param cached Cached entry, if any. Will be provided only if size of keys collection is 1.
      * @param filter Filter.
+     * @param singleRmv {@code True} for single key remove operation ({@link Cache#remove(Object)}.
      * @return Future for asynchronous remove.
      */
     public <K, V> IgniteInternalFuture<GridCacheReturn> removeAllAsync(
         GridCacheContext cacheCtx,
         Collection<? extends K> keys,
-        @Nullable GridCacheEntryEx cached,
         boolean retval,
-        CacheEntryPredicate[] filter);
+        CacheEntryPredicate[] filter,
+        boolean singleRmv);
 
     /**
      * @param cacheCtx Cache context.
@@ -161,17 +154,17 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      * @param readThrough Read through flag.
      * @param async if {@code True}, then loading will happen in a separate thread.
      * @param keys Keys.
-     * @param c Closure.
-     * @param deserializePortable Deserialize portable flag.
      * @param skipVals Skip values flag.
+     * @param needVer If {@code true} version is required for loaded values.
+     * @param c Closure to be applied for loaded values.
      * @return Future with {@code True} value if loading took place.
      */
-    public IgniteInternalFuture<Boolean> loadMissing(
+    public IgniteInternalFuture<Void> loadMissing(
         GridCacheContext cacheCtx,
         boolean readThrough,
         boolean async,
         Collection<KeyCacheObject> keys,
-        boolean deserializePortable,
         boolean skipVals,
-        IgniteBiInClosure<KeyCacheObject, Object> c);
+        boolean needVer,
+        GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c);
 }

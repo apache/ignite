@@ -325,7 +325,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
         threadId = Thread.currentThread().getId();
 
-        log = U.logger(cctx.kernalContext(), logRef, this);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, this);
     }
 
     /**
@@ -374,7 +375,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         implicitSingle = false;
         loc = false;
 
-        log = U.logger(cctx.kernalContext(), logRef, this);
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, this);
     }
 
     /** {@inheritDoc} */
@@ -430,6 +432,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> optimisticLockEntries() {
+        if (serializable() && optimistic())
+            return F.concat(false, writeEntries(), readEntries());
+
         return writeEntries();
     }
 
@@ -1267,88 +1272,81 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         if (F.isEmpty(txEntry.entryProcessors()))
             return F.t(txEntry.op(), txEntry.value());
         else {
+            boolean recordEvt = cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ);
+
+            CacheObject cacheVal = txEntry.hasValue() ? txEntry.value() :
+                txEntry.cached().innerGet(this,
+                    /*swap*/false,
+                    /*read through*/false,
+                    /*fail fast*/true,
+                    /*unmarshal*/true,
+                    /*metrics*/metrics,
+                    /*event*/recordEvt,
+                    /*temporary*/true,
+                    /*subjId*/subjId,
+                    /**closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
+                    resolveTaskName(),
+                    null);
+
+            boolean modified = false;
+
+            Object val = null;
+
+            Object key = null;
+
+            GridCacheVersion ver;
+
             try {
-                boolean recordEvt = cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ);
+                ver = txEntry.cached().version();
+            }
+            catch (GridCacheEntryRemovedException e) {
+                assert optimistic() : txEntry;
 
-                CacheObject cacheVal = txEntry.hasValue() ? txEntry.value() :
-                    txEntry.cached().innerGet(this,
-                        /*swap*/false,
-                        /*read through*/false,
-                        /*fail fast*/true,
-                        /*unmarshal*/true,
-                        /*metrics*/metrics,
-                        /*event*/recordEvt,
-                        /*temporary*/true,
-                        /*subjId*/subjId,
-                        /**closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
-                        resolveTaskName(),
-                        null);
+                if (log.isDebugEnabled())
+                    log.debug("Failed to get entry version: [msg=" + e.getMessage() + ']');
 
-                boolean modified = false;
+                ver = null;
+            }
 
-                Object val = null;
-
-                Object key = null;
-
-                GridCacheVersion ver;
+            for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
+                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(txEntry.context(),
+                    txEntry.key(), key, cacheVal, val, ver);
 
                 try {
-                    ver = txEntry.cached().version();
+                    EntryProcessor<Object, Object, Object> processor = t.get1();
+
+                    processor.process(invokeEntry, t.get2());
+
+                    val = invokeEntry.getValue();
+
+                    key = invokeEntry.key();
                 }
-                catch (GridCacheEntryRemovedException e) {
-                    assert optimistic() : txEntry;
-
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to get entry version: [msg=" + e.getMessage() + ']');
-
-                    ver = null;
-                }
-
-                for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                    CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(txEntry.context(),
-                        txEntry.key(), key, cacheVal, val, ver);
-
-                    try {
-                        EntryProcessor<Object, Object, Object> processor = t.get1();
-
-                        processor.process(invokeEntry, t.get2());
-
-                        val = invokeEntry.getValue();
-
-                        key = invokeEntry.key();
-                    }
-                    catch (Exception ignore) {
-                        // No-op.
-                    }
-
-                    modified |= invokeEntry.modified();
+                catch (Exception ignore) {
+                    // No-op.
                 }
 
-                if (modified)
-                    cacheVal = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(val));
-
-                GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
-
-                if (op == NOOP) {
-                    ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
-
-                    if (expiry != null) {
-                        long ttl = CU.toTtl(expiry.getExpiryForAccess());
-
-                        txEntry.ttl(ttl);
-
-                        if (ttl == CU.TTL_ZERO)
-                            op = DELETE;
-                    }
-                }
-
-                return F.t(op, cacheVal);
+                modified |= invokeEntry.modified();
             }
-            catch (GridCacheFilterFailedException e) {
-                assert false : "Empty filter failed for innerGet: " + e;
 
-                return null;
+            if (modified)
+                cacheVal = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(val));
+
+            GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
+
+            if (op == NOOP) {
+                ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
+
+                if (expiry != null) {
+                    long ttl = CU.toTtl(expiry.getExpiryForAccess());
+
+                    txEntry.ttl(ttl);
+
+                    if (ttl == CU.TTL_ZERO)
+                        op = DELETE;
+                }
             }
+
+            return F.t(op, cacheVal);
         }
     }
 
@@ -1498,9 +1496,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      * @param e Entry to evict if it qualifies for eviction.
      * @param primaryOnly Flag to try to evict only on primary node.
      * @return {@code True} if attempt was made to evict the entry.
-     * @throws IgniteCheckedException If failed.
      */
-    protected boolean evictNearEntry(IgniteTxEntry e, boolean primaryOnly) throws IgniteCheckedException {
+    protected boolean evictNearEntry(IgniteTxEntry e, boolean primaryOnly) {
         assert e != null;
 
         if (isNearLocallyMapped(e, primaryOnly)) {
@@ -1754,6 +1751,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         /** {@inheritDoc} */
         @Override public Collection<Integer> activeCacheIds() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean activeCachesDeploymentEnabled() {
+            return false;
         }
 
         /** {@inheritDoc} */

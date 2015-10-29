@@ -139,15 +139,18 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
      * @param id Request to cancel.
      * @param fields Fields query flag.
      * @param topVer Topology version.
+     * @param addDepInfo Deployment info flag.
      */
     public GridCacheQueryRequest(int cacheId,
         long id,
         boolean fields,
-        AffinityTopologyVersion topVer) {
+        AffinityTopologyVersion topVer,
+        boolean addDepInfo) {
         this.cacheId = cacheId;
         this.id = id;
         this.fields = fields;
         this.topVer = topVer;
+        this.addDepInfo = addDepInfo;
 
         cancel = true;
     }
@@ -166,6 +169,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
      * @param subjId Subject ID.
      * @param taskHash Task name hash code.
      * @param topVer Topology version.
+     * @param addDepInfo Deployment info flag.
      */
     public GridCacheQueryRequest(
         int cacheId,
@@ -178,7 +182,8 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         boolean keepPortable,
         UUID subjId,
         int taskHash,
-        AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer,
+        boolean addDepInfo
     ) {
         this.cacheId = cacheId;
         this.id = id;
@@ -191,6 +196,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         this.subjId = subjId;
         this.taskHash = taskHash;
         this.topVer = topVer;
+        this.addDepInfo = addDepInfo;
     }
 
     /**
@@ -213,6 +219,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
      * @param subjId Subject ID.
      * @param taskHash Task name hash code.
      * @param topVer Topology version.
+     * @param addDepInfo Deployment info flag.
      */
     public GridCacheQueryRequest(
         int cacheId,
@@ -233,7 +240,8 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         boolean keepPortable,
         UUID subjId,
         int taskHash,
-        AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer,
+        boolean addDepInfo
     ) {
         assert type != null || fields;
         assert clause != null || (type == SCAN || type == SET || type == SPI);
@@ -258,6 +266,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         this.subjId = subjId;
         this.taskHash = taskHash;
         this.topVer = topVer;
+        this.addDepInfo = addDepInfo;
     }
 
     /** {@inheritDoc} */
@@ -269,34 +278,36 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (keyValFilter != null) {
-            if (ctx.deploymentEnabled())
-                prepareObject(keyValFilter, ctx);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-            keyValFilterBytes = CU.marshal(ctx, keyValFilter);
+        if (keyValFilter != null) {
+            if (addDepInfo)
+                prepareObject(keyValFilter, cctx);
+
+            keyValFilterBytes = CU.marshal(cctx, keyValFilter);
         }
 
         if (rdc != null) {
-            if (ctx.deploymentEnabled())
-                prepareObject(rdc, ctx);
+            if (addDepInfo)
+                prepareObject(rdc, cctx);
 
-            rdcBytes = CU.marshal(ctx, rdc);
+            rdcBytes = CU.marshal(cctx, rdc);
         }
 
         if (trans != null) {
-            if (ctx.deploymentEnabled())
-                prepareObject(trans, ctx);
+            if (addDepInfo)
+                prepareObject(trans, cctx);
 
-            transBytes = CU.marshal(ctx, trans);
+            transBytes = CU.marshal(cctx, trans);
         }
 
         if (!F.isEmpty(args)) {
-            if (ctx.deploymentEnabled()) {
+            if (addDepInfo) {
                 for (Object arg : args)
-                    prepareObject(arg, ctx);
+                    prepareObject(arg, cctx);
             }
 
-            argsBytes = CU.marshal(ctx, args);
+            argsBytes = CU.marshal(cctx, args);
         }
     }
 
@@ -317,6 +328,11 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
 
         if (argsBytes != null)
             args = mrsh.unmarshal(argsBytes, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
     /**
