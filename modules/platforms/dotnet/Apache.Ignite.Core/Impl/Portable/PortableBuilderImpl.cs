@@ -714,9 +714,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         var outHeader = new PortableObjectHeader(inHeader.IsUserType, inHeader.TypeId, outHash, 
                             outLen, outSchemaId, outSchemaOff, outSchema == null);
 
-                        outStream.Seek(outStartPos, SeekOrigin.Begin);
-
-                        PortableObjectHeader.Write(&outHeader, outStream);
+                        PortableObjectHeader.Write(outHeader, outStream, outStartPos);
 
                         outStream.Seek(outStartPos + outLen, SeekOrigin.Begin);  // seek to the end of the object
                     }

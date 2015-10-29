@@ -1025,7 +1025,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Write object.
         /// </summary>
         /// <param name="obj">Object.</param>
-        public unsafe void Write<T>(T obj)
+        public void Write<T>(T obj)
         {
             // Handle special case for null.
             if (obj == null)
@@ -1105,7 +1105,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 var header = new PortableObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len,
                     PU.GetSchemaId(_curSchema), schemaOffset, !hasSchema);
 
-                PortableObjectHeader.Write(&header, _stream, pos);
+                PortableObjectHeader.Write(header, _stream, pos);
 
                 Stream.Seek(pos + len, SeekOrigin.Begin);  // Seek to the end
 

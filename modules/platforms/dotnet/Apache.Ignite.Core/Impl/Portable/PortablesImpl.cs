@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="desc">Descriptor.</param>
         /// <returns>Empty portable object.</returns>
-        private unsafe PortableUserObject PortableFromDescriptor(IPortableTypeDescriptor desc)
+        private PortableUserObject PortableFromDescriptor(IPortableTypeDescriptor desc)
         {
             var len = PortableObjectHeader.Size;
 
@@ -170,7 +170,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var stream = new PortableHeapStream(len);
 
-            PortableObjectHeader.Write(&hdr, stream, 0);
+            PortableObjectHeader.Write(hdr, stream, 0);
 
             return new PortableUserObject(_marsh, stream.InternalArray, 0, hdr);
         }

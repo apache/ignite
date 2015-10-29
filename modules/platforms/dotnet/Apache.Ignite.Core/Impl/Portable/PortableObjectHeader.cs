@@ -206,24 +206,17 @@ namespace Apache.Ignite.Core.Impl.Portable
             return PortableObjectSchemaField.ReadArray(stream, schemaSize);
         }
 
-        public static unsafe void Write(PortableObjectHeader* hdr, IPortableStream stream, int position)
+        public static unsafe void Write(PortableObjectHeader hdr, IPortableStream stream, int position)
         {
             Debug.Assert(stream != null);
             Debug.Assert(position >= 0);
 
             stream.Seek(position, SeekOrigin.Begin);
 
-            Write(hdr, stream);
-        }
-
-        public static unsafe void Write(PortableObjectHeader* hdr, IPortableStream stream)
-        {
-            Debug.Assert(stream != null);
-
             if (BitConverter.IsLittleEndian)
-                stream.Write((byte*) hdr, Size);
+                stream.Write((byte*) &hdr, Size);
             else
-                hdr->Write(stream);
+                hdr.Write(stream);
         }
 
         public static PortableObjectHeader Read(IPortableStream stream, int position)
