@@ -624,17 +624,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     else
                     {
                         // New object, write in full form.
-                        // TODO: Postpone this till the end
-                        if (changeHash)
-                        {
-                            var outHeader = inHeader.ChangeHashCode(hash);
-                            PortableObjectHeader.Write(&outHeader, outStream);
-                        }
-                        else
-                            PortableObjectHeader.Write(&inHeader, outStream);
-
-                        // Skip length and raw offset as they are not known at this point.
-                        outStream.Seek(8, SeekOrigin.Current);
+                        // Skip header as it is not known at this point.
+                        outStream.Seek(PortableObjectHeader.Size, SeekOrigin.Current);
 
                         // Write regular fields.
                         while (inStream.Position < inStartPos + inRawOff)
@@ -649,7 +640,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                             if (!fieldFound || fieldVal != PortableBuilderField.RmvMarker)
                             {
-                                outStream.WriteInt(inFieldId);
+                                outStream.WriteInt(inFieldId);  // field id
 
                                 int fieldLenPos = outStream.Position; // Here we will write length later.
 
@@ -689,7 +680,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         {
                             if (valEntry.Value != PortableBuilderField.RmvMarker)
                             {
-                                outStream.WriteInt(valEntry.Key);
+                                outStream.WriteInt(valEntry.Key);  // field id
 
                                 int fieldLenPos = outStream.Position; // Here we will write length later.
 
@@ -708,15 +699,24 @@ namespace Apache.Ignite.Core.Impl.Portable
                         // Write raw data.
                         int rawPos = outStream.Position;
 
-                        outStream.Write(inStream.InternalArray, inStartPos + inRawOff, inLen - inRawOff);
+                        outStream.Write(inStream.InternalArray, inStartPos + inRawOff, inHeader.Length - inRawOff);
 
-                        // Write length and raw data offset.
+                        // Write header
                         int outResPos = outStream.Position;
 
-                        outStream.Seek(outStartPos + PortableUtils.OffsetLen, SeekOrigin.Begin);
+                        if (changeHash)
+                        {
+                            var outHeader = inHeader.ChangeHashCode(hash);
+                            PortableObjectHeader.Write(&outHeader, outStream);
+                        }
+                        else
+                            PortableObjectHeader.Write(&inHeader, outStream);
 
-                        outStream.WriteInt(outResPos - outStartPos); // Length.
-                        outStream.WriteInt(rawPos - outStartPos); // Raw offset.
+
+                        //outStream.Seek(outStartPos + PortableUtils.OffsetLen, SeekOrigin.Begin);
+
+                        //outStream.WriteInt(outResPos - outStartPos); // Length.
+                        //outStream.WriteInt(rawPos - outStartPos); // Raw offset.
 
                         outStream.Seek(outResPos, SeekOrigin.Begin);
                     }
