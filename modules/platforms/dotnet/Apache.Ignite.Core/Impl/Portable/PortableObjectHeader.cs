@@ -111,16 +111,25 @@ namespace Apache.Ignite.Core.Impl.Portable
             stream.WriteInt(SchemaOffset);
         }
 
+        /// <summary>
+        /// Gets a user type flag.
+        /// </summary>
         public bool IsUserType
         {
             get { return (Flags & FlagUserType) == FlagUserType; }
         }
 
+        /// <summary>
+        /// Gets a raw-only flag.
+        /// </summary>
         public bool IsRawOnly
         {
             get { return (Flags & FlagRawOnly) == FlagRawOnly; }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this instance has raw offset.
+        /// </summary>
         public bool HasRawOffset
         {
             get
@@ -130,6 +139,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
+        /// <summary>
+        /// Gets the schema field count.
+        /// </summary>
         public int SchemaFieldCount
         {
             get
@@ -146,6 +158,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
+        /// <summary>
+        /// Gets the schema end.
+        /// </summary>
         public int GetSchemaEnd(int position)
         {
             var res = position + Length;
@@ -156,11 +171,20 @@ namespace Apache.Ignite.Core.Impl.Portable
             return res;
         }
 
+        /// <summary>
+        /// Gets the schema start.
+        /// </summary>
         public int GetSchemaStart(int position)
         {
             return IsRawOnly ? GetSchemaEnd(position) : position + SchemaOffset;
         }
 
+        /// <summary>
+        /// Gets the raw offset of this object in specified stream.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <param name="position">The position.</param>
+        /// <returns>Raw offset.</returns>
         public int GetRawOffset(IPortableStream stream, int position)
         {
             Debug.Assert(stream != null);
@@ -173,6 +197,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             return stream.ReadInt();
         }
 
+        /// <summary>
+        /// Reads the schema as dictionary according to this header data.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <param name="position">The position.</param>
+        /// <returns>Schema.</returns>
         public Dictionary<int, int> ReadSchemaAsDictionary(IPortableStream stream, int position)
         {
             Debug.Assert(stream != null);
@@ -192,6 +222,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             return schema;
         }
 
+        /// <summary>
+        /// Reads the schema according to this header data.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <param name="position">The position.</param>
+        /// <returns>Schema.</returns>
         public PortableObjectSchemaField[] ReadSchema(IPortableStream stream, int position)
         {
             Debug.Assert(stream != null);
@@ -206,7 +242,13 @@ namespace Apache.Ignite.Core.Impl.Portable
             return PortableObjectSchemaField.ReadArray(stream, schemaSize);
         }
 
-        public static unsafe void Write(PortableObjectHeader hdr, IPortableStream stream, int position)
+        /// <summary>
+        /// Writes specified header to a stream.
+        /// </summary>
+        /// <param name="header">The header.</param>
+        /// <param name="stream">The stream.</param>
+        /// <param name="position">The position.</param>
+        public static unsafe void Write(PortableObjectHeader header, IPortableStream stream, int position)
         {
             Debug.Assert(stream != null);
             Debug.Assert(position >= 0);
@@ -214,11 +256,17 @@ namespace Apache.Ignite.Core.Impl.Portable
             stream.Seek(position, SeekOrigin.Begin);
 
             if (BitConverter.IsLittleEndian)
-                stream.Write((byte*) &hdr, Size);
+                stream.Write((byte*) &header, Size);
             else
-                hdr.Write(stream);
+                header.Write(stream);
         }
 
+        /// <summary>
+        /// Reads an instance from stream.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <param name="position">The position.</param>
+        /// <returns>Instance of the header.</returns>
         public static unsafe PortableObjectHeader Read(IPortableStream stream, int position)
         {
             Debug.Assert(stream != null);
