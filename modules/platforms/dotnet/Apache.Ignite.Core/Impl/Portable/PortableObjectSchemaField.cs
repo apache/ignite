@@ -59,23 +59,23 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
-        public static unsafe PortableObjectSchemaField[] ReadArray(IPortableStream stream, int count)
+        public static unsafe PortableObjectSchemaField[] ReadArray(IPortableStream stream, int size)
         {
             Debug.Assert(stream != null);
-            Debug.Assert(count > 0);
+            Debug.Assert(size > 0);
 
-            var res = new PortableObjectSchemaField[count];
+            var res = new PortableObjectSchemaField[size];
 
             if (BitConverter.IsLittleEndian)
             {
                 fixed (PortableObjectSchemaField* ptr = &res[0])
                 {
-                    stream.Read((byte*) ptr, count << 3); // 8 == sizeof (PortableObjectSchemaField)
+                    stream.Read((byte*) ptr, size); 
                 }
             }
             else
             {
-                for (int i = 0; i < count; i++)
+                for (int i = 0; i < size >> 3; i++) // 8 == sizeof (PortableObjectSchemaField)
                 {
                     res[i] = new PortableObjectSchemaField(stream.ReadInt(), stream.ReadInt());
                 }

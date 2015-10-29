@@ -24,39 +24,41 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Impl.Portable.IO;
 
+    /// <summary>
+    /// Portable object header structure.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     internal struct PortableObjectHeader : IEquatable<PortableObjectHeader>
     {
+        /** Size, equals to sizeof(PortableObjectHeader) */
         public const int Size = 24;
 
+        /** User type flag */
         private const int FlagUserType = 0x1;
+
+        /** Raw only flag */
         private const int FlagRawOnly = 0x2;
 
-        public readonly byte Header;
-        public readonly byte Version;
-        public readonly short Flags;
-        public readonly int TypeId;
-        public readonly int HashCode;
-        public readonly int Length;
-        public readonly int SchemaId;
-        public readonly int SchemaOffset;
+        /** Actual header layout */
+        public readonly byte Header;        // Header code, always 103 (HdrFull)
+        public readonly byte Version;       // Protocol version
+        public readonly short Flags;        // Flags
+        public readonly int TypeId;         // Type ID
+        public readonly int HashCode;       // Hash code
+        public readonly int Length;         // Length, including header
+        public readonly int SchemaId;       // Schema ID (Fnv1 of field type ids)
+        public readonly int SchemaOffset;   // Schema offset, or raw offset when RawOnly flag is set.
 
-        public PortableObjectHeader(byte header, byte version, short flags, int typeId, int hashCode, int length, int schemaId, int schemaOffset)
-        {
-            Debug.Assert(version == PortableUtils.ProtoVer);
-            Debug.Assert(schemaOffset <= length);
-            Debug.Assert(schemaOffset >= Size);
-
-            Header = header;
-            Version = version;
-            Flags = flags;
-            TypeId = typeId;
-            HashCode = hashCode;
-            Length = length;
-            SchemaId = schemaId;
-            SchemaOffset = schemaOffset;
-        }
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PortableObjectHeader"/> struct.
+        /// </summary>
+        /// <param name="userType">User type flag.</param>
+        /// <param name="typeId">Type ID.</param>
+        /// <param name="hashCode">Hash code.</param>
+        /// <param name="length">Length.</param>
+        /// <param name="schemaId">Schema ID.</param>
+        /// <param name="schemaOffset">Schema offset.</param>
+        /// <param name="rawOnly">Raw flag.</param>
         public PortableObjectHeader(bool userType, int typeId, int hashCode, int length, int schemaId, int schemaOffset, bool rawOnly)
         {
             Header = PortableUtils.HdrFull;
@@ -77,6 +79,10 @@ namespace Apache.Ignite.Core.Impl.Portable
             SchemaOffset = schemaOffset;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PortableObjectHeader"/> struct from specified stream.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
         private PortableObjectHeader(IPortableStream stream)
         {
             Header = stream.ReadByte();
@@ -89,6 +95,10 @@ namespace Apache.Ignite.Core.Impl.Portable
             SchemaOffset = stream.ReadInt();
         }
 
+        /// <summary>
+        /// Writes this instance to the specified stream.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
         private void Write(IPortableStream stream)
         {
             stream.WriteByte(Header);
@@ -120,7 +130,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
-        public int SchemaFieldCount
+        public int SchemaSize
         {
             get
             {
@@ -132,7 +142,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (HasRawOffset)
                     schemaSize -= 4;
 
-                return schemaSize >> 3;   // 8 == sizeof(PortableObjectSchemaField)
+                return schemaSize;
             }
         }
 
@@ -167,16 +177,16 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             Debug.Assert(stream != null);
 
-            var fieldCount = SchemaFieldCount;
+            var schemaSize = SchemaSize;
 
-            if (fieldCount == 0)
+            if (schemaSize == 0)
                 return null;
 
             stream.Seek(position + SchemaOffset, SeekOrigin.Begin);
 
-            var schema = new Dictionary<int, int>(fieldCount);
+            var schema = new Dictionary<int, int>(schemaSize >> 3);
 
-            for (var i = 0; i < fieldCount; i++)
+            for (var i = 0; i < schemaSize; i++)
                 schema.Add(stream.ReadInt(), stream.ReadInt());
 
             return schema;
@@ -186,23 +196,21 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             Debug.Assert(stream != null);
 
-            var fieldCount = SchemaFieldCount;
+            var schemaSize = SchemaSize;
 
-            if (fieldCount == 0)
+            if (schemaSize == 0)
                 return null;
 
             stream.Seek(position + SchemaOffset, SeekOrigin.Begin);
 
-            return PortableObjectSchemaField.ReadArray(stream, fieldCount);
-        }
-
-        public PortableObjectHeader ChangeHashCode(int hashCode)
-        {
-            return new PortableObjectHeader(Header, Version, Flags, TypeId, hashCode, Length, SchemaId, SchemaOffset);
+            return PortableObjectSchemaField.ReadArray(stream, schemaSize);
         }
 
         public static unsafe void Write(PortableObjectHeader* hdr, IPortableStream stream, int position)
         {
+            Debug.Assert(stream != null);
+            Debug.Assert(position >= 0);
+
             stream.Seek(position, SeekOrigin.Begin);
 
             Write(hdr, stream);
@@ -210,6 +218,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         public static unsafe void Write(PortableObjectHeader* hdr, IPortableStream stream)
         {
+            Debug.Assert(stream != null);
+
             if (BitConverter.IsLittleEndian)
                 stream.Write((byte*) hdr, Size);
             else
@@ -218,6 +228,9 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         public static PortableObjectHeader Read(IPortableStream stream, int position)
         {
+            Debug.Assert(stream != null);
+            Debug.Assert(position >= 0);
+
             stream.Seek(position, SeekOrigin.Begin);
 
             return Read(stream);
@@ -225,6 +238,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         public static unsafe PortableObjectHeader Read(IPortableStream stream)
         {
+            Debug.Assert(stream != null);
+
             if (BitConverter.IsLittleEndian)
             {
                 var hdr = new PortableObjectHeader();
@@ -241,6 +256,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             return new PortableObjectHeader(stream);
         }
 
+        /** <inheritdoc> */
         public bool Equals(PortableObjectHeader other)
         {
             return Header == other.Header &&
@@ -253,12 +269,15 @@ namespace Apache.Ignite.Core.Impl.Portable
                    SchemaOffset == other.SchemaOffset;
         }
 
+        /** <inheritdoc> */
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
+            
             return obj is PortableObjectHeader && Equals((PortableObjectHeader) obj);
         }
 
+        /** <inheritdoc> */
         public override int GetHashCode()
         {
             unchecked
@@ -275,11 +294,13 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
+        /** <inheritdoc> */
         public static bool operator ==(PortableObjectHeader left, PortableObjectHeader right)
         {
             return left.Equals(right);
         }
 
+        /** <inheritdoc> */
         public static bool operator !=(PortableObjectHeader left, PortableObjectHeader right)
         {
             return !left.Equals(right);
