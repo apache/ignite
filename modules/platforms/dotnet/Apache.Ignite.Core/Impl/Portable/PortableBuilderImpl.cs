@@ -351,7 +351,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public unsafe IPortableObject Build()
+        public IPortableObject Build()
         {
             PortableHeapStream inStream = new PortableHeapStream(_obj.Data);
 
@@ -610,8 +610,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 
                 PortableUtils.ValidateProtocolVersion(inHeader.Version);
 
-                int inRawOff = inHeader.GetRawOffset(inStream, inStartPos);
-
                 int hndPos;
 
                 if (ctx.AddOldToNew(inStartPos, outStartPos, out hndPos))
@@ -685,28 +683,39 @@ namespace Apache.Ignite.Core.Impl.Portable
                         }
 
                         // Write raw data.
-                        int rawPos = outStream.Position;
+                        int outRawOff = outStream.Position - outStartPos;
 
-                        outStream.Write(inStream.InternalArray, inStartPos + inRawOff, inHeader.Length - inRawOff);
+                        int inRawOff = inHeader.GetRawOffset(inStream, inStartPos);
+                        int inRawLen = inRawOff - inHeader.SchemaOffset;
 
-                        // Write header
-                        int outResPos = outStream.Position;
+                        if (inRawLen > 0)
+                            outStream.Write(inStream.InternalArray, inStartPos + inRawOff, inRawLen);
 
-                        if (changeHash)
+                        // Write schema
+                        int outSchemaOff = outRawOff;
+
+                        if (outSchema != null)
                         {
-                            var outHeader = inHeader.ChangeHashCode(hash);
-                            PortableObjectHeader.Write(&outHeader, outStream);
+                            outSchemaOff = outStream.Position - outStartPos;
+
+                            PortableObjectSchemaField.WriteArray(outSchema.Array, outStream, outSchema.Count);
+                            outStream.WriteInt(outRawOff);
                         }
-                        else
-                            PortableObjectHeader.Write(&inHeader, outStream);
 
+                        var outLen = outStream.Position - outStartPos;
 
-                        //outStream.Seek(outStartPos + PortableUtils.OffsetLen, SeekOrigin.Begin);
+                        var outHash = changeHash ? hash : inHeader.HashCode;
 
-                        //outStream.WriteInt(outResPos - outStartPos); // Length.
-                        //outStream.WriteInt(rawPos - outStartPos); // Raw offset.
+                        var outSchemaId = 0; // TODO: Calculate
 
-                        outStream.Seek(outResPos, SeekOrigin.Begin);
+                        var outHeader = new PortableObjectHeader(inHeader.IsUserType, inHeader.TypeId, outHash, outLen,
+                            outSchemaId, outSchemaOff, outSchema == null);
+
+                        outStream.Seek(outStartPos, SeekOrigin.Begin);
+
+                        PortableObjectHeader.Write(&outHeader, outStream);
+
+                        outStream.Seek(outStartPos + outLen, SeekOrigin.Begin);  // seek to the end of the object
                     }
                 }
                 else
@@ -717,7 +726,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 }
 
                 // Synchronize input stream position.
-                inStream.Seek(inStartPos + inLen, SeekOrigin.Begin);
+                inStream.Seek(inStartPos + inHeader.Length, SeekOrigin.Begin);
             }
             else
             {
