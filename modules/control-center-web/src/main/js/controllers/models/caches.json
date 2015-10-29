@@ -16,7 +16,7 @@
   },
   "moreInfo": {
     "title": "Caches screen",
-    "content": ["Manage you cluster's caches on current screen.",
+    "content": ["Manage your cluster's caches on current screen.",
       "Caches can be linked with specified <a href='/configuration/clusters'>clusters</a> and <a href='/configuration/metadata'>metadata</a>",
       "Generated cluster with caches configuration available on <a href='/configuration/summary'>summary</a> screen."]
   },
@@ -126,7 +126,7 @@
           "model": "copyOnRead",
           "placeholder": true,
           "tip": [
-            "Flag indicating whether copy of of the value stored in cache should be created for cache operation implying return value",
+            "Flag indicating whether copy of the value stored in cache should be created for cache operation implying return value",
             "Also if this flag is set copies are created for values passed to CacheInterceptor and to CacheEntryProcessor"
           ]
         },
@@ -465,7 +465,7 @@
                     "  <li>Oracle database</li>",
                     "  <li>IBM DB2</li>",
                     "  <li>Microsoft SQL Server</li>",
-                    "  <li>My SQL</li>",
+                    "  <li>MySQL</li>",
                     "  <li>H2 database</li>",
                     "</ul>"
                   ]

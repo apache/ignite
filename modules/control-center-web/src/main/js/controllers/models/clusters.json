@@ -14,7 +14,7 @@
   },
   "moreInfo": {
     "title": "Clusters screen",
-    "content": ["Manage you clusters on current screen.",
+    "content": ["Manage your clusters on current screen.",
       "Generated clusters configuration available on <a href='/configuration/summary'>summary</a> screen."]
   },
   "general": [
