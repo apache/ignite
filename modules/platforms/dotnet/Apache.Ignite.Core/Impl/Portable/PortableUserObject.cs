@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             IPortableStream stream = new PortableHeapStream(_data);
 
-            stream.Seek(pos, SeekOrigin.Begin);
+            stream.Seek(pos + _offset, SeekOrigin.Begin);
 
             return _marsh.Unmarshal<T>(stream, PortableMode.ForcePortable, builder);
         }
