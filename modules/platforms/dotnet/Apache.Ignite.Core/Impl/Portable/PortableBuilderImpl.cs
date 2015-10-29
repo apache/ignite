@@ -695,8 +695,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                         // Write schema
                         int outSchemaOff = outRawOff;
 
-                        int outSchemaId;
-
                         if (outSchema != null)
                         {
                             outSchemaOff = outStream.Position - outStartPos;
@@ -705,11 +703,9 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                             if (inRawLen > 0)
                                 outStream.WriteInt(outRawOff);
-
-                            outSchemaId = PortableUtils.GetSchemaId(outSchema.Array);
                         }
-                        else
-                            outSchemaId = PortableUtils.GetSchemaId(null);
+
+                        var outSchemaId = PortableUtils.GetSchemaId(outSchema);
 
                         var outLen = outStream.Position - outStartPos;
 

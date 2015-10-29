@@ -1781,16 +1781,20 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Gets the schema id as a Fnv1 hash.
         /// </summary>
         /// <param name="schema">The schema.</param>
-        /// <returns>Schema id.</returns>
-        public static int GetSchemaId(PortableObjectSchemaField[] schema)
+        /// <returns>
+        /// Schema id.
+        /// </returns>
+        public static int GetSchemaId(ResizeableArray<PortableObjectSchemaField> schema)
         {
             var hash = Fnv1Hash.Basis;
 
-            if (schema == null)
+            if (schema == null || schema.Count == 0)
                 return hash;
 
-            foreach (var field in schema)
-                hash = Fnv1Hash.Update(hash, field.Id);
+            var arr = schema.Array;
+
+            for (int i = 0; i < schema.Count; i++)
+                hash = Fnv1Hash.Update(hash, arr[i].Id);
 
             return hash;
         }

@@ -1103,7 +1103,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 var len = _stream.Position - pos;
 
                 var header = new PortableObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len,
-                    PU.GetSchemaId(hasSchema ? _curSchema.Array : null), schemaOffset, !hasSchema);
+                    PU.GetSchemaId(_curSchema), schemaOffset, !hasSchema);
 
                 PortableObjectHeader.Write(&header, _stream, pos);
 
