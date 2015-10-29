@@ -47,7 +47,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
@@ -2523,7 +2522,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         assert typeId != UNREGISTERED_TYPE_ID;
 
         if (idMapper == null)
-            idMapper = ctx.idMapper(typeId);
+            idMapper = ctx.userTypeIdMapper(typeId);
 
         return idMapper.fieldId(typeId, name);
     }
