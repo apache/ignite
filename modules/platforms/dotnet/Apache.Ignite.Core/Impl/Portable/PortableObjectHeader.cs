@@ -111,12 +111,27 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
-        public static int GetRawOffset(PortableObjectHeader header, int position, IPortableStream stream)
+        public int GetSchemaEnd(int position)
         {
-            if (!header.HasRawOffset)
-                return header.SchemaOffset;
+            var res = position + Length;
 
-            stream.Seek(position + header.Length - 4, SeekOrigin.Begin);
+            if (HasRawOffset)
+                res -= 4;
+
+            return res;
+        }
+
+        public int GetSchemaStart(int position)
+        {
+            return IsRawOnly ? GetSchemaEnd(position) : position + SchemaOffset;
+        }
+
+        public int GetRawOffset(int position, IPortableStream stream)
+        {
+            if (!HasRawOffset)
+                return SchemaOffset;
+
+            stream.Seek(position + Length - 4, SeekOrigin.Begin);
 
             return stream.ReadInt();
         }

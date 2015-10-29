@@ -678,13 +678,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                     // Set new frame.
                     _curTypeId = hdr.TypeId;
                     _curPos = pos;
-                    _curFooterEnd = pos + hdr.Length;
-                    
-                    if (hdr.HasRawOffset)
-                        _curFooterEnd -= 4;
-
-                    _curFooterStart = hdr.IsRawOnly ? _curFooterEnd : pos + hdr.SchemaOffset;
-                    _curRawOffset = PortableObjectHeader.GetRawOffset(hdr, pos, Stream);
+                    _curFooterEnd = hdr.GetSchemaEnd(pos);
+                    _curFooterStart = hdr.GetSchemaStart(pos);
+                    _curRawOffset = hdr.GetRawOffset(pos, Stream);
                     _curStruct = new PortableStructureTracker(desc, desc.ReaderTypeStructure);
                     _curRaw = false;
 

@@ -611,7 +611,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 
                 PortableUtils.ValidateProtocolVersion(inHeader.Version);
 
-                int inRawOff = PortableObjectHeader.GetRawOffset(inHeader, inStartPos, inStream);
+                int inRawOff = inHeader.GetRawOffset(inStartPos, inStream);
 
                 int hndPos;
 

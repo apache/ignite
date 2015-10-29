@@ -239,10 +239,10 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     // 4. Check if objects have the same raw data.
                     var stream = new PortableHeapStream(_data);
-                    var rawOffset = PortableObjectHeader.GetRawOffset(_header, _offset, stream);
+                    var rawOffset = _header.GetRawOffset(_offset, stream);
 
                     var thatStream = new PortableHeapStream(that._data);
-                    var thatRawOffset = PortableObjectHeader.GetRawOffset(that._header, that._offset, thatStream);
+                    var thatRawOffset = that._header.GetRawOffset(that._offset, thatStream);
 
                     return PortableUtils.CompareArrays(_data, _offset + rawOffset, _header.Length - rawOffset, 
                         that._data, that._offset + thatRawOffset, that._header.Length - thatRawOffset);
