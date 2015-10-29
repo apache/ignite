@@ -65,7 +65,7 @@ void CheckPrimitive(T val)
 
     in.Position(19);
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, 100, 100);
     PortableReader reader(&readerImpl);
 
     try
@@ -98,7 +98,7 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
     PortableWriter writer(&writerImpl);
     
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, 100, 100);
     PortableReader reader(&readerImpl);
 
     out.Position(19);
@@ -446,7 +446,7 @@ void CheckCollectionEmpty(CollectionType* colType)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
     in.Position(19);
@@ -530,7 +530,7 @@ void CheckCollection(CollectionType* colType)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
     in.Position(19);
@@ -601,7 +601,7 @@ void CheckCollectionIterators(CollectionType* colType)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
     in.Position(18);
@@ -671,7 +671,7 @@ void CheckMapEmpty(MapType* mapType)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
     in.Position(19);
@@ -758,7 +758,7 @@ void CheckMap(MapType* mapType)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
     in.Position(19);
@@ -934,7 +934,7 @@ BOOST_AUTO_TEST_CASE(TestGuidNull)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, 100, 100);
     PortableReader reader(&readerImpl);
     
     in.Position(19);
@@ -1013,7 +1013,7 @@ BOOST_AUTO_TEST_CASE(TestString) {
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
     in.Position(19);
@@ -1085,7 +1085,7 @@ BOOST_AUTO_TEST_CASE(TestStringArrayNull)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
     in.Position(19);
@@ -1196,7 +1196,7 @@ BOOST_AUTO_TEST_CASE(TestStringArrayEmpty)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
     in.Position(19);
@@ -1317,7 +1317,7 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
     in.Position(19);
@@ -1425,7 +1425,7 @@ BOOST_AUTO_TEST_CASE(TestObject)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
     in.Position(19);
@@ -1462,7 +1462,7 @@ BOOST_AUTO_TEST_CASE(TestNestedObject)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
     in.Position(19);
@@ -1498,7 +1498,7 @@ BOOST_AUTO_TEST_CASE(TestArrayNull)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
     in.Position(19);
@@ -1568,7 +1568,7 @@ BOOST_AUTO_TEST_CASE(TestArrayEmpty)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
     in.Position(19);
@@ -1646,7 +1646,7 @@ BOOST_AUTO_TEST_CASE(TestArray)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
     in.Position(19);
@@ -1701,7 +1701,7 @@ BOOST_AUTO_TEST_CASE(TestCollectionNull)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
     in.Position(19);
@@ -1781,7 +1781,7 @@ BOOST_AUTO_TEST_CASE(TestMapNull)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
     PortableReader reader(&readerImpl);
 
     in.Position(19);
@@ -1866,7 +1866,7 @@ BOOST_AUTO_TEST_CASE(TestRawMode)
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 19);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 19, 1000, 1000);
     PortableReader reader(&readerImpl);
 
     in.Position(19);
@@ -1909,13 +1909,42 @@ BOOST_AUTO_TEST_CASE(TestFieldSeek)
     int32_t pos = in.Position();
     in.ReadInt8(); // We do not need a header here.
     in.ReadInt8(); // We do not need proto ver here.
-    bool usrType = in.ReadBool();
+
+    int16_t flags = in.ReadInt16();
     int32_t typeId = in.ReadInt32();
     int32_t hashCode = in.ReadInt32();
     int32_t len = in.ReadInt32();
-    int32_t rawOff = in.ReadInt32();
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, pos, usrType, typeId, hashCode, len, rawOff);
+    in.ReadInt32(); // Ignoring Schema Id.
+
+    int32_t schemaOrRawOff = in.ReadInt32();
+
+    int32_t rawOff;
+    int32_t footerBegin;
+
+    if (flags & IGNITE_PORTABLE_FLAG_RAW_ONLY)
+        footerBegin = len;
+    else
+        footerBegin = schemaOrRawOff;
+
+    int32_t trailingBytes = (len - footerBegin) % 8;
+
+    int32_t footerEnd = len - trailingBytes;
+
+    if (trailingBytes)
+        rawOff = in.ReadInt32(pos + len - 4);
+    else
+        rawOff = schemaOrRawOff;
+
+    bool usrType = flags & IGNITE_PORTABLE_FLAG_USER_OBJECT;
+
+    footerBegin += pos;
+    footerEnd += pos;
+
+    PortableReaderImpl readerImpl(&in, &idRslvr, pos, usrType, 
+                                  typeId, hashCode, len, rawOff, 
+                                  footerBegin, footerEnd);
+
     PortableReader reader(&readerImpl);
 
     // 1. Clockwise.
