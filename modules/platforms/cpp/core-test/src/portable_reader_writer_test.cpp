@@ -65,9 +65,9 @@ void CheckPrimitive(T val)
 
     InteropInputStream in(&mem);
 
-    in.Position(IGNITE_DFLT_HDR_LEN);
+    in.Synchronize();
 
-    int32_t footerBegin = IGNITE_DFLT_HDR_LEN + 1 + sizeof(T);
+    int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 8;
 
     PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
@@ -109,13 +109,6 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
     PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     PortableWriter writer(&writerImpl);
 
-    int32_t footerBegin = IGNITE_DFLT_HDR_LEN + 5 + sizeof(T) * 2;
-    int32_t footerEnd = footerBegin + 8;
-
-    InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
-    PortableReader reader(&readerImpl);
-
     out.Position(IGNITE_DFLT_HDR_LEN);
 
     try
@@ -134,121 +127,171 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
         BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_PORTABLE);
     }
 
-    // 1. Write NULL and see what happens.
-    WriteArray<T>(writer, fieldName, NULL, 0);
-
-    writerImpl.PostWrite();
-
-    out.Synchronize();
-    in.Synchronize();
-
-    in.Position(IGNITE_DFLT_HDR_LEN);
-    BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 0) == -1);
-
-    in.Position(IGNITE_DFLT_HDR_LEN);
-    BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == -1);
-
     T arr1[2];
     arr1[0] = dflt;
     arr1[1] = dflt;
 
-    in.Position(IGNITE_DFLT_HDR_LEN);
-    BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 1) == -1);
-
-    BOOST_REQUIRE(arr1[0] == dflt);
-    BOOST_REQUIRE(arr1[1] == dflt);
-
-    // 2. Write empty array.
     T arr2[2];
     arr2[0] = val1;
     arr2[1] = val2;
 
-    out.Position(IGNITE_DFLT_HDR_LEN);
-    
-    WriteArray<T>(writer, fieldName, arr2, 0);
-
-    out.Synchronize();
-    in.Synchronize();
-
-    in.Position(IGNITE_DFLT_HDR_LEN);
-    BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 0) == 0);
-
-    in.Position(IGNITE_DFLT_HDR_LEN);
-    BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == 0);
-
-    in.Position(IGNITE_DFLT_HDR_LEN);
-    BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 0) == 0);
-    BOOST_REQUIRE(arr1[0] == dflt);
-    BOOST_REQUIRE(arr1[1] == dflt);
-
-    in.Position(IGNITE_DFLT_HDR_LEN);
-    BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 2) == 0);
-    BOOST_REQUIRE(arr1[0] == dflt);
-    BOOST_REQUIRE(arr1[1] == dflt);
-
-    // 3. Partial array write.
-    out.Position(IGNITE_DFLT_HDR_LEN);
-    
-    WriteArray<T>(writer, fieldName, arr2, 1);
-
-    out.Synchronize();
-    in.Synchronize();
-
-    in.Position(IGNITE_DFLT_HDR_LEN);
-    BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 0) == 1);
-    BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == 1);
-    BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 0) == 1);
-    BOOST_REQUIRE(arr1[0] == dflt);
-    BOOST_REQUIRE(arr1[1] == dflt);
-
-    in.Position(IGNITE_DFLT_HDR_LEN);
-    BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 1) == 1);
-    BOOST_REQUIRE(arr1[0] == val1);
-    BOOST_REQUIRE(arr1[1] == dflt);
-    arr1[0] = dflt;
-
-    in.Position(IGNITE_DFLT_HDR_LEN);
-    BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 2) == 1);
-    BOOST_REQUIRE(arr1[0] == val1);
-    BOOST_REQUIRE(arr1[1] == dflt);
-    arr1[0] = dflt;
-
-    // 4. Full array write.
-    out.Position(IGNITE_DFLT_HDR_LEN);
-    
-    WriteArray<T>(writer, fieldName, arr2, 2);
-
-    out.Synchronize();
-    in.Synchronize();
-
-    in.Position(IGNITE_DFLT_HDR_LEN);
-    BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 0) == 2);
-
-    in.Position(IGNITE_DFLT_HDR_LEN);
-    BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == 2);
-
-    try
     {
-        ReadArray<T>(reader, NULL, arr1, 2);
+        // 1. Write NULL and see what happens.
+        WriteArray<T>(writer, fieldName, NULL, 0);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_PORTABLE);
+        writerImpl.PostWrite();
+
+        out.Synchronize();
+
+        InteropInputStream in(&mem);
+
+        in.Synchronize();
+
+        int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
+        int32_t footerEnd = footerBegin + 8;
+
+        PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+        PortableReader reader(&readerImpl);
+
+        in.Position(IGNITE_DFLT_HDR_LEN);
+        BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 0) == -1);
+
+        in.Position(IGNITE_DFLT_HDR_LEN);
+        BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == -1);
+
+        in.Position(IGNITE_DFLT_HDR_LEN);
+        BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 1) == -1);
+
+        BOOST_REQUIRE(arr1[0] == dflt);
+        BOOST_REQUIRE(arr1[1] == dflt);
     }
 
-    BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 0) == 2);
-    BOOST_REQUIRE(arr1[0] == dflt);
-    BOOST_REQUIRE(arr1[1] == dflt);
+    {
+        // 2. Write empty array.
+        out.Position(IGNITE_DFLT_HDR_LEN);
 
-    BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 1) == 2);
-    BOOST_REQUIRE(arr1[0] == dflt);
-    BOOST_REQUIRE(arr1[1] == dflt);
+        WriteArray<T>(writer, fieldName, arr2, 0);
 
-    BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 2) == 2);
-    BOOST_REQUIRE(arr1[0] == val1);
-    BOOST_REQUIRE(arr1[1] == val2);
+        writerImpl.PostWrite();
+
+        out.Synchronize();
+
+        InteropInputStream in(&mem);
+
+        in.Synchronize();
+
+        int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
+        int32_t footerEnd = footerBegin + 8;
+
+        PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+        PortableReader reader(&readerImpl);
+
+        in.Position(IGNITE_DFLT_HDR_LEN);
+        BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 0) == 0);
+
+        in.Position(IGNITE_DFLT_HDR_LEN);
+        BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == 0);
+
+        in.Position(IGNITE_DFLT_HDR_LEN);
+        BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 0) == 0);
+        BOOST_REQUIRE(arr1[0] == dflt);
+        BOOST_REQUIRE(arr1[1] == dflt);
+
+        in.Position(IGNITE_DFLT_HDR_LEN);
+        BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 2) == 0);
+        BOOST_REQUIRE(arr1[0] == dflt);
+        BOOST_REQUIRE(arr1[1] == dflt);
+    }
+
+    {
+        // 3. Partial array write.
+        out.Position(IGNITE_DFLT_HDR_LEN);
+
+        WriteArray<T>(writer, fieldName, arr2, 1);
+
+        writerImpl.PostWrite();
+
+        out.Synchronize();
+
+        InteropInputStream in(&mem);
+
+        in.Synchronize();
+
+        int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
+        int32_t footerEnd = footerBegin + 8;
+
+        PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+        PortableReader reader(&readerImpl);
+
+        in.Position(IGNITE_DFLT_HDR_LEN);
+        BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 0) == 1);
+        BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == 1);
+        BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 0) == 1);
+        BOOST_REQUIRE(arr1[0] == dflt);
+        BOOST_REQUIRE(arr1[1] == dflt);
+
+        in.Position(IGNITE_DFLT_HDR_LEN);
+        BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 1) == 1);
+        BOOST_REQUIRE(arr1[0] == val1);
+        BOOST_REQUIRE(arr1[1] == dflt);
+        arr1[0] = dflt;
+
+        in.Position(IGNITE_DFLT_HDR_LEN);
+        BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 2) == 1);
+        BOOST_REQUIRE(arr1[0] == val1);
+        BOOST_REQUIRE(arr1[1] == dflt);
+        arr1[0] = dflt;
+    }
+
+    {
+        // 4. Full array write.
+        out.Position(IGNITE_DFLT_HDR_LEN);
+
+        WriteArray<T>(writer, fieldName, arr2, 2);
+
+        writerImpl.PostWrite();
+
+        out.Synchronize();
+
+        InteropInputStream in(&mem);
+
+        in.Synchronize();
+
+        int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
+        int32_t footerEnd = footerBegin + 8;
+
+        PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+        PortableReader reader(&readerImpl);
+
+        in.Position(IGNITE_DFLT_HDR_LEN);
+        BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 0) == 2);
+
+        in.Position(IGNITE_DFLT_HDR_LEN);
+        BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == 2);
+
+        try
+        {
+            ReadArray<T>(reader, NULL, arr1, 2);
+
+            BOOST_FAIL("Not restricted.");
+        }
+        catch (IgniteError& err)
+        {
+            BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_PORTABLE);
+        }
+
+        BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 0) == 2);
+        BOOST_REQUIRE(arr1[0] == dflt);
+        BOOST_REQUIRE(arr1[1] == dflt);
+
+        BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 1) == 2);
+        BOOST_REQUIRE(arr1[0] == dflt);
+        BOOST_REQUIRE(arr1[1] == dflt);
+
+        BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 2) == 2);
+        BOOST_REQUIRE(arr1[0] == val1);
+        BOOST_REQUIRE(arr1[1] == val2);
+    }
 }
 
 void CheckWritesRestricted(PortableWriter& writer)
@@ -948,10 +991,16 @@ BOOST_AUTO_TEST_CASE(TestGuidNull)
 
     writer.WriteNull("test");
 
+    writerImpl.PostWrite();
+
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, 100, 100);
+
+    int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
+    int32_t footerEnd = footerBegin + 8;
+
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
     PortableReader reader(&readerImpl);
     
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1027,10 +1076,16 @@ BOOST_AUTO_TEST_CASE(TestString) {
     writer.WriteString("field4", NULL);
     writer.WriteString("field5", NULL, 4);
 
+    writerImpl.PostWrite();
+
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
+
+    int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
+    int32_t footerEnd = footerBegin + 8 * 5;
+
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1099,10 +1154,16 @@ BOOST_AUTO_TEST_CASE(TestStringArrayNull)
     writer.WriteNull("field1");
     writer.WriteInt8("field2", 1);
 
+    writerImpl.PostWrite();
+
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
+
+    int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
+    int32_t footerEnd = footerBegin + 8 * 2;
+
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1210,15 +1271,28 @@ BOOST_AUTO_TEST_CASE(TestStringArrayEmpty)
         BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_PORTABLE);
     }
 
+    writerImpl.PostWrite();
+
     out.Synchronize();
 
     InteropInputStream in(&mem);
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, 1000, 1000, 1000);
+
+    int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
+    int32_t footerEnd = footerBegin + 8 * 2;
+
+    for (int i = 0; i < footerEnd; ++i)
+    {
+        std::cout << i << " : " << (int)in.ReadInt8() << std::endl;
+    }
+
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
 
     PortableStringArrayReader arrReader = reader.ReadStringArray("field1");
+
+    std::cout << arrReader.GetSize() << std::endl;
 
     BOOST_REQUIRE(arrReader.GetSize() == 0);
     BOOST_REQUIRE(!arrReader.HasNext());
