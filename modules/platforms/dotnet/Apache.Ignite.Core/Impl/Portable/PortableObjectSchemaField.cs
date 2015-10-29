@@ -64,7 +64,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             Debug.Assert(stream != null);
             Debug.Assert(size > 0);
 
-            var res = new PortableObjectSchemaField[size];
+            int fieldCount = size >> 3; // 8 == sizeof (PortableObjectSchemaField)
+
+            var res = new PortableObjectSchemaField[fieldCount];
 
             if (BitConverter.IsLittleEndian)
             {
@@ -75,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             else
             {
-                for (int i = 0; i < size >> 3; i++) // 8 == sizeof (PortableObjectSchemaField)
+                for (int i = 0; i < fieldCount >> 3; i++) 
                 {
                     res[i] = new PortableObjectSchemaField(stream.ReadInt(), stream.ReadInt());
                 }
