@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Text;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
@@ -235,6 +236,11 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         public void Write(byte[] src, int off, int cnt)
         {
+            IgniteArgumentCheck.NotNull(src, "src");
+
+            if (cnt < 0)
+                throw new ArgumentOutOfRangeException("cnt", "Byte count can't be negative.");
+
             fixed (byte* src0 = src)
             {
                 CopyFromAndShift(src0 + off, cnt);    

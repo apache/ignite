@@ -687,7 +687,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         int outRawOff = outStream.Position - outStartPos;
 
                         int inRawOff = inHeader.GetRawOffset(inStream, inStartPos);
-                        int inRawLen = inRawOff - inHeader.SchemaOffset;
+                        int inRawLen = inHeader.SchemaOffset - inRawOff;
 
                         if (inRawLen > 0)
                             outStream.Write(inStream.InternalArray, inStartPos + inRawOff, inRawLen);
