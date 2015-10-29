@@ -37,13 +37,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         public static unsafe void WriteArray(PortableObjectSchemaField[] fields, IPortableStream stream, int count)
         {
             Debug.Assert(fields != null);
+            Debug.Assert(stream != null);
             Debug.Assert(count > 0);
 
             if (BitConverter.IsLittleEndian)
             {
                 fixed (PortableObjectSchemaField* ptr = &fields[0])
                 {
-                    stream.Write((byte*)ptr, PortableObjectHeader.Size * count);
+                    stream.Write((byte*) ptr, count << 3); // 8 == sizeof (PortableObjectSchemaField)
                 }
             }
             else
@@ -56,6 +57,31 @@ namespace Apache.Ignite.Core.Impl.Portable
                     stream.WriteInt(field.Offset);
                 }
             }
+        }
+
+        public static unsafe PortableObjectSchemaField[] ReadArray(IPortableStream stream, int count)
+        {
+            Debug.Assert(stream != null);
+            Debug.Assert(count > 0);
+
+            var res = new PortableObjectSchemaField[count];
+
+            if (BitConverter.IsLittleEndian)
+            {
+                fixed (PortableObjectSchemaField* ptr = &res[0])
+                {
+                    stream.Read((byte*) ptr, count << 3); // 8 == sizeof (PortableObjectSchemaField)
+                }
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    res[i] = new PortableObjectSchemaField(stream.ReadInt(), stream.ReadInt());
+                }
+            }
+
+            return res;
         }
     }
 }

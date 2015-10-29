@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -128,6 +129,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         public int GetRawOffset(int position, IPortableStream stream)
         {
+            Debug.Assert(stream != null);
+
             if (!HasRawOffset)
                 return SchemaOffset;
 
