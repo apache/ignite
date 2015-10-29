@@ -73,15 +73,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Current schema. */
         private ResizeableArray<PortableObjectSchemaField> _curSchema;
 
-        /** Current schema id. */
-        private int _curSchemaId;
-
-        /** FNV1 basis. */
-        private const int Fnv1OffsetBasis = unchecked((int) 0x811C9DC5);
-
-        /** FNV1 offset. */
-        private const int Fnv1Prime = 0x01000193;
-
 
         /// <summary>
         /// Gets the marshaller.
@@ -1084,7 +1075,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 
                 var oldStruct = _curStruct;
                 var oldSchema = _curSchema;
-                var oldSchemaId = _curSchemaId;
 
                 // Push new frame.
                 _curTypeId = desc.TypeId;
@@ -1095,7 +1085,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 _curStruct = new PortableStructureTracker(desc, desc.WriterTypeStructure);
                 _curSchema = null;
-                _curSchemaId = Fnv1OffsetBasis;
 
                 // Write object fields.
                 desc.Serializer.WritePortable(obj, this);
@@ -1113,8 +1102,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 var len = _stream.Position - pos;
 
-                var header = new PortableObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len, _curSchemaId,
-                    schemaOffset, !hasSchema);
+                var header = new PortableObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len,
+                    PU.GetSchemaId(hasSchema ? _curSchema.Array : null), schemaOffset, !hasSchema);
 
                 PortableObjectHeader.Write(&header, _stream, pos);
 
@@ -1132,7 +1121,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 _curStruct = oldStruct;
                 _curSchema = oldSchema;
-                _curSchemaId = oldSchemaId;
             }
             else
             {
@@ -1383,21 +1371,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 throw new PortableException("Cannot write named fields after raw data is written.");
 
             var fieldId = _curStruct.GetFieldId(fieldName, fieldTypeId);
-
-            unchecked
-            {
-                var schemaId0 = _curSchemaId ^ (fieldId & 0xFF);
-
-                schemaId0 = schemaId0 * Fnv1Prime;
-                schemaId0 = schemaId0 ^ ((fieldId >> 8) & 0xFF);
-                schemaId0 = schemaId0 * Fnv1Prime;
-                schemaId0 = schemaId0 ^ ((fieldId >> 16) & 0xFF);
-                schemaId0 = schemaId0 * Fnv1Prime;
-                schemaId0 = schemaId0 ^ ((fieldId >> 24) & 0xFF);
-                schemaId0 = schemaId0 * Fnv1Prime;
-
-                _curSchemaId = schemaId0;
-            }
 
             _curSchema = _curSchema ?? new ResizeableArray<PortableObjectSchemaField>(4);
 
