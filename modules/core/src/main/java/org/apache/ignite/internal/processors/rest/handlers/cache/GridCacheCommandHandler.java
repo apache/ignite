@@ -18,10 +18,13 @@
 package org.apache.ignite.internal.processors.rest.handlers.cache;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -35,10 +38,18 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -370,20 +381,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 }
 
                 case CACHE_METADATA: {
-                    IgniteInternalCache<?, ?> cache = ctx.cache().cache(cacheName);
-
-                    if (cache != null) {
-                        GridCacheSqlMetadata res = F.first(cache.context().queries().sqlMetadata());
-
-                        fut = new GridFinishedFuture<>(new GridRestResponse(res));
-                    }
-                    else {
-                        ClusterGroup prj = ctx.grid().cluster().forDataNodes(cacheName);
-
-                        ctx.task().setThreadContext(TC_NO_FAILOVER, true);
-
-                        fut = ctx.closure().callAsync(BALANCE, new MetadataCommand(cacheName), prj.nodes());
-                    }
+                    fut = ctx.task().execute(MetadataTask.class, cacheName);
 
                     break;
                 }
@@ -903,27 +901,118 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** */
-    private static class MetadataCommand implements Callable<GridRestResponse>, Serializable {
+    @GridInternal
+    private static class MetadataTask extends ComputeTaskAdapter<String, GridRestResponse> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final String cacheName;
+        @IgniteInstanceResource
+        private IgniteEx ignite;
 
         /** */
+        private String cacheName;
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+            @Nullable String cacheName) throws IgniteException {
+            this.cacheName = cacheName;
+
+            GridDiscoveryManager discovery = ignite.context().discovery();
+
+            boolean sameCaches = true;
+
+            int hash = discovery.nodeCaches(F.first(subgrid)).hashCode();
+
+            for (int i = 1; i < subgrid.size(); i++)
+                if (hash != discovery.nodeCaches(subgrid.get(i)).hashCode()) {
+                    sameCaches = false;
+
+                    break;
+                }
+
+            Map<ComputeJob, ClusterNode> map = U.newHashMap(sameCaches ? 1 : subgrid.size());
+
+            if (sameCaches)
+                map.put(new MetadataJob(cacheName), ignite.localNode());
+            else
+                for (ClusterNode node : subgrid)
+                    map.put(new MetadataJob(cacheName), node);
+
+            return map;
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+        @Nullable @Override public GridRestResponse reduce(List<ComputeJobResult> results) throws IgniteException {
+            Map<String, GridCacheSqlMetadata> map = new HashMap<>();
+
+            for (ComputeJobResult r : results)
+                if (!r.isCancelled() && r.getException() == null)
+                    for (GridCacheSqlMetadata m : r.<Collection<GridCacheSqlMetadata>>getData())
+                        if (!map.containsKey(m.cacheName()))
+                            map.put(m.cacheName(), m);
+
+            Collection<GridCacheSqlMetadata> metas = new ArrayList<>(map.size());
+
+            // Metadata for current cache must be first in list.
+            GridCacheSqlMetadata cacheMeta = map.remove(cacheName);
+
+            if (cacheMeta != null)
+                metas.add(cacheMeta);
+
+            metas.addAll(map.values());
+
+            return new GridRestResponse(metas);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(MetadataTask.class, this);
+        }
+    }
+
+    /** */
+    private static class MetadataJob extends ComputeJobAdapter {
+        /** */
+        private static final long serialVersionUID = 0L;
+        /** */
+        private final String cacheName;
+        /** Auto-injected grid instance. */
         @IgniteInstanceResource
-        private Ignite g;
+        protected transient IgniteKernal ignite;
 
         /**
          * @param cacheName Cache name.
          */
-        private MetadataCommand(String cacheName) {
+        private MetadataJob(String cacheName) {
             this.cacheName = cacheName;
         }
 
         /** {@inheritDoc} */
-        @Override public GridRestResponse call() throws Exception {
-            return  new GridRestResponse(F.first(cache(g, cacheName).context().queries().sqlMetadata()));
+        @Override public Collection<GridCacheSqlMetadata> execute() {
+            IgniteCacheProxy<?, ?> cache;
+
+            try {
+                cache = (IgniteCacheProxy<?, ?>)ignite.cache(cacheName);
+            } catch (IllegalArgumentException ignore) {
+                cache = F.first(ignite.context().cache().publicCaches());
+
+                if (cache == null)
+                    return Collections.emptyList();
+            }
+
+            try {
+                return cache.context().queries().sqlMetadata();
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(MetadataJob.class, this);
         }
     }
 
