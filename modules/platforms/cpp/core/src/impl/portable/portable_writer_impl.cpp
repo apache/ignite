@@ -438,10 +438,7 @@ namespace ignite
             {
                 CheckSession(id);
 
-                if (rawPos == -1)
-                    stream->WriteInt32(elemPos + 5, elemCnt);
-                else
-                    stream->WriteInt32(elemPos + 1, elemCnt);
+                stream->WriteInt32(elemPos + 1, elemCnt);
 
                 elemId = 0;
                 elemCnt = 0;

@@ -46,8 +46,8 @@ namespace ignite
 
             PortableReaderImpl::PortableReaderImpl(InteropInputStream* stream) :
                 stream(stream), idRslvr(NULL), pos(0), usrType(false), typeId(0), hashCode(0), len(0),
-                rawOff(0), rawMode(true), elemIdGen(0), elemId(0), elemCnt(-1), elemRead(0), footerBegin(0),
-                footerEnd(0)
+                rawOff(0), rawMode(true), elemIdGen(0), elemId(0), elemCnt(-1), elemRead(0), footerBegin(-1),
+                footerEnd(-1)
             {
                 // No-op.
             }
