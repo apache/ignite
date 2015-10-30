@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Portable
 {
-    using System;
-
     /// <summary>
     /// Append-only PortableSchemaField array.
     /// </summary>
@@ -50,11 +48,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         public int Count { get; private set; }
 
         /// <summary>
-        /// Gets or sets the maximum field offset.
-        /// </summary>
-        public int MaxOffset { get; private set; }
-
-        /// <summary>
         /// Add element.
         /// </summary>
         /// <param name="element">Element.</param>
@@ -64,8 +57,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 System.Array.Resize(ref _arr, _arr.Length*2);
 
             _arr[Count++] = element;
-            
-            MaxOffset = Math.Max(MaxOffset, element.Offset);
         }
     }
 }
