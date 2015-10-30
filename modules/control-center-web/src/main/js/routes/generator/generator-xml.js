@@ -153,20 +153,12 @@ $generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBean
                             $generatorXml.listProperty(res, bean, propName, descr.setterName);
 
                             break;
+
                         case 'array':
                             $generatorXml.arrayProperty(res, bean, propName, descr);
 
                             break;
-                        case 'jdbcDialect':
-                            if (bean[propName]) {
-                                res.startBlock('<property name="' + propName + '">');
-                                res.line('<bean class="' + $generatorCommon.jdbcDialectClassName(bean[propName]) + '"/>');
-                                res.endBlock('</property>');
 
-                                hasData = true;
-                            }
-
-                            break;
                         case 'propertiesAsList':
                             var val = bean[propName];
 
@@ -189,6 +181,7 @@ $generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBean
                             }
 
                             break;
+
                         case 'bean':
                             if ($commonUtils.isDefinedAndNotEmpty(bean[propName])) {
                                 res.startBlock('<property name="' + propName + '">');
@@ -199,6 +192,7 @@ $generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBean
                             }
 
                             break;
+
                         default:
                             if ($generatorXml.property(res, bean, propName, descr.setterName, descr.dflt))
                                 hasData = true;
@@ -721,20 +715,61 @@ $generatorXml.cacheStore = function(cache, res) {
         res = $generatorCommon.builder();
 
     if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
-        var storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
+        var factoryKind = cache.cacheStoreFactory.kind;
+
+        var storeFactory = cache.cacheStoreFactory[factoryKind];
 
         if (storeFactory) {
-            $generatorXml.beanProperty(res, storeFactory, 'cacheStoreFactory', $generatorCommon.STORE_FACTORIES[cache.cacheStoreFactory.kind], true);
+            if (factoryKind == 'CacheJdbcPojoStoreFactory') {
+                res.startBlock('<property name="cacheStoreFactory">');
+                res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory">');
+                res.startBlock('<property name="configuration">');
+                res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreConfiguration">');
 
-            if (storeFactory.dialect) {
-                if (_.findIndex(res.datasources, function (ds) {
-                        return ds.dataSourceBean == storeFactory.dataSourceBean;
-                    }) < 0) {
-                    res.datasources.push({
-                        dataSourceBean: storeFactory.dataSourceBean,
-                        className: $generatorCommon.DATA_SOURCES[storeFactory.dialect],
-                        dialect: storeFactory.dialect
+                $generatorXml.property(res, storeFactory, 'dataSourceBean');
+
+                res.startBlock('<property name="dialect">');
+                res.line('<bean class="' + $generatorCommon.jdbcDialectClassName(storeFactory.dialect) + '"/>');
+                res.endBlock('</property>');
+
+                var metadatas = cache.metadatas;
+
+                if (metadatas && metadatas.length > 0) {
+                    res.startBlock('<property name="types">');
+                    res.startBlock('<list>');
+
+                    _.forEach(metadatas, function (meta) {
+                        res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.JdbcType">');
+
+                        $generatorXml.classNameProperty(res, meta, 'keyType');
+                        $generatorXml.property(res, meta, 'valueType');
+                        $generatorXml.property(res, meta, 'keepSerialized', null, null, false);
+
+                        res.endBlock('</bean>');
                     });
+
+                    res.endBlock('</list>');
+                    res.endBlock('</property>');
+                }
+
+                res.endBlock('</bean>');
+                res.endBlock("</property>");
+                res.endBlock('</bean>');
+                res.endBlock("</property>")
+            }
+            else {
+                $generatorXml.beanProperty(res, storeFactory, 'cacheStoreFactory', $generatorCommon.STORE_FACTORIES[factoryKind], true);
+
+                if (storeFactory.dialect) {
+                    if (_.findIndex(res.datasources, function (ds) {
+                            return ds.dataSourceBean == storeFactory.dataSourceBean;
+                        }) < 0) {
+                        res.datasources.push({
+                            dataSourceBean: storeFactory.dataSourceBean,
+                            className: $generatorCommon.DATA_SOURCES[storeFactory.dialect],
+                            dialect: storeFactory.dialect
+                        });
+                    }
                 }
             }
 
@@ -939,7 +974,7 @@ $generatorXml.metadataDatabaseFields = function (res, meta, fieldProp) {
         res.startBlock('<list>');
 
         _.forEach(fields, function (field) {
-            res.startBlock('<bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">');
+            res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">');
 
             $generatorXml.property(res, field, 'databaseName');
 
@@ -997,6 +1032,7 @@ $generatorXml.metadataStore = function(meta, res) {
 
     $generatorXml.property(res, meta, 'databaseSchema');
     $generatorXml.property(res, meta, 'databaseTable');
+    $generatorXml.property(res, meta, 'keepSerialized');
 
     res.needEmptyLine = true;
 
@@ -1004,25 +1040,6 @@ $generatorXml.metadataStore = function(meta, res) {
         $generatorXml.metadataDatabaseFields(res, meta, 'keyFields');
 
     $generatorXml.metadataDatabaseFields(res, meta, 'valueFields');
-
-    res.needEmptyLine = true;
-
-    return res;
-};
-
-// Generate cache type metadata config.
-$generatorXml.cacheMetadata = function(meta, res) {
-    if (!res)
-        res = $generatorCommon.builder();
-
-    res.emptyLineIfNeeded();
-
-    res.startBlock('<bean class="org.apache.ignite.cache.CacheTypeMetadata">');
-
-    $generatorXml.metadataGeneral(meta, res);
-    $generatorXml.metadataStore(meta, res);
-
-    res.endBlock('</bean>');
 
     res.needEmptyLine = true;
 
@@ -1054,18 +1071,6 @@ $generatorXml.cacheMetadatas = function(metadatas, res) {
 
     if (metadatas && metadatas.length > 0) {
         res.emptyLineIfNeeded();
-
-        res.startBlock('<property name="typeMetadata">');
-        res.startBlock('<list>');
-
-        _.forEach(metadatas, function (meta) {
-            $generatorXml.cacheMetadata(meta, res);
-        });
-
-        res.endBlock('</list>');
-        res.endBlock('</property>');
-
-        res.needEmptyLine = true;
 
         res.startBlock('<property name="queryEntities">');
         res.startBlock('<list>');

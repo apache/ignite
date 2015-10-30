@@ -62,6 +62,7 @@ $generatorCommon.builder = function () {
     res.lineStart = true;
     res.datasources = [];
     res.imports = {};
+    res.vars = {};
 
     res.safeDeep = 0;
     res.safeNeedEmptyLine = false;
@@ -285,7 +286,9 @@ $generatorCommon.dataSourceClassName = function(db) {
 $generatorCommon.STORE_FACTORIES = {
     CacheJdbcPojoStoreFactory: {
         className: 'org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory',
-        fields: {dataSourceBean: null, dialect: {type: 'jdbcDialect'}}
+        fields: {
+            configuration: {type: 'bean'}
+        }
     },
     CacheJdbcBlobStoreFactory: {
         className: 'org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactory',

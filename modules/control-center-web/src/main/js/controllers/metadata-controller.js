@@ -726,7 +726,7 @@ consoleModule.controller('metadataController', [
                                     $scope.preview.query.allDefaults = $common.isEmptyString($scope.preview.query.xml);
 
                                     $scope.preview.store.xml = $generatorXml.metadataStore(val).asString();
-                                    $scope.preview.store.java = $generatorJava.metadataStore(val).asString();
+                                    $scope.preview.store.java = $generatorJava.metadataStore(val, false).asString();
                                     $scope.preview.store.allDefaults = $common.isEmptyString($scope.preview.store.xml);
                                 }
                             }, true);

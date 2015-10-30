@@ -151,6 +151,15 @@
           ]
         },
         {
+          "label": "Keep serialized",
+          "id": "keepSerialized",
+          "type": "check",
+          "model": "keepSerialized",
+          "tip": [
+            "Should be checked if in case of Portable object format"
+          ]
+        },
+        {
           "label": "Key fields",
           "id": "keyFields",
           "type": "table-db-fields",
