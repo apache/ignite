@@ -17,14 +17,16 @@
 
 // Controller for SQL notebook screen.
 consoleModule.controller('sqlController',
-    ['$scope', '$window','$controller', '$http', '$timeout', '$common', '$confirm', '$interval', '$popover', '$loading',
+    ['$scope', '$window','$controller', '$http', '$timeout', '$common', '$confirm', '$interval', '$message', '$popover', '$loading',
         '$location', '$anchorScroll', function ($scope, $window, $controller, $http, $timeout, $common, $confirm,
-        $interval, $popover, $loading, $location, $anchorScroll) {
+        $interval, $message, $popover, $loading, $location, $anchorScroll) {
     // Initialize the super class and extend it.
     angular.extend(this, $controller('agent-download', {$scope: $scope}));
 
     $scope.agentGoal = 'execute sql statements';
     $scope.agentTestDriveOption = '--test-drive-sql';
+
+    $scope.showMessage = $message.message;
 
     $scope.joinTip = $common.joinTip;
 
@@ -553,7 +555,7 @@ consoleModule.controller('sqlController',
                 if (!$common.isDefined(paragraph.chartKeyCols))
                     paragraph.chartKeyCols = [];
 
-                if (!$common.isDefined(paragraph.chartValCols ))
+                if (!$common.isDefined(paragraph.chartValCols))
                     paragraph.chartValCols = [];
 
                 if (res.meta.length <= 2) {
@@ -678,6 +680,10 @@ consoleModule.controller('sqlController',
             });
 
         paragraph.ace.focus();
+    };
+
+    $scope.queryExecuted = function(paragraph) {
+        return $common.isDefined(paragraph.queryArgs);
     };
 
     $scope.explain = function (paragraph) {
