@@ -76,10 +76,10 @@ public class PlatformDotNetCacheStoreFactory implements Factory<PlatformDotNetCa
     /**
      * Sets .NET type name.
      *
-     * @param clsName .NET type name.
+     * @param typName .NET type name.
      */
-    public void setTypeName(String clsName) {
-        this.typName = clsName;
+    public void setTypeName(String typName) {
+        this.typName = typName;
     }
 
     /**
