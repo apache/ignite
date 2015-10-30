@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -116,7 +117,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param txNodes Transaction nodes mapping.
      * @param nearXidVer Near transaction ID.
      * @param last {@code True} if this is last prepare request for node.
-     * @param onePhaseCommit One phase commit flag.
+     * @param addDepInfo Deployment info flag.
      */
     public GridDhtTxPrepareRequest(
         IgniteUuid futId,
@@ -130,8 +131,9 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean last,
         boolean onePhaseCommit,
         UUID subjId,
-        int taskNameHash) {
-        super(tx, null, dhtWrites, txNodes, onePhaseCommit);
+        int taskNameHash,
+        boolean addDepInfo) {
+        super(tx, null, dhtWrites, txNodes, onePhaseCommit, addDepInfo);
 
         assert futId != null;
         assert miniId != null;
@@ -271,8 +273,11 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         return owned;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /**
+     * {@inheritDoc}
+     *
+     * @param ctx
+     */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
@@ -281,12 +286,13 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
             ownedVals = owned.values();
 
-            for (IgniteTxKey key: ownedKeys)
-                key.prepareMarshal(ctx.cacheContext(key.cacheId()));
+            for (IgniteTxKey key: ownedKeys) {
+                GridCacheContext cctx = ctx.cacheContext(key.cacheId());
 
-            if (ctx.deploymentEnabled()) {
-                for (IgniteTxKey k : owned.keySet())
-                    prepareObject(k, ctx);
+                key.prepareMarshal(cctx);
+
+                if (addDepInfo)
+                    prepareObject(key, cctx);
             }
         }
 

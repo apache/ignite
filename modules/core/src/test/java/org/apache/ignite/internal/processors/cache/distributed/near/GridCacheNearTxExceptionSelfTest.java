@@ -31,6 +31,7 @@ public class GridCacheNearTxExceptionSelfTest extends IgniteTxExceptionAbstractS
         return PARTITIONED;
     }
 
+    /** {@inheritDoc} */
     @Override public void testTransformBackup(){
         fail("https://issues.apache.org/jira/browse/IGNITE-1601");
     }

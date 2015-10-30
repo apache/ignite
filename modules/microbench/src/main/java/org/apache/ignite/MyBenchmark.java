@@ -1,46 +1,36 @@
 /*
- * Copyright (c) 2014, Oracle America, Inc.
- * All rights reserved.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *  * Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- *
- *  * Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- *  * Neither the name of Oracle nor the names of its contributors may be used
- *    to endorse or promote products derived from this software without
- *    specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
- * THE POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite;
 
+import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableMetaDataHandler;
+import org.apache.ignite.internal.portable.PortableObjectImpl;
 import org.apache.ignite.internal.portable.streams.PortableSimpleMemoryAllocator;
 import org.apache.ignite.internal.util.IgniteUtils;
 
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.portable.PortableException;
 import org.apache.ignite.portable.PortableMarshalAware;
 import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.portable.PortableObject;
 import org.apache.ignite.portable.PortableReader;
 import org.apache.ignite.portable.PortableWriter;
 import org.apache.ignite.util.MarshallerContextMicrobenchImpl;
@@ -84,7 +74,7 @@ public class MyBenchmark {
 
     private static byte[] marshAddrBytes;
 
-    private static byte[] optMarshAddrBytes;
+    private static PortableObject marshPortable;
 
     @Setup
     public static void setup() throws Exception {
@@ -103,12 +93,10 @@ public class MyBenchmark {
         optMarsh = new OptimizedMarshaller();
         optMarsh.setContext(new MarshallerContextMicrobenchImpl(null));
 
-        marshAddrBytes = marsh.marshal(new Address());
-        optMarshAddrBytes = optMarsh.marshal(new Address());
+        marshAddrBytes = marsh.marshal(new ManyFields());
 
-        byte[] data = marsh.marshal(new Address());
-
-        System.out.println(data.length);
+        marshPortable = new PortableObjectImpl(U.<GridPortableMarshaller>field(marsh, "impl").context(),
+            marshAddrBytes, 0);
     }
 
 //    @Benchmark
@@ -117,16 +105,25 @@ public class MyBenchmark {
 //    }
 
     @Benchmark
-    public Address testAddressRead() throws Exception {
+    public Object testRead() throws Exception {
         return marsh.unmarshal(marshAddrBytes, null);
     }
+
+//    @Benchmark
+//    public Object testFieldRead() throws Exception {
+//        return marshPortable.field("street");
+//    }
 
     private static final Address addr = new Address();
 
     public static void main(String[] args) throws Exception {
 //        setup();
-//        while (true)
+//        while (true) {
 //            marsh.unmarshal(marshAddrBytes, null);
+////            String val = marshPortable.field("street");
+////
+////            System.out.println(val);
+//        }
 
         Options opts = new OptionsBuilder().include(MyBenchmark.class.getSimpleName()).build();
         new Runner(opts).run();
@@ -153,6 +150,21 @@ public class MyBenchmark {
         customer.emailAddress = "email." + customer.name + "@gmail.com";
         //customer.longArray = new long[100];
         return customer;
+    }
+
+    static class ManyFields {
+        public int field1 = 1;
+        public int field2 = 2;
+        public int field3 = 3;
+        public int field4 = 4;
+        public int field5 = 5;
+
+        public int field6 = 6;
+        public int field7 = 7;
+        public int field8 = 8;
+        public int field9 = 9;
+        public int field10 = 10;
+
     }
 
     static class Address implements PortableMarshalAware, Externalizable {

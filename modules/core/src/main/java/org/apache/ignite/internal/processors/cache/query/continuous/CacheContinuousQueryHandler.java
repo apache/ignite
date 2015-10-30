@@ -233,12 +233,10 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                         locLsnr.onUpdated(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt));
                     else {
                         try {
-                            if (ctx.config().isPeerClassLoadingEnabled() && ctx.discovery().node(nodeId) != null) {
+                            if (cctx.deploymentEnabled() && ctx.discovery().node(nodeId) != null) {
                                 evt.entry().prepareMarshal(cctx);
 
-                                GridCacheDeploymentManager depMgr = cctx.deploy();
-
-                                depMgr.prepare(evt.entry());
+                                cctx.deploy().prepare(evt.entry());
                             }
                             else
                                 evt.entry().prepareMarshal(cctx);

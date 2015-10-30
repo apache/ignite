@@ -31,47 +31,10 @@
 
     <componentDescriptors>
         <componentDescriptor>release-base.xml</componentDescriptor>
+        <componentDescriptor>release-fabric-base.xml</componentDescriptor>
     </componentDescriptors>
 
     <files>
-        <!-- Copy CPP files. -->
-        <file>
-            <source>modules/platforms/cpp/project/vs/ignite.slnrel</source>
-            <outputDirectory>/platforms/cpp/project/vs</outputDirectory>
-            <destName>ignite.sln</destName>
-        </file>
-
-        <file>
-            <source>modules/platforms/cpp/project/vs/ignite_x86.slnrel</source>
-            <outputDirectory>/platforms/cpp/project/vs</outputDirectory>
-            <destName>ignite_x86.sln</destName>
-        </file>
-
-        <!-- Copy .Net files. -->
-        <file>
-            <source>modules/platforms/dotnet/Apache.Ignite.slnrel</source>
-            <outputDirectory>/platforms/dotnet</outputDirectory>
-            <destName>Apache.Ignite.sln</destName>
-        </file>
-
-        <file>
-            <source>modules/platforms/dotnet/Apache.Ignite_x86.slnrel</source>
-            <outputDirectory>/platforms/dotnet</outputDirectory>
-            <destName>Apache.Ignite_x86.sln</destName>
-        </file>
-
-        <file>
-            <source>assembly/LICENSE_FABRIC</source>
-            <destName>LICENSE</destName>
-            <outputDirectory>/</outputDirectory>
-        </file>
-
-        <file>
-            <source>assembly/NOTICE_FABRIC</source>
-            <destName>NOTICE</destName>
-            <outputDirectory>/</outputDirectory>
-        </file>
-
         <file>
             <source>examples/pom-standalone.xml</source>
             <outputDirectory>/examples</outputDirectory>
@@ -79,141 +42,9 @@
         </file>
 
         <file>
-            <source>examples/schema-import/pom-standalone.xml</source>
-            <outputDirectory>/examples/schema-import</outputDirectory>
-            <destName>pom.xml</destName>
+            <source>examples/README.txt</source>
+            <outputDirectory>/examples</outputDirectory>
+            <destName>README.txt</destName>
         </file>
     </files>
-
-    <fileSets>
-        <!-- Move .Net readme. -->
-        <fileSet>
-            <directory>modules/platforms/dotnet</directory>
-            <outputDirectory>/platforms/dotnet</outputDirectory>
-            <includes>
-                <include>README.txt</include>
-            </includes>
-        </fileSet>
-
-        <!-- Move .Net "core" module. -->
-        <fileSet>
-            <directory>modules/platforms/dotnet/Apache.Ignite.Core</directory>
-            <outputDirectory>/platforms/dotnet/Apache.Ignite.Core</outputDirectory>
-        </fileSet>
-
-        <!-- Move .Net executable module. -->
-        <fileSet>
-            <directory>modules/platforms/dotnet/Apache.Ignite</directory>
-            <outputDirectory>/platforms/dotnet/Apache.Ignite</outputDirectory>
-        </fileSet>
-
-        <!-- Move .Net examples. -->
-        <fileSet>
-            <directory>modules/platforms/dotnet/examples</directory>
-            <outputDirectory>/platforms/dotnet/examples</outputDirectory>
-        </fileSet>
-
-        <!-- Move .Net licenses. -->
-        <fileSet>
-            <directory>modules/platforms/licenses</directory>
-            <outputDirectory>/platforms/dotnet/licenses</outputDirectory>
-        </fileSet>
-
-        <!-- Move CPP readme. -->
-        <fileSet>
-            <directory>modules/platforms/cpp</directory>
-            <outputDirectory>/platforms/cpp</outputDirectory>
-            <includes>
-                <include>README.txt</include>
-            </includes>
-        </fileSet>
-
-        <!-- Move CPP "common" module. -->
-        <fileSet>
-            <directory>modules/platforms/cpp/common</directory>
-            <outputDirectory>/platforms/cpp/common</outputDirectory>
-        </fileSet>
-
-        <!-- Move CPP "core" module. -->
-        <fileSet>
-            <directory>modules/platforms/cpp/core</directory>
-            <outputDirectory>/platforms/cpp/core</outputDirectory>
-        </fileSet>
-
-        <!-- Move CPP examples. -->
-        <fileSet>
-            <directory>modules/platforms/cpp/examples</directory>
-            <outputDirectory>/platforms/cpp/examples</outputDirectory>
-        </fileSet>
-
-        <!-- Move CPP licenses. -->
-        <fileSet>
-            <directory>modules/platforms/licenses</directory>
-            <outputDirectory>/platforms/cpp/licenses</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>bin</directory>
-            <outputDirectory>/bin</outputDirectory>
-            <includes>
-                <include>igniterouter.bat</include>
-            </includes>
-        </fileSet>
-
-        <fileSet>
-            <directory>bin</directory>
-            <outputDirectory>/bin</outputDirectory>
-            <fileMode>0755</fileMode>
-            <includes>
-                <include>igniterouter.sh</include>
-            </includes>
-        </fileSet>
-
-        <fileSet>
-            <directory>config/router</directory>
-            <outputDirectory>/config/router</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>examples</directory>
-            <outputDirectory>/examples</outputDirectory>
-            <includes>
-                <include>rest/**</include>
-                <include>memcached/**</include>
-                <include>schema-import/src/**</include>
-                <include>schema-import/bin/**</include>
-                <include>schema-import/README.txt</include>
-                <include>README.txt</include>
-            </includes>
-        </fileSet>
-
-        <fileSet>
-            <directory>target/javadoc/core</directory>
-            <outputDirectory>/docs/javadoc</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>modules/scalar/target/site/scaladocs</directory>
-            <outputDirectory>/docs/scaladoc/scalar</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>examples</directory>
-            <outputDirectory>/examples</outputDirectory>
-            <includes>
-                <include>config/**</include>
-                <include>src/**</include>
-            </includes>
-            <excludes>
-                <exclude>**/package.html</exclude>
-                <exclude>pom-standalone.xml</exclude>
-                <exclude>src/test/**</exclude>
-            </excludes>
-        </fileSet>
-
-        <fileSet>
-            <directory>assembly/libs</directory>
-            <outputDirectory>/libs</outputDirectory>
-        </fileSet>
-    </fileSets>
 </assembly>

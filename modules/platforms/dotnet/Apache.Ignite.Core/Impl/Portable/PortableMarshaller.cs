@@ -119,7 +119,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             Marshal(val, stream);
 
-            return stream.ArrayCopy();
+            return stream.GetArrayCopy();
         }
 
         /// <summary>

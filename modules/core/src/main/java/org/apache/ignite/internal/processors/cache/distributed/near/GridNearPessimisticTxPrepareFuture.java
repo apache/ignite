@@ -103,7 +103,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         if (!isDone()) {
             assert res.clientRemapVersion() == null : res;
 
-            for (IgniteInternalFuture<IgniteInternalTx> fut : pending()) {
+            for (IgniteInternalFuture<GridNearTxPrepareResponse> fut : pending()) {
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.futureId().equals(res.miniId())) {
@@ -207,7 +207,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 m.explicitLock(),
                 tx.subjectId(),
                 tx.taskNameHash(),
-                false);
+                false,
+                tx.activeCachesDeploymentEnabled());
 
             for (IgniteTxEntry txEntry : m.writes()) {
                 if (txEntry.op() == TRANSFORM)
@@ -291,7 +292,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     /**
      *
      */
-    private class MiniFuture extends GridFutureAdapter<IgniteInternalTx> {
+    private class MiniFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -331,7 +332,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             else {
                 onPrepareResponse(m, res);
 
-                onDone(tx);
+                onDone(res);
             }
         }
 
@@ -343,7 +344,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 tx.markForBackupCheck();
 
                 // Do not fail future for one-phase transaction right away.
-                onDone(tx);
+                onDone((GridNearTxPrepareResponse)null);
             }
 
             onError(e);

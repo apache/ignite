@@ -53,17 +53,21 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage {
      * @param futId Future ID.
      * @param miniId Mini future ID.
      * @param success {@code True} if all remote transactions were prepared, {@code false} otherwise.
+     * @param addDepInfo Deployment info flag.
      */
     public GridCacheTxRecoveryResponse(GridCacheVersion txId,
         IgniteUuid futId,
         IgniteUuid miniId,
-        boolean success)
+        boolean success,
+        boolean addDepInfo)
     {
-        super(txId, 0);
+        super(txId, 0, addDepInfo);
 
         this.futId = futId;
         this.miniId = miniId;
         this.success = success;
+
+        this.addDepInfo = addDepInfo;
     }
 
     /**

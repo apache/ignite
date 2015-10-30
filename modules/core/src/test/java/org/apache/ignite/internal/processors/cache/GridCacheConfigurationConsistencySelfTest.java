@@ -806,23 +806,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     public void testAffinityForReplicatedCache() throws Exception {
         cacheEnabled = true;
 
-        aff = new FairAffinityFunction(); // Check cannot use FairAffinityFunction.
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return startGrid(1);
-            }
-        }, IgniteCheckedException.class, null);
-
-        aff = new RendezvousAffinityFunction(true); // Check cannot set 'excludeNeighbors' flag.
-        backups = Integer.MAX_VALUE;
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return startGrid(1);
-            }
-        }, IgniteCheckedException.class, null);
-
         aff = new RendezvousAffinityFunction(false, 100);
 
         startGrid(1);

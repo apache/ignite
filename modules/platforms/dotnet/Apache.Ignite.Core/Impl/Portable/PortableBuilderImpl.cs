@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Diagnostics;
     using System.IO;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Portable.Metadata;
     using Apache.Ignite.Core.Portable;
@@ -357,9 +358,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             inStream.Seek(_obj.Offset, SeekOrigin.Begin);
 
             // Assume that resulting length will be no less than header + [fields_cnt] * 12;
-            int len = PortableUtils.FullHdrLen + (_vals == null ? 0 : _vals.Count * 12);
+            int estimatedCapacity = PortableObjectHeader.Size + (_vals == null ? 0 : _vals.Count*12);
 
-            PortableHeapStream outStream = new PortableHeapStream(len);
+            PortableHeapStream outStream = new PortableHeapStream(estimatedCapacity);
 
             PortableWriterImpl writer = _portables.Marshaller.StartMarshal(outStream);
 
@@ -377,8 +378,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 _portables.Marshaller.FinishMarshal(writer);
 
                 // Create portable object once metadata is processed.
-                return new PortableUserObject(_portables.Marshaller, outStream.InternalArray, 0,
-                    _desc.TypeId, _hashCode);
+                return new PortableUserObject(_portables.Marshaller, outStream.InternalArray, 0, 
+                    PortableObjectHeader.Read(outStream, 0));
             }
             finally
             {
@@ -568,7 +569,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="hash">New hash.</param>
         /// <param name="vals">Values to be replaced.</param>
         /// <returns>Mutated object.</returns>
-        private void Mutate0(Context ctx, PortableHeapStream inStream, IPortableStream outStream,
+        private unsafe void Mutate0(Context ctx, PortableHeapStream inStream, IPortableStream outStream,
             bool changeHash, int hash, IDictionary<int, PortableBuilderField> vals)
         {
             int inStartPos = inStream.Position;
@@ -605,13 +606,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             else if (inHdr == PortableUtils.HdrFull)
             {
-                PortableUtils.ValidateProtocolVersion(inStream);
-
-                byte inUsrFlag = inStream.ReadByte();
-                int inTypeId = inStream.ReadInt();
-                int inHash = inStream.ReadInt();
-                int inLen = inStream.ReadInt();
-                int inRawOff = inStream.ReadInt();
+                var inHeader = PortableObjectHeader.Read(inStream, inStartPos);
+                
+                PortableUtils.ValidateProtocolVersion(inHeader.Version);
 
                 int hndPos;
 
@@ -620,104 +617,106 @@ namespace Apache.Ignite.Core.Impl.Portable
                     // Object could be cached in parent builder.
                     PortableBuilderField cachedVal;
 
-                    if (_parent._cache != null && _parent._cache.TryGetValue(inStartPos, out cachedVal)) {
+                    if (_parent._cache != null && _parent._cache.TryGetValue(inStartPos, out cachedVal))
+                    {
                         WriteField(ctx, cachedVal);
                     }
                     else
                     {
                         // New object, write in full form.
-                        outStream.WriteByte(PortableUtils.HdrFull);
-                        outStream.WriteByte(PortableUtils.ProtoVer);
-                        outStream.WriteByte(inUsrFlag);
-                        outStream.WriteInt(inTypeId);
-                        outStream.WriteInt(changeHash ? hash : inHash);
+                        var inSchema = inHeader.ReadSchema(inStream, inStartPos);
 
-                        // Skip length and raw offset as they are not known at this point.
-                        outStream.Seek(8, SeekOrigin.Current);
+                        var outSchemaLen = vals.Count + (inSchema == null ? 0 : inSchema.Length);
+                        var outSchema = outSchemaLen > 0 
+                            ? new ResizeableArray<PortableObjectSchemaField>(outSchemaLen)
+                            : null;
 
-                        // Write regular fields.
-                        while (inStream.Position < inStartPos + inRawOff)
+                        // Skip header as it is not known at this point.
+                        outStream.Seek(PortableObjectHeader.Size, SeekOrigin.Current);
+
+                        if (inSchema != null)
                         {
-                            int inFieldId = inStream.ReadInt();
-                            int inFieldLen = inStream.ReadInt();
-                            int inFieldDataPos = inStream.Position;
-
-                            PortableBuilderField fieldVal;
-
-                            bool fieldFound = vals.TryGetValue(inFieldId, out fieldVal);
-
-                            if (!fieldFound || fieldVal != PortableBuilderField.RmvMarker)
+                            foreach (var inField in inSchema)
                             {
-                                outStream.WriteInt(inFieldId);
+                                PortableBuilderField fieldVal;
 
-                                int fieldLenPos = outStream.Position; // Here we will write length later.
+                                var fieldFound = vals.TryGetValue(inField.Id, out fieldVal);
 
-                                outStream.Seek(4, SeekOrigin.Current);
+                                if (fieldFound && fieldVal == PortableBuilderField.RmvMarker)
+                                    continue;
+
+                                // ReSharper disable once PossibleNullReferenceException (can't be null)
+                                outSchema.Add(new PortableObjectSchemaField(inField.Id, outStream.Position - outStartPos));
+
+                                if (!fieldFound)
+                                    fieldFound = _parent._cache != null &&
+                                                 _parent._cache.TryGetValue(inField.Offset + inStartPos, out fieldVal);
 
                                 if (fieldFound)
                                 {
-                                    // Replace field with new value.
-                                    if (fieldVal != PortableBuilderField.RmvMarker)
-                                        WriteField(ctx, fieldVal);
+                                    WriteField(ctx, fieldVal);
 
-                                    vals.Remove(inFieldId);
+                                    vals.Remove(inField.Id);
                                 }
                                 else
                                 {
-                                    // If field was requested earlier, then we must write tracked value
-                                    if (_parent._cache != null && _parent._cache.TryGetValue(inFieldDataPos, out fieldVal))
-                                        WriteField(ctx, fieldVal);
-                                    else
-                                        // Field is not tracked, re-write as is.
-                                        Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);                                    
+                                    // Field is not tracked, re-write as is.
+                                    inStream.Seek(inField.Offset + inStartPos, SeekOrigin.Begin);
+
+                                    Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
                                 }
-
-                                int fieldEndPos = outStream.Position;
-
-                                outStream.Seek(fieldLenPos, SeekOrigin.Begin);
-                                outStream.WriteInt(fieldEndPos - fieldLenPos - 4);
-                                outStream.Seek(fieldEndPos, SeekOrigin.Begin);
                             }
-
-                            // Position intput stream pointer after the field.
-                            inStream.Seek(inFieldDataPos + inFieldLen, SeekOrigin.Begin);
                         }
 
                         // Write remaining new fields.
                         foreach (var valEntry in vals)
                         {
-                            if (valEntry.Value != PortableBuilderField.RmvMarker)
-                            {
-                                outStream.WriteInt(valEntry.Key);
+                            if (valEntry.Value == PortableBuilderField.RmvMarker) 
+                                continue;
 
-                                int fieldLenPos = outStream.Position; // Here we will write length later.
+                            // ReSharper disable once PossibleNullReferenceException (can't be null)
+                            outSchema.Add(new PortableObjectSchemaField(valEntry.Key, outStream.Position - outStartPos));
 
-                                outStream.Seek(4, SeekOrigin.Current);
-
-                                WriteField(ctx, valEntry.Value);
-
-                                int fieldEndPos = outStream.Position;
-
-                                outStream.Seek(fieldLenPos, SeekOrigin.Begin);
-                                outStream.WriteInt(fieldEndPos - fieldLenPos - 4);
-                                outStream.Seek(fieldEndPos, SeekOrigin.Begin);
-                            }
+                            WriteField(ctx, valEntry.Value);
                         }
 
+                        if (outSchema != null && outSchema.Count == 0)
+                            outSchema = null;
+
                         // Write raw data.
-                        int rawPos = outStream.Position;
+                        int outRawOff = outStream.Position - outStartPos;
 
-                        outStream.Write(inStream.InternalArray, inStartPos + inRawOff, inLen - inRawOff);
+                        int inRawOff = inHeader.GetRawOffset(inStream, inStartPos);
+                        int inRawLen = inHeader.SchemaOffset - inRawOff;
 
-                        // Write length and raw data offset.
-                        int outResPos = outStream.Position;
+                        if (inRawLen > 0)
+                            outStream.Write(inStream.InternalArray, inStartPos + inRawOff, inRawLen);
 
-                        outStream.Seek(outStartPos + PortableUtils.OffsetLen, SeekOrigin.Begin);
+                        // Write schema
+                        int outSchemaOff = outRawOff;
 
-                        outStream.WriteInt(outResPos - outStartPos); // Length.
-                        outStream.WriteInt(rawPos - outStartPos); // Raw offset.
+                        if (outSchema != null)
+                        {
+                            outSchemaOff = outStream.Position - outStartPos;
 
-                        outStream.Seek(outResPos, SeekOrigin.Begin);
+                            PortableObjectSchemaField.WriteArray(outSchema.Array, outStream, outSchema.Count);
+
+                            if (inRawLen > 0)
+                                outStream.WriteInt(outRawOff);
+                        }
+
+                        var outSchemaId = PortableUtils.GetSchemaId(outSchema);
+
+                        var outLen = outStream.Position - outStartPos;
+
+                        var outHash = changeHash ? hash : inHeader.HashCode;
+
+                        var outHeader = new PortableObjectHeader(inHeader.IsUserType, inHeader.TypeId, outHash, 
+                            outLen, outSchemaId, outSchemaOff, outSchema == null);
+
+                        PortableObjectHeader.Write(outHeader, outStream, outStartPos);
+
+                        outStream.Seek(outStartPos + outLen, SeekOrigin.Begin);  // seek to the end of the object
                     }
                 }
                 else
@@ -728,7 +727,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 }
 
                 // Synchronize input stream position.
-                inStream.Seek(inStartPos + inLen, SeekOrigin.Begin);
+                inStream.Seek(inStartPos + inHeader.Length, SeekOrigin.Begin);
             }
             else
             {
