@@ -248,17 +248,17 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (offsetSize == 1)
             {
-                for (var i = 0; i < offsetSize; i++)
+                for (var i = 0; i < schemaSize; i++)
                     schema.Add(stream.ReadInt(), stream.ReadByte());
             }
             else if (offsetSize == 2)
             {
-                for (var i = 0; i < offsetSize; i++)
+                for (var i = 0; i < schemaSize; i++)
                     schema.Add(stream.ReadInt(), stream.ReadShort());
             }
             else
             {
-                for (var i = 0; i < offsetSize; i++)
+                for (var i = 0; i < schemaSize; i++)
                     schema.Add(stream.ReadInt(), stream.ReadInt());
             }
 
@@ -288,17 +288,17 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (offsetSize == 1)
             {
-                for (var i = 0; i < offsetSize; i++)
+                for (var i = 0; i < schemaSize; i++)
                     schema[i] = new PortableObjectSchemaField(stream.ReadInt(), stream.ReadByte());
             }
             else if (offsetSize == 2)
             {
-                for (var i = 0; i < offsetSize; i++)
+                for (var i = 0; i < schemaSize; i++)
                     schema[i] = new PortableObjectSchemaField(stream.ReadInt(), stream.ReadShort());
             }
             else
             {
-                for (var i = 0; i < offsetSize; i++)
+                for (var i = 0; i < schemaSize; i++)
                     schema[i] = new PortableObjectSchemaField(stream.ReadInt(), stream.ReadInt());
             }
 
