@@ -22,6 +22,9 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Impl.Portable.IO;
 
+    /// <summary>
+    /// Portable schema field DTO (as it is stored in a stream).
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     internal struct PortableObjectSchemaField
     {
