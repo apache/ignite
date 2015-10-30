@@ -140,8 +140,26 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             get
             {
+                // TODO:
                 // Odd amount of records in schema => raw offset is the very last 4 bytes in object.
                 return !IsRawOnly && (((Length - SchemaOffset) >> 2) & 0x1) != 0x0;
+            }
+        }
+
+        /// <summary>
+        /// Gets the size of the schema field offset (1, 2 or 4 bytes).
+        /// </summary>
+        public int SchemaFieldOffsetSize
+        {
+            get
+            {
+                if ((Flags & FlagByteOffsets) == FlagByteOffsets)
+                    return 1;
+
+                if ((Flags & FlagShortOffsets) == FlagShortOffsets)
+                    return 2;
+
+                return 4;
             }
         }
 
@@ -289,6 +307,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                 Debug.Assert(hdr.Version == PortableUtils.ProtoVer);
                 Debug.Assert(hdr.SchemaOffset <= hdr.Length);
                 Debug.Assert(hdr.SchemaOffset >= Size);
+
+                // Only one of the flags can be set
+                var f = hdr.Flags;
+                Debug.Assert((f & (FlagShortOffsets | FlagByteOffsets)) != (FlagShortOffsets | FlagByteOffsets));
 
                 return hdr;
             }
