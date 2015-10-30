@@ -311,7 +311,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public <K1, V1> IgniteCache<K1, V1> withKeepPortable() {
+    @Override public <K1, V1> IgniteCache<K1, V1> withKeepBinary() {
         return keepPortable();
     }
 

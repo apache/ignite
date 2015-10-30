@@ -27,8 +27,8 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTaskNoResultCache;
 import org.apache.ignite.internal.IgniteComputeImpl;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.IgniteObjectRawReaderEx;
+import org.apache.ignite.internal.portable.IgniteObjectRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -83,7 +83,7 @@ public final class PlatformFullTask extends PlatformAbstractTask {
             try (PlatformMemory outMem = memMgr.allocate()) {
                 PlatformOutputStream out = outMem.output();
 
-                PortableRawWriterEx writer = ctx.writer(out);
+                IgniteObjectRawWriterEx writer = ctx.writer(out);
 
                 write(writer, nodes, subgrid);
 
@@ -96,7 +96,7 @@ public final class PlatformFullTask extends PlatformAbstractTask {
 
                     in.synchronize();
 
-                    PortableRawReaderEx reader = ctx.reader(in);
+                    IgniteObjectRawReaderEx reader = ctx.reader(in);
 
                     return read(reader, nodes);
                 }
@@ -114,7 +114,7 @@ public final class PlatformFullTask extends PlatformAbstractTask {
      * @param nodes Current topology nodes.
      * @param subgrid Subgrid.
      */
-    private void write(PortableRawWriterEx writer, Collection<ClusterNode> nodes, List<ClusterNode> subgrid) {
+    private void write(IgniteObjectRawWriterEx writer, Collection<ClusterNode> nodes, List<ClusterNode> subgrid) {
         GridDiscoveryManager discoMgr = ctx.kernalContext().discovery();
 
         long curTopVer = discoMgr.topologyVersion();
@@ -145,7 +145,7 @@ public final class PlatformFullTask extends PlatformAbstractTask {
      * @param nodes Current topology nodes.
      * @return Map result.
      */
-    private Map<ComputeJob, ClusterNode> read(PortableRawReaderEx reader, Collection<ClusterNode> nodes) {
+    private Map<ComputeJob, ClusterNode> read(IgniteObjectRawReaderEx reader, Collection<ClusterNode> nodes) {
         if (reader.readBoolean()) {
             if (!reader.readBoolean())
                 return null;

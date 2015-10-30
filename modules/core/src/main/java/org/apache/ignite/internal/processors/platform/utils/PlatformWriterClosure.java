@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.IgniteObjectRawWriterEx;
 
 /**
  * Interop writer closure.
@@ -29,5 +29,5 @@ public interface PlatformWriterClosure<T> {
      * @param writer Writer.
      * @param val Value.
      */
-    public void write(PortableRawWriterEx writer, T val);
+    public void write(IgniteObjectRawWriterEx writer, T val);
 }

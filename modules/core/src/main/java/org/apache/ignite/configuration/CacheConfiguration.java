@@ -30,7 +30,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 import javax.cache.Cache;
@@ -51,7 +50,8 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryEntityIndex;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.eviction.EvictionFilter;
@@ -72,7 +72,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.jetbrains.annotations.Nullable;
@@ -1951,9 +1950,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         for (ClassProperty prop : desc.props.values())
             entity.addQueryField(prop.fullName(), U.box(prop.type()).getName(), prop.alias());
 
-        QueryEntityIndex txtIdx = null;
+        QueryIndex txtIdx = null;
 
-        Collection<QueryEntityIndex> idxs = new ArrayList<>();
+        Collection<QueryIndex> idxs = new ArrayList<>();
 
         for (Map.Entry<String, GridQueryIndexDescriptor> idxEntry : desc.indexes().entrySet()) {
             GridQueryIndexDescriptor idx = idxEntry.getValue();
@@ -1961,10 +1960,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             if (idx.type() == FULLTEXT) {
                 assert txtIdx == null;
 
-                txtIdx = new QueryEntityIndex();
+                txtIdx = new QueryIndex();
 
-                txtIdx.setType(QueryEntityIndex.Type.FULLTEXT);
-                txtIdx.setFields(new ArrayList<>(idx.fields()));
+                txtIdx.setIndexType(QueryIndexType.FULLTEXT);
+
+                txtIdx.setFieldNames(idx.fields(), true);
                 txtIdx.setName(idxEntry.getKey());
             }
             else {
@@ -1973,10 +1973,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                 for (String fieldName : idx.fields())
                     grp.add(idx.descending(fieldName) ? fieldName + " desc" : fieldName);
 
-                QueryEntityIndex sortedIdx = new QueryEntityIndex();
+                QueryIndex sortedIdx = new QueryIndex();
 
-                sortedIdx.setType(idx.type() == SORTED ? QueryEntityIndex.Type.SORTED : QueryEntityIndex.Type.GEOSPATIAL);
-                sortedIdx.setFields(grp);
+                sortedIdx.setIndexType(idx.type() == SORTED ? QueryIndexType.SORTED : QueryIndexType.GEOSPATIAL);
+
+                LinkedHashMap<String, Boolean> fields = new LinkedHashMap<>();
+
+                for (String f : idx.fields())
+                    fields.put(f, !idx.descending(f));
+
+                sortedIdx.setFields(fields);
+
                 sortedIdx.setName(idxEntry.getKey());
 
                 idxs.add(sortedIdx);
@@ -1985,14 +1992,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
         if (desc.valueTextIndex()) {
             if (txtIdx == null) {
-                txtIdx = new QueryEntityIndex();
+                txtIdx = new QueryIndex();
 
-                txtIdx.setType(QueryEntityIndex.Type.FULLTEXT);
+                txtIdx.setIndexType(QueryIndexType.FULLTEXT);
 
-                txtIdx.setFields(Arrays.asList(_VAL));
+                txtIdx.setFieldNames(Arrays.asList(_VAL), true);
             }
             else
-                txtIdx.getFields().add(_VAL);
+                txtIdx.getFields().put(_VAL, true);
         }
 
         if (txtIdx != null)

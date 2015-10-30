@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.platform.compute;
 import java.io.Externalizable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.IgniteObjectRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -105,7 +105,7 @@ public abstract class PlatformAbstractJob implements PlatformJob, Externalizable
             try (PlatformMemory mem = ctx.memory().allocate()) {
                 PlatformOutputStream out = mem.output();
 
-                PortableRawWriterEx writer = ctx.writer(out);
+                IgniteObjectRawWriterEx writer = ctx.writer(out);
 
                 writer.writeObject(job);
 

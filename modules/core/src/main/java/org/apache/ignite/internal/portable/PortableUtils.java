@@ -19,8 +19,8 @@ package org.apache.ignite.internal.portable;
 
 import org.apache.ignite.internal.portable.builder.PortableLazyValue;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.igniteobject.IgniteObjectException;
+import org.apache.ignite.igniteobject.IgniteObject;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -185,7 +185,7 @@ public class PortableUtils {
      * @param writer W
      * @param val Value.
      */
-    public static void writePlainObject(PortableWriterExImpl writer, Object val) {
+    public static void writePlainObject(IgniteObjectWriterExImpl writer, Object val) {
         Byte flag = PLAIN_CLASS_TO_FLAG.get(val.getClass());
 
         if (flag == null)
@@ -436,7 +436,7 @@ public class PortableUtils {
     public static boolean isPortableType(Class<?> cls) {
         assert cls != null;
 
-        return PortableObject.class.isAssignableFrom(cls) ||
+        return IgniteObject.class.isAssignableFrom(cls) ||
             PORTABLE_CLS.contains(cls) ||
             cls.isEnum() ||
             (cls.isArray() && cls.getComponentType().isEnum());
@@ -485,6 +485,6 @@ public class PortableUtils {
      */
     public static void checkProtocolVersion(byte protoVer) {
         if (PROTO_VER != protoVer)
-            throw new PortableException("Unsupported protocol version: " + protoVer);
+            throw new IgniteObjectException("Unsupported protocol version: " + protoVer);
     }
 }

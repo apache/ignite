@@ -156,7 +156,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * (which will be stored in portable format), you should acquire following projection
      * to avoid deserialization:
      * <pre>
-     * IgniteCache<Integer, PortableObject> prj = cache.withKeepPortable();
+     * IgniteCache<Integer, PortableObject> prj = cache.withKeepBinary();
      *
      * // Value is not deserialized and returned in portable format.
      * PortableObject po = prj.get(1);
@@ -167,7 +167,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @return New cache instance for portable objects.
      */
-    public <K1, V1> IgniteCache<K1, V1> withKeepPortable();
+    public <K1, V1> IgniteCache<K1, V1> withKeepBinary();
 
     /**
      * Executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.

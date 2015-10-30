@@ -26,11 +26,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallerContextAdapter;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMarshalAware;
-import org.apache.ignite.portable.PortableMetadata;
-import org.apache.ignite.portable.PortableReader;
-import org.apache.ignite.portable.PortableWriter;
+import org.apache.ignite.igniteobject.IgniteObjectException;
+import org.apache.ignite.igniteobject.IgniteObjectMarshalAware;
+import org.apache.ignite.igniteobject.IgniteObjectMetadata;
+import org.apache.ignite.igniteobject.IgniteObjectReader;
+import org.apache.ignite.igniteobject.IgniteObjectWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -39,11 +39,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstractTest {
     /** */
     protected static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, PortableMetadata meta) {
+        @Override public void addMeta(int typeId, IgniteObjectMetadata meta) {
             // No-op.
         }
 
-        @Override public PortableMetadata metadata(int typeId) {
+        @Override public IgniteObjectMetadata metadata(int typeId) {
             return null;
         }
     };
@@ -77,7 +77,7 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
 
         assertEquals(simpleObj, marsh.unmarshal(marsh.marshal(simpleObj), null));
 
-        SimplePortable simplePortable = new SimplePortable();
+        SimpleIgniteObject simplePortable = new SimpleIgniteObject();
 
         simplePortable.str = "portable";
         simplePortable.arr = new long[] {100, 200, 300};
@@ -179,7 +179,7 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
     /**
      *
      */
-    private static class SimplePortable implements PortableMarshalAware {
+    private static class SimpleIgniteObject implements IgniteObjectMarshalAware {
         /** */
         private String str;
 
@@ -187,13 +187,13 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
         private long[] arr;
 
         /** {@inheritDoc} */
-        @Override public void writePortable(PortableWriter writer) throws PortableException {
+        @Override public void writePortable(IgniteObjectWriter writer) throws IgniteObjectException {
             writer.writeString("str", str);
             writer.writeLongArray("longArr", arr);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(PortableReader reader) throws PortableException {
+        @Override public void readPortable(IgniteObjectReader reader) throws IgniteObjectException {
             str = reader.readString("str");
             arr = reader.readLongArray("longArr");
         }
@@ -206,7 +206,7 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            SimplePortable that = (SimplePortable)o;
+            SimpleIgniteObject that = (SimpleIgniteObject)o;
 
             if (str != null ? !str.equals(that.str) : that.str != null)
                 return false;

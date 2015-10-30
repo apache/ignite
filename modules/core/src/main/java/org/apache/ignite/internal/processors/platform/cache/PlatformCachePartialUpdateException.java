@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.cache;
 
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.IgniteObjectRawWriterEx;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
@@ -49,7 +49,7 @@ public class PlatformCachePartialUpdateException extends PlatformExtendedExcepti
     }
 
     /** {@inheritDoc} */
-    @Override public void writeData(PortableRawWriterEx writer) {
+    @Override public void writeData(IgniteObjectRawWriterEx writer) {
         Collection keys = ((CachePartialUpdateCheckedException)getCause()).failedKeys();
 
         writer.writeBoolean(keepPortable);

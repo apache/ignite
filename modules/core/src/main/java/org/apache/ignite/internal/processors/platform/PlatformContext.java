@@ -21,8 +21,8 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.IgniteObjectRawReaderEx;
+import org.apache.ignite.internal.portable.IgniteObjectRawWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryProcessor;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
@@ -71,7 +71,7 @@ public interface PlatformContext {
      * @param mem Memory.
      * @return Reader.
      */
-    public PortableRawReaderEx reader(PlatformMemory mem);
+    public IgniteObjectRawReaderEx reader(PlatformMemory mem);
 
     /**
      * Get memory reader.
@@ -79,7 +79,7 @@ public interface PlatformContext {
      * @param in Input.
      * @return Reader.
      */
-    public PortableRawReaderEx reader(PlatformInputStream in);
+    public IgniteObjectRawReaderEx reader(PlatformInputStream in);
 
     /**
      * Get memory writer.
@@ -87,7 +87,7 @@ public interface PlatformContext {
      * @param mem Memory.
      * @return Writer.
      */
-    public PortableRawWriterEx writer(PlatformMemory mem);
+    public IgniteObjectRawWriterEx writer(PlatformMemory mem);
 
     /**
      * Get memory writer.
@@ -95,7 +95,7 @@ public interface PlatformContext {
      * @param out Output.
      * @return Writer.
      */
-    public PortableRawWriterEx writer(PlatformOutputStream out);
+    public IgniteObjectRawWriterEx writer(PlatformOutputStream out);
 
     /**
      * Sends node info to native platform, if necessary.
@@ -110,7 +110,7 @@ public interface PlatformContext {
      * @param writer Writer.
      * @param node Node.
      */
-    public void writeNode(PortableRawWriterEx writer, ClusterNode node);
+    public void writeNode(IgniteObjectRawWriterEx writer, ClusterNode node);
 
     /**
      * Writes multiple node ids to a stream and sends node info to native platform, if necessary.
@@ -118,14 +118,14 @@ public interface PlatformContext {
      * @param writer Writer.
      * @param nodes Nodes.
      */
-    public void writeNodes(PortableRawWriterEx writer, Collection<ClusterNode> nodes);
+    public void writeNodes(IgniteObjectRawWriterEx writer, Collection<ClusterNode> nodes);
 
     /**
      * Process metadata from the platform.
      *
      * @param reader Reader.
      */
-    public void processMetadata(PortableRawReaderEx reader);
+    public void processMetadata(IgniteObjectRawReaderEx reader);
 
     /**
      * Write metadata for the given type ID.
@@ -133,14 +133,14 @@ public interface PlatformContext {
      * @param writer Writer.
      * @param typeId Type ID.
      */
-    public void writeMetadata(PortableRawWriterEx writer, int typeId);
+    public void writeMetadata(IgniteObjectRawWriterEx writer, int typeId);
 
     /**
      * Write all available metadata.
      *
      * @param writer Writer.
      */
-    public void writeAllMetadata(PortableRawWriterEx writer);
+    public void writeAllMetadata(IgniteObjectRawWriterEx writer);
 
     /**
      * Write cluster metrics.
@@ -148,7 +148,7 @@ public interface PlatformContext {
      * @param writer Writer.
      * @param metrics Metrics.
      */
-    public void writeClusterMetrics(PortableRawWriterEx writer, @Nullable ClusterMetrics metrics);
+    public void writeClusterMetrics(IgniteObjectRawWriterEx writer, @Nullable ClusterMetrics metrics);
 
     /**
      *
@@ -190,7 +190,7 @@ public interface PlatformContext {
      * @param writer Writer.
      * @param evt Event.
      */
-    public void writeEvent(PortableRawWriterEx writer, Event evt);
+    public void writeEvent(IgniteObjectRawWriterEx writer, Event evt);
 
     /**
      * Create local event filter.

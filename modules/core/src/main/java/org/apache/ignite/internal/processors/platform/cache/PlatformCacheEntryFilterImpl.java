@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.cache;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.IgniteObjectRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -58,7 +58,7 @@ public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate impl
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx writer = ctx.writer(out);
+            IgniteObjectRawWriterEx writer = ctx.writer(out);
 
             writer.writeObject(k);
             writer.writeObject(v);
@@ -94,7 +94,7 @@ public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate impl
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx writer = ctx.writer(out);
+            IgniteObjectRawWriterEx writer = ctx.writer(out);
 
             writer.writeObject(pred);
 

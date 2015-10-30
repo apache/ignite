@@ -32,7 +32,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.SwapSpaceEvent;
 import org.apache.ignite.events.TaskEvent;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.IgniteObjectRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
@@ -41,8 +41,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.events.*;
 
-import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecuritySubjectType;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -97,7 +95,7 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
 
             try (PlatformMemory mem = ctx.memory().get(ptr)) {
                 PlatformOutputStream out = mem.output();
-                PortableRawWriterEx writer = ctx.writer(out);
+                IgniteObjectRawWriterEx writer = ctx.writer(out);
 
                 int evtType = EventType.EVT_SWAP_SPACE_CLEARED;
                 String msg = "msg";

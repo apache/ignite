@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
+import org.apache.ignite.internal.portable.IgniteObjectRawReaderEx;
 
 /**
  * Reader closure.
@@ -30,5 +30,5 @@ public interface PlatformReaderClosure<T> {
      * @param reader Reader.
      * @return Object.
      */
-    T read(PortableRawReaderEx reader);
+    T read(IgniteObjectRawReaderEx reader);
 }

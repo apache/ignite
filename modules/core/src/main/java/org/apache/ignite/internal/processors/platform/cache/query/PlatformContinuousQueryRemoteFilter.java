@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.cache.query;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.IgniteObjectRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
@@ -115,7 +115,7 @@ public class PlatformContinuousQueryRemoteFilter implements PlatformContinuousQu
             try (PlatformMemory mem = ctx.memory().allocate()) {
                 PlatformOutputStream out = mem.output();
 
-                PortableRawWriterEx writer = ctx.writer(out);
+                IgniteObjectRawWriterEx writer = ctx.writer(out);
 
                 writer.writeObject(filter);
 

@@ -59,7 +59,7 @@ class PortableLazyMapEntry implements Map.Entry<Object, Object>, PortableBuilder
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
+    @Override public void writeTo(IgniteObjectWriterExImpl writer, PortableBuilderSerializer ctx) {
         writer.writeByte(GridPortableMarshaller.MAP_ENTRY);
 
         ctx.writeValue(writer, key);

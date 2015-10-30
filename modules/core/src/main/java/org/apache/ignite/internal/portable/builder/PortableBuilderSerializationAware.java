@@ -27,5 +27,5 @@ interface PortableBuilderSerializationAware {
      * @param writer Writer.
      * @param ctx Context.
      */
-    public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx);
+    public void writeTo(IgniteObjectWriterExImpl writer, PortableBuilderSerializer ctx);
 }

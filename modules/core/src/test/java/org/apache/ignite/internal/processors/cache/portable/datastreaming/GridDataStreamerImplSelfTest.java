@@ -31,11 +31,11 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMarshalAware;
-import org.apache.ignite.portable.PortableObject;
-import org.apache.ignite.portable.PortableReader;
-import org.apache.ignite.portable.PortableWriter;
+import org.apache.ignite.igniteobject.IgniteObjectException;
+import org.apache.ignite.igniteobject.IgniteObjectMarshalAware;
+import org.apache.ignite.igniteobject.IgniteObject;
+import org.apache.ignite.igniteobject.IgniteObjectReader;
+import org.apache.ignite.igniteobject.IgniteObjectWriter;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -221,12 +221,12 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
             }
 
             // Read random keys. Take values as PortableObject.
-            IgniteCache<Integer, PortableObject> c2 = ((IgniteCacheProxy)c).keepPortable();
+            IgniteCache<Integer, IgniteObject> c2 = ((IgniteCacheProxy)c).keepPortable();
 
             for (int i = 0; i < 100; i ++) {
                 Integer k = rnd.nextInt(KEYS_COUNT);
 
-                PortableObject v = c2.get(k);
+                IgniteObject v = c2.get(k);
 
                 assertEquals(k, v.field("val"));
             }
@@ -256,7 +256,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    private static class TestObject implements PortableMarshalAware, Serializable {
+    private static class TestObject implements IgniteObjectMarshalAware, Serializable {
         /** */
         private int val;
 
@@ -289,19 +289,19 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(PortableWriter writer) throws PortableException {
+        @Override public void writePortable(IgniteObjectWriter writer) throws IgniteObjectException {
             writer.writeInt("val", val);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(PortableReader reader) throws PortableException {
+        @Override public void readPortable(IgniteObjectReader reader) throws IgniteObjectException {
             val = reader.readInt("val");
         }
     }
 
     /**
      */
-    private static class TestObject2 implements PortableMarshalAware, Serializable {
+    private static class TestObject2 implements IgniteObjectMarshalAware, Serializable {
         /** */
         private int val;
 
@@ -333,12 +333,12 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(PortableWriter writer) throws PortableException {
+        @Override public void writePortable(IgniteObjectWriter writer) throws IgniteObjectException {
             writer.writeInt("val", val);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(PortableReader reader) throws PortableException {
+        @Override public void readPortable(IgniteObjectReader reader) throws IgniteObjectException {
             val = reader.readInt("val");
         }
     }

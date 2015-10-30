@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.platform;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.IgniteObjectRawReaderEx;
+import org.apache.ignite.internal.portable.IgniteObjectRawWriterEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
@@ -62,7 +62,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     /** {@inheritDoc} */
     @Override public long inStreamOutLong(int type, long memPtr) throws Exception {
         try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
-            PortableRawReaderEx reader = platformCtx.reader(mem);
+            IgniteObjectRawReaderEx reader = platformCtx.reader(mem);
 
             if (type == OP_META) {
                 platformCtx.processMetadata(reader);
@@ -80,7 +80,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     /** {@inheritDoc} */
     @Override public Object inStreamOutObject(int type, long memPtr) throws Exception {
         try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
-            PortableRawReaderEx reader = platformCtx.reader(mem);
+            IgniteObjectRawReaderEx reader = platformCtx.reader(mem);
 
             return processInStreamOutObject(type, reader);
         }
@@ -104,7 +104,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
         try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx writer = platformCtx.writer(out);
+            IgniteObjectRawWriterEx writer = platformCtx.writer(out);
 
             processOutStream(type, writer);
 
@@ -128,12 +128,12 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     /** {@inheritDoc} */
     @Override public void inStreamOutStream(int type, long inMemPtr, long outMemPtr) throws Exception {
         try (PlatformMemory inMem = platformCtx.memory().get(inMemPtr)) {
-            PortableRawReaderEx reader = platformCtx.reader(inMem);
+            IgniteObjectRawReaderEx reader = platformCtx.reader(inMem);
 
             try (PlatformMemory outMem = platformCtx.memory().get(outMemPtr)) {
                 PlatformOutputStream out = outMem.output();
 
-                PortableRawWriterEx writer = platformCtx.writer(out);
+                IgniteObjectRawWriterEx writer = platformCtx.writer(out);
 
                 processInStreamOutStream(type, reader, writer);
 
@@ -148,12 +148,12 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     /** {@inheritDoc} */
     @Override public void inObjectStreamOutStream(int type, Object arg, long inMemPtr, long outMemPtr) throws Exception {
         try (PlatformMemory inMem = platformCtx.memory().get(inMemPtr)) {
-            PortableRawReaderEx reader = platformCtx.reader(inMem);
+            IgniteObjectRawReaderEx reader = platformCtx.reader(inMem);
 
             try (PlatformMemory outMem = platformCtx.memory().get(outMemPtr)) {
                 PlatformOutputStream out = outMem.output();
 
-                PortableRawWriterEx writer = platformCtx.writer(out);
+                IgniteObjectRawWriterEx writer = platformCtx.writer(out);
 
                 processInObjectStreamOutStream(type, arg, reader, writer);
 
@@ -233,7 +233,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @return Result.
      * @throws IgniteCheckedException In case of exception.
      */
-    protected long processInStreamOutLong(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    protected long processInStreamOutLong(int type, IgniteObjectRawReaderEx reader) throws IgniteCheckedException {
         return throwUnsupported(type);
     }
 
@@ -245,7 +245,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param writer Portable writer.
      * @throws IgniteCheckedException In case of exception.
      */
-    protected void processInStreamOutStream(int type, PortableRawReaderEx reader, PortableRawWriterEx writer)
+    protected void processInStreamOutStream(int type, IgniteObjectRawReaderEx reader, IgniteObjectRawWriterEx writer)
         throws IgniteCheckedException {
         throwUnsupported(type);
     }
@@ -258,7 +258,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @return Result.
      * @throws IgniteCheckedException In case of exception.
      */
-    protected Object processInStreamOutObject(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    protected Object processInStreamOutObject(int type, IgniteObjectRawReaderEx reader) throws IgniteCheckedException {
         return throwUnsupported(type);
     }
 
@@ -271,8 +271,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param writer Portable writer.
      * @throws IgniteCheckedException In case of exception.
      */
-    protected void processInObjectStreamOutStream(int type, @Nullable Object arg, PortableRawReaderEx reader,
-        PortableRawWriterEx writer) throws IgniteCheckedException {
+    protected void processInObjectStreamOutStream(int type, @Nullable Object arg, IgniteObjectRawReaderEx reader,
+        IgniteObjectRawWriterEx writer) throws IgniteCheckedException {
         throwUnsupported(type);
     }
 
@@ -293,7 +293,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param writer Portable writer.
      * @throws IgniteCheckedException In case of exception.
      */
-    protected void processOutStream(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
+    protected void processOutStream(int type, IgniteObjectRawWriterEx writer) throws IgniteCheckedException {
         throwUnsupported(type);
     }
 

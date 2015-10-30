@@ -31,7 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.igniteobject.IgniteObject;
 
 /**
  * Tests that portable object is the same in cache entry and in index.
@@ -96,9 +96,9 @@ public abstract class GridPortableDuplicateIndexObjectsAbstractSelfTest extends 
 
         cache.put(key, new TestPortable(fieldOneVal, fieldTwoVal));
 
-        IgniteCache<Integer, PortableObject> prj = grid(0).cache(null).withKeepPortable();
+        IgniteCache<Integer, IgniteObject> prj = grid(0).cache(null).withKeepBinary();
 
-        PortableObject cacheVal = prj.get(key);
+        IgniteObject cacheVal = prj.get(key);
 
         assertEquals(fieldOneVal, cacheVal.field("fieldOne"));
         assertEquals(new Integer(fieldTwoVal), cacheVal.field("fieldTwo"));
@@ -108,7 +108,7 @@ public abstract class GridPortableDuplicateIndexObjectsAbstractSelfTest extends 
 
         assertEquals(1, row.size());
 
-        PortableObject qryVal = (PortableObject)row.get(0);
+        IgniteObject qryVal = (IgniteObject)row.get(0);
 
         assertEquals(fieldOneVal, qryVal.field("fieldOne"));
         assertEquals(new Integer(fieldTwoVal), qryVal.field("fieldTwo"));

@@ -188,7 +188,7 @@ class PortableLazyLinkedList extends AbstractList<Object> implements PortableBui
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
+    @Override public void writeTo(IgniteObjectWriterExImpl writer, PortableBuilderSerializer ctx) {
         if (delegate == null) {
             int size = reader.readIntAbsolute(off + 1);
 

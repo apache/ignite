@@ -18,10 +18,11 @@
 package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 
 import java.util.Collections;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableTypeConfiguration;
+import org.apache.ignite.igniteobject.IgniteObjectConfiguration;
 
 /**
  *
@@ -31,10 +32,13 @@ public class GridCacheAffinityRoutingPortableSelfTest extends GridCacheAffinityR
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        PortableTypeConfiguration typeCfg = new PortableTypeConfiguration();
+        IgniteObjectConfiguration typeCfg = new IgniteObjectConfiguration();
 
         typeCfg.setClassName(AffinityTestKey.class.getName());
-        typeCfg.setAffinityKeyFieldName("affKey");
+
+        CacheKeyConfiguration keyCfg = new CacheKeyConfiguration(AffinityTestKey.class.getName(), "affKey");
+
+        cfg.setCacheKeyCfg(keyCfg);
 
         PortableMarshaller marsh = new PortableMarshaller();
 

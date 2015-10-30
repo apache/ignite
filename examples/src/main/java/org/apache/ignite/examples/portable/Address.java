@@ -17,19 +17,19 @@
 
 package org.apache.ignite.examples.portable;
 
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMarshalAware;
-import org.apache.ignite.portable.PortableReader;
-import org.apache.ignite.portable.PortableWriter;
+import org.apache.ignite.igniteobject.IgniteObjectException;
+import org.apache.ignite.igniteobject.IgniteObjectMarshalAware;
+import org.apache.ignite.igniteobject.IgniteObjectReader;
+import org.apache.ignite.igniteobject.IgniteObjectWriter;
 
 /**
  * Employee address.
  * <p>
- * This class implements {@link PortableMarshalAware} only for example purposes,
+ * This class implements {@link org.apache.ignite.igniteobject.IgniteObjectMarshalAware} only for example purposes,
  * in order to show how to customize serialization and deserialization of
  * portable objects.
  */
-public class Address implements PortableMarshalAware {
+public class Address implements IgniteObjectMarshalAware {
     /** Street. */
     private String street;
 
@@ -53,13 +53,13 @@ public class Address implements PortableMarshalAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(PortableWriter writer) throws PortableException {
+    @Override public void writePortable(IgniteObjectWriter writer) throws IgniteObjectException {
         writer.writeString("street", street);
         writer.writeInt("zip", zip);
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(PortableReader reader) throws PortableException {
+    @Override public void readPortable(IgniteObjectReader reader) throws IgniteObjectException {
         street = reader.readString("street");
         zip = reader.readInt("zip");
     }

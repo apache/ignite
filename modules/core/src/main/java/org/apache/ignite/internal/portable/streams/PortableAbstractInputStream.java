@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.portable.streams;
 
-import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.igniteobject.IgniteObjectException;
 
 /**
  * Portable abstract input stream.
@@ -268,7 +268,7 @@ public abstract class PortableAbstractInputStream extends PortableAbstractStream
     /** {@inheritDoc} */
     @Override public void position(int pos) {
         if (remaining() + this.pos < pos)
-            throw new PortableException("Position is out of bounds: " + pos);
+            throw new IgniteObjectException("Position is out of bounds: " + pos);
         else
             this.pos = pos;
     }
@@ -285,7 +285,7 @@ public abstract class PortableAbstractInputStream extends PortableAbstractStream
      */
     protected void ensureEnoughData(int cnt) {
         if (remaining() < cnt)
-            throw new PortableException("Not enough data to read the value [position=" + pos +
+            throw new IgniteObjectException("Not enough data to read the value [position=" + pos +
                 ", requiredBytes=" + cnt + ", remainingBytes=" + remaining() + ']');
     }
 

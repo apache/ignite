@@ -17,7 +17,7 @@
 package org.apache.ignite.internal.processors.cache.portable;
 
 import java.util.Map;
-import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.igniteobject.IgniteObject;
 
 /**
  * Tests for cache store with portables.
@@ -47,9 +47,9 @@ public class GridCachePortableStorePortablesSelfTest extends GridCachePortableSt
         for (int idx : idxs) {
             Object val = map.get(portable(new Key(idx)));
 
-            assertTrue(String.valueOf(val), val instanceof PortableObject);
+            assertTrue(String.valueOf(val), val instanceof IgniteObject);
 
-            PortableObject po = (PortableObject)val;
+            IgniteObject po = (IgniteObject)val;
 
             assertEquals("Value", po.metaData().typeName());
             assertEquals(new Integer(idx), po.field("idx"));

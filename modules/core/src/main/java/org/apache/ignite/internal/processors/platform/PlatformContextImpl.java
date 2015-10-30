@@ -34,9 +34,9 @@ import org.apache.ignite.events.SwapSpaceEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.PortableMetaDataImpl;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.IgniteObjectMetaDataImpl;
+import org.apache.ignite.internal.portable.IgniteObjectRawReaderEx;
+import org.apache.ignite.internal.portable.IgniteObjectRawWriterEx;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilterImpl;
@@ -70,13 +70,12 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.igniteobject.IgniteObjectMetadata;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -171,22 +170,22 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public PortableRawReaderEx reader(PlatformMemory mem) {
+    @Override public IgniteObjectRawReaderEx reader(PlatformMemory mem) {
         return reader(mem.input());
     }
 
     /** {@inheritDoc} */
-    @Override public PortableRawReaderEx reader(PlatformInputStream in) {
+    @Override public IgniteObjectRawReaderEx reader(PlatformInputStream in) {
         return marsh.reader(in);
     }
 
     /** {@inheritDoc} */
-    @Override public PortableRawWriterEx writer(PlatformMemory mem) {
+    @Override public IgniteObjectRawWriterEx writer(PlatformMemory mem) {
         return writer(mem.output());
     }
 
     /** {@inheritDoc} */
-    @Override public PortableRawWriterEx writer(PlatformOutputStream out) {
+    @Override public IgniteObjectRawWriterEx writer(PlatformOutputStream out) {
         return marsh.writer(out);
     }
 
@@ -199,7 +198,7 @@ public class PlatformContextImpl implements PlatformContext {
         try (PlatformMemory mem0 = mem.allocate()) {
             PlatformOutputStream out = mem0.output();
 
-            PortableRawWriterEx w = writer(out);
+            IgniteObjectRawWriterEx w = writer(out);
 
             w.writeUuid(node.id());
 
@@ -234,7 +233,7 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeNode(PortableRawWriterEx writer, ClusterNode node) {
+    @Override public void writeNode(IgniteObjectRawWriterEx writer, ClusterNode node) {
         if (node == null) {
             writer.writeUuid(null);
 
@@ -247,7 +246,7 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeNodes(PortableRawWriterEx writer, Collection<ClusterNode> nodes) {
+    @Override public void writeNodes(IgniteObjectRawWriterEx writer, Collection<ClusterNode> nodes) {
         if (nodes == null) {
             writer.writeInt(-1);
 
@@ -264,7 +263,7 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeClusterMetrics(PortableRawWriterEx writer, @Nullable ClusterMetrics metrics) {
+    @Override public void writeClusterMetrics(IgniteObjectRawWriterEx writer, @Nullable ClusterMetrics metrics) {
         if (metrics == null)
             writer.writeBoolean(false);
         else {
@@ -340,17 +339,17 @@ public class PlatformContextImpl implements PlatformContext {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public void processMetadata(PortableRawReaderEx reader) {
+    @Override public void processMetadata(IgniteObjectRawReaderEx reader) {
         Collection<T4<Integer, String, String, Map<String, Integer>>> metas = PlatformUtils.readCollection(reader,
             new PlatformReaderClosure<T4<Integer, String, String, Map<String, Integer>>>() {
-                @Override public T4<Integer, String, String, Map<String, Integer>> read(PortableRawReaderEx reader) {
+                @Override public T4<Integer, String, String, Map<String, Integer>> read(IgniteObjectRawReaderEx reader) {
                     int typeId = reader.readInt();
                     String typeName = reader.readString();
                     String affKey = reader.readString();
 
                     Map<String, Integer> fields = PlatformUtils.readMap(reader,
                         new PlatformReaderBiClosure<String, Integer>() {
-                            @Override public IgniteBiTuple<String, Integer> read(PortableRawReaderEx reader) {
+                            @Override public IgniteBiTuple<String, Integer> read(IgniteObjectRawReaderEx reader) {
                                 return F.t(reader.readString(), reader.readInt());
                             }
                         });
@@ -365,17 +364,17 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeMetadata(PortableRawWriterEx writer, int typeId) {
+    @Override public void writeMetadata(IgniteObjectRawWriterEx writer, int typeId) {
         writeMetadata0(writer, typeId, cacheObjProc.metadata(typeId));
     }
 
     /** {@inheritDoc} */
-    @Override public void writeAllMetadata(PortableRawWriterEx writer) {
-        Collection<PortableMetadata> metas = cacheObjProc.metadata();
+    @Override public void writeAllMetadata(IgniteObjectRawWriterEx writer) {
+        Collection<IgniteObjectMetadata> metas = cacheObjProc.metadata();
 
         writer.writeInt(metas.size());
 
-        for (org.apache.ignite.portable.PortableMetadata m : metas)
+        for (IgniteObjectMetadata m : metas)
             writeMetadata0(writer, cacheObjProc.typeId(m.typeName()), m);
     }
 
@@ -386,13 +385,13 @@ public class PlatformContextImpl implements PlatformContext {
      * @param typeId Type id.
      * @param meta Metadata.
      */
-    private void writeMetadata0(PortableRawWriterEx writer, int typeId, PortableMetadata meta) {
+    private void writeMetadata0(IgniteObjectRawWriterEx writer, int typeId, IgniteObjectMetadata meta) {
         if (meta == null)
             writer.writeBoolean(false);
         else {
             writer.writeBoolean(true);
 
-            Map<String, String> metaFields = ((PortableMetaDataImpl)meta).fields0();
+            Map<String, String> metaFields = ((IgniteObjectMetaDataImpl)meta).fields0();
 
             Map<String, Integer> fields = U.newHashMap(metaFields.size());
 
@@ -428,7 +427,7 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeEvent(PortableRawWriterEx writer, Event evt) {
+    @Override public void writeEvent(IgniteObjectRawWriterEx writer, Event evt) {
         assert writer != null;
 
         if (evt == null)
@@ -566,7 +565,7 @@ public class PlatformContextImpl implements PlatformContext {
      * @param writer Writer.
      * @param evt Event.
      */
-    private void writeCommonEventData(PortableRawWriterEx writer, EventAdapter evt) {
+    private void writeCommonEventData(IgniteObjectRawWriterEx writer, EventAdapter evt) {
         PlatformUtils.writeIgniteUuid(writer, evt.id());
         writer.writeLong(evt.localOrder());
         writeNode(writer, evt.node());

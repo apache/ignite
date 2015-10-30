@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.portable.builder;
 
-import org.apache.ignite.internal.portable.PortableWriterExImpl;
+import org.apache.ignite.internal.portable.IgniteObjectWriterExImpl;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -41,7 +41,7 @@ class PortableValueWithType implements PortableLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
+    @Override public void writeTo(IgniteObjectWriterExImpl writer, PortableBuilderSerializer ctx) {
         if (val instanceof PortableBuilderSerializationAware)
             ((PortableBuilderSerializationAware)val).writeTo(writer, ctx);
         else

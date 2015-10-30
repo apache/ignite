@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.igniteobject.IgniteObjectException;
+import org.apache.ignite.igniteobject.IgniteObjectMetadata;
 
 /**
  * Portable meta data handler.
@@ -29,16 +29,16 @@ public interface PortableMetaDataHandler {
      *
      * @param typeId Type ID.
      * @param meta Meta data.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
-    public void addMeta(int typeId, PortableMetadata meta) throws PortableException;
+    public void addMeta(int typeId, IgniteObjectMetadata meta) throws IgniteObjectException;
 
     /**
      * Gets meta data for provided type ID.
      *
      * @param typeId Type ID.
      * @return Meta data.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
-    public PortableMetadata metadata(int typeId) throws PortableException;
+    public IgniteObjectMetadata metadata(int typeId) throws IgniteObjectException;
 }

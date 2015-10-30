@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.cache.query;
 
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.IgniteObjectRawWriterEx;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -62,7 +62,7 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutStream(int type, final PortableRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processOutStream(int type, final IgniteObjectRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_BATCH: {
                 assert iter != null : "iterator() has not been called";
@@ -157,7 +157,7 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
      * @param writer Writer.
      * @param val Value.
      */
-    protected abstract void write(PortableRawWriterEx writer, T val);
+    protected abstract void write(IgniteObjectRawWriterEx writer, T val);
 
     /**
      * Query cursor consumer.
@@ -167,7 +167,7 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
         private final PlatformAbstractQueryCursor<T> cursor;
 
         /** Writer. */
-        private final PortableRawWriterEx writer;
+        private final IgniteObjectRawWriterEx writer;
 
         /** Count. */
         private int cnt;
@@ -177,7 +177,7 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
          *
          * @param writer Writer.
          */
-        public Consumer(PlatformAbstractQueryCursor<T> cursor, PortableRawWriterEx writer) {
+        public Consumer(PlatformAbstractQueryCursor<T> cursor, IgniteObjectRawWriterEx writer) {
             this.cursor = cursor;
             this.writer = writer;
         }

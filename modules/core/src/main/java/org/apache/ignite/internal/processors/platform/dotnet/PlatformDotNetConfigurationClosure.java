@@ -25,7 +25,7 @@ import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableMetaDataHandler;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.IgniteObjectRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.lifecycle.PlatformLifecycleBean;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
@@ -39,8 +39,8 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.igniteobject.IgniteObjectException;
+import org.apache.ignite.igniteobject.IgniteObjectMetadata;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -137,7 +137,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             try (PlatformMemory inMem = memMgr.allocate()) {
                 PlatformOutputStream out = outMem.output();
 
-                PortableRawWriterEx writer = marshaller().writer(out);
+                IgniteObjectRawWriterEx writer = marshaller().writer(out);
 
                 PlatformUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
 
@@ -230,12 +230,12 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     private static GridPortableMarshaller marshaller() {
         try {
             PortableContext ctx = new PortableContext(new PortableMetaDataHandler() {
-                @Override public void addMeta(int typeId, PortableMetadata meta)
-                    throws PortableException {
+                @Override public void addMeta(int typeId, IgniteObjectMetadata meta)
+                    throws IgniteObjectException {
                     // No-op.
                 }
 
-                @Override public PortableMetadata metadata(int typeId) throws PortableException {
+                @Override public IgniteObjectMetadata metadata(int typeId) throws IgniteObjectException {
                     return null;
                 }
             }, null);

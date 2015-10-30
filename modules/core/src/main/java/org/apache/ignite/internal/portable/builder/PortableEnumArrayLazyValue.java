@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.portable.builder;
 
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.PortableWriterExImpl;
+import org.apache.ignite.internal.portable.IgniteObjectWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableInvalidClassException;
+import org.apache.ignite.igniteobject.IgniteObjectException;
+import org.apache.ignite.igniteobject.IgniteObjectInvalidClassException;
 
 /**
  *
@@ -54,7 +54,7 @@ class PortableEnumArrayLazyValue extends PortableAbstractLazyValue {
                 cls = U.forName(reader.readString(), null);
             }
             catch (ClassNotFoundException e) {
-                throw new PortableInvalidClassException("Failed to load the class: " + clsName, e);
+                throw new IgniteObjectInvalidClassException("Failed to load the class: " + clsName, e);
             }
 
             compTypeId = reader.portableContext().descriptorForClass(cls).typeId();
@@ -90,7 +90,7 @@ class PortableEnumArrayLazyValue extends PortableAbstractLazyValue {
                 continue;
 
             if (flag != GridPortableMarshaller.ENUM)
-                throw new PortableException("Invalid flag value: " + flag);
+                throw new IgniteObjectException("Invalid flag value: " + flag);
 
             res[i] = new PortableBuilderEnum(reader);
         }
@@ -99,7 +99,7 @@ class PortableEnumArrayLazyValue extends PortableAbstractLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
+    @Override public void writeTo(IgniteObjectWriterExImpl writer, PortableBuilderSerializer ctx) {
         if (val != null) {
             if (clsName != null)
                 ctx.writeArray(writer, GridPortableMarshaller.ENUM_ARR, (Object[])val, clsName);

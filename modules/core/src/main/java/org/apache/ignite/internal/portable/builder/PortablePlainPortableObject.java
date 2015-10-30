@@ -17,22 +17,22 @@
 
 package org.apache.ignite.internal.portable.builder;
 
-import org.apache.ignite.internal.portable.PortableObjectImpl;
-import org.apache.ignite.internal.portable.PortableObjectOffheapImpl;
-import org.apache.ignite.internal.portable.PortableWriterExImpl;
-import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.internal.portable.IgniteObjectImpl;
+import org.apache.ignite.internal.portable.IgniteObjectOffheapImpl;
+import org.apache.ignite.internal.portable.IgniteObjectWriterExImpl;
+import org.apache.ignite.igniteobject.IgniteObject;
 
 /**
  *
  */
 public class PortablePlainPortableObject implements PortableLazyValue {
     /** */
-    private final PortableObject portableObj;
+    private final IgniteObject portableObj;
 
     /**
      * @param portableObj Portable object.
      */
-    public PortablePlainPortableObject(PortableObject portableObj) {
+    public PortablePlainPortableObject(IgniteObject portableObj) {
         this.portableObj = portableObj;
     }
 
@@ -42,12 +42,12 @@ public class PortablePlainPortableObject implements PortableLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(PortableWriterExImpl writer, PortableBuilderSerializer ctx) {
-        PortableObject val = portableObj;
+    @Override public void writeTo(IgniteObjectWriterExImpl writer, PortableBuilderSerializer ctx) {
+        IgniteObject val = portableObj;
 
-        if (val instanceof PortableObjectOffheapImpl)
-            val = ((PortableObjectOffheapImpl)val).heapCopy();
+        if (val instanceof IgniteObjectOffheapImpl)
+            val = ((IgniteObjectOffheapImpl)val).heapCopy();
 
-        writer.doWritePortableObject((PortableObjectImpl)val);
+        writer.doWritePortableObject((IgniteObjectImpl)val);
     }
 }

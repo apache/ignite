@@ -28,11 +28,11 @@ import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableIdMapper;
-import org.apache.ignite.portable.PortableObject;
-import org.apache.ignite.portable.PortableSerializer;
-import org.apache.ignite.portable.PortableTypeConfiguration;
+import org.apache.ignite.igniteobject.IgniteObject;
+import org.apache.ignite.igniteobject.IgniteObjectConfiguration;
+import org.apache.ignite.igniteobject.IgniteObjectException;
+import org.apache.ignite.igniteobject.IgniteObjectIdMapper;
+import org.apache.ignite.igniteobject.IgniteObjectSerializer;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -79,13 +79,13 @@ public class PortableMarshaller extends AbstractMarshaller {
     private Collection<String> clsNames;
 
     /** ID mapper. */
-    private PortableIdMapper idMapper;
+    private IgniteObjectIdMapper idMapper;
 
     /** Serializer. */
-    private PortableSerializer serializer;
+    private IgniteObjectSerializer serializer;
 
     /** Types. */
-    private Collection<PortableTypeConfiguration> typeCfgs;
+    private Collection<IgniteObjectConfiguration> typeCfgs;
 
     /** Whether to convert string to bytes using UTF-8 encoding. */
     private boolean convertString = true;
@@ -125,7 +125,7 @@ public class PortableMarshaller extends AbstractMarshaller {
      *
      * @return ID mapper.
      */
-    public PortableIdMapper getIdMapper() {
+    public IgniteObjectIdMapper getIdMapper() {
         return idMapper;
     }
 
@@ -134,7 +134,7 @@ public class PortableMarshaller extends AbstractMarshaller {
      *
      * @param idMapper ID mapper.
      */
-    public void setIdMapper(PortableIdMapper idMapper) {
+    public void setIdMapper(IgniteObjectIdMapper idMapper) {
         this.idMapper = idMapper;
     }
 
@@ -143,7 +143,7 @@ public class PortableMarshaller extends AbstractMarshaller {
      *
      * @return Serializer.
      */
-    public PortableSerializer getSerializer() {
+    public IgniteObjectSerializer getSerializer() {
         return serializer;
     }
 
@@ -152,7 +152,7 @@ public class PortableMarshaller extends AbstractMarshaller {
      *
      * @param serializer Serializer.
      */
-    public void setSerializer(PortableSerializer serializer) {
+    public void setSerializer(IgniteObjectSerializer serializer) {
         this.serializer = serializer;
     }
 
@@ -161,7 +161,7 @@ public class PortableMarshaller extends AbstractMarshaller {
      *
      * @return Types configuration.
      */
-    public Collection<PortableTypeConfiguration> getTypeConfigurations() {
+    public Collection<IgniteObjectConfiguration> getTypeConfigurations() {
         return typeCfgs;
     }
 
@@ -170,7 +170,7 @@ public class PortableMarshaller extends AbstractMarshaller {
      *
      * @param typeCfgs Type configurations.
      */
-    public void setTypeConfigurations(Collection<PortableTypeConfiguration> typeCfgs) {
+    public void setTypeConfigurations(Collection<IgniteObjectConfiguration> typeCfgs) {
         this.typeCfgs = typeCfgs;
     }
 
@@ -198,7 +198,7 @@ public class PortableMarshaller extends AbstractMarshaller {
 
     /**
      * If {@code true}, meta data will be collected or all types. If you need to override this behaviour for
-     * some specific type, use {@link PortableTypeConfiguration#setMetaDataEnabled(Boolean)} method.
+     * some specific type, use {@link IgniteObjectConfiguration#setMetaDataEnabled(Boolean)} method.
      * <p>
      * Default value if {@code true}.
      *
@@ -216,11 +216,11 @@ public class PortableMarshaller extends AbstractMarshaller {
     }
 
     /**
-     * If {@code true}, {@link PortableObject} will cache deserialized instance after
-     * {@link PortableObject#deserialize()} is called. All consequent calls of this
-     * method on the same instance of {@link PortableObject} will return that cached
+     * If {@code true}, {@link IgniteObject} will cache deserialized instance after
+     * {@link IgniteObject#deserialize()} is called. All consequent calls of this
+     * method on the same instance of {@link IgniteObject} will return that cached
      * value without actually deserializing portable object. If you need to override this
-     * behaviour for some specific type, use {@link PortableTypeConfiguration#setKeepDeserialized(Boolean)}
+     * behaviour for some specific type, use {@link IgniteObjectConfiguration#setKeepDeserialized(Boolean)}
      * method.
      * <p>
      * Default value if {@code true}.
@@ -271,7 +271,7 @@ public class PortableMarshaller extends AbstractMarshaller {
             out.write(arr);
         }
         catch (IOException e) {
-            throw new PortableException("Failed to marshal the object: " + obj, e);
+            throw new IgniteObjectException("Failed to marshal the object: " + obj, e);
         }
     }
 
@@ -298,7 +298,7 @@ public class PortableMarshaller extends AbstractMarshaller {
             return impl.deserialize(buf.toByteArray(), clsLdr);
         }
         catch (IOException e) {
-            throw new PortableException("Failed to unmarshal the object from InputStream", e);
+            throw new IgniteObjectException("Failed to unmarshal the object from InputStream", e);
         }
     }
 }

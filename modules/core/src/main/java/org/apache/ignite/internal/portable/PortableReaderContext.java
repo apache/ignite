@@ -20,7 +20,7 @@ package org.apache.ignite.internal.portable;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.igniteobject.IgniteObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -31,7 +31,7 @@ class PortableReaderContext {
     private Map<Integer, Object> oHandles;
 
     /** */
-    private Map<Integer, PortableObject> poHandles;
+    private Map<Integer, IgniteObject> poHandles;
 
     /**
      * @param handle Handle.
@@ -50,7 +50,7 @@ class PortableReaderContext {
      * @param handle Handle.
      * @param po Portable object.
      */
-    void setPortableHandler(int handle, PortableObject po) {
+    void setPortableHandler(int handle, IgniteObject po) {
         assert po != null;
 
         if (poHandles == null)
@@ -71,7 +71,7 @@ class PortableReaderContext {
      * @param handle Handle.
      * @return Object.
      */
-    @Nullable PortableObject getPortableByHandle(int handle) {
+    @Nullable IgniteObject getPortableByHandle(int handle) {
         return poHandles != null ? poHandles.get(handle) : null;
     }
 

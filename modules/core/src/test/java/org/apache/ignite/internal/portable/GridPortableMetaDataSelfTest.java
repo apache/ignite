@@ -22,17 +22,17 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
-import org.apache.ignite.IgnitePortables;
+import org.apache.ignite.IgniteObjects;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMarshalAware;
-import org.apache.ignite.portable.PortableMetadata;
-import org.apache.ignite.portable.PortableObject;
-import org.apache.ignite.portable.PortableRawWriter;
-import org.apache.ignite.portable.PortableReader;
-import org.apache.ignite.portable.PortableWriter;
+import org.apache.ignite.igniteobject.IgniteObjectException;
+import org.apache.ignite.igniteobject.IgniteObjectMarshalAware;
+import org.apache.ignite.igniteobject.IgniteObjectMetadata;
+import org.apache.ignite.igniteobject.IgniteObject;
+import org.apache.ignite.igniteobject.IgniteObjectRawWriter;
+import org.apache.ignite.igniteobject.IgniteObjectReader;
+import org.apache.ignite.igniteobject.IgniteObjectWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -74,7 +74,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
     /**
      * @return Portables API.
      */
-    protected IgnitePortables portables() {
+    protected IgniteObjects portables() {
         return grid().portables();
     }
 
@@ -84,11 +84,11 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
     public void testGetAll() throws Exception {
         portables().toPortable(new TestObject2());
 
-        Collection<PortableMetadata> metas = portables().metadata();
+        Collection<IgniteObjectMetadata> metas = portables().metadata();
 
         assertEquals(2, metas.size());
 
-        for (PortableMetadata meta : metas) {
+        for (IgniteObjectMetadata meta : metas) {
             Collection<String> fields;
 
             switch (meta.typeName()) {
@@ -159,7 +159,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReflection() throws Exception {
-        PortableMetadata meta = portables().metadata(TestObject1.class);
+        IgniteObjectMetadata meta = portables().metadata(TestObject1.class);
 
         assertNotNull(meta);
 
@@ -192,7 +192,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
     public void testPortableMarshalAware() throws Exception {
         portables().toPortable(new TestObject2());
 
-        PortableMetadata meta = portables().metadata(TestObject2.class);
+        IgniteObjectMetadata meta = portables().metadata(TestObject2.class);
 
         assertNotNull(meta);
 
@@ -229,7 +229,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
 
         portables().toPortable(new TestObject2());
 
-        PortableMetadata meta = portables().metadata(TestObject2.class);
+        IgniteObjectMetadata meta = portables().metadata(TestObject2.class);
 
         assertNotNull(meta);
 
@@ -274,11 +274,11 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
         obj.decVal = BigDecimal.ZERO;
         obj.decArrVal = new BigDecimal[] { BigDecimal.ONE };
 
-        PortableObject po = portables().toPortable(obj);
+        IgniteObject po = portables().toPortable(obj);
 
         info(po.toString());
 
-        PortableMetadata meta = po.metaData();
+        IgniteObjectMetadata meta = po.metaData();
 
         assertNotNull(meta);
 
@@ -333,9 +333,9 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    private static class TestObject2 implements PortableMarshalAware {
+    private static class TestObject2 implements IgniteObjectMarshalAware {
         /** {@inheritDoc} */
-        @Override public void writePortable(PortableWriter writer) throws PortableException {
+        @Override public void writePortable(IgniteObjectWriter writer) throws IgniteObjectException {
             writer.writeBoolean("boolVal", false);
             writer.writeDate("dateVal", new Date());
             writer.writeUuidArray("uuidArrVal", null);
@@ -349,14 +349,14 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
                 writer.writeCollection("colVal", null);
             }
 
-            PortableRawWriter raw = writer.rawWriter();
+            IgniteObjectRawWriter raw = writer.rawWriter();
 
             raw.writeChar((char)0);
             raw.writeCollection(null);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(PortableReader reader) throws PortableException {
+        @Override public void readPortable(IgniteObjectReader reader) throws IgniteObjectException {
             // No-op.
         }
     }

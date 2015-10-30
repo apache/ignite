@@ -25,7 +25,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.portable.Address;
 import org.apache.ignite.examples.portable.Employee;
 import org.apache.ignite.examples.portable.ExamplePortableNodeStartup;
-import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.igniteobject.IgniteObject;
 
 /**
  * This example demonstrates use of portable objects with task execution.
@@ -74,7 +74,7 @@ public class ComputeClientPortableTaskExecutionExample {
             // Convert collection of employees to collection of portable objects.
             // This allows to send objects across nodes without requiring to have
             // Employee class on classpath of these nodes.
-            Collection<PortableObject> portables = ignite.portables().toPortable(employees);
+            Collection<IgniteObject> portables = ignite.portables().toPortable(employees);
 
             // Execute task and get average salary.
             Long avgSalary = ignite.compute(ignite.cluster().forRemotes()).execute(new ComputeClientTask(), portables);

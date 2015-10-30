@@ -41,10 +41,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableIdMapper;
-import org.apache.ignite.portable.PortableMarshalAware;
-import org.apache.ignite.portable.PortableSerializer;
+import org.apache.ignite.igniteobject.IgniteObjectException;
+import org.apache.ignite.igniteobject.IgniteObjectIdMapper;
+import org.apache.ignite.igniteobject.IgniteObjectMarshalAware;
+import org.apache.ignite.igniteobject.IgniteObjectSerializer;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.reflect.Modifier.isStatic;
@@ -61,7 +61,7 @@ public class PortableClassDescriptor {
     private final Class<?> cls;
 
     /** */
-    private final PortableSerializer serializer;
+    private final IgniteObjectSerializer serializer;
 
     /** */
     private final Mode mode;
@@ -114,7 +114,7 @@ public class PortableClassDescriptor {
      * @param keepDeserialized Keep deserialized flag.
      * @param registered Whether typeId has been successfully registered by MarshallerContext or not.
      * @param predefined Whether the class is predefined or not.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     PortableClassDescriptor(
         PortableContext ctx,
@@ -122,13 +122,13 @@ public class PortableClassDescriptor {
         boolean userType,
         int typeId,
         String typeName,
-        @Nullable PortableIdMapper idMapper,
-        @Nullable PortableSerializer serializer,
+        @Nullable IgniteObjectIdMapper idMapper,
+        @Nullable IgniteObjectSerializer serializer,
         boolean metaDataEnabled,
         boolean keepDeserialized,
         boolean registered,
         boolean predefined
-    ) throws PortableException {
+    ) throws IgniteObjectException {
         assert ctx != null;
         assert cls != null;
 
@@ -220,12 +220,12 @@ public class PortableClassDescriptor {
                             String name = f.getName();
 
                             if (!names.add(name))
-                                throw new PortableException("Duplicate field name: " + name);
+                                throw new IgniteObjectException("Duplicate field name: " + name);
 
                             int fieldId = idMapper.fieldId(typeId, name);
 
                             if (!ids.add(fieldId))
-                                throw new PortableException("Duplicate field ID: " + name);
+                                throw new IgniteObjectException("Duplicate field ID: " + name);
 
                             FieldInfo fieldInfo = new FieldInfo(f, fieldId);
 
@@ -241,7 +241,7 @@ public class PortableClassDescriptor {
 
             default:
                 // Should never happen.
-                throw new PortableException("Invalid mode: " + mode);
+                throw new IgniteObjectException("Invalid mode: " + mode);
         }
 
         if (mode == Mode.PORTABLE || mode == Mode.EXTERNALIZABLE || mode == Mode.OBJECT) {
@@ -323,9 +323,9 @@ public class PortableClassDescriptor {
     /**
      * @param obj Object.
      * @param writer Writer.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
-    void write(Object obj, PortableWriterExImpl writer) throws PortableException {
+    void write(Object obj, IgniteObjectWriterExImpl writer) throws IgniteObjectException {
         assert obj != null;
         assert writer != null;
 
@@ -504,7 +504,7 @@ public class PortableClassDescriptor {
                 break;
 
             case PORTABLE_OBJ:
-                writer.doWritePortableObject((PortableObjectImpl)obj);
+                writer.doWritePortableObject((IgniteObjectImpl)obj);
 
                 break;
 
@@ -513,19 +513,19 @@ public class PortableClassDescriptor {
                     if (serializer != null)
                         serializer.writePortable(obj, writer);
                     else
-                        ((PortableMarshalAware)obj).writePortable(writer);
+                        ((IgniteObjectMarshalAware)obj).writePortable(writer);
 
                     writer.writeRawOffsetIfNeeded();
                     writer.writeLength();
 
-                    if (obj.getClass() != PortableMetaDataImpl.class
+                    if (obj.getClass() != IgniteObjectMetaDataImpl.class
                         && ctx.isMetaDataChanged(typeId, writer.metaDataHashSum())) {
-                        PortableMetaDataCollector metaCollector = new PortableMetaDataCollector(typeName);
+                        IgniteObjectMetaDataCollector metaCollector = new IgniteObjectMetaDataCollector(typeName);
 
                         if (serializer != null)
                             serializer.writePortable(obj, metaCollector);
                         else
-                            ((PortableMarshalAware)obj).writePortable(metaCollector);
+                            ((IgniteObjectMarshalAware)obj).writePortable(metaCollector);
 
                         ctx.updateMetaData(typeId, typeName, metaCollector.meta());
                     }
@@ -539,7 +539,7 @@ public class PortableClassDescriptor {
                         ((Externalizable)obj).writeExternal(writer);
                     }
                     catch (IOException e) {
-                        throw new PortableException("Failed to write Externalizable object: " + obj, e);
+                        throw new IgniteObjectException("Failed to write Externalizable object: " + obj, e);
                     }
 
                     writer.writeLength();
@@ -566,9 +566,9 @@ public class PortableClassDescriptor {
     /**
      * @param reader Reader.
      * @return Object.
-     * @throws PortableException If failed.
+     * @throws org.apache.ignite.igniteobject.IgniteObjectException If failed.
      */
-    Object read(PortableReaderExImpl reader) throws PortableException {
+    Object read(IgniteObjectReaderExImpl reader) throws IgniteObjectException {
         assert reader != null;
 
         Object res;
@@ -582,7 +582,7 @@ public class PortableClassDescriptor {
                 if (serializer != null)
                     serializer.readPortable(res, reader);
                 else
-                    ((PortableMarshalAware)res).readPortable(reader);
+                    ((IgniteObjectMarshalAware)res).readPortable(reader);
 
                 break;
 
@@ -595,7 +595,7 @@ public class PortableClassDescriptor {
                     ((Externalizable)res).readExternal(reader);
                 }
                 catch (IOException | ClassNotFoundException e) {
-                    throw new PortableException("Failed to read Externalizable object: " +
+                    throw new IgniteObjectException("Failed to read Externalizable object: " +
                         res.getClass().getName(), e);
                 }
 
@@ -627,10 +627,10 @@ public class PortableClassDescriptor {
                 throw new RuntimeException(e);
             }
             catch (InvocationTargetException e) {
-                if (e.getTargetException() instanceof PortableException)
-                    throw (PortableException)e.getTargetException();
+                if (e.getTargetException() instanceof IgniteObjectException)
+                    throw (IgniteObjectException)e.getTargetException();
 
-                throw new PortableException("Failed to execute readResolve() method on " + res, e);
+                throw new IgniteObjectException("Failed to execute readResolve() method on " + res, e);
             }
         }
 
@@ -642,7 +642,7 @@ public class PortableClassDescriptor {
      * @param writer Writer.
      * @return Whether further write is needed.
      */
-    private boolean writeHeader(Object obj, PortableWriterExImpl writer) {
+    private boolean writeHeader(Object obj, IgniteObjectWriterExImpl writer) {
         if (writer.tryWriteAsHandle(obj))
             return false;
 
@@ -674,25 +674,25 @@ public class PortableClassDescriptor {
 
     /**
      * @return Instance.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
-    private Object newInstance() throws PortableException {
+    private Object newInstance() throws IgniteObjectException {
         assert ctor != null;
 
         try {
             return ctor.newInstance();
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
-            throw new PortableException("Failed to instantiate instance: " + cls, e);
+            throw new IgniteObjectException("Failed to instantiate instance: " + cls, e);
         }
     }
 
     /**
      * @param cls Class.
      * @return Constructor.
-     * @throws PortableException If constructor doesn't exist.
+     * @throws org.apache.ignite.igniteobject.IgniteObjectException If constructor doesn't exist.
      */
-    @Nullable private static Constructor<?> constructor(Class<?> cls) throws PortableException {
+    @Nullable private static Constructor<?> constructor(Class<?> cls) throws IgniteObjectException {
         assert cls != null;
 
         try {
@@ -703,7 +703,7 @@ public class PortableClassDescriptor {
             return ctor;
         }
         catch (IgniteCheckedException e) {
-            throw new PortableException("Failed to get constructor for class: " + cls.getName(), e);
+            throw new IgniteObjectException("Failed to get constructor for class: " + cls.getName(), e);
         }
     }
 
@@ -795,9 +795,9 @@ public class PortableClassDescriptor {
             return Mode.TIMESTAMP_ARR;
         else if (cls.isArray())
             return cls.getComponentType().isEnum() ? Mode.ENUM_ARR : Mode.OBJ_ARR;
-        else if (cls == PortableObjectImpl.class)
+        else if (cls == IgniteObjectImpl.class)
             return Mode.PORTABLE_OBJ;
-        else if (PortableMarshalAware.class.isAssignableFrom(cls))
+        else if (IgniteObjectMarshalAware.class.isAssignableFrom(cls))
             return Mode.PORTABLE;
         else if (Externalizable.class.isAssignableFrom(cls))
             return Mode.EXTERNALIZABLE;
@@ -807,7 +807,7 @@ public class PortableClassDescriptor {
             return Mode.COL;
         else if (Map.class.isAssignableFrom(cls))
             return Mode.MAP;
-        else if (cls == PortableObjectImpl.class)
+        else if (cls == IgniteObjectImpl.class)
             return Mode.PORTABLE_OBJ;
         else if (cls.isEnum())
             return Mode.ENUM;
@@ -853,9 +853,9 @@ public class PortableClassDescriptor {
         /**
          * @param obj Object.
          * @param writer Writer.
-         * @throws PortableException In case of error.
+         * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
          */
-        public void write(Object obj, PortableWriterExImpl writer) throws PortableException {
+        public void write(Object obj, IgniteObjectWriterExImpl writer) throws IgniteObjectException {
             assert obj != null;
             assert writer != null;
 
@@ -867,7 +867,7 @@ public class PortableClassDescriptor {
                 val = field.get(obj);
             }
             catch (IllegalAccessException e) {
-                throw new PortableException("Failed to get value for field: " + field, e);
+                throw new IgniteObjectException("Failed to get value for field: " + field, e);
             }
 
             switch (mode) {
@@ -1022,7 +1022,7 @@ public class PortableClassDescriptor {
                     break;
 
                 case PORTABLE_OBJ:
-                    writer.writePortableObjectField((PortableObjectImpl)val);
+                    writer.writePortableObjectField((IgniteObjectImpl)val);
 
                     break;
 
@@ -1056,9 +1056,9 @@ public class PortableClassDescriptor {
         /**
          * @param obj Object.
          * @param reader Reader.
-         * @throws PortableException In case of error.
+         * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
          */
-        public void read(Object obj, PortableReaderExImpl reader) throws PortableException {
+        public void read(Object obj, IgniteObjectReaderExImpl reader) throws IgniteObjectException {
             Object val = null;
 
             switch (mode) {
@@ -1248,7 +1248,7 @@ public class PortableClassDescriptor {
                     field.set(obj, val);
             }
             catch (IllegalAccessException e) {
-                throw new PortableException("Failed to set value for field: " + field, e);
+                throw new IgniteObjectException("Failed to set value for field: " + field, e);
             }
         }
     }

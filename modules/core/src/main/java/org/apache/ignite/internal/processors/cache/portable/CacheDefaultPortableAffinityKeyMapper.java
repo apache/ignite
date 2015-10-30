@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.portable.PortableObject;
+import org.apache.ignite.igniteobject.IgniteObject;
 
 /**
  *
@@ -43,8 +43,8 @@ public class CacheDefaultPortableAffinityKeyMapper extends GridCacheDefaultAffin
             U.error(log, "Failed to marshal key to portable: " + key, e);
         }
 
-        if (key instanceof PortableObject)
-            return proc.affinityKey((PortableObject)key);
+        if (key instanceof IgniteObject)
+            return proc.affinityKey((IgniteObject)key);
         else
             return super.affinityKey(key);
     }

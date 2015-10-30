@@ -46,7 +46,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryEntityIndex;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -1410,40 +1411,33 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (aliases == null)
                 aliases = Collections.emptyMap();
 
-            for (QueryEntityIndex idx : qryEntity.getIndexes()) {
+            for (QueryIndex idx : qryEntity.getIndexes()) {
                 String idxName = idx.getName();
 
                 if (idxName == null)
                     idxName = QueryEntity.defaultIndexName(idx);
 
-                if (idx.getType() == QueryEntityIndex.Type.SORTED || idx.getType() == QueryEntityIndex.Type.GEOSPATIAL) {
-                    d.addIndex(idxName, idx.getType() == QueryEntityIndex.Type.SORTED ? SORTED : GEO_SPATIAL);
+                if (idx.getIndexType() == QueryIndexType.SORTED || idx.getIndexType() == QueryIndexType.GEOSPATIAL) {
+                    d.addIndex(idxName, idx.getIndexType() == QueryIndexType.SORTED ? SORTED : GEO_SPATIAL);
 
                     int i = 0;
 
-                    for (String field : idx.getFields()) {
-                        boolean desc = false;
-
-                        int space = field.indexOf(' ');
-
-                        if (space != -1) {
-                            desc = field.toLowerCase().startsWith("desc", space + 1);
-
-                            field = field.substring(0, space);
-                        }
+                    for (Map.Entry<String, Boolean> entry : idx.getFields().entrySet()) {
+                        String field = entry.getKey();
+                        boolean asc = entry.getValue();
 
                         String alias = aliases.get(field);
 
                         if (alias != null)
                             field = alias;
 
-                        d.addFieldToIndex(idxName, field, i++, desc);
+                        d.addFieldToIndex(idxName, field, i++, !asc);
                     }
                 }
                 else {
-                    assert idx.getType() == QueryEntityIndex.Type.FULLTEXT;
+                    assert idx.getIndexType() == QueryIndexType.FULLTEXT;
 
-                    for (String field : idx.getFields()) {
+                    for (String field : idx.getFields().keySet()) {
                         String alias = aliases.get(field);
 
                         if (alias != null)

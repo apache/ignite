@@ -17,7 +17,6 @@
 package org.apache.ignite.cache;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -46,7 +45,7 @@ public class QueryEntity implements Serializable {
     private Map<String, String> aliases = new HashMap<>();
 
     /** Collection of query indexes. */
-    private Map<String, QueryEntityIndex> idxs = new HashMap<>();
+    private Map<String, QueryIndex> idxs = new HashMap<>();
 
     /**
      * Gets key type for this query pair.
@@ -109,7 +108,7 @@ public class QueryEntity implements Serializable {
      *
      * @return Collection of index entities.
      */
-    public Collection<QueryEntityIndex> getIndexes() {
+    public Collection<QueryIndex> getIndexes() {
         return idxs.values();
     }
 
@@ -137,8 +136,8 @@ public class QueryEntity implements Serializable {
      *
      * @param idxs Collection of index entities.
      */
-    public void setIndexes(Collection<QueryEntityIndex> idxs) {
-        for (QueryEntityIndex idx : idxs) {
+    public void setIndexes(Collection<QueryIndex> idxs) {
+        for (QueryIndex idx : idxs) {
             if (!F.isEmpty(idx.getFields())) {
                 if (idx.getName() == null)
                     idx.setName(defaultIndexName(idx));
@@ -170,20 +169,20 @@ public class QueryEntity implements Serializable {
      * @param idxName Index name.
      * @param idxType Index type.
      */
-    public void ensureIndex(String idxName, QueryEntityIndex.Type idxType) {
-        QueryEntityIndex idx = idxs.get(idxName);
+    public void ensureIndex(String idxName, QueryIndexType idxType) {
+        QueryIndex idx = idxs.get(idxName);
 
         if (idx == null) {
-            idx = new QueryEntityIndex();
+            idx = new QueryIndex();
 
             idx.setName(idxName);
-            idx.setType(idxType);
+            idx.setIndexType(idxType);
 
             idxs.put(idxName, idx);
         }
         else
             throw new IllegalArgumentException("An index with the same name and of a different type already exists " +
-                "[idxName=" + idxName + ", existingIdxType=" + idx.getType() + ", newIdxType=" + idxType + ']');
+                "[idxName=" + idxName + ", existingIdxType=" + idx.getIndexType() + ", newIdxType=" + idxType + ']');
     }
 
     /**
@@ -192,13 +191,14 @@ public class QueryEntity implements Serializable {
      * @param idx Index to build name for.
      * @return Index name.
      */
-    public static String defaultIndexName(QueryEntityIndex idx) {
+    public static String defaultIndexName(QueryIndex idx) {
         StringBuilder idxName = new StringBuilder();
 
-        for (String field : idx.getFields()) {
-            idxName.append(field);
+        for (Map.Entry<String, Boolean> field : idx.getFields().entrySet()) {
+            idxName.append(field.getKey());
 
             idxName.append('_');
+            idxName.append(field.getValue() ? "asc_" : "desc_");
         }
 
         for (int i = 0; i < idxName.length(); i++) {
