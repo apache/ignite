@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_SQL
-#define _IGNITE_CACHE_QUERY_SQL
+#ifndef _IGNITE_CACHE_QUERY_SQL_FIELDS
+#define _IGNITE_CACHE_QUERY_SQL_FIELDS
 
 #include <stdint.h>
 #include <string>
@@ -26,25 +26,34 @@
 #include "ignite/portable/portable_raw_writer.h"
 
 namespace ignite
-{    
+{
     namespace cache
     {
         namespace query
-        {         
+        {
             /**
-             * Sql query.
+             * Sql fields query.
              */
-            class SqlQuery
+            class SqlFieldsQuery
             {
             public:
                 /**
                  * Constructor.
                  *
-                 * @param type Type name.
                  * @param sql SQL string.
                  */
-                SqlQuery(const std::string& type, const std::string& sql) : type(type), sql(sql), pageSize(1024), 
-                    loc(false), args(NULL)
+                SqlFieldsQuery(const std::string& sql) : sql(sql), pageSize(1024), loc(false), args()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Constructor.
+                 *
+                 * @param sql SQL string.
+                 * @param loc Whether query should be executed locally.
+                 */
+                SqlFieldsQuery(const std::string& sql, bool loc) : sql(sql), pageSize(1024), loc(false), args()
                 {
                     // No-op.
                 }
@@ -54,8 +63,8 @@ namespace ignite
                  *
                  * @param other Other instance.
                  */
-                SqlQuery(const SqlQuery& other) : type(other.type), sql(other.sql), pageSize(other.pageSize),
-                    loc(other.loc), args()
+                SqlFieldsQuery(const SqlFieldsQuery& other) : sql(other.sql), pageSize(other.pageSize), loc(other.loc),
+                    args()
                 {
                     args.reserve(other.args.size());
 
@@ -69,13 +78,12 @@ namespace ignite
                  *
                  * @param other Other instance.
                  */
-                SqlQuery& operator=(const SqlQuery& other) 
+                SqlFieldsQuery& operator=(const SqlFieldsQuery& other) 
                 {
                     if (this != &other)
                     {
-                        SqlQuery tmp(other);
+                        SqlFieldsQuery tmp(other);
 
-                        std::swap(type, tmp.type);
                         std::swap(sql, tmp.sql);
                         std::swap(pageSize, tmp.pageSize);
                         std::swap(loc, tmp.loc);
@@ -88,49 +96,12 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                ~SqlQuery()
+                ~SqlFieldsQuery()
                 {
                     for (std::vector<QueryArgumentBase*>::iterator it = args.begin(); it != args.end(); ++it)
                         delete *it;
                 }
-
-                /**
-                 * Efficiently swaps contents with another SqlQuery instance.
-                 *
-                 * @param other Other instance.
-                 */
-                void Swap(SqlQuery& other)
-                {
-                    if (this != &other)
-                    {
-                        std::swap(type, other.type);
-                        std::swap(sql, other.sql);
-                        std::swap(pageSize, other.pageSize);
-                        std::swap(loc, other.loc);
-                        std::swap(args, other.args);
-                    }
-                }
-
-                /**
-                 * Get type name.
-                 *
-                 * @return Type name.
-                 */
-                const std::string& GetType() const
-                {
-                    return type;
-                }
-
-                /**
-                 * Set type name.
-                 *
-                 * @param sql Type name.
-                 */
-                void SetType(const std::string& type)
-                {
-                    this->type = type;
-                }
-
+                
                 /**
                  * Get SQL string.
                  *
@@ -211,7 +182,6 @@ namespace ignite
                 {
                     writer.WriteBool(loc);
                     writer.WriteString(sql);
-                    writer.WriteString(type);
                     writer.WriteInt32(pageSize);
 
                     writer.WriteInt32(static_cast<int32_t>(args.size()));
@@ -221,9 +191,6 @@ namespace ignite
                 }
 
             private:
-                /** Type name. */
-                std::string type;
-
                 /** SQL string. */
                 std::string sql;
 
