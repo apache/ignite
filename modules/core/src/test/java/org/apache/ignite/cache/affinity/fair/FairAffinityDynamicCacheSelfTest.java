@@ -71,6 +71,8 @@ public class FairAffinityDynamicCacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartStopCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-647");
+
         CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>();
 
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);

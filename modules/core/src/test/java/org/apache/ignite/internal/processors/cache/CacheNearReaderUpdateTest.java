@@ -122,6 +122,8 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGetUpdateMultithreaded() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-627");
+
         List<CacheConfiguration<Integer, Integer>> cfgs = new ArrayList<>();
 
         cfgs.add(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, false, false));
