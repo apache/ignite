@@ -331,14 +331,24 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             PortableRawWriterEx writer = platformCtx.writer(out);
 
-            writer.writeString(typName);
-            writer.writeBoolean(convertPortable);
-            writer.writeMap(props);
+            write(writer, convertPortable);
 
             out.synchronize();
 
             ptr = platformCtx.gateway().cacheStoreCreate(mem.pointer());
         }
+    }
+
+    /**
+     * Write store data to a stream.
+     *
+     * @param writer Writer.
+     * @param convertPortable Convert portable flag.
+     */
+    protected void write(PortableRawWriterEx writer, boolean convertPortable) {
+        writer.writeString(typName);
+        writer.writeBoolean(convertPortable);
+        writer.writeMap(props);
     }
 
     /**
