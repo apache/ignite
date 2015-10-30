@@ -245,7 +245,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             stream.Seek(position + SchemaOffset, SeekOrigin.Begin);
 
-            var schema = new Dictionary<int, int>(schemaSize >> 3);
+            var schema = new Dictionary<int, int>(schemaSize);
 
             for (var i = 0; i < schemaSize; i++)
                 schema.Add(stream.ReadInt(), stream.ReadInt());
@@ -261,6 +261,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Schema.</returns>
         public PortableObjectSchemaField[] ReadSchema(IPortableStream stream, int position)
         {
+            // TODO: This does not work
             Debug.Assert(stream != null);
 
             var schemaSize = SchemaFieldCount;
