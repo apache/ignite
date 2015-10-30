@@ -1795,9 +1795,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                         cfg.TypeConfigurations.Add(new PortableTypeConfiguration
                         {
                             TypeName = reader.ReadString(),
-                            NameMapper = IgniteUtils.CreateInstance<IPortableNameMapper>(reader.ReadString()),
-                            IdMapper = IgniteUtils.CreateInstance<IPortableIdMapper>(reader.ReadString()),
-                            Serializer = IgniteUtils.CreateInstance<IPortableSerializer>(reader.ReadString()),
+                            NameMapper = CreateInstance<IPortableNameMapper>(reader),
+                            IdMapper = CreateInstance<IPortableIdMapper>(reader),
+                            Serializer = CreateInstance<IPortableSerializer>(reader),
                             AffinityKeyFieldName = reader.ReadString(),
                             MetadataEnabled = reader.ReadObject<bool?>(),
                             KeepDeserialized = reader.ReadObject<bool?>()
@@ -1817,14 +1817,27 @@ namespace Apache.Ignite.Core.Impl.Portable
                 }
 
                 // Read the rest.
-                cfg.DefaultNameMapper = IgniteUtils.CreateInstance<IPortableNameMapper>(reader.ReadString());
-                cfg.DefaultIdMapper = IgniteUtils.CreateInstance<IPortableIdMapper>(reader.ReadString());
-                cfg.DefaultSerializer = IgniteUtils.CreateInstance<IPortableSerializer>(reader.ReadString());
+                cfg.DefaultNameMapper = CreateInstance<IPortableNameMapper>(reader);
+                cfg.DefaultIdMapper = CreateInstance<IPortableIdMapper>(reader);
+                cfg.DefaultSerializer = CreateInstance<IPortableSerializer>(reader);
                 cfg.DefaultMetadataEnabled = reader.ReadBoolean();
                 cfg.DefaultKeepDeserialized = reader.ReadBoolean();
             }
             else
                 cfg = null;
+        }
+
+        /// <summary>
+        /// Creates and instance from the type name in reader.
+        /// </summary>
+        private static T CreateInstance<T>(PortableReaderImpl reader)
+        {
+            var typeName = reader.ReadString();
+
+            if (typeName == null)
+                return default(T);
+
+            return IgniteUtils.CreateInstance<T>(typeName);
         }
 
         /// <summary>
