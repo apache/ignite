@@ -26,27 +26,38 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.UUID;
 
 /**
  * Platform event filter. Delegates apply to native platform.
  */
-public class PlatformEventFilterListenerImpl implements PlatformEventFilterListener
+public class PlatformEventFilterListenerImpl implements PlatformEventFilterListener, Externalizable
 {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final Object pred;
+    private Object pred;
 
     /** Event types. */
-    private final int[] types;
+    private int[] types;
 
     /** */
-    protected transient long hnd;
+    private transient long hnd;
 
     /** */
     private transient PlatformContext ctx;
+
+    /**
+     * {@link Externalizable} support.
+     */
+    public PlatformEventFilterListenerImpl() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -159,5 +170,17 @@ public class PlatformEventFilterListenerImpl implements PlatformEventFilterListe
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return (int)(hnd ^ (hnd >>> 32));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(pred);
+        out.writeObject(types);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        pred = in.readObject();
+        types = (int[])in.readObject();
     }
 }
