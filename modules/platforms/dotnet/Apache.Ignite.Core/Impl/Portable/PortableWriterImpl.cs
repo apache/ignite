@@ -1092,7 +1092,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 var schemaOffset = hasSchema ? _stream.Position - pos : PortableObjectHeader.Size;
 
                 if (hasSchema)
-                    PortableObjectSchemaField.WriteArray(_curSchema.Array, _stream, _curSchema.Count);
+                    PortableObjectSchemaField.WriteArray(_curSchema.Array, _stream, _curSchema.Count,
+                        _stream.Position - _curPos);
 
                 // Calculate and write header.
                 if (hasSchema && _curRawPos > 0)

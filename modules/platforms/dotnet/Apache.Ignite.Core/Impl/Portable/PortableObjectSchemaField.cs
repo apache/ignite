@@ -34,9 +34,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Offset. */
         public readonly int Offset;
 
-        /** Size, equals to sizeof(PortableObjectSchemaField) */
-        private const int Size = 8;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="PortableObjectSchemaField"/> struct.
         /// </summary>
@@ -54,12 +51,52 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="fields">Fields.</param>
         /// <param name="stream">Stream.</param>
         /// <param name="count">Field count to write.</param>
-        public static unsafe void WriteArray(PortableObjectSchemaField[] fields, IPortableStream stream, int count)
+        /// <param name="maxOffset">
+        /// The maximum field offset to determine whether 1, 2 or 4 bytes are needed for offsets.
+        /// </param>
+        public static unsafe void WriteArray(PortableObjectSchemaField[] fields, IPortableStream stream, int count, 
+            int maxOffset)
         {
             Debug.Assert(fields != null);
             Debug.Assert(stream != null);
             Debug.Assert(count > 0);
 
+            unchecked
+            {
+                if (maxOffset <= byte.MaxValue)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        var field = fields[i];
+
+                        stream.WriteInt(field.Id);
+                        stream.WriteByte((byte) field.Offset);
+                    }
+                }
+                else if (maxOffset <= ushort.MaxValue)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        var field = fields[i];
+
+                        stream.WriteInt(field.Id);
+
+                        stream.WriteShort((short) field.Offset);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        var field = fields[i];
+
+                        stream.WriteInt(field.Id);
+                        stream.WriteInt(field.Offset);
+                    }
+                }
+            }
+
+            /*
             if (BitConverter.IsLittleEndian)
             {
                 fixed (PortableObjectSchemaField* ptr = &fields[0])
@@ -76,7 +113,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     stream.WriteInt(field.Id);
                     stream.WriteInt(field.Offset);
                 }
-            }
+            }*/
         }
 
 
