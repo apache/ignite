@@ -182,10 +182,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 var schemaSize = Length - SchemaOffset;
 
-                if (HasRawOffset)
-                    schemaSize -= 4;
-
-                return schemaSize >> 3;  // 8 == PortableObjectSchemaField.Size
+                return schemaSize / SchemaFieldSize;
             }
         }
 
