@@ -276,6 +276,17 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (BitConverter.IsLittleEndian)
             {
+                var hdr = new PortableObjectHeader();
+
+                stream.Read((byte*)&hdr, Size);
+
+                Debug.Assert(hdr.Version == PortableUtils.ProtoVer);
+                Debug.Assert(hdr.SchemaOffset <= hdr.Length);
+                Debug.Assert(hdr.SchemaOffset >= Size);
+
+                return hdr;
+
+                /*
                 // reading 3 longs is faster than MemCopy
                 long* mem = stackalloc long[3];
 
@@ -283,7 +294,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 mem[1] = stream.ReadLong();
                 mem[2] = stream.ReadLong();
                 
-                return *((PortableObjectHeader*) mem);
+                return *((PortableObjectHeader*) mem);*/
             }
 
             return new PortableObjectHeader(stream);
