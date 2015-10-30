@@ -186,6 +186,14 @@ namespace ignite
                 void Position(const int32_t val);
 
                 /**
+                 * Reserve specified number of bytes in stream.
+                 *
+                 * @param num Number of bytes to reserve.
+                 * @return Absolute position to reserved space.
+                 */
+                int32_t Reserve(int32_t num);
+
+                /**
                  * Synchronize data with underlying memory.
                  */
                 void Synchronize();

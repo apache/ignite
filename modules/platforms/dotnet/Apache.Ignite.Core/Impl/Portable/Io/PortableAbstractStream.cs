@@ -18,28 +18,16 @@
 namespace Apache.Ignite.Core.Impl.Portable.IO
 {
     using System;
-    using System.Diagnostics.CodeAnalysis;
     using System.IO;
-    using System.Reflection;
     using System.Text;
+    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Memory;
 
     /// <summary>
     /// Base class for managed and unmanaged data streams.
     /// </summary>
     internal unsafe abstract class PortableAbstractStream : IPortableStream
     {
-        /// <summary>
-        /// Array copy delegate.
-        /// </summary>
-        delegate void MemCopy(byte* a1, byte* a2, int len);
-
-        /** memcpy function handle. */
-        private static readonly MemCopy Memcpy;
-
-        /** Whether src and dest arguments are inverted. */
-        [SuppressMessage("Microsoft.Performance", "CA1802:UseLiteralsWhereAppropriate")]
-        private static readonly bool MemcpyInverted;
-
         /** Byte: zero. */
         private const byte ByteZero = 0;
 
@@ -54,37 +42,6 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
 
         /** Disposed flag. */
         private bool _disposed;
-
-        /// <summary>
-        /// Static initializer.
-        /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
-        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
-        static PortableAbstractStream()
-        {
-            Type type = typeof(Buffer);
-
-            const BindingFlags flags = BindingFlags.Static | BindingFlags.NonPublic;
-            Type[] paramTypes = { typeof(byte*), typeof(byte*), typeof(int) };
-
-            // Assume .Net 4.5.
-            MethodInfo mthd = type.GetMethod("Memcpy", flags, null, paramTypes, null);
-
-            MemcpyInverted = true;
-
-            if (mthd == null)
-            {
-                // Assume .Net 4.0.
-                mthd = type.GetMethod("memcpyimpl", flags, null, paramTypes, null);
-
-                MemcpyInverted = false;
-
-                if (mthd == null)
-                    throw new InvalidOperationException("Unable to get memory copy function delegate.");
-            }
-
-            Memcpy = (MemCopy)Delegate.CreateDelegate(typeof(MemCopy), mthd);
-        }
 
         /// <summary>
         /// Write byte.
@@ -1076,15 +1033,15 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <summary>
         /// Internal read routine.
         /// </summary>
+        /// <param name="src">Source</param>
         /// <param name="dest">Destination.</param>
         /// <param name="cnt">Count.</param>
-        /// <param name="data">Data (source).</param>
         /// <returns>Amount of bytes written.</returns>
-        protected void ReadInternal(byte* dest, int cnt, byte* data)
+        protected void ReadInternal(byte* src, byte* dest, int cnt)
         {
-            int cnt0 = Math.Min(Remaining(), cnt);
+            int cnt0 = Math.Min(Remaining, cnt);
 
-            CopyMemory(data + Pos, dest, cnt0);
+            CopyMemory(src + Pos, dest, cnt0);
 
             ShiftRead(cnt0);
         }
@@ -1100,10 +1057,10 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <summary>
         /// Gets remaining bytes in the stream.
         /// </summary>
-        /// <returns>
-        /// Remaining bytes.
-        /// </returns>
-        public abstract int Remaining();
+        /// <value>
+        ///     Remaining bytes.
+        /// </value>
+        public abstract int Remaining { get; }
 
         /// <summary>
         /// Gets underlying array, avoiding copying if possible.
@@ -1111,7 +1068,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <returns>
         /// Underlying array.
         /// </returns>
-        public abstract byte[] Array();
+        public abstract byte[] GetArray();
 
         /// <summary>
         /// Gets underlying data in a new array.
@@ -1119,7 +1076,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <returns>
         /// New array with data.
         /// </returns>
-        public abstract byte[] ArrayCopy();
+        public abstract byte[] GetArrayCopy();
 
         /// <summary>
         /// Check whether array passed as argument is the same as the stream hosts.
@@ -1291,10 +1248,7 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <param name="len">Length.</param>
         private static void CopyMemory(byte* src, byte* dest, int len)
         {
-            if (MemcpyInverted)
-                Memcpy.Invoke(dest, src, len);
-            else
-                Memcpy.Invoke(src, dest, len);
+            PlatformMemoryUtils.CopyMemory(src, dest, len);
         }
     }
 }

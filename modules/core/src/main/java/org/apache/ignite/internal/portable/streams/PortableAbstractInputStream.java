@@ -158,13 +158,23 @@ public abstract class PortableAbstractInputStream extends PortableAbstractStream
     }
 
     /** {@inheritDoc} */
-    @Override public int readInt(int pos) {
+    @Override public short readShortPositioned(int pos) {
+        int delta = pos + 2 - this.pos;
+
+        if (delta > 0)
+            ensureEnoughData(delta);
+
+        return readShortPositioned0(pos);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int readIntPositioned(int pos) {
         int delta = pos + 4 - this.pos;
 
         if (delta > 0)
             ensureEnoughData(delta);
 
-        return readIntPositioned(pos);
+        return readIntPositioned0(pos);
     }
 
     /** {@inheritDoc} */
@@ -334,10 +344,18 @@ public abstract class PortableAbstractInputStream extends PortableAbstractStream
     protected abstract long readLongFast();
 
     /**
+     * Internal routine for positioned short value read.
+     *
+     * @param pos Position.
+     * @return Int value.
+     */
+    protected abstract short readShortPositioned0(int pos);
+
+    /**
      * Internal routine for positioned int value read.
      *
      * @param pos Position.
      * @return Int value.
      */
-    protected abstract int readIntPositioned(int pos);
+    protected abstract int readIntPositioned0(int pos);
 }

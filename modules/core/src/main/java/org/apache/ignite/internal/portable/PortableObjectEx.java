@@ -58,6 +58,15 @@ public abstract class PortableObjectEx implements PortableObject {
     public abstract long offheapAddress();
 
     /**
+     * Gets field value.
+     *
+     * @param fieldId Field ID.
+     * @return Field value.
+     * @throws PortableException In case of any other error.
+     */
+    @Nullable public abstract <F> F field(int fieldId) throws PortableException;
+
+    /**
      * @param ctx Reader context.
      * @param fieldName Field name.
      * @return Field name.

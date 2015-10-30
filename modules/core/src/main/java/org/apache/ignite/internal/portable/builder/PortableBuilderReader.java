@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableObjectImpl;
+import org.apache.ignite.internal.portable.PortablePositionReadable;
 import org.apache.ignite.internal.portable.PortablePrimitives;
 import org.apache.ignite.internal.portable.PortableReaderExImpl;
 import org.apache.ignite.internal.portable.PortableUtils;
@@ -37,7 +38,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
 /**
  *
  */
-class PortableBuilderReader {
+public class PortableBuilderReader implements PortablePositionReadable {
     /** */
     private static final PortablePrimitives PRIM = PortablePrimitives.get();
 
@@ -130,11 +131,13 @@ class PortableBuilderReader {
         return PRIM.readByte(arr, pos);
     }
 
-    /**
-     * @param pos Position in the source array.
-     * @return Read int value.
-     */
-    public int readIntAbsolute(int pos) {
+    /** {@inheritDoc} */
+    @Override public short readShortPositioned(int pos) {
+        return PRIM.readShort(arr, pos);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int readIntPositioned(int pos) {
         return PRIM.readInt(arr, pos);
     }
 
@@ -357,7 +360,7 @@ class PortableBuilderReader {
                 return null;
 
             case GridPortableMarshaller.HANDLE: {
-                int objStart = pos - readIntAbsolute(pos + 1);
+                int objStart = pos - readIntPositioned(pos + 1);
 
                 PortableBuilderImpl res = objMap.get(objStart);
 
@@ -451,9 +454,9 @@ class PortableBuilderReader {
             }
 
             case GridPortableMarshaller.PORTABLE_OBJ: {
-                int size = readIntAbsolute(pos + 1);
+                int size = readIntPositioned(pos + 1);
 
-                int start = readIntAbsolute(pos + 4 + size);
+                int start = readIntPositioned(pos + 4 + size);
 
                 PortableObjectImpl portableObj = new PortableObjectImpl(ctx, arr, pos + 4 + start);
 
@@ -746,7 +749,6 @@ class PortableBuilderReader {
 
                 return new PortablePlainPortableObject(portableObj);
             }
-
 
             default:
                 throw new PortableException("Invalid flag value: " + type);

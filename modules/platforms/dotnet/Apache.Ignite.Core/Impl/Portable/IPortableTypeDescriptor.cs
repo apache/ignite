@@ -133,5 +133,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="pathIdx">Path index.</param>
         /// <param name="updates">Recorded updates.</param>
         void UpdateReadStructure(PortableStructure exp, int pathIdx, IList<PortableStructureUpdate> updates);
+
+        /// <summary>
+        /// Gets the schema.
+        /// </summary>
+        PortableObjectSchema Schema { get; }
     }
 }

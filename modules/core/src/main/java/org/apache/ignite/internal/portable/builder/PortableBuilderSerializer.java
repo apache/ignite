@@ -82,12 +82,12 @@ class PortableBuilderSerializer {
             Integer posInResArr = objToPos.get(obj);
 
             if (posInResArr == null) {
-                objToPos.put(obj, writer.outputStream().position());
+                objToPos.put(obj, writer.out().position());
 
                 obj.serializeTo(writer.newWriter(obj.typeId()), this);
             }
             else {
-                int handle = writer.outputStream().position() - posInResArr;
+                int handle = writer.out().position() - posInResArr;
 
                 writer.writeByte(GridPortableMarshaller.HANDLE);
                 writer.writeInt(handle);
@@ -177,7 +177,7 @@ class PortableBuilderSerializer {
             return;
         }
 
-        writer.doWriteObject(val, false);
+        writer.doWriteObject(val);
     }
 
     /**

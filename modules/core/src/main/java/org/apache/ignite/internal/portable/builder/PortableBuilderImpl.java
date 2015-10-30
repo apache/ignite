@@ -17,33 +17,32 @@
 
 package org.apache.ignite.internal.portable.builder;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import org.apache.ignite.internal.portable.PortableContext;
+import org.apache.ignite.internal.portable.PortableObjectImpl;
+import org.apache.ignite.internal.portable.PortableObjectOffheapImpl;
+import org.apache.ignite.internal.portable.PortableUtils;
+import org.apache.ignite.internal.portable.PortableWriterExImpl;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
 import org.apache.ignite.internal.util.GridArgumentCheck;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.portable.PortableBuilder;
 import org.apache.ignite.portable.PortableException;
 import org.apache.ignite.portable.PortableInvalidClassException;
 import org.apache.ignite.portable.PortableMetadata;
 import org.apache.ignite.portable.PortableObject;
 import org.jetbrains.annotations.Nullable;
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.cache.portable.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.portable.*;
 
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLS_NAME_POS;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DFLT_HDR_LEN;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.HASH_CODE_POS;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER_POS;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.RAW_DATA_OFF_POS;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.TOTAL_LEN_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TYPE_ID_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UNREGISTERED_TYPE_ID;
 
@@ -143,14 +142,14 @@ public class PortableBuilderImpl implements PortableBuilder {
 
         PortableUtils.checkProtocolVersion(ver);
 
-        int typeId = reader.readIntAbsolute(start + TYPE_ID_POS);
+        int typeId = reader.readIntPositioned(start + TYPE_ID_POS);
         ctx = reader.portableContext();
-        hashCode = reader.readIntAbsolute(start + HASH_CODE_POS);
+        hashCode = reader.readIntPositioned(start + HASH_CODE_POS);
 
         if (typeId == UNREGISTERED_TYPE_ID) {
             int mark = reader.position();
 
-            reader.position(start + CLS_NAME_POS);
+            reader.position(start + DFLT_HDR_LEN);
 
             clsNameToWrite = reader.readString();
 
@@ -180,7 +179,7 @@ public class PortableBuilderImpl implements PortableBuilder {
 
     /** {@inheritDoc} */
     @Override public PortableObject build() {
-        try (PortableWriterExImpl writer = new PortableWriterExImpl(ctx, 0, typeId, false)) {
+        try (PortableWriterExImpl writer = new PortableWriterExImpl(ctx, typeId, false)) {
 
             PortableBuilderSerializer serializationCtx = new PortableBuilderSerializer();
 
@@ -199,17 +198,11 @@ public class PortableBuilderImpl implements PortableBuilder {
      * @param serializer Serializer.
      */
     void serializeTo(PortableWriterExImpl writer, PortableBuilderSerializer serializer) {
-        writer.doWriteByte(GridPortableMarshaller.OBJ);
-        writer.doWriteByte(PROTO_VER);
-        writer.doWriteBoolean(true);
-        writer.doWriteInt(registeredType ? typeId : UNREGISTERED_TYPE_ID);
-        writer.doWriteInt(hashCode);
-
-        // Length and raw offset.
-        writer.reserve(8);
-
-        if (!registeredType)
-            writer.writeString(clsNameToWrite);
+        PortableUtils.writeHeader(writer,
+            true,
+            registeredType ? typeId : UNREGISTERED_TYPE_ID,
+            hashCode,
+            registeredType ? null : clsNameToWrite);
 
         Set<Integer> remainsFlds = null;
 
@@ -230,84 +223,68 @@ public class PortableBuilderImpl implements PortableBuilder {
             else
                 assignedFldsById = Collections.emptyMap();
 
-            int rawOff = start + reader.readIntAbsolute(start + RAW_DATA_OFF_POS);
+            // Get footer details.
+            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start);
 
+            int footerPos = footer.get1();
+            int footerEnd = footer.get2();
+
+            // Get raw position.
+            int rawPos = PortableUtils.rawOffsetAbsolute(reader, start);
+
+            // Position reader on data.
             reader.position(start + hdrLen);
 
-            int cpStart = -1;
+            while (reader.position() < rawPos) {
+                int fieldId = reader.readIntPositioned(footerPos);
+                int fieldLen = fieldPositionAndLength(footerPos, footerEnd, rawPos).get2();
 
-            while (reader.position() < rawOff) {
-                int fldId = reader.readInt();
+                footerPos += 8;
 
-                int len = reader.readInt();
+                if (assignedFldsById.containsKey(fieldId)) {
+                    Object assignedVal = assignedFldsById.remove(fieldId);
 
-                if (assignedFldsById.containsKey(fldId)) {
-                    if (cpStart >= 0) {
-                        writer.write(reader.array(), cpStart, reader.position() - 4 - 4 - cpStart);
-
-                        cpStart = -1;
-                    }
-
-                    Object assignedVal = assignedFldsById.remove(fldId);
-
-                    reader.skip(len);
+                    reader.skip(fieldLen);
 
                     if (assignedVal != REMOVED_FIELD_MARKER) {
-                        writer.writeInt(fldId);
-
-                        int lenPos = writer.reserveAndMark(4);
+                        writer.writeFieldId(fieldId);
 
                         serializer.writeValue(writer, assignedVal);
-
-                        writer.writeDelta(lenPos);
                     }
                 }
                 else {
-                    int type = len != 0 ? reader.readByte(0) : 0;
+                    int type = fieldLen != 0 ? reader.readByte(0) : 0;
 
-                    if (len != 0 && !PortableUtils.isPlainArrayType(type) && PortableUtils.isPlainType(type)) {
-                        if (cpStart < 0)
-                            cpStart = reader.position() - 4 - 4;
+                    if (fieldLen != 0 && !PortableUtils.isPlainArrayType(type) && PortableUtils.isPlainType(type)) {
+                        writer.writeFieldId(fieldId);
+                        writer.write(reader.array(), reader.position(), fieldLen);
 
-                        reader.skip(len);
+                        reader.skip(fieldLen);
                     }
                     else {
-                        if (cpStart >= 0) {
-                            writer.write(reader.array(), cpStart, reader.position() - 4 - cpStart);
-
-                            cpStart = -1;
-                        }
-                        else
-                            writer.writeInt(fldId);
+                        writer.writeFieldId(fieldId);
 
                         Object val;
 
-                        if (len == 0)
+                        if (fieldLen == 0)
                             val = null;
                         else if (readCache == null) {
                             int savedPos = reader.position();
 
                             val = reader.parseValue();
 
-                            assert reader.position() == savedPos + len;
+                            assert reader.position() == savedPos + fieldLen;
                         }
                         else {
-                            val = readCache.get(fldId);
+                            val = readCache.get(fieldId);
 
-                            reader.skip(len);
+                            reader.skip(fieldLen);
                         }
 
-                        int lenPos = writer.reserveAndMark(4);
-
                         serializer.writeValue(writer, val);
-
-                        writer.writeDelta(lenPos);
                     }
                 }
             }
-
-            if (cpStart >= 0)
-                writer.write(reader.array(), cpStart, reader.position() - cpStart);
         }
 
         if (assignedVals != null && (remainsFlds == null || !remainsFlds.isEmpty())) {
@@ -333,13 +310,9 @@ public class PortableBuilderImpl implements PortableBuilder {
                 if (remainsFlds != null && !remainsFlds.contains(fldId))
                     continue;
 
-                writer.writeInt(fldId);
-
-                int lenPos = writer.reserveAndMark(4);
+                writer.writeFieldId(fldId);
 
                 serializer.writeValue(writer, val);
-
-                writer.writeDelta(lenPos);
 
                 if (metadataEnabled) {
                     String oldFldTypeName = metadata == null ? null : metadata.fieldTypeName(name);
@@ -387,17 +360,22 @@ public class PortableBuilderImpl implements PortableBuilder {
             }
         }
 
-        writer.writeRawOffsetIfNeeded();
-
         if (reader != null) {
-            int rawOff = reader.readIntAbsolute(start + RAW_DATA_OFF_POS);
-            int len = reader.readIntAbsolute(start + TOTAL_LEN_POS);
+            // Write raw data if any.
+            int rawOff = PortableUtils.rawOffsetAbsolute(reader, start);
+            int footerStart = PortableUtils.footerStartAbsolute(reader, start);
 
-            if (rawOff < len)
-                writer.write(reader.array(), rawOff, len - rawOff);
+            if (rawOff < footerStart) {
+                writer.rawWriter();
+
+                writer.write(reader.array(), rawOff, footerStart - rawOff);
+            }
+
+            // Shift reader to the end of the object.
+            reader.position(start + PortableUtils.length(reader, start));
         }
 
-        writer.writeLength();
+        writer.postWrite(true);
     }
 
     /** {@inheritDoc} */
@@ -408,29 +386,58 @@ public class PortableBuilderImpl implements PortableBuilder {
     }
 
     /**
+     * Get field position and length.
      *
+     * @param footerPos Field position inside the footer (absolute).
+     * @param footerEnd Footer end (absolute).
+     * @param rawPos Raw data position (absolute).
+     * @return Tuple with field position and length.
+     */
+    private IgniteBiTuple<Integer, Integer> fieldPositionAndLength(int footerPos, int footerEnd, int rawPos) {
+        int fieldOffset = reader.readIntPositioned(footerPos + 4);
+        int fieldPos = start + fieldOffset;
+
+        // Get field length.
+        int fieldLen;
+
+        if (footerPos + 8 == footerEnd)
+            // This is the last field, compare to raw offset.
+            fieldLen = rawPos - fieldPos;
+        else {
+            // Field is somewhere in the middle, get difference with the next offset.
+            int nextFieldOffset = reader.readIntPositioned(footerPos + 8 + 4);
+
+            fieldLen = nextFieldOffset - fieldOffset;
+        }
+
+        return F.t(fieldPos, fieldLen);
+    }
+
+    /**
+     * Initialize read cache if needed.
      */
     private void ensureReadCacheInit() {
         if (readCache == null) {
             Map<Integer, Object> readCache = new HashMap<>();
 
-            int pos = start + hdrLen;
-            int end = start + reader.readIntAbsolute(start + RAW_DATA_OFF_POS);
+            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start);
 
-            while (pos < end) {
-                int fieldId = reader.readIntAbsolute(pos);
+            int footerPos = footer.get1();
+            int footerEnd = footer.get2();
 
-                pos += 4;
+            int rawPos = PortableUtils.rawOffsetAbsolute(reader, start);
 
-                int len = reader.readIntAbsolute(pos);
+            while (footerPos < footerEnd) {
+                int fieldId = reader.readIntPositioned(footerPos);
 
-                pos += 4;
+                IgniteBiTuple<Integer, Integer> posAndLen = fieldPositionAndLength(footerPos, footerEnd, rawPos);
 
-                Object val = reader.getValueQuickly(pos, len);
+                Object val = reader.getValueQuickly(posAndLen.get1(), posAndLen.get2());
 
                 readCache.put(fieldId, val);
 
-                pos += len;
+                // Shift current footer position.
+                footerPos += 8;
             }
 
             this.readCache = readCache;
@@ -438,7 +445,8 @@ public class PortableBuilderImpl implements PortableBuilder {
     }
 
     /** {@inheritDoc} */
-    @Override public <F> F getField(String name) {
+    @SuppressWarnings("unchecked")
+    @Override public <T> T getField(String name) {
         Object val;
 
         if (assignedVals != null && assignedVals.containsKey(name)) {
@@ -455,7 +463,7 @@ public class PortableBuilderImpl implements PortableBuilder {
             val = readCache.get(fldId);
         }
 
-        return (F)PortableUtils.unwrapLazy(val);
+        return (T)PortableUtils.unwrapLazy(val);
     }
 
     /** {@inheritDoc} */

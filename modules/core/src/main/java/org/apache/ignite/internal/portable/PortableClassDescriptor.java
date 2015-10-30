@@ -17,6 +17,18 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableIdMapper;
+import org.apache.ignite.portable.PortableMarshalAware;
+import org.apache.ignite.portable.PortableSerializer;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -35,17 +47,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableIdMapper;
-import org.apache.ignite.portable.PortableMarshalAware;
-import org.apache.ignite.portable.PortableSerializer;
-import org.jetbrains.annotations.Nullable;
 
 import static java.lang.reflect.Modifier.isStatic;
 import static java.lang.reflect.Modifier.isTransient;
@@ -62,6 +63,9 @@ public class PortableClassDescriptor {
 
     /** */
     private final PortableSerializer serializer;
+
+    /** ID mapper. */
+    private final PortableIdMapper idMapper;
 
     /** */
     private final Mode mode;
@@ -138,6 +142,7 @@ public class PortableClassDescriptor {
         this.typeId = typeId;
         this.typeName = typeName;
         this.serializer = serializer;
+        this.idMapper = idMapper;
         this.keepDeserialized = keepDeserialized;
         this.registered = registered;
 
@@ -307,6 +312,15 @@ public class PortableClassDescriptor {
     }
 
     /**
+     * Get ID mapper.
+     *
+     * @return ID mapper.
+     */
+    public PortableIdMapper idMapper() {
+        return idMapper;
+    }
+
+    /**
      * @return portableWriteReplace() method
      */
     @Nullable Method getWriteReplaceMethod() {
@@ -409,57 +423,57 @@ public class PortableClassDescriptor {
                 break;
 
             case SHORT_ARR:
-                writer.doWriteShortArray((short[])obj);
+                writer.doWriteShortArray((short[]) obj);
 
                 break;
 
             case INT_ARR:
-                writer.doWriteIntArray((int[])obj);
+                writer.doWriteIntArray((int[]) obj);
 
                 break;
 
             case LONG_ARR:
-                writer.doWriteLongArray((long[])obj);
+                writer.doWriteLongArray((long[]) obj);
 
                 break;
 
             case FLOAT_ARR:
-                writer.doWriteFloatArray((float[])obj);
+                writer.doWriteFloatArray((float[]) obj);
 
                 break;
 
             case DOUBLE_ARR:
-                writer.doWriteDoubleArray((double[])obj);
+                writer.doWriteDoubleArray((double[]) obj);
 
                 break;
 
             case CHAR_ARR:
-                writer.doWriteCharArray((char[])obj);
+                writer.doWriteCharArray((char[]) obj);
 
                 break;
 
             case BOOLEAN_ARR:
-                writer.doWriteBooleanArray((boolean[])obj);
+                writer.doWriteBooleanArray((boolean[]) obj);
 
                 break;
 
             case DECIMAL_ARR:
-                writer.doWriteDecimalArray((BigDecimal[])obj);
+                writer.doWriteDecimalArray((BigDecimal[]) obj);
 
                 break;
 
             case STRING_ARR:
-                writer.doWriteStringArray((String[])obj);
+                writer.doWriteStringArray((String[]) obj);
 
                 break;
 
             case UUID_ARR:
-                writer.doWriteUuidArray((UUID[])obj);
+                writer.doWriteUuidArray((UUID[]) obj);
 
                 break;
 
             case DATE_ARR:
-                writer.doWriteDateArray((Date[])obj);
+                writer.doWriteDateArray((Date[]) obj);
 
                 break;
 
@@ -515,8 +529,7 @@ public class PortableClassDescriptor {
                     else
                         ((PortableMarshalAware)obj).writePortable(writer);
 
-                    writer.writeRawOffsetIfNeeded();
-                    writer.writeLength();
+                    writer.postWrite(userType);
 
                     if (obj.getClass() != PortableMetaDataImpl.class
                         && ctx.isMetaDataChanged(typeId, writer.metaDataHashSum())) {
@@ -535,6 +548,8 @@ public class PortableClassDescriptor {
 
             case EXTERNALIZABLE:
                 if (writeHeader(obj, writer)) {
+                    writer.rawWriter();
+
                     try {
                         ((Externalizable)obj).writeExternal(writer);
                     }
@@ -542,7 +557,7 @@ public class PortableClassDescriptor {
                         throw new PortableException("Failed to write Externalizable object: " + obj, e);
                     }
 
-                    writer.writeLength();
+                    writer.postWrite(userType);
                 }
 
                 break;
@@ -552,8 +567,7 @@ public class PortableClassDescriptor {
                     for (FieldInfo info : fields)
                         info.write(obj, writer);
 
-                    writer.writeRawOffsetIfNeeded();
-                    writer.writeLength();
+                    writer.postWrite(userType);
                 }
 
                 break;
@@ -646,28 +660,13 @@ public class PortableClassDescriptor {
         if (writer.tryWriteAsHandle(obj))
             return false;
 
-        int pos = writer.position();
-
-        writer.doWriteByte(GridPortableMarshaller.OBJ);
-        writer.doWriteByte(GridPortableMarshaller.PROTO_VER);
-        writer.doWriteBoolean(userType);
-        writer.doWriteInt(registered ? typeId : GridPortableMarshaller.UNREGISTERED_TYPE_ID);
-        writer.doWriteInt(obj instanceof CacheObjectImpl ? 0 : obj.hashCode());
-
-        // For length and raw offset.
-        int reserved = writer.reserve(8);
-
-        // Class name in case if typeId registration is failed.
-        if (!registered)
-            writer.doWriteString(cls.getName());
-
-        int current = writer.position();
-        int len = current - pos;
-
-        // Default raw offset (equal to header length).
-        writer.position(reserved + 4);
-        writer.doWriteInt(len);
-        writer.position(current);
+        PortableUtils.writeHeader(
+            writer,
+            userType,
+            registered ? typeId : GridPortableMarshaller.UNREGISTERED_TYPE_ID,
+            obj instanceof CacheObjectImpl ? 0 : obj.hashCode(),
+            registered ? null : cls.getName()
+        );
 
         return true;
     }
@@ -859,7 +858,7 @@ public class PortableClassDescriptor {
             assert obj != null;
             assert writer != null;
 
-            writer.doWriteInt(id);
+            writer.writeFieldId(id);
 
             Object val;
 
@@ -942,57 +941,57 @@ public class PortableClassDescriptor {
                     break;
 
                 case SHORT_ARR:
-                    writer.writeShortArrayField((short[])val);
+                    writer.writeShortArrayField((short[]) val);
 
                     break;
 
                 case INT_ARR:
-                    writer.writeIntArrayField((int[])val);
+                    writer.writeIntArrayField((int[]) val);
 
                     break;
 
                 case LONG_ARR:
-                    writer.writeLongArrayField((long[])val);
+                    writer.writeLongArrayField((long[]) val);
 
                     break;
 
                 case FLOAT_ARR:
-                    writer.writeFloatArrayField((float[])val);
+                    writer.writeFloatArrayField((float[]) val);
 
                     break;
 
                 case DOUBLE_ARR:
-                    writer.writeDoubleArrayField((double[])val);
+                    writer.writeDoubleArrayField((double[]) val);
 
                     break;
 
                 case CHAR_ARR:
-                    writer.writeCharArrayField((char[])val);
+                    writer.writeCharArrayField((char[]) val);
 
                     break;
 
                 case BOOLEAN_ARR:
-                    writer.writeBooleanArrayField((boolean[])val);
+                    writer.writeBooleanArrayField((boolean[]) val);
 
                     break;
 
                 case DECIMAL_ARR:
-                    writer.writeDecimalArrayField((BigDecimal[])val);
+                    writer.writeDecimalArrayField((BigDecimal[]) val);
 
                     break;
 
                 case STRING_ARR:
-                    writer.writeStringArrayField((String[])val);
+                    writer.writeStringArrayField((String[]) val);
 
                     break;
 
                 case UUID_ARR:
-                    writer.writeUuidArrayField((UUID[])val);
+                    writer.writeUuidArrayField((UUID[]) val);
 
                     break;
 
                 case DATE_ARR:
-                    writer.writeDateArrayField((Date[])val);
+                    writer.writeDateArrayField((Date[]) val);
 
                     break;
 

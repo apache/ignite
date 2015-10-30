@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.portable;
 
 import org.apache.ignite.internal.portable.builder.PortableLazyValue;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.portable.PortableException;
 import org.apache.ignite.portable.PortableObject;
 import org.jetbrains.annotations.Nullable;
@@ -77,7 +79,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_ARR;
 
 /**
- *
+ * Portable utils.
  */
 public class PortableUtils {
     /** */
@@ -91,6 +93,47 @@ public class PortableUtils {
 
     /** Portable classes. */
     private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
+
+    /** Flag: user type. */
+    public static final short FLAG_USR_TYP = 0x1;
+
+    /** Flag: only raw data exists. */
+    public static final short FLAG_RAW_ONLY = 0x2;
+
+    /**
+     * Write flags.
+     *
+     * @param writer Writer.
+     * @param userType User type flag.
+     */
+    public static void writeFlags(PortableWriterExImpl writer, boolean userType) {
+        short val = 0;
+
+        if (userType)
+            val |= FLAG_USR_TYP;
+
+        writer.doWriteShort(val);
+    }
+
+    /**
+     * Check if user type flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean isUserType(short flags) {
+        return (flags & FLAG_USR_TYP) == FLAG_USR_TYP;
+    }
+
+    /**
+     * Check if raw-only flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean isRawOnly(short flags) {
+        return (flags & FLAG_RAW_ONLY) == FLAG_RAW_ONLY;
+    }
 
     /**
      *
@@ -486,5 +529,119 @@ public class PortableUtils {
     public static void checkProtocolVersion(byte protoVer) {
         if (PROTO_VER != protoVer)
             throw new PortableException("Unsupported protocol version: " + protoVer);
+    }
+
+    /**
+     * Write portable header.
+     *
+     * @param writer Writer.
+     * @param usrTyp User type flag.
+     * @param typeId Type ID.
+     * @param hashCode Hash code.
+     * @param clsName Class name (optional).
+     * @return Position where length should be written.
+     */
+    public static int writeHeader(PortableWriterExImpl writer, boolean usrTyp, int typeId, int hashCode,
+        @Nullable String clsName) {
+        writer.doWriteByte(GridPortableMarshaller.OBJ);
+        writer.doWriteByte(GridPortableMarshaller.PROTO_VER);
+
+        PortableUtils.writeFlags(writer, usrTyp);
+
+        writer.doWriteInt(typeId);
+        writer.doWriteInt(hashCode);
+
+        int reserved = writer.reserve(12);
+
+        if (clsName != null)
+            writer.doWriteString(clsName);
+
+        return reserved;
+    }
+
+    /**
+     * Get portable object length.
+     *
+     * @param in Input stream.
+     * @param start Start position.
+     * @return Length.
+     */
+    public static int length(PortablePositionReadable in, int start) {
+        return in.readIntPositioned(start + GridPortableMarshaller.TOTAL_LEN_POS);
+    }
+
+    /**
+     * Get footer start of the object.
+     *
+     * @param in Input stream.
+     * @param start Object start position inside the stream.
+     * @return Footer start.
+     */
+    public static int footerStartRelative(PortablePositionReadable in, int start) {
+        short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
+
+        if (PortableUtils.isRawOnly(flags))
+            // No schema, footer start equals to object end.
+            return length(in, start);
+        else
+            // Schema exists, use offset.
+            return in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+    }
+
+    /**
+     * Get object's footer.
+     *
+     * @param in Input stream.
+     * @param start Start position.
+     * @return Footer start.
+     */
+    public static int footerStartAbsolute(PortablePositionReadable in, int start) {
+        return footerStartRelative(in, start) + start;
+    }
+
+    /**
+     * Get object's footer.
+     *
+     * @param in Input stream.
+     * @param start Start position.
+     * @return Footer.
+     */
+    public static IgniteBiTuple<Integer, Integer> footerAbsolute(PortablePositionReadable in, int start) {
+        int footerStart = footerStartRelative(in, start);
+        int footerEnd = length(in, start);
+
+        // Take in count possible raw offset.
+        if ((((footerEnd - footerStart) >> 2) & 0x1) == 0x1)
+            footerEnd -= 4;
+
+        return F.t(start + footerStart, start + footerEnd);
+    }
+
+    /**
+     * Get raw offset of the object.
+     *
+     * @param in Input stream.
+     * @param start Object start position inside the stream.
+     * @return Raw offset.
+     */
+    public static int rawOffsetAbsolute(PortablePositionReadable in, int start) {
+        int len = length(in, start);
+
+        short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
+
+        if (PortableUtils.isRawOnly(flags))
+            // No schema, raw offset is located on schema offset position.
+            return start + in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        else {
+            // Schema exists.
+            int schemaOff = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+
+            if ((((len - schemaOff) >> 2) & 0x1) == 0x0)
+                // Even amount of records in schema => no raw offset.
+                return start + schemaOff;
+            else
+                // Odd amount of records in schema => raw offset is the very last 4 bytes in object.
+                return start + in.readIntPositioned(start + len - 4);
+        }
     }
 }

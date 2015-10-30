@@ -260,7 +260,7 @@ public class PortableMarshaller extends AbstractMarshaller {
 
     /** {@inheritDoc} */
     @Override public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException {
-        return impl.marshal(obj, 0);
+        return impl.marshal(obj);
     }
 
     /** {@inheritDoc} */

@@ -35,18 +35,19 @@ namespace ignite
         namespace portable
         {
             PortableReaderImpl::PortableReaderImpl(InteropInputStream* stream, PortableIdResolver* idRslvr,
-                int32_t pos, bool usrType, int32_t typeId, int32_t hashCode, int32_t len, int32_t rawOff) :
+                int32_t pos, bool usrType, int32_t typeId, int32_t hashCode, int32_t len, int32_t rawOff,
+                int32_t footerBegin, int32_t footerEnd) :
                 stream(stream), idRslvr(idRslvr), pos(pos), usrType(usrType), typeId(typeId), 
-                hashCode(hashCode), len(len), rawOff(rawOff), rawMode(false), 
-                elemIdGen(0), elemId(0), elemCnt(-1), elemRead(0)
+                hashCode(hashCode), len(len), rawOff(rawOff), rawMode(false), elemIdGen(0), elemId(0),
+                elemCnt(-1), elemRead(0), footerBegin(footerBegin), footerEnd(footerEnd)
             {
                 // No-op.
             }
 
             PortableReaderImpl::PortableReaderImpl(InteropInputStream* stream) :
-                stream(stream), idRslvr(NULL), pos(0), usrType(false), typeId(0), hashCode(0), 
-                len(0), rawOff(0), rawMode(true),
-                elemIdGen(0), elemId(0), elemCnt(-1), elemRead(0)
+                stream(stream), idRslvr(NULL), pos(0), usrType(false), typeId(0), hashCode(0), len(0),
+                rawOff(0), rawMode(true), elemIdGen(0), elemId(0), elemCnt(-1), elemRead(0), footerBegin(-1),
+                footerEnd(-1)
             {
                 // No-op.
             }
@@ -233,12 +234,14 @@ namespace ignite
                 CheckSingleMode(true);
 
                 int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
-                int32_t fieldLen = SeekField(fieldId);
+                int32_t fieldPos = FindField(fieldId);
 
-                if (fieldLen > 0)
-                    return ReadNullable(stream, PortableUtils::ReadGuid, IGNITE_TYPE_UUID);
+                if (fieldPos <= 0)
+                    return Guid();
 
-                return Guid();
+                stream->Position(fieldPos);
+
+                return ReadNullable(stream, PortableUtils::ReadGuid, IGNITE_TYPE_UUID);
             }
 
             int32_t PortableReaderImpl::ReadGuidArray(const char* fieldName, Guid* res, const int32_t len)
@@ -249,20 +252,60 @@ namespace ignite
                 int32_t pos = stream->Position();
 
                 int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
-                int32_t fieldLen = SeekField(fieldId);
+                int32_t fieldPos = FindField(fieldId);
 
-                if (fieldLen > 0) {
-                    int32_t realLen = ReadArrayInternal<Guid>(res, len, stream, ReadGuidArrayInternal, IGNITE_TYPE_ARRAY_UUID);
+                if (fieldPos <= 0)
+                    return -1;
 
-                    // If actual read didn't occur return to initial position so that we do not perform 
-                    // N jumps to find the field again, where N is total amount of fields.
-                    if (realLen != -1 && (!res || realLen > len))
-                        stream->Position(pos);
+                stream->Position(fieldPos);
 
-                    return realLen;
+                int32_t realLen = ReadArrayInternal<Guid>(res, len, stream, ReadGuidArrayInternal, IGNITE_TYPE_ARRAY_UUID);
+
+                return realLen;
+            }
+
+            void PortableReaderImpl::ParseHeaderIfNeeded()
+            {
+                if (footerBegin)
+                    return;
+
+                InteropStreamPositionGuard<InteropInputStream> posGuard(*stream);
+
+                int8_t hdr = stream->ReadInt8();
+
+                if (hdr != IGNITE_HDR_FULL)
+                    IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_PORTABLE, "Invalid header: ", hdr);
+
+                int8_t protoVer = stream->ReadInt8();
+
+                if (protoVer != IGNITE_PROTO_VER) {
+                    IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_PORTABLE,
+                        "Unsupported portable protocol version: ", protoVer);
                 }
 
-                return -1;
+                int16_t flags = stream->ReadInt16();
+                int32_t typeId = stream->ReadInt32();
+                int32_t hashCode = stream->ReadInt32();
+                int32_t len = stream->ReadInt32();
+                int32_t schemaId = stream->ReadInt32();
+                int32_t schemaOrRawOff = stream->ReadInt32();
+
+                if (flags & IGNITE_PORTABLE_FLAG_RAW_ONLY)
+                {
+                    footerBegin = len;
+
+                    rawOff = schemaOrRawOff;
+                }
+                else
+                {
+                    footerBegin = schemaOrRawOff;
+
+                    rawOff = (len - footerBegin) % 8 ? stream->ReadInt32(pos + len - 4) : schemaOrRawOff;
+                }
+
+                footerEnd = len - ((len - footerBegin) % 8);
+
+                bool usrType = flags & IGNITE_PORTABLE_FLAG_USER_OBJECT;
             }
 
             void PortableReaderImpl::ReadGuidArrayInternal(InteropInputStream* stream, Guid* res, const int32_t len)
@@ -287,20 +330,16 @@ namespace ignite
                 int32_t pos = stream->Position();
                 
                 int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
-                int32_t fieldLen = SeekField(fieldId);
+                int32_t fieldPos = FindField(fieldId);
 
-                if (fieldLen > 0) {
-                    int32_t realLen = ReadStringInternal(res, len);
+                if (fieldPos <= 0)
+                    return -1;
 
-                    // If actual read didn't occur return to initial position so that we do not perform 
-                    // N jumps to find the field again, where N is total amount of fields.
-                    if (realLen != -1 && (!res || realLen > len))
-                        stream->Position(pos);
+                stream->Position(fieldPos);
 
-                    return realLen;
-                }
+                int32_t realLen = ReadStringInternal(res, len);
 
-                return -1;
+                return realLen;
             }
 
             int32_t PortableReaderImpl::ReadStringArray(int32_t* size)
@@ -314,15 +353,18 @@ namespace ignite
                 CheckSingleMode(true);
 
                 int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
-                int32_t fieldLen = SeekField(fieldId);
+                int32_t fieldPos = FindField(fieldId);
 
-                if (fieldLen > 0)
-                    return StartContainerSession(false, IGNITE_TYPE_ARRAY_STRING, size);
-                else {
+                if (fieldPos <= 0)
+                {
                     *size = -1;
 
                     return ++elemIdGen;
                 }
+
+                stream->Position(fieldPos);
+
+                return StartContainerSession(false, IGNITE_TYPE_ARRAY_STRING, size);
             }
 
             int32_t PortableReaderImpl::ReadStringElement(int32_t id, char* res, const int32_t len)
@@ -389,15 +431,18 @@ namespace ignite
                 CheckSingleMode(true);
 
                 int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
-                int32_t fieldLen = SeekField(fieldId);
+                int32_t fieldPos = FindField(fieldId);
 
-                if (fieldLen > 0)
-                    return StartContainerSession(false, IGNITE_TYPE_ARRAY, size);
-                else {
+                if (fieldPos <= 0)
+                {
                     *size = -1;
 
                     return ++elemIdGen;
                 }
+
+                stream->Position(fieldPos);
+
+                return StartContainerSession(false, IGNITE_TYPE_ARRAY, size);
             }
 
             int32_t PortableReaderImpl::ReadCollection(CollectionType* typ, int32_t* size)
@@ -418,25 +463,26 @@ namespace ignite
                 CheckSingleMode(true);
 
                 int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
-                int32_t fieldLen = SeekField(fieldId);
+                int32_t fieldPos = FindField(fieldId);
 
-                if (fieldLen > 0)
+                if (fieldPos <= 0)
                 {
-                    int32_t id = StartContainerSession(false, IGNITE_TYPE_COLLECTION, size);
-
-                    if (*size == -1)
-                        *typ = IGNITE_COLLECTION_UNDEFINED;
-                    else
-                        *typ = static_cast<CollectionType>(stream->ReadInt8());
-
-                    return id;
-                }                    
-                else {
                     *typ = IGNITE_COLLECTION_UNDEFINED;
                     *size = -1;
 
                     return ++elemIdGen;
                 }
+
+                stream->Position(fieldPos);
+
+                int32_t id = StartContainerSession(false, IGNITE_TYPE_COLLECTION, size);
+
+                if (*size == -1)
+                    *typ = IGNITE_COLLECTION_UNDEFINED;
+                else
+                    *typ = static_cast<CollectionType>(stream->ReadInt8());
+
+                return id;
             }
 
             int32_t PortableReaderImpl::ReadMap(MapType* typ, int32_t* size)
@@ -457,25 +503,26 @@ namespace ignite
                 CheckSingleMode(true);
 
                 int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
-                int32_t fieldLen = SeekField(fieldId);
+                int32_t fieldPos = FindField(fieldId);
 
-                if (fieldLen > 0)
+                if (fieldPos <= 0)
                 {
-                    int32_t id = StartContainerSession(false, IGNITE_TYPE_MAP, size);
-
-                    if (*size == -1)
-                        *typ = IGNITE_MAP_UNDEFINED;
-                    else
-                        *typ = static_cast<MapType>(stream->ReadInt8());
-
-                    return id;
-                }
-                else {
                     *typ = IGNITE_MAP_UNDEFINED;
                     *size = -1;
 
                     return ++elemIdGen;
                 }
+
+                stream->Position(fieldPos);
+
+                int32_t id = StartContainerSession(false, IGNITE_TYPE_MAP, size);
+
+                if (*size == -1)
+                    *typ = IGNITE_MAP_UNDEFINED;
+                else
+                    *typ = static_cast<MapType>(stream->ReadInt8());
+
+                return id;
             }
 
             CollectionType PortableReaderImpl::ReadCollectionTypeUnprotected()
@@ -504,10 +551,12 @@ namespace ignite
                 InteropStreamPositionGuard<InteropInputStream> positionGuard(*stream);
 
                 int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
-                int32_t fieldLen = SeekField(fieldId);
+                int32_t fieldPos = FindField(fieldId);
 
-                if (fieldLen <= 0)
+                if (fieldPos <= 0)
                     return IGNITE_COLLECTION_UNDEFINED;
+
+                stream->Position(fieldPos);
 
                 return ReadCollectionTypeUnprotected();
             }
@@ -544,10 +593,12 @@ namespace ignite
                 InteropStreamPositionGuard<InteropInputStream> positionGuard(*stream);
 
                 int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
-                int32_t fieldLen = SeekField(fieldId);
+                int32_t fieldPos = FindField(fieldId);
 
-                if (fieldLen <= 0)
+                if (fieldPos <= 0)
                     return -1;
+
+                stream->Position(fieldPos);
 
                 return ReadCollectionSizeUnprotected();
             }
@@ -635,41 +686,18 @@ namespace ignite
                 return stream;
             }
 
-            int32_t PortableReaderImpl::SeekField(const int32_t fieldId)
+            int32_t PortableReaderImpl::FindField(const int32_t fieldId)
             {
-                // We assume that it is very likely that fields are read in the same
-                // order as they were initially written. So we start seeking field
-                // from current stream position making a "loop" up to this position.
-                int32_t marker = stream->Position();
+                InteropStreamPositionGuard<InteropInputStream> streamGuard(*stream);
 
-                for (int32_t curPos = marker; curPos < pos + rawOff;)
+                stream->Position(footerBegin);
+
+                for (int32_t schemaPos = footerBegin; schemaPos < footerEnd; schemaPos += 8)
                 {
-                    int32_t curFieldId = stream->ReadInt32();
-                    int32_t curFieldLen = stream->ReadInt32();
+                    int32_t currentFieldId = stream->ReadInt32(schemaPos);
 
-                    if (fieldId == curFieldId)
-                        return curFieldLen;
-                    else {
-                        curPos = stream->Position() + curFieldLen;
-
-                        stream->Position(curPos);
-                    }
-                }
-
-                stream->Position(pos + IGNITE_FULL_HDR_LEN);
-
-                for (int32_t curPos = stream->Position(); curPos < marker;)
-                {
-                    int32_t curFieldId = stream->ReadInt32();
-                    int32_t curFieldLen = stream->ReadInt32();
-
-                    if (fieldId == curFieldId)
-                        return curFieldLen;
-                    else {
-                        curPos = stream->Position() + curFieldLen;
-
-                        stream->Position(curPos);
-                    }
+                    if (fieldId == currentFieldId)
+                        return stream->ReadInt32(schemaPos + 4) + pos;
                 }
 
                 return -1;
