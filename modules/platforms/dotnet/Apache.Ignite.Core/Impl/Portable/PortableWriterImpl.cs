@@ -1094,7 +1094,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 if (hasSchema)
                     flags = PortableObjectSchemaField.WriteArray(_curSchema.Array, _stream, _curSchema.Count,
-                        _stream.Position - pos);
+                        _curSchema.Array[_curSchema.Count - 1].Offset);
 
                 // Calculate and write header.
                 if (hasSchema && _curRawPos > 0)
