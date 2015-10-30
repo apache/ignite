@@ -126,20 +126,18 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Create new instance of specified class.
         /// </summary>
-        /// <param name="assemblyName">Assembly name.</param>
-        /// <param name="clsName">Class name</param>
+        /// <param name="typeName">Class name</param>
         /// <returns>New Instance.</returns>
-        public static object CreateInstance(string assemblyName, string clsName)
+        public static T CreateInstance<T>(string typeName)
         {
-            IgniteArgumentCheck.NotNullOrEmpty(clsName, "clsName");
+            IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
-            var type = new TypeResolver().ResolveType(clsName, assemblyName);
+            var type = new TypeResolver().ResolveType(typeName);
 
             if (type == null)
-                throw new IgniteException("Failed to create class instance [assemblyName=" + assemblyName +
-                    ", className=" + clsName + ']');
+                throw new IgniteException("Failed to create class instance [className=" + typeName + ']');
 
-            return Activator.CreateInstance(type);
+            return (T) Activator.CreateInstance(type);
         }
 
         /// <summary>

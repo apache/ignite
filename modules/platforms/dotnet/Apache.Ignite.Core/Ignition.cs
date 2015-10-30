@@ -338,17 +338,14 @@ namespace Apache.Ignite.Core
         private static ILifecycleBean CreateLifecycleBean(PortableReaderImpl reader)
         {
             // 1. Instantiate.
-            string assemblyName = reader.ReadString();
-            string clsName = reader.ReadString();
-
-            object bean = IgniteUtils.CreateInstance(assemblyName, clsName);
+            var bean = IgniteUtils.CreateInstance<ILifecycleBean>(reader.ReadString());
 
             // 2. Set properties.
             var props = reader.ReadDictionaryAsGeneric<string, object>();
 
             IgniteUtils.SetProperties(bean, props);
 
-            return bean as ILifecycleBean;
+            return bean;
         }
 
         /// <summary>

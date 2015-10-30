@@ -103,12 +103,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
             {
                 var reader = PortableUtils.Marshaller.StartUnmarshal(stream, PortableMode.KeepPortable);
 
-                var assemblyName = reader.ReadString();
                 var className = reader.ReadString();
                 var convertPortable = reader.ReadBoolean();
                 var propertyMap = reader.ReadDictionaryAsGeneric<string, object>();
 
-                var store = (ICacheStore) IgniteUtils.CreateInstance(assemblyName, className);
+                var store = IgniteUtils.CreateInstance<ICacheStore>(className);
 
                 IgniteUtils.SetProperties(store, propertyMap);
 
