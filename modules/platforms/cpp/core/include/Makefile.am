@@ -42,6 +42,7 @@ nobase_include_HEADERS = ignite/cache/cache.h \
                          ignite/impl/portable/portable_reader_impl.h \
                          ignite/impl/portable/portable_utils.h \
                          ignite/impl/portable/portable_writer_impl.h \
+                         ignite/impl/portable/portable_schema.h \
                          ignite/impl/ignite_environment.h \
                          ignite/impl/ignite_impl.h \
                          ignite/impl/handle_registry.h \

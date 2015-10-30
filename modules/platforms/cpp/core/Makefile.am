@@ -39,6 +39,7 @@ COMMON_SRC = os/linux/src/impl/utils.cpp \
              src/impl/portable/portable_utils.cpp \
              src/impl/portable/portable_reader_impl.cpp \
              src/impl/portable/portable_writer_impl.cpp \
+             src/impl/portable/portable_schema.cpp \
              src/portable/portable_containers.cpp \
              src/portable/portable_raw_reader.cpp \
              src/portable/portable_raw_writer.cpp \
