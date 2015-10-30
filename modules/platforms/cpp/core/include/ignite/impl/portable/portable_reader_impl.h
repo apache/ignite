@@ -788,7 +788,22 @@ namespace ignite
                             else
                                 footerBegin = schemaOrRawOff;
 
+                            SCHEMA_TYPE schemaType = SCHEMA_TYPE_BIG;
+
                             int32_t trailingBytes = (len - footerBegin) % 8;
+
+                            if (flags & IGNITE_PORTABLE_FLAG_TINY)
+                            {
+                                schemaType = SCHEMA_TYPE_TINY;
+
+                                trailingBytes = (len - footerBegin) % 5;
+                            }
+                            else if (flags & IGNITE_PORTABLE_FLAG_SMALL)
+                            {
+                                schemaType = SCHEMA_TYPE_SMALL;
+
+                                trailingBytes = (len - footerBegin) % 6;
+                            }
 
                             int32_t footerEnd = len - trailingBytes;
 
@@ -801,13 +816,6 @@ namespace ignite
 
                             footerBegin += pos;
                             footerEnd += pos;
-
-                            SCHEMA_TYPE schemaType = SCHEMA_TYPE_BIG;
-
-                            if (flags & IGNITE_PORTABLE_FLAG_TINY)
-                                schemaType = SCHEMA_TYPE_TINY;
-                            else if (flags & IGNITE_PORTABLE_FLAG_SMALL)
-                                schemaType = SCHEMA_TYPE_SMALL;
 
                             ignite::portable::PortableType<T> type;
                             TemplatedPortableIdResolver<T> idRslvr(type);
