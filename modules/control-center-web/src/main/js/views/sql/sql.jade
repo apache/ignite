@@ -34,7 +34,7 @@ mixin btn-toolbar-data(btn, kind, tip)
     i.btn.btn-default.fa(class=btn ng-click='setResult(paragraph, "#{kind}")' ng-class='{active: resultEq(paragraph, "#{kind}")}' bs-tooltip='' data-title=tip data-trigger='hover' data-placement='bottom')
 
 mixin result-toolbar
-    .btn-group(ng-model='paragraph.result' ng-click='$event.stopPropagation()' style='left: 50%; margin: 0 0 0 -70px;')
+    .btn-group(ng-model='paragraph.result' ng-click='$event.stopPropagation()' style='left: 50%; margin: 0 0 0 -70px;display: block;')
         +btn-toolbar-data('fa-table', 'table', 'Show data in tabular form.')
         +btn-toolbar-data('fa-bar-chart', 'bar', 'Show bar chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
         +btn-toolbar-data('fa-pie-chart', 'pie', 'Show pie chart.<br/>By default first column - pie labels, second column - pie values.<br/>In case of one column it will be treated as pie values.')
@@ -189,11 +189,14 @@ block container
                                                         nvd3(options='chart.options' data='chart.data' api='chart.api')
                                                 .sql-empty-result(ng-show='!paragraph.timeLineSupported() && paragraph.chartTimeLineEnabled()') Pie chart does not support 'TIME_LINE' column for X-axis. Please use another column for X-axis or switch to another chart.
                                         .sql-empty-result(ng-hide='paragraph.queryExecute()')
-                                            | Charts do not support&nbsp
-                                            b Explain
-                                            | &nbspand&nbsp
-                                            b Scan
-                                            | &nbspquery
+                                            .row
+                                                .col-xs-4.col-xs-offset-4
+                                                    +result-toolbar
+                                            label.margin-top-dflt Charts do not support&nbsp
+                                                b Explain
+                                                | &nbspand&nbsp
+                                                b Scan
+                                                | &nbspquery
                                     div(ng-show='queryExecuted(paragraph) && !paragraph.refreshExecuting()')
                                         -var nextVisibleCondition = 'paragraph.queryId && (paragraph.table() || paragraph.chart() && paragraph.queryExecute() && (paragraph.timeLineSupported() || !paragraph.chartTimeLineEnabled()))'
                                         -var queryLinkStyle = 'float: left; margin-left: 5px; margin-bottom: 5px;'
