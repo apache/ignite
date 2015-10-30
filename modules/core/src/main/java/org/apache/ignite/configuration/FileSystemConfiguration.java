@@ -143,7 +143,10 @@ public class FileSystemConfiguration {
     /** Maximum space. */
     private long maxSpace;
 
-    /** Trash purge await timeout. */
+    /** Trash purge await timeout.
+     * @deprecated This parameter in no longer used, its value is ignored.
+     */
+    @Deprecated
     private long trashPurgeTimeout = DFLT_TRASH_PURGE_TIMEOUT;
 
     /** Dual mode PUT operations executor service. */
@@ -671,8 +674,10 @@ public class FileSystemConfiguration {
     /**
      * Gets maximum timeout awaiting for trash purging in case data cache oversize is detected.
      *
+     * @deprecated This parameter in no longer used, its value is ignored.
      * @return Maximum timeout awaiting for trash purging in case data cache oversize is detected.
      */
+    @Deprecated
     public long getTrashPurgeTimeout() {
         return trashPurgeTimeout;
     }
@@ -680,8 +685,10 @@ public class FileSystemConfiguration {
     /**
      * Sets maximum timeout awaiting for trash purging in case data cache oversize is detected.
      *
+     * @deprecated This parameter in no longer used, its value is ignored.
      * @param trashPurgeTimeout Maximum timeout awaiting for trash purging in case data cache oversize is detected.
      */
+    @Deprecated
     public void setTrashPurgeTimeout(long trashPurgeTimeout) {
         this.trashPurgeTimeout = trashPurgeTimeout;
     }
