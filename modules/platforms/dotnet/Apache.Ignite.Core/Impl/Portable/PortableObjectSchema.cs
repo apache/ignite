@@ -17,7 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Portable
 {
-    using Apache.Ignite.Core.Impl.Common;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Holds and manages portable object schema for a specific type.
@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         private volatile int[] _schema2;
 
-        private CopyOnWriteConcurrentDictionary<int, int[]> _schemas;
+        private volatile Dictionary<int, int[]> _schemas;
 
         public int[] GetSchema(int id)
         {
@@ -55,6 +55,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             lock (this)
             {
+                if (_schemaId1 == id || _schemaId2 == id || (_schemas != null && _schemas.ContainsKey(id)))
+                    return;
+
                 if (_schema1 == null)
                 {
                     _schemaId1 = id;
@@ -67,8 +70,13 @@ namespace Apache.Ignite.Core.Impl.Portable
                 }
                 else
                 {
-                    _schemas = _schemas ?? new CopyOnWriteConcurrentDictionary<int, int[]>();
-                    _schemas.GetOrAdd(id, x => schema);
+                    var schemas = _schemas == null 
+                        ? new Dictionary<int, int[]>() 
+                        : new Dictionary<int, int[]>(_schemas);
+
+                    schemas.Add(id, schema);
+
+                    _schemas = schemas;
                 }
             }
         }
