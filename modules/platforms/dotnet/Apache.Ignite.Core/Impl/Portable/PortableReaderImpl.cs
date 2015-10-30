@@ -684,13 +684,13 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _curFooterEnd = hdr.GetSchemaEnd(pos);
                     _curFooterStart = hdr.GetSchemaStart(pos);
                     
-                    _curSchema = desc.Schema.GetSchema(hdr.SchemaId);
+                    _curSchema = desc.Schema.Get(hdr.SchemaId);
 
                     if (_curSchema == null)
                     {
                         _curSchema = ReadSchema();
 
-                        desc.Schema.AddSchema(hdr.SchemaId, _curSchema);
+                        desc.Schema.Add(hdr.SchemaId, _curSchema);
                     }
 
                     _curRawOffset = hdr.GetRawOffset(Stream, pos);

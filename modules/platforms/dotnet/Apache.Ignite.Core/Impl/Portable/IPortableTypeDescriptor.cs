@@ -137,6 +137,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Gets the schema.
         /// </summary>
-        PortableObjectSchema Schema { get; }
+        PortableObjectSchemaDictionary Schema { get; }
     }
 }
