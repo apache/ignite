@@ -504,8 +504,7 @@ consoleModule.controller('metadataController', [
                             var colName = col.name;
                             var jdbcType = $common.findJdbcType(col.type);
 
-                            if (!fieldIndexed(colName, table))
-                                qryFields.push(queryField(colName, jdbcType));
+                            qryFields.push(queryField(colName, jdbcType));
 
                             if (col.key) {
                                 keyFields.push(dbField(colName, jdbcType));
@@ -570,21 +569,6 @@ consoleModule.controller('metadataController', [
                         tables.push(tableName);
                     }
                 });
-
-                /**
-                 * Check field with specified name is indexed.
-                 *
-                 * @param name Field name.
-                 * @param table Table to check indexed fields.
-                 * @returns {boolean} <code>True</code> when field is indexed of <code>false</code> otherwise.
-                 */
-                function fieldIndexed(name, table) {
-                    // Check if in asc or desc fields.
-                    if (_.includes(table.ascCols, name) || _.includes(table.descCols, name) || !table.idxs)
-                        return true;
-
-                    return _.findKey(table.idxs, function(fields) { return _.includes(Object.keys(fields), name); }) != undefined;
-                }
 
                 /**
                  * Generate message to show on confirm dialog.
@@ -992,8 +976,8 @@ consoleModule.controller('metadataController', [
             };
 
             var pairFields = {
-                fields: {msg: 'Query field class', id: 'QryField', checkValidClass: true},
-                aliases: {msg: 'Ascending field class', id: 'Alias', keyCol: 'field', valCol: 'alias', valColName: 'alias', checkEqualsSecondField: true}
+                fields: {msg: 'Query field class', id: 'QryField', idPrefix: 'Key', searchCol: 'name', valueCol: 'key', classValidation: true, dupObjName: 'name'},
+                aliases: {id: 'Alias', idPrefix: 'Value', searchCol: 'alias', valueCol: 'value', dupObjName: 'alias'}
             };
 
             $scope.tablePairValid = function (item, field, index) {
@@ -1006,25 +990,15 @@ consoleModule.controller('metadataController', [
 
                     if ($common.isDefined(model)) {
                         var idx = _.findIndex(model, function (pair) {
-                            return pair[pairField.keyCol || 'name'] == pairValue.key;
+                            return pair[pairField.searchCol] == pairValue[pairField.valueCol];
                         });
 
                         // Found duplicate by key.
                         if (idx >= 0 && idx != index)
-                            return showPopoverMessage(null, null, $table.tableFieldId(index, 'Key' + pairField.id), 'Field with such name already exists!');
-
-                        if (pairField.checkEqualsSecondField) {
-                            idx = _.findIndex(model, function (pair) {
-                                return pair[pairField.valCol || 'className'].toUpperCase() === pairValue.value.toUpperCase();
-                            });
-
-                            // Found duplicate by value.
-                            if (idx >= 0 && idx != index)
-                                return showPopoverMessage(null, null, $table.tableFieldId(index, 'Value' + pairField.id), 'Field with such ' + pairField.valColName + ' already exists!');
-                        }
+                            return showPopoverMessage(null, null, $table.tableFieldId(index, pairField.idPrefix + pairField.id), 'Field with such ' + pairField.dupObjName + ' already exists!');
                     }
 
-                    if (pairField.checkValidClass && !$common.isValidJavaClass(pairField.msg, pairValue.value, true, $table.tableFieldId(index, 'Value' + pairField.id)))
+                    if (pairField.classValidation && !$common.isValidJavaClass(pairField.msg, pairValue.value, true, $table.tableFieldId(index, 'Value' + pairField.id)))
                         return $table.tableFocusInvalidField(index, 'Value' + pairField.id);
                 }
 
@@ -1270,6 +1244,8 @@ consoleModule.controller('metadataController', [
             };
 
             $scope.resetAll = function() {
+                $table.tableReset();
+
                 $confirm.confirm('Are you sure you want to reset current metadata?')
                     .then(function() {
                         $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();

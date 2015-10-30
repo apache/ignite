@@ -383,6 +383,8 @@ consoleModule.controller('igfsController', [
             };
 
             $scope.resetAll = function() {
+                $table.tableReset();
+
                 $confirm.confirm('Are you sure you want to reset current IGFS?')
                     .then(function() {
                         $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();

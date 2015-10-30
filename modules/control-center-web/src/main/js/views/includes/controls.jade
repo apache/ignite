@@ -66,7 +66,7 @@ mixin btn-up(show, click)
 mixin btn-down(show, click)
     i.tipField.fa.fa-arrow-down(ng-if=show ng-click=click bs-tooltip data-title='Move item down')
 
-mixin table-pair-edit(prefix, keyPlaceholder, valPlaceholder, keyJavaBuildInTypes, valueJavaBuildInTypes, focusId, index)
+mixin table-pair-edit(prefix, keyPlaceholder, valPlaceholder, keyJavaBuildInTypes, valueJavaBuildInTypes, focusId, index, divider)
     -var keyModel = 'field.' + prefix + 'Key'
     -var valModel = 'field.' + prefix + 'Value'
 
@@ -75,7 +75,7 @@ mixin table-pair-edit(prefix, keyPlaceholder, valPlaceholder, keyJavaBuildInType
 
     .col-xs-6.col-sm-6.col-md-6
         label.placeholder #{keyPlaceholder}
-        label.fieldSep /
+        label.fieldSep #{divider}
         .input-tip
             if keyJavaBuildInTypes
                 input.form-control(id=keyFocusId enter-focus-next=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder bs-typeahead container='body' retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuildInClasses' on-escape='tableReset()')
@@ -95,7 +95,7 @@ mixin table-pair-edit(prefix, keyPlaceholder, valPlaceholder, keyJavaBuildInType
             else
                 input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder on-enter=btnVisibleAndSave on-escape='tableReset()')
 
-mixin table-pair(header, tblMdl, keyFld, valFld, keyPlaceholder, valPlaceholder, keyJavaBuildInTypes, valueJavaBuildInTypes)
+mixin table-pair(header, tblMdl, keyFld, valFld, keyPlaceholder, valPlaceholder, keyJavaBuildInTypes, valueJavaBuildInTypes, divider)
     .col-sm-12.group
         .group-legend
             label #{header}
@@ -107,14 +107,14 @@ mixin table-pair(header, tblMdl, keyFld, valFld, keyPlaceholder, valPlaceholder,
                 tbody
                     tr(ng-repeat='item in #{tblMdl}')
                         td.col-sm-12(ng-show='!tableEditing(field, $index)')
-                            a.labelFormField(ng-click='tableStartEdit(backupItem, field, $index)') {{compactJavaName(field.model, $index + 1, 55, [item.#{keyFld}, item.#{valFld}])}}
+                            a.labelFormField(ng-click='tableStartEdit(backupItem, field, $index)') {{compactJavaName(field.model, $index + 1, 55, [item.#{keyFld}, item.#{valFld}], '#{divider}')}}
                             +btn-remove('tableRemove(backupItem, field, $index)', 'field.removeTip')
                         td.col-sm-12(ng-show='tableEditing(field, $index)')
-                            +table-pair-edit('cur', keyPlaceholder, valPlaceholder, keyJavaBuildInTypes, valueJavaBuildInTypes, '{{::field.focusId}}', '$index')
+                            +table-pair-edit('cur', keyPlaceholder, valPlaceholder, keyJavaBuildInTypes, valueJavaBuildInTypes, '{{::field.focusId}}', '$index', divider)
                 tfoot(ng-show='tableNewItemActive(field)')
                     tr
                         td.col-sm-12
-                            +table-pair-edit('new', keyPlaceholder, valPlaceholder, keyJavaBuildInTypes, valueJavaBuildInTypes, '{{::field.focusId}}', '-1')
+                            +table-pair-edit('new', keyPlaceholder, valPlaceholder, keyJavaBuildInTypes, valueJavaBuildInTypes, '{{::field.focusId}}', '-1', divider)
 
 mixin table-igfs-path-mode-edit(prefix, keyPlaceholder, valPlaceholder, focusId, index)
     -var keyModel = 'field.' + prefix + 'Key'
@@ -397,7 +397,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                             tr(ng-repeat='item in #{fieldMdl} track by $index')
                                 td
                                     div(ng-show='!tableEditing(field, $index)')
-                                        a.labelFormField(ng-click='tableStartEdit(backupItem, field, $index)') {{compactJavaName(field.model, $index + 1, 55, [item])}}
+                                        a.labelFormField(ng-click='tableStartEdit(backupItem, field, $index)') {{compactJavaName(field.model, $index + 1, 55, [item], '/')}}
                                         +btn-remove('tableRemove(backupItem, field, $index)', 'field.removeTip')
                                         +btn-down('field.reordering && tableSimpleDownVisible(backupItem, field, $index)', 'tableSimpleDown(backupItem, field, $index)')
                                         +btn-up('field.reordering && $index > 0', 'tableSimpleUp(backupItem, field, $index)')
@@ -414,11 +414,11 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                                     .input-tip
                                         input.form-control(id='new{{::field.focusId}}' type='text' ng-model='field.newValue' placeholder='{{::field.placeholder}}' on-enter='tableSimpleSaveVisible(field, -1) && tableSimpleSave(tableSimpleValid, backupItem, field, -1)' on-escape='tableReset()')
         .group-section(ng-switch-when='indexedTypes')
-            +table-pair('Index key-value type pairs', fieldMdl, 'keyClass', 'valueClass', 'Key full class name', 'Value class full name', true, true)
+            +table-pair('Index key-value type pairs', fieldMdl, 'keyClass', 'valueClass', 'Key full class name', 'Value class full name', true, true, '/')
         div(ng-switch-when='fields' ng-hide=fieldHide)
-            +table-pair('{{::field.label}}', fieldMdl, 'name', 'className', 'Field name', 'Field full class name', false, true)
+            +table-pair('{{::field.label}}', fieldMdl, 'name', 'className', 'Field name', 'Field full class name', false, true, '/')
         .group-section(ng-switch-when='aliases' ng-hide=fieldHide)
-            +table-pair('{{::field.label}}', fieldMdl, 'field', 'alias', 'Field name', 'Field Alias', false, false)
+            +table-pair('{{::field.label}}', fieldMdl, 'field', 'alias', 'Field name', 'Field Alias', false, false, '->')
         .group-section(ng-switch-when='pathModes' ng-hide=fieldHide)
             +table-igfs-path-mode('{{::field.label}}', fieldMdl, 'path', 'mode', 'Path', 'Mode')
         .group-section(ng-switch-when='table-db-fields' ng-hide=fieldHide)

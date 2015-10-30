@@ -692,9 +692,12 @@ consoleModule.service('$common', [
              * @param index Showed index of element.
              * @param maxLength Maximum length in symbols for all names.
              * @param names Array of class names to compact.
+             * @param divider String to visualy divide items.
              * @returns {*} Array of compacted class names.
              */
-            compactJavaName: function (id, index, maxLength, names) {
+            compactJavaName: function (id, index, maxLength, names, divider) {
+                divider = ' ' + divider + ' ';
+
                 var prefix = index + ') ';
 
                 var nameCnt = names.length;
@@ -702,7 +705,7 @@ consoleModule.service('$common', [
                 var nameLength = ((maxLength - 3 * (nameCnt - 1)) / nameCnt) | 0;
 
                 try {
-                    var nameWidth = (availableWidth(index, id) - measureText(prefix) - (nameCnt - 1) * measureText(' / ')) /
+                    var nameWidth = (availableWidth(index, id) - measureText(prefix) - (nameCnt - 1) * measureText(divider)) /
                         nameCnt | 0;
 
                     // HTML5 calculation of showed message width.
@@ -715,7 +718,7 @@ consoleModule.service('$common', [
                 var result = prefix + names[0];
 
                 for (var nameIx = 1; nameIx < names.length; nameIx ++)
-                    result += ' / ' + names[nameIx];
+                    result += divider + names[nameIx];
 
                 return result;
             },
