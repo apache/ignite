@@ -905,7 +905,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (_curSchema == null || actionId >= _curSchema.Length || fieldId != _curSchema[actionId])
             {
-                _curSchema = null;   // read order is different, discard schema
+                _curSchema = null;   // read order is different, ignore schema for future reads
 
                 if (!SeekField(fieldId))
                     return false;
