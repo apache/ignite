@@ -21,14 +21,15 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.igniteobject.IgniteObject;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Reader context.
- */
+* Reader context.
+*/
 class PortableReaderContext {
     /** */
-    private Map<Integer, Object> oHandles;
+    private Object oHandles;
 
     /** */
     private Map<Integer, IgniteObject> poHandles;
@@ -37,13 +38,24 @@ class PortableReaderContext {
      * @param handle Handle.
      * @param obj Object.
      */
+    @SuppressWarnings("unchecked")
     void setObjectHandler(int handle, Object obj) {
         assert obj != null;
 
         if (oHandles == null)
-            oHandles = new HashMap<>(3, 1.0f);
+            oHandles = new IgniteBiTuple(handle, obj);
+        else if (oHandles instanceof IgniteBiTuple) {
+            Map map = new HashMap(3, 1.0f);
 
-        oHandles.put(handle, obj);
+            IgniteBiTuple t = (IgniteBiTuple)oHandles;
+
+            map.put(t.getKey(), t.getValue());
+            map.put(handle, obj);
+
+            oHandles = map;
+        }
+        else
+            ((Map)oHandles).put(handle, obj);
     }
 
     /**
@@ -64,7 +76,18 @@ class PortableReaderContext {
      * @return Object.
      */
     @Nullable Object getObjectByHandle(int handle) {
-        return oHandles != null ? oHandles.get(handle) : null;
+        if (oHandles != null) {
+            if (oHandles instanceof IgniteBiTuple) {
+                IgniteBiTuple t = (IgniteBiTuple)oHandles;
+
+                if ((int)t.get1() == handle)
+                    return t.get2();
+            }
+            else
+                return ((Map)oHandles).get(handle);
+        }
+
+        return null;
     }
 
     /**

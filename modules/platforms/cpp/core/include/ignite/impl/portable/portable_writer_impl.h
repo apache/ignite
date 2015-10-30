@@ -30,6 +30,7 @@
 #include "ignite/impl/portable/portable_id_resolver.h"
 #include "ignite/impl/portable/portable_metadata_manager.h"
 #include "ignite/impl/portable/portable_utils.h"
+#include "ignite/impl/portable/portable_schema.h"
 #include "ignite/portable/portable_consts.h"
 #include "ignite/portable/portable_type.h"
 #include "ignite/guid.h"
@@ -55,7 +56,7 @@ namespace ignite
                  * @param metaHnd Metadata handler.
                  */
                 PortableWriterImpl(ignite::impl::interop::InteropOutputStream* stream, PortableIdResolver* idRslvr, 
-                    PortableMetadataManager* metaMgr, PortableMetadataHandler* metaHnd);
+                    PortableMetadataManager* metaMgr, PortableMetadataHandler* metaHnd, int32_t start);
                 
                 /**
                  * Constructor used to construct light-weight writer allowing only raw operations 
@@ -470,7 +471,7 @@ namespace ignite
                 {
                     StartContainerSession(false);
 
-                    WriteFieldIdSkipLength(fieldName, IGNITE_TYPE_COLLECTION);
+                    WriteFieldId(fieldName, IGNITE_TYPE_COLLECTION);
 
                     WriteCollectionWithinSession(first, last, typ);
                 }
@@ -519,7 +520,7 @@ namespace ignite
                 void WriteElement(int32_t id, K key, V val)
                 {
                     CheckSession(id);
-                    
+
                     WriteTopObject<K>(key);
                     WriteTopObject<V>(val);
 
@@ -555,21 +556,11 @@ namespace ignite
                 template<typename T>
                 void WriteObject(const char* fieldName, T val)
                 {
-                    CheckRawMode(false); 
-                        
-                    // 1. Write field ID.
+                    CheckRawMode(false);
+
                     WriteFieldId(fieldName, IGNITE_TYPE_OBJECT);
 
-                    // 2. Preserve space for length.
-                    int32_t lenPos = stream->Position();
-                    stream->Position(lenPos + 4);
-
-                    // 3. Actual write.
                     WriteTopObject(val);
-
-                    // 4. Write field length.
-                    int32_t len = stream->Position() - lenPos - 4;
-                    stream->WriteInt32(lenPos, len);
                 }
 
                 /**
@@ -599,33 +590,53 @@ namespace ignite
                         TemplatedPortableIdResolver<T> idRslvr(type);
                         ignite::common::concurrent::SharedPointer<PortableMetadataHandler> metaHnd;
 
-                        if (metaMgr)                        
+                        if (metaMgr)
                             metaHnd = metaMgr->GetHandler(idRslvr.GetTypeId());
-
-                        PortableWriterImpl writerImpl(stream, &idRslvr, metaMgr, metaHnd.Get());
-                        ignite::portable::PortableWriter writer(&writerImpl);
 
                         int32_t pos = stream->Position();
 
+                        PortableWriterImpl writerImpl(stream, &idRslvr, metaMgr, metaHnd.Get(), pos);
+                        ignite::portable::PortableWriter writer(&writerImpl);
+
                         stream->WriteInt8(IGNITE_HDR_FULL);
                         stream->WriteInt8(IGNITE_PROTO_VER);
-                        stream->WriteBool(true);
+                        stream->WriteInt16(IGNITE_PORTABLE_FLAG_USER_OBJECT);
                         stream->WriteInt32(idRslvr.GetTypeId());
                         stream->WriteInt32(type.GetHashCode(obj));
 
-                        stream->Position(pos + IGNITE_FULL_HDR_LEN);
+                        // Reserve space for the Object Lenght, Schema ID and Schema or Raw Offsett.
+                        stream->Reserve(12);
 
                         type.Write(writer, obj);
 
-                        int32_t len = stream->Position() - pos;
-
-                        stream->WriteInt32(pos + IGNITE_OFFSET_LEN, len);
-                        stream->WriteInt32(pos + IGNITE_OFFSET_RAW, writerImpl.GetRawPosition() - pos);
+                        writerImpl.PostWrite();
 
                         if (metaMgr)
                             metaMgr->SubmitHandler(type.GetTypeName(), idRslvr.GetTypeId(), metaHnd.Get());
                     }
                 }
+
+                /**
+                 * Perform all nessasary post-write operations.
+                 * Includes:
+                 * - writing object length;
+                 * - writing schema offset;
+                 * - writing schema id;
+                 * - writing schema to the tail.
+                 */
+                void PostWrite();
+
+                /**
+                 * Check if the writer has object schema.
+                 *
+                 * @return True if has schema.
+                 */
+                bool HasSchema() const;
+                
+                /**
+                 * Writes contating schema and clears current schema.
+                 */
+                void WriteAndClearSchema();
 
                 /**
                  * Get underlying stream.
@@ -638,31 +649,37 @@ namespace ignite
                 ignite::impl::interop::InteropOutputStream* stream; 
                 
                 /** ID resolver. */
-                PortableIdResolver* idRslvr;                     
+                PortableIdResolver* idRslvr;
                 
                 /** Metadata manager. */
-                PortableMetadataManager* metaMgr;                   
+                PortableMetadataManager* metaMgr;
                 
                 /** Metadata handler. */
-                PortableMetadataHandler* metaHnd;                  
+                PortableMetadataHandler* metaHnd;
 
                 /** Type ID. */
-                int32_t typeId;                                       
+                int32_t typeId;
 
                 /** Elements write session ID generator. */
-                int32_t elemIdGen;                                   
+                int32_t elemIdGen;
                 
                 /** Elements write session ID. */
-                int32_t elemId;                                       
+                int32_t elemId;
                 
                 /** Elements count. */
-                int32_t elemCnt;                                      
+                int32_t elemCnt;
                 
                 /** Elements start position. */
-                int32_t elemPos;                                      
+                int32_t elemPos;
 
                 /** Raw data offset. */
-                int32_t rawPos;                                       
+                int32_t rawPos;
+
+                /** Schema of the current object. */
+                PortableSchema schema;
+
+                /** Writing start position. */
+                int32_t start;
 
                 IGNITE_NO_COPY_ASSIGNMENT(PortableWriterImpl)
 
@@ -736,7 +753,6 @@ namespace ignite
 
                     WriteFieldId(fieldName, typ);
 
-                    stream->WriteInt32(1 + len);
                     stream->WriteInt8(typ);
 
                     func(stream, val);
@@ -769,14 +785,12 @@ namespace ignite
 
                     if (val)
                     {
-                        stream->WriteInt32(5 + (len << lenShift));
                         stream->WriteInt8(hdr);
                         stream->WriteInt32(len);
                         func(stream, val, len);
                     }
                     else
                     {
-                        stream->WriteInt32(1);
                         stream->WriteInt8(IGNITE_HDR_NULL);
                     }
                 }
@@ -837,23 +851,6 @@ namespace ignite
                  * @param fieldTypeId Field type ID.
                  */
                 void WriteFieldId(const char* fieldName, int32_t fieldTypeId);
-
-                /**
-                 * Write field ID and skip field length.
-                 *
-                 * @param fieldName Field name.
-                 * @param fieldTypeId Field type ID.
-                 */
-                void WriteFieldIdSkipLength(const char* fieldName, int32_t fieldTypeId);
-
-                /**
-                 * Write field ID and length.
-                 *
-                 * @param fieldName Field name.
-                 * @param fieldTypeId Field type ID.
-                 * @param len Length.
-                 */
-                void WriteFieldIdAndLength(const char* fieldName, int32_t fieldTypeId, int32_t len);
 
                 /**
                  * Write primitive value.

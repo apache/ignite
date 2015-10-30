@@ -518,7 +518,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         @Nullable final Collection<? extends K> keys,
         final boolean forcePrimary,
         boolean skipTx,
-        @Nullable final GridCacheEntryEx entry,
         @Nullable UUID subjId,
         final String taskName,
         final boolean deserializePortable,
@@ -618,10 +617,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 catch (GridCacheEntryRemovedException ignored) {
                     // No-op, retry.
                 }
-                catch (GridCacheFilterFailedException ignored) {
-                    // No-op, skip the key.
-                    break;
-                }
                 finally {
                     if (entry != null)
                         ctx.evicts().touch(entry, ctx.affinity().affinityTopologyVersion());
@@ -638,7 +633,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         return getAllAsync(
             keys,
             opCtx == null || !opCtx.skipStore(),
-            null,
             false,
             subjId,
             taskName,
@@ -1331,9 +1325,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 }
                 catch (GridCacheEntryRemovedException ignore) {
                     assert false : "Entry cannot become obsolete while holding lock.";
-                }
-                catch (GridCacheFilterFailedException ignore) {
-                    assert false : "Filter should never fail with failFast=false and empty filter.";
                 }
             }
 

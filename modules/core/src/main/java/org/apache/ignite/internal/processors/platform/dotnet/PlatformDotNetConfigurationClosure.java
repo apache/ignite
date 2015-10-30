@@ -146,8 +146,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 writer.writeInt(beans.size());
 
                 for (PlatformDotNetLifecycleBean bean : beans) {
-                    writer.writeString(bean.getAssemblyName());
-                    writer.writeString(bean.getClassName());
+                    writer.writeString(bean.getTypeName());
                     writer.writeMap(bean.getProperties());
                 }
 

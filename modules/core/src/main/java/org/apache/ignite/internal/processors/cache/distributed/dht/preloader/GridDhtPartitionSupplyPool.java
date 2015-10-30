@@ -253,7 +253,7 @@ class GridDhtPartitionSupplyPool {
             GridDhtPartitionDemandMessage d = msg.message();
 
             GridDhtPartitionSupplyMessage s = new GridDhtPartitionSupplyMessage(d.workerId(),
-                d.updateSequence(), cctx.cacheId());
+                d.updateSequence(), cctx.cacheId(), cctx.deploymentEnabled());
 
             long preloadThrottle = cctx.config().getRebalanceThrottle();
 
@@ -312,7 +312,7 @@ class GridDhtPartitionSupplyPool {
                                     U.sleep(preloadThrottle);
 
                                 s = new GridDhtPartitionSupplyMessage(d.workerId(), d.updateSequence(),
-                                    cctx.cacheId());
+                                    cctx.cacheId(), cctx.deploymentEnabled());
                             }
 
                             GridCacheEntryInfo info = e.info();
@@ -364,7 +364,7 @@ class GridDhtPartitionSupplyPool {
                                                 U.sleep(preloadThrottle);
 
                                             s = new GridDhtPartitionSupplyMessage(d.workerId(),
-                                                d.updateSequence(), cctx.cacheId());
+                                                d.updateSequence(), cctx.cacheId(), cctx.deploymentEnabled());
                                         }
 
                                         GridCacheSwapEntry swapEntry = e.getValue();
@@ -448,7 +448,7 @@ class GridDhtPartitionSupplyPool {
 
                                     s = new GridDhtPartitionSupplyMessage(d.workerId(),
                                         d.updateSequence(),
-                                        cctx.cacheId());
+                                        cctx.cacheId(), cctx.deploymentEnabled());
                                 }
 
                                 if (preloadPred == null || preloadPred.apply(info))

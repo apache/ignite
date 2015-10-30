@@ -320,7 +320,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.pendingVersions(),
                 tx.size(),
                 tx.subjectId(),
-                tx.taskNameHash());
+                tx.taskNameHash(),
+                tx.activeCachesDeploymentEnabled());
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
@@ -397,7 +398,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.pendingVersions(),
                 tx.size(),
                 tx.subjectId(),
-                tx.taskNameHash());
+                tx.taskNameHash(),
+                tx.activeCachesDeploymentEnabled());
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
@@ -450,7 +452,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     tx.pendingVersions(),
                     tx.size(),
                     tx.subjectId(),
-                    tx.taskNameHash());
+                    tx.taskNameHash(),
+                    tx.activeCachesDeploymentEnabled());
 
                 req.writeVersion(tx.writeVersion());
 

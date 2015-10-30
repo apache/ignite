@@ -25,7 +25,7 @@
 #include "ignite/impl/interop/interop_input_stream.h"
 #include "ignite/impl/portable/portable_common.h"
 #include "ignite/impl/portable/portable_id_resolver.h"
-#include "ignite/impl/portable/portable_utils.h"
+#include "ignite/impl/portable/portable_schema.h"
 #include "ignite/impl/utils.h"
 #include "ignite/portable/portable_consts.h"
 #include "ignite/portable/portable_type.h"
@@ -54,9 +54,12 @@ namespace ignite
                  * @param hashcode Hash code.
                  * @param len Length in bytes.
                  * @param rawOff Raw data offset.
+                 * @param footerBegin Footer beginning absolute position in stream.
+                 * @param footerEnd Footer ending absolute position in stream.
                  */
-                PortableReaderImpl(interop::InteropInputStream* stream, PortableIdResolver* idRslvr,                     
-                    int32_t pos, bool usrType, int32_t typeId, int32_t hashCode, int32_t len, int32_t rawOff);
+                PortableReaderImpl(interop::InteropInputStream* stream, PortableIdResolver* idRslvr,
+                    int32_t pos, bool usrType, int32_t typeId, int32_t hashCode, int32_t len, int32_t rawOff,
+                    int32_t footerBegin, int32_t footerEnd);
 
                 /**
                  * Constructor used to construct light-weight reader allowing only raw operations 
@@ -182,7 +185,7 @@ namespace ignite
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
-                 *      -1 will be returned in case array in stream was null.
+                 *     -1 will be returned in case array in stream was null.
                  */
                 int32_t ReadInt16Array(const char* fieldName, int16_t* res, const int32_t len);
 
@@ -556,10 +559,12 @@ namespace ignite
                     CheckSingleMode(true);
 
                     int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
-                    int32_t fieldLen = SeekField(fieldId);
+                    int32_t fieldPos = FindField(fieldId);
 
-                    if (fieldLen <= 0)
+                    if (fieldPos <= 0)
                         return -1;
+
+                    stream->Position(fieldPos);
 
                     int32_t size;
                     int32_t id = StartContainerSession(false, IGNITE_TYPE_COLLECTION, &size);
@@ -701,13 +706,15 @@ namespace ignite
                     CheckRawMode(false);
 
                     int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName); 
-                        
-                    int32_t fieldLen = SeekField(fieldId); 
-                        
-                    if (fieldLen > 0) 
-                        return ReadTopObject<T>();
-                    
-                    return GetNull<T>();
+
+                    int32_t fieldPos = FindField(fieldId);
+
+                    if (fieldPos <= 0)
+                        return GetNull<T>();
+
+                    stream->Position(fieldPos);
+
+                    return ReadTopObject<T>();
                 }
 
                 /**
@@ -718,7 +725,7 @@ namespace ignite
                 /**
                  * Read object.
                  *
-                 * @param obj Object to write.
+                 * @return Read object.
                  */
                 template<typename T>
                 T ReadTopObject()
@@ -726,54 +733,93 @@ namespace ignite
                     int32_t pos = stream->Position();
                     int8_t hdr = stream->ReadInt8();
 
-                    if (hdr == IGNITE_HDR_NULL)
-                        return GetNull<T>();
-                    else if (hdr == IGNITE_HDR_HND) {
-                        IGNITE_ERROR_1(ignite::IgniteError::IGNITE_ERR_PORTABLE, "Circular references are not supported.");
-                    }
-                    else if (hdr == IGNITE_TYPE_PORTABLE)
+                    switch (hdr)
                     {
-                        int32_t portLen = stream->ReadInt32(); // Total length of portable object.
-                        int32_t curPos = stream->Position();
-                        int32_t portOff = stream->ReadInt32(curPos + portLen);
-
-                        stream->Position(curPos + portOff); // Position stream right on the object.
-
-                        T val = ReadTopObject<T>();
-
-                        stream->Position(curPos + portLen + 4); // Position stream after portable.
-
-                        return val;
-                    }
-                    else
-                    {
-                        if (hdr != IGNITE_HDR_FULL) {
-                            IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_PORTABLE, "Unexpected header during deserialization: ", hdr);
+                        case IGNITE_HDR_NULL:
+                        {
+                            return GetNull<T>();
                         }
-                        else {
+
+                        case IGNITE_HDR_HND:
+                        {
+                            IGNITE_ERROR_1(ignite::IgniteError::IGNITE_ERR_PORTABLE, 
+                                           "Circular references are not supported.");
+                        }
+
+                        case IGNITE_TYPE_PORTABLE:
+                        {
+                            int32_t portLen = stream->ReadInt32(); // Total length of portable object.
+                            int32_t curPos = stream->Position();
+                            int32_t portOff = stream->ReadInt32(curPos + portLen);
+
+                            stream->Position(curPos + portOff); // Position stream right on the object.
+
+                            T val = ReadTopObject<T>();
+
+                            stream->Position(curPos + portLen + 4); // Position stream after portable.
+
+                            return val;
+                        }
+
+                        case IGNITE_HDR_FULL:
+                        {
                             int8_t protoVer = stream->ReadInt8();
 
                             if (protoVer != IGNITE_PROTO_VER) {
-                                IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_PORTABLE, "Unsupported portable protocol version: ", protoVer);
+                                IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_PORTABLE, 
+                                               "Unsupported portable protocol version: ", protoVer);
                             }
-                            else {
-                                bool usrType = stream->ReadBool();
-                                int32_t typeId = stream->ReadInt32();
-                                int32_t hashCode = stream->ReadInt32();
-                                int32_t len = stream->ReadInt32();
-                                int32_t rawOff = stream->ReadInt32();
 
-                                ignite::portable::PortableType<T> type;
-                                TemplatedPortableIdResolver<T> idRslvr(type);
-                                PortableReaderImpl readerImpl(stream, &idRslvr, pos, usrType, typeId, hashCode, len, rawOff);
-                                ignite::portable::PortableReader reader(&readerImpl);
+                            int16_t flags = stream->ReadInt16();
+                            int32_t typeId = stream->ReadInt32();
+                            int32_t hashCode = stream->ReadInt32();
+                            int32_t len = stream->ReadInt32();
 
-                                T val = type.Read(reader);
+                            // Ignoring Schema Id for now.
+                            stream->ReadInt32();
 
-                                stream->Position(pos + len);
+                            int32_t schemaOrRawOff = stream->ReadInt32();
 
-                                return val;
-                            }
+                            int32_t rawOff;
+                            int32_t footerBegin;
+
+                            if (flags & IGNITE_PORTABLE_FLAG_RAW_ONLY)
+                                footerBegin = len;
+                            else
+                                footerBegin = schemaOrRawOff;
+
+                            int32_t trailingBytes = (len - footerBegin) % 8;
+
+                            int32_t footerEnd = len - trailingBytes;
+
+                            if (trailingBytes)
+                                rawOff = stream->ReadInt32(pos + len - 4);
+                            else
+                                rawOff = schemaOrRawOff;
+
+                            bool usrType = flags & IGNITE_PORTABLE_FLAG_USER_OBJECT;
+
+                            footerBegin += pos;
+                            footerEnd += pos;
+
+                            ignite::portable::PortableType<T> type;
+                            TemplatedPortableIdResolver<T> idRslvr(type);
+                            PortableReaderImpl readerImpl(stream, &idRslvr, pos, usrType,
+                                                          typeId, hashCode, len, rawOff,
+                                                          footerBegin, footerEnd);
+                            ignite::portable::PortableReader reader(&readerImpl);
+
+                            T val = type.Read(reader);
+
+                            stream->Position(pos + len);
+
+                            return val;
+                        }
+
+                        default:
+                        {
+                            IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_PORTABLE, 
+                                           "Unexpected header during deserialization: ", hdr);
                         }
                     }
                 }
@@ -797,46 +843,52 @@ namespace ignite
                 impl::interop::InteropInputStream* GetStream();
             private:
                 /** Underlying stream. */
-                interop::InteropInputStream* stream;   
-                
+                interop::InteropInputStream* stream;
+
                 /** ID resolver. */
-                PortableIdResolver* idRslvr;           
+                PortableIdResolver* idRslvr;
 
                 /** Position in the stream where this object starts. */
-                int32_t pos;       
-                
+                int32_t pos;
+
                 /** Whether this is user type or system type. */
-                bool usrType;      
-                
+                bool usrType;
+
                 /** Type ID as defined in the stream. */
-                int32_t typeId;    
-                
+                int32_t typeId;
+
                 /** Hash code. */
-                int32_t hashCode;  
-                
+                int32_t hashCode;
+
                 /** Total object length in the stream. */
-                int32_t len;       
-                
+                int32_t len;
+
                 /** Raw data offset. */
-                int32_t rawOff;    
+                int32_t rawOff;
 
                 /** Raw mode flag. */
-                bool rawMode;      
+                bool rawMode;
 
                 /** Elements read session ID generator. */
-                int32_t elemIdGen; 
-                
+                int32_t elemIdGen;
+
                 /** Elements read session ID. */
-                int32_t elemId;    
-                
+                int32_t elemId;
+
                 /** Total amount of elements in collection. */
-                int32_t elemCnt;   
-                
+                int32_t elemCnt;
+
                 /** Amount of elements read. */
-                int32_t elemRead;  
+                int32_t elemRead;
+
+                /** Footer beginning position. */
+                int32_t footerBegin;
+
+                /** Footer ending position. */
+                int32_t footerEnd;
 
                 IGNITE_NO_COPY_ASSIGNMENT(PortableReaderImpl)
-
+                    
                 /**
                  * Internal routine to read Guid array.
                  *
@@ -892,24 +944,27 @@ namespace ignite
                         CheckSingleMode(true);
 
                         int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
-                        int32_t fieldLen = SeekField(fieldId);
+                        int32_t fieldPos = FindField(fieldId);
 
-                        if (fieldLen > 0)
+                        if (fieldPos <= 0)
+                            return dflt;
+
+                        stream->Position(fieldPos);
+
+                        int8_t typeId = stream->ReadInt8();
+                        
+                        if (typeId == IGNITE_HDR_NULL)
+                            return dflt;
+
+                        if (typeId != expHdr)
                         {
-                            int8_t typeId = stream->ReadInt8();
+                            int32_t pos = stream->Position();
 
-                            if (typeId == expHdr)
-                                return func(stream);
-                            else if (typeId != IGNITE_HDR_NULL)
-                            {
-                                int32_t pos = stream->Position();
-
-                                IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_PORTABLE, "Invalid type ID", 
-                                    "position", pos, "expected", expHdr, "actual", typeId)
-                            }
+                            IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_PORTABLE, "Invalid type ID", 
+                                "position", pos, "expected", static_cast<int>(expHdr), "actual", static_cast<int>(typeId))
                         }
 
-                        return dflt;
+                        return func(stream);
                     }
                 }
 
@@ -964,20 +1019,16 @@ namespace ignite
                         int32_t pos = stream->Position();
 
                         int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
-                        int32_t fieldLen = SeekField(fieldId);
+                        int32_t fieldPos = FindField(fieldId);
 
-                        if (fieldLen > 0) {
-                            int32_t realLen = ReadArrayInternal(res, len, stream, func, expHdr);
+                        if (fieldPos <= 0)
+                            return -1;
 
-                            // If actual read didn't occur return to initial position so that we do not perform 
-                            // N jumps to find the field again, where N is total amount of fields.
-                            if (realLen != -1 && (!res || realLen > len))
-                                stream->Position(pos);
+                        stream->Position(fieldPos);
 
-                            return realLen;
-                        }
+                        int32_t realLen = ReadArrayInternal(res, len, stream, func, expHdr);
 
-                        return -1;
+                        return realLen;
                     }
                 }
 
@@ -1056,7 +1107,7 @@ namespace ignite
                  * @param fieldId Field ID.
                  * @return Field length or -1 if field is not found.
                  */
-                int32_t SeekField(const int32_t fieldId);
+                int32_t FindField(const int32_t fieldId);
 
                 /**
                  * Check raw mode.

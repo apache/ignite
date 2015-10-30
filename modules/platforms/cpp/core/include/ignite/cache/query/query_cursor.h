@@ -28,11 +28,11 @@
 #include "ignite/impl/operations.h"
 
 namespace ignite
-{    
+{
     namespace cache
     {
         namespace query
-        {            
+        {
             /**
              * Query cursor.
              */
@@ -53,12 +53,11 @@ namespace ignite
                  *
                  * @param impl Implementation.
                  */
-                QueryCursor(impl::cache::query::QueryCursorImpl* impl) : 
-                    impl(ignite::common::concurrent::SharedPointer<impl::cache::query::QueryCursorImpl>(impl))
+                QueryCursor(impl::cache::query::QueryCursorImpl* impl) : impl(impl)
                 {
                     // No-op.
                 }
-                
+
                 /**
                  * Check whether next entry exists.
                  *
@@ -109,7 +108,7 @@ namespace ignite
 
                     IgniteError::ThrowIfNeeded(err);
 
-                    return res;                        
+                    return res;
                 }
 
                 /**

@@ -198,23 +198,26 @@ public class GridPortableMarshaller {
     /** Protocol version position. */
     public static final int PROTO_VER_POS = 1;
 
-    /** */
-    public static final int TYPE_ID_POS = 3;
+    /** Flags position in header. */
+    public static final int FLAGS_POS = 2;
 
     /** */
-    public static final int HASH_CODE_POS = 7;
+    public static final int TYPE_ID_POS = 4;
 
     /** */
-    public static final int TOTAL_LEN_POS = 11;
+    public static final int HASH_CODE_POS = 8;
 
     /** */
-    public static final byte RAW_DATA_OFF_POS = 15;
+    public static final int TOTAL_LEN_POS = 12;
 
     /** */
-    public static final int CLS_NAME_POS = 19;
+    public static final int SCHEMA_ID_POS = 16;
+
+    /** Schema or raw offset position. */
+    public static final int SCHEMA_OR_RAW_OFF_POS = 20;
 
     /** */
-    public static final byte DFLT_HDR_LEN = 19;
+    public static final byte DFLT_HDR_LEN = 24;
 
     /** */
     private final PortableContext ctx;
@@ -228,15 +231,14 @@ public class GridPortableMarshaller {
 
     /**
      * @param obj Object to marshal.
-     * @param off Offset.
      * @return Byte array.
-     * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
+.     * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
-    public byte[] marshal(@Nullable Object obj, int off) throws IgniteObjectException {
+    public byte[] marshal(@Nullable Object obj) throws IgniteObjectException {
         if (obj == null)
             return new byte[] { NULL };
 
-        try (IgniteObjectWriterExImpl writer = new IgniteObjectWriterExImpl(ctx, off)) {
+        try (IgniteObjectWriterExImpl writer = new IgniteObjectWriterExImpl(ctx)) {
             writer.marshal(obj, false);
 
             return writer.array();
@@ -293,7 +295,7 @@ public class GridPortableMarshaller {
      * @return Writer.
      */
     public IgniteObjectWriterExImpl writer(PortableOutputStream out) {
-        return new IgniteObjectWriterExImpl(ctx, out, 0);
+        return new IgniteObjectWriterExImpl(ctx, out);
     }
 
     /**

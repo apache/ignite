@@ -72,9 +72,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 if (string.IsNullOrEmpty(typeCfg.TypeName))
                     throw new PortableException("Type name cannot be null or empty: " + typeCfg);
-
-                if (typeCfg.AssemblyName != null && typeCfg.AssemblyName.Length == 0)
-                    throw new PortableException("Assembly name cannot be empty string: " + typeCfg);
             }
 
             // Define system types. They use internal reflective stuff, so configuration doesn't affect them.
@@ -119,7 +116,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             Marshal(val, stream);
 
-            return stream.ArrayCopy();
+            return stream.GetArrayCopy();
         }
 
         /// <summary>
@@ -397,7 +394,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             bool keepDeserialized = typeCfg.KeepDeserialized ?? cfg.DefaultKeepDeserialized;
 
             // Try resolving type.
-            Type type = typeResolver.ResolveType(typeCfg.TypeName, typeCfg.AssemblyName);
+            Type type = typeResolver.ResolveType(typeCfg.TypeName);
 
             if (type != null)
             {

@@ -84,9 +84,10 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
      * @param xid Xid version.
      * @param futId Future ID.
      * @param miniId Mini future ID.
+     * @param addDepInfo Deployment info flag.
      */
-    public GridDhtTxPrepareResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId) {
-        super(xid);
+    public GridDhtTxPrepareResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId, boolean addDepInfo) {
+        super(xid, addDepInfo);
 
         assert futId != null;
         assert miniId != null;
@@ -100,9 +101,11 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
      * @param futId Future ID.
      * @param miniId Mini future ID.
      * @param err Error.
+     * @param addDepInfo Deployment enabled.
      */
-    public GridDhtTxPrepareResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId, Throwable err) {
-        super(xid, err);
+    public GridDhtTxPrepareResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId, Throwable err,
+        boolean addDepInfo) {
+        super(xid, err, addDepInfo);
 
         assert futId != null;
         assert miniId != null;

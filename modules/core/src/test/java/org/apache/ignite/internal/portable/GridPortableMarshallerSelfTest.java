@@ -714,36 +714,13 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testInvalidClass() throws Exception {
-        byte[] arr = new byte[20];
-
-        arr[0] = 103;
-        arr[1] = 1;
-
-        U.intToBytes(Integer.reverseBytes(11111), arr, 3);
-
-        final IgniteObject po = new IgniteObjectImpl(initPortableContext(new PortableMarshaller()), arr, 0);
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-                                       @Override public Object call() throws Exception {
-                                           po.deserialize();
-
-                                           return null;
-                                       }
-                                   }, IgniteObjectInvalidClassException.class, "Unknown type ID: 11111"
-        );
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testClassWithoutPublicConstructor() throws Exception {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(
-                                        new IgniteObjectConfiguration(NoPublicConstructor.class.getName()),
-                                        new IgniteObjectConfiguration(NoPublicDefaultConstructor.class.getName()),
-                                        new IgniteObjectConfiguration(ProtectedConstructor.class.getName()))
+                new IgniteObjectConfiguration(NoPublicConstructor.class.getName()),
+                new IgniteObjectConfiguration(NoPublicDefaultConstructor.class.getName()),
+                new IgniteObjectConfiguration(ProtectedConstructor.class.getName()))
         );
 
         initPortableContext(marsh);
@@ -846,11 +823,11 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         CustomMappedObject1 obj1 = new CustomMappedObject1(10, "str");
 
-        IgniteObject po1 = marshal(obj1, marsh);
+        IgniteObjectEx po1 = marshal(obj1, marsh);
 
         assertEquals(11111, po1.typeId());
-        assertEquals(22222, intFromPortable(po1, 19));
-        assertEquals(33333, intFromPortable(po1, 32));
+        assertEquals(10, po1.field(22222));
+        assertEquals("str", po1.field(33333));
 
         assertEquals(10, po1.<CustomMappedObject1>deserialize().val1);
         assertEquals("str", po1.<CustomMappedObject1>deserialize().val2);
@@ -905,22 +882,22 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         CustomMappedObject1 obj1 = new CustomMappedObject1(10, "str1");
 
-        IgniteObject po1 = marshal(obj1, marsh);
+        IgniteObjectEx po1 = marshal(obj1, marsh);
 
         assertEquals(11111, po1.typeId());
-        assertEquals(22222, intFromPortable(po1, 19));
-        assertEquals(33333, intFromPortable(po1, 32));
+        assertEquals(10, po1.field(22222));
+        assertEquals("str1", po1.field(33333));
 
         assertEquals(10, po1.<CustomMappedObject1>deserialize().val1);
         assertEquals("str1", po1.<CustomMappedObject1>deserialize().val2);
 
         CustomMappedObject2 obj2 = new CustomMappedObject2(20, "str2");
 
-        IgniteObject po2 = marshal(obj2, marsh);
+        IgniteObjectEx po2 = marshal(obj2, marsh);
 
         assertEquals(44444, po2.typeId());
-        assertEquals(55555, intFromPortable(po2, 19));
-        assertEquals(66666, intFromPortable(po2, 32));
+        assertEquals(20, po2.field(55555));
+        assertEquals("str2", po2.field(66666));
 
         assertEquals(20, po2.<CustomMappedObject2>deserialize().val1);
         assertEquals("str2", po2.<CustomMappedObject2>deserialize().val2);
@@ -1272,9 +1249,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         });
 
         marsh.setTypeConfigurations(Arrays.asList(new IgniteObjectConfiguration(Key.class.getName()),
-                                                  new IgniteObjectConfiguration("NonExistentClass2"),
-                                                  customType1,
-                                                  customType2));
+            new IgniteObjectConfiguration("NonExistentClass2"),
+            customType1,
+            customType2));
 
         PortableContext ctx = initPortableContext(marsh);
 
@@ -2100,7 +2077,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         // Checking the writer directly.
         assertEquals(false, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
 
-        try (IgniteObjectWriterExImpl writer = new IgniteObjectWriterExImpl(initPortableContext(new PortableMarshaller()), 0)) {
+        try (IgniteObjectWriterExImpl writer = new IgniteObjectWriterExImpl(initPortableContext(new PortableMarshaller()))) {
             assertEquals(true, THREAD_LOCAL_ALLOC.isThreadLocalArrayAcquired());
 
             writer.writeString("Thread local test");

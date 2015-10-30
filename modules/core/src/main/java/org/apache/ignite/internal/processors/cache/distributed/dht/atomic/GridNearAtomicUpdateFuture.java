@@ -588,7 +588,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                     req = mappings != null ? mappings.get(nodeId) : null;
 
                 if (req != null) {
-                    res = new GridNearAtomicUpdateResponse(cctx.cacheId(), nodeId, req.futureVersion());
+                    res = new GridNearAtomicUpdateResponse(cctx.cacheId(), nodeId, req.futureVersion(),
+                        cctx.deploymentEnabled());
 
                     ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Primary node left grid " +
                         "before response is received: " + nodeId);
@@ -799,7 +800,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             synchronized (this) {
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(cctx.cacheId(),
                     req.nodeId(),
-                    req.futureVersion());
+                    req.futureVersion(),
+                    cctx.deploymentEnabled());
 
                 res.addFailedKeys(req.keys(), e);
 
@@ -1054,7 +1056,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                             taskNameHash,
                             skipStore,
                             keepBinary,
-                            cctx.kernalContext().clientNode());
+                            cctx.kernalContext().clientNode(),
+                            cctx.deploymentEnabled());
 
                         pendingMappings.put(nodeId, mapped);
                     }
@@ -1147,7 +1150,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 taskNameHash,
                 skipStore,
                 keepBinary,
-                cctx.kernalContext().clientNode());
+                cctx.kernalContext().clientNode(),
+                cctx.deploymentEnabled());
 
             req.addUpdateEntry(cacheKey,
                 val,

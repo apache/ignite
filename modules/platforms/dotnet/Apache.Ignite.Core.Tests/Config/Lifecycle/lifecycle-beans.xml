@@ -45,11 +45,11 @@
             <list>
                 <bean class="org.apache.ignite.platform.lifecycle.PlatformJavaLifecycleBean" />
                 <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean">
-                    <property name="className" value="Apache.Ignite.Core.Tests.Bean" />
+                    <property name="typeName" value="Apache.Ignite.Core.Tests.Bean" />
                 </bean>
                 <bean class="org.apache.ignite.platform.lifecycle.PlatformJavaLifecycleBean" />
                 <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean">
-                    <property name="className" value="Apache.Ignite.Core.Tests.Bean" />
+                    <property name="typeName" value="Apache.Ignite.Core.Tests.Bean" />
                     <property name="properties">
                         <map>
                             <entry key="Property1">

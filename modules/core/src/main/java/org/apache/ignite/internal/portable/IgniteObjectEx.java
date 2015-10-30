@@ -58,11 +58,42 @@ public abstract class IgniteObjectEx implements IgniteObject {
     public abstract long offheapAddress();
 
     /**
+     * Gets field value.
+     *
+     * @param fieldId Field ID.
+     * @return Field value.
+     * @throws PortableException In case of any other error.
+     */
+    @Nullable public abstract <F> F field(int fieldId) throws PortableException;
+
+    /**
+     * Get field by offset.
+     *
+     * @param fieldOffset Field offset.
+     * @return Field value.
+     */
+    @Nullable protected abstract <F> F fieldByOffset(int fieldOffset);
+
+    /**
      * @param ctx Reader context.
      * @param fieldName Field name.
-     * @return Field name.
+     * @return Field value.
      */
     @Nullable protected abstract <F> F field(PortableReaderContext ctx, String fieldName);
+
+    /**
+     * Get schema ID.
+     *
+     * @return Schema ID.
+     */
+    protected abstract int schemaId();
+
+    /**
+     * Create schema for object.
+     *
+     * @return Schema.
+     */
+    protected abstract PortableSchema createSchema();
 
     /** {@inheritDoc} */
     @Override public IgniteObject clone() throws CloneNotSupportedException {

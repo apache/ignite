@@ -181,6 +181,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
      * @param taskNameHash Task name hash code.
      * @param skipStore Skip write-through to a persistent storage.
      * @param clientReq Client node request flag.
+     * @param addDepInfo Deployment info flag.
      */
     public GridNearAtomicUpdateRequest(
         int cacheId,
@@ -200,7 +201,8 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         int taskNameHash,
         boolean skipStore,
         boolean keepBinary,
-        boolean clientReq
+        boolean clientReq,
+        boolean addDepInfo
     ) {
         assert futVer != null;
 
@@ -223,6 +225,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
         this.clientReq = clientReq;
+        this.addDepInfo = addDepInfo;
 
         keys = new ArrayList<>();
     }
@@ -550,11 +553,6 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
         prepareMarshalCacheObjects(keys, cctx);
 
-        if (op == TRANSFORM)
-            entryProcessorsBytes = marshalCollection(entryProcessors, ctx);
-        else
-            prepareMarshalCacheObjects(vals, cctx);
-
         if (filter != null) {
             boolean hasFilter = false;
 
@@ -570,10 +568,20 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 filter = null;
         }
 
-        invokeArgsBytes = marshalInvokeArguments(invokeArgs, ctx);
-
         if (expiryPlc != null)
-            expiryPlcBytes = CU.marshal(ctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
+            expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
+
+        if (op == TRANSFORM) {
+            // force addition of deployment info for entry processors if P2P is enabled globally.
+            if (!addDepInfo && ctx.deploymentEnabled())
+                addDepInfo = true;
+
+            entryProcessorsBytes = marshalCollection(entryProcessors, cctx);
+
+            invokeArgsBytes = marshalInvokeArguments(invokeArgs, cctx);
+        }
+        else
+            prepareMarshalCacheObjects(vals, cctx);
     }
 
     /** {@inheritDoc} */
@@ -600,6 +608,11 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
         if (expiryPlcBytes != null)
             expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
     /** {@inheritDoc} */

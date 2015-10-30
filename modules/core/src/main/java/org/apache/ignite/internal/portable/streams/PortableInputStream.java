@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.portable.streams;
 
+import org.apache.ignite.internal.portable.PortablePositionReadable;
+
 /**
  * Portable input stream.
  */
-public interface PortableInputStream extends PortableStream {
+public interface PortableInputStream extends PortableStream, PortablePositionReadable {
     /**
      * Read byte value.
      *
@@ -97,14 +99,6 @@ public interface PortableInputStream extends PortableStream {
      * @return Int value.
      */
     public int readInt();
-
-    /**
-     * Read int value at the given position.
-     *
-     * @param pos Position.
-     * @return Value.
-     */
-    public int readInt(int pos);
 
     /**
      * Read int array.

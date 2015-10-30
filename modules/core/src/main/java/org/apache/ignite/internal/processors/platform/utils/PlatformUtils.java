@@ -781,7 +781,6 @@ public class PlatformUtils {
             writeNullableCollection(writer, portableCfg.getTypesConfiguration(),
                 new PlatformWriterClosure<PlatformDotNetPortableTypeConfiguration>() {
                 @Override public void write(IgniteObjectRawWriterEx writer, PlatformDotNetPortableTypeConfiguration typ) {
-                    writer.writeString(typ.getAssemblyName());
                     writer.writeString(typ.getTypeName());
                     writer.writeString(typ.getNameMapper());
                     writer.writeString(typ.getIdMapper());

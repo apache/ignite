@@ -17,11 +17,12 @@
 
 package org.apache.ignite.igniteobject;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.TreeMap;
+import org.apache.ignite.IgnitePortables;
+import org.apache.ignite.cache.IgniteObject;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.jetbrains.annotations.Nullable;
 
@@ -108,7 +109,7 @@ public interface IgniteObject extends Serializable, Cloneable {
      *
      * @return Type ID.
      */
-    public int typeId();
+    @Override public int typeId();
 
     /**
      * Gets meta data for this portable object.
@@ -133,7 +134,16 @@ public interface IgniteObject extends Serializable, Cloneable {
      * @param fieldName Field name.
      * @return {@code true} if field is set.
      */
-    public boolean hasField(String fieldName);
+    @Override public boolean hasField(String fieldName);
+
+    /**
+     * Gets field descriptor.
+     *
+     * @param fieldName Field name.
+     * @return Field descriptor.
+     * @throws PortableException If failed.
+     */
+    public PortableField fieldDescriptor(String fieldName) throws PortableException;
 
     /**
      * Gets fully deserialized instance of portable object.

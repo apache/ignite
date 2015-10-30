@@ -7,7 +7,7 @@ Without LGPL dependencies and Scala 2.10:
   mvn clean package -DskipTests -Dscala-2.10
 
 With LGPL dependencies:
-  mvn clean package -DskipTests -Prelease,lgpl
+  mvn clean package -DskipTests -Prelease,lgpl -Dignite.edition=fabric-lgpl
 
 With LGPL dependencies and Scala 2.10:
   mvn clean package -DskipTests -Prelease,lgpl -Dscala-2.10
@@ -19,9 +19,10 @@ NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
 
 Ignite Hadoop Accelerator Maven Build Instructions
 ============================================
-mvn clean package -DskipTests -Dignite.edition=hadoop [-Dhadoop.version=X.X.X]
+mvn clean package -DskipTests -Dignite.edition=hadoop [-Dhadoop.version=X.X.X] [-Dspark.version=x.y.z]
 
 Use 'hadoop.version' parameter to build Ignite against a specific Hadoop version.
+Use 'spark.version' parameter to build ignite-spark module for a specific Spark version.
 
 Look for apache-ignite-hadoop-<version>-bin.zip in ./target/bin directory. Resulting binary
 assembly will also include integration module for Apache Spark.

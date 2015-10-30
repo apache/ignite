@@ -38,14 +38,29 @@ namespace ignite
             /** Portable protocol version.  */
             const int8_t IGNITE_PROTO_VER = 1;
 
+            /** Protocol version position. */
+            const int32_t PROTO_VER_POS = 1;
+
+            /** Header offset: Flags. */
+            const int32_t IGNITE_OFFSET_FLAGS = 2;
+
+            /** Header offset: Type ID. */
+            const int32_t IGNITE_OFFSET_TYPE_ID = 4;
+
+            /** Header offset: Hash Code. */
+            const int32_t IGNITE_OFFSET_HASH_CODE = 8;
+
+            /** Header offset: Object Length. */
+            const int32_t IGNITE_OFFSET_LEN = 12;
+
+            /** Header offset: Schema ID. */
+            const int32_t IGNITE_OFFSET_SCHEMA_ID = 16;
+
+            /** Header offset: Schema or Raw Offset. */
+            const int32_t IGNITE_OFFSET_SCHEMA_OR_RAW_OFF = 20;
+
             /** Full header length. */
-            const int32_t IGNITE_FULL_HDR_LEN = 19;
-
-            /** Header offset: length. */
-            const int32_t IGNITE_OFFSET_LEN = 11;
-
-            /** Header offset: raw offset. */
-            const int32_t IGNITE_OFFSET_RAW = 15;
+            const int32_t IGNITE_DFLT_HDR_LEN = 24;
 
             /** Type: object. */
             const int8_t IGNITE_TYPE_OBJECT = IGNITE_HDR_FULL;
@@ -148,6 +163,12 @@ namespace ignite
 
             /** Read/write map. */
             const int32_t IGNITE_PORTABLE_MODE_MAP = 3;
+
+            /** User object flag. */
+            const int16_t IGNITE_PORTABLE_FLAG_USER_OBJECT = 0x0001;
+
+            /** Raw only flag. */
+            const int16_t IGNITE_PORTABLE_FLAG_RAW_ONLY = 0x0002;
         }
     }    
 }

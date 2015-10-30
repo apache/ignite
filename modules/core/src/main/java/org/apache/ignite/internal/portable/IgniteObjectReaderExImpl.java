@@ -29,6 +29,7 @@ import org.apache.ignite.igniteobject.IgniteObjectInvalidClassException;
 import org.apache.ignite.igniteobject.IgniteObject;
 import org.apache.ignite.igniteobject.IgniteObjectRawReader;
 import org.apache.ignite.igniteobject.IgniteObjectReader;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,6 +46,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
@@ -63,7 +65,6 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE_AR
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLASS;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLS_NAME_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.COL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_HASH_MAP;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CONC_SKIP_LIST_SET;
@@ -97,7 +98,6 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OPTM_MARSH;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PORTABLE_OBJ;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROPERTIES_MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.RAW_DATA_OFF_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
@@ -117,6 +117,9 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_AR
  */
 @SuppressWarnings("unchecked")
 public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjectRawReaderEx, ObjectInput {
+    /** Length of a single field descriptor. */
+    private static final int FIELD_DESC_LEN = 16;
+
     /** */
     private final PortableContext ctx;
 
@@ -133,25 +136,34 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     private final ClassLoader ldr;
 
     /** */
-    private int off;
-
-    /** */
-    private int rawOff;
-
-    /** */
-    private int len;
-
-    /** */
     private PortableClassDescriptor desc;
+
+    /** Flag indicating that object header was parsed. */
+    private boolean hdrParsed;
+
+    /** Type ID. */
+    private int typeId;
+
+    /** Raw offset. */
+    private int rawOff;
 
     /** */
     private int hdrLen;
 
-    /** */
-    private int clsNameLen;
+    /** Footer start. */
+    private int footerStart;
 
-    /** */
-    private Integer typeId;
+    /** Footer end. */
+    private int footerLen;
+
+    /** ID mapper. */
+    private PortableIdMapper idMapper;
+
+    /** Schema Id. */
+    private int schemaId;
+
+    /** Object schema. */
+    private PortableSchema schema;
 
     /**
      * @param ctx Context.
@@ -186,49 +198,65 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
         this.ldr = ldr;
         this.rCtx = rCtx;
 
-        off = start;
-        rawOff = start;
+        in.position(start);
     }
 
     /**
      * Preloads typeId from the input array.
      */
-    private void readObjectTypeId(boolean skipObjByte) {
-        int pos = rawOff;
+    private void parseHeaderIfNeeded() {
+        if (hdrParsed)
+            return;
 
-        if (!skipObjByte)
-            // skip obj type byte
-            rawOff++;
+        int retPos = in.position();
 
-        // Validate protocol version.
-        PortableUtils.checkProtocolVersion(doReadByte(true));
+        in.position(start);
 
-        // skip user flag
-        rawOff += 1;
+        byte hdr = in.readByte();
 
-        typeId = doReadInt(true);
+        if (hdr != GridPortableMarshaller.OBJ)
+            throw new PortableException("Invalid header [pos=" + retPos + "expected=" + GridPortableMarshaller.OBJ +
+                ", actual=" + hdr + ']');
+
+        PortableUtils.checkProtocolVersion(in.readByte());
+
+        in.position(in.position() + 2); // Skip flags.
+
+        typeId = in.readIntPositioned(start + GridPortableMarshaller.TYPE_ID_POS);
+
+        IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(in, start);
+
+        footerStart = footer.get1();
+        footerLen = footer.get2() - footerStart;
+
+        schemaId = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_ID_POS);
+
+        rawOff = PortableUtils.rawOffsetAbsolute(in, start);
 
         if (typeId == UNREGISTERED_TYPE_ID) {
-            // skip hash code, length and raw offset
-            rawOff += 12;
+            // Skip to the class name position.
+            in.position(start + GridPortableMarshaller.DFLT_HDR_LEN);
 
-            int off = rawOff;
+            int off = in.position();
 
-            Class cls = doReadClass(true, typeId);
+            Class cls = doReadClass(typeId);
 
             // registers class by typeId, at least locally if the cache is not ready yet.
             PortableClassDescriptor desc = ctx.descriptorForClass(cls);
 
             typeId = desc.typeId();
 
-            clsNameLen = rawOff - off;
+            int clsNameLen = in.position() - off;
 
-            hdrLen = CLS_NAME_POS + clsNameLen;
+            hdrLen = DFLT_HDR_LEN + clsNameLen;
         }
         else
             hdrLen = DFLT_HDR_LEN;
 
-        in.position(rawOff = pos);
+        // Restore state.
+        in.position(retPos);
+
+        hdrParsed = true;
     }
 
     /**
@@ -243,7 +271,18 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Object unmarshal() throws IgniteObjectException {
-        return unmarshal(true);
+        return unmarshal(false);
+    }
+
+    /**
+     * @param offset Offset in the array.
+     * @return Unmarshalled value.
+     * @throws PortableException In case of error.
+     */
+    public Object unmarshal(int offset) throws PortableException {
+        in.position(offset);
+
+        return in.position() >= 0 ? unmarshal() : null;
     }
 
     /**
@@ -251,21 +290,34 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @return Unmarshalled value.
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
-    @Nullable Object unmarshal(String fieldName) throws IgniteObjectException {
-        off = fieldOffset(fieldId(fieldName));
-
-        return off >= 0 ? unmarshal(false) : null;
+    @Nullable Object unmarshalField(String fieldName) throws IgniteObjectException {
+        return hasField(fieldName) ? unmarshal() : null;
     }
 
     /**
-     * @param offset Offset in the array.
+     * @param fieldId Field ID.
+     * @return Unmarshalled value.
+     * @throws IgniteObjectException In case of error.
+     */
+    @Nullable Object unmarshalField(int fieldId) throws IgniteObjectException {
+        parseHeaderIfNeeded();
+
+        return hasField(fieldId) ? unmarshal() : null;
+    }
+
+    /**
+     * @param fieldOffset Field offset.
      * @return Unmarshalled value.
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
-    public Object unmarshal(int offset) throws IgniteObjectException {
-        off = offset;
+    @Nullable Object unmarshalFieldByOffset(int fieldOffset) throws IgniteObjectException {
+        assert fieldOffset != 0;
 
-        return off >= 0 ? unmarshal(false) : null;
+        parseHeaderIfNeeded();
+
+        in.position(start + in.readIntPositioned(footerStart + fieldOffset));
+
+        return unmarshal();
     }
 
     /**
@@ -274,18 +326,11 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Byte readByte(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+        if (hasField(fieldId)) {
+            if (checkFlag(BYTE) == Flag.NULL)
                 return null;
 
-            if (flag != BYTE)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadByte(false);
+            return in.readByte();
         }
         else
             return null;
@@ -297,18 +342,11 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Short readShort(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+        if (hasField(fieldId)) {
+            if (checkFlag(SHORT) == Flag.NULL)
                 return null;
 
-            if (flag != SHORT)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadShort(false);
+            return in.readShort();
         }
         else
             return null;
@@ -320,18 +358,11 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Integer readInt(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+        if (hasField(fieldId)) {
+            if (checkFlag(INT) == Flag.NULL)
                 return null;
 
-            if (flag != INT)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadInt(false);
+            return in.readInt();
         }
         else
             return null;
@@ -343,18 +374,11 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Long readLong(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+        if (hasField(fieldId)) {
+            if (checkFlag(LONG) == Flag.NULL)
                 return null;
 
-            if (flag != LONG)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadLong(false);
+            return in.readLong();
         }
         else
             return null;
@@ -366,18 +390,11 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Float readFloat(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+        if (hasField(fieldId)) {
+            if (checkFlag(FLOAT) == Flag.NULL)
                 return null;
 
-            if (flag != FLOAT)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadFloat(false);
+            return in.readFloat();
         }
         else
             return null;
@@ -389,18 +406,11 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Double readDouble(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+        if (hasField(fieldId)) {
+            if (checkFlag(DOUBLE) == Flag.NULL)
                 return null;
 
-            if (flag != DOUBLE)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadDouble(false);
+            return in.readDouble();
         }
         else
             return null;
@@ -412,18 +422,11 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Character readChar(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+        if (hasField(fieldId)) {
+            if (checkFlag(CHAR) == Flag.NULL)
                 return null;
 
-            if (flag != CHAR)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadChar(false);
+            return in.readChar();
         }
         else
             return null;
@@ -435,18 +438,11 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Boolean readBoolean(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+        if (hasField(fieldId)) {
+            if (checkFlag(BOOLEAN) == Flag.NULL)
                 return null;
 
-            if (flag != BOOLEAN)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadBoolean(false);
+            return in.readBoolean();
         }
         else
             return null;
@@ -458,18 +454,11 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable BigDecimal readDecimal(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+        if (hasField(fieldId)) {
+            if (checkFlag(DECIMAL) == Flag.NULL)
                 return null;
 
-            if (flag != DECIMAL)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadDecimal(false);
+            return doReadDecimal();
         }
         else
             return null;
@@ -481,18 +470,11 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable String readString(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+        if (hasField(fieldId)) {
+            if (checkFlag(STRING) == Flag.NULL)
                 return null;
 
-            if (flag != STRING)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadString(false);
+            return doReadString();
         }
         else
             return null;
@@ -504,18 +486,11 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable UUID readUuid(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+        if (hasField(fieldId)) {
+            if (checkFlag(UUID) == Flag.NULL)
                 return null;
 
-            if (flag != UUID)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadUuid(false);
+            return doReadUuid();
         }
         else
             return null;
@@ -527,18 +502,11 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Date readDate(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+        if (hasField(fieldId)) {
+            if (checkFlag(DATE) == Flag.NULL)
                 return null;
 
-            if (flag != DATE)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadDate(false);
+            return doReadDate();
         }
         else
             return null;
@@ -550,18 +518,11 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Timestamp readTimestamp(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+        if (hasField(fieldId)) {
+            if (checkFlag(TIMESTAMP) == Flag.NULL)
                 return null;
 
-            if (flag != TIMESTAMP)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadTimestamp(false);
+            return doReadTimestamp();
         }
         else
             return null;
@@ -573,9 +534,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Object readObject(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
-
-        return off >= 0 ? doReadObject(false) : null;
+        return hasField(fieldId) ? doReadObject() : null;
     }
 
     /**
@@ -584,24 +543,16 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable byte[] readByteArray(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(BYTE_ARR);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
-                return null;
-
-            if (flag == HANDLE)
+            if (flag == Flag.NORMAL)
+                return doReadByteArray();
+            else if (flag == Flag.HANDLE)
                 return readHandleField();
-
-            if (flag != BYTE_ARR)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadByteArray(false);
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -610,24 +561,16 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable short[] readShortArray(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(SHORT_ARR);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
-                return null;
-
-            if (flag == HANDLE)
+            if (flag == Flag.NORMAL)
+                return doReadShortArray();
+            else if (flag == Flag.HANDLE)
                 return readHandleField();
-
-            if (flag != SHORT_ARR)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadShortArray(false);
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -636,24 +579,16 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable int[] readIntArray(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(INT_ARR);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
-                return null;
-
-            if (flag == HANDLE)
+            if (flag == Flag.NORMAL)
+                return doReadIntArray();
+            else if (flag == Flag.HANDLE)
                 return readHandleField();
-
-            if (flag != INT_ARR)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadIntArray(false);
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -662,24 +597,16 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable long[] readLongArray(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(LONG_ARR);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
-                return null;
-
-            if (flag == HANDLE)
+            if (flag == Flag.NORMAL)
+                return doReadLongArray();
+            else if (flag == Flag.HANDLE)
                 return readHandleField();
-
-            if (flag != LONG_ARR)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadLongArray(false);
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -688,24 +615,16 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable float[] readFloatArray(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(FLOAT_ARR);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
-                return null;
-
-            if (flag == HANDLE)
+            if (flag == Flag.NORMAL)
+                return doReadFloatArray();
+            else if (flag == Flag.HANDLE)
                 return readHandleField();
-
-            if (flag != FLOAT_ARR)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadFloatArray(false);
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -714,24 +633,16 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable double[] readDoubleArray(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(DOUBLE_ARR);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
-                return null;
-
-            if (flag == HANDLE)
+            if (flag == Flag.NORMAL)
+                return doReadDoubleArray();
+            else if (flag == Flag.HANDLE)
                 return readHandleField();
-
-            if (flag != DOUBLE_ARR)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadDoubleArray(false);
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -740,24 +651,16 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable char[] readCharArray(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(CHAR_ARR);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
-                return null;
-
-            if (flag == HANDLE)
+            if (flag == Flag.NORMAL)
+                return doReadCharArray();
+            else if (flag == Flag.HANDLE)
                 return readHandleField();
-
-            if (flag != CHAR_ARR)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadCharArray(false);
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -766,24 +669,16 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable boolean[] readBooleanArray(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(BOOLEAN_ARR);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
-                return null;
-
-            if (flag == HANDLE)
+            if (flag == Flag.NORMAL)
+                return doReadBooleanArray();
+            else if (flag == Flag.HANDLE)
                 return readHandleField();
-
-            if (flag != BOOLEAN_ARR)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadBooleanArray(false);
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -792,24 +687,16 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable BigDecimal[] readDecimalArray(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(DECIMAL_ARR);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
-                return null;
-
-            if (flag == HANDLE)
+            if (flag == Flag.NORMAL)
+                return doReadDecimalArray();
+            else if (flag == Flag.HANDLE)
                 return readHandleField();
-
-            if (flag != DECIMAL_ARR)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadDecimalArray(false);
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -818,24 +705,16 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable String[] readStringArray(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(STRING_ARR);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
-                return null;
-
-            if (flag == HANDLE)
+            if (flag == Flag.NORMAL)
+                return doReadStringArray();
+            else if (flag == Flag.HANDLE)
                 return readHandleField();
-
-            if (flag != STRING_ARR)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadStringArray(false);
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -844,24 +723,16 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable UUID[] readUuidArray(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(UUID_ARR);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
-                return null;
-
-            if (flag == HANDLE)
+            if (flag == Flag.NORMAL)
+                return doReadUuidArray();
+            else if (flag == Flag.HANDLE)
                 return readHandleField();
-
-            if (flag != UUID_ARR)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadUuidArray(false);
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -870,24 +741,16 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Date[] readDateArray(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(DATE_ARR);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
-                return null;
-
-            if (flag == HANDLE)
+            if (flag == Flag.NORMAL)
+                return doReadDateArray();
+            else if (flag == Flag.HANDLE)
                 return readHandleField();
-
-            if (flag != DATE_ARR)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadDateArray(false);
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -896,24 +759,16 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Timestamp[] readTimestampArray(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(TIMESTAMP_ARR);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
-                return null;
-
-            if (flag == HANDLE)
+            if (flag == Flag.NORMAL)
+                return doReadTimestampArray();
+            else if (flag == Flag.HANDLE)
                 return readHandleField();
-
-            if (flag != TIMESTAMP_ARR)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadTimestampArray(false);
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -922,24 +777,16 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Object[] readObjectArray(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(OBJ_ARR);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
-                return null;
-
-            if (flag == HANDLE)
+            if (flag == Flag.NORMAL)
+                return doReadObjectArray(true);
+            else if (flag == Flag.HANDLE)
                 return readHandleField();
-
-            if (flag != OBJ_ARR)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadObjectArray(false, true);
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -950,24 +797,16 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      */
     @Nullable <T> Collection<T> readCollection(int fieldId, @Nullable Class<? extends Collection> cls)
         throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(COL);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
-                return null;
-
-            if (flag == HANDLE)
+            if (flag == Flag.NORMAL)
+                return (Collection<T>)doReadCollection(true, cls);
+            else if (flag == Flag.HANDLE)
                 return readHandleField();
-
-            if (flag != COL)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return (Collection<T>)doReadCollection(false, true, cls);
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -978,24 +817,16 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      */
     @Nullable Map<?, ?> readMap(int fieldId, @Nullable Class<? extends Map> cls)
         throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(MAP);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
-                return null;
-
-            if (flag == HANDLE)
+            if (flag == Flag.NORMAL)
+                return doReadMap(true, cls);
+            else if (flag == Flag.HANDLE)
                 return readHandleField();
-
-            if (flag != MAP)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadMap(false, true, cls);
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -1004,24 +835,16 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException On case of error.
      */
     @Nullable Map.Entry<?, ?> readMapEntry(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(MAP_ENTRY);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
-                return null;
-
-            if (flag == HANDLE)
+            if (flag == Flag.NORMAL)
+                return doReadMapEntry(true);
+            else if (flag == Flag.HANDLE)
                 return readHandleField();
-
-            if (flag != MAP_ENTRY)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return doReadMapEntry(false, true);
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -1030,18 +853,11 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable IgniteObject readPortableObject(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+        if (hasField(fieldId)) {
+            if (checkFlag(PORTABLE_OBJ) == Flag.NULL)
                 return null;
 
-            if (flag != PORTABLE_OBJ)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            return new IgniteObjectImpl(ctx, doReadByteArray(false), doReadInt(false));
+            return new IgniteObjectImpl(ctx, doReadByteArray(), in.readInt());
         }
         else
             return null;
@@ -1054,26 +870,19 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Enum<?> readEnum(int fieldId, @Nullable Class<?> cls) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+        if (hasField(fieldId)) {
+            if (checkFlag(ENUM) == Flag.NULL)
                 return null;
-
-            if (flag != ENUM)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
 
             // Revisit: why have we started writing Class for enums in their serialized form?
             if (cls == null)
-                cls = doReadClass(false);
+                cls = doReadClass();
             else
-                doReadClass(false);
+                doReadClass();
 
             Object[] vals = GridEnumCache.get(cls);
 
-            return (Enum<?>)vals[doReadInt(false)];
+            return (Enum<?>)vals[in.readInt()];
         }
         else
             return null;
@@ -1086,27 +895,22 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Object[] readEnumArray(int fieldId, @Nullable Class<?> cls) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
+        if (hasField(fieldId)) {
+            Flag flag = checkFlag(ENUM_ARR);
 
-        if (off >= 0) {
-            byte flag = doReadByte(false);
+            if (flag == Flag.NORMAL) {
+                if (cls == null)
+                    cls = doReadClass();
+                else
+                    doReadClass();
 
-            if (flag == NULL)
-                return null;
-
-            if (flag != ENUM_ARR)
-                throw new IgniteObjectException("Invalid flag value: " + flag);
-
-            // Revisit: why have we started writing Class for enums in their serialized form?
-            if (cls == null)
-                cls = doReadClass(false);
-            else
-                doReadClass(false);
-
-            return doReadEnumArray(false, cls);
+                return doReadEnumArray(cls);
+            }
+            else if (flag == Flag.HANDLE)
+                return readHandleField();
         }
-        else
-            return null;
+
+        return null;
     }
 
     /**
@@ -1115,18 +919,11 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @Nullable Class<?> readClass(int fieldId) throws IgniteObjectException {
-        off = fieldOffset(fieldId);
-
-        if (off >= 0) {
-            byte flag = doReadByte(false);
-
-            if (flag == NULL)
+        if (hasField(fieldId)) {
+            if (checkFlag(CLASS) == Flag.NULL)
                 return null;
 
-            if (flag != CLASS)
-                throw new IgniteObjectException("Invalid flag type: [flag=" + flag + ']');
-
-            return doReadClass(false);
+            return doReadClass();
         }
 
         return null;
@@ -1154,14 +951,14 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
      * @return Field.
      */
     private <T> T readHandleField() {
-        int handle = (off - 1) - doReadInt(false);
+        int handle = (in.position() - 1) - in.readInt();
 
         Object obj = rCtx.getObjectByHandle(handle);
 
         if (obj == null) {
-            off = handle;
+            in.position(handle);
 
-            obj = doReadObject(false);
+            obj = doReadObject();
         }
 
         return (T)obj;
@@ -1175,7 +972,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Override public byte readByte() throws IgniteObjectException {
-        return doReadByte(true);
+        return in.readByte();
     }
 
     /** {@inheritDoc} */
@@ -1187,7 +984,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Override public short readShort() throws IgniteObjectException {
-        return doReadShort(true);
+        return in.readShort();
     }
 
     /** {@inheritDoc} */
@@ -1199,7 +996,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Override public int readInt() throws IgniteObjectException {
-        return doReadInt(true);
+        return in.readInt();
     }
 
     /** {@inheritDoc} */
@@ -1211,7 +1008,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Override public long readLong() throws IgniteObjectException {
-        return doReadLong(true);
+        return in.readLong();
     }
 
     /** {@inheritDoc} */
@@ -1223,7 +1020,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Override public float readFloat() throws IgniteObjectException {
-        return doReadFloat(true);
+        return in.readFloat();
     }
 
     /** {@inheritDoc} */
@@ -1235,7 +1032,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Override public double readDouble() throws IgniteObjectException {
-        return doReadDouble(true);
+        return in.readDouble();
     }
 
     /** {@inheritDoc} */
@@ -1247,7 +1044,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Override public char readChar() throws IgniteObjectException {
-        return doReadChar(true);
+        return in.readChar();
     }
 
     /** {@inheritDoc} */
@@ -1259,7 +1056,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Override public boolean readBoolean() throws IgniteObjectException {
-        return doReadBoolean(true);
+        return in.readBoolean();
     }
 
     /** {@inheritDoc} */
@@ -1269,15 +1066,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Override @Nullable public BigDecimal readDecimal() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(DECIMAL) == Flag.NULL)
             return null;
 
-        if (flag != DECIMAL)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadDecimal(true);
+        return doReadDecimal();
     }
 
     /** {@inheritDoc} */
@@ -1287,15 +1079,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public String readString() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(STRING) == Flag.NULL)
             return null;
 
-        if (flag != STRING)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadString(true);
+        return doReadString();
     }
 
     /** {@inheritDoc} */
@@ -1305,15 +1092,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public UUID readUuid() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(UUID) == Flag.NULL)
             return null;
 
-        if (flag != UUID)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadUuid(true);
+        return doReadUuid();
     }
 
     /** {@inheritDoc} */
@@ -1323,15 +1105,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public Date readDate() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(DATE) == Flag.NULL)
             return null;
 
-        if (flag != DATE)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadDate(true);
+        return doReadDate();
     }
 
     /** {@inheritDoc} */
@@ -1341,15 +1118,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public Timestamp readTimestamp() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(TIMESTAMP) == Flag.NULL)
             return null;
 
-        if (flag != TIMESTAMP)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadTimestamp(true);
+        return doReadTimestamp();
     }
 
     /** {@inheritDoc} */
@@ -1360,12 +1132,12 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Override public Object readObject() throws IgniteObjectException {
-        return doReadObject(true);
+        return doReadObject();
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObjectDetached() throws IgniteObjectException {
-        return unmarshal(true, true);
+        return unmarshal(true);
     }
 
     /** {@inheritDoc} */
@@ -1375,15 +1147,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public byte[] readByteArray() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(BYTE_ARR) == Flag.NULL)
             return null;
 
-        if (flag != BYTE_ARR)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadByteArray(true);
+        return doReadByteArray();
     }
 
     /** {@inheritDoc} */
@@ -1393,15 +1160,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public short[] readShortArray() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(SHORT_ARR) == Flag.NULL)
             return null;
 
-        if (flag != SHORT_ARR)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadShortArray(true);
+        return doReadShortArray();
     }
 
     /** {@inheritDoc} */
@@ -1411,15 +1173,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public int[] readIntArray() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(INT_ARR) == Flag.NULL)
             return null;
 
-        if (flag != INT_ARR)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadIntArray(true);
+        return doReadIntArray();
     }
 
     /** {@inheritDoc} */
@@ -1429,15 +1186,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public long[] readLongArray() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(LONG_ARR) == Flag.NULL)
             return null;
 
-        if (flag != LONG_ARR)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadLongArray(true);
+        return doReadLongArray();
     }
 
     /** {@inheritDoc} */
@@ -1447,15 +1199,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public float[] readFloatArray() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(FLOAT_ARR) == Flag.NULL)
             return null;
 
-        if (flag != FLOAT_ARR)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadFloatArray(true);
+        return doReadFloatArray();
     }
 
     /** {@inheritDoc} */
@@ -1465,15 +1212,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public double[] readDoubleArray() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(DOUBLE_ARR) == Flag.NULL)
             return null;
 
-        if (flag != DOUBLE_ARR)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadDoubleArray(true);
+        return doReadDoubleArray();
     }
 
     /** {@inheritDoc} */
@@ -1483,15 +1225,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public char[] readCharArray() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(CHAR_ARR) == Flag.NULL)
             return null;
 
-        if (flag != CHAR_ARR)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadCharArray(true);
+        return doReadCharArray();
     }
 
     /** {@inheritDoc} */
@@ -1501,15 +1238,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public boolean[] readBooleanArray() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(BOOLEAN_ARR) == Flag.NULL)
             return null;
 
-        if (flag != BOOLEAN_ARR)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadBooleanArray(true);
+        return doReadBooleanArray();
     }
 
     /** {@inheritDoc} */
@@ -1519,15 +1251,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Override @Nullable public BigDecimal[] readDecimalArray() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(DECIMAL_ARR) == Flag.NULL)
             return null;
 
-        if (flag != DECIMAL_ARR)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadDecimalArray(true);
+        return doReadDecimalArray();
     }
 
     /** {@inheritDoc} */
@@ -1537,15 +1264,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public String[] readStringArray() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(STRING_ARR) == Flag.NULL)
             return null;
 
-        if (flag != STRING_ARR)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadStringArray(true);
+        return doReadStringArray();
     }
 
     /** {@inheritDoc} */
@@ -1555,15 +1277,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public UUID[] readUuidArray() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(UUID_ARR) == Flag.NULL)
             return null;
 
-        if (flag != UUID_ARR)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadUuidArray(true);
+        return doReadUuidArray();
     }
 
     /** {@inheritDoc} */
@@ -1578,28 +1295,18 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public Date[] readDateArray() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(DATE_ARR) == Flag.NULL)
             return null;
 
-        if (flag != DATE_ARR)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadDateArray(true);
+        return doReadDateArray();
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Timestamp[] readTimestampArray() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(TIMESTAMP_ARR) == Flag.NULL)
             return null;
 
-        if (flag != TIMESTAMP_ARR)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadTimestampArray(true);
+        return doReadTimestampArray();
     }
 
     /** {@inheritDoc} */
@@ -1609,15 +1316,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public Object[] readObjectArray() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(OBJ_ARR) == Flag.NULL)
             return null;
 
-        if (flag != OBJ_ARR)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return doReadObjectArray(true, true);
+        return doReadObjectArray(true);
     }
 
     /** {@inheritDoc} */
@@ -1626,16 +1328,11 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> Collection<T> readCollection() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+    @Nullable @Override public <T> Collection<T> readCollection() throws PortableException {
+        if (checkFlag(COL) == Flag.NULL)
             return null;
 
-        if (flag != COL)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return (Collection<T>)doReadCollection(true, true, null);
+        return (Collection<T>)doReadCollection(true, null);
     }
 
     /** {@inheritDoc} */
@@ -1647,15 +1344,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     /** {@inheritDoc} */
     @Nullable @Override public <T> Collection<T> readCollection(Class<? extends Collection<T>> colCls)
         throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(COL) == Flag.NULL)
             return null;
 
-        if (flag != COL)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return (Collection<T>)doReadCollection(true, true, colCls);
+        return (Collection<T>)doReadCollection(true, colCls);
     }
 
     /** {@inheritDoc} */
@@ -1665,15 +1357,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public <K, V> Map<K, V> readMap() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(MAP) == Flag.NULL)
             return null;
 
-        if (flag != MAP)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return (Map<K, V>)doReadMap(true, true, null);
+        return (Map<K, V>)doReadMap(true, null);
     }
 
     /** {@inheritDoc} */
@@ -1685,15 +1372,10 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     /** {@inheritDoc} */
     @Nullable @Override public <K, V> Map<K, V> readMap(Class<? extends Map<K, V>> mapCls)
         throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(MAP) == Flag.NULL)
             return null;
 
-        if (flag != MAP)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
-
-        return (Map<K, V>)doReadMap(true, true, mapCls);
+        return (Map<K, V>)doReadMap(true, mapCls);
     }
 
     /** {@inheritDoc} */
@@ -1704,17 +1386,12 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public <T extends Enum<?>> T readEnum() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(ENUM) == Flag.NULL)
             return null;
 
-        if (flag != ENUM)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
+        Class cls = doReadClass();
 
-        Class cls = doReadClass(true);
-
-        return (T)doReadEnum(true, cls);
+        return (T)doReadEnum(cls);
     }
 
     /** {@inheritDoc} */
@@ -1725,69 +1402,88 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Nullable @Override public <T extends Enum<?>> T[] readEnumArray() throws IgniteObjectException {
-        byte flag = doReadByte(true);
-
-        if (flag == NULL)
+        if (checkFlag(ENUM_ARR) == Flag.NULL)
             return null;
 
-        if (flag != ENUM_ARR)
-            throw new IgniteObjectException("Invalid flag value: " + flag);
+        Class cls = doReadClass();
 
-        Class cls = doReadClass(true);
+        return (T[])doReadEnumArray(cls);
+    }
 
-        return (T[])doReadEnumArray(true, cls);
+    /**
+     * Ensure that type flag is either null or contains expected value.
+     *
+     * @param expFlag Expected value.
+     * @return Flag.
+     * @throws IgniteObjectException If flag is neither null, nor expected.
+     */
+    private Flag checkFlag(byte expFlag) {
+        byte flag = in.readByte();
+
+        if (flag == NULL)
+            return Flag.NULL;
+        else if (flag == HANDLE)
+            return Flag.HANDLE;
+        else if (flag != expFlag) {
+            int pos = in.position() - 1;
+
+            throw new IgniteObjectException("Unexpected flag value [pos=" + pos + ", expected=" + expFlag +
+                ", actual=" + flag + ']');
+        }
+
+        return Flag.NORMAL;
     }
 
     /**
      * @param fieldName Field name.
-     * @return {@code true} if field is set.
+     * @return {@code True} if field is set.
      */
     public boolean hasField(String fieldName) {
-        return fieldOffset(fieldId(fieldName)) != -1;
+        return hasField(fieldId(fieldName));
+    }
+
+    /**
+     * @param fieldId Field ID.
+     * @return {@code True} if field is set.
+     */
+    private boolean hasField(int fieldId) {
+        return fieldOffset(fieldId) != 0;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteObjectRawReader rawReader() {
+        in.position(rawOff);
+
         return this;
     }
 
     /**
-     * @param raw Raw flag.
      * @return Unmarshalled value.
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
-    @Nullable private Object unmarshal(boolean raw) throws IgniteObjectException {
-        return unmarshal(raw, false);
-    }
+    @Nullable private Object unmarshal(boolean detach) throws IgniteObjectException {
+        int start = in.position();
 
-    /**
-     * @param raw Raw flag.
-     * @return Unmarshalled value.
-     * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
-     */
-    @Nullable private Object unmarshal(boolean raw, boolean detach) throws IgniteObjectException {
-        int start = raw ? rawOff : off;
-
-        byte flag = doReadByte(raw);
+        byte flag = in.readByte();
 
         switch (flag) {
             case NULL:
                 return null;
 
             case HANDLE:
-                int handle = start - doReadInt(raw);
+                int handle = start - in.readInt();
 
                 IgniteObject handledPo = rCtx.getPortableByHandle(handle);
 
                 if (handledPo != null)
                     return handledPo;
 
-                off = handle;
+                in.position(handle);
 
-                return unmarshal(false);
+                return unmarshal();
 
             case OBJ:
-                PortableUtils.checkProtocolVersion(doReadByte(raw));
+                PortableUtils.checkProtocolVersion(in.readByte());
 
                 IgniteObjectEx po;
 
@@ -1808,117 +1504,114 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
                 rCtx.setPortableHandler(start, po);
 
-                if (raw)
-                    rawOff = start + po.length();
-                else
-                    off = start + po.length();
+                in.position(start + po.length());
 
                 return po;
 
             case BYTE:
-                return doReadByte(raw);
+                return in.readByte();
 
             case SHORT:
-                return doReadShort(raw);
+                return in.readShort();
 
             case INT:
-                return doReadInt(raw);
+                return in.readInt();
 
             case LONG:
-                return doReadLong(raw);
+                return in.readLong();
 
             case FLOAT:
-                return doReadFloat(raw);
+                return in.readFloat();
 
             case DOUBLE:
-                return doReadDouble(raw);
+                return in.readDouble();
 
             case CHAR:
-                return doReadChar(raw);
+                return in.readChar();
 
             case BOOLEAN:
-                return doReadBoolean(raw);
+                return in.readBoolean();
 
             case DECIMAL:
-                return doReadDecimal(raw);
+                return doReadDecimal();
 
             case STRING:
-                return doReadString(raw);
+                return doReadString();
 
             case UUID:
-                return doReadUuid(raw);
+                return doReadUuid();
 
             case DATE:
-                return doReadDate(raw);
+                return doReadDate();
 
             case TIMESTAMP:
-                return doReadTimestamp(raw);
+                return doReadTimestamp();
 
             case BYTE_ARR:
-                return doReadByteArray(raw);
+                return doReadByteArray();
 
             case SHORT_ARR:
-                return doReadShortArray(raw);
+                return doReadShortArray();
 
             case INT_ARR:
-                return doReadIntArray(raw);
+                return doReadIntArray();
 
             case LONG_ARR:
-                return doReadLongArray(raw);
+                return doReadLongArray();
 
             case FLOAT_ARR:
-                return doReadFloatArray(raw);
+                return doReadFloatArray();
 
             case DOUBLE_ARR:
-                return doReadDoubleArray(raw);
+                return doReadDoubleArray();
 
             case CHAR_ARR:
-                return doReadCharArray(raw);
+                return doReadCharArray();
 
             case BOOLEAN_ARR:
-                return doReadBooleanArray(raw);
+                return doReadBooleanArray();
 
             case DECIMAL_ARR:
-                return doReadDecimalArray(raw);
+                return doReadDecimalArray();
 
             case STRING_ARR:
-                return doReadStringArray(raw);
+                return doReadStringArray();
 
             case UUID_ARR:
-                return doReadUuidArray(raw);
+                return doReadUuidArray();
 
             case DATE_ARR:
-                return doReadDateArray(raw);
+                return doReadDateArray();
 
             case TIMESTAMP_ARR:
-                return doReadTimestampArray(raw);
+                return doReadTimestampArray();
 
             case OBJ_ARR:
-                return doReadObjectArray(raw, false);
+                return doReadObjectArray(false);
 
             case COL:
-                return doReadCollection(raw, false, null);
+                return doReadCollection(false, null);
 
             case MAP:
-                return doReadMap(raw, false, null);
+                return doReadMap(false, null);
 
             case MAP_ENTRY:
-                return doReadMapEntry(raw, false);
+                return doReadMapEntry(false);
 
             case PORTABLE_OBJ:
-                return doReadPortableObject(raw);
+                return doReadPortableObject();
 
             case ENUM:
-                return doReadEnum(raw, doReadClass(raw));
+                return doReadEnum(doReadClass());
 
             case ENUM_ARR:
-                return doReadEnumArray(raw, doReadClass(raw));
+                return doReadEnumArray(doReadClass());
 
             case CLASS:
-                return doReadInt(raw);
+                return in.readInt();
 
             case OPTM_MARSH:
-                int len = doReadInt(true);
+                int len = in.readInt();
 
                 ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
 
@@ -1931,11 +1624,6 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
                     throw new IgniteObjectException("Failed to unmarshal object with optmMarsh marshaller", e);
                 }
 
-                if (raw)
-                    rawOff += len;
-                else
-                    off += len;
-
                 return obj;
 
             default:
@@ -1944,134 +1632,11 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private byte doReadByte(boolean raw) {
-        in.position(raw ? rawOff++ : off++);
-
-        return in.readByte();
-    }
-
-    /**
-     * @param raw Raw flag.
-     * @return Value.
-     */
-    private short doReadShort(boolean raw) {
-        in.position(raw ? rawOff : off);
-
-        short val = in.readShort();
-
-        if (raw)
-            rawOff += 2;
-        else
-            off += 2;
-
-        return val;
-    }
-
-    /**
-     * @param raw Raw flag.
-     * @return Value.
-     */
-    private int doReadInt(boolean raw) {
-        in.position(raw ? rawOff : off);
-
-        int val = in.readInt();
-
-        if (raw)
-            rawOff += 4;
-        else
-            off += 4;
-
-        return val;
-    }
-
-    /**
-     * @param raw Raw flag.
-     * @return Value.
-     */
-    private long doReadLong(boolean raw) {
-        in.position(raw ? rawOff : off);
-
-        long val = in.readLong();
-
-        if (raw)
-            rawOff += 8;
-        else
-            off += 8;
-
-        return val;
-    }
-
-    /**
-     * @param raw Raw flag.
-     * @return Value.
-     */
-    private float doReadFloat(boolean raw) {
-        in.position(raw ? rawOff : off);
-
-        float val = in.readFloat();
-
-        if (raw)
-            rawOff += 4;
-        else
-            off += 4;
-
-        return val;
-    }
-
-    /**
-     * @param raw Raw flag.
-     * @return Value.
-     */
-    private double doReadDouble(boolean raw) {
-        in.position(raw ? rawOff : off);
-
-        double val = in.readDouble();
-
-        if (raw)
-            rawOff += 8;
-        else
-            off += 8;
-
-        return val;
-    }
-
-    /**
-     * @param raw Raw flag.
-     * @return Value.
-     */
-    private char doReadChar(boolean raw) {
-        in.position(raw ? rawOff : off);
-
-        char val = in.readChar();
-
-        if (raw)
-            rawOff += 2;
-        else
-            off += 2;
-
-        return val;
-    }
-
-    /**
-     * @param raw Raw flag.
-     * @return Value.
-     */
-    private boolean doReadBoolean(boolean raw) {
-        in.position(raw ? rawOff++ : off++);
-
-        return in.readBoolean();
-    }
-
-    /**
-     * @param raw Raw flag.
-     * @return Value.
-     */
-    private BigDecimal doReadDecimal(boolean raw) {
-        int scale = doReadInt(raw);
-        byte[] mag = doReadByteArray(raw);
+    private BigDecimal doReadDecimal() {
+        int scale = in.readInt();
+        byte[] mag = doReadByteArray();
 
         BigInteger intVal = new BigInteger(mag);
 
@@ -2085,55 +1650,48 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private String doReadString(boolean raw) {
-        if (doReadBoolean(raw)) {
+    private String doReadString() {
+        if (in.readBoolean()) {
             if (!in.hasArray())
-                return new String(doReadByteArray(raw), UTF_8);
+                return new String(doReadByteArray(), UTF_8);
 
-            int strLen = doReadInt(raw);
-            int strOff = raw ? rawOff : off;
+            int strLen = in.readInt();
+            int strOff = in.position();
 
             String res = new String(in.array(), strOff, strLen, UTF_8);
 
-            if (raw)
-                rawOff += strLen;
-            else
-                off += strLen;
+            in.position(in.position() + strLen);
 
             return res;
         }
         else
-            return String.valueOf(doReadCharArray(raw));
+            return String.valueOf(doReadCharArray());
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private UUID doReadUuid(boolean raw) {
-        return new UUID(doReadLong(raw), doReadLong(raw));
+    private UUID doReadUuid() {
+        return new UUID(in.readLong(), in.readLong());
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private Date doReadDate(boolean raw) {
-        long time = doReadLong(raw);
+    private Date doReadDate() {
+        long time = in.readLong();
 
         return new Date(time);
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private Timestamp doReadTimestamp(boolean raw) {
-        long time = doReadLong(raw);
-        int nanos = doReadInt(raw);
+    private Timestamp doReadTimestamp() {
+        long time = in.readLong();
+        int nanos = in.readInt();
 
         Timestamp ts = new Timestamp(time);
 
@@ -2143,21 +1701,13 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     }
 
     /**
-     * @param raw Raw flag.
      * @return Object.
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
-    @Nullable private Object doReadObject(boolean raw) throws IgniteObjectException {
-        IgniteObjectReaderExImpl reader = new IgniteObjectReaderExImpl(ctx, in, raw ? rawOff : off, ldr, rCtx);
+    @Nullable private Object doReadObject() throws IgniteObjectException {
+        IgniteObjectReaderExImpl reader = new IgniteObjectReaderExImpl(ctx, in, in.position(), ldr, rCtx);
 
-        Object obj = reader.deserialize();
-
-        if (raw)
-            rawOff += reader.len;
-        else
-            off += reader.len;
-
-        return obj;
+        return reader.deserialize();
     }
 
     /**
@@ -2167,7 +1717,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     @Nullable Object deserialize() throws IgniteObjectException {
         Object obj;
 
-        byte flag = doReadByte(true);
+        byte flag = in.readByte();
 
         switch (flag) {
             case NULL:
@@ -2176,196 +1726,201 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
                 break;
 
             case HANDLE:
-                int handle = start - doReadInt(true);
+                int handle = start - in.readInt();
 
                 obj = rCtx.getObjectByHandle(handle);
 
                 if (obj == null) {
-                    off = handle;
+                    int retPos = in.position();
 
-                    obj = doReadObject(false);
+                    in.position(handle);
+
+                    obj = doReadObject();
+
+                    in.position(retPos);
                 }
 
                 break;
 
             case OBJ:
-                if (typeId == null)
-                    readObjectTypeId(true);
+                parseHeaderIfNeeded();
 
                 assert typeId != UNREGISTERED_TYPE_ID;
 
-                PortableUtils.checkProtocolVersion(doReadByte(true));
+                PortableUtils.checkProtocolVersion(in.readByte());
 
-                boolean userType = doReadBoolean(true);
+                boolean userType = PortableUtils.isUserType(this.readShort());
 
                 // Skip typeId and hash code.
-                rawOff += 8;
+                in.position(in.position() + 8);
 
                 desc = ctx.descriptorForTypeId(userType, typeId, ldr);
 
-                len = doReadInt(true);
+                int len = in.readInt();
 
-                rawOff = start + doReadInt(true);
+                in.position(start + hdrLen);
 
                 if (desc == null)
                     throw new IgniteObjectInvalidClassException("Unknown type ID: " + typeId);
 
                 obj = desc.read(this);
 
+                in.position(start + len);
+
                 break;
 
             case BYTE:
-                obj = doReadByte(true);
+                obj = in.readByte();
 
                 break;
 
             case SHORT:
-                obj = doReadShort(true);
+                obj = in.readShort();
 
                 break;
 
             case INT:
-                obj = doReadInt(true);
+                obj = in.readInt();
 
                 break;
 
             case LONG:
-                obj = doReadLong(true);
+                obj = in.readLong();
 
                 break;
 
             case FLOAT:
-                obj = doReadFloat(true);
+                obj = in.readFloat();
 
                 break;
 
             case DOUBLE:
-                obj = doReadDouble(true);
+                obj = in.readDouble();
 
                 break;
 
             case CHAR:
-                obj = doReadChar(true);
+                obj = in.readChar();
 
                 break;
 
             case BOOLEAN:
-                obj = doReadBoolean(true);
+                obj = in.readBoolean();
 
                 break;
 
             case DECIMAL:
-                obj = doReadDecimal(true);
+                obj = doReadDecimal();
 
                 break;
 
             case STRING:
-                obj = doReadString(true);
+                obj = doReadString();
 
                 break;
 
             case UUID:
-                obj = doReadUuid(true);
+                obj = doReadUuid();
 
                 break;
 
             case DATE:
-                obj = doReadDate(true);
+                obj = doReadDate();
 
                 break;
 
             case TIMESTAMP:
-                obj = doReadTimestamp(true);
+                obj = doReadTimestamp();
 
                 break;
 
             case BYTE_ARR:
-                obj = doReadByteArray(true);
+                obj = doReadByteArray();
 
                 break;
 
             case SHORT_ARR:
-                obj = doReadShortArray(true);
+                obj = doReadShortArray();
 
                 break;
 
             case INT_ARR:
-                obj = doReadIntArray(true);
+                obj = doReadIntArray();
 
                 break;
 
             case LONG_ARR:
-                obj = doReadLongArray(true);
+                obj = doReadLongArray();
 
                 break;
 
             case FLOAT_ARR:
-                obj = doReadFloatArray(true);
+                obj = doReadFloatArray();
 
                 break;
 
             case DOUBLE_ARR:
-                obj = doReadDoubleArray(true);
+                obj = doReadDoubleArray();
 
                 break;
 
             case CHAR_ARR:
-                obj = doReadCharArray(true);
+                obj = doReadCharArray();
 
                 break;
 
             case BOOLEAN_ARR:
-                obj = doReadBooleanArray(true);
+                obj = doReadBooleanArray();
 
                 break;
 
             case DECIMAL_ARR:
-                obj = doReadDecimalArray(true);
+                obj = doReadDecimalArray();
 
                 break;
 
             case STRING_ARR:
-                obj = doReadStringArray(true);
+                obj = doReadStringArray();
 
                 break;
 
             case UUID_ARR:
-                obj = doReadUuidArray(true);
+                obj = doReadUuidArray();
 
                 break;
 
             case DATE_ARR:
-                obj = doReadDateArray(true);
+                obj = doReadDateArray();
 
                 break;
 
             case TIMESTAMP_ARR:
-                obj = doReadTimestampArray(true);
+                obj = doReadTimestampArray();
 
                 break;
 
             case OBJ_ARR:
-                obj = doReadObjectArray(true, true);
+                obj = doReadObjectArray(true);
 
                 break;
 
             case COL:
-                obj = doReadCollection(true, true, null);
+                obj = doReadCollection(true, null);
 
                 break;
 
             case MAP:
-                obj = doReadMap(true, true, null);
+                obj = doReadMap(true, null);
 
                 break;
 
             case MAP_ENTRY:
-                obj = doReadMapEntry(true, true);
+                obj = doReadMapEntry(true);
 
                 break;
 
             case PORTABLE_OBJ:
-                obj = doReadPortableObject(true);
+                obj = doReadPortableObject();
 
                 ((IgniteObjectImpl)obj).context(ctx);
 
@@ -2375,24 +1930,24 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
                 break;
 
             case ENUM:
-                obj = doReadEnum(true, doReadClass(true));
+                obj = doReadEnum(doReadClass());
 
                 break;
 
             case ENUM_ARR:
-                obj = doReadEnumArray(true, doReadClass(true));
+                obj = doReadEnumArray(doReadClass());
 
                 break;
 
             case CLASS:
-                obj = doReadClass(true);
+                obj = doReadClass();
 
                 break;
 
             case OPTM_MARSH:
-                int len = doReadInt(true);
+                int dataLen = in.readInt();
 
-                ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
+                ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), dataLen);
 
                 try {
                     obj = ctx.optimizedMarsh().unmarshal(input, null);
@@ -2401,7 +1956,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
                     throw new IgniteObjectException("Failed to unmarshal object with optimized marshaller", e);
                 }
 
-                rawOff += len;
+                in.position(in.position() + dataLen);
 
                 break;
 
@@ -2409,224 +1964,144 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
                 throw new IgniteObjectException("Invalid flag value: " + flag);
         }
 
-        if (len == 0)
-            len = rawOff - start;
-
         return obj;
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private byte[] doReadByteArray(boolean raw) {
-        int hPos = (raw ? rawOff : off) - 1;
+    private byte[] doReadByteArray() {
+        int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
-
-        in.position(raw ? rawOff : off);
+        int len = in.readInt();
 
         byte[] arr = in.readByteArray(len);
 
         setHandler(arr, hPos);
 
-        if (raw)
-            rawOff += len;
-        else
-            off += len;
-
         return arr;
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private short[] doReadShortArray(boolean raw) {
-        int hPos = (raw ? rawOff : off) - 1;
+    private short[] doReadShortArray() {
+        int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
-
-        in.position(raw ? rawOff : off);
+        int len = in.readInt();
 
         short[] arr = in.readShortArray(len);
 
         setHandler(arr, hPos);
 
-        int bytes = len << 1;
-
-        if (raw)
-            rawOff += bytes;
-        else
-            off += bytes;
-
         return arr;
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private int[] doReadIntArray(boolean raw) {
-        int hPos = (raw ? rawOff : off) - 1;
+    private int[] doReadIntArray() {
+        int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
-
-        in.position(raw ? rawOff : off);
+        int len = in.readInt();
 
         int[] arr = in.readIntArray(len);
 
         setHandler(arr, hPos);
 
-        int bytes = len << 2;
-
-        if (raw)
-            rawOff += bytes;
-        else
-            off += bytes;
-
         return arr;
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private long[] doReadLongArray(boolean raw) {
-        int hPos = (raw ? rawOff : off) - 1;
+    private long[] doReadLongArray() {
+        int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
-
-        in.position(raw ? rawOff : off);
+        int len = in.readInt();
 
         long[] arr = in.readLongArray(len);
 
         setHandler(arr, hPos);
 
-        int bytes = len << 3;
-
-        if (raw)
-            rawOff += bytes;
-        else
-            off += bytes;
-
         return arr;
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private float[] doReadFloatArray(boolean raw) {
-        int hPos = (raw ? rawOff : off) - 1;
+    private float[] doReadFloatArray() {
+        int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
-
-        in.position(raw ? rawOff : off);
+        int len = in.readInt();
 
         float[] arr = in.readFloatArray(len);
 
         setHandler(arr, hPos);
 
-        int bytes = len << 2;
-
-        if (raw)
-            rawOff += bytes;
-        else
-            off += bytes;
-
         return arr;
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private double[] doReadDoubleArray(boolean raw) {
-        int hPos = (raw ? rawOff : off) - 1;
+    private double[] doReadDoubleArray() {
+        int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
-
-        in.position(raw ? rawOff : off);
+        int len = in.readInt();
 
         double[] arr = in.readDoubleArray(len);
 
         setHandler(arr, hPos);
 
-        int bytes = len << 3;
-
-        if (raw)
-            rawOff += bytes;
-        else
-            off += bytes;
-
         return arr;
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private char[] doReadCharArray(boolean raw) {
-        int hPos = (raw ? rawOff : off) - 1;
+    private char[] doReadCharArray() {
+        int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
-
-        in.position(raw ? rawOff : off);
+        int len = in.readInt();
 
         char[] arr = in.readCharArray(len);
 
         setHandler(arr, hPos);
 
-        int bytes = len << 1;
-
-        if (raw)
-            rawOff += bytes;
-        else
-            off += bytes;
-
         return arr;
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private boolean[] doReadBooleanArray(boolean raw) {
-        int hPos = (raw ? rawOff : off) - 1;
+    private boolean[] doReadBooleanArray() {
+        int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
-
-        in.position(raw ? rawOff : off);
+        int len = in.readInt();
 
         boolean[] arr = in.readBooleanArray(len);
 
         setHandler(arr, hPos);
 
-        if (raw)
-            rawOff += len;
-        else
-            off += len;
-
         return arr;
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
-    private BigDecimal[] doReadDecimalArray(boolean raw) throws IgniteObjectException {
-        int hPos = (raw ? rawOff : off) - 1;
+    private BigDecimal[] doReadDecimalArray() throws IgniteObjectException {
+        int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         BigDecimal[] arr = new BigDecimal[len];
 
         setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
-            byte flag = doReadByte(raw);
+            byte flag = in.readByte();
 
             if (flag == NULL)
                 arr[i] = null;
@@ -2634,7 +2109,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
                 if (flag != DECIMAL)
                     throw new IgniteObjectException("Invalid flag value: " + flag);
 
-                arr[i] = doReadDecimal(raw);
+                arr[i] = doReadDecimal();
             }
         }
 
@@ -2642,21 +2117,20 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
-    private String[] doReadStringArray(boolean raw) throws IgniteObjectException {
-        int hPos = (raw ? rawOff : off) - 1;
+    private String[] doReadStringArray() throws IgniteObjectException {
+        int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         String[] arr = new String[len];
 
         setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
-            byte flag = doReadByte(raw);
+            byte flag = in.readByte();
 
             if (flag == NULL)
                 arr[i] = null;
@@ -2664,7 +2138,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
                 if (flag != STRING)
                     throw new IgniteObjectException("Invalid flag value: " + flag);
 
-                arr[i] = doReadString(raw);
+                arr[i] = doReadString();
             }
         }
 
@@ -2672,21 +2146,20 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
-    private UUID[] doReadUuidArray(boolean raw) throws IgniteObjectException {
-        int hPos = (raw ? rawOff : off) - 1;
+    private UUID[] doReadUuidArray() throws IgniteObjectException {
+        int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         UUID[] arr = new UUID[len];
 
         setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
-            byte flag = doReadByte(raw);
+            byte flag = in.readByte();
 
             if (flag == NULL)
                 arr[i] = null;
@@ -2694,7 +2167,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
                 if (flag != UUID)
                     throw new IgniteObjectException("Invalid flag value: " + flag);
 
-                arr[i] = doReadUuid(raw);
+                arr[i] = doReadUuid();
             }
         }
 
@@ -2702,21 +2175,20 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
-    private Date[] doReadDateArray(boolean raw) throws IgniteObjectException {
-        int hPos = (raw ? rawOff : off) - 1;
+    private Date[] doReadDateArray() throws IgniteObjectException {
+        int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         Date[] arr = new Date[len];
 
         setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
-            byte flag = doReadByte(raw);
+            byte flag = in.readByte();
 
             if (flag == NULL)
                 arr[i] = null;
@@ -2724,7 +2196,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
                 if (flag != DATE)
                     throw new IgniteObjectException("Invalid flag value: " + flag);
 
-                arr[i] = doReadDate(raw);
+                arr[i] = doReadDate();
             }
         }
 
@@ -2732,21 +2204,20 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
-    private Timestamp[] doReadTimestampArray(boolean raw) throws IgniteObjectException {
-        int hPos = (raw ? rawOff : off) - 1;
+    private Timestamp[] doReadTimestampArray() throws IgniteObjectException {
+        int hPos = in.position() - 1;
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         Timestamp[] arr = new Timestamp[len];
 
         setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++) {
-            byte flag = doReadByte(raw);
+            byte flag = in.readByte();
 
             if (flag == NULL)
                 arr[i] = null;
@@ -2754,7 +2225,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
                 if (flag != TIMESTAMP)
                     throw new IgniteObjectException("Invalid flag value: " + flag);
 
-                arr[i] = doReadTimestamp(raw);
+                arr[i] = doReadTimestamp();
             }
         }
 
@@ -2762,45 +2233,43 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     }
 
     /**
-     * @param raw Raw flag.
      * @param deep Deep flag.
      * @return Value.
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
-    private Object[] doReadObjectArray(boolean raw, boolean deep) throws IgniteObjectException {
-        int hPos = (raw ? rawOff : off) - 1;
+    private Object[] doReadObjectArray(boolean deep) throws IgniteObjectException {
+        int hPos = in.position() - 1;
 
-        Class compType = doReadClass(raw);
+        Class compType = doReadClass();
 
-        int len = doReadInt(raw);
+        int len = in.readInt();
 
         Object[] arr = deep ? (Object[])Array.newInstance(compType, len) : new Object[len];
 
         setHandler(arr, hPos);
 
         for (int i = 0; i < len; i++)
-            arr[i] = deep ? doReadObject(raw) : unmarshal(raw);
+            arr[i] = deep ? doReadObject() : unmarshal();
 
         return arr;
     }
 
     /**
-     * @param raw Raw flag.
      * @param deep Deep flag.
      * @param cls Collection class.
      * @return Value.
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
-    private Collection<?> doReadCollection(boolean raw, boolean deep, @Nullable Class<? extends Collection> cls)
+    private Collection<?> doReadCollection(boolean deep, @Nullable Class<? extends Collection> cls)
         throws IgniteObjectException {
-        int hPos = (raw ? rawOff : off) - 1;
+        int hPos = in.position() - 1;
 
-        int size = doReadInt(raw);
+        int size = in.readInt();
 
         assert size >= 0;
 
-        byte colType = doReadByte(raw);
+        byte colType = in.readByte();
 
         Collection<Object> col;
 
@@ -2868,28 +2337,27 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
         setHandler(col, hPos);
 
         for (int i = 0; i < size; i++)
-            col.add(deep ? doReadObject(raw) : unmarshal(raw));
+            col.add(deep ? doReadObject() : unmarshal());
 
         return col;
     }
 
     /**
-     * @param raw Raw flag.
      * @param deep Deep flag.
      * @param cls Map class.
      * @return Value.
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
-    private Map<?, ?> doReadMap(boolean raw, boolean deep, @Nullable Class<? extends Map> cls)
+    private Map<?, ?> doReadMap(boolean deep, @Nullable Class<? extends Map> cls)
         throws IgniteObjectException {
-        int hPos = (raw ? rawOff : off) - 1;
+        int hPos = in.position() - 1;
 
-        int size = doReadInt(raw);
+        int size = in.readInt();
 
         assert size >= 0;
 
-        byte mapType = doReadByte(raw);
+        byte mapType = in.readByte();
 
         Map<Object, Object> map;
 
@@ -2947,22 +2415,21 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
         setHandler(map, hPos);
 
         for (int i = 0; i < size; i++)
-            map.put(deep ? doReadObject(raw) : unmarshal(raw), deep ? doReadObject(raw) : unmarshal(raw));
+            map.put(deep ? doReadObject() : unmarshal(), deep ? doReadObject() : unmarshal());
 
         return map;
     }
 
     /**
-     * @param raw Raw flag.
      * @param deep Deep flag.
      * @return Value.
      * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
      */
-    private Map.Entry<?, ?> doReadMapEntry(boolean raw, boolean deep) throws IgniteObjectException {
-        int hPos = (raw ? rawOff : off) - 1;
+    private Map.Entry<?, ?> doReadMapEntry(boolean deep) throws IgniteObjectException {
+        int hPos = in.position() - 1;
 
-        Object val1 = deep ? doReadObject(raw) : unmarshal(raw);
-        Object val2 = deep ? doReadObject(raw) : unmarshal(raw);
+        Object val1 = deep ? doReadObject() : unmarshal();
+        Object val2 = deep ? doReadObject() : unmarshal();
 
         GridMapEntry entry = new GridMapEntry<>(val1, val2);
 
@@ -2972,82 +2439,74 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private IgniteObject doReadPortableObject(boolean raw) {
+    private IgniteObject doReadPortableObject() {
         if (in.offheapPointer() > 0) {
-            int len = doReadInt(raw);
+            int len = in.readInt();
 
-            int pos = raw ? rawOff : off;
+            int pos = in.position();
 
-            if (raw)
-                rawOff += len;
-            else
-                off += len;
+            in.position(in.position() + len);
 
-            int start = doReadInt(raw);
+            int start = in.readInt();
 
             return new IgniteObjectOffheapImpl(ctx, in.offheapPointer() + pos, start, len);
         }
         else {
-            byte[] arr = doReadByteArray(raw);
-            int start = doReadInt(raw);
+            byte[] arr = doReadByteArray();
+            int start = in.readInt();
 
             return new IgniteObjectImpl(ctx, arr, start);
         }
     }
 
     /**
-     * @param raw Raw flag.
      * @param cls Enum class.
      * @return Value.
      */
-    private Enum<?> doReadEnum(boolean raw, Class<?> cls) throws IgniteObjectException {
+    private Enum<?> doReadEnum(Class<?> cls) throws IgniteObjectException {
         if (!cls.isEnum())
             throw new IgniteObjectException("Class does not represent enum type: " + cls.getName());
 
-        int ord = doReadInt(raw);
+        int ord = in.readInt();
 
         return ord >= 0 ? (Enum<?>)GridEnumCache.get(cls)[ord] : null;
     }
 
     /**
-     * @param raw Raw flag.
      * @param cls Enum class.
      * @return Value.
      */
-    private Object[] doReadEnumArray(boolean raw, Class<?> cls) throws IgniteObjectException {
-        int len = doReadInt(raw);
+    private Object[] doReadEnumArray(Class<?> cls) throws IgniteObjectException {
+        int len = in.readInt();
 
         Object[] arr = (Object[])Array.newInstance(cls, len);
 
         for (int i = 0; i < len; i++) {
-            byte flag = doReadByte(raw);
+            byte flag = in.readByte();
 
             if (flag == NULL)
                 arr[i] = null;
             else
-                arr[i] = doReadEnum(raw, doReadClass(raw));
+                arr[i] = doReadEnum(doReadClass());
         }
 
         return arr;
     }
 
     /**
-     * @param raw Raw flag.
      * @return Value.
      */
-    private Class doReadClass(boolean raw) throws IgniteObjectException {
-        return doReadClass(raw, doReadInt(raw));
+    private Class doReadClass() throws IgniteObjectException {
+        return doReadClass(in.readInt());
     }
 
     /**
-     * @param raw Raw flag.
      * @param typeId Type id.
      * @return Value.
      */
-    private Class doReadClass(boolean raw, int typeId) throws IgniteObjectException {
+    private Class doReadClass(int typeId) throws IgniteObjectException {
         Class cls;
 
         if (typeId == OBJECT_TYPE_ID)
@@ -3056,12 +2515,12 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
         if (typeId != UNREGISTERED_TYPE_ID)
             cls = ctx.descriptorForTypeId(true, typeId, ldr).describedClass();
         else {
-            byte flag = doReadByte(raw);
+            byte flag = in.readByte();
 
             if (flag != STRING)
                 throw new IgniteObjectException("No class definition for typeId: " + typeId);
 
-            String clsName = doReadString(raw);
+            String clsName = doReadString();
 
             try {
                 cls = U.forName(clsName, ldr);
@@ -3084,12 +2543,38 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     private int fieldId(String name) {
         assert name != null;
 
-        if (typeId == null)
-            readObjectTypeId(false);
+        parseHeaderIfNeeded();
 
         assert typeId != UNREGISTERED_TYPE_ID;
 
-        return ctx.fieldId(typeId, name);
+        if (idMapper == null)
+            idMapper = ctx.userTypeIdMapper(typeId);
+
+        return idMapper.fieldId(typeId, name);
+    }
+
+    /**
+     * Create schema.
+     *
+     * @return Schema.
+     */
+    public PortableSchema createSchema() {
+        parseHeaderIfNeeded();
+
+        LinkedHashMap<Integer, Integer> fields = new LinkedHashMap<>();
+
+        int searchPos = footerStart;
+        int searchEnd = searchPos + footerLen;
+
+        while (searchPos < searchEnd) {
+            int fieldId = in.readIntPositioned(searchPos);
+
+            fields.put(fieldId, searchPos + 4 - footerStart);
+
+            searchPos += 8;
+        }
+
+        return new PortableSchema(fields);
     }
 
     /**
@@ -3099,23 +2584,68 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     private int fieldOffset(int id) {
         assert hdrLen != 0;
 
-        int off = start + hdrLen;
+        if (footerLen == 0)
+            return 0;
 
-        int end = start + in.readInt(start + RAW_DATA_OFF_POS);
+        int searchPos = footerStart;
+        int searchTail = searchPos + footerLen;
 
-        while (true) {
-            if (off >= end)
-                return -1;
+        if (hasLowFieldsCount(footerLen)) {
+            while (true) {
+                if (searchPos >= searchTail)
+                    return 0;
 
-            int id0 = in.readInt(off);
+                int id0 = in.readIntPositioned(searchPos);
 
-            if (id0 == id)
-                return off + 8;
+                if (id0 == id) {
+                    int pos = start + in.readIntPositioned(searchPos + 4);
 
-            int len = in.readInt(off + 4);
+                    in.position(pos);
 
-            off += (8 + len);
+                    return pos;
+                }
+
+                searchPos += 8;
+            }
         }
+        else {
+            PortableSchema schema0 = schema;
+
+            if (schema0 == null) {
+                schema0 = ctx.schemaRegistry(typeId).schema(schemaId);
+
+                if (schema0 == null) {
+                    schema0 = createSchema();
+
+                    ctx.schemaRegistry(typeId).addSchema(schemaId, schema0);
+                }
+
+                schema = schema0;
+            }
+
+            int fieldOffsetPos = schema.offset(id);
+
+            if (fieldOffsetPos != 0) {
+                int pos = start + in.readIntPositioned(footerStart + fieldOffsetPos);
+
+                in.position(pos);
+
+                return pos;
+            }
+            else
+                return 0;
+        }
+    }
+
+    /**
+     * Check whether object has low amount of fields.
+     *
+     * @param footerLen Footer length.
+     */
+    private boolean hasLowFieldsCount(int footerLen) {
+        assert hdrParsed;
+
+        return footerLen < (FIELD_DESC_LEN << 4);
     }
 
     /** {@inheritDoc} */
@@ -3160,25 +2690,24 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @NotNull @Override public String readUTF() throws IOException {
         return readString();
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("NullableProblems")
     @Override public void readFully(byte[] b) throws IOException {
         readFully(b, 0, b.length);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("NullableProblems")
     @Override public void readFully(byte[] b, int off, int len) throws IOException {
-        in.position(rawOff);
-
         int cnt = in.read(b, off, len);
 
         if (cnt < len)
             throw new EOFException();
-
-        rawOff += len;
     }
 
     /** {@inheritDoc} */
@@ -3186,8 +2715,6 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
         int toSkip = Math.min(in.remaining(), n);
 
         in.position(in.position() + toSkip);
-
-        rawOff += toSkip;
 
         return toSkip;
     }
@@ -3204,18 +2731,12 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
 
     /** {@inheritDoc} */
     @Override public int read(byte[] b, int off, int len) throws IOException {
-        in.position(rawOff);
-
-        int cnt = in.read(b, off, len);
-
-        rawOff += len;
-
-        return cnt;
+        return in.read(b, off, len);
     }
 
     /** {@inheritDoc} */
     @Override public long skip(long n) throws IOException {
-        return skipBytes((int)n);
+        return skipBytes((int) n);
     }
 
     /** {@inheritDoc} */
@@ -3226,5 +2747,19 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
         // No-op.
+    }
+
+    /**
+     * Flag.
+     */
+    private static enum Flag {
+        /** Null. */
+        NULL,
+
+        /** Handle. */
+        HANDLE,
+
+        /** Regular. */
+        NORMAL
     }
 }

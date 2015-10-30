@@ -188,7 +188,7 @@ namespace ignite
                 data = mem->Data();
                 len = mem->Length();
             }
-            
+
             void InteropInputStream::EnsureEnoughData(int32_t cnt) const
             {
                 if (len - pos < cnt) {

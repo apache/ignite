@@ -123,7 +123,17 @@ public final class PortableHeapInputStream extends PortableAbstractInputStream {
     }
 
     /** {@inheritDoc} */
-    @Override protected int readIntPositioned(int pos) {
+    @Override protected short readShortPositioned0(int pos) {
+        short res = UNSAFE.getShort(data, BYTE_ARR_OFF + pos);
+
+        if (!LITTLE_ENDIAN)
+            res = Short.reverseBytes(res);
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int readIntPositioned0(int pos) {
         int res = UNSAFE.getInt(data, BYTE_ARR_OFF + pos);
 
         if (!LITTLE_ENDIAN)

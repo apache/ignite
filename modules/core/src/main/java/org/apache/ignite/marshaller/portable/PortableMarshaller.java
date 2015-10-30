@@ -260,7 +260,7 @@ public class PortableMarshaller extends AbstractMarshaller {
 
     /** {@inheritDoc} */
     @Override public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException {
-        return impl.marshal(obj, 0);
+        return impl.marshal(obj);
     }
 
     /** {@inheritDoc} */
@@ -300,5 +300,10 @@ public class PortableMarshaller extends AbstractMarshaller {
         catch (IOException e) {
             throw new IgniteObjectException("Failed to unmarshal the object from InputStream", e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onUndeploy(ClassLoader ldr) {
+        impl.context().onUndeploy(ldr);
     }
 }
