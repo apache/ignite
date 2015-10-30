@@ -30,14 +30,20 @@ namespace Apache.Ignite.Core.Impl.Portable
     [StructLayout(LayoutKind.Sequential)]
     internal struct PortableObjectHeader : IEquatable<PortableObjectHeader>
     {
-        /** Size, equals to sizeof(PortableObjectHeader) */
+        /** Size, equals to sizeof(PortableObjectHeader). */
         public const int Size = 24;
 
-        /** User type flag */
+        /** User type flag. */
         private const int FlagUserType = 0x1;
 
-        /** Raw only flag */
+        /** Raw only flag. */
         private const int FlagRawOnly = 0x2;
+
+        /** Byte-sized field offsets flag. */
+        private const int FlagByteOffsets = 0x4;
+
+        /** Short-sized field offsets flag. */
+        private const int FlagShortOffsets = 0x8;
 
         /** Actual header layout */
         public readonly byte Header;        // Header code, always 103 (HdrFull)
