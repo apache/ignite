@@ -693,12 +693,13 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                         // Write schema
                         int outSchemaOff = outRawOff;
+                        short flags = 0;
 
                         if (outSchema != null)
                         {
                             outSchemaOff = outStream.Position - outStartPos;
 
-                            PortableObjectSchemaField.WriteArray(outSchema.Array, outStream, outSchema.Count,
+                            flags = PortableObjectSchemaField.WriteArray(outSchema.Array, outStream, outSchema.Count,
                                 outStream.Position - outStartPos);
 
                             if (inRawLen > 0)
@@ -712,7 +713,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         var outHash = changeHash ? hash : inHeader.HashCode;
 
                         var outHeader = new PortableObjectHeader(inHeader.IsUserType, inHeader.TypeId, outHash, 
-                            outLen, outSchemaId, outSchemaOff, outSchema == null);
+                            outLen, outSchemaId, outSchemaOff, outSchema == null, flags);
 
                         PortableObjectHeader.Write(outHeader, outStream, outStartPos);
 

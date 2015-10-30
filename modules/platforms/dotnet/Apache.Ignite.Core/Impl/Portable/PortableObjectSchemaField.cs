@@ -51,10 +51,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="fields">Fields.</param>
         /// <param name="stream">Stream.</param>
         /// <param name="count">Field count to write.</param>
-        /// <param name="maxOffset">
-        /// The maximum field offset to determine whether 1, 2 or 4 bytes are needed for offsets.
-        /// </param>
-        public static unsafe void WriteArray(PortableObjectSchemaField[] fields, IPortableStream stream, int count, 
+        /// <param name="maxOffset">The maximum field offset to determine whether 1, 2 or 4 bytes are needed for offsets.</param>
+        /// <returns>
+        /// Flags according to offset sizes: <see cref="PortableObjectHeader.FlagByteOffsets"/>, 
+        /// <see cref="PortableObjectHeader.FlagShortOffsets"/>, or 0.
+        /// </returns>
+        public static unsafe short WriteArray(PortableObjectSchemaField[] fields, IPortableStream stream, int count, 
             int maxOffset)
         {
             Debug.Assert(fields != null);
@@ -72,8 +74,11 @@ namespace Apache.Ignite.Core.Impl.Portable
                         stream.WriteInt(field.Id);
                         stream.WriteByte((byte) field.Offset);
                     }
+
+                    return PortableObjectHeader.FlagByteOffsets;
                 }
-                else if (maxOffset <= ushort.MaxValue)
+
+                if (maxOffset <= ushort.MaxValue)
                 {
                     for (int i = 0; i < count; i++)
                     {
@@ -83,17 +88,19 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                         stream.WriteShort((short) field.Offset);
                     }
-                }
-                else
-                {
-                    for (int i = 0; i < count; i++)
-                    {
-                        var field = fields[i];
 
-                        stream.WriteInt(field.Id);
-                        stream.WriteInt(field.Offset);
-                    }
+                    return PortableObjectHeader.FlagShortOffsets;
                 }
+                
+                for (int i = 0; i < count; i++)
+                {
+                    var field = fields[i];
+
+                    stream.WriteInt(field.Id);
+                    stream.WriteInt(field.Offset);
+                }
+
+                return 0;
             }
 
             /*

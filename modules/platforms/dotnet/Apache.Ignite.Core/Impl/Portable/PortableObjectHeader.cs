@@ -34,16 +34,16 @@ namespace Apache.Ignite.Core.Impl.Portable
         public const int Size = 24;
 
         /** User type flag. */
-        private const int FlagUserType = 0x1;
+        public const short FlagUserType = 0x1;
 
         /** Raw only flag. */
-        private const int FlagRawOnly = 0x2;
+        public const short FlagRawOnly = 0x2;
 
         /** Byte-sized field offsets flag. */
-        private const int FlagByteOffsets = 0x4;
+        public const short FlagByteOffsets = 0x4;
 
         /** Short-sized field offsets flag. */
-        private const int FlagShortOffsets = 0x8;
+        public const short FlagShortOffsets = 0x8;
 
         /** Actual header layout */
         public readonly byte Header;        // Header code, always 103 (HdrFull)
@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         public readonly int SchemaOffset;   // Schema offset, or raw offset when RawOnly flag is set.
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PortableObjectHeader"/> struct.
+        /// Initializes a new instance of the <see cref="PortableObjectHeader" /> struct.
         /// </summary>
         /// <param name="userType">User type flag.</param>
         /// <param name="typeId">Type ID.</param>
@@ -65,18 +65,23 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="schemaId">Schema ID.</param>
         /// <param name="schemaOffset">Schema offset.</param>
         /// <param name="rawOnly">Raw flag.</param>
-        public PortableObjectHeader(bool userType, int typeId, int hashCode, int length, int schemaId, int schemaOffset, bool rawOnly)
+        /// <param name="flags">The flags.</param>
+        public PortableObjectHeader(bool userType, int typeId, int hashCode, int length, int schemaId, int schemaOffset, 
+            bool rawOnly, short flags)
         {
             Header = PortableUtils.HdrFull;
             Version = PortableUtils.ProtoVer;
 
             Debug.Assert(schemaOffset <= length);
             Debug.Assert(schemaOffset >= Size);
-            
-            Flags = (short) (userType ? FlagUserType : 0);
+
+            if (userType)
+                flags |= FlagUserType;
 
             if (rawOnly)
-                Flags = (short) (Flags | FlagRawOnly);
+                flags |= FlagRawOnly;
+
+            Flags = flags;
 
             TypeId = typeId;
             HashCode = hashCode;
