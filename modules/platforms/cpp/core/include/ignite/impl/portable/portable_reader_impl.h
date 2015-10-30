@@ -59,7 +59,7 @@ namespace ignite
                  */
                 PortableReaderImpl(interop::InteropInputStream* stream, PortableIdResolver* idRslvr,
                     int32_t pos, bool usrType, int32_t typeId, int32_t hashCode, int32_t len, int32_t rawOff,
-                    int32_t footerBegin, int32_t footerEnd);
+                    int32_t footerBegin, int32_t footerEnd, SCHEMA_TYPE schemaType);
 
                 /**
                  * Constructor used to construct light-weight reader allowing only raw operations 
@@ -802,11 +802,18 @@ namespace ignite
                             footerBegin += pos;
                             footerEnd += pos;
 
+                            SCHEMA_TYPE schemaType = SCHEMA_TYPE_BIG;
+
+                            if (flags & IGNITE_PORTABLE_FLAG_TINY)
+                                schemaType = SCHEMA_TYPE_TINY;
+                            else if (flags & IGNITE_PORTABLE_FLAG_SMALL)
+                                schemaType = SCHEMA_TYPE_SMALL;
+
                             ignite::portable::PortableType<T> type;
                             TemplatedPortableIdResolver<T> idRslvr(type);
                             PortableReaderImpl readerImpl(stream, &idRslvr, pos, usrType,
                                                           typeId, hashCode, len, rawOff,
-                                                          footerBegin, footerEnd);
+                                                          footerBegin, footerEnd, schemaType);
                             ignite::portable::PortableReader reader(&readerImpl);
 
                             T val = type.Read(reader);
@@ -886,6 +893,9 @@ namespace ignite
 
                 /** Footer ending position. */
                 int32_t footerEnd;
+
+                /** Object schema type. */
+                SCHEMA_TYPE schemaType;
 
                 IGNITE_NO_COPY_ASSIGNMENT(PortableReaderImpl)
                     
