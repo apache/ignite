@@ -1719,18 +1719,16 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     for (int i = 0; i < typesCnt; i++)
                     {
-                        PortableTypeConfiguration typCfg = new PortableTypeConfiguration();
-
-                        typCfg.AssemblyName = reader.ReadString();
-                        typCfg.TypeName = reader.ReadString();
-                        typCfg.NameMapper = (IPortableNameMapper)CreateInstance(reader.ReadString());
-                        typCfg.IdMapper = (IPortableIdMapper)CreateInstance(reader.ReadString());
-                        typCfg.Serializer = (IPortableSerializer)CreateInstance(reader.ReadString());
-                        typCfg.AffinityKeyFieldName = reader.ReadString();
-                        typCfg.MetadataEnabled = reader.ReadObject<bool?>();
-                        typCfg.KeepDeserialized = reader.ReadObject<bool?>();
-
-                        cfg.TypeConfigurations.Add(typCfg);
+                        cfg.TypeConfigurations.Add(new PortableTypeConfiguration
+                        {
+                            TypeName = reader.ReadString(),
+                            NameMapper = CreateInstance<IPortableNameMapper>(reader),
+                            IdMapper = CreateInstance<IPortableIdMapper>(reader),
+                            Serializer = CreateInstance<IPortableSerializer>(reader),
+                            AffinityKeyFieldName = reader.ReadString(),
+                            MetadataEnabled = reader.ReadObject<bool?>(),
+                            KeepDeserialized = reader.ReadObject<bool?>()
+                        });
                     }
                 }
 
@@ -1746,9 +1744,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                 }
 
                 // Read the rest.
-                cfg.DefaultNameMapper = (IPortableNameMapper)CreateInstance(reader.ReadString());
-                cfg.DefaultIdMapper = (IPortableIdMapper)CreateInstance(reader.ReadString());
-                cfg.DefaultSerializer = (IPortableSerializer)CreateInstance(reader.ReadString());
+                cfg.DefaultNameMapper = CreateInstance<IPortableNameMapper>(reader);
+                cfg.DefaultIdMapper = CreateInstance<IPortableIdMapper>(reader);
+                cfg.DefaultSerializer = CreateInstance<IPortableSerializer>(reader);
                 cfg.DefaultMetadataEnabled = reader.ReadBoolean();
                 cfg.DefaultKeepDeserialized = reader.ReadBoolean();
             }
@@ -1757,24 +1755,16 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Create new instance of specified class.
+        /// Creates and instance from the type name in reader.
         /// </summary>
-        /// <param name="typeName">Name of the type.</param>
-        /// <returns>New Instance.</returns>
-        public static object CreateInstance(string typeName)
+        private static T CreateInstance<T>(PortableReaderImpl reader)
         {
+            var typeName = reader.ReadString();
+
             if (typeName == null)
-                return null;
+                return default(T);
 
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                object instance = assembly.CreateInstance(typeName);
-
-                if (instance != null)
-                    return instance;
-            }
-
-            throw new PortableException("Failed to find class: " + typeName);
+            return IgniteUtils.CreateInstance<T>(typeName);
         }
 
         /// <summary>

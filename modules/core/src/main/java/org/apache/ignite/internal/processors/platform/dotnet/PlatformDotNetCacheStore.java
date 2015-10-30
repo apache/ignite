@@ -96,11 +96,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     @CacheStoreSessionResource
     private CacheStoreSession ses;
 
-    /** .Net assembly name. */
-    private String assemblyName;
-
     /** .Net class name. */
-    private String clsName;
+    private String typName;
 
     /** Properties. */
     private Map<String, ?> props;
@@ -112,39 +109,21 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     protected long ptr;
 
     /**
-     * Gets .NET assembly name.
-     *
-     * @return .NET assembly name.
-     */
-    public String getAssemblyName() {
-        return assemblyName;
-    }
-
-    /**
-     * Set .NET assembly name.
-     *
-     * @param assemblyName .NET assembly name.
-     */
-    public void setAssemblyName(String assemblyName) {
-        this.assemblyName = assemblyName;
-    }
-
-    /**
      * Gets .NET class name.
      *
      * @return .NET class name.
      */
-    public String getClassName() {
-        return clsName;
+    public String getTypeName() {
+        return typName;
     }
 
     /**
      * Sets .NET class name.
      *
-     * @param clsName .NET class name.
+     * @param typName .NET class name.
      */
-    public void setClassName(String clsName) {
-        this.clsName = clsName;
+    public void setTypeName(String typName) {
+        this.typName = typName;
     }
 
     /**
@@ -343,8 +322,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * @throws org.apache.ignite.IgniteCheckedException
      */
     public void initialize(GridKernalContext ctx, boolean convertPortable) throws IgniteCheckedException {
-        A.notNull(assemblyName, "assemblyName");
-        A.notNull(clsName, "clsName");
+        A.notNull(typName, "typName");
 
         platformCtx = PlatformUtils.platformContext(ctx.grid());
 
@@ -353,15 +331,24 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             PortableRawWriterEx writer = platformCtx.writer(out);
 
-            writer.writeString(assemblyName);
-            writer.writeString(clsName);
-            writer.writeBoolean(convertPortable);
-            writer.writeMap(props);
+            write(writer, convertPortable);
 
             out.synchronize();
 
             ptr = platformCtx.gateway().cacheStoreCreate(mem.pointer());
         }
+    }
+
+    /**
+     * Write store data to a stream.
+     *
+     * @param writer Writer.
+     * @param convertPortable Convert portable flag.
+     */
+    protected void write(PortableRawWriterEx writer, boolean convertPortable) {
+        writer.writeString(typName);
+        writer.writeBoolean(convertPortable);
+        writer.writeMap(props);
     }
 
     /**
