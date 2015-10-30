@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private int[] _curSchema;
 
         /** */
-        private static CopyOnWriteConcurrentDictionary<int, int[]> _schemas =
+        private static readonly CopyOnWriteConcurrentDictionary<int, int[]> Schemas =
             new CopyOnWriteConcurrentDictionary<int, int[]>();
 
         /// <summary>
@@ -688,9 +688,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _curFooterEnd = hdr.GetSchemaEnd(pos);
                     _curFooterStart = hdr.GetSchemaStart(pos);
 
-                    if (!_schemas.TryGetValue(hdr.SchemaId, out _curSchema))
+                    if (!Schemas.TryGetValue(hdr.SchemaId, out _curSchema))
                     {
-                        _curSchema = _schemas.GetOrAdd(hdr.SchemaId, ReadSchema);
+                        _curSchema = Schemas.GetOrAdd(hdr.SchemaId, ReadSchema);
                     }
 
                     _curRawOffset = hdr.GetRawOffset(Stream, pos);
