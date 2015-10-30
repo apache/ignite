@@ -52,6 +52,18 @@ public class GridSqlAlias extends GridSqlElement {
         this.alias = alias;
     }
 
+    /**
+     * @param el Element.
+     * @return Unwrapped from alias element.
+     */
+    public static GridSqlElement unwrap(GridSqlElement el) {
+        el = el instanceof GridSqlAlias ? el.child() : el;
+
+        assert el != null;
+
+        return el;
+    }
+
     /** {@inheritDoc} */
     @Override public String getSQL() {
         return child().getSQL() + (useAs ? " AS " : " ") + Parser.quoteIdentifier(alias);

@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.util.lang.GridFilteredIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -27,43 +29,35 @@ import org.h2.index.BaseIndex;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
-import org.h2.result.SortOrder;
-import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.VAL_COL;
 
 /**
  * Index base.
  */
 public abstract class GridH2IndexBase extends BaseIndex {
     /** */
-    protected static final ThreadLocal<IndexingQueryFilter> filters = new ThreadLocal<>();
+    private static final AtomicLong idxIdGen = new AtomicLong();
 
     /** */
-    protected final int keyCol;
+    protected final long idxId = idxIdGen.incrementAndGet();
 
     /** */
-    protected final int valCol;
+    private final ThreadLocal<Object> snapshot = new ThreadLocal<>();
 
-    /**
-     * @param keyCol Key column.
-     * @param valCol Value column.
-     */
-    protected GridH2IndexBase(int keyCol, int valCol) {
-        this.keyCol = keyCol;
-        this.valCol = valCol;
+    /** {@inheritDoc} */
+    @Override public final void close(Session session) {
+        // No-op. Actual index destruction must happen in method destroy.
     }
 
     /**
-     * Sets key filters for current thread.
-     *
-     * @param fs Filters.
+     * Attempts to destroys index and release all the resources.
+     * We use this method instead of {@link #close(Session)} because that method
+     * is used by H2 internally.
      */
-    public static void setFiltersForThread(IndexingQueryFilter fs) {
-        if (fs == null)
-            filters.remove();
-        else
-            filters.set(fs);
-    }
+    public abstract void destroy();
 
     /**
      * If the index supports rebuilding it has to creates its own copy.
@@ -95,57 +89,58 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * Takes or sets existing snapshot to be used in current thread.
      *
      * @param s Optional existing snapshot to use.
+     * @param qctx Query context.
      * @return Snapshot.
      */
-    public Object takeSnapshot(@Nullable Object s) {
+    public final Object takeSnapshot(@Nullable Object s, GridH2QueryContext qctx) {
+        assert snapshot.get() == null;
+
+        if (s == null)
+            s = doTakeSnapshot();
+
+        if (s != null) {
+            if (s instanceof GridReservable && !((GridReservable)s).reserve())
+                return null;
+
+            snapshot.set(s);
+
+            if (qctx != null)
+                qctx.putSnapshot(idxId, s);
+        }
+
         return s;
+    }
+
+    /**
+     * Takes and returns actual snapshot or {@code null} if snapshots are not supported.
+     *
+     * @return Snapshot or {@code null}.
+     */
+    @Nullable protected abstract Object doTakeSnapshot();
+
+    /**
+     * @return Thread local snapshot.
+     */
+    @SuppressWarnings("unchecked")
+    protected <T> T threadLocalSnapshot() {
+        return (T)snapshot.get();
     }
 
     /**
      * Releases snapshot for current thread.
      */
     public void releaseSnapshot() {
-        // No-op.
-    }
+        Object s = snapshot.get();
 
-    /** {@inheritDoc} */
-    @Override public int compareRows(SearchRow rowData, SearchRow compare) {
-        if (rowData == compare)
-            return 0;
+        assert s != null;
 
-        for (int i = 0, len = indexColumns.length; i < len; i++) {
-            int index = columnIds[i];
+        snapshot.remove();
 
-            Value v1 = rowData.getValue(index);
-            Value v2 = compare.getValue(index);
+        if (s instanceof GridReservable)
+            ((GridReservable)s).release();
 
-            if (v1 == null || v2 == null)
-                return 0;
-
-            int c = compareValues(v1, v2, indexColumns[i].sortType);
-
-            if (c != 0)
-                return c;
-        }
-        return 0;
-    }
-
-    /**
-     * @param a First value.
-     * @param b Second value.
-     * @param sortType Sort type.
-     * @return Comparison result.
-     */
-    private int compareValues(Value a, Value b, int sortType) {
-        if (a == b)
-            return 0;
-
-        int comp = table.compareTypeSave(a, b);
-
-        if ((sortType & SortOrder.DESCENDING) != 0)
-            comp = -comp;
-
-        return comp;
+        if (s instanceof AutoCloseable)
+            U.closeQuiet((AutoCloseable)s);
     }
 
     /**
@@ -157,7 +152,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
     protected Iterator<GridH2Row> filter(Iterator<GridH2Row> iter) {
         IgniteBiPredicate<Object, Object> p = null;
 
-        IndexingQueryFilter f = filters.get();
+        IndexingQueryFilter f = filter();
 
         if (f != null) {
             String spaceName = ((GridH2Table)getTable()).spaceName();
@@ -166,6 +161,15 @@ public abstract class GridH2IndexBase extends BaseIndex {
         }
 
         return new FilteringIterator(iter, U.currentTimeMillis(), p);
+    }
+
+    /**
+     * @return Filter for currently running query or {@code null} if none.
+     */
+    protected IndexingQueryFilter filter() {
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        return qctx == null ? null : qctx.filter();
     }
 
     /** {@inheritDoc} */
@@ -206,7 +210,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * Iterator which filters by expiration time and predicate.
      */
-    protected class FilteringIterator extends GridFilteredIterator<GridH2Row> {
+    protected static class FilteringIterator extends GridFilteredIterator<GridH2Row> {
         /** */
         private final IgniteBiPredicate<Object, Object> fltr;
 
@@ -239,8 +243,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
             if (fltr == null)
                 return true;
 
-            Object key = row.getValue(keyCol).getObject();
-            Object val = row.getValue(valCol).getObject();
+            Object key = row.getValue(KEY_COL).getObject();
+            Object val = row.getValue(VAL_COL).getObject();
 
             assert key != null;
             assert val != null;

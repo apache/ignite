@@ -18,52 +18,75 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.GridKernalContext;
+import java.util.List;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.h2.value.Value;
-import org.h2.value.ValueUuid;
 
 /**
- * H2 Uuid.
+ * Range of rows.
  */
-public class GridH2Uuid extends GridH2ValueMessage {
+public class GridH2RowRange implements Message {
     /** */
-    private long high;
+    private static int FLAG_PARTIAL = 1;
 
     /** */
-    private long low;
+    private int rangeId;
+
+    /** */
+    @GridDirectCollection(Message.class)
+    private List<GridH2RowMessage> rows;
+
+    /** */
+    private byte flags;
 
     /**
-     *
+     * @param rangeId Range ID.
      */
-    public GridH2Uuid() {
-        // No-op.
+    public void rangeId(int rangeId) {
+        this.rangeId = rangeId;
     }
 
     /**
-     * @param val Value.
+     * @return Range ID.
      */
-    public GridH2Uuid(Value val) {
-        assert val.getType() == Value.UUID : val.getType();
-
-        ValueUuid uuid = (ValueUuid)val;
-
-        high = uuid.getHigh();
-        low = uuid.getLow();
+    public int rangeId() {
+        return rangeId;
     }
 
-    /** {@inheritDoc} */
-    @Override public Value value(GridKernalContext ctx) {
-        return ValueUuid.get(high, low);
+    /**
+     * @param rows Rows.
+     */
+    public void rows(List<GridH2RowMessage> rows) {
+        this.rows = rows;
+    }
+
+    /**
+     * @return Rows.
+     */
+    public List<GridH2RowMessage> rows() {
+        return rows;
+    }
+
+    /**
+     * Sets that this is a partial range.
+     */
+    public void setPartial() {
+        flags |= FLAG_PARTIAL;
+    }
+
+    /**
+     * @return {@code true} If this is a partial range.
+     */
+    public boolean isPartial() {
+        return (flags & FLAG_PARTIAL) == FLAG_PARTIAL;
     }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType(), fieldsCount()))
@@ -74,13 +97,19 @@ public class GridH2Uuid extends GridH2ValueMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("high", high))
+                if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("low", low))
+                if (!writer.writeInt("rangeId", rangeId))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeCollection("rows", rows, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -97,12 +126,9 @@ public class GridH2Uuid extends GridH2ValueMessage {
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf, reader))
-            return false;
-
         switch (reader.state()) {
             case 0:
-                high = reader.readLong("high");
+                flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
                     return false;
@@ -110,7 +136,15 @@ public class GridH2Uuid extends GridH2ValueMessage {
                 reader.incrementState();
 
             case 1:
-                low = reader.readLong("low");
+                rangeId = reader.readInt("rangeId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                rows = reader.readCollection("rows", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -119,16 +153,16 @@ public class GridH2Uuid extends GridH2ValueMessage {
 
         }
 
-        return reader.afterMessageRead(GridH2Uuid.class);
+        return reader.afterMessageRead(GridH2RowRange.class);
     }
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -20;
+        return -27;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 3;
     }
 }

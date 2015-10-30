@@ -23,6 +23,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.h2.command.Command;
+import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Explain;
 import org.h2.command.dml.Query;
@@ -91,13 +92,16 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlType.fro
 @SuppressWarnings("TypeMayBeWeakened")
 public class GridSqlQueryParser {
     /** */
-    private static final GridSqlOperationType[] OPERATION_OP_TYPES = new GridSqlOperationType[]{CONCAT, PLUS, MINUS, MULTIPLY, DIVIDE, null, MODULUS};
+    private static final GridSqlOperationType[] OPERATION_OP_TYPES =
+        {CONCAT, PLUS, MINUS, MULTIPLY, DIVIDE, null, MODULUS};
 
     /** */
-    private static final GridSqlOperationType[] COMPARISON_TYPES = new GridSqlOperationType[]{EQUAL, BIGGER_EQUAL, BIGGER, SMALLER_EQUAL,
+    private static final GridSqlOperationType[] COMPARISON_TYPES =
+        {EQUAL, BIGGER_EQUAL, BIGGER, SMALLER_EQUAL,
         SMALLER, NOT_EQUAL, IS_NULL, IS_NOT_NULL,
-        null, null, null, SPATIAL_INTERSECTS /* 11 */, null, null, null, null, EQUAL_NULL_SAFE /* 16 */, null, null, null, null,
-        NOT_EQUAL_NULL_SAFE /* 21 */};
+        null, null, null, SPATIAL_INTERSECTS /* 11 */,
+        null, null, null, null, EQUAL_NULL_SAFE /* 16 */,
+        null, null, null, null, NOT_EQUAL_NULL_SAFE /* 21 */};
 
     /** */
     private static final Getter<Select, Expression> CONDITION = getter(Select.class, "condition");
@@ -217,7 +221,8 @@ public class GridSqlQueryParser {
     private static final Getter<Explain, Prepared> EXPLAIN_COMMAND = getter(Explain.class, "command");
 
     /** */
-    private static volatile Getter<Command,Prepared> prepared;
+    private static final Getter<Command,Prepared> PREPARED =
+        GridSqlQueryParser.<Command,Prepared>getter(CommandContainer.class, "prepared");
 
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
@@ -229,19 +234,9 @@ public class GridSqlQueryParser {
     public static GridSqlQuery parse(JdbcPreparedStatement stmt) {
         Command cmd = COMMAND.get(stmt);
 
-        Getter<Command,Prepared> p = prepared;
+        assert cmd instanceof CommandContainer;
 
-        if (p == null) {
-            Class<? extends Command> cls = cmd.getClass();
-
-            assert "CommandContainer".equals(cls.getSimpleName());
-
-            prepared = p = getter(cls, "prepared");
-        }
-
-        Prepared statement = p.get(cmd);
-
-        return new GridSqlQueryParser().parse(statement);
+        return new GridSqlQueryParser().parse(PREPARED.get(cmd));
     }
 
     /**
@@ -254,7 +249,7 @@ public class GridSqlQueryParser {
             Table tbl = filter.getTable();
 
             if (tbl instanceof TableBase)
-                res = new GridSqlTable(tbl.getSchema().getName(), tbl.getName());
+                res = new GridSqlTable(tbl);
             else if (tbl instanceof TableView) {
                 Query qry = VIEW_QUERY.get((TableView)tbl);
 
@@ -368,6 +363,8 @@ public class GridSqlQueryParser {
      * @param qry Select.
      */
     public GridSqlQuery parse(Prepared qry) {
+        assert qry != null;
+
         if (qry instanceof Select)
             return parse((Select)qry);
 
@@ -436,11 +433,10 @@ public class GridSqlQueryParser {
      */
     private GridSqlElement parseExpression0(Expression expression, boolean calcTypes) {
         if (expression instanceof ExpressionColumn) {
-            TableFilter tblFilter = ((ExpressionColumn)expression).getTableFilter();
+            ExpressionColumn expCol = (ExpressionColumn)expression;
 
-            GridSqlElement gridTblFilter = parseTable(tblFilter);
-
-            return new GridSqlColumn(gridTblFilter, expression.getColumnName(), expression.getSQL());
+            return new GridSqlColumn(expCol.getColumn(), parseTable(expCol.getTableFilter()),
+                expression.getColumnName(), expression.getSQL());
         }
 
         if (expression instanceof Alias)
@@ -474,12 +470,14 @@ public class GridSqlQueryParser {
 
             assert opType != null : COMPARISON_TYPE.get(cmp);
 
-            GridSqlElement left = parseExpression(COMPARISON_LEFT.get(cmp), calcTypes);
+            Expression leftExp = COMPARISON_LEFT.get(cmp);
+            GridSqlElement left = parseExpression(leftExp, calcTypes);
 
             if (opType.childrenCount() == 1)
                 return new GridSqlOperation(opType, left);
 
-            GridSqlElement right = parseExpression(COMPARISON_RIGHT.get(cmp), calcTypes);
+            Expression rightExp = COMPARISON_RIGHT.get(cmp);
+            GridSqlElement right = parseExpression(rightExp, calcTypes);
 
             return new GridSqlOperation(opType, left, right);
         }

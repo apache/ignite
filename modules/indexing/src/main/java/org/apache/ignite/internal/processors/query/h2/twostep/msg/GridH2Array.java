@@ -115,7 +115,7 @@ public class GridH2Array extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2Array.class);
     }
 
     /** {@inheritDoc} */

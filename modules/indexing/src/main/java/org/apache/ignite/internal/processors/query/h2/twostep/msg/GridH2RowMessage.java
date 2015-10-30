@@ -18,48 +18,59 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import java.nio.ByteBuffer;
+import java.util.List;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.h2.value.Value;
-import org.h2.value.ValueString;
 
 /**
- * H2 String.
+ * SQL Row message.
  */
-public class GridH2String extends GridH2ValueMessage {
+public class GridH2RowMessage implements Message {
     /** */
-    private String x;
+    @GridDirectCollection(Message.class)
+    private List<GridH2ValueMessage> vals;
 
     /**
-     *
+     * @return Values of row.
      */
-    public GridH2String() {
-        // No-op.
+    public List<GridH2ValueMessage> values() {
+        return vals;
     }
 
     /**
-     * @param val Value.
+     * @param vals Values of row.
      */
-    public GridH2String(Value val) {
-        assert val.getType() == Value.STRING ||
-            val.getType() == Value.STRING_FIXED ||
-            val.getType() == Value.STRING_IGNORECASE : val.getType();
-
-        x = val.getString();
+    public void values(List<GridH2ValueMessage> vals) {
+        this.vals = vals;
     }
 
-    /** {@inheritDoc} */
-    @Override public Value value(GridKernalContext ctx) {
-        return ValueString.get(x);
+    /**
+     * @param ctx Kernal context.
+     * @return Row.
+     */
+    public GridH2Row row(GridKernalContext ctx) {
+        Value[] v = new Value[vals.size()];
+
+        try {
+            GridH2ValueMessageFactory.fillArray(vals.iterator(), v, ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
+        }
+
+        return new GridH2Row(v);
     }
 
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType(), fieldsCount()))
@@ -70,7 +81,7 @@ public class GridH2String extends GridH2ValueMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("x", x))
+                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -80,19 +91,15 @@ public class GridH2String extends GridH2ValueMessage {
         return true;
     }
 
-    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf, reader))
-            return false;
-
         switch (reader.state()) {
             case 0:
-                x = reader.readString("x");
+                vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -101,15 +108,13 @@ public class GridH2String extends GridH2ValueMessage {
 
         }
 
-        return reader.afterMessageRead(GridH2String.class);
+        return reader.afterMessageRead(GridH2RowMessage.class);
     }
 
-    /** {@inheritDoc} */
     @Override public byte directType() {
-        return -17;
+        return -25;
     }
 
-    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 1;
     }

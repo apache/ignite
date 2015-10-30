@@ -219,6 +219,10 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridH2Uuid.class);
 //        gen.generateAndWrite(GridH2Geometry.class);
 //        gen.generateAndWrite(GridH2CacheObject.class);
+//        gen.generateAndWrite(GridH2IndexRangeRequest.class);
+//        gen.generateAndWrite(GridH2IndexRangeResponse.class);
+//        gen.generateAndWrite(GridH2RowRange.class);
+//        gen.generateAndWrite(GridH2RowRangeBounds.class);
     }
 
     /**

@@ -120,7 +120,7 @@ public class GridH2Geometry extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2Geometry.class);
     }
 
     /** {@inheritDoc} */

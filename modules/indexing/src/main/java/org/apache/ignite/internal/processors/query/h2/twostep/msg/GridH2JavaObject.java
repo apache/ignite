@@ -99,7 +99,7 @@ public class GridH2JavaObject extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2JavaObject.class);
     }
 
     /** {@inheritDoc} */

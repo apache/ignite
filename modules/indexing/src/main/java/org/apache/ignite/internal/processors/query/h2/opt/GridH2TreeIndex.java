@@ -17,21 +17,53 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
+import org.h2.index.IndexCondition;
+import org.h2.index.IndexLookupBatch;
 import org.h2.index.IndexType;
 import org.h2.index.SingleRowCursor;
 import org.h2.result.Row;
@@ -39,8 +71,15 @@ import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
+import org.h2.util.DoneFuture;
 import org.h2.value.Value;
+import org.h2.value.ValueNull;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.Collections.emptyIterator;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
+import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds.rangeBounds;
 
 /**
  * Base class for snapshotable tree indexes.
@@ -48,11 +87,22 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings("ComparatorNotSerializable")
 public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridSearchRowPointer> {
     /** */
+    private static Object EXPLICIT_NULL = new Object();
+
+    /** */
     protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree;
 
     /** */
-    private final ThreadLocal<ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row>> snapshot =
-        new ThreadLocal<>();
+    private final Object msgTopic;
+
+    /** */
+    private final GridMessageListener msgLsnr;
+
+    /** */
+    private final GridKernalContext ctx;
+
+    /** */
+    private final IgniteLogger log;
 
     /**
      * Constructor with index initialization.
@@ -60,19 +110,11 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * @param name Index name.
      * @param tbl Table.
      * @param pk If this index is primary key.
-     * @param keyCol Primary key column index.
-     * @param valCol Value column index.
-     * @param cols Index columns list.
+     * @param colsList Index columns list.
      */
     @SuppressWarnings("unchecked")
-    public GridH2TreeIndex(String name, GridH2Table tbl, boolean pk, int keyCol, int valCol, IndexColumn... cols) {
-        super(keyCol, valCol);
-        if (!pk) {
-            // For other indexes we add primary key at the end to avoid conflicts.
-            cols = Arrays.copyOf(cols, cols.length + 1);
-
-            cols[cols.length - 1] = tbl.indexColumn(keyCol, SortOrder.ASCENDING);
-        }
+    public GridH2TreeIndex(String name, GridH2Table tbl, boolean pk, List<IndexColumn> colsList) {
+        IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
         IndexColumn.mapColumns(cols, tbl);
 
@@ -115,52 +157,149 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                 return super.comparable(key);
             }
         };
+
+        if (desc != null && desc.context() != null) {
+            ctx = desc.context().kernalContext();
+            log = ctx.log(GridH2TreeIndex.class);
+
+            msgTopic = new IgniteBiTuple<>(GridTopic.TOPIC_QUERY, tbl.identifier() + '.' + getName());
+
+            msgLsnr = new GridMessageListener() {
+                @Override public void onMessage(UUID nodeId, Object msg) {
+                    ClusterNode node = ctx.discovery().node(nodeId);
+
+                    if (node == null)
+                        return;
+
+                    try {
+                        if (msg instanceof GridH2IndexRangeRequest)
+                            onIndexRangeRequest(node, (GridH2IndexRangeRequest)msg);
+                        else if (msg instanceof GridH2IndexRangeResponse)
+                            onIndexRangeResponse(node, (GridH2IndexRangeResponse)msg);
+                    }
+                    catch (Throwable th) {
+                        U.error(log, "Failed to handle message[nodeId=" + nodeId + ", msg=" + msg + "]", th);
+
+                        if (th instanceof Error)
+                            throw th;
+                    }
+                }
+            };
+
+            ctx.io().addMessageListener(msgTopic, msgLsnr);
+        }
+        else {
+            msgTopic = null;
+            msgLsnr = null;
+            ctx =  null;
+            log = new NullLogger();
+        }
     }
 
     /**
-     * Closes index and releases resources.
+     * @param node Requesting node.
+     * @param msg Request message.
      */
-    public void close() {
-        if (tree instanceof Closeable)
-            U.closeQuiet((Closeable)tree);
+    private void onIndexRangeRequest(ClusterNode node, GridH2IndexRangeRequest msg) {
+        GridH2QueryContext qctx = GridH2QueryContext.get(ctx.localNodeId(), msg.originNodeId(), msg.queryId(), MAP);
+
+        if (qctx == null) {
+            // TODO respond NOT_FOUND
+
+            return;
+        }
+
+        RangeSource src;
+
+        if (msg.bounds() != null) {
+            // This is the first request containing all the search rows.
+            ConcurrentNavigableMap<GridSearchRowPointer,GridH2Row> snapshot0 = qctx.getSnapshot(idxId);
+
+            assert snapshot0 != null;
+
+            src = new RangeSource(msg.bounds(), snapshot0);
+        }
+        else {
+            // This is request to fetch next portion of data.
+            src = qctx.getSource(node.id(), msg.batchLookupId());
+
+            assert src != null;
+        }
+
+        List<GridH2RowRange> ranges = new ArrayList<>();
+
+        int maxRows = qctx.pageSize();
+
+        while (maxRows > 0) {
+            GridH2RowRange range = src.next(maxRows);
+
+            if (range == null)
+                break;
+
+            maxRows -= range.rows().size();
+        }
+
+        if (src.hasMoreRows()) {
+            // Save source for future fetches.
+            if (msg.bounds() != null)
+                qctx.putSource(node.id(), msg.batchLookupId(), src);
+        }
+        else if (msg.bounds() == null) {
+            // Drop saved source.
+            qctx.putSource(node.id(), msg.batchLookupId(), null);
+        }
+
+        assert !ranges.isEmpty();
+
+        GridH2IndexRangeResponse res = new GridH2IndexRangeResponse();
+
+        res.originNodeId(msg.originNodeId());
+        res.queryId(msg.queryId());
+        res.batchLookupId(msg.batchLookupId());
+        res.ranges(ranges);
+
+        // TODO send res
     }
 
     /**
-     * Takes snapshot to be used in current thread. If argument is null it will be taken from current trees.
-     *
-     * @param s Map to be used as snapshot if not null.
-     * @return Taken snapshot or given argument back.
+     * @param node Responded node.
+     * @param msg Response message.
      */
-    @SuppressWarnings("unchecked")
-    @Override public Object takeSnapshot(@Nullable Object s) {
-        assert snapshot.get() == null;
+    private void onIndexRangeResponse(ClusterNode node, GridH2IndexRangeResponse msg) {
+        GridH2QueryContext qctx = GridH2QueryContext.get(ctx.localNodeId(), msg.originNodeId(), msg.queryId(), MAP);
 
-        if (s == null)
-            s = tree instanceof SnapTreeMap ? ((SnapTreeMap)tree).clone() :
-                ((GridOffHeapSnapTreeMap)tree).clone();
+        if (qctx == null)
+            return;
 
-        snapshot.set((ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row>)s);
+        Map<ClusterNode, RangeStream> streams = qctx.getStreams(msg.batchLookupId());
 
-        return s;
+        if (streams == null)
+            return;
+
+        RangeStream stream = streams.get(node);
+
+        assert stream != null;
+
+        stream.onResponse(msg);
     }
 
-    /**
-     * Releases snapshot for current thread.
-     */
-    @Override public void releaseSnapshot() {
-        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> s = snapshot.get();
+    /** {@inheritDoc} */
+    @Override public GridH2Table getTable() {
+        return (GridH2Table)super.getTable();
+    }
 
-        snapshot.remove();
-
-        if (s instanceof Closeable)
-            U.closeQuiet((Closeable)s);
+    /** {@inheritDoc} */
+    @Override protected Object doTakeSnapshot() {
+        return tree instanceof SnapTreeMap ?
+            ((SnapTreeMap)tree).clone() :
+            ((GridOffHeapSnapTreeMap)tree).clone();
     }
 
     /**
      * @return Snapshot for current thread if there is one.
      */
     private ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead() {
-        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> res = snapshot.get();
+        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> res = threadLocalSnapshot();
 
         if (res == null)
             res = tree;
@@ -169,19 +308,22 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     }
 
     /** {@inheritDoc} */
-    @Override public void close(Session ses) {
-        assert snapshot.get() == null;
+    @Override public void destroy() {
+        assert threadLocalSnapshot() == null;
 
-        if (tree instanceof Closeable)
-            U.closeQuiet((Closeable)tree);
+        if (tree instanceof AutoCloseable)
+            U.closeQuiet((AutoCloseable)tree);
+
+        if (msgLsnr != null)
+            ctx.io().removeMessageListener(msgTopic, msgLsnr);
     }
 
     /** {@inheritDoc} */
     @Override public long getRowCount(@Nullable Session ses) {
-        IndexingQueryFilter f = filters.get();
+        IndexingQueryFilter f = filter();
 
         // Fast path if we don't need to perform any filtering.
-        if (f == null || f.forSpace(((GridH2Table)getTable()).spaceName()) == null)
+        if (f == null || f.forSpace((getTable()).spaceName()) == null)
             return treeForRead().size();
 
         Iterator<GridH2Row> iter = doFind(null, false, null);
@@ -228,14 +370,35 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         return sb.toString();
     }
 
+    /**
+     * @param masks Masks.
+     * @param colId Column ID.
+     * @return {@code true} If set of index conditions contains equality condition for the given column.
+     */
+    private static boolean hasEqualityCondition(int[] masks, int colId) {
+        return (masks[colId] & IndexCondition.EQUALITY) == IndexCondition.EQUALITY;
+    }
+
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter filter, SortOrder sortOrder) {
-        return getCostRangeIndex(masks, getRowCountApproximation(), filter, sortOrder);
+        int rmtMultiplier = 1;
+
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        if (qctx != null && qctx.distributedJoins()) {
+            int affColId = getTable().getAffinityKeyColumn().column.getColumnId();
+
+            // If we don't have affinity or pk conditions we will multiply cost by 10.
+            if (masks == null || (!hasEqualityCondition(masks, affColId) && !hasEqualityCondition(masks, KEY_COL)))
+                rmtMultiplier = 10;
+        }
+
+        return rmtMultiplier * getCostRangeIndex(masks, getRowCountApproximation(), filter, sortOrder);
     }
 
     /** {@inheritDoc} */
     @Override public boolean canFindNext() {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -269,10 +432,25 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * @return Iterator over rows in given range.
      */
     @SuppressWarnings("unchecked")
-    private Iterator<GridH2Row> doFind(@Nullable SearchRow first, boolean includeFirst,
-        @Nullable SearchRow last) {
+    private Iterator<GridH2Row> doFind(@Nullable SearchRow first, boolean includeFirst, @Nullable SearchRow last) {
         ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> t = treeForRead();
 
+        return doFind0(t, first, includeFirst, last);
+    }
+
+    /**
+     * @param t Tree.
+     * @param first Lower bound.
+     * @param includeFirst Whether lower bound should be inclusive.
+     * @param last Upper bound always inclusive.
+     * @return Iterator over rows in given range.
+     */
+    private Iterator<GridH2Row> doFind0(
+        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> t,
+        @Nullable SearchRow first,
+        boolean includeFirst,
+        @Nullable SearchRow last
+    ) {
         includeFirst &= first != null;
 
         NavigableMap<GridSearchRowPointer, GridH2Row> range = subTree(t, comparable(first, includeFirst ? -1 : 1),
@@ -341,7 +519,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public boolean canGetFirstOrLast() {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -463,11 +641,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     @Override public GridH2TreeIndex rebuild() throws InterruptedException {
         IndexColumn[] cols = getIndexColumns();
 
-        if (!getIndexType().isUnique())
-            cols = Arrays.copyOf(cols, cols.length - 1);
-
-        GridH2TreeIndex idx = new GridH2TreeIndex(getName(), (GridH2Table)getTable(), getIndexType().isUnique(),
-            keyCol, valCol, cols);
+        GridH2TreeIndex idx = new GridH2TreeIndex(getName(), getTable(),
+            getIndexType().isUnique(), F.asList(cols));
 
         Thread thread = Thread.currentThread();
 
@@ -482,5 +657,816 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         }
 
         return idx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexLookupBatch createLookupBatch(TableFilter filter) {
+        final GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        if (qctx == null || !qctx.distributedJoins())
+            return null;
+
+        IndexColumn affCol = getTable().getAffinityKeyColumn();
+
+        assert affCol != null;
+
+        final int affColId = affCol.column.getColumnId();
+        final GridCacheContext<?,?> cctx = getTable().rowDescriptor().context();
+
+        final int batchLookupId = qctx.nextBatchLookupId();
+
+        return new IndexLookupBatch() {
+            /** */
+            Map<ClusterNode, RangeStream> rangeStreams = new HashMap<>();
+
+            /** */
+            Collection<ClusterNode> broadcastNodes = null;
+
+            /** */
+            final List<Future<Cursor>> res = new ArrayList<>();
+
+            /** */
+            boolean batchFull;
+
+            /** */
+            boolean clearRes;
+
+            private Object getAffinityKey(SearchRow firstRow, SearchRow lastRow) {
+                if (firstRow == null || lastRow == null)
+                    return null;
+
+                Value affKeyFirst = firstRow.getValue(affColId);
+                Value affKeyLast = lastRow.getValue(affColId);
+
+                if (affKeyFirst != null && equal(affKeyFirst, affKeyLast))
+                    return affKeyFirst == ValueNull.INSTANCE ? EXPLICIT_NULL : affKeyFirst.getObject();
+
+                if (affColId == KEY_COL)
+                    return null;
+
+                // Try to extract affinity key from primary key.
+                Value pkFirst = firstRow.getValue(KEY_COL);
+                Value pkLast = lastRow.getValue(KEY_COL);
+
+                if (pkFirst == ValueNull.INSTANCE || pkLast == ValueNull.INSTANCE)
+                    return EXPLICIT_NULL;
+
+                if (pkFirst == null || pkLast == null)
+                    return null;
+
+                Object pkAffKeyFirst;
+                Object pkAffKeyLast;
+
+                try {
+                    pkAffKeyFirst = ctx.affinity().affinityKey(cctx.name(), pkFirst.getObject());
+                    pkAffKeyLast = ctx.affinity().affinityKey(cctx.name(), pkFirst.getObject());
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException(e);
+                }
+
+                if (pkAffKeyFirst == null || pkAffKeyLast == null)
+                    throw new CacheException("Cache key without affinity key.");
+
+                if (pkAffKeyFirst.equals(pkAffKeyLast))
+                    return pkAffKeyFirst;
+
+                return null;
+            }
+
+            @Override public void addSearchRows(SearchRow firstRow, SearchRow lastRow) {
+                // If this is a beginning of the new lookup clear old results.
+                if (clearRes) {
+                    clearRes = false;
+
+                    res.clear();
+                }
+
+                Object affKey = getAffinityKey(firstRow, lastRow);
+
+                Collection<ClusterNode> nodes;
+                Future<Cursor> fut;
+
+                if (affKey != null) {
+                    // Affinity key is provided.
+                    if (affKey == EXPLICIT_NULL) // Affinity key is explicit null, we will not find anything.
+                        nodes = null;
+                    else
+                        nodes = F.asList(rangeNode(cctx, qctx, affKey));
+                }
+                else {
+                    // Affinity key is not provided or is not the same in upper and lower bounds, we have to broadcast.
+                    if (broadcastNodes == null)
+                        broadcastNodes = broadcastNodes(qctx, cctx);
+
+                    nodes = broadcastNodes;
+                }
+
+                if (nodes != null) {
+                    assert !F.isEmpty(nodes);
+
+                    final int rangeId = res.size();
+
+                    // Create messages.
+                    GridH2RowMessage first = toSearchRowMessage(firstRow);
+                    GridH2RowMessage last = toSearchRowMessage(lastRow);
+
+                    // Range containing upper and lower bounds.
+                    GridH2RowRangeBounds rangeBounds = rangeBounds(rangeId, first, last);
+
+                    // Add range to every message of every participating node.
+                    for (ClusterNode node : nodes) {
+                        assert node != null;
+
+                        RangeStream stream = rangeStreams.get(node);
+
+                        List<GridH2RowRangeBounds> bounds;
+
+                        if (stream == null) {
+                            stream = new RangeStream(qctx, node);
+
+                            stream.req = createRequest(qctx, batchLookupId);
+                            stream.req.bounds(bounds = new ArrayList<>());
+
+                            rangeStreams.put(node, stream);
+                        }
+                        else
+                            bounds = stream.req.bounds();
+
+                        bounds.add(rangeBounds);
+
+                        // If at least one node will have a full batch then we are ok.
+                        if (bounds.size() >= qctx.pageSize())
+                            batchFull = true;
+                    }
+
+                    fut = new DoneFuture<>(nodes.size() == 1 ?
+                        new SimpleCursor(rangeId, nodes, rangeStreams) :
+                        new MergeCursor(rangeId, nodes, rangeStreams));
+                }
+                else
+                    fut = null;
+
+                res.add(fut);
+            }
+
+            @Override public boolean isBatchFull() {
+                return batchFull;
+            }
+
+            private void startStreams() {
+                if (rangeStreams.isEmpty())
+                    return;
+
+                qctx.putStreams(batchLookupId, rangeStreams);
+
+                // Start streaming.
+                for (RangeStream stream : rangeStreams.values())
+                    stream.start();
+
+                rangeStreams = new HashMap<>();
+            }
+
+            @Override public List<Future<Cursor>> find() {
+                batchFull = false;
+                clearRes = !res.isEmpty();
+
+                startStreams();
+
+                return res;
+            }
+        };
+    }
+
+    /**
+     * @param v1 First value.
+     * @param v2 Second value.
+     * @return {@code true} If they equal.
+     */
+    private boolean equal(Value v1, Value v2) {
+        return v1 == v2 || (v1 != null && v2 != null && v1.compareTypeSafe(v2, getDatabase().getCompareMode()) == 0);
+    }
+
+    /**
+     * @param qctx Query context.
+     * @param batchLookupId Batch lookup ID.
+     * @return Index range request.
+     */
+    private static GridH2IndexRangeRequest createRequest(GridH2QueryContext qctx, int batchLookupId) {
+        GridH2IndexRangeRequest req = new GridH2IndexRangeRequest();
+
+        req.originNodeId(qctx.originNodeId());
+        req.queryId(qctx.queryId());
+        req.batchLookupId(batchLookupId);
+
+        return req;
+    }
+
+    /**
+     * @param qctx Query context.
+     * @param cctx Cache context.
+     * @return Collection of nodes for broadcasting.
+     */
+    private Collection<ClusterNode> broadcastNodes(GridH2QueryContext qctx, GridCacheContext<?,?> cctx) {
+        Map<UUID,int[]> partMap = qctx.partitionsMap();
+
+        Collection<ClusterNode> res;
+
+        if (partMap == null)
+            res = CU.affinityNodes(cctx, qctx.topologyVersion());
+        else {
+            res = new ArrayList<>(partMap.size());
+
+            for (UUID nodeId : partMap.keySet()) {
+                ClusterNode node = ctx.discovery().node(nodeId);
+
+                if (node == null)
+                    throw new GridH2RetryException("Failed to find node.");
+
+                res.add(node);
+            }
+        }
+
+        if (F.isEmpty(res))
+            throw new GridH2RetryException("Failed to collect affinity nodes.");
+
+        return res;
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param qctx Query context.
+     * @param affKeyObj Affinity key.
+     * @return Cluster nodes or {@code null} if affinity key is a null value.
+     */
+    private ClusterNode rangeNode(GridCacheContext<?,?> cctx, GridH2QueryContext qctx, Object affKeyObj) {
+        assert affKeyObj != null && affKeyObj != EXPLICIT_NULL : affKeyObj;
+
+        ClusterNode node;
+
+        if (qctx.partitionsMap() != null) {
+            // If we have explicit partitions map, we have to use it to calculate affinity node.
+            UUID nodeId = qctx.nodeForPartition(cctx.affinity().partition(affKeyObj), cctx);
+
+            node = cctx.discovery().node(nodeId);
+        }
+        else // Get primary node for current topology version.
+            node = cctx.affinity().primary(affKeyObj, qctx.topologyVersion());
+
+        if (node == null) // Node was not found, probably topology changed and we need to retry the whole query.
+            throw new GridH2RetryException("Failed to find node.");
+
+        return node;
+    }
+
+    /**
+     * @param row Row.
+     * @return Row message.
+     */
+    private GridH2RowMessage toRowMessage(Row row) {
+        if (row == null)
+            return null;
+
+        List<GridH2ValueMessage> vals = new ArrayList<>(row.getColumnCount());
+
+        for (int i = 0; i < vals.size(); i++) {
+            try {
+                vals.add(GridH2ValueMessageFactory.toMessage(row.getValue(i)));
+            }
+            catch (IgniteCheckedException e) {
+                throw new CacheException(e);
+            }
+        }
+
+        GridH2RowMessage res = new GridH2RowMessage();
+
+        res.values(vals);
+
+        return res;
+    }
+
+    /**
+     * @param msg Row message.
+     * @return Search row.
+     */
+    private SearchRow toSearchRow(GridH2RowMessage msg) {
+        if (msg == null)
+            return null;
+
+        Value[] vals = new Value[getTable().getColumns().length];
+
+        for (int i = 0; i < indexColumns.length; i++) {
+            try {
+                vals[indexColumns[i].column.getColumnId()] = msg.values().get(i).value(ctx);
+            }
+            catch (IgniteCheckedException e) {
+                throw new CacheException(e);
+            }
+        }
+
+        return new GridH2Row(vals);
+    }
+
+    /**
+     * @param row Search row.
+     * @return Row message.
+     */
+    private GridH2RowMessage toSearchRowMessage(SearchRow row) {
+        if (row == null)
+            return null;
+
+        List<GridH2ValueMessage> vals = new ArrayList<>(indexColumns.length);
+
+        for (IndexColumn idxCol : indexColumns) {
+            Value val = row.getValue(idxCol.column.getColumnId());
+
+            if (val == null)
+                break;
+
+            try {
+                vals.add(GridH2ValueMessageFactory.toMessage(val));
+            }
+            catch (IgniteCheckedException e) {
+                throw new CacheException(e);
+            }
+        }
+
+        GridH2RowMessage res = new GridH2RowMessage();
+
+        res.values(vals);
+
+        return res;
+    }
+
+    /**
+     * @param msg Message.
+     * @return Row.
+     */
+    private Row toRow(GridH2RowMessage msg) {
+        if (msg == null)
+            return null;
+
+        List<GridH2ValueMessage> vals = msg.values();
+
+        Value[] vals0 = new Value[vals.size()];
+
+        for (int i = 0; i < vals0.length; i++) {
+            try {
+                vals0[i] = vals.get(i).value(ctx);
+            }
+            catch (IgniteCheckedException e) {
+                throw new CacheException(e);
+            }
+        }
+
+        return new GridH2Row(vals0);
+    }
+
+    /**
+     * Simple cursor from a single node.
+     */
+    private static class SimpleCursor implements Cursor {
+        /** */
+        final int rangeId;
+
+        /** */
+        RangeStream stream;
+
+        /**
+         * @param rangeId Range ID.
+         * @param nodes Remote nodes.
+         * @param rangeStreams Range streams.
+         */
+        private SimpleCursor(int rangeId, Collection<ClusterNode> nodes, Map<ClusterNode,RangeStream> rangeStreams) {
+            assert nodes.size() == 1;
+
+            this.rangeId = rangeId;
+            this.stream = rangeStreams.get(F.first(nodes));
+
+            assert stream != null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean next() {
+            return stream.next(rangeId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Row get() {
+            return stream.get(rangeId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public SearchRow getSearchRow() {
+            return get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean previous() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    /**
+     * Merge cursor from multiple nodes.
+     */
+    private class MergeCursor implements Cursor, Comparator<RangeStream> {
+        /** */
+        final int rangeId;
+
+        /** */
+        final RangeStream[] streams;
+
+        /** */
+        boolean first = true;
+
+        /** */
+        int off;
+
+        /**
+         * @param rangeId Range ID.
+         * @param nodes Remote nodes.
+         * @param rangeStreams Range streams.
+         */
+        private MergeCursor(int rangeId, Collection<ClusterNode> nodes, Map<ClusterNode,RangeStream> rangeStreams) {
+            assert nodes.size() > 1;
+
+            this.rangeId = rangeId;
+
+            streams = new RangeStream[nodes.size()];
+
+            int i = 0;
+
+            for (ClusterNode node : nodes) {
+                RangeStream stream = rangeStreams.get(node);
+
+                assert stream != null;
+
+                streams[i++] = stream;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compare(RangeStream o1, RangeStream o2) {
+            if (o1 == o2)
+                return 0;
+
+            // Nulls are at the beginning of array.
+            if (o1 == null)
+                return -1;
+
+            if (o2 == null)
+                return 1;
+
+            return compareRows(o1.get(rangeId), o2.get(rangeId));
+        }
+
+        /**
+         * Try to fetch the first row.
+         *
+         * @return {@code true} If we were able to find at least one row.
+         */
+        private boolean goFirst() {
+            // Fetch first row from all the streams and sort them.
+            for (int i = 0; i < streams.length; i++) {
+                if (!streams[i].next(rangeId)) {
+                    streams[i] = null;
+                    off++; // After sorting this offset will cut off all null elements at the beginning of array.
+                }
+            }
+
+            if (off == streams.length)
+                return false;
+
+            Arrays.sort(streams, this);
+
+            return true;
+        }
+
+        /**
+         * Fetch next row.
+         *
+         * @return {@code true} If we were able to find at least one row.
+         */
+        private boolean goNext() {
+            assert off != streams.length;
+
+            if (!streams[off].next(rangeId)) {
+                // Next row from current min stream was not found -> nullify that stream and bump offset forward.
+                streams[off] = null;
+
+                return ++off != streams.length;
+            }
+
+            // Bubble up current min stream with respect to fetched row to achieve correct sort order of streams.
+            for (int i = off, last = streams.length - 1; i < last; i++) {
+                if (compareRows(streams[i].get(rangeId), streams[i + 1].get(rangeId)) <= 0)
+                    break;
+
+                U.swap(streams, i, i + 1);
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean next() {
+            if (first) {
+                first = false;
+
+                return goFirst();
+            }
+
+            return goNext();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Row get() {
+            return streams[off].get(rangeId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public SearchRow getSearchRow() {
+            return get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean previous() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    /**
+     * Per node range stream.
+     */
+    private class RangeStream {
+        /** */
+        final GridH2QueryContext qctx;
+
+        /** */
+        final ClusterNode node;
+
+        /** */
+        GridH2IndexRangeRequest req;
+
+        /** */
+        int remainingRanges;
+
+        /** */
+        final BlockingQueue<GridH2IndexRangeResponse> respQueue = new LinkedBlockingQueue<>();
+
+        /** */
+        Iterator<GridH2RowRange> ranges = emptyIterator();
+
+        /** */
+        Cursor cursor = GridH2Cursor.EMPTY;
+
+        /** */
+        int cursorRangeId = -1;
+
+        /**
+         * @param qctx Query context.
+         * @param node Node.
+         */
+        RangeStream(GridH2QueryContext qctx, ClusterNode node) {
+            this.node = node;
+            this.qctx = qctx;
+        }
+
+        /**
+         * Start streaming.
+         */
+        private void start() {
+            remainingRanges = req.bounds().size();
+
+            assert remainingRanges > 0;
+
+            // TODO send req
+        }
+
+        /**
+         * @param msg Response.
+         */
+        public void onResponse(GridH2IndexRangeResponse msg) {
+            respQueue.add(msg);
+        }
+
+        /**
+         * @return Response.
+         */
+        private GridH2IndexRangeResponse awaitForResponse() {
+            assert remainingRanges > 0;
+
+            for (int attempt = 0; attempt < 40; attempt++) {
+                GridH2IndexRangeResponse res;
+
+                try {
+                    res = respQueue.poll(500, TimeUnit.MILLISECONDS);
+                }
+                catch (InterruptedException e) {
+                    throw new IgniteInterruptedException(e);
+                }
+
+                if (res != null) {
+                    switch (res.status()) {
+                        case GridH2IndexRangeResponse.STATUS_OK:
+                            List<GridH2RowRange> ranges0 = res.ranges();
+
+                            remainingRanges -= ranges0.size();
+
+                            if (ranges0.get(ranges0.size() - 1).isPartial())
+                                remainingRanges++;
+
+                            if (remainingRanges > 0) {
+                                if (req.bounds() != null)
+                                    req = createRequest(qctx, req.batchLookupId());
+
+                                // TODO request next by sending req
+                            }
+                            else
+                                req = null;
+
+                            return res;
+
+                        case GridH2IndexRangeResponse.STATUS_NOT_FOUND:
+                            if (req == null || req.bounds() == null) // We have already received the first response.
+                                throw new GridH2RetryException("Failure on remote node.");
+
+                            try {
+                                U.sleep(10 * attempt);
+                            }
+                            catch (IgniteInterruptedCheckedException e) {
+                                throw new IgniteInterruptedException(e.getMessage());
+                            }
+
+                            // TODO resend req
+
+                            break;
+
+                        case GridH2IndexRangeResponse.STATUS_ERROR:
+                            throw new CacheException(res.error());
+
+                        default:
+                            assert false;
+                    }
+                }
+
+                if (!ctx.discovery().alive(node))
+                    throw new GridH2RetryException("Node left.");
+            }
+
+            throw new GridH2RetryException("Attempts exceeded.");
+        }
+
+        /**
+         * @param rangeId Requested range ID.
+         * @return {@code true} If next row for the requested range was found.
+         */
+        private boolean next(final int rangeId) {
+            for (;;) {
+                if (rangeId == cursorRangeId) {
+                    if (cursor.next())
+                        return true;
+                }
+                else if (rangeId < cursorRangeId)
+                    return false;
+
+                cursor = GridH2Cursor.EMPTY;
+
+                while (!ranges.hasNext()) {
+                    if (remainingRanges == 0) {
+                        ranges = emptyIterator();
+
+                        return false;
+                    }
+
+                    ranges = awaitForResponse().ranges().iterator();
+                }
+
+                GridH2RowRange range = ranges.next();
+
+                cursorRangeId = range.rangeId();
+
+                final Iterator<GridH2RowMessage> it = range.rows().iterator();
+
+                if (it.hasNext()) {
+                    cursor = new GridH2Cursor(new Iterator<Row>() {
+                        @Override public boolean hasNext() {
+                            return it.hasNext();
+                        }
+
+                        @Override public Row next() {
+                            // Lazily convert messages into real rows.
+                            return toRow(it.next());
+                        }
+
+                        @Override public void remove() {
+                            throw new UnsupportedOperationException();
+                        }
+                    });
+                }
+            }
+        }
+
+        /**
+         * @param rangeId Requested range ID.
+         * @return Current row.
+         */
+        private Row get(int rangeId) {
+            assert rangeId == cursorRangeId;
+
+            return cursor.get();
+        }
+    }
+
+    /**
+     * Bounds iterator.
+     */
+    private class RangeSource {
+        /** */
+        Iterator<GridH2RowRangeBounds> boundsIter;
+
+        /** */
+        int curRangeId;
+
+        /** */
+        Iterator<GridH2Row> curRange = emptyIterator();
+
+        /** */
+        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree;
+
+        /**
+         * @param bounds Bounds.
+         * @param tree Snapshot.
+         */
+        RangeSource(
+            Iterable<GridH2RowRangeBounds> bounds,
+            ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree
+        ) {
+            this.tree = tree;
+            boundsIter = bounds.iterator();
+        }
+
+        /**
+         * @return {@code true} If there are more rows in this source.
+         */
+        public boolean hasMoreRows() {
+            return boundsIter.hasNext() || curRange.hasNext();
+        }
+
+        /**
+         * @param maxRows Max allowed rows.
+         * @return Range.
+         */
+        public GridH2RowRange next(int maxRows) {
+            for (;;) {
+                if (curRange.hasNext()) {
+                    List<GridH2RowMessage> rows = new ArrayList<>();
+
+                    GridH2RowRange nextRange = new GridH2RowRange();
+
+                    nextRange.rangeId(curRangeId);
+                    nextRange.rows(rows);
+
+                    do {
+                        rows.add(toRowMessage(curRange.next()));
+                    }
+                    while (rows.size() < maxRows && curRange.hasNext());
+
+                    if (curRange.hasNext())
+                        nextRange.setPartial();
+                    else
+                        curRange = emptyIterator();
+
+                    return nextRange;
+                }
+
+                curRange = emptyIterator();
+
+                if (!boundsIter.hasNext()) {
+                    boundsIter = emptyIterator();
+
+                    return null;
+                }
+
+                GridH2RowRangeBounds bounds = boundsIter.next();
+
+                curRangeId = bounds.rangeId();
+
+                SearchRow first = toSearchRow(bounds.first());
+                SearchRow last = toSearchRow(bounds.last());
+
+                curRange = doFind0(tree, first, true, last);
+
+                if (!curRange.hasNext()) {
+                    // We have to return empty range.
+                    GridH2RowRange nextRange = new GridH2RowRange();
+
+                    nextRange.rangeId(curRangeId);
+
+                    return nextRange;
+                }
+            }
+        }
     }
 }

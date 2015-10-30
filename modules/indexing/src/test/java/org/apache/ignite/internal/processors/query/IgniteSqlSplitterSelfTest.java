@@ -93,6 +93,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             Integer.class, Integer.class));
 
         try {
+            awaitPartitionMapExchange();
+
             List<Integer> res = new ArrayList<>();
 
             Random rnd = new GridRandom();
@@ -132,6 +134,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             Integer.class, GroupIndexTestValue.class));
 
         try {
+            awaitPartitionMapExchange();
+
             // Check group index usage.
             String qry = "select 1 from GroupIndexTestValue ";
 
@@ -203,6 +207,43 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testNonCollocatedJoins() throws Exception {
+        IgniteCache<Integer, Object> c = ignite(0).getOrCreateCache(cacheConfig("persOrg", true,
+            Integer.class, Person.class, Integer.class, Organization.class));
+
+        try {
+            awaitPartitionMapExchange();
+
+            int key = 0;
+            for (int i = 0; i < 3000; i++) {
+                Organization o = new Organization();
+
+                o.name = "Org" + i;
+
+                c.put(key++, o);
+            }
+
+            Random rnd = new GridRandom();
+            for (int i = 0; i < 15000; i++) {
+                Person p = new Person();
+
+                p.name = "Person" + i;
+                p.orgId = rnd.nextInt(3000);
+
+                c.put(key++, p);
+            }
+
+            assertEquals(15000L, c.query(new SqlFieldsQuery("select count(*) from Person p, Organization o " +
+                "where p.orgId = o._key")).getAll().get(0).get(0));
+        }
+        finally {
+            c.destroy();
+        }
+    }
+
+    /**
      * @param c Cache.
      * @param qry Query.
      * @param args Arguments.
@@ -244,5 +285,18 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             this.a = a;
             this.b = b;
         }
+    }
+
+    private static class Person {
+        @QuerySqlField
+        int orgId;
+
+        @QuerySqlField
+        String name;
+    }
+
+    private static class Organization {
+        @QuerySqlField
+        String name;
     }
 }

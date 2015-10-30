@@ -47,16 +47,33 @@ public class GridCacheTwoStepQuery {
     /** */
     private Set<String> spaces;
 
+    /** */
+    private Set<String> tbls;
+
+    /** */
+    private boolean collocated;
+
     /**
      * @param spaces All spaces accessed in query.
-     * @param rdc Reduce query.
+     * @param tbls Tables.
      */
-    public GridCacheTwoStepQuery(Set<String> spaces, GridCacheSqlQuery rdc) {
-        assert rdc != null;
-
+    public GridCacheTwoStepQuery(Set<String> spaces, Set<String> tbls) {
         this.spaces = spaces;
+        this.tbls = tbls;
+    }
 
-        this.rdc = rdc;
+    /**
+     * @param collocated If it is a collocated query and no distributed joins can occur.
+     */
+    public void collocated(boolean collocated) {
+        this.collocated = collocated;
+    }
+
+    /**
+     * @return {@code true} If it is a collocated query and no distributed joins can occur.
+     */
+    public boolean collocated() {
+        return collocated;
     }
 
     /**
@@ -102,6 +119,13 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
+     * @param rdc Reduce query.
+     */
+    public void reduceQuery(GridCacheSqlQuery rdc) {
+        this.rdc = rdc;
+    }
+
+    /**
      * @return Map queries.
      */
     public List<GridCacheSqlQuery> mapQueries() {
@@ -120,6 +144,13 @@ public class GridCacheTwoStepQuery {
      */
     public void spaces(Set<String> spaces) {
         this.spaces = spaces;
+    }
+
+    /**
+     * @return Tables.
+     */
+    public Set<String> tables() {
+        return tbls;
     }
 
     /** {@inheritDoc} */

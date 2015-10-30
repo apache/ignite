@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -33,7 +34,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Query.
  */
-public class GridCacheSqlQuery implements Message {
+public class GridCacheSqlQuery implements Message, GridCacheQueryMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -110,30 +111,34 @@ public class GridCacheSqlQuery implements Message {
         return params;
     }
 
-    /**
-     * @param m Marshaller.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void marshallParams(Marshaller m) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void marshall(Marshaller m) {
         if (paramsBytes != null)
             return;
 
         assert params != null;
 
-        paramsBytes = m.marshal(params);
+        try {
+            paramsBytes = m.marshal(params);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
-    /**
-     * @param m Marshaller.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void unmarshallParams(Marshaller m) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void unmarshall(Marshaller m) {
         if (params != null)
             return;
 
         assert paramsBytes != null;
 
-        params = m.unmarshal(paramsBytes, null);
+        try {
+            params = m.unmarshal(paramsBytes, null);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */

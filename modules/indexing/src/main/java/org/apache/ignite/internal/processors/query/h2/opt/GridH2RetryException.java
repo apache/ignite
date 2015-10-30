@@ -15,24 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.reducefields;
+package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import org.apache.ignite.IgniteException;
 
 /**
- * Reduce fields queries tests for partitioned cache.
+ * Internal exception.
  */
-public class GridCacheReduceFieldsQueryAtomicSelfTest extends GridCacheReduceFieldsQueryPartitionedSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
+public class GridH2RetryException extends IgniteException {
+    /**
+     * @param msg Message.
+     */
+    public GridH2RetryException(String msg) {
+        super(msg);
     }
 }

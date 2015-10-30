@@ -90,6 +90,24 @@ public class GridH2ValueMessageFactory implements MessageFactory {
 
             case -22:
                 return new GridH2CacheObject();
+
+            case -23:
+                return new GridH2IndexRangeRequest();
+
+            case -24:
+                return new GridH2IndexRangeResponse();
+
+            case -25:
+                return new GridH2RowMessage();
+
+            case -26:
+                return new GridH2QueryRequest();
+
+            case -27:
+                return new GridH2RowRange();
+
+            case -28:
+                return new GridH2RowRangeBounds();
         }
 
         return null;
@@ -118,7 +136,7 @@ public class GridH2ValueMessageFactory implements MessageFactory {
      * @return Filled array.
      * @throws IgniteCheckedException If failed.
      */
-    public static Value[] fillArray(Iterator<Message> src, Value[] dst, GridKernalContext ctx)
+    public static Value[] fillArray(Iterator<? extends Message> src, Value[] dst, GridKernalContext ctx)
         throws IgniteCheckedException {
         for (int i = 0; i < dst.length; i++) {
             Message msg = src.next();
@@ -134,7 +152,7 @@ public class GridH2ValueMessageFactory implements MessageFactory {
      * @return Message.
      * @throws IgniteCheckedException If failed.
      */
-    public static Message toMessage(Value v) throws IgniteCheckedException {
+    public static GridH2ValueMessage toMessage(Value v) throws IgniteCheckedException {
         switch (v.getType()) {
             case Value.NULL:
                 return GridH2Null.INSTANCE;

@@ -15,23 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.reducefields;
+package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.cache.CacheMode;
-
-import static org.apache.ignite.cache.CacheMode.LOCAL;
+import org.apache.ignite.marshaller.Marshaller;
 
 /**
- * Reduce fields queries tests for local cache.
+ * Message which needs to be marshalled and unmarshalled before sending or processing it.
  */
-public class GridCacheReduceFieldsQueryLocalSelfTest extends GridCacheAbstractReduceFieldsQuerySelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return LOCAL;
-    }
+public interface GridCacheQueryMarshallable {
+    /**
+     * @param m Marshaller.
+     */
+    public void marshall(Marshaller m);
 
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
-    }
+    /**
+     * @param m Marshaller.
+     */
+    public void unmarshall(Marshaller m);
 }

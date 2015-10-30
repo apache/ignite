@@ -17,6 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.sql.SQLException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Queue;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -51,7 +73,6 @@ import org.apache.ignite.internal.processors.datastructures.GridCacheSetItemKey;
 import org.apache.ignite.internal.processors.datastructures.GridSetQueryPredicate;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexType;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -90,30 +111,6 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-
-import javax.cache.Cache;
-import javax.cache.expiry.ExpiryPolicy;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.sql.SQLException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Queue;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentMap;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
@@ -266,25 +263,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @Override public final void stop0(boolean cancel) {
         if (log.isDebugEnabled())
             log.debug("Stopped cache query manager.");
-    }
-
-    /**
-     * Gets number of objects of given type in index.
-     *
-     * @param valType Value type.
-     * @return Number of objects or -1 if type was not indexed at all.
-     * @throws IgniteCheckedException If failed.
-     */
-    public long size(Class<?> valType) throws IgniteCheckedException {
-        if (!enterBusy())
-            throw new IllegalStateException("Failed to get size (grid is stopping).");
-
-        try {
-            return qryProc.size(space, valType);
-        }
-        finally {
-            leaveBusy();
-        }
     }
 
     /**
@@ -554,26 +532,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         try {
             switch (qry.type()) {
                 case SQL:
-                    if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                        cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
-                            cctx.localNode(),
-                            "SQL query executed.",
-                            EVT_CACHE_QUERY_EXECUTED,
-                            CacheQueryType.SQL.name(),
-                            cctx.namex(),
-                            qry.queryClassName(),
-                            qry.clause(),
-                            null,
-                            null,
-                            args,
-                            subjId,
-                            taskName));
-                    }
-
-                    iter = qryProc.query(space, qry.clause(), F.asList(args),
-                        qry.queryClassName(), filter(qry));
-
-                    break;
+                    throw new IllegalStateException("Should never be called.");
 
                 case SCAN:
                     if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
@@ -732,11 +691,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             else {
                 assert qry.type() == SQL_FIELDS;
 
-                GridQueryFieldsResult qryRes = qryProc.queryFields(space, qry.clause(), F.asList(args), filter(qry));
-
-                res.metaData(qryRes.metaData());
-
-                res.onDone(qryRes.iterator());
+                throw new IllegalStateException("Should never be called.");
             }
         }
         catch (Exception e) {

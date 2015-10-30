@@ -47,6 +47,18 @@ public class GridH2Integer extends GridH2ValueMessage {
         x = val.getInt();
     }
 
+    /**
+     * @param x Primitive value.
+     * @return Instance of {@link GridH2Integer}.
+     */
+    public static GridH2Integer fromInt(int x) {
+        GridH2Integer res = new GridH2Integer();
+
+        res.x = x;
+
+        return res;
+    }
+
     /** {@inheritDoc} */
     @Override public Value value(GridKernalContext ctx) {
         return ValueInt.get(x);
@@ -99,7 +111,7 @@ public class GridH2Integer extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2Integer.class);
     }
 
     /** {@inheritDoc} */
@@ -110,5 +122,16 @@ public class GridH2Integer extends GridH2ValueMessage {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        return obj == this || (obj != null && obj.getClass() == GridH2Integer.class && x == ((GridH2Integer)obj).x);
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return x;
     }
 }

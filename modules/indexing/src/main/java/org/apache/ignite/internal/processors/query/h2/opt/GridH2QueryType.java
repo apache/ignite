@@ -15,23 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.reducefields;
-
-import org.apache.ignite.cache.CacheMode;
-
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+package org.apache.ignite.internal.processors.query.h2.opt;
 
 /**
- * Reduce fields queries tests for replicated cache.
+ * Query type.
  */
-public class GridCacheReduceFieldsQueryReplicatedSelfTest extends GridCacheAbstractReduceFieldsQuerySelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
-    }
+public enum GridH2QueryType {
+    /** Map query. */
+    MAP,
 
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 3;
-    }
+    /** Reduce query. */
+    REDUCE,
+
+    /** Local query. */
+    LOCAL
 }

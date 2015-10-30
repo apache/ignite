@@ -99,7 +99,7 @@ public class GridH2Byte extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2Byte.class);
     }
 
     /** {@inheritDoc} */

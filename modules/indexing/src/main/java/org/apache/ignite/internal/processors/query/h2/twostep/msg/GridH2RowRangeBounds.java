@@ -18,52 +18,84 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.h2.value.Value;
-import org.h2.value.ValueUuid;
 
 /**
- * H2 Uuid.
+ * Bounds of row range.
  */
-public class GridH2Uuid extends GridH2ValueMessage {
+public class GridH2RowRangeBounds implements Message {
     /** */
-    private long high;
+    private int rangeId;
 
     /** */
-    private long low;
+    private GridH2RowMessage first;
+
+    /** */
+    private GridH2RowMessage last;
 
     /**
-     *
+     * @param rangeId Range ID.
+     * @param first First.
+     * @param last Last.
+     * @return Range bounds.
      */
-    public GridH2Uuid() {
-        // No-op.
+    public static GridH2RowRangeBounds rangeBounds(int rangeId, GridH2RowMessage first, GridH2RowMessage last) {
+        GridH2RowRangeBounds res = new GridH2RowRangeBounds();
+
+        res.rangeId(rangeId);
+        res.first(first);
+        res.last(last);
+
+        return res;
     }
 
     /**
-     * @param val Value.
+     * @param rangeId Range ID.
      */
-    public GridH2Uuid(Value val) {
-        assert val.getType() == Value.UUID : val.getType();
-
-        ValueUuid uuid = (ValueUuid)val;
-
-        high = uuid.getHigh();
-        low = uuid.getLow();
+    public void rangeId(int rangeId) {
+        this.rangeId = rangeId;
     }
 
-    /** {@inheritDoc} */
-    @Override public Value value(GridKernalContext ctx) {
-        return ValueUuid.get(high, low);
+    /**
+     * @return Range ID.
+     */
+    public int rangeId() {
+        return rangeId;
+    }
+
+    /**
+     * @param first First.
+     */
+    public void first(GridH2RowMessage first) {
+        this.first = first;
+    }
+
+    /**
+     * @return First.
+     */
+    public GridH2RowMessage first() {
+        return first;
+    }
+
+    /**
+     * @param last Last.
+     */
+    public void last(GridH2RowMessage last) {
+        this.last = last;
+    }
+
+    /**
+     * @return Last.
+     */
+    public GridH2RowMessage last() {
+        return last;
     }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType(), fieldsCount()))
@@ -74,13 +106,19 @@ public class GridH2Uuid extends GridH2ValueMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("high", high))
+                if (!writer.writeMessage("first", first))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("low", low))
+                if (!writer.writeMessage("last", last))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeInt("rangeId", rangeId))
                     return false;
 
                 writer.incrementState();
@@ -97,12 +135,9 @@ public class GridH2Uuid extends GridH2ValueMessage {
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf, reader))
-            return false;
-
         switch (reader.state()) {
             case 0:
-                high = reader.readLong("high");
+                first = reader.readMessage("first");
 
                 if (!reader.isLastRead())
                     return false;
@@ -110,7 +145,15 @@ public class GridH2Uuid extends GridH2ValueMessage {
                 reader.incrementState();
 
             case 1:
-                low = reader.readLong("low");
+                last = reader.readMessage("last");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                rangeId = reader.readInt("rangeId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -119,16 +162,16 @@ public class GridH2Uuid extends GridH2ValueMessage {
 
         }
 
-        return reader.afterMessageRead(GridH2Uuid.class);
+        return reader.afterMessageRead(GridH2RowRangeBounds.class);
     }
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -20;
+        return -28;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 3;
     }
 }

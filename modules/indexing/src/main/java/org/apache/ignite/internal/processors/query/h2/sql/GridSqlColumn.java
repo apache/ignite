@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.Collections;
+import org.h2.table.Column;
 
 /**
  * Column.
@@ -32,12 +33,16 @@ public class GridSqlColumn extends GridSqlElement implements GridSqlValue {
     /** SQL from original query. May be qualified or unqualified column name. */
     private final String sqlText;
 
+    /** */
+    private Column col;
+
     /**
+     * @param col Column.
      * @param from From.
      * @param name Name.
      * @param sqlText Text.
      */
-    public GridSqlColumn(GridSqlElement from, String name, String sqlText) {
+    public GridSqlColumn(Column col, GridSqlElement from, String name, String sqlText) {
         super(Collections.<GridSqlElement>emptyList());
 
         assert sqlText != null;
@@ -45,13 +50,7 @@ public class GridSqlColumn extends GridSqlElement implements GridSqlValue {
         expressionInFrom = from;
         colName = name;
         this.sqlText = sqlText;
-    }
-
-    /**
-     * @return Simple unqualified column with only name.
-     */
-    public GridSqlColumn simplify() {
-        return new GridSqlColumn(null, colName, colName);
+        this.col = col;
     }
 
     /**
@@ -71,5 +70,12 @@ public class GridSqlColumn extends GridSqlElement implements GridSqlValue {
      */
     public GridSqlElement expressionInFrom() {
         return expressionInFrom;
+    }
+
+    /**
+     * @return H2 Column.
+     */
+    public Column column() {
+        return col;
     }
 }
