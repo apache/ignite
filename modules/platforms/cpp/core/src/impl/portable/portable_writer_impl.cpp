@@ -16,6 +16,7 @@
  */
 
 #include "ignite/impl/portable/portable_writer_impl.h"
+#include "ignite/impl/interop/interop_stream_position_guard.h"
 #include "ignite/ignite_error.h"
 
 using namespace ignite::impl::interop;
@@ -568,6 +569,8 @@ namespace ignite
 
                 if (schema.Empty())
                 {
+                    InteropStreamPositionGuard<InteropOutputStream> guard(*stream);
+
                     stream->Position(start + IGNITE_OFFSET_FLAGS);
                     stream->WriteInt16(IGNITE_PORTABLE_FLAG_USER_OBJECT | IGNITE_PORTABLE_FLAG_RAW_ONLY);
 

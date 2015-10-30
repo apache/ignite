@@ -725,7 +725,7 @@ namespace ignite
                 /**
                  * Read object.
                  *
-                 * @param obj Object to write.
+                 * @return Read object.
                  */
                 template<typename T>
                 T ReadTopObject()
