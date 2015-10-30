@@ -192,9 +192,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         ClusterNode loc = cctx.localNode();
 
-        long startTime = loc.metrics().getStartTime();
-
-        assert startTime > 0;
+        assert loc.metrics().getStartTime() > 0;
 
         final long startTopVer = loc.order();
 

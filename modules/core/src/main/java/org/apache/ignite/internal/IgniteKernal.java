@@ -165,6 +165,7 @@ import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
@@ -3158,10 +3159,17 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     public void dumpDebugInfo() {
-        U.warn(log, "Dumping debug info for node [id=" + ctx.localNodeId() +
+        boolean client = ctx.clientNode();
+
+        ClusterNode locNode = ctx.discovery().localNode();
+
+        UUID routerId = locNode instanceof TcpDiscoveryNode ? ((TcpDiscoveryNode)locNode).clientRouterNodeId() : null;
+
+        U.warn(log, "Dumping debug info for node [id=" + locNode.id() +
             ", name=" + ctx.gridName() +
-            ", order=" + ctx.discovery().localNode().order() +
-            ", client=" + ctx.clientNode() + ']');
+            ", order=" + locNode.order() +
+            ", client=" + client +
+            (client && routerId != null ? ", routerId=" + routerId : "") + ']');
 
         ctx.cache().context().exchange().dumpDebugInfo();
     }
