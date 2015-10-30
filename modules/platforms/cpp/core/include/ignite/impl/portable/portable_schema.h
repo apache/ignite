@@ -34,6 +34,21 @@ namespace ignite
             class PortableWriterImpl;
 
             /**
+            * Schema size variants.
+            */
+            enum SCHEMA_TYPE
+            {
+                /** Tiny schema type. Means all field sizes can be fit in uint8_t. */
+                SCHEMA_TYPE_TINY,
+
+                /** Small schema type. Means all field sizes can be fit in uint16_t. */
+                SCHEMA_TYPE_SMALL,
+
+                /** Big schema type. Means field sizes have type uint32_t. */
+                SCHEMA_TYPE_BIG
+            };
+
+            /**
              * Portable schema.
              */
             class IGNITE_IMPORT_EXPORT PortableSchema
@@ -86,10 +101,17 @@ namespace ignite
                  */
                 void Clear();
 
+                /**
+                 * Get type of schema.
+                 *
+                 * @return Type of schema.
+                 */
+                SCHEMA_TYPE GetType() const;
+
             private:
                 /**
-                * Single schema field info.
-                */
+                 * Single schema field info.
+                 */
                 struct PortableSchemaFieldInfo
                 {
                     int32_t id;
