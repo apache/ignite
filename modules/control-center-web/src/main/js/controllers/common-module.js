@@ -671,11 +671,9 @@ consoleModule.service('$common', [
                 return true;
             },
             metadataForQueryConfigured: function (meta) {
-                var isEmpty = !isDefined(meta) || (isEmptyArray(meta.queryFields)
-                    && isEmptyArray(meta.ascendingFields)
-                    && isEmptyArray(meta.descendingFields)
-                    && isEmptyArray(meta.textFields)
-                    && isEmptyArray(meta.groups));
+                var isEmpty = !isDefined(meta) || (isEmptyArray(meta.fields)
+                    && isEmptyArray(meta.aliases)
+                    && isEmptyArray(meta.indexes));
 
                 return !isEmpty;
             },
@@ -1121,11 +1119,12 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
 
             _tableFocus('DatabaseName' + field.focusId, index);
         }
-        else if (ui == 'table-query-groups') {
-            field.curGroupName = val.name;
-            field.curFields = val.fields;
+        else if (ui == 'table-indexes') {
+            field.curIndexName = val.name;
+            field.curIndexType = val.type;
+            field.curIndexFields = val.fields;
 
-            _tableFocus('GroupName', index);
+            _tableFocus(field.focusId, index);
         }
     }
 
@@ -1153,13 +1152,14 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
 
             _tableFocus('DatabaseName' + field.focusId, -1);
         }
-        else if (ui == 'table-query-groups') {
-            field.newGroupName = null;
-            field.newFields = null;
+        else if (ui == 'table-indexes') {
+            field.newIndexName = null;
+            field.newIndexType = null;
+            field.newIndexFields = null;
 
-            _tableFocus('GroupName', -1);
+            _tableFocus(field.focusId, -1);
         }
-        else if (ui == 'table-query-group-fields') {
+        else if (ui == 'table-index-fields') {
             _tableFocus('FieldName', -1);
         }
     }

@@ -89,6 +89,8 @@ consoleModule.controller('metadataController', [
                 store: {xml: '', java: '', allDefaults: true}
             };
 
+            $scope.indexType = $common.mkOptions(['SORTED', 'FULLTEXT', 'GEOSPATIAL']);
+
             var presets = [
                 {
                     db: 'oracle',
@@ -184,8 +186,8 @@ consoleModule.controller('metadataController', [
             $scope.supportedJavaTypes = $common.mkOptions($common.javaBuildInClasses);
 
             $scope.sortDirections = [
-                {value: false, label: 'ASC'},
-                {value: true, label: 'DESC'}
+                {value: true, label: 'ASC'},
+                {value: false, label: 'DESC'}
             ];
 
             $scope.panels = {activePanels: [0, 1]};
@@ -474,9 +476,7 @@ consoleModule.controller('metadataController', [
                 _.forEach($scope.loadMeta.tables, function (table) {
                     if (table.use) {
                         var qryFields = [];
-                        var ascFields = [];
-                        var descFields = [];
-                        var groups = [];
+                        var indexes = [];
                         var keyFields = [];
                         var valFields = [];
 
@@ -498,17 +498,6 @@ consoleModule.controller('metadataController', [
                                 javaName: toJavaName(name), javaType: jdbcType.javaType}
                         }
 
-                        function colType(colName) {
-                            var col = _.find(table.cols, function (col) {
-                                return col.name == colName;
-                            });
-
-                            if (col)
-                                return $common.findJdbcType(col.type).javaType;
-
-                            return 'Unknown';
-                        }
-
                         var _containKey = false;
 
                         _.forEach(table.cols, function (col) {
@@ -517,12 +506,6 @@ consoleModule.controller('metadataController', [
 
                             if (!fieldIndexed(colName, table))
                                 qryFields.push(queryField(colName, jdbcType));
-
-                            if (_.includes(table.ascCols, colName))
-                                ascFields.push(queryField(colName, jdbcType));
-
-                            if (_.includes(table.descCols, colName))
-                                descFields.push(queryField(colName, jdbcType));
 
                             if (col.key) {
                                 keyFields.push(dbField(colName, jdbcType));
@@ -538,22 +521,20 @@ consoleModule.controller('metadataController', [
                         var idxs = table.idxs;
 
                         if (table.idxs) {
-                            var indexes = Object.keys(idxs);
+                            var tblIndexes = Object.keys(idxs);
 
-                            _.forEach(indexes, function (indexName) {
+                            _.forEach(tblIndexes, function (indexName) {
                                 var index = idxs[indexName];
 
                                 var fields = Object.keys(index);
 
-                                if (fields.length > 1)
-                                    groups.push(
-                                        {name: indexName, fields: _.map(fields, function (fieldName) {
-                                            return {
-                                                name: toJavaName(fieldName),
-                                                className: colType(fieldName),
-                                                direction: index[fieldName]
-                                            };
-                                        })});
+                                indexes.push(
+                                    {name: indexName, type: 'SORTED', fields: _.map(fields, function (fieldName) {
+                                        return {
+                                            name: toJavaName(fieldName),
+                                            direction: !index[fieldName]
+                                        };
+                                    })});
                             });
                         }
 
@@ -580,10 +561,8 @@ consoleModule.controller('metadataController', [
                         meta.valueType = valType + dupSfx;
                         meta.databaseSchema = table.schema;
                         meta.databaseTable = tableName;
-                        meta.queryFields = qryFields;
-                        meta.ascendingFields = ascFields;
-                        meta.descendingFields = descFields;
-                        meta.groups = groups;
+                        meta.fields = qryFields;
+                        meta.indexes = indexes;
                         meta.keyFields = keyFields;
                         meta.valueFields = valFields;
 
@@ -848,20 +827,13 @@ consoleModule.controller('metadataController', [
                 var qry = $common.metadataForQueryConfigured(item);
 
                 if (qry) {
-                    var groups = item.groups;
+                    var indexes = item.indexes;
 
-                    if (groups && groups.length > 0) {
-                        for (var i = 0; i < groups.length; i++) {
-                            var group = groups[i];
-                            var fields = group.fields;
-
-                            if ($common.isEmptyArray(fields))
-                                return showPopoverMessage($scope.panels, 'query', 'groups' + i, 'Group fields are not specified');
-
-                            if (fields.length == 1) {
-                                return showPopoverMessage($scope.panels, 'query', 'groups' + i, 'Group has only one field. Consider to use ascending or descending fields.');
-                            }
-                        }
+                    if (indexes && indexes.length > 0) {
+                        _.forEach(indexes, function(index) {
+                            if ($common.isEmptyArray(index.fields))
+                                return showPopoverMessage($scope.panels, 'query', 'indexes' + i, 'Group fields are not specified');
+                        });
                     }
                 }
 
@@ -1020,9 +992,8 @@ consoleModule.controller('metadataController', [
             };
 
             var pairFields = {
-                queryFields: {msg: 'Query field class', id: 'QryField'},
-                ascendingFields: {msg: 'Ascending field class', id: 'AscField'},
-                descendingFields: {msg: 'Descending field class', id: 'DescField'}
+                fields: {msg: 'Query field class', id: 'QryField', checkValidClass: true},
+                aliases: {msg: 'Ascending field class', id: 'Alias', keyCol: 'field', valCol: 'alias', valColName: 'alias', checkEqualsSecondField: true}
             };
 
             $scope.tablePairValid = function (item, field, index) {
@@ -1031,20 +1002,30 @@ consoleModule.controller('metadataController', [
                 var pairValue = $table.tablePairValue(field, index);
 
                 if (pairField) {
-                    if (!$common.isValidJavaClass(pairField.msg, pairValue.value, true, $table.tableFieldId(index, 'Value' + pairField.id)))
-                        return $table.tableFocusInvalidField(index, 'Value' + pairField.id);
-
                     var model = item[field.model];
 
                     if ($common.isDefined(model)) {
                         var idx = _.findIndex(model, function (pair) {
-                            return pair.name == pairValue.key
+                            return pair[pairField.keyCol || 'name'] == pairValue.key;
                         });
 
-                        // Found duplicate.
+                        // Found duplicate by key.
                         if (idx >= 0 && idx != index)
                             return showPopoverMessage(null, null, $table.tableFieldId(index, 'Key' + pairField.id), 'Field with such name already exists!');
+
+                        if (pairField.checkEqualsSecondField) {
+                            idx = _.findIndex(model, function (pair) {
+                                return pair[pairField.valCol || 'className'].toUpperCase() === pairValue.value.toUpperCase();
+                            });
+
+                            // Found duplicate by value.
+                            if (idx >= 0 && idx != index)
+                                return showPopoverMessage(null, null, $table.tableFieldId(index, 'Value' + pairField.id), 'Field with such ' + pairField.valColName + ' already exists!');
+                        }
                     }
+
+                    if (pairField.checkValidClass && !$common.isValidJavaClass(pairField.msg, pairValue.value, true, $table.tableFieldId(index, 'Value' + pairField.id)))
+                        return $table.tableFocusInvalidField(index, 'Value' + pairField.id);
                 }
 
                 return true;
@@ -1125,167 +1106,158 @@ consoleModule.controller('metadataController', [
                 }
             };
 
-            function tableGroupValue(field, index) {
-                return index < 0 ? field.newGroupName : field.curGroupName;
+            function tableIndexName(field, index) {
+                return index < 0 ? field.newIndexName : field.curIndexName;
             }
 
-            $scope.tableGroupSaveVisible = function (field, index) {
-                return !$common.isEmptyString(tableGroupValue(field, index));
+            function tableIndexType(field, index) {
+                return index < 0 ? field.newIndexType : field.curIndexType;
+            }
+
+            $scope.tableIndexSaveVisible = function (field, index) {
+                return !$common.isEmptyString(tableIndexName(field, index)) && $common.isDefined(tableIndexType(field, index));
             };
 
-            $scope.tableGroupSave = function (field, index) {
-                var groupName = tableGroupValue(field, index);
-
-                var groups = $scope.backupItem.groups;
-
-                if ($common.isDefined(groups)) {
-                    var idx = _.findIndex(groups, function (group) {
-                        return group.name == groupName;
-                    });
-
-                    // Found duplicate.
-                    if (idx >= 0 && idx != index)
-                        return showPopoverMessage(null, null, $table.tableFieldId(index, 'GroupName'), 'Group with such name already exists!');
-                }
+            $scope.tableIndexSave = function (field, curIdx) {
+                var indexName = tableIndexName(field, curIdx);
+                var indexType = tableIndexType(field, curIdx);
 
                 var item = $scope.backupItem;
 
-                if (index < 0) {
-                    var newGroup = {name: groupName};
+                var indexes = item.indexes;
 
-                    if (item.groups)
-                        item.groups.push(newGroup);
-                    else
-                        item.groups = [newGroup];
+                if ($common.isDefined(indexes)) {
+                    var idx = _.findIndex(indexes, function (index) {
+                        return index.name == indexName;
+                    });
+
+                    // Found duplicate.
+                    if (idx >= 0 && idx != curIdx)
+                        return showPopoverMessage(null, null, $table.tableFieldId(curIdx, 'IndexName'), 'Index with such name already exists!');
                 }
-                else
-                    item.groups[index].name = groupName;
 
-                if (index < 0)
-                    $scope.tableGroupNewItem(field, item.groups.length - 1);
-                else {
-                    var group = item.groups[index];
+                if (curIdx < 0) {
+                    var newIndex = {name: indexName, type: indexType};
 
-                    if (group.fields || group.fields.length > 0)
-                        $scope.tableGroupItemStartEdit(field, index, 0);
+                    if (item.indexes)
+                        item.indexes.push(newIndex);
                     else
-                        $scope.tableGroupNewItem(field, index);
+                        item.indexes = [newIndex];
+                }
+                else {
+                    item.indexes[curIdx].name = indexName;
+                    item.indexes[curIdx].type = indexType;
+                }
+
+                if (curIdx < 0)
+                    $scope.tableIndexNewItem(field, item.indexes.length - 1);
+                else {
+                    var index = item.indexes[curIdx];
+
+                    if (index.fields && index.fields.length > 0)
+                        $scope.tableIndexItemStartEdit(field, curIdx, 0);
+                    else
+                        $scope.tableIndexNewItem(field, curIdx);
                 }
             };
 
-            $scope.tableGroupNewItem = function (field, groupIndex) {
-                var groupName = $scope.backupItem.groups[groupIndex].name;
+            $scope.tableIndexNewItem = function (field, indexIdx) {
+                var indexName = $scope.backupItem.indexes[indexIdx].name;
 
-                $table.tableNewItem({ui: 'table-query-group-fields', model: groupName});
+                $table.tableNewItem({ui: 'table-index-fields', model: indexName});
 
                 field.newFieldName = null;
-                field.newClassName = null;
-                field.newDirection = false;
+                field.newDirection = true;
             };
 
-            $scope.tableGroupNewItemActive = function (groupIndex) {
-                var groups = $scope.backupItem.groups;
+            $scope.tableIndexNewItemActive = function (itemIndex) {
+                var indexes = $scope.backupItem.indexes;
 
-                if (groups) {
-                    var group = groups[groupIndex];
+                if (indexes) {
+                    var index = indexes[itemIndex];
 
-                    if (group) {
-                        var groupName = group.name;
-
-                        return $table.tableNewItemActive({model: groupName});
-                    }
+                    if (index)
+                        return $table.tableNewItemActive({model: index.name});
                 }
 
                 return false;
             };
 
-            $scope.tableGroupItemEditing = function (groupIndex, index) {
-                var groups = $scope.backupItem.groups;
+            $scope.tableIndexItemEditing = function (itemIndex, curIdx) {
+                var indexes = $scope.backupItem.indexes;
 
-                if (groups) {
-                    var group = groups[groupIndex];
+                if (indexes) {
+                    var index = indexes[itemIndex];
 
-                    if (group)
-                        return $table.tableEditing({model: group.name}, index);
+                    if (index)
+                        return $table.tableEditing({model: index.name}, curIdx);
                 }
 
                 return false;
             };
 
-            function tableGroupItemValue(field, index) {
+            function tableIndexItemValue(field, index) {
                 return index < 0
-                    ? {name: field.newFieldName, className: field.newClassName, direction: field.newDirection}
-                    : {name: field.curFieldName, className: field.curClassName, direction: field.curDirection};
+                    ? {name: field.newFieldName, direction: field.newDirection}
+                    : {name: field.curFieldName, direction: field.curDirection};
             }
 
-            $scope.tableGroupItemStartEdit = function (field, groupIndex, index) {
-                var groups = $scope.backupItem.groups;
+            $scope.tableIndexItemStartEdit = function (field, indexIdx, curIdx) {
+                var index = $scope.backupItem.indexes[indexIdx];
 
-                var group = groups[groupIndex];
+                $table.tableState(index.name, curIdx);
 
-                $table.tableState(group.name, index);
+                var indexItem = index.fields[curIdx];
 
-                var groupItem = group.fields[index];
-
-                field.curFieldName = groupItem.name;
-                field.curClassName = groupItem.className;
-                field.curDirection = groupItem.direction;
+                field.curFieldName = indexItem.name;
+                field.curDirection = indexItem.direction;
 
                 $focus('curFieldName');
             };
 
-            $scope.tableGroupItemSaveVisible = function (field, index) {
-                var groupItemValue = tableGroupItemValue(field, index);
-
-                return !$common.isEmptyString(groupItemValue.name) && !$common.isEmptyString(groupItemValue.className);
+            $scope.tableIndexItemSaveVisible = function (field, index) {
+                return !$common.isEmptyString(tableIndexItemValue(field, index).name);
             };
 
-            $scope.tableGroupItemSave = function (field, groupIndex, index) {
-                var groupItemValue = tableGroupItemValue(field, index);
+            $scope.tableIndexItemSave = function (field, indexIdx, curIdx) {
+                var indexItemValue = tableIndexItemValue(field, curIdx);
 
-                if (!$common.isValidJavaClass('Group field', groupItemValue.className, true, $table.tableFieldId(index, 'ClassName')))
-                    return $table.tableFocusInvalidField(index, 'ClassName');
-
-                var fields = $scope.backupItem.groups[groupIndex].fields;
+                var fields = $scope.backupItem.indexes[indexIdx].fields;
 
                 if ($common.isDefined(fields)) {
                     var idx = _.findIndex(fields, function (field) {
-                        return field.name == groupItemValue.name;
+                        return field.name == indexItemValue.name;
                     });
 
                     // Found duplicate.
-                    if (idx >= 0 && idx != index)
-                        return showPopoverMessage(null, null, $table.tableFieldId(index, 'FieldName'), 'Field with such name already exists in group!');
+                    if (idx >= 0 && idx != curIdx)
+                        return showPopoverMessage(null, null, $table.tableFieldId(curIdx, 'FieldName'), 'Field with such name already exists in index!');
                 }
 
-                var group = $scope.backupItem.groups[groupIndex];
+                var index = $scope.backupItem.indexes[indexIdx];
 
-                if (index < 0) {
-                    if (group.fields)
-                        group.fields.push(groupItemValue);
+                if (curIdx < 0) {
+                    if (index.fields)
+                        index.fields.push(indexItemValue);
                     else
-                        group.fields = [groupItemValue];
+                        index.fields = [indexItemValue];
 
-                    $scope.tableGroupNewItem(field, groupIndex);
+                    $scope.tableIndexNewItem(field, indexIdx);
                 }
                 else {
-                    var groupItem = group.fields[index];
+                    index.fields[curIdx] = indexItemValue;
 
-                    groupItem.name = groupItemValue.name;
-                    groupItem.className = groupItemValue.className;
-                    groupItem.direction = groupItemValue.direction;
-
-                    if (index < group.fields.length - 1)
-                        $scope.tableGroupItemStartEdit(field, groupIndex, index + 1);
+                    if (curIdx < index.fields.length - 1)
+                        $scope.tableIndexItemStartEdit(field, indexIdx, curIdx + 1);
                     else
-                        $scope.tableGroupNewItem(field, groupIndex);
+                        $scope.tableIndexNewItem(field, indexIdx);
                 }
             };
 
-            $scope.tableRemoveGroupItem = function (group, index) {
+            $scope.tableRemoveIndexItem = function (index, curIdx) {
                 $table.tableReset();
 
-                group.fields.splice(index, 1);
+                index.fields.splice(curIdx, 1);
             };
 
             $scope.resetItem = function (group) {

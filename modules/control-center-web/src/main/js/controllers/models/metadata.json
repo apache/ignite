@@ -76,77 +76,49 @@
       ],
       "fields": [
         {
-          "label": "Not indexed fields",
-          "id": "queryFields",
+          "label": "Fields",
+          "id": "fields",
           "ui": "table-pair",
-          "type": "queryFieldsFirst",
-          "model": "queryFields",
+          "type": "fields",
+          "model": "fields",
           "keyName": "name",
           "valueName": "className",
           "focusId": "QryField",
-          "addTip": "Add not indexed field to query",
+          "addTip": "Add field to query",
           "removeTip": "Remove field",
           "tip": [
             "Collection of name-to-type mappings to be queried, in addition to indexed fields"
           ]
         },
         {
-          "label": "Ascending indexed fields",
-          "id": "ascendingFields",
+          "label": "Aliases",
+          "id": "aliases",
           "ui": "table-pair",
-          "type": "queryFields",
-          "model": "ascendingFields",
-          "keyName": "name",
-          "valueName": "className",
-          "focusId": "AscField",
-          "addTip": "Add field to index in ascending order",
-          "removeTip": "Remove field",
+          "type": "aliases",
+          "model": "aliases",
+          "keyName": "field",
+          "valueName": "alias",
+          "focusId": "Alias",
+          "addTip": "Add alias to query",
+          "removeTip": "Remove alias",
           "tip": [
-            "Collection of name-to-type mappings to index in ascending order"
+            "Mapping from full property name in dot notation to an alias that will be used as SQL column name",
+            "For example: {\"parent.name\" -> \"parentName\"}"
           ]
         },
         {
-          "label": "Descending indexed fields",
-          "id": "descendingFields",
-          "ui": "table-pair",
-          "type": "queryFields",
-          "model": "descendingFields",
-          "keyName": "name",
-          "valueName": "className",
-          "focusId": "DescField",
-          "addTip": "Add field to index in descending order",
-          "removeTip": "Remove field",
+          "label": "Indexes",
+          "id": "indexes",
+          "ui": "table-indexes",
+          "type": "indexes",
+          "model": "indexes",
+          "addTip": "Add new index",
+          "removeTip": "Remove index",
+          "addItemTip": "Add new field to index",
+          "removeItemTip": "Remove field from index",
+          "focusId": "IndexName",
           "tip": [
-            "Collection of name-to-type mappings to index in descending order"
-          ]
-        },
-        {
-          "label": "Text indexed fields",
-          "id": "textFields",
-          "type": "table-simple",
-          "model": "textFields",
-          "placeholder": "Field name",
-          "focusId": "TextField",
-          "addTip": "Add field to index as text",
-          "removeTip": "Remove field",
-          "tableTip": [
-            "Fields to index as text"
-          ],
-          "tip": [
-            "Field to index as text"
-          ]
-        },
-        {
-          "label": "Group indexes",
-          "id": "groups",
-          "type": "table-query-groups",
-          "model": "groups",
-          "addTip": "Add new group",
-          "removeTip": "Remove group",
-          "addItemTip": "Add new field to group",
-          "removeItemTip": "Remove field from group",
-          "tip": [
-            "Collection of group indexes"
+            "Collection of indexes"
           ]
         }
       ]

@@ -992,73 +992,82 @@ $generatorJava.cacheStatistics = function (cache, varName, res) {
 };
 
 // Generate metadata query fields.
-$generatorJava.metadataQueryFields = function (res, meta, fieldProperty) {
-    var fields = meta[fieldProperty];
+$generatorJava.metadataQueryFields = function (res, meta) {
+    var fields = meta.fields;
 
     if (fields && fields.length > 0) {
-        $generatorJava.declareVariable(res, $generatorJava.needNewVariable(res, fieldProperty), fieldProperty, 'java.util.Map', 'java.util.LinkedHashMap', 'java.lang.String', 'java.lang.Class<?>');
+        $generatorJava.declareVariable(res, $generatorJava.needNewVariable(res, 'fields'), 'fields', 'java.util.LinkedHashMap', 'java.util.LinkedHashMap', 'java.lang.String', 'java.lang.String');
 
         _.forEach(fields, function (field) {
-            res.line(fieldProperty + '.put("' + field.name + '", ' + res.importClass(field.className) + '.class);');
+            res.line('fields.put("' + field.name + '", "' + $dataStructures.fullClassName(field.className) + '");');
         });
 
         res.needEmptyLine = true;
 
-        res.line('typeMeta.' + $commonUtils.toJavaName('set', fieldProperty) + '(' + fieldProperty + ');');
+        res.line('queryMeta.setFields(fields);');
 
         res.needEmptyLine = true;
     }
 };
 
-// Generate metadata groups.
-$generatorJava.metadataGroups = function (res, meta) {
-    var groups = meta.groups;
+// Generate metadata query aliases.
+$generatorJava.metadataQueryAliases = function (res, meta) {
+    var aliases = meta.aliases;
 
-    if (groups && groups.length > 0) {
-        _.forEach(groups, function (group) {
-            var fields = group.fields;
+    if (aliases && aliases.length > 0) {
+        $generatorJava.declareVariable(res, $generatorJava.needNewVariable(res, 'aliases'), 'aliases', 'java.util.Map', 'java.util.HashMap', 'java.lang.String', 'java.lang.String');
 
-            if (fields && fields.length > 0) {
-                res.importClass('java.util.Map');
-                res.importClass('java.util.LinkedHashMap');
-                res.importClass('org.apache.ignite.lang.IgniteBiTuple');
-
-                var varNew = !res.groups;
-
-                res.needEmptyLine = true;
-
-                res.line((varNew ? 'Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> ' : '') +
-                    "groups = new LinkedHashMap<>();");
-
-                res.needEmptyLine = true;
-
-                if (varNew)
-                    res.groups = true;
-
-                varNew = !res.groupItems;
-
-                res.line((varNew ? 'LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> ' : '') +
-                    'groupItems = new LinkedHashMap<>();');
-
-                res.needEmptyLine = true;
-
-                if (varNew)
-                    res.groupItems = true;
-
-                _.forEach(fields, function (field) {
-                    res.line('groupItems.put("' + field.name + '", ' +
-                        'new IgniteBiTuple<Class<?>, Boolean>(' + res.importClass(field.className) + '.class, ' + field.direction + '));');
-                });
-
-                res.needEmptyLine = true;
-
-                res.line('groups.put("' + group.name + '", groupItems);');
-            }
+        _.forEach(aliases, function (alias) {
+            res.line('aliases.put("' + alias.field + '", "' + alias.alias + '");');
         });
 
         res.needEmptyLine = true;
 
-        res.line('typeMeta.setGroups(groups);');
+        res.line('queryMeta.setAliases(aliases);');
+
+        res.needEmptyLine = true;
+    }
+};
+
+// Generate metadata indexes.
+$generatorJava.metadataQueryIndexes = function (res, meta) {
+    var indexes = meta.indexes;
+
+    if (indexes && indexes.length > 0) {
+        res.needEmptyLine = true;
+
+        $generatorJava.declareVariable(res, $generatorJava.needNewVariable(res, 'indexes'), 'indexes', 'java.util.Map', 'java.util.LinkedHashMap', 'String', 'org.apache.ignite.cache.store.QueryEntityIndex');
+
+        _.forEach(indexes, function (index) {
+            res.needEmptyLine = true;
+
+            $generatorJava.declareVariable(res, $generatorJava.needNewVariable(res, 'index'), 'index', 'org.apache.ignite.cache.store.QueryEntityIndex');
+
+            $generatorJava.property(res, 'index', index, 'name');
+            $generatorJava.property(res, 'index', index, 'type', 'org.apache.ignite.cache.store.QueryEntityIndex.Type');
+
+            var fields = index.fields;
+
+            if (fields && fields.length > 0) {
+                $generatorJava.declareVariable(res, $generatorJava.needNewVariable(res, 'indFlds'), 'indFlds', 'java.util.LinkedHashMap', 'java.util.LinkedHashMap', 'String', 'Boolean');
+
+                _.forEach(fields, function(field) {
+                    res.line('indFlds.put("' + field.name + '", ' + field.direction + ');');
+                });
+
+                res.needEmptyLine = true;
+
+                res.line('index.setFields(indFlds);');
+
+                res.needEmptyLine = true;
+            }
+
+            res.line('indexes.add(index);');
+        });
+
+        res.needEmptyLine = true;
+
+        res.line('queryMeta.setIndexes(indexes);');
 
         res.needEmptyLine = true;
     }
@@ -1106,13 +1115,11 @@ $generatorJava.metadataQuery = function (meta, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.metadataQueryFields(res, meta, 'queryFields');
-    $generatorJava.metadataQueryFields(res, meta, 'ascendingFields');
-    $generatorJava.metadataQueryFields(res, meta, 'descendingFields');
+    $generatorJava.metadataQueryFields(res, meta);
 
-    $generatorJava.listProperty(res, 'typeMeta', meta, 'textFields');
+    $generatorJava.metadataQueryAliases(res, meta);
 
-    $generatorJava.metadataGroups(res, meta);
+    $generatorJava.metadataQueryIndexes(res, meta);
 
     res.needEmptyLine = true;
 
@@ -1142,11 +1149,27 @@ $generatorJava.cacheMetadata = function(meta, res) {
     $generatorJava.declareVariable(res, $generatorJava.needNewVariable(res, 'typeMeta'), 'typeMeta', 'org.apache.ignite.cache.CacheTypeMetadata');
 
     $generatorJava.metadataGeneral(meta, res);
-    $generatorJava.metadataQuery(meta, res);
     $generatorJava.metadataStore(meta, res);
 
     res.emptyLineIfNeeded();
     res.line('types.add(typeMeta);');
+
+    res.needEmptyLine = true;
+};
+
+// Generate cache type metadata config.
+$generatorJava.cacheQueryMetadata = function(meta, res) {
+    $generatorJava.declareVariable(res, $generatorJava.needNewVariable(res, 'queryMeta'), 'queryMeta', 'org.apache.ignite.cache.store.QueryEntity');
+
+    $generatorJava.classNameProperty(res, 'queryMeta', meta, 'keyType');
+    $generatorJava.classNameProperty(res, 'queryMeta', meta, 'valueType');
+
+    res.needEmptyLine = true;
+
+    $generatorJava.metadataQuery(meta, res);
+
+    res.emptyLineIfNeeded();
+    res.line('queryEntities.add(queryMeta);');
 
     res.needEmptyLine = true;
 };
@@ -1165,6 +1188,16 @@ $generatorJava.cacheMetadatas = function (metadatas, varName, res) {
         });
 
         res.line(varName + '.setTypeMetadata(types);');
+
+        res.needEmptyLine = true;
+
+        $generatorJava.declareVariable(res, $generatorJava.needNewVariable(res, 'queryEntities'), 'queryEntities', 'java.util.Collection', 'java.util.ArrayList', 'org.apache.ignite.cache.store.QueryEntity');
+
+        _.forEach(metadatas, function (meta) {
+            $generatorJava.cacheQueryMetadata(meta, res);
+        });
+
+        res.line(varName + '.setQueryEntities(queryEntities);');
 
         res.needEmptyLine = true;
     }

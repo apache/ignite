@@ -277,34 +277,32 @@ mixin table-db-field-edit(prefix, focusId, index)
         .input-tip
             button.form-control(id=javaTypeId ng-model=javaTypeModel data-placeholder='Java type' ng-class='{placeholder: !#{javaTypeModel}}' bs-select bs-options='item.value as item.label for item in {{supportedJavaTypes}}' on-enter=btnVisibleAndSave on-escape='tableReset()' tabindex='0')
 
-mixin table-group-item-edit(prefix, index)
+mixin table-index-item-edit(prefix, index, sortAvailable)
     -var fieldName = prefix + 'FieldName'
-    -var className = prefix + 'ClassName'
     -var direction = prefix + 'Direction'
 
     -var fieldNameModel = 'field.' + fieldName
-    -var classNameModel = 'field.' + className
     -var directionModel = 'field.' + direction
 
-    -var btnVisible = 'tableGroupItemSaveVisible(field, ' + index + ')'
-    -var btnSave = 'tableGroupItemSave(field, groupIndex, ' + index + ')'
+    -var btnVisible = 'tableIndexItemSaveVisible(field, ' + index + ')'
+    -var btnSave = 'tableIndexItemSave(field, itemIndex, ' + index + ')'
     -var btnVisibleAndSave = btnVisible + ' && ' + btnSave
 
-    .col-xs-4.col-sm-4.col-md-4
+    .col-xs-8.col-sm-8.col-md-8(ng-show=sortAvailable)
         label.placeholder Field name
         label.fieldSep /
         .input-tip
-            input.form-control(id=fieldName enter-focus-next=className type='text' ng-model=fieldNameModel placeholder='Field name' on-escape='tableReset()')
-    .col-xs-5.col-sm-5.col-md-5
-        label.placeholder Class name
-        label.fieldSep /
-        .input-tip
-            input.form-control(id=className enter-focus-next=direction type='text' ng-model=classNameModel placeholder='Class name' bs-typeahead container='body' retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuildInClasses' on-escape='tableReset()')
-    .col-xs-3.col-sm-3.col-md-3
+            input.form-control(id=fieldName enter-focus-next=direction type='text' ng-model=fieldNameModel placeholder='Field name' on-escape='tableReset()')
+    .col-xs-4.col-sm-4.col-md-4(ng-show=sortAvailable)
         label.placeholder Sort order
         +btn-save(btnVisible, btnSave)
         .input-tip
             button.form-control(id=direction ng-model=directionModel bs-select bs-options='item.value as item.label for item in {{sortDirections}}' on-enter=btnVisibleAndSave on-escape='tableReset()' tabindex='0')
+    .col-xs-12(ng-show='!(#{sortAvailable})')
+        label.placeholder Field name
+        +btn-save(btnVisible, btnSave)
+        .input-tip
+            input.form-control(id=fieldName enter-focus-next=direction type='text' ng-model=fieldNameModel placeholder='Field name' on-escape='tableReset()')
 
 mixin form-row(dataSource)
     +form-row-custom(['col-xs-4 col-sm-4 col-md-4'], ['col-xs-8 col-sm-8 col-md-8'], dataSource)
@@ -417,10 +415,10 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                                         input.form-control(id='new{{::field.focusId}}' type='text' ng-model='field.newValue' placeholder='{{::field.placeholder}}' on-enter='tableSimpleSaveVisible(field, -1) && tableSimpleSave(tableSimpleValid, backupItem, field, -1)' on-escape='tableReset()')
         .group-section(ng-switch-when='indexedTypes')
             +table-pair('Index key-value type pairs', fieldMdl, 'keyClass', 'valueClass', 'Key full class name', 'Value class full name', true, true)
-        div(ng-switch-when='queryFieldsFirst' ng-hide=fieldHide)
+        div(ng-switch-when='fields' ng-hide=fieldHide)
             +table-pair('{{::field.label}}', fieldMdl, 'name', 'className', 'Field name', 'Field full class name', false, true)
-        .group-section(ng-switch-when='queryFields' ng-hide=fieldHide)
-            +table-pair('{{::field.label}}', fieldMdl, 'name', 'className', 'Field name', 'Field full class name', false, true)
+        .group-section(ng-switch-when='aliases' ng-hide=fieldHide)
+            +table-pair('{{::field.label}}', fieldMdl, 'field', 'alias', 'Field name', 'Field Alias', false, false)
         .group-section(ng-switch-when='pathModes' ng-hide=fieldHide)
             +table-igfs-path-mode('{{::field.label}}', fieldMdl, 'path', 'mode', 'Path', 'Mode')
         .group-section(ng-switch-when='table-db-fields' ng-hide=fieldHide)
@@ -444,7 +442,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                             tr
                                 td
                                     +table-db-field-edit('new', '{{::field.focusId}}', '-1')
-        .group-section(ng-switch-when='table-query-groups' ng-hide=fieldHide)
+        .group-section(ng-switch-when='indexes' ng-hide=fieldHide)
             .col-sm-12.group
                 .group-legend
                     label {{::field.label}}
@@ -452,40 +450,55 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                     +group-btn-add('tableNewItem(field)', 'field.addTip')
                 .group-content-empty(id='{{::field.id + "-add"}}' ng-show='!((#{fieldMdl} && #{fieldMdl}.length > 0) || tableNewItemActive(field))') Not defined
                 .group-content(ng-show='(#{fieldMdl} && #{fieldMdl}.length > 0) || tableNewItemActive(field)')
+                    -var btnVisibleAndSave = 'tableIndexSaveVisible(field, $index) && tableIndexSave(field, $index)'
+
                     table.links-edit(st-table=fieldMdl ng-init='newDirection = false')
                         tbody
-                            tr(ng-repeat='group in #{fieldMdl}')
+                            tr(ng-repeat='item in #{fieldMdl}')
                                 td
                                     .col-sm-12(ng-show='!tableEditing(field, $index)')
-                                        a.labelFormField(id='{{field.id + $index}}' ng-click='tableStartEdit(backupItem, field, $index)') {{$index + 1}}) {{group.name}}
+                                        a.labelFormField(id='{{field.id + $index}}' ng-click='tableStartEdit(backupItem, field, $index)') {{$index + 1}}) {{item.name}} [{{item.type}}]
                                         +btn-remove('tableRemove(backupItem, field, $index)', 'field.removeTip')
-                                        +btn-add('tableGroupNewItem(field, $index)', 'field.addItemTip')
-                                    div(ng-if='tableEditing(field, $index)')
-                                        label.labelField {{$index + 1}})
-                                        +btn-save('tableGroupSaveVisible(field, $index)', 'tableGroupSave(field, $index)')
-                                        .input-tip
-                                            input#curGroupName.form-control(type='text' ng-model='field.curGroupName' placeholder='Index name' on-enter='tableGroupSaveVisible(field, $index) && tableGroupSave(field, $index)' on-escape='tableReset()')
+                                        +btn-add('tableIndexNewItem(field, $index)', 'field.addItemTip')
+                                    div(ng-show='tableEditing(field, $index)')
+                                        .col-sm-7
+                                            label.placeholder Index name
+                                            label.fieldSep /
+                                            .input-tip
+                                                input#curIndexName.form-control(type='text' enter-focus-next="curIndexType" ng-model='field.curIndexName' placeholder='Index name' on-enter=btnVisibleAndSave on-escape='tableReset()')
+                                        .col-sm-5
+                                            label.placeholder Index type
+                                            +btn-save('tableIndexSaveVisible(field, $index)', 'tableIndexSave(field, $index)')
+                                            .input-tip
+                                                button#curIndexType.form-control(bs-select ng-model='field.curIndexType' data-placeholder='Select index type' bs-options="item.value as item.label for item in indexType" tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
                                     .margin-left-dflt
-                                        table.links-edit-sub(st-table='group.fields' ng-init='groupIndex = $index')
+                                        table.links-edit-sub(st-table='item.fields' ng-init='itemIndex = $index')
                                             tbody
-                                                tr(ng-repeat='groupItem in group.fields')
+                                                tr(ng-repeat='itemItem in item.fields')
                                                     td
-                                                        div(ng-show='!tableGroupItemEditing(groupIndex, $index)')
-                                                            a.labelFormField(ng-click='tableGroupItemStartEdit(field, groupIndex, $index)') {{$index + 1}}) {{groupItem.name}} / {{groupItem.className}} / {{groupItem.direction ? "DESC" : "ASC"}}
-                                                            +btn-remove('tableRemoveGroupItem(group, $index)', 'field.removeItemTip')
-                                                        div(ng-if='tableGroupItemEditing(groupIndex, $index)')
-                                                            +table-group-item-edit('cur', '$index')
-                                            tfoot(ng-if='tableGroupNewItemActive(groupIndex)')
+                                                        div(ng-show='!tableIndexItemEditing(itemIndex, $index)')
+                                                            a.labelFormField(ng-if='item.type == "SORTED"' ng-click='tableIndexItemStartEdit(field, itemIndex, $index)') {{$index + 1}}) {{itemItem.name}} / {{itemItem.direction ? "ASC" : "DESC"}}
+                                                            a.labelFormField(ng-if='item.type != "SORTED"' ng-click='tableIndexItemStartEdit(field, itemIndex, $index)') {{$index + 1}}) {{itemItem.name}}
+                                                            +btn-remove('tableRemoveIndexItem(item, $index)', 'field.removeItemTip')
+                                                        div(ng-show='tableIndexItemEditing(itemIndex, $index)')
+                                                            +table-index-item-edit('cur', '$index', '{{item.type == "SORTED"}}')
+                                            tfoot(ng-show='tableIndexNewItemActive(itemIndex)')
                                                 tr(style='padding-left: 18px')
                                                     td
-                                                        +table-group-item-edit('new', '-1')
+                                                        +table-index-item-edit('new', '-1', '{{item.type == "SORTED"}}')
                         tfoot(ng-show='tableNewItemActive(field)')
                             tr
                                 td
-                                    label.placeholder Group name
-                                    +btn-save('tableGroupSaveVisible(field, -1)', 'tableGroupSave(field, -1)')
-                                    .input-tip
-                                        input#newGroupName.form-control(type='text' ng-model='field.newGroupName' placeholder='Group name' on-enter='tableGroupSaveVisible(field, -1) && tableGroupSave(field, -1)' on-escape='tableReset()')
+                                    .col-sm-7
+                                        label.placeholder Index name
+                                        label.fieldSep /
+                                        .input-tip
+                                            input#newIndexName.form-control(type='text' enter-focus-next="newIndexType" ng-model='field.newIndexName' placeholder='Index name' on-enter='tableIndexSaveVisible(field, -1) && tableIndexSave(field, -1)' on-escape='tableReset()')
+                                    .col-sm-5
+                                        label.placeholder Index type
+                                        +btn-save('tableIndexSaveVisible(field, -1)', 'tableIndexSave(field, -1)')
+                                        .input-tip
+                                            button#newIndexType.form-control(bs-select ng-model='field.newIndexType' data-placeholder='Select index type' bs-options="item.value as item.label for item in indexType" tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
 
 mixin main-table(title, rows, focusId, click, rowTemplate)
     .padding-bottom-dflt(ng-show='#{rows} && #{rows}.length > 0')

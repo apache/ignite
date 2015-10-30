@@ -846,13 +846,13 @@ $generatorXml.cacheStatistics = function(cache, res) {
 };
 
 // Generate metadata query fields.
-$generatorXml.metadataQueryFields = function (res, meta, fieldProp) {
-    var fields = meta[fieldProp];
+$generatorXml.metadataQueryFields = function (res, meta) {
+    var fields = meta.fields;
 
     if (fields && fields.length > 0) {
         res.emptyLineIfNeeded();
 
-        res.startBlock('<property name="' + fieldProp + '">');
+        res.startBlock('<property name="fields">');
         res.startBlock('<map>');
 
         _.forEach(fields, function (field) {
@@ -866,40 +866,61 @@ $generatorXml.metadataQueryFields = function (res, meta, fieldProp) {
     }
 };
 
-// Generate metadata groups.
-$generatorXml.metadataGroups = function (res, meta) {
-    var groups = meta.groups;
+// Generate metadata query fields.
+$generatorXml.metadataQueryAliases = function (res, meta) {
+    var aliases = meta.aliases;
 
-    if (groups && groups.length > 0) {
+    if (aliases && aliases.length > 0) {
         res.emptyLineIfNeeded();
 
-        res.startBlock('<property name="groups">');
+        res.startBlock('<property name="aliases">');
         res.startBlock('<map>');
 
-        _.forEach(groups, function (group) {
-            var fields = group.fields;
-
-            if (fields && fields.length > 0) {
-                res.startBlock('<entry key="' + group.name + '">');
-                res.startBlock('<map>');
-
-                _.forEach(fields, function (field) {
-                    res.startBlock('<entry key="' + field.name.toUpperCase() + '">');
-
-                    res.startBlock('<bean class="org.apache.ignite.lang.IgniteBiTuple">');
-                    res.line('<constructor-arg value="' + $dataStructures.fullClassName(field.className) + '"/>');
-                    res.line('<constructor-arg value="' + field.direction + '"/>');
-                    res.endBlock('</bean>');
-
-                    res.endBlock('</entry>');
-                });
-
-                res.endBlock('</map>');
-                res.endBlock('</entry>');
-            }
+        _.forEach(aliases, function (alias) {
+            $generatorXml.element(res, 'entry', 'key', alias.field, 'value', alias.alias);
         });
 
         res.endBlock('</map>');
+        res.endBlock('</property>');
+
+        res.needEmptyLine = true;
+    }
+};
+
+// Generate metadata indexes.
+$generatorXml.metadataQueryIndexes = function (res, meta) {
+    var indexes = meta.indexes;
+
+    if (indexes && indexes.length > 0) {
+        res.emptyLineIfNeeded();
+
+        res.startBlock('<property name="indexes">');
+        res.startBlock('<list>');
+
+        _.forEach(indexes, function (index) {
+            res.startBlock('<bean class="org.apache.ignite.cache.store.QueryEntityIndex">');
+
+            $generatorXml.property(res, index, 'name');
+            $generatorXml.property(res, index, 'type');
+
+            var fields = index.fields;
+
+            if (fields && fields.length > 0) {
+                res.startBlock('<property name="fields">');
+                res.startBlock('<map>');
+
+                _.forEach(fields, function (field) {
+                    $generatorXml.element(res, 'entry', 'key', field.name, 'value', field.direction);
+                });
+
+                res.endBlock('</map>');
+                res.endBlock('</property>');
+            }
+
+            res.endBlock('</bean>');
+        });
+
+        res.endBlock('</list>');
         res.endBlock('</property>');
 
         res.needEmptyLine = true;
@@ -958,13 +979,11 @@ $generatorXml.metadataQuery = function(meta, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorXml.metadataQueryFields(res, meta, 'queryFields');
-    $generatorXml.metadataQueryFields(res, meta, 'ascendingFields');
-    $generatorXml.metadataQueryFields(res, meta, 'descendingFields');
+    $generatorXml.metadataQueryFields(res, meta);
 
-    $generatorXml.listProperty(res, meta, 'textFields');
+    $generatorXml.metadataQueryAliases(res, meta);
 
-    $generatorXml.metadataGroups(res, meta);
+    $generatorXml.metadataQueryIndexes(res, meta);
 
     res.needEmptyLine = true;
 
@@ -1001,8 +1020,25 @@ $generatorXml.cacheMetadata = function(meta, res) {
     res.startBlock('<bean class="org.apache.ignite.cache.CacheTypeMetadata">');
 
     $generatorXml.metadataGeneral(meta, res);
-    $generatorXml.metadataQuery(meta, res);
     $generatorXml.metadataStore(meta, res);
+
+    res.endBlock('</bean>');
+
+    res.needEmptyLine = true;
+
+    return res;
+};
+
+$generatorXml.cacheQueryMetadata = function(meta, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    res.startBlock('<bean class="org.apache.ignite.cache.store.QueryEntity">');
+
+    $generatorXml.classNameProperty(res, meta, 'keyType');
+    $generatorXml.property(res, meta, 'valueType');
+
+    $generatorXml.metadataQuery(meta, res);
 
     res.endBlock('</bean>');
 
@@ -1030,6 +1066,16 @@ $generatorXml.cacheMetadatas = function(metadatas, res) {
         res.endBlock('</property>');
 
         res.needEmptyLine = true;
+
+        res.startBlock('<property name="queryEntities">');
+        res.startBlock('<list>');
+
+        _.forEach(metadatas, function (meta) {
+            $generatorXml.cacheQueryMetadata(meta, res);
+        });
+
+        res.endBlock('</list>');
+        res.endBlock('</property>');
     }
 
     return res;
