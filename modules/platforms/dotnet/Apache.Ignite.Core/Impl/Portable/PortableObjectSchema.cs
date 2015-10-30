@@ -24,18 +24,26 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// </summary>
     internal class PortableObjectSchema
     {
-        // TODO: Check if removing volatile changes performance
-
+        /** First schema id. */
         private volatile int _schemaId1;
 
+        /** First schema. */
         private volatile int[] _schema1;
 
+        /** Second schema id. */
         private volatile int _schemaId2;
 
+        /** Second schema. */
         private volatile int[] _schema2;
 
+        /** Other schemas. */
         private volatile Dictionary<int, int[]> _schemas;
 
+        /// <summary>
+        /// Gets the schema by id.
+        /// </summary>
+        /// <param name="id">Schema id.</param>
+        /// <returns>Schema or null.</returns>
         public int[] GetSchema(int id)
         {
             if (_schemaId1 == id)
@@ -45,12 +53,18 @@ namespace Apache.Ignite.Core.Impl.Portable
                 return _schema2;
 
             int[] res;
+
             if (_schemas != null && _schemas.TryGetValue(id, out res))
                 return res;
 
             return null;
         }
 
+        /// <summary>
+        /// Adds the schema.
+        /// </summary>
+        /// <param name="id">Schema id.</param>
+        /// <param name="schema">Schema.</param>
         public void AddSchema(int id, int[] schema)
         {
             lock (this)
@@ -80,6 +94,5 @@ namespace Apache.Ignite.Core.Impl.Portable
                 }
             }
         }
-
     }
 }

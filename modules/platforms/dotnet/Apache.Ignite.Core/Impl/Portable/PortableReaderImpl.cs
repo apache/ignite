@@ -683,8 +683,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _curPos = pos;
                     _curFooterEnd = hdr.GetSchemaEnd(pos);
                     _curFooterStart = hdr.GetSchemaStart(pos);
+                    
                     _curSchema = desc.Schema.GetSchema(hdr.SchemaId);
-
                     if (_curSchema == null)
                     {
                         _curSchema = ReadSchema();
