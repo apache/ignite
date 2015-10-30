@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Diagnostics;
     using System.IO;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Portable.Metadata;
     using Apache.Ignite.Core.Portable;
@@ -569,7 +568,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="hash">New hash.</param>
         /// <param name="vals">Values to be replaced.</param>
         /// <returns>Mutated object.</returns>
-        private unsafe void Mutate0(Context ctx, PortableHeapStream inStream, IPortableStream outStream,
+        private void Mutate0(Context ctx, PortableHeapStream inStream, IPortableStream outStream,
             bool changeHash, int hash, IDictionary<int, PortableBuilderField> vals)
         {
             int inStartPos = inStream.Position;
@@ -628,7 +627,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                         var outSchemaLen = vals.Count + (inSchema == null ? 0 : inSchema.Length);
                         var outSchema = outSchemaLen > 0 
-                            ? new ResizeableArray<PortableObjectSchemaField>(outSchemaLen)
+                            ? new ResizeableArray(outSchemaLen)
                             : null;
 
                         // Skip header as it is not known at this point.

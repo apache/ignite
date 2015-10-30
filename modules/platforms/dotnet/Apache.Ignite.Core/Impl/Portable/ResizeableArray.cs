@@ -22,10 +22,10 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Simple append-only <see cref="List{T}"/> alternative which exposes internal array.
     /// </summary>
-    internal class ResizeableArray<T>
+    internal class ResizeableArray
     {
         /** Array. */
-        private T[] _arr;
+        private PortableObjectSchemaField[] _arr;
 
         /** Items count. */
         private int _count;
@@ -36,13 +36,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="capacity">Capacity.</param>
         public ResizeableArray(int capacity)
         {
-            _arr = new T[capacity];
+            _arr = new PortableObjectSchemaField[capacity];
         }
 
         /// <summary>
         /// Array.
         /// </summary>
-        public T[] Array
+        public PortableObjectSchemaField[] Array
         {
             get { return _arr; }
         }
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Add element.
         /// </summary>
         /// <param name="element">Element.</param>
-        public void Add(T element)
+        public void Add(PortableObjectSchemaField element)
         {
             if (_count == _arr.Length)
                 System.Array.Resize(ref _arr, _arr.Length*2);
