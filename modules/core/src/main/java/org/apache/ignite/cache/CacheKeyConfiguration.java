@@ -21,7 +21,7 @@ import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * Configuration defining various aspects of cache keys without explicit usage of annotations on user classes.
  */
 public class CacheKeyConfiguration implements Serializable {
     /** */
