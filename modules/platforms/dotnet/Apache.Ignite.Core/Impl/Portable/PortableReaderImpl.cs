@@ -912,6 +912,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     return false;
             }
 
+            // Expected read order, no need to seek.
             return IsNotNullHeader(expHdr);
         }
 
