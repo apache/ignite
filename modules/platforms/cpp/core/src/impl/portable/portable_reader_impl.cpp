@@ -692,12 +692,12 @@ namespace ignite
 
                 stream->Position(footerBegin);
 
-                for (int32_t pos = footerBegin; pos < footerEnd; pos += 8)
+                for (int32_t schemaPos = footerBegin; schemaPos < footerEnd; schemaPos += 8)
                 {
-                    int32_t currentFieldId = stream->ReadInt32(pos);
+                    int32_t currentFieldId = stream->ReadInt32(schemaPos);
 
                     if (fieldId == currentFieldId)
-                        return stream->ReadInt32(pos + 4);
+                        return stream->ReadInt32(schemaPos + 4) + pos;
                 }
 
                 return -1;
