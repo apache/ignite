@@ -57,6 +57,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -308,8 +309,10 @@ public class PortableContext implements Externalizable {
 
         Map<String, String> affFields = new HashMap<>();
 
-        for (CacheKeyConfiguration keyCfg : igniteCfg.getCacheKeyConfiguration())
-            affFields.put(keyCfg.getTypeName(), keyCfg.getAffinityKeyFieldName());
+        if (!F.isEmpty(igniteCfg.getCacheKeyConfiguration())) {
+            for (CacheKeyConfiguration keyCfg : igniteCfg.getCacheKeyConfiguration())
+                affFields.put(keyCfg.getTypeName(), keyCfg.getAffinityKeyFieldName());
+        }
 
         if (typeCfgs != null) {
             for (IgniteObjectConfiguration typeCfg : typeCfgs) {
