@@ -92,68 +92,27 @@ namespace Apache.Ignite.Core.Impl.Portable
                     return PortableObjectHeader.FlagShortOffsets;
                 }
                 
-                for (int i = 0; i < count; i++)
+                if (BitConverter.IsLittleEndian)
                 {
-                    var field = fields[i];
+                    fixed (PortableObjectSchemaField* ptr = &fields[0])
+                    {
+                        stream.Write((byte*) ptr, count << 3);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        var field = fields[i];
 
-                    stream.WriteInt(field.Id);
-                    stream.WriteInt(field.Offset);
+                        stream.WriteInt(field.Id);
+                        stream.WriteInt(field.Offset);
+                    }
                 }
 
                 return 0;
             }
 
-            /*
-            if (BitConverter.IsLittleEndian)
-            {
-                fixed (PortableObjectSchemaField* ptr = &fields[0])
-                {
-                    stream.Write((byte*) ptr, count * Size);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < count; i++)
-                {
-                    var field = fields[i];
-
-                    stream.WriteInt(field.Id);
-                    stream.WriteInt(field.Offset);
-                }
-            }*/
         }
-
-
-        /*
-        /// <summary>
-        /// Reads an array of fields from a stream.
-        /// </summary>
-        /// <param name="stream">Stream.</param>
-        /// <param name="count">Count.</param>
-        /// <returns></returns>
-        public static unsafe PortableObjectSchemaField[] ReadArray(IPortableStream stream, int count)
-        {
-            Debug.Assert(stream != null);
-            Debug.Assert(count > 0);
-
-            var res = new PortableObjectSchemaField[count];
-
-            if (BitConverter.IsLittleEndian)
-            {
-                fixed (PortableObjectSchemaField* ptr = &res[0])
-                {
-                    stream.Read((byte*) ptr, count * Size);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < count; i++) 
-                {
-                    res[i] = new PortableObjectSchemaField(stream.ReadInt(), stream.ReadInt());
-                }
-            }
-
-            return res;
-        }*/
     }
 }
