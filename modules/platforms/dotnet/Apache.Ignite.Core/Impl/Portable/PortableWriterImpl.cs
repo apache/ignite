@@ -72,7 +72,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Current schema. */
         private PortableSchemaArray _curSchema;
 
-
         /// <summary>
         /// Gets the marshaller.
         /// </summary>
