@@ -648,12 +648,43 @@ namespace ignite
 
                 stream->Position(footerBegin);
 
-                for (int32_t schemaPos = footerBegin; schemaPos < footerEnd; schemaPos += 8)
+                switch (schemaType)
                 {
-                    int32_t currentFieldId = stream->ReadInt32(schemaPos);
+                    case SCHEMA_TYPE_TINY:
+                    {
+                        for (int32_t schemaPos = footerBegin; schemaPos < footerEnd; schemaPos += 5)
+                        {
+                            int32_t currentFieldId = stream->ReadInt32(schemaPos);
 
-                    if (fieldId == currentFieldId)
-                        return stream->ReadInt32(schemaPos + 4) + pos;
+                            if (fieldId == currentFieldId)
+                                return static_cast<uint8_t>(stream->ReadInt8(schemaPos + 4)) + pos;
+                        }
+                        break;
+                    }
+
+                    case SCHEMA_TYPE_SMALL:
+                    {
+                        for (int32_t schemaPos = footerBegin; schemaPos < footerEnd; schemaPos += 6)
+                        {
+                            int32_t currentFieldId = stream->ReadInt32(schemaPos);
+
+                            if (fieldId == currentFieldId)
+                                return static_cast<uint16_t>(stream->ReadInt16(schemaPos + 4)) + pos;
+                        }
+                        break;
+                    }
+
+                    case SCHEMA_TYPE_BIG:
+                    {
+                        for (int32_t schemaPos = footerBegin; schemaPos < footerEnd; schemaPos += 8)
+                        {
+                            int32_t currentFieldId = stream->ReadInt32(schemaPos);
+
+                            if (fieldId == currentFieldId)
+                                return stream->ReadInt32(schemaPos + 4) + pos;
+                        }
+                        break;
+                    }
                 }
 
                 return -1;
