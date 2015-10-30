@@ -899,11 +899,11 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_curRaw)
                 throw new PortableException("Cannot read named fields after raw data is read.");
 
-            var fieldId = _curStruct.GetFieldId(fieldName);
-
             var actionId = _curStruct.CurStructAction;
 
-            if (_curSchema != null && actionId < _curSchema.Length && fieldId == _curSchema[actionId])
+            var fieldId = _curStruct.GetFieldId(fieldName);
+
+            if (_curSchema == null || actionId >= _curSchema.Length || fieldId != _curSchema[actionId])
             {
                 if (!SeekField(fieldId))
                     return false;
