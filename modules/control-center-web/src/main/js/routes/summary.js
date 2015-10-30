@@ -45,30 +45,28 @@ router.post('/download', function (req, res) {
         if (!cluster)
             return res.sendStatus(404);
 
-        var clientNearConfiguration = req.body.clientNearConfiguration;
-
         var JSZip = require('jszip');
 
         var zip = new JSZip();
 
         // Set the archive name.
-        res.attachment(cluster.name + (clientNearConfiguration ? '-client' : '-server') + '-configuration.zip');
+        res.attachment(cluster.name + '-configuration.zip');
 
         var builder = $generatorProperties.sslProperties(cluster);
 
-        if (!clientNearConfiguration) {
-            zip.file('Dockerfile', $generatorDocker.clusterDocker(cluster, req.body.os));
+        zip.file('Dockerfile', $generatorDocker.clusterDocker(cluster, req.body.os));
 
-            builder = $generatorProperties.dataSourcesProperties(cluster, builder);
-        }
+        builder = $generatorProperties.dataSourcesProperties(cluster, builder);
 
         if (builder)
             zip.file('src/main/resources/secret.properties', builder.asString());
 
         var srcPath = 'src/main/java/';
 
-        zip.file('config/' + cluster.name + '.xml', $generatorXml.cluster(cluster, clientNearConfiguration));
-        zip.file(srcPath + 'ConfigurationFactory.java', $generatorJava.cluster(cluster, true, clientNearConfiguration));
+        zip.file('config/' + cluster.name + '.xml', $generatorXml.cluster(cluster));
+        zip.file('config/' + cluster.name + '-client' + '.xml', $generatorXml.cluster(cluster, true));
+        zip.file(srcPath + 'ConfigurationFactory.java', $generatorJava.cluster(cluster, 'ConfigurationFactory'));
+        zip.file(srcPath + 'ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'ClientConfigurationFactory', true));
         zip.file('pom.xml', $generatorPom.pom(cluster.caches, '1.5.0').asString());
 
         zip.file('README.txt', $generatorReadme.readme().asString());

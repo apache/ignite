@@ -19,6 +19,7 @@
 consoleModule.controller('summaryController', [
     '$scope', '$http', '$common', '$loading', '$message', '$table',
     function ($scope, $http, $common, $loading, $message, $table) {
+    $scope.panelExpanded = $common.panelExpanded;
     $scope.tableVisibleRow = $table.tableVisibleRow;
     $scope.joinTip = $common.joinTip;
     $scope.getModel = $common.getModel;
@@ -81,15 +82,16 @@ consoleModule.controller('summaryController', [
 
         renderer.setHighlightGutterLine(false);
         renderer.setShowPrintMargin(false);
-        renderer.setOption('fontSize', '14px');
+        renderer.setOption('fontSize', '12px');
         renderer.setOption('minLines', '3');
-        renderer.setOption('maxLines', '50');
+        renderer.setOption('maxLines', '25');
 
         editor.setTheme('ace/theme/chrome');
     };
 
     $scope.generateJavaServer = function () {
-        $scope.javaServer = $generatorJava.cluster($scope.selectedItem, $scope.configServer.javaClassServer === 2);
+        $scope.javaServer = $generatorJava.cluster($scope.selectedItem,
+            $scope.configServer.javaClassServer === 2 ? 'ConfigurationFactory' : false);
     };
 
     function selectPojoClass(config) {
@@ -162,7 +164,8 @@ consoleModule.controller('summaryController', [
 
     $scope.generateClient = function () {
         $scope.xmlClient = $generatorXml.cluster($scope.selectedItem, $scope.backupItem.nearConfiguration);
-        $scope.javaClient = $generatorJava.cluster($scope.selectedItem, $scope.backupItem.javaClassClient === 2,
+        $scope.javaClient = $generatorJava.cluster($scope.selectedItem,
+            $scope.backupItem.javaClassClient === 2 ? 'ClientConfigurationFactory' : false,
             $scope.backupItem.nearConfiguration, $scope.configServer.useConstructor);
     };
 

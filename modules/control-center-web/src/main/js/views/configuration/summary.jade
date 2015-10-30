@@ -27,10 +27,6 @@ include ../includes/controls
 mixin hard-link(ref, txt)
     a(style='color:#ec1c24' href=ref target='_blank') #{txt}
 
-mixin btn-download(side)
-    .panel-tip-container(style='float: right;' data-placement='bottom' bs-tooltip='"Download #{side} configuration"')
-        button.btn.btn-primary.pull-right(type='submit' ng-click='$event.stopPropagation()') Download
-
 mixin pojos(side)
     div(bs-pane title='POJO' ng-show='pojoAvailable()')
         .details-row
@@ -53,26 +49,28 @@ mixin pojos(side)
 block content
     .docs-header
         h1 Configurations Summary
-    .docs-body(ng-controller='summaryController' dw-loading='loadingSummaryScreen' dw-loading-options='{text: "Loading summary screen...", className: "page-loading-overlay"}')
+    .docs-body(ng-controller='summaryController' dw-loading='loadingSummaryScreen' dw-loading-options='{text: "Loading summary screen...", className: "page-loading-overlay"}' method='post' action='summary/download')
         +block-callout('{{screenTip.workflowTitle}}', 'screenTip.workflowContent', '{{screenTip.whatsNextTitle}}', 'screenTip.whatsNextContent')
         hr
         .padding-dflt(ng-if='clusters.length == 0')
             | You have no clusters configured. Please configure them &nbsp;
             a(href='clusters') here.
         +main-table('Clusters:', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}')
-        div(ng-show='selectedItem && tableVisibleRow(displayedRows, selectedItem)' role='tab' method='post' action='summary/download')
-            .padding-dflt(bs-collapse ng-init='serverExpanded=0' ng-model='serverExpanded')
+        .padding-top-dflt(bs-affix)
+            form.panel-tip-container(data-placement='bottom' bs-tooltip data-title='Download configuration' method='post' action='summary/download')
+                input(type='hidden' name='_id' value='{{selectedItem._id}}')
+                input(type='hidden' name='os' value='{{os}}')
+                input(type='hidden' name='useConstructor' value='{{configServer.useConstructor}}')
+                input(type='hidden' name='includeKeyFields' value='{{configServer.includeKeyFields}}')
+                button.btn.btn-primary(id='download' type='submit' ng-click='$event.stopPropagation()') Download
+            hr
+        div(ng-show='selectedItem && tableVisibleRow(displayedRows, selectedItem)' role='tab')
+            .panel-group(bs-collapse ng-init='panels.activePanels=[0,1]' ng-model='panels.activePanels' data-allow-multiple='true')
                 .panel.panel-default
-                    form.panel-heading(role='tab' method='post' action='summary/download' bs-collapse-toggle)
-                        i.tipLabel.fa(ng-class='serverExpanded == 0 ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+                    .panel-heading(role='tab' bs-collapse-toggle)
+                        i.fa(ng-class='panelExpanded(panels, "server") ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
                         label Server
-                        input(type='hidden' name='_id' value='{{selectedItem._id}}')
-                        input(type='hidden' name='os' value='{{os}}')
-                        input(type='hidden' name='javaClass' value='{{javaClassServer}}')
-                        input(type='hidden' name='useConstructor' value='{{configServer.useConstructor}}')
-                        input(type='hidden' name='includeKeyFields' value='{{configServer.includeKeyFields}}')
-                        +btn-download('server')
-                    .panel-collapse(role='tabpanel' bs-collapse-target)
+                    .panel-collapse(id='server' role='tabpanel' bs-collapse-target)
                         .summary-tabs(bs-tabs data-bs-active-pane="tabsServer.activeTab" ng-show='selectedItem' template='summary/summary-tabs')
                             div(bs-pane title='XML')
                                 div(ui-ace='{ onLoad: aceInit, mode: "xml" }' ng-model='xmlServer')
@@ -100,18 +98,11 @@ block content
                                     .col-xs-5.col-sm-4
                                         input#os.form-control(type='text' ng-model='configServer.os' placeholder='debian:8' data-min-length='0' data-html='1' data-auto-select='true' bs-typeahead retain-selection bs-options='os for os in oss')
                                 div(ui-ace='{ onLoad: aceInit, mode: "dockerfile" }' ng-model='dockerServer')
-            .padding-dflt(bs-collapse ng-init='clientExpanded=0' ng-model='clientExpanded')
                 .panel.panel-default
-                    form.panel-heading(role='tab' method='post' action='summary/download' bs-collapse-toggle)
-                        i.tipLabel.fa(ng-class='clientExpanded == 0 ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+                    .panel-heading(role='tab' bs-collapse-toggle)
+                        i.fa(ng-class='panelExpanded(panels, "server") ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
                         label Client
-                        input(type='hidden' name='_id' value='{{selectedItem._id}}')
-                        input(type='hidden' name='javaClass' value='{{javaClassClient}}')
-                        input(type='hidden' name='clientNearConfiguration' value='{{backupItem}}')
-                        input(type='hidden' name='useConstructor' value='{{configServer.useConstructor}}')
-                        input(type='hidden' name='includeKeyFields' value='{{configServer.includeKeyFields}}')
-                        +btn-download('client')
-                    .panel-collapse(role='tabpanel' bs-collapse-target)
+                    .panel-collapse(id='client' role='tabpanel' bs-collapse-target)
                         div(ng-show='selectedItem')
                             .details-row(ng-repeat='field in clientFields')
                                 +form-row-custom(['col-xs-4 col-sm-4 col-md-3'], ['col-xs-4 col-sm-4 col-md-3'], 'backupItem')

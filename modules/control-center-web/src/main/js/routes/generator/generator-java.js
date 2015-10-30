@@ -1667,7 +1667,7 @@ $generatorJava.igfsMisc = function(igfs, varName, res) {
  * Function to generate java code for cluster configuration.
  *
  * @param cluster Cluster to process.
- * @param javaClass If 'true' then generate factory class otherwise generate code snippet.
+ * @param javaClass Class name for generate factory class otherwise generate code snippet.
  * @param clientNearCfg Near cache configuration for client node.
  */
 $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
@@ -1678,7 +1678,7 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
             res.line('/**');
             res.line(' * ' + $generatorCommon.mainComment());
             res.line(' */');
-            res.startBlock('public class ConfigurationFactory {');
+            res.startBlock('public class ' + javaClass + ' {');
             res.line('/**');
             res.line(' * Configure grid.');
             res.line(' *');
@@ -1734,15 +1734,17 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
             res.line('return cfg;');
             res.endBlock('}');
 
+            res.needEmptyLine = true;
+
             res.line('/**');
-            res.line(' * Sample usage of ConfigurationFactory.');
+            res.line(' * Sample usage of ' + javaClass + '.');
             res.line(' *');
             res.line(' * @param args Command line arguments, none required.');
             res.line(' * @throws Exception If sample execution failed.');
             res.line(' */');
 
             res.startBlock('public static void main(String[] args) throws Exception {');
-            res.startBlock('try (Ignite ignite = Ignition.start(ConfigurationFactory.createConfiguration())) {');
+            res.startBlock('try (Ignite ignite = Ignition.start(' + javaClass + '.createConfiguration())) {');
             res.line('System.out.println("Write some code here...");');
             res.endBlock('}');
             res.endBlock('}');
