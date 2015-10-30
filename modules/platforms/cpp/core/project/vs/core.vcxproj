@@ -194,8 +194,11 @@
     <ClInclude Include="..\..\include\ignite\cache\query\query.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\query_argument.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\query_cursor.h" />
+    <ClInclude Include="..\..\include\ignite\cache\query\query_fields_cursor.h" />
+    <ClInclude Include="..\..\include\ignite\cache\query\query_fields_row.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\query_scan.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\query_sql.h" />
+    <ClInclude Include="..\..\include\ignite\cache\query\query_sql_fields.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\query_text.h" />
     <ClInclude Include="..\..\include\ignite\ignite.h" />
     <ClInclude Include="..\..\include\ignite\ignite_configuration.h" />
@@ -203,6 +206,7 @@
     <ClInclude Include="..\..\include\ignite\ignition.h" />
     <ClInclude Include="..\..\include\ignite\guid.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\query_fields_row_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\ignite_environment.h" />
     <ClInclude Include="..\..\include\ignite\impl\ignite_impl.h" />
