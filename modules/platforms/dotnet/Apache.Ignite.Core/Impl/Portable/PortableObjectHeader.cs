@@ -273,7 +273,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Schema.</returns>
         public PortableObjectSchemaField[] ReadSchema(IPortableStream stream, int position)
         {
-            // TODO: This does not work
             Debug.Assert(stream != null);
 
             var schemaSize = SchemaFieldCount;
@@ -283,7 +282,27 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             stream.Seek(position + SchemaOffset, SeekOrigin.Begin);
 
-            return PortableObjectSchemaField.ReadArray(stream, schemaSize);
+            var schema = new PortableObjectSchemaField[schemaSize];
+
+            var offsetSize = SchemaFieldOffsetSize;
+
+            if (offsetSize == 1)
+            {
+                for (var i = 0; i < offsetSize; i++)
+                    schema[i] = new PortableObjectSchemaField(stream.ReadInt(), stream.ReadByte());
+            }
+            else if (offsetSize == 2)
+            {
+                for (var i = 0; i < offsetSize; i++)
+                    schema[i] = new PortableObjectSchemaField(stream.ReadInt(), stream.ReadShort());
+            }
+            else
+            {
+                for (var i = 0; i < offsetSize; i++)
+                    schema[i] = new PortableObjectSchemaField(stream.ReadInt(), stream.ReadInt());
+            }
+
+            return schema;
         }
 
         /// <summary>

@@ -79,6 +79,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
         }
 
+
+        /*
         /// <summary>
         /// Reads an array of fields from a stream.
         /// </summary>
@@ -108,6 +110,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             return res;
-        }
+        }*/
     }
 }
