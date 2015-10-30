@@ -739,16 +739,11 @@
                                         <exclude>ipc/shmem/igniteshmem/.deps/*</exclude><!--tmp files-->
                                         <exclude>ipc/shmem/igniteshmem/libigniteshmem.la</exclude><!--tmp (not under VCS)-->
                                         <exclude>ipc/shmem/igniteshmem/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo</exclude><!--tmp (not under VCS)-->
-                                        <!--platform-->
-                                        <exclude>src/main/dotnet/Apache.Ignite.Core/Apache.Ignite.Core.csproj</exclude>
-                                        <exclude>src/main/dotnet/Apache.Ignite.sln</exclude>
-                                        <exclude>src/main/dotnet/Apache.Ignite.sln.DotSettings</exclude>
+                                        <!--platforms-->
                                         <exclude>src/main/java/META-INF/services/org.apache.ignite.internal.processors.platform.PlatformBootstrapFactory</exclude>
                                         <exclude>src/main/resources/META-INF/services/org.apache.ignite.internal.processors.platform.PlatformBootstrapFactory</exclude>
-                                        <exclude>src/test/dotnet/Apache.Ignite.Core.Tests/Apache.Ignite.Core.Tests.csproj</exclude>
                                         <exclude>src/test/portables/repo/org/apache/ignite/portable/test1/1.1/test1-1.1.jar</exclude>
                                         <exclude>src/test/portables/repo/org/apache/ignite/portable/test2/1.1/test2-1.1.jar</exclude>
-                                        <!--platforms-->
                                         <exclude>**/META-INF/services/*.PlatformBootstrapFactory</exclude>
                                         <exclude>**/Makefile.am</exclude>
                                         <exclude>**/configure.ac</exclude>
@@ -762,6 +757,7 @@
                                         <exclude>**/*.vcxproj</exclude>
                                         <exclude>**/*.vcxprojrel</exclude>
                                         <exclude>**/*.vcxproj.filters</exclude>
+                                        <exclude>**/mkbuild.cmd</exclude>
                                         <exclude>**/module.def</exclude>
                                         <exclude>**/*.fxcop</exclude>
                                         <exclude>**/*.metaproj</exclude>
