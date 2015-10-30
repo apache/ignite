@@ -242,8 +242,23 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         U.shutdownNow(GridServiceProcessor.class, depExe, log);
 
+        cancelFutures();
+
         if (log.isDebugEnabled())
             log.debug("Stopped service processor.");
+    }
+
+    /**
+     * Cancel all user operations.
+     */
+    private void cancelFutures() {
+        Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
+
+        for (IgniteInternalFuture fut : depFuts.values())
+            ((GridFutureAdapter)fut).onDone(err);
+
+        for (IgniteInternalFuture fut : undepFuts.values())
+            ((GridFutureAdapter)fut).onDone(err);
     }
 
     /** {@inheritDoc} */
