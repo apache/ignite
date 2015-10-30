@@ -785,6 +785,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                         return e;
                     else {
                         GridLongList filteredEvts = new GridLongList(buf.size());
+
                         int size = 0;
 
                         Iterator<Long> iter = buf.iterator();

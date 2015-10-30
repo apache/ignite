@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -98,6 +100,9 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     /** Future keys. */
     private Collection<KeyCacheObject> keys;
 
+    /** Updates. */
+    private List<T4<GridDhtCacheEntry, CacheObject, CacheObject, Long>> updates;
+
     /** */
     private boolean waitForExchange;
 
@@ -128,6 +133,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
             log = U.logger(cctx.kernalContext(), logRef, GridDhtAtomicUpdateFuture.class);
 
         keys = new ArrayList<>(updateReq.keys().size());
+
+        updates = new ArrayList<>(updateReq.keys().size());
 
         boolean topLocked = updateReq.topologyLocked() || (updateReq.fastMap() && !updateReq.clientRequest());
 
@@ -221,6 +228,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
 
         keys.add(entry.key());
+
+        updates.add(new T4<>(entry, val, prevVal, updateIdx));
 
         for (ClusterNode node : dhtNodes) {
             UUID nodeId = node.id();
@@ -325,6 +334,26 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
             if (err != null) {
                 for (KeyCacheObject key : keys)
                     updateRes.addFailedKey(key, err);
+            }
+            else {
+                assert keys.size() == updates.size();
+
+                int i = 0;
+
+                for (KeyCacheObject key : keys) {
+                    T4<GridDhtCacheEntry, CacheObject, CacheObject, Long> upd = updates.get(i);
+
+                    try {
+                        cctx.continuousQueries().onEntryUpdated(upd.get1(), key, upd.get2(), upd.get3(), true, false,
+                            upd.get4(), updateRes.topologyVersion());
+                    }
+                    catch (IgniteCheckedException e) {
+                        log.warning("Failed to send continuous query message. [key=" + key + ", newVal="
+                            + upd.get1() + ", err=" + e + "]");
+                    }
+
+                    ++i;
+                }
             }
 
             if (updateReq.writeSynchronizationMode() == FULL_SYNC)

@@ -50,7 +50,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /** Partitions update counters. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<Integer, Map<Integer, Long>> partCntrs = new HashMap<>();
+    private Map<Integer, Map<Integer, Long>> partCntrs;
 
     /** Serialized partitions counters. */
     private byte[] partCntrsBytes;
@@ -103,6 +103,9 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @param cntrMap Partition update counters.
      */
     public void partitionUpdateCounters(int cacheId, Map<Integer, Long> cntrMap) {
+        if (partCntrs == null)
+            partCntrs = new HashMap<>();
+
         partCntrs.put(cacheId, cntrMap);
     }
 
@@ -111,9 +114,13 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @return Partition update counters.
      */
     public Map<Integer, Long> partitionUpdateCounters(int cacheId) {
-        Map<Integer, Long> res = partCntrs.get(cacheId);
+        if (partCntrs != null) {
+            Map<Integer, Long> res = partCntrs.get(cacheId);
 
-        return res != null ? res : Collections.<Integer, Long>emptyMap();
+            return res != null ? res : Collections.<Integer, Long>emptyMap();
+        }
+
+        return Collections.emptyMap();
     }
 
     /**

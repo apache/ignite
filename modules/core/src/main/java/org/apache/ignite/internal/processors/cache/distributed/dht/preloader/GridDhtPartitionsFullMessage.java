@@ -52,7 +52,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /** Partitions update counters. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<Integer, Map<Integer, Long>> partCntrs = new HashMap<>();
+    private Map<Integer, Map<Integer, Long>> partCntrs;
 
     /** Serialized partitions counters. */
     private byte[] partCntrsBytes;
@@ -106,6 +106,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @param cntrMap Partition update counters.
      */
     public void addPartitionUpdateCounters(int cacheId, Map<Integer, Long> cntrMap) {
+        if (partCntrs == null)
+            partCntrs = new HashMap<>();
+
         if (!partCntrs.containsKey(cacheId))
             partCntrs.put(cacheId, cntrMap);
     }
@@ -115,9 +118,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @return Partition update counters.
      */
     public Map<Integer, Long> partitionUpdateCounters(int cacheId) {
-        Map<Integer, Long> res = partCntrs.get(cacheId);
+        if (partCntrs != null) {
+            Map<Integer, Long> res = partCntrs.get(cacheId);
 
-        return res != null ? res : Collections.<Integer, Long>emptyMap();
+            return res != null ? res : Collections.<Integer, Long>emptyMap();
+        }
+
+        return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */

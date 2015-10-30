@@ -282,15 +282,15 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                     initialized = true;
                 }
 
-               CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
-                   cctx.cacheId(),
-                   EXPIRED,
-                   key,
-                   null,
-                   lsnr.oldValueRequired() ? oldVal : null,
-                   e.partition(),
-                   -1,
-                   null);
+                CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
+                    cctx.cacheId(),
+                    EXPIRED,
+                    key,
+                    null,
+                    lsnr.oldValueRequired() ? oldVal : null,
+                    e.partition(),
+                    -1,
+                    null);
 
                 CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent(
                     cctx.kernalContext().cache().jcache(cctx.name()), cctx, e0);

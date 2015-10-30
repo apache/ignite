@@ -65,9 +65,6 @@ public class GridCacheUpdateAtomicResult {
     /** Value computed by entry processor. */
     private IgniteBiTuple<Object, Exception> res;
 
-    /** Continuous query notify listener. */
-    private CI1<IgniteInternalFuture<Void>> contQryNtfy;
-
     /**
      * Constructor.
      *
@@ -91,8 +88,7 @@ public class GridCacheUpdateAtomicResult {
         @Nullable GridCacheVersion rmvVer,
         @Nullable GridCacheVersionConflictContext<?, ?> conflictRes,
         boolean sndToDht,
-        long updateIdx,
-        @Nullable CI1<IgniteInternalFuture<Void>> contQryNtfy) {
+        long updateIdx) {
         this.success = success;
         this.oldVal = oldVal;
         this.newVal = newVal;
@@ -103,7 +99,6 @@ public class GridCacheUpdateAtomicResult {
         this.conflictRes = conflictRes;
         this.sndToDht = sndToDht;
         this.updateIdx = updateIdx;
-        this.contQryNtfy = contQryNtfy;
     }
 
     /**
@@ -175,13 +170,6 @@ public class GridCacheUpdateAtomicResult {
      */
     public boolean sendToDht() {
         return sndToDht;
-    }
-
-    /**
-     * @return Continuous notify closure.
-     */
-    public CI1<IgniteInternalFuture<Void>> contQryNtfy() {
-        return contQryNtfy;
     }
 
     /** {@inheritDoc} */

@@ -1799,19 +1799,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     readersOnly = true;
                 }
 
-                if (updRes.contQryNtfy() != null) {
-                    if (primary && dhtFut != null) {
-                        dhtFut.listen(new CI1<IgniteInternalFuture<Void>>() {
-                            @Override public void apply(IgniteInternalFuture<Void> f) {
-                                if (f.isDone() && f.error() == null)
-                                    updRes.contQryNtfy().apply(f);
-                                }
-                            });
-                    }
-                    else
-                        updRes.contQryNtfy().apply(null);
-                }
-
                 if (dhtFut != null) {
                     if (updRes.sendToDht()) { // Send to backups even in case of remove-remove scenarios.
                         GridCacheVersionConflictContext<?, ?> conflictCtx = updRes.conflictResolveResult();
@@ -1848,6 +1835,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             log.debug("Entry did not pass the filter or conflict resolution (will skip write) " +
                                 "[entry=" + entry + ", filter=" + Arrays.toString(req.filter()) + ']');
                     }
+                }
+                else if (!entry.isNear()) {
+                    ctx.continuousQueries().onEntryUpdated(entry, entry.key(), updRes.newValue(), updRes.oldValue(),
+                        primary, false, updRes.updateIdx(), topVer);
                 }
 
                 if (hasNear) {
@@ -2574,8 +2565,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());
 
-                        if (updRes.contQryNtfy() != null)
-                            updRes.contQryNtfy().apply(null);
+                        if (updRes.success() && !entry.isNear())
+                            ctx.continuousQueries().onEntryUpdated(entry, entry.key(), updRes.newValue(),
+                                updRes.oldValue(), false, false, updRes.updateIdx(), req.topologyVersion());
 
                         entry.onUnlock();
 
