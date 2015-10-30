@@ -33,6 +33,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.igniteobject.IgniteObjectException;
 import org.apache.ignite.igniteobject.IgniteObjectMetadata;
 import org.apache.ignite.igniteobject.IgniteObject;
+import org.apache.ignite.portable.PortableField;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
 
@@ -107,7 +108,7 @@ public class IgniteObjectOffheapImpl extends IgniteObjectEx implements Externali
 
     /** {@inheritDoc} */
     @Override protected PortableSchema createSchema() {
-        PortableReaderExImpl reader = new PortableReaderExImpl(ctx,
+        IgniteObjectReaderExImpl reader = new IgniteObjectReaderExImpl(ctx,
             new PortableOffheapInputStream(ptr, size, false),
             start,
             null);
@@ -116,7 +117,7 @@ public class IgniteObjectOffheapImpl extends IgniteObjectEx implements Externali
     }
 
     /** {@inheritDoc} */
-    @Override public PortableField fieldDescriptor(String fieldName) throws PortableException {
+    @Override public PortableField fieldDescriptor(String fieldName) throws IgniteObjectException {
         int typeId = typeId();
 
         PortableSchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
@@ -167,8 +168,8 @@ public class IgniteObjectOffheapImpl extends IgniteObjectEx implements Externali
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Nullable @Override public <F> F field(int fieldId) throws PortableException {
-        PortableReaderExImpl reader = new PortableReaderExImpl(ctx,
+    @Nullable @Override public <F> F field(int fieldId) throws IgniteObjectException {
+        IgniteObjectReaderExImpl reader = new IgniteObjectReaderExImpl(ctx,
             new PortableOffheapInputStream(ptr, size, false),
             start,
             null);
@@ -179,7 +180,7 @@ public class IgniteObjectOffheapImpl extends IgniteObjectEx implements Externali
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override protected <F> F fieldByOffset(int fieldOffset) {
-        PortableReaderExImpl reader = new PortableReaderExImpl(ctx,
+        IgniteObjectReaderExImpl reader = new IgniteObjectReaderExImpl(ctx,
             new PortableOffheapInputStream(ptr, size, false),
             start,
             null);

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.igniteobject.IgniteObject;
 import org.apache.ignite.portable.PortableField;
-import org.apache.ignite.portable.PortableObject;
 
 /**
  * Implementation of portable field descriptor.
@@ -42,16 +42,16 @@ public class PortableFieldImpl implements PortableField {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean exists(PortableObject obj) {
-        PortableObjectEx obj0 = (PortableObjectEx)obj;
+    @Override public boolean exists(IgniteObject obj) {
+        IgniteObjectEx obj0 = (IgniteObjectEx)obj;
 
         return fieldOffset(obj0) != 0;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <T> T value(PortableObject obj) {
-        PortableObjectEx obj0 = (PortableObjectEx)obj;
+    @Override public <T> T value(IgniteObject obj) {
+        IgniteObjectEx obj0 = (IgniteObjectEx)obj;
 
         int offset = fieldOffset(obj0);
 
@@ -64,7 +64,7 @@ public class PortableFieldImpl implements PortableField {
      * @param obj Object.
      * @return Field offset.
      */
-    private int fieldOffset(PortableObjectEx obj) {
+    private int fieldOffset(IgniteObjectEx obj) {
         int schemaId = obj.schemaId();
 
         PortableSchema schema = schemas.schema(schemaId);

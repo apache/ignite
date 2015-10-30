@@ -17,11 +17,18 @@
 
 package org.apache.ignite.internal.portable.builder;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.igniteobject.IgniteObject;
 import org.apache.ignite.igniteobject.IgniteObjectBuilder;
+import org.apache.ignite.igniteobject.IgniteObjectException;
 import org.apache.ignite.igniteobject.IgniteObjectInvalidClassException;
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
+import org.apache.ignite.igniteobject.IgniteObjectMetadata;
 import org.apache.ignite.internal.portable.IgniteObjectImpl;
+import org.apache.ignite.internal.portable.IgniteObjectOffheapImpl;
 import org.apache.ignite.internal.portable.IgniteObjectWriterExImpl;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableUtils;
@@ -31,12 +38,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
 
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DFLT_HDR_LEN;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.HASH_CODE_POS;

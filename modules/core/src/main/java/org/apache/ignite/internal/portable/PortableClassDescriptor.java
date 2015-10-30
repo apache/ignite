@@ -72,7 +72,7 @@ public class PortableClassDescriptor {
     private final IgniteObjectSerializer serializer;
 
     /** ID mapper. */
-    private final PortableIdMapper idMapper;
+    private final IgniteObjectIdMapper idMapper;
 
     /** */
     private final Mode mode;
@@ -323,7 +323,7 @@ public class PortableClassDescriptor {
      *
      * @return ID mapper.
      */
-    public PortableIdMapper idMapper() {
+    public IgniteObjectIdMapper idMapper() {
         return idMapper;
     }
 

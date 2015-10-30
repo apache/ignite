@@ -1835,7 +1835,7 @@ public class IgniteObjectWriterExImpl implements IgniteObjectWriter, IgniteObjec
          * @param writer Writer.
          * @param cnt Count.
          */
-        public void writeAndPop(PortableWriterExImpl writer, int cnt) {
+        public void writeAndPop(IgniteObjectWriterExImpl writer, int cnt) {
             int startIdx = idx - cnt * 2;
 
             assert startIdx >= 0;

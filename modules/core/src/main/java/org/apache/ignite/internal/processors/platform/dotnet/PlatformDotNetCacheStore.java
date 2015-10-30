@@ -345,7 +345,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * @param writer Writer.
      * @param convertPortable Convert portable flag.
      */
-    protected void write(PortableRawWriterEx writer, boolean convertPortable) {
+    protected void write(IgniteObjectRawWriterEx writer, boolean convertPortable) {
         writer.writeString(typName);
         writer.writeBoolean(convertPortable);
         writer.writeMap(props);

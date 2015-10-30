@@ -17,22 +17,6 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
-import org.apache.ignite.internal.portable.streams.PortableInputStream;
-import org.apache.ignite.internal.util.GridEnumCache;
-import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.igniteobject.IgniteObjectException;
-import org.apache.ignite.igniteobject.IgniteObjectInvalidClassException;
-import org.apache.ignite.igniteobject.IgniteObject;
-import org.apache.ignite.igniteobject.IgniteObjectRawReader;
-import org.apache.ignite.igniteobject.IgniteObjectReader;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
@@ -55,6 +39,22 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.igniteobject.IgniteObject;
+import org.apache.ignite.igniteobject.IgniteObjectException;
+import org.apache.ignite.igniteobject.IgniteObjectIdMapper;
+import org.apache.ignite.igniteobject.IgniteObjectInvalidClassException;
+import org.apache.ignite.igniteobject.IgniteObjectRawReader;
+import org.apache.ignite.igniteobject.IgniteObjectReader;
+import org.apache.ignite.internal.portable.streams.PortableHeapInputStream;
+import org.apache.ignite.internal.portable.streams.PortableInputStream;
+import org.apache.ignite.internal.util.GridEnumCache;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.ARR_LIST;
@@ -157,7 +157,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     private int footerLen;
 
     /** ID mapper. */
-    private PortableIdMapper idMapper;
+    private IgniteObjectIdMapper idMapper;
 
     /** Schema Id. */
     private int schemaId;
@@ -215,7 +215,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
         byte hdr = in.readByte();
 
         if (hdr != GridPortableMarshaller.OBJ)
-            throw new PortableException("Invalid header [pos=" + retPos + "expected=" + GridPortableMarshaller.OBJ +
+            throw new IgniteObjectException("Invalid header [pos=" + retPos + "expected=" + GridPortableMarshaller.OBJ +
                 ", actual=" + hdr + ']');
 
         PortableUtils.checkProtocolVersion(in.readByte());
@@ -277,9 +277,9 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     /**
      * @param offset Offset in the array.
      * @return Unmarshalled value.
-     * @throws PortableException In case of error.
+     * @throws IgniteObjectException In case of error.
      */
-    public Object unmarshal(int offset) throws PortableException {
+    public Object unmarshal(int offset) throws IgniteObjectException {
         in.position(offset);
 
         return in.position() >= 0 ? unmarshal() : null;
@@ -1328,7 +1328,7 @@ public class IgniteObjectReaderExImpl implements IgniteObjectReader, IgniteObjec
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> Collection<T> readCollection() throws PortableException {
+    @Nullable @Override public <T> Collection<T> readCollection() throws IgniteObjectException {
         if (checkFlag(COL) == Flag.NULL)
             return null;
 

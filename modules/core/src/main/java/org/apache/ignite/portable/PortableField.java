@@ -17,6 +17,8 @@
 
 package org.apache.ignite.portable;
 
+import org.apache.ignite.igniteobject.IgniteObject;
+
 /**
  * Portable object field. Can be used to speed object field lookup.
  */
@@ -27,7 +29,7 @@ public interface PortableField {
      * @param obj Object.
      * @return {@code True} if exists.
      */
-    public boolean exists(PortableObject obj);
+    public boolean exists(IgniteObject obj);
 
     /**
      * Get field's value from the given object.
@@ -35,5 +37,5 @@ public interface PortableField {
      * @param obj Object.
      * @return Value.
      */
-    public <T> T value(PortableObject obj);
+    public <T> T value(IgniteObject obj);
 }

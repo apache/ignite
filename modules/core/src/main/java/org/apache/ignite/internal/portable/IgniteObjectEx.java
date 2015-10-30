@@ -62,9 +62,9 @@ public abstract class IgniteObjectEx implements IgniteObject {
      *
      * @param fieldId Field ID.
      * @return Field value.
-     * @throws PortableException In case of any other error.
+     * @throws IgniteObjectException In case of any other error.
      */
-    @Nullable public abstract <F> F field(int fieldId) throws PortableException;
+    @Nullable public abstract <F> F field(int fieldId) throws IgniteObjectException;
 
     /**
      * Get field by offset.
