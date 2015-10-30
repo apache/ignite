@@ -244,8 +244,23 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var schema = new Dictionary<int, int>(schemaSize);
 
-            for (var i = 0; i < schemaSize; i++)
-                schema.Add(stream.ReadInt(), stream.ReadInt());
+            var offsetSize = SchemaFieldOffsetSize;
+
+            if (offsetSize == 1)
+            {
+                for (var i = 0; i < offsetSize; i++)
+                    schema.Add(stream.ReadInt(), stream.ReadByte());
+            }
+            else if (offsetSize == 2)
+            {
+                for (var i = 0; i < offsetSize; i++)
+                    schema.Add(stream.ReadInt(), stream.ReadShort());
+            }
+            else
+            {
+                for (var i = 0; i < offsetSize; i++)
+                    schema.Add(stream.ReadInt(), stream.ReadInt());
+            }
 
             return schema;
         }
