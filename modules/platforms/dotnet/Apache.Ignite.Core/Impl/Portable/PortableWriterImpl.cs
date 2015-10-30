@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private PortableStructureTracker _curStruct;
 
         /** Current schema. */
-        private ResizeableArray _curSchema;
+        private PortableSchemaArray _curSchema;
 
 
         /// <summary>
@@ -1371,7 +1371,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var fieldId = _curStruct.GetFieldId(fieldName, fieldTypeId);
 
-            _curSchema = _curSchema ?? new ResizeableArray(4);
+            _curSchema = _curSchema ?? new PortableSchemaArray(4);
 
             _curSchema.Add(new PortableObjectSchemaField(fieldId, _stream.Position - _curPos));
         }

@@ -627,7 +627,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                         var outSchemaLen = vals.Count + (inSchema == null ? 0 : inSchema.Length);
                         var outSchema = outSchemaLen > 0 
-                            ? new ResizeableArray(outSchemaLen)
+                            ? new PortableSchemaArray(outSchemaLen)
                             : null;
 
                         // Skip header as it is not known at this point.
