@@ -140,9 +140,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             get
             {
-                // TODO:
-                // Odd amount of records in schema => raw offset is the very last 4 bytes in object.
-                return !IsRawOnly && (((Length - SchemaOffset) >> 2) & 0x1) != 0x0;
+                // Remainder => raw offset is the very last 4 bytes in object.
+                return !IsRawOnly && ((Length - SchemaOffset) % SchemaFieldSize) == 4;
             }
         }
 
@@ -161,6 +160,14 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 return 4;
             }
+        }
+
+        /// <summary>
+        /// Gets the size of the schema field.
+        /// </summary>
+        public int SchemaFieldSize
+        {
+            get { return SchemaFieldOffsetSize + 4; }
         }
 
         /// <summary>
