@@ -23,7 +23,6 @@ import org.apache.ignite.internal.portable.IgniteObjectEx;
 import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.portable.IgniteObjectWriterExImpl;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.portable.*;
 
 import java.util.*;
 
