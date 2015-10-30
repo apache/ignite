@@ -137,6 +137,15 @@ public interface PortableObject extends IgniteObject, Cloneable {
     @Override public boolean hasField(String fieldName);
 
     /**
+     * Gets field descriptor.
+     *
+     * @param fieldName Field name.
+     * @return Field descriptor.
+     * @throws PortableException If failed.
+     */
+    public PortableField fieldDescriptor(String fieldName) throws PortableException;
+
+    /**
      * Gets fully deserialized instance of portable object.
      *
      * @return Fully deserialized instance of portable object.

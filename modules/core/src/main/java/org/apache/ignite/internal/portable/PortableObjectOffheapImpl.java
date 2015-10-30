@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableField;
 import org.apache.ignite.portable.PortableMetadata;
 import org.apache.ignite.portable.PortableObject;
 import org.jetbrains.annotations.Nullable;
@@ -101,6 +102,32 @@ public class PortableObjectOffheapImpl extends PortableObjectEx implements Exter
     }
 
     /** {@inheritDoc} */
+    @Override protected int schemaId() {
+        return UNSAFE.getInt(ptr + start + GridPortableMarshaller.SCHEMA_ID_POS);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected PortableSchema createSchema() {
+        PortableReaderExImpl reader = new PortableReaderExImpl(ctx,
+            new PortableOffheapInputStream(ptr, size, false),
+            start,
+            null);
+
+        return reader.createSchema();
+    }
+
+    /** {@inheritDoc} */
+    @Override public PortableField fieldDescriptor(String fieldName) throws PortableException {
+        int typeId = typeId();
+
+        PortableSchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
+
+        int fieldId = ctx.userTypeIdMapper(typeId).fieldId(typeId, fieldName);
+
+        return new PortableFieldImpl(schemaReg, fieldId);
+    }
+
+    /** {@inheritDoc} */
     @Override public int start() {
         return start;
     }
@@ -148,6 +175,17 @@ public class PortableObjectOffheapImpl extends PortableObjectEx implements Exter
             null);
 
         return (F)reader.unmarshalField(fieldId);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Nullable @Override protected <F> F fieldByOffset(int fieldOffset) {
+        PortableReaderExImpl reader = new PortableReaderExImpl(ctx,
+            new PortableOffheapInputStream(ptr, size, false),
+            start,
+            null);
+
+        return (F)reader.unmarshalFieldByOffset(fieldOffset);
     }
 
     /** {@inheritDoc} */

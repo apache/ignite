@@ -47,6 +47,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
@@ -117,6 +118,9 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_AR
  */
 @SuppressWarnings("unchecked")
 public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx, ObjectInput {
+    /** Length of a single field descriptor. */
+    private static final int FIELD_DESC_LEN = 16;
+
     /** */
     private final PortableContext ctx;
 
@@ -151,7 +155,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private int footerStart;
 
     /** Footer end. */
-    private int footerEnd;
+    private int footerLen;
 
     /** ID mapper. */
     private PortableIdMapper idMapper;
@@ -160,7 +164,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private int schemaId;
 
     /** Object schema. */
-    private PortableObjectSchema schema;
+    private PortableSchema schema;
 
     /**
      * @param ctx Context.
@@ -224,7 +228,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(in, start);
 
         footerStart = footer.get1();
-        footerEnd = footer.get2();
+        footerLen = footer.get2() - footerStart;
 
         schemaId = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_ID_POS);
 
@@ -300,6 +304,21 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         parseHeaderIfNeeded();
 
         return hasField(fieldId) ? unmarshal() : null;
+    }
+
+    /**
+     * @param fieldOffset Field offset.
+     * @return Unmarshalled value.
+     * @throws PortableException In case of error.
+     */
+    @Nullable Object unmarshalFieldByOffset(int fieldOffset) throws PortableException {
+        assert fieldOffset != 0;
+
+        parseHeaderIfNeeded();
+
+        in.position(start + in.readIntPositioned(footerStart + fieldOffset));
+
+        return unmarshal();
     }
 
     /**
@@ -1418,10 +1437,18 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /**
      * @param fieldName Field name.
-     * @return {@code true} if field is set.
+     * @return {@code True} if field is set.
      */
     public boolean hasField(String fieldName) {
         return hasField(fieldId(fieldName));
+    }
+
+    /**
+     * @param fieldId Field ID.
+     * @return {@code True} if field is set.
+     */
+    private boolean hasField(int fieldId) {
+        return fieldOffset(fieldId) != 0;
     }
 
     /** {@inheritDoc} */
@@ -2528,31 +2555,98 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     }
 
     /**
+     * Create schema.
+     *
+     * @return Schema.
+     */
+    public PortableSchema createSchema() {
+        parseHeaderIfNeeded();
+
+        LinkedHashMap<Integer, Integer> fields = new LinkedHashMap<>();
+
+        int searchPos = footerStart;
+        int searchEnd = searchPos + footerLen;
+
+        while (searchPos < searchEnd) {
+            int fieldId = in.readIntPositioned(searchPos);
+
+            fields.put(fieldId, searchPos + 4 - footerStart);
+
+            searchPos += 8;
+        }
+
+        return new PortableSchema(fields);
+    }
+
+    /**
      * @param id Field ID.
      * @return Field offset.
      */
-    private boolean hasField(int id) {
+    private int fieldOffset(int id) {
         assert hdrLen != 0;
 
-        int searchHead = footerStart;
-        int searchTail = footerEnd;
+        if (footerLen == 0)
+            return 0;
 
-        while (true) {
-            if (searchHead >= searchTail)
-                return false;
+        int searchPos = footerStart;
+        int searchTail = searchPos + footerLen;
 
-            int id0 = in.readIntPositioned(searchHead);
+        if (hasLowFieldsCount(footerLen)) {
+            while (true) {
+                if (searchPos >= searchTail)
+                    return 0;
 
-            if (id0 == id) {
-                int offset = in.readIntPositioned(searchHead + 4);
+                int id0 = in.readIntPositioned(searchPos);
 
-                in.position(start + offset);
+                if (id0 == id) {
+                    int pos = start + in.readIntPositioned(searchPos + 4);
 
-                return true;
+                    in.position(pos);
+
+                    return pos;
+                }
+
+                searchPos += 8;
+            }
+        }
+        else {
+            PortableSchema schema0 = schema;
+
+            if (schema0 == null) {
+                schema0 = ctx.schemaRegistry(typeId).schema(schemaId);
+
+                if (schema0 == null) {
+                    schema0 = createSchema();
+
+                    ctx.schemaRegistry(typeId).addSchema(schemaId, schema0);
+                }
+
+                schema = schema0;
             }
 
-            searchHead += 8;
+            int fieldOffsetPos = schema.offset(id);
+
+            if (fieldOffsetPos != 0) {
+                int pos = start + in.readIntPositioned(footerStart + fieldOffsetPos);
+
+                in.position(pos);
+
+                return pos;
+            }
+            else
+                return 0;
         }
+    }
+
+    /**
+     * Check whether object has low amount of fields.
+     *
+     * @param footerLen Footer length.
+     */
+    private boolean hasLowFieldsCount(int footerLen) {
+        assert hdrParsed;
+
+        return footerLen < (FIELD_DESC_LEN << 4);
     }
 
     /** {@inheritDoc} */

@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.portable;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
@@ -35,9 +30,25 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableField;
 import org.apache.ignite.portable.PortableMetadata;
 import org.apache.ignite.portable.PortableObject;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
+
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
 
 /**
  * Portable object implementation.
@@ -248,6 +259,94 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
+    @Nullable @Override protected <F> F fieldByOffset(int fieldOffset) {
+        Object val;
+
+        int schemaOffset = PRIM.readInt(arr, start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        int fieldPos = PRIM.readInt(arr, start + schemaOffset + fieldOffset);
+
+        // Read header and try performing fast lookup for well-known types (the most common types go first).
+        byte hdr = PRIM.readByte(arr, fieldPos);
+
+        switch (hdr) {
+            case INT:
+                val = PRIM.readInt(arr, fieldPos + 1);
+
+                break;
+
+            case LONG:
+                val = PRIM.readLong(arr, fieldPos + 1);
+
+                break;
+
+            case BOOLEAN:
+                val = PRIM.readBoolean(arr, fieldPos + 1);
+
+                break;
+
+            case SHORT:
+                val = PRIM.readShort(arr, fieldPos + 1);
+
+                break;
+
+            case BYTE:
+                val = PRIM.readByte(arr, fieldPos + 1);
+
+                break;
+
+            case CHAR:
+                val = PRIM.readChar(arr, fieldPos + 1);
+
+                break;
+
+            case FLOAT:
+                val = PRIM.readFloat(arr, fieldPos + 1);
+
+                break;
+
+            case DOUBLE:
+                val = PRIM.readDouble(arr, fieldPos + 1);
+
+                break;
+
+//            case DECIMAL:
+//                val = doReadDecimal();
+//
+//                break;
+//
+//            case STRING:
+//                val = doReadString();
+//
+//                break;
+//
+//            case UUID:
+//                val = doReadUuid();
+//
+//                break;
+//
+//            case DATE:
+//                val = doReadDate();
+//
+//                break;
+//
+//            case TIMESTAMP:
+//                val = doReadTimestamp();
+//
+//                break;
+
+            default: {
+                // TODO: Pass absolute offset, not relative.
+                PortableReaderExImpl reader = new PortableReaderExImpl(ctx, arr, start, null);
+
+                val = reader.unmarshalFieldByOffset(fieldOffset);
+            }
+        }
+
+        return (F)val;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Nullable @Override protected <F> F field(PortableReaderContext rCtx, String fieldName) {
         PortableReaderExImpl reader = new PortableReaderExImpl(ctx,
             new PortableHeapInputStream(arr),
@@ -295,6 +394,29 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return PRIM.readInt(arr, start + GridPortableMarshaller.HASH_CODE_POS);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int schemaId() {
+        return PRIM.readInt(arr, start + GridPortableMarshaller.SCHEMA_ID_POS);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected PortableSchema createSchema() {
+        PortableReaderExImpl reader = new PortableReaderExImpl(ctx, arr, start, null);
+
+        return reader.createSchema();
+    }
+
+    /** {@inheritDoc} */
+    @Override public PortableField fieldDescriptor(String fieldName) throws PortableException {
+        int typeId = typeId();
+
+        PortableSchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
+
+        int fieldId = ctx.userTypeIdMapper(typeId).fieldId(typeId, fieldName);
+
+        return new PortableFieldImpl(schemaReg, fieldId);
     }
 
     /** {@inheritDoc} */

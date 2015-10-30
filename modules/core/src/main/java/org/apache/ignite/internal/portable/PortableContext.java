@@ -156,7 +156,7 @@ public class PortableContext implements Externalizable {
     private boolean keepDeserialized;
 
     /** Object schemas. */
-    private volatile Map<Integer, Object> schemas;
+    private volatile Map<Integer, PortableSchemaRegistry> schemas;
 
     /**
      * For {@link Externalizable}.
@@ -857,95 +857,51 @@ public class PortableContext implements Externalizable {
     }
 
     /**
-     * Get schema for the given schema ID.
+     * Get schema registry for type ID.
      *
-     * @param schemaId Schema ID.
-     * @return Schema or {@code null} if there are no such schema.
+     * @param typeId Type ID.
+     * @return Schema registry for type ID.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable public PortableObjectSchema schema(int typeId, int schemaId) {
-        Map<Integer, Object> schemas0 = schemas;
+    public PortableSchemaRegistry schemaRegistry(int typeId) {
+        Map<Integer, PortableSchemaRegistry> schemas0 = schemas;
 
-        if (schemas0 != null) {
-            Object typeSchemas = schemas0.get(typeId);
+        if (schemas0 == null) {
+            synchronized (this) {
+                schemas0 = schemas;
 
-            if (typeSchemas instanceof IgniteBiTuple) {
-                // The most common case goes first.
-                IgniteBiTuple<Integer, PortableObjectSchema> schema =
-                    (IgniteBiTuple<Integer, PortableObjectSchema>)typeSchemas;
+                if (schemas0 == null) {
+                    schemas0 = new HashMap<>();
 
-                if (schema.get1() == schemaId)
-                    return schema.get2();
-            }
-            else if (typeSchemas instanceof Map) {
-                Map<Integer, PortableObjectSchema> curSchemas = (Map<Integer, PortableObjectSchema>)typeSchemas;
+                    PortableSchemaRegistry reg = new PortableSchemaRegistry();
 
-                return curSchemas.get(schemaId);
+                    schemas0.put(typeId, reg);
+
+                    schemas = schemas0;
+
+                    return reg;
+                }
             }
         }
 
-        return null;
-    }
+        PortableSchemaRegistry reg = schemas0.get(typeId);
 
-    /**
-     * Add schema.
-     *
-     * @param schemaId Schema ID.
-     * @param newTypeSchema New schema.
-     */
-    @SuppressWarnings("unchecked")
-    public void addSchema(int typeId, int schemaId, PortableObjectSchema newTypeSchema) {
-        synchronized (this) {
-            if (schemas == null) {
-                // This is the very first schema recorded.
-                Map<Integer, Object> newSchemas = new HashMap<>();
+        if (reg == null) {
+            synchronized (this) {
+                reg = schemas.get(typeId);
 
-                newSchemas.put(typeId, new IgniteBiTuple<>(schemaId, newTypeSchema));
+                if (reg == null) {
+                    reg = new PortableSchemaRegistry();
 
-                schemas = newSchemas;
-            }
-            else {
-                Object typeSchemas = schemas.get(typeId);
+                    schemas0 = new HashMap<>(schemas);
 
-                if (typeSchemas == null) {
-                    // This is the very first object schema.
-                    Map<Integer, Object> newSchemas = new HashMap<>(schemas);
+                    schemas0.put(typeId, reg);
 
-                    newSchemas.put(typeId, new IgniteBiTuple<>(schemaId, newTypeSchema));
-
-                    schemas = newSchemas;
-                }
-                else if (typeSchemas instanceof IgniteBiTuple) {
-                    IgniteBiTuple<Integer, PortableObjectSchema> typeSchema =
-                        (IgniteBiTuple<Integer, PortableObjectSchema>)typeSchemas;
-
-                    if (typeSchema.get1() != schemaId) {
-                        Map<Integer, PortableObjectSchema> newTypeSchemas = new HashMap();
-
-                        newTypeSchemas.put(typeSchema.get1(), typeSchema.get2());
-                        newTypeSchemas.put(schemaId, newTypeSchema);
-
-                        Map<Integer, Object> newSchemas = new HashMap<>(schemas);
-
-                        newSchemas.put(typeId, newTypeSchemas);
-
-                        schemas = newSchemas;
-                    }
-                }
-                else {
-                    Map<Integer, PortableObjectSchema> newTypeSchemas =
-                        new HashMap((Map<Integer, PortableObjectSchema>)typeSchemas);
-
-                    newTypeSchemas.put(schemaId, newTypeSchema);
-
-                    Map<Integer, Object> newSchemas = new HashMap<>(schemas);
-
-                    newSchemas.put(typeId, newTypeSchemas);
-
-                    schemas = newSchemas;
+                    schemas = schemas0;
                 }
             }
         }
+
+        return reg;
     }
 
     /**
