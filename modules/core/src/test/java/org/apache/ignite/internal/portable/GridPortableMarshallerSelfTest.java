@@ -37,10 +37,22 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.igniteobject.IgniteObject;
+import org.apache.ignite.igniteobject.IgniteObjectBuilder;
+import org.apache.ignite.igniteobject.IgniteObjectConfiguration;
+import org.apache.ignite.igniteobject.IgniteObjectException;
+import org.apache.ignite.igniteobject.IgniteObjectIdMapper;
+import org.apache.ignite.igniteobject.IgniteObjectMarshalAware;
+import org.apache.ignite.igniteobject.IgniteObjectMetadata;
+import org.apache.ignite.igniteobject.IgniteObjectRawReader;
+import org.apache.ignite.igniteobject.IgniteObjectRawWriter;
+import org.apache.ignite.igniteobject.IgniteObjectReader;
+import org.apache.ignite.igniteobject.IgniteObjectSerializer;
+import org.apache.ignite.igniteobject.IgniteObjectWriter;
 import org.apache.ignite.internal.portable.builder.IgniteObjectBuilderImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -50,19 +62,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.igniteobject.IgniteObjectBuilder;
-import org.apache.ignite.igniteobject.IgniteObjectException;
-import org.apache.ignite.igniteobject.IgniteObjectIdMapper;
-import org.apache.ignite.igniteobject.IgniteObjectInvalidClassException;
-import org.apache.ignite.igniteobject.IgniteObjectMarshalAware;
-import org.apache.ignite.igniteobject.IgniteObjectMetadata;
-import org.apache.ignite.igniteobject.IgniteObject;
-import org.apache.ignite.igniteobject.IgniteObjectRawReader;
-import org.apache.ignite.igniteobject.IgniteObjectRawWriter;
-import org.apache.ignite.igniteobject.IgniteObjectReader;
-import org.apache.ignite.igniteobject.IgniteObjectSerializer;
-import org.apache.ignite.igniteobject.IgniteObjectConfiguration;
-import org.apache.ignite.igniteobject.IgniteObjectWriter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentHashMap8;
@@ -2389,7 +2388,9 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
      * @return Portable context.
      */
     protected PortableContext initPortableContext(PortableMarshaller marsh) throws IgniteCheckedException {
-        PortableContext ctx = new PortableContext(META_HND, null);
+        IgniteConfiguration iCfg = new IgniteConfiguration();
+
+        PortableContext ctx = new PortableContext(META_HND, iCfg);
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 

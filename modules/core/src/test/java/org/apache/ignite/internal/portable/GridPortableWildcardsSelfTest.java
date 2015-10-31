@@ -19,6 +19,7 @@ package org.apache.ignite.internal.portable;
 
 import java.util.Arrays;
 import java.util.Map;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
@@ -46,7 +47,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
      * @return Portable context.
      */
     private PortableContext portableContext() {
-        return new PortableContext(META_HND, null);
+        return new PortableContext(META_HND, new IgniteConfiguration());
     }
 
     /**
