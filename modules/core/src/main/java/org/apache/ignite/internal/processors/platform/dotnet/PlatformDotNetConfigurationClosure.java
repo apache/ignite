@@ -237,7 +237,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 @Override public IgniteObjectMetadata metadata(int typeId) throws IgniteObjectException {
                     return null;
                 }
-            }, null);
+            }, new IgniteConfiguration());
 
             PortableMarshaller marsh = new PortableMarshaller();
 
