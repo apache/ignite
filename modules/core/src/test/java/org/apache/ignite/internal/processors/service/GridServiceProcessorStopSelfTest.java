@@ -57,6 +57,9 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
                 catch (IgniteException e) {
                     finishLatch.countDown();
                 }
+                catch (Throwable e) {
+                    log.error("Service deployment error: ", e);
+                }
             }
         });
 
@@ -66,7 +69,7 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
 
         Ignition.stopAll(true);
 
-        assertTrue(finishLatch.await(10, TimeUnit.SECONDS));
+        assertTrue("Deploy future isn't completed", finishLatch.await(15, TimeUnit.SECONDS));
     }
 
     /**
