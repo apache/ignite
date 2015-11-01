@@ -1183,7 +1183,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (cctx.isLocal() || cctx.isReplicated() || (tx != null && tx.local() && !isNear()))
                 cctx.continuousQueries().onEntryUpdated(this, key, val, old, false);
 
-            cctx.dataStructures().onEntryUpdated(key, false);
+            cctx.dataStructures().onEntryUpdated(key, false, keepPortable);
         }
 
         if (log.isDebugEnabled())
@@ -1352,7 +1352,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (cctx.isLocal() || cctx.isReplicated() || (tx != null && tx.local() && !isNear()))
                 cctx.continuousQueries().onEntryUpdated(this, key, null, old, false);
 
-            cctx.dataStructures().onEntryUpdated(key, true);
+            cctx.dataStructures().onEntryUpdated(key, true, keepPortable);
         }
 
         // Persist outside of synchronization. The correctness of the
@@ -1695,7 +1695,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             cctx.continuousQueries().onEntryUpdated(this, key, val, old, false);
 
-            cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE);
+            cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE, keepPortable);
 
             if (intercept) {
                 if (op == GridCacheOperation.UPDATE)
@@ -2312,7 +2312,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (cctx.isReplicated() || primary)
                 cctx.continuousQueries().onEntryUpdated(this, key, val, oldVal, false);
 
-            cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE);
+            cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE, keepPortable);
 
             if (intercept) {
                 if (op == GridCacheOperation.UPDATE)
@@ -3161,7 +3161,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (cctx.isLocal() || cctx.isReplicated() || cctx.affinity().primary(cctx.localNode(), key, topVer))
                         cctx.continuousQueries().onEntryUpdated(this, key, val, null, preload);
 
-                    cctx.dataStructures().onEntryUpdated(key, false);
+                    cctx.dataStructures().onEntryUpdated(key, false, true);
                 }
 
                 if (cctx.store().isLocal()) {
