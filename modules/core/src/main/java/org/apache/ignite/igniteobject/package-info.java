@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains portable objects API classes.
+ * Contains Ignite Objects API classes.
  */
 package org.apache.ignite.igniteobject;
