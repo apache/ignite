@@ -179,6 +179,10 @@ public class PortableContext implements Externalizable {
 
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;
+
+        if (igniteCfg == null)
+            U.dumpStack("Attempting to create portable context with null configuration.");
+
         gridName = igniteCfg.getGridName();
 
         colTypes.put(ArrayList.class, GridPortableMarshaller.ARR_LIST);
