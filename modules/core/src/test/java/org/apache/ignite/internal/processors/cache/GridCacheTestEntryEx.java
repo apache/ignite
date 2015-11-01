@@ -582,7 +582,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     @Override public boolean tmLock(IgniteInternalTx tx,
         long timeout,
         @Nullable GridCacheVersion serOrder,
-        GridCacheVersion serReadVer) {
+        GridCacheVersion serReadVer,
+        boolean keepBinary) {
         assert false; return false;
     }
 

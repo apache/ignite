@@ -235,7 +235,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                         this.updateReq.taskNameHash(),
                         forceTransformBackups ? this.updateReq.invokeArguments() : null,
                         cctx.deploymentEnabled(),
-                        updateReq.keepBinary());
+                        this.updateReq.keepBinary());
 
                     mappings.put(nodeId, updateReq);
                 }

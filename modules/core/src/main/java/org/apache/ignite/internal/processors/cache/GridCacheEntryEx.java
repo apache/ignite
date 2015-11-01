@@ -553,8 +553,9 @@ public interface GridCacheEntryEx {
     public boolean tmLock(IgniteInternalTx tx,
         long timeout,
         @Nullable GridCacheVersion serOrder,
-        @Nullable GridCacheVersion serReadVer)
-        throws GridCacheEntryRemovedException, GridDistributedLockCancelledException;
+        @Nullable GridCacheVersion serReadVer,
+        boolean keepBinary
+    ) throws GridCacheEntryRemovedException, GridDistributedLockCancelledException;
 
     /**
      * Unlocks acquired lock.
