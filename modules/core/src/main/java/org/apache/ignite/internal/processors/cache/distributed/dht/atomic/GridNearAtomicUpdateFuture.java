@@ -1195,7 +1195,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             Collection<Object> keys = new ArrayList<>(failedKeys.size());
 
             for (KeyCacheObject key : failedKeys)
-                keys.add(key.value(cctx.cacheObjectContext(), false));
+                keys.add(cctx.cacheObjectContext().unwrapPortableIfNeeded(key, keepBinary, false));
 
             err0.add(keys, err, topVer);
         }
