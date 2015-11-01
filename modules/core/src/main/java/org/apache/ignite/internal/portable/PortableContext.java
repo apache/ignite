@@ -180,9 +180,6 @@ public class PortableContext implements Externalizable {
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;
 
-        if (igniteCfg == null)
-            U.dumpStack("Attempting to create portable context with null configuration.");
-
         gridName = igniteCfg.getGridName();
 
         colTypes.put(ArrayList.class, GridPortableMarshaller.ARR_LIST);
@@ -498,6 +495,10 @@ public class PortableContext implements Externalizable {
             // Class might have been loaded by default class loader.
             if (userType && !ldr.equals(dfltLdr) && (desc = descriptorForTypeId(true, typeId, dfltLdr)) != null)
                 return desc;
+
+            e.printStackTrace();
+
+            U.dumpStack("Failed resolve class for ID: " + typeId);
 
             throw new IgniteObjectException("Failed resolve class for ID: " + typeId, e);
         }
