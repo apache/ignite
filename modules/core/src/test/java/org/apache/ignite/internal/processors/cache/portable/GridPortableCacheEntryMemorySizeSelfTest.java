@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.portable;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableMetaDataHandler;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
@@ -46,7 +47,7 @@ public class GridPortableCacheEntryMemorySizeSelfTest extends GridCacheEntryMemo
             @Override public IgniteObjectMetadata metadata(int typeId) throws IgniteObjectException {
                 return null;
             }
-        }, null);
+        }, new IgniteConfiguration());
 
         IgniteUtils.invoke(PortableMarshaller.class, marsh, "setPortableContext", pCtx);
 
