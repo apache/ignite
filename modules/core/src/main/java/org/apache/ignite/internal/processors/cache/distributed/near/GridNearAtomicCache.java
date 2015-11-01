@@ -350,7 +350,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             /*write-through*/false,
                             /*read-through*/false,
                             /*retval*/false,
-                            req.keepPortable(),
+                            req.keepBinary(),
                             null,
                             /*event*/true,
                             /*metrics*/true,

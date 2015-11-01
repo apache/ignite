@@ -2523,7 +2523,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             /*write-through*/false,
                             /*read-through*/false,
                             /*retval*/false,
-                            req.keepPortable(),
+                            req.keepBinary(),
                             /*expiry policy*/null,
                             /*event*/true,
                             /*metrics*/true,
