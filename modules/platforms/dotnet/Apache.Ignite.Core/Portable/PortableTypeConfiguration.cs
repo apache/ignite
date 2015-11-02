@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Portable
         /// <param name="type">Type.</param> 
         public PortableTypeConfiguration(Type type)
         {
-            TypeName = type.FullName;
+            TypeName = type.AssemblyQualifiedName;
         }
 
         /// <summary>
