@@ -312,16 +312,16 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     }
 
     /**
-     * @param fieldOffset Field offset.
-     * @return Unmarshalled value.
+     * Unmarshal field by absolute position.
+     *
+     * @param pos Absolute position.
+     * @return Field value.
      * @throws PortableException In case of error.
      */
-    @Nullable Object unmarshalFieldByOffset(int fieldOffset) throws PortableException {
-        assert fieldOffset != 0;
-
+    @Nullable Object unmarshalFieldByAbsolutePosition(int pos) throws PortableException {
         parseHeaderIfNeeded();
 
-        in.position(start + in.readIntPositioned(footerStart + fieldOffset));
+        in.position(pos);
 
         return unmarshal();
     }

@@ -37,6 +37,15 @@ import org.apache.ignite.portable.PortableObject;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
 
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
+
 /**
  *  Portable object implementation over offheap memory
  */
@@ -179,13 +188,83 @@ public class PortableObjectOffheapImpl extends PortableObjectEx implements Exter
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Nullable @Override protected <F> F fieldByOffset(int fieldOffset) {
-        PortableReaderExImpl reader = new PortableReaderExImpl(ctx,
-            new PortableOffheapInputStream(ptr, size, false),
-            start,
-            null);
+    @Nullable @Override protected <F> F fieldByOrder(int order) {
+        Object val;
 
-        return (F)reader.unmarshalFieldByOffset(fieldOffset);
+        // Calculate field position.
+        int schemaOffset = PortablePrimitives.readInt(ptr, start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+
+        short flags = PortablePrimitives.readShort(ptr, start + GridPortableMarshaller.FLAGS_POS);
+        int fieldOffsetSize = PortableUtils.fieldOffsetSize(flags);
+
+        int fieldOffsetPos = start + schemaOffset + order * (4 + fieldOffsetSize) + 4;
+
+        int fieldPos;
+
+        if (fieldOffsetSize == PortableUtils.OFFSET_1)
+            fieldPos = (int)PortablePrimitives.readByte(ptr, fieldOffsetPos) & 0xFF;
+        else if (fieldOffsetSize == PortableUtils.OFFSET_2)
+            fieldPos = (int)PortablePrimitives.readShort(ptr, fieldOffsetPos) & 0xFFFF;
+        else
+            fieldPos = PortablePrimitives.readInt(ptr, fieldOffsetPos);
+
+        // Read header and try performing fast lookup for well-known types (the most common types go first).
+        byte hdr = PortablePrimitives.readByte(ptr, fieldPos);
+
+        switch (hdr) {
+            case INT:
+                val = PortablePrimitives.readInt(ptr, fieldPos + 1);
+
+                break;
+
+            case LONG:
+                val = PortablePrimitives.readLong(ptr, fieldPos + 1);
+
+                break;
+
+            case BOOLEAN:
+                val = PortablePrimitives.readBoolean(ptr, fieldPos + 1);
+
+                break;
+
+            case SHORT:
+                val = PortablePrimitives.readShort(ptr, fieldPos + 1);
+
+                break;
+
+            case BYTE:
+                val = PortablePrimitives.readByte(ptr, fieldPos + 1);
+
+                break;
+
+            case CHAR:
+                val = PortablePrimitives.readChar(ptr, fieldPos + 1);
+
+                break;
+
+            case FLOAT:
+                val = PortablePrimitives.readFloat(ptr, fieldPos + 1);
+
+                break;
+
+            case DOUBLE:
+                val = PortablePrimitives.readDouble(ptr, fieldPos + 1);
+
+                break;
+
+            // TODO: Support other types: DECIMAL, STRING, UUID, DATE, TIMESTAMP.
+
+            default: {
+                PortableReaderExImpl reader = new PortableReaderExImpl(ctx,
+                    new PortableOffheapInputStream(ptr, size, false),
+                    start,
+                    null);
+
+                val = reader.unmarshalFieldByAbsolutePosition(fieldPos);
+            }
+        }
+
+        return (F)val;
     }
 
     /** {@inheritDoc} */
