@@ -723,9 +723,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             }
 
                             if (intercept) {
-                                Object interceptorVal = cacheCtx.config().getInterceptor()
-                                    .onBeforePut(new CacheLazyEntry(cacheCtx, key, e.cached().rawGetOrUnmarshal(true),
-                                        e.keepBinary()), CU.value(val, cacheCtx, false));
+                                Object interceptorVal = cacheCtx.config().getInterceptor().onBeforePut(
+                                    new CacheLazyEntry(
+                                        cacheCtx,
+                                        key,
+                                        e.cached().rawGetOrUnmarshal(true),
+                                        e.keepBinary()),
+                                    cacheCtx.cacheObjectContext().unwrapPortableIfNeeded(val, e.keepBinary(), false));
 
                                 if (interceptorVal == null)
                                     continue;
