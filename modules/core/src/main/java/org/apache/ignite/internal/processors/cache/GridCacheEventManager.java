@@ -26,7 +26,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -270,12 +269,12 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 type,
                 part,
                 cctx.isNear(),
-                key == null ? null : key.value(cctx.cacheObjectContext(), false),
+                cctx.cacheObjectContext().unwrapPortableIfNeeded(key, keepPortable, false),
                 xid,
                 lockId,
-                cctx.cacheObjectContext().unwrapPortableIfNeeded(newVal, keepPortable, true),
+                cctx.cacheObjectContext().unwrapPortableIfNeeded(newVal, keepPortable, false),
                 hasNewVal,
-                cctx.cacheObjectContext().unwrapPortableIfNeeded(oldVal, keepPortable, true),
+                cctx.cacheObjectContext().unwrapPortableIfNeeded(oldVal, keepPortable, false),
                 hasOldVal,
                 subjId,
                 cloClsName,

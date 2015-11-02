@@ -943,7 +943,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (doomed != null && ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
             // Event notification.
             ctx.events().addEvent(doomed.partition(), doomed.key(), locNodeId, (IgniteUuid)null, null,
-                EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null, null, null, false);
+                EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null, null, null, true);
 
         if (created != null) {
             // Event notification.
