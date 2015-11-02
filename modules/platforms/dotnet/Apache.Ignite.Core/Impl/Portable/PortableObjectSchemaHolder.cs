@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private PortableObjectSchemaField[] _fields = new PortableObjectSchemaField[16];
 
         /** Current field index. */
-        private int _idx = 0;
+        private int _idx;
 
         /// <summary>
         /// Adds a field to the holder.
