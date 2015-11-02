@@ -241,11 +241,11 @@ public class PortableBuilderImpl implements PortableBuilder {
             // Position reader on data.
             reader.position(start + hdrLen);
 
-            while (reader.position() < rawPos) {
+            while (reader.position() + 4 < rawPos) {
                 int fieldId = reader.readIntPositioned(footerPos);
-                int fieldLen = fieldPositionAndLength(footerPos, footerEnd, rawPos).get2();
+                int fieldLen = fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldOffsetSize).get2();
 
-                footerPos += 8;
+                footerPos += 4 + fieldOffsetSize;
 
                 if (assignedFldsById.containsKey(fieldId)) {
                     Object assignedVal = assignedFldsById.remove(fieldId);
@@ -399,21 +399,25 @@ public class PortableBuilderImpl implements PortableBuilder {
      * @param footerPos Field position inside the footer (absolute).
      * @param footerEnd Footer end (absolute).
      * @param rawPos Raw data position (absolute).
+     * @param fieldOffsetSize Size of field's offset.
      * @return Tuple with field position and length.
      */
-    private IgniteBiTuple<Integer, Integer> fieldPositionAndLength(int footerPos, int footerEnd, int rawPos) {
-        int fieldOffset = reader.readIntPositioned(footerPos + 4);
+    private IgniteBiTuple<Integer, Integer> fieldPositionAndLength(int footerPos, int footerEnd, int rawPos,
+        int fieldOffsetSize) {
+        // Get field offset first.
+        int fieldOffset = PortableUtils.fieldOffsetRelative(reader, footerPos + 4, fieldOffsetSize);
         int fieldPos = start + fieldOffset;
 
         // Get field length.
         int fieldLen;
 
-        if (footerPos + 8 == footerEnd)
+        if (footerPos + 4 + fieldOffsetSize == footerEnd)
             // This is the last field, compare to raw offset.
             fieldLen = rawPos - fieldPos;
         else {
             // Field is somewhere in the middle, get difference with the next offset.
-            int nextFieldOffset = reader.readIntPositioned(footerPos + 8 + 4);
+            int nextFieldOffset = PortableUtils.fieldOffsetRelative(reader, footerPos + 4 + fieldOffsetSize + 4,
+                fieldOffsetSize);
 
             fieldLen = nextFieldOffset - fieldOffset;
         }
@@ -437,17 +441,18 @@ public class PortableBuilderImpl implements PortableBuilder {
 
             int rawPos = PortableUtils.rawOffsetAbsolute(reader, start, fieldOffsetSize);
 
-            while (footerPos < footerEnd) {
+            while (footerPos + 4 < footerEnd) {
                 int fieldId = reader.readIntPositioned(footerPos);
 
-                IgniteBiTuple<Integer, Integer> posAndLen = fieldPositionAndLength(footerPos, footerEnd, rawPos);
+                IgniteBiTuple<Integer, Integer> posAndLen =
+                    fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldOffsetSize);
 
                 Object val = reader.getValueQuickly(posAndLen.get1(), posAndLen.get2());
 
                 readCache.put(fieldId, val);
 
                 // Shift current footer position.
-                footerPos += 8;
+                footerPos += 4 + fieldOffsetSize;
             }
 
             this.readCache = readCache;

@@ -55,6 +55,7 @@ public class PortableFieldImpl implements PortableField {
 
         int order = fieldOrder(obj0);
 
+        // TODO: Fix me!
         return order != 0 ? (T)obj0.fieldByOffset(order * 8 + 4) : null;
     }
 
