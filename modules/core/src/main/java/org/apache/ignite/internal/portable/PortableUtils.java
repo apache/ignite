@@ -676,4 +676,25 @@ public class PortableUtils {
         else
             return OFFSET_4;
     }
+
+    /**
+     * Get relative field offset.
+     *
+     * @param stream Stream.
+     * @param pos Position.
+     * @param fieldOffsetSize Field offset size.
+     * @return Relative field offset.
+     */
+    public static int fieldOffsetRelative(PortablePositionReadable stream, int pos, int fieldOffsetSize) {
+        int res;
+
+        if (fieldOffsetSize == PortableUtils.OFFSET_1)
+            res = (int)stream.readBytePositioned(pos) & 0xFF;
+        else if (fieldOffsetSize == PortableUtils.OFFSET_2)
+            res = (int)stream.readShortPositioned(pos) & 0xFFFF;
+        else
+            res = stream.readIntPositioned(pos);
+
+        return res;
+    }
 }

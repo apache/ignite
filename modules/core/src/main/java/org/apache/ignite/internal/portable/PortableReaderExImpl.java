@@ -2606,14 +2606,14 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 int id0 = in.readIntPositioned(searchPos);
 
                 if (id0 == id) {
-                    int pos = start + in.readIntPositioned(searchPos + 4);
+                    int pos = start + PortableUtils.fieldOffsetRelative(in, searchPos + 4, offsetSize);
 
                     in.position(pos);
 
                     return pos;
                 }
 
-                searchPos += 8;
+                searchPos += 4 + offsetSize;
             }
         }
         else {
@@ -2634,7 +2634,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             int order = schema.order(id);
 
             if (order != 0) {
-                int pos = start + in.readIntPositioned(footerStart + order * 8 + 4);
+                int offsetPos = footerStart + order * (4 + offsetSize) + 4;
+
+                int pos = start + PortableUtils.fieldOffsetRelative(in, offsetPos, offsetSize);
 
                 in.position(pos);
 
