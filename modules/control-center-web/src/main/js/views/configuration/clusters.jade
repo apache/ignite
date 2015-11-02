@@ -35,7 +35,7 @@ block content
                         button.btn.btn-primary(id='new-item' ng-click='createItem()') Add cluster
                     +save-remove-buttons('cluster')
                     .panel-tip-container(ng-show='backupItem')
-                        a.btn.btn-primary(id='reset-item' ng-disabled='!ui.isDirty()' ng-click='resetAll()' bs-tooltip data-title='Reset current cluster' data-placement='bottom' data-trigger='hover') Reset
+                        a.btn.btn-primary(id='reset-item-top' ng-disabled='!ui.isDirty()' ng-click='ui.isDirty() ? resetAll() : ""' bs-tooltip data-title='Reset current cluster' data-placement='bottom' data-trigger='hover') Reset
                     hr
                 form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate unsaved-warning-form)
                     .panel-group(bs-collapse ng-model='panels.activePanels' data-allow-multiple='true' ng-click='triggerDigest = true')
@@ -47,4 +47,4 @@ block content
                     .section(ng-show='ui.expanded')
                         +save-remove-buttons('cluster')
                         .panel-tip-container(ng-show='backupItem')
-                            a.btn.btn-primary(id='reset-item' ng-disabled='!ui.isDirty()' ng-click='resetAll()' bs-tooltip data-title='Reset current cluster' data-placement='bottom' data-trigger='hover') Reset
+                            a.btn.btn-primary(id='reset-item-bottom' ng-disabled='!ui.isDirty()' ng-click='ui.isDirty() ? resetAll() : ""' bs-tooltip data-title='Reset current cluster' data-placement='bottom' data-trigger='hover') Reset

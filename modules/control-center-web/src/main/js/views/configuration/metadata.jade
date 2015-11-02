@@ -60,7 +60,7 @@ block content
                         button.btn.btn-primary(ng-click='showLoadMetadataModal()') Load from database
                     +save-remove-buttons('metadata')
                     .panel-tip-container(ng-show='backupItem')
-                        a.btn.btn-primary(id='reset-item' ng-disabled='!ui.isDirty()' ng-click='resetAll()' bs-tooltip data-title='Reset current metadata' data-placement='bottom' data-trigger='hover') Reset
+                        a.btn.btn-primary(id='reset-item-top' ng-disabled='!ui.isDirty()' ng-click='ui.isDirty() ? resetAll() : ""' bs-tooltip data-title='Reset current metadata' data-placement='bottom' data-trigger='hover') Reset
                 hr
                 form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow((displayedRows | metadatasValidation:ui.showValid:true), selectedItem)' novalidate unsaved-warning-form)
                     .panel-group(bs-collapse ng-model='panels.activePanels' data-allow-multiple='true')
@@ -68,4 +68,4 @@ block content
                     .section
                         +save-remove-buttons('metadata')
                         .panel-tip-container(ng-show='backupItem')
-                            a.btn.btn-primary(id='reset-item' ng-disabled='!ui.isDirty()' ng-click='resetAll()' bs-tooltip data-title='Reset current metadata' data-placement='bottom' data-trigger='hover') Reset
+                            a.btn.btn-primary(id='reset-item-bottom' ng-disabled='!ui.isDirty()' ng-click='ui.isDirty() ? resetAll() : ""' bs-tooltip data-title='Reset current metadata' data-placement='bottom' data-trigger='hover') Reset
