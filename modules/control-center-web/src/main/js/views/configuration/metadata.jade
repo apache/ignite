@@ -39,8 +39,8 @@ block content
                                     .col-sm-8.pull-right(style='padding: 0')
                                         .col-sm-6
                                             .pull-right.labelLogin.additional-filter(ng-if='(metadatas | metadatasValidation:false:true).length > 0')
-                                                a.labelFormField(ng-if='ui.showValid' ng-click='ui.showValid = !ui.showValid') Key fields should be configured: {{(displayedRows | metadatasValidation:false:true).length}}&nbsp
-                                                a.labelFormField(ng-if='!ui.showValid' ng-click='ui.showValid = !ui.showValid') Show all metadata: {{displayedRows.length}}&nbsp
+                                                a.labelFormField(ng-if='ui.showValid' ng-click='toggleValid()') Key fields should be configured: {{(displayedRows | metadatasValidation:false:true).length}}&nbsp
+                                                a.labelFormField(ng-if='!ui.showValid' ng-click='toggleValid()') Show all metadata: {{displayedRows.length}}&nbsp
                                         .col-sm-6
                                             input.form-control.pull-right(type='text' st-search='' placeholder='Filter metadatas...')
                             tbody

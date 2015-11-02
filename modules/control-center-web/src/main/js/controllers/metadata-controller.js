@@ -985,7 +985,21 @@ consoleModule.controller('metadataController', [
                 return true;
             };
 
-            var pairFields = {
+            $scope.toggleValid = function () {
+                $scope.ui.showValid = !$scope.ui.showValid;
+
+                var validFilter = $filter('metadatasValidation');
+
+                var idx = _.findIndex(validFilter($scope.metadatas, $scope.ui.showValid, true), function (metadata) {
+                    return metadata._id == $scope.selectedItem._id;
+                });
+
+                if (idx == -1)
+                    $scope.selectItem(undefined, undefined);
+            };
+
+
+        var pairFields = {
                 fields: {msg: 'Query field class', id: 'QryField', idPrefix: 'Key', searchCol: 'name', valueCol: 'key', classValidation: true, dupObjName: 'name'},
                 aliases: {id: 'Alias', idPrefix: 'Value', searchCol: 'alias', valueCol: 'value', dupObjName: 'alias'}
             };
