@@ -230,7 +230,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         typeId = in.readIntPositioned(start + GridPortableMarshaller.TYPE_ID_POS);
 
-        IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(in, start);
+        IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(in, start, offsetSize);
 
         footerStart = footer.get1();
         footerLen = footer.get2() - footerStart;

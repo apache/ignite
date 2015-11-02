@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DFLT_HDR_LEN;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLAGS_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.HASH_CODE_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PROTO_VER_POS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.TYPE_ID_POS;
@@ -77,12 +78,13 @@ public class PortableBuilderImpl implements PortableBuilder {
     /** Position of object in source array, or -1 if object is not created from PortableObject. */
     private final int start;
 
+    /** Flags. */
+    private final short flags;
+
     /** Total header length */
     private final int hdrLen;
 
-    /**
-     * Context of PortableObject reading process. Or {@code null} if object is not created from PortableObject.
-     */
+    /** Context of PortableObject reading process. Or {@code null} if object is not created from PortableObject. */
     private final PortableBuilderReader reader;
 
     /** */
@@ -115,6 +117,7 @@ public class PortableBuilderImpl implements PortableBuilder {
         this.ctx = ctx;
 
         start = -1;
+        flags = -1;
         reader = null;
         hdrLen = DFLT_HDR_LEN;
 
@@ -137,6 +140,7 @@ public class PortableBuilderImpl implements PortableBuilder {
     PortableBuilderImpl(PortableBuilderReader reader, int start) {
         this.reader = reader;
         this.start = start;
+        this.flags = reader.readShortPositioned(start + FLAGS_POS);
 
         byte ver = reader.readBytePositioned(start + PROTO_VER_POS);
 
@@ -224,7 +228,9 @@ public class PortableBuilderImpl implements PortableBuilder {
                 assignedFldsById = Collections.emptyMap();
 
             // Get footer details.
-            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start);
+            int fieldOffsetSize = PortableUtils.fieldOffsetSize(flags);
+
+            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start, fieldOffsetSize);
 
             int footerPos = footer.get1();
             int footerEnd = footer.get2();
@@ -418,9 +424,11 @@ public class PortableBuilderImpl implements PortableBuilder {
      */
     private void ensureReadCacheInit() {
         if (readCache == null) {
+            int fieldOffsetSize = PortableUtils.fieldOffsetSize(flags);
+
             Map<Integer, Object> readCache = new HashMap<>();
 
-            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start);
+            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start, fieldOffsetSize);
 
             int footerPos = footer.get1();
             int footerEnd = footer.get2();

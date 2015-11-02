@@ -619,14 +619,16 @@ public class PortableUtils {
      *
      * @param in Input stream.
      * @param start Start position.
+     * @param fieldOffsetSize Field offset size.
      * @return Footer.
      */
-    public static IgniteBiTuple<Integer, Integer> footerAbsolute(PortablePositionReadable in, int start) {
+    public static IgniteBiTuple<Integer, Integer> footerAbsolute(PortablePositionReadable in, int start,
+        int fieldOffsetSize) {
         int footerStart = footerStartRelative(in, start);
         int footerEnd = length(in, start);
 
         // Take in count possible raw offset.
-        if ((((footerEnd - footerStart) >> 2) & 0x1) == 0x1)
+        if ((footerEnd - footerStart) % (4 + fieldOffsetSize) != 0)
             footerEnd -= 4;
 
         return F.t(start + footerStart, start + footerEnd);
