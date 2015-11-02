@@ -53,9 +53,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="fields">Fields.</param>
         /// <param name="stream">Stream.</param>
-        /// <param name="start">Start index.</param>
         /// <param name="count">Field count to write.</param>
-        public static unsafe void WriteArray(PortableObjectSchemaField[] fields, IPortableStream stream, int start, int count)
+        public static unsafe void WriteArray(PortableObjectSchemaField[] fields, IPortableStream stream, int count)
         {
             Debug.Assert(fields != null);
             Debug.Assert(stream != null);
@@ -63,14 +62,14 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (BitConverter.IsLittleEndian)
             {
-                fixed (PortableObjectSchemaField* ptr = &fields[start])
+                fixed (PortableObjectSchemaField* ptr = &fields[0])
                 {
                     stream.Write((byte*) ptr, count * Size);
                 }
             }
             else
             {
-                for (int i = start; i < count + start; i++)
+                for (int i = 0; i < count; i++)
                 {
                     var field = fields[i];
 
