@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var count = _idx - offset;
 
-            _idx -= count;
+            _idx = offset;
 
             schemaId = Fnv1Hash.Basis;
 
