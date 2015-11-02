@@ -605,7 +605,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             isolation,
             accessTtl,
             CU.empty0(),
-            opCtx != null && opCtx.skipStore());
+            opCtx != null && opCtx.skipStore(),
+            opCtx != null && opCtx.isKeepPortable());
     }
 
     /**
@@ -632,7 +633,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         TransactionIsolation isolation,
         long accessTtl,
         CacheEntryPredicate[] filter,
-        boolean skipStore) {
+        boolean skipStore,
+        boolean keepBinary) {
         if (keys == null || keys.isEmpty())
             return new GridDhtFinishedFuture<>(true);
 
@@ -653,7 +655,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             tx.threadId(),
             accessTtl,
             filter,
-            skipStore);
+            skipStore,
+            keepBinary);
 
         for (KeyCacheObject key : keys) {
             try {
@@ -773,7 +776,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         req.threadId(),
                         req.accessTtl(),
                         filter,
-                        req.skipStore());
+                        req.skipStore(),
+                        req.keepBinary());
 
                     // Add before mapping.
                     if (!ctx.mvcc().addFuture(fut))
@@ -1126,7 +1130,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         CU.subjectId(tx, ctx.shared()),
                                         null,
                                         tx != null ? tx.resolveTaskName() : null,
-                                        null);
+                                        null,
+                                        req.keepBinary());
 
                                 assert e.lockedBy(mappedVer) ||
                                     (ctx.mvcc().isRemoved(e.context(), mappedVer) && req.timeout() > 0) :

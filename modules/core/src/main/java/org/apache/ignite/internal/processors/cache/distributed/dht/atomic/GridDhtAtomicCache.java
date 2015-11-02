@@ -973,7 +973,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 subjId,
                                 null,
                                 taskName,
-                                expiry);
+                                expiry,
+                                !deserializePortable);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {
@@ -1385,7 +1386,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         req.subjectId(),
                         entryProcessor,
                         taskName,
-                        null);
+                        null,
+                        req.keepBinary());
 
                     Object oldVal = null;
                     Object updatedVal = null;
@@ -1535,7 +1537,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             req.subjectId(),
                             null,
                             taskName,
-                            null);
+                            null,
+                            req.keepBinary());
 
                         Object val = ctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(ctx, entry.key(),
                             old, req.keepBinary()),
@@ -1573,7 +1576,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             req.subjectId(),
                             null,
                             taskName,
-                            null);
+                            null,
+                            req.keepBinary());
 
                         IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
                             .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), old, req.keepBinary()));

@@ -419,7 +419,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             subjId,
                             null,
                             taskName,
-                            expiryPlc);
+                            expiryPlc,
+                            !deserializePortable);
 
                         if (res != null) {
                             v = res.get1();
@@ -438,7 +439,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             subjId,
                             null,
                             taskName,
-                            expiryPlc);
+                            expiryPlc,
+                            !deserializePortable);
                     }
                 }
 
@@ -466,7 +468,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                                     subjId,
                                     null,
                                     taskName,
-                                    expiryPlc);
+                                    expiryPlc,
+                                    !deserializePortable);
 
                                 if (res != null) {
                                     v = res.get1();
@@ -485,7 +488,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                                     subjId,
                                     null,
                                     taskName,
-                                    expiryPlc);
+                                    expiryPlc,
+                                    !deserializePortable);
                             }
 
                             // Entry was not in memory or in swap, so we remove it from cache.
@@ -694,6 +698,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             info.ttl(),
                             info.expireTime(),
                             true,
+                            !deserializePortable,
                             topVer,
                             subjId);
                     }

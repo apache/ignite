@@ -721,7 +721,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 skipped,
                 accessTtl,
                 null,
-                skipStore);
+                skipStore,
+                keepBinary);
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
@@ -751,7 +752,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         final Set<KeyCacheObject> skipped,
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter,
-        boolean skipStore) {
+        boolean skipStore,
+        boolean keepBinary) {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys [passedKeys=" + passedKeys + ", skipped=" +
                 skipped + ']');
@@ -770,7 +772,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             isolation,
             accessTtl,
             CU.empty0(),
-            skipStore);
+            skipStore,
+            keepBinary);
 
         return new GridEmbeddedFuture<>(
             fut,

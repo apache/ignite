@@ -136,6 +136,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         int keyCnt,
         int txSize,
         boolean skipStore,
+        boolean keepBinary,
         boolean addDepInfo
     ) {
         super(lockVer, keyCnt, addDepInfo);
@@ -159,6 +160,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         retVals = new boolean[keyCnt];
 
         skipStore(skipStore);
+        keepBinary(keepBinary);
     }
 
     /**
@@ -243,6 +245,9 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         return (flags & SKIP_STORE_FLAG_MASK) == 1;
     }
 
+    /**
+     * @param keepBinary Keep binary flag.
+     */
     public void keepBinary(boolean keepBinary) {
         flags = keepBinary ? (byte)(flags | KEEP_BINARY_FLAG_MASK) : (byte)(flags & ~KEEP_BINARY_FLAG_MASK);
     }

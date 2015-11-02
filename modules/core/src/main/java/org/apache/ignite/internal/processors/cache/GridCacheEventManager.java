@@ -84,7 +84,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasOldVal,
         UUID subjId,
         String cloClsName,
-        String taskName)
+        String taskName,
+        boolean keepBinary)
     {
         addEvent(part,
             key,
@@ -99,7 +100,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             subjId,
             cloClsName,
             taskName,
-            false);
+            keepBinary);
     }
 
     /**

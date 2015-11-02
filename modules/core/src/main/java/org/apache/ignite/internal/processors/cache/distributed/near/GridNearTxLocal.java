@@ -1079,7 +1079,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         boolean implicit,
         boolean read,
         long accessTtl,
-        boolean skipStore) {
+        boolean skipStore,
+        boolean keepBinary) {
         assert pessimistic();
 
         try {
@@ -1108,7 +1109,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             isolation,
             accessTtl,
             CU.empty0(),
-            skipStore);
+            skipStore,
+            keepBinary);
 
         return new GridEmbeddedFuture<>(
             fut,

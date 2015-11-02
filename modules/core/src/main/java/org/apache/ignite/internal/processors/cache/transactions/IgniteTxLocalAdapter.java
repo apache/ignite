@@ -467,7 +467,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             CU.subjectId(this, cctx),
                             null,
                             resolveTaskName(),
-                            expiryPlc);
+                            expiryPlc,
+                            txEntry.keepBinary());
 
                         if (res == null) {
                             if (misses == null)
@@ -1419,7 +1420,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 CU.subjectId(this, cctx),
                                 transformClo,
                                 resolveTaskName(),
-                                null);
+                                null,
+                                txEntry.keepBinary());
 
                             if (val != null) {
                                 if (!readCommitted() && !skipVals)
@@ -1478,7 +1480,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                         CU.subjectId(this, cctx),
                                         null,
                                         resolveTaskName(),
-                                        accessPlc) : null;
+                                        accessPlc,
+                                        txEntry.keepBinary()) : null;
 
                                 if (res != null) {
                                     val = res.get1();
@@ -1497,7 +1500,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     CU.subjectId(this, cctx),
                                     null,
                                     resolveTaskName(),
-                                    accessPlc);
+                                    accessPlc,
+                                    txEntry.keepBinary());
                             }
 
                             if (val != null) {
@@ -1822,7 +1826,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                         CU.subjectId(IgniteTxLocalAdapter.this, cctx),
                                         transformClo,
                                         resolveTaskName(),
-                                        null);
+                                        null,
+                                        txEntry.keepBinary());
 
                                     // If value is in cache and passed the filter.
                                     if (val != null) {
@@ -2159,7 +2164,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                                 CU.subjectId(this, cctx),
                                                 entryProcessor,
                                                 resolveTaskName(),
-                                                null) : null;
+                                                null,
+                                                txEntry.keepBinary()) : null;
 
                                         if (res != null) {
                                             old = res.get1();
@@ -2178,7 +2184,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             CU.subjectId(this, cctx),
                                             entryProcessor,
                                             resolveTaskName(),
-                                            null);
+                                            null,
+                                            txEntry.keepBinary());
                                     }
                                 }
                                 catch (ClusterTopologyCheckedException e) {
@@ -2569,7 +2576,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     CU.subjectId(this, cctx),
                                     null,
                                     resolveTaskName(),
-                                    null);
+                                    null,
+                                    txEntry.keepBinary());
                             }
                         }
                         else {

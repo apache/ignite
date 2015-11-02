@@ -674,7 +674,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         UUID subjId,
         Object transformClo,
         String taskName,
-        @Nullable IgniteCacheExpiryPolicy expirePlc)
+        @Nullable IgniteCacheExpiryPolicy expirePlc,
+        boolean keepBinary)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         return (CacheObject)innerGet0(tx,
             readSwap,
@@ -687,7 +688,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             transformClo,
             taskName,
             expirePlc,
-            false);
+            false,
+            keepBinary);
     }
 
     /** {@inheritDoc} */
@@ -700,7 +702,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         UUID subjId,
         Object transformClo,
         String taskName,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc)
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean keepBinary)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         return (T2<CacheObject, GridCacheVersion>)innerGet0(tx,
             readSwap,
@@ -713,7 +716,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             transformClo,
             taskName,
             expiryPlc,
-            true);
+            true,
+            keepBinary);
     }
 
     /** {@inheritDoc} */
@@ -729,8 +733,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean retVer)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
+        boolean retVer,
+        boolean keepBinary
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert !(retVer && readThrough);
 
         // Disable read-through if there is no store.
@@ -854,7 +859,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         expiredVal != null || hasOldBytes,
                         subjId,
                         null,
-                        taskName);
+                        taskName,
+                        keepBinary);
                 }
 
                 cctx.continuousQueries().onEntryExpired(this, key, expiredVal);
@@ -864,9 +870,20 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (evt && !expired && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
-                cctx.events().addEvent(partition(), key, tx, owner, EVT_CACHE_OBJECT_READ, ret, ret != null, old,
-                    hasOldBytes || old != null, subjId,
-                    transformClo != null ? transformClo.getClass().getName() : null, taskName);
+                cctx.events().addEvent(
+                    partition(),
+                    key,
+                    tx,
+                    owner,
+                    EVT_CACHE_OBJECT_READ,
+                    ret,
+                    ret != null,
+                    old,
+                    hasOldBytes || old != null,
+                    subjId,
+                    transformClo != null ? transformClo.getClass().getName() : null,
+                    taskName,
+                    keepBinary);
 
                 // No more notifications.
                 evt = false;
@@ -941,9 +958,20 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
 
                 if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
-                    cctx.events().addEvent(partition(), key, tx, owner, EVT_CACHE_OBJECT_READ, ret, ret != null,
-                        old, hasOldBytes, subjId, transformClo != null ? transformClo.getClass().getName() : null,
-                        taskName);
+                    cctx.events().addEvent(
+                        partition(),
+                        key,
+                        tx,
+                        owner,
+                        EVT_CACHE_OBJECT_READ,
+                        ret,
+                        ret != null,
+                        old,
+                        hasOldBytes,
+                        subjId,
+                        transformClo != null ? transformClo.getClass().getName() : null,
+                        taskName,
+                        keepBinary);
             }
         }
 

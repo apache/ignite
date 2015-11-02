@@ -361,7 +361,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         null,
                         null,
                         null,
-                        null);
+                        null,
+                        txEntry.keepBinary());
 
                     if (retVal || txEntry.op() == TRANSFORM) {
                         if (!F.isEmpty(txEntry.entryProcessors())) {

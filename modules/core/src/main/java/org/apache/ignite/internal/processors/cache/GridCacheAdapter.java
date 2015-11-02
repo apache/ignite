@@ -1620,7 +1620,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 subjId,
                                 null,
                                 taskName,
-                                expiry);
+                                expiry,
+                                !deserializePortable);
 
                             if (res == null) {
                                 if (storeEnabled) {
@@ -4603,7 +4604,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             null,
             null,
-            null);
+            null,
+            !deserializePortable);
 
         if (val == null)
             return null;

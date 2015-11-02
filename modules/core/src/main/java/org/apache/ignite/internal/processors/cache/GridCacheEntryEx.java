@@ -303,7 +303,8 @@ public interface GridCacheEntryEx {
         UUID subjId,
         Object transformClo,
         String taskName,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc)
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean keepBinary)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -329,7 +330,8 @@ public interface GridCacheEntryEx {
         UUID subjId,
         Object transformClo,
         String taskName,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc)
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean keepBinary)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

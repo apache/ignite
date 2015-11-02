@@ -418,7 +418,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                     subjId,
                                     null,
                                     taskName,
-                                    expiryPlc);
+                                    expiryPlc,
+                                    !deserializePortable);
 
                                 if (res != null) {
                                     v = res.get1();
@@ -437,7 +438,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                     subjId,
                                     null,
                                     taskName,
-                                    expiryPlc);
+                                    expiryPlc,
+                                    !deserializePortable);
                             }
 
                             colocated.context().evicts().touch(entry, topVer);
