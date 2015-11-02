@@ -639,7 +639,7 @@ public class IgfsWriteFailoverCleanupSelfTest extends IgfsCommonAbstractTest {
 
         GridCacheAdapter<IgniteUuid, IgfsFileInfo> metaCache = getMetaCache(igfs);
 
-        IgfsMetaManager meta = igfs.getMeta();
+        IgfsMetaManager meta = igfs.context().meta();
 
         Map<IgniteUuid, IgfsPath> id2path = new HashMap<>();
 

@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -112,9 +111,6 @@ public class IgfsDataManager extends IgfsManager {
 
     /** Data input writer. */
     private DataInputBlocksWriter dataInputWriter = new DataInputBlocksWriter();
-
-    /** Pending writes future. */
-    private ConcurrentMap<IgniteUuid, WriteCompletionFuture> pendingWrites = new ConcurrentHashMap8<>();
 
     /** Affinity key generator. */
     private AtomicLong affKeyGen = new AtomicLong();
@@ -427,40 +423,14 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
-     * Registers write future in igfs data manager.
-     *
-     * @param fileInfo File info of file opened to write.
-     * @return Future that will be completed when all ack messages are received or when write failed.
-     */
-    public IgniteInternalFuture<Boolean> writeStart(IgfsFileInfo fileInfo) {
-        WriteCompletionFuture fut = new WriteCompletionFuture(fileInfo.id());
-
-        WriteCompletionFuture oldFut = pendingWrites.putIfAbsent(fileInfo.id(), fut);
-
-        assert oldFut == null : "Opened write that is being concurrently written: " + fileInfo;
-
-        if (log.isDebugEnabled())
-            log.debug("Registered write completion future for file output stream [fileInfo=" + fileInfo +
-                ", fut=" + fut + ']');
-
-        return fut;
-    }
-
-    /**
      * Notifies data manager that no further writes will be performed on stream.
      *
-     * @param fileInfo File info being written.
+     * @param fut File info being written.
      */
-    public void writeClose(IgfsFileInfo fileInfo) {
-        WriteCompletionFuture fut = pendingWrites.get(fileInfo.id());
+    public void writeClose(WriteCompletionFuture fut) {
+        assert fut != null;
 
-        if (fut != null)
-            fut.markWaitingLastAck();
-        else {
-            if (log.isDebugEnabled())
-                log.debug("Failed to find write completion future for file in pending write map (most likely it was " +
-                    "failed): " + fileInfo);
-        }
+        fut.markWaitingLastAck();
     }
 
     /**
@@ -487,12 +457,13 @@ public class IgfsDataManager extends IgfsManager {
         ByteBuffer data,
         boolean flush,
         IgfsFileAffinityRange affinityRange,
-        @Nullable IgfsFileWorkerBatch batch
+        @Nullable IgfsFileWorkerBatch batch,
+        WriteCompletionFuture fut
     ) throws IgniteCheckedException {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
         return byteBufWriter.storeDataBlocks(fileInfo, reservedLen, remainder, remainderLen, data, data.remaining(),
-            flush, affinityRange, batch);
+            flush, affinityRange, batch, fut);
     }
 
     /**
@@ -521,12 +492,13 @@ public class IgfsDataManager extends IgfsManager {
         int len,
         boolean flush,
         IgfsFileAffinityRange affinityRange,
-        @Nullable IgfsFileWorkerBatch batch
+        @Nullable IgfsFileWorkerBatch batch,
+        WriteCompletionFuture fut
     ) throws IgniteCheckedException, IOException {
         //assert validTxState(any); // Allow this method call for any transaction state.
 
         return dataInputWriter.storeDataBlocks(fileInfo, reservedLen, remainder, remainderLen, in, len, flush,
-            affinityRange, batch);
+            affinityRange, batch, fut);
     }
 
     /**
@@ -940,17 +912,16 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
-     * @param fileId File ID.
+     * @param completionFut Completion future..
      * @param blocks Blocks to put in cache.
      * @throws IgniteCheckedException If batch processing failed.
      */
-    private void processBatch(IgniteUuid fileId, final Map<IgfsBlockKey, byte[]> blocks) throws IgniteCheckedException {
-        final WriteCompletionFuture completionFut = pendingWrites.get(fileId);
-
+    private void processBatch(final WriteCompletionFuture completionFut,
+        final Map<IgfsBlockKey, byte[]> blocks) throws IgniteCheckedException {
         if (completionFut == null) {
             if (log.isDebugEnabled())
                 log.debug("Missing completion future for file write request (most likely exception occurred " +
-                    "which will be thrown upon stream close) [fileId=" + fileId + ']');
+                    "which will be thrown upon stream close) [fileId=" + completionFut.fileId + ']');
 
             return;
         }
@@ -1177,7 +1148,8 @@ public class IgfsDataManager extends IgfsManager {
             int srcLen,
             boolean flush,
             IgfsFileAffinityRange affinityRange,
-            @Nullable IgfsFileWorkerBatch batch
+            @Nullable IgfsFileWorkerBatch batch,
+            WriteCompletionFuture fut
         ) throws IgniteCheckedException {
             final IgniteUuid id = fileInfo.id();
             final int blockSize = fileInfo.blockSize();
@@ -1236,7 +1208,7 @@ public class IgfsDataManager extends IgfsManager {
                         assert written + portion.length == len;
 
                         if (!nodeBlocks.isEmpty()) {
-                            processBatch(id, nodeBlocks);
+                            processBatch(fut, nodeBlocks);
 
                             metrics.addWriteBlocks(1, 0);
                         }
@@ -1258,7 +1230,7 @@ public class IgfsDataManager extends IgfsManager {
                 int writtenTotal = 0;
 
                 if (!nodeBlocks.isEmpty()) {
-                    processBatch(id, nodeBlocks);
+                    processBatch(fut, nodeBlocks);
 
                     writtenTotal = nodeBlocks.size();
                 }
@@ -1283,7 +1255,7 @@ public class IgfsDataManager extends IgfsManager {
 
             // Process final batch, if exists.
             if (!nodeBlocks.isEmpty()) {
-                processBatch(id, nodeBlocks);
+                processBatch(fut, nodeBlocks);
 
                 metrics.addWriteBlocks(nodeBlocks.size(), 0);
             }
@@ -1361,8 +1333,9 @@ public class IgfsDataManager extends IgfsManager {
          */
         private UpdateProcessor(int start, byte[] data) {
             assert start >= 0;
-            assert start + (data == null ? 0 : data.length) >= 0 : "Too much data [start=" + start
-                + ", data.length=" + (data == null ? 0 : data.length) + ']';
+            assert data != null;
+            assert start + data.length >= 0 : "Too much data [start=" + start
+                + ", data.length=" + data.length + ']';
 
             this.start = start;
             this.data = data;
@@ -1371,20 +1344,6 @@ public class IgfsDataManager extends IgfsManager {
         /** {@inheritDoc} */
         @Override public Void process(MutableEntry<IgfsBlockKey, byte[]> entry, Object... args) {
             byte[] e = entry.getValue();
-
-            if (data == null) {
-                // In this case we don't write any new data,
-                // just truncate the existing entry data to have "start" length, if needed:
-                if (e != null && e.length > start) {
-                    byte[] tmp = new byte[start];
-
-                    U.arrayCopy(e, 0, tmp, 0, start);
-
-                    entry.setValue(tmp);
-                }
-
-                return null;
-            }
 
             final int size = data.length;
 
@@ -1422,6 +1381,68 @@ public class IgfsDataManager extends IgfsManager {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(UpdateProcessor.class, this, "start", start, "data.length", data.length);
+        }
+    }
+
+    /**
+     *
+     */
+    private static final class TruncateDataBlockProcessor implements EntryProcessor<IgfsBlockKey, byte[], Void>,
+        Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Start position in the block to write new data from. */
+        private int len;
+
+        /**
+         * Empty constructor required for {@link Externalizable}.
+         *
+         */
+        public TruncateDataBlockProcessor() {
+            // No-op.
+        }
+
+        /**
+         * Constructs update data block closure.
+         *
+         * @param len Block length to truncate the data to.
+         */
+        private TruncateDataBlockProcessor(int len) {
+            assert len >= 0;
+
+            this.len = len;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void process(MutableEntry<IgfsBlockKey, byte[]> entry, Object... args) {
+            byte[] e = entry.getValue();
+
+            // Truncate the existing entry data to have "start" length, if needed:
+            if (e != null && e.length > len) {
+                byte[] tmp = new byte[len];
+
+                U.arrayCopy(e, 0, tmp, 0, len);
+
+                entry.setValue(tmp);
+            }
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeInt(len);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException {
+            len = in.readInt();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TruncateDataBlockProcessor.class, this, "len", len);
         }
     }
 
@@ -1543,24 +1564,24 @@ public class IgfsDataManager extends IgfsManager {
         }
     }
 
-    /**
-     * Allows output stream to await for all current acks.
-     *
-     * @param fileId File ID.
-     * @throws IgniteInterruptedCheckedException In case of interrupt.
-     */
-    void awaitAllAcksReceived(IgniteUuid fileId) throws IgniteInterruptedCheckedException {
-        WriteCompletionFuture fut = pendingWrites.get(fileId);
-
-        if (fut != null)
-            fut.awaitAllAcksReceived();
-    }
+//    /**
+//     * Allows output stream to await for all current acks.
+//     *
+//     * @param fileId File ID.
+//     * @throws IgniteInterruptedCheckedException In case of interrupt.
+//     */
+//    void awaitAllAcksReceived(IgniteUuid fileId) throws IgniteInterruptedCheckedException {
+//        WriteCompletionFuture fut = pendingWrites.get(fileId);
+//
+//        if (fut != null)
+//            fut.awaitAllAcksReceived();
+//    }
 
     /**
      * Future that is completed when all participating
      * parts of the file are written.
      */
-    private class WriteCompletionFuture extends GridFutureAdapter<Boolean> {
+    public static class WriteCompletionFuture extends GridFutureAdapter<Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1568,7 +1589,7 @@ public class IgfsDataManager extends IgfsManager {
         private final IgniteUuid fileId;
 
         /** Non-completed blocks count. It may both increase and decrease. */
-        private final AtomicInteger completedBlocksCnt = new AtomicInteger(0);
+        private final AtomicInteger awaitingAckBlocksCnt = new AtomicInteger(0);
 
         /** Lock for map-related conditions. */
         private final Lock lock = new ReentrantLock();
@@ -1582,7 +1603,7 @@ public class IgfsDataManager extends IgfsManager {
         /**
          * @param fileId File id.
          */
-        private WriteCompletionFuture(IgniteUuid fileId) {
+        WriteCompletionFuture(IgniteUuid fileId) {
             assert fileId != null;
 
             this.fileId = fileId;
@@ -1593,11 +1614,12 @@ public class IgfsDataManager extends IgfsManager {
          *
          * @throws IgniteInterruptedCheckedException In case of interrupt.
          */
+        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         public void awaitAllAcksReceived() throws IgniteInterruptedCheckedException {
             lock.lock();
 
             try {
-                while (completedBlocksCnt.get() > 0)
+                while (!isDone() && awaitingAckBlocksCnt.get() > 0)
                     U.await(allAcksRcvCond);
             }
             finally {
@@ -1607,16 +1629,13 @@ public class IgfsDataManager extends IgfsManager {
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
-            assert err != null || completedBlocksCnt.get() == 0;
+            assert err != null || awaitingAckBlocksCnt.get() == 0;
 
-            if (!isDone()) {
-                pendingWrites.remove(fileId, this);
+            boolean res1 = super.onDone(res, err);
 
-                if (super.onDone(res, err))
-                    return true;
-            }
+            signalNoAcks();
 
-            return false;
+            return res1;
         }
 
         /**
@@ -1626,7 +1645,7 @@ public class IgfsDataManager extends IgfsManager {
             assert !awaitingLast; // Writing is finished, we should not receive more write requests.
 
             if (!isDone())
-                completedBlocksCnt.incrementAndGet();
+                awaitingAckBlocksCnt.incrementAndGet();
         }
 
         /**
@@ -1635,10 +1654,6 @@ public class IgfsDataManager extends IgfsManager {
          * @param e Caught exception.
          */
         private void onError(IgniteCheckedException e) {
-            completedBlocksCnt.set(0);
-
-            signalNoAcks();
-
             if (e.hasCause(IgfsOutOfSpaceException.class))
                 onDone(new IgniteCheckedException("Failed to write data (not enough space on node): ", e));
             else
@@ -1647,19 +1662,21 @@ public class IgfsDataManager extends IgfsManager {
         }
 
         /**
-         * Write ack received from node with given ID for given batch ID.
+         * Write ack received.
          */
         private void onWriteAck() {
             if (!isDone()) {
-                int afterAck = completedBlocksCnt.decrementAndGet();
+                int afterAck = awaitingAckBlocksCnt.decrementAndGet();
 
+                // This assertion is true because the number of counter decrements cannot exceed
+                // the number of counter increments:
                 assert afterAck >= 0 : "Received acknowledgement message for not registered batch.";
 
                 if (afterAck == 0) {
-                    signalNoAcks();
-
                     if (awaitingLast)
                         onDone(true);
+                    else
+                        signalNoAcks();
                 }
             }
         }
@@ -1684,10 +1701,7 @@ public class IgfsDataManager extends IgfsManager {
         private void markWaitingLastAck() {
             awaitingLast = true;
 
-            if (log.isDebugEnabled())
-                log.debug("Marked write completion future as awaiting last ack: " + fileId);
-
-            if (completedBlocksCnt.get() == 0)
+            if (awaitingAckBlocksCnt.get() == 0)
                 onDone(true);
         }
     }
@@ -1728,7 +1742,7 @@ public class IgfsDataManager extends IgfsManager {
         if (lastBlockLen > 0) {
             IgfsBlockKey lastKey = blockKey(blockIdx1, info);
 
-            dataCachePrj.invoke(lastKey, new UpdateProcessor(lastBlockLen, null));
+            dataCachePrj.invoke(lastKey, new TruncateDataBlockProcessor(lastBlockLen));
         }
     }
 

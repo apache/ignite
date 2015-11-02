@@ -29,9 +29,7 @@ import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -80,7 +78,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     private int remainderDataLen;
 
     /** Write completion future. */
-    private final IgniteInternalFuture<Boolean> writeCompletionFut;
+    private final IgfsDataManager.WriteCompletionFuture writeCompletionFut;
 
     /** IGFS mode. */
     private final IgfsMode mode;
@@ -138,7 +136,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
 
         fileName = path.name();
 
-        writeCompletionFut = data.writeStart(fileInfo);
+        writeCompletionFut = new IgfsDataManager.WriteCompletionFuture(fileInfo.id());
     }
 
     /**
@@ -205,7 +203,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         }
         else {
             remainder = data.storeDataBlocks(fileInfo, fileInfo.length() + space, remainder, remainderDataLen, block,
-                false, streamRange, batch);
+                false, streamRange, batch, writeCompletionFut);
 
             remainderDataLen = remainder == null ? 0 : remainder.length;
         }
@@ -238,7 +236,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         }
         else {
             remainder = data.storeDataBlocks(fileInfo, fileInfo.length() + space, remainder, remainderDataLen, in, len,
-                false, streamRange, batch);
+                false, streamRange, batch, writeCompletionFut);
 
             remainderDataLen = remainder == null ? 0 : remainder.length;
         }
@@ -254,7 +252,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
 
         // Check if any exception happened while writing data.
         if (writeCompletionFut.isDone()) {
-            assert ((GridFutureAdapter)writeCompletionFut).isFailed();
+            assert writeCompletionFut.isFailed();
 
             if (in != null)
                 in.skipBytes(len);
@@ -319,7 +317,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         try {
             if (remainder != null) {
                 data.storeDataBlocks(fileInfo, fileInfo.length() + space, null, 0,
-                    ByteBuffer.wrap(remainder, 0, remainderDataLen), true, streamRange, batch);
+                    ByteBuffer.wrap(remainder, 0, remainderDataLen), true, streamRange, batch, writeCompletionFut);
 
                 remainder = null;
                 remainderDataLen = 0;
@@ -329,7 +327,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                 fileInfo.length() + space, expWriteAmount);
 
             if (space > 0 || newReservedDelta > fileInfo.reservedDelta()) {
-                data.awaitAllAcksReceived(fileInfo.id());
+                writeCompletionFut.awaitAllAcksReceived();
 
                 IgfsFileInfo fileInfo0 = meta.updateInfo(fileInfo.id(),
                     new UpdateLengthClosure(space, newReservedDelta, streamRange));
@@ -385,7 +383,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                 IOException err = null;
 
                 try {
-                    data.writeClose(fileInfo);
+                    data.writeClose(writeCompletionFut);
 
                     writeCompletionFut.get(); // Wait all the data are committed into data cache.
                 }
@@ -407,8 +405,30 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                     }
                 }
 
+                IgfsFileInfo fi;
+
+                try {
+                    // Zero the reserved delta:
+                    fi = meta.updateInfo(fileInfo.id(), new UpdateLengthClosure(0L, 0L, streamRange));
+
+                    if (fi == null) {
+                        data.delete(fileInfo); // Safety to ensure that all data blocks are deleted.
+
+                        throw new IOException("File was concurrently deleted: " + path);
+                    }
+                    else
+                        fileInfo = fi;
+                }
+                catch (IgniteCheckedException ioe) {
+                    throw new IOException("Failed to update " +
+                        "length [path=" + path + ", fileInfo=" + fileInfo + ']', ioe);
+                }
+
+                assert fileInfo.reservedDelta() == 0L;
+
                 long modificationTime = System.currentTimeMillis();
 
+                // Removing of the write lock:
                 try {
                     meta.unlock(fileInfo, modificationTime);
                 }
@@ -485,7 +505,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * Helper closure to reserve specified space and update file's length
      */
     @GridInternal
-    private static final class UpdateLengthClosure implements IgniteClosure<IgfsFileInfo, IgfsFileInfo>,
+    static final class UpdateLengthClosure implements IgniteClosure<IgfsFileInfo, IgfsFileInfo>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -511,11 +531,10 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
          * Constructs the closure to reserve specified space and update file's length.
          *
          * @param space Space amount (bytes number) to increase file's length.
+         * @param reservedDelta The number of bytes that can be written before next flush.
          * @param range Affinity range specifying which part of file was colocated.
          */
-        private UpdateLengthClosure(long space, long reservedDelta, IgfsFileAffinityRange range) {
-            assert space > 0 || reservedDelta > 0;
-
+        UpdateLengthClosure(long space, long reservedDelta, IgfsFileAffinityRange range) {
             this.space = space;
             this.range = range;
             this.reservedDelta = reservedDelta;
@@ -533,7 +552,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
             IgfsFileInfo updated = space == 0 ? oldInfo : new IgfsFileInfo(oldInfo, oldInfo.length() + space);
 
             // Update the reserved delta:
-            updated = IgfsFileInfo.builder(updated).reservedDelta(reservedDelta).build();
+            updated = new IgfsFileInfo(reservedDelta, updated);
 
             updated.fileMap(newMap);
 
