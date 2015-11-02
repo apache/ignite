@@ -99,6 +99,12 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /** FNV1 hash prime. */
     private static final int FNV1_PRIME = 0x01000193;
 
+    /** Maximum offset which fits in 1 byte. */
+    private static final int MAX_OFFSET_1 = 2 << 8;
+
+    /** Maximum offset which fits in 2 bytes. */
+    private static final int MAX_OFFSET_2 = 2 << 16;
+
     /** Thread-local schema. */
     private static final ThreadLocal<SchemaHolder> SCHEMA = new ThreadLocal<>();
 
