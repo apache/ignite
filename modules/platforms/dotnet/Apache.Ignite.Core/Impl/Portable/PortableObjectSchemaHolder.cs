@@ -62,16 +62,28 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Writes collected schema to the stream and pops it.
         /// </summary>
         /// <param name="stream">The stream.</param>
-        public void WriteAndPop(IPortableStream stream)
+        /// <param name="schemaId">The schema identifier.</param>
+        /// <returns>True if current schema was non empty; false otherwise.</returns>
+        public bool WriteAndPop(IPortableStream stream, out int schemaId)
         {
             var count = _offsets.Pop();
 
             if (count > 0)
             {
-                PortableObjectSchemaField.WriteArray(_fields, stream, _idx - count, count);
+                var startIdx = _idx - count;
+
+                PortableObjectSchemaField.WriteArray(_fields, stream, startIdx, count);
+
+                schemaId = PortableUtils.GetSchemaId(_fields, startIdx, count);
 
                 _idx -= count;
+
+                return true;
             }
+
+            schemaId = PortableUtils.GetSchemaId(null, 0, 0);
+
+            return false;
         }
     }
 }
