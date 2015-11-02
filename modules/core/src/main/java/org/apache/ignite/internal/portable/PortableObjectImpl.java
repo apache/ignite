@@ -63,9 +63,6 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final PortablePrimitives PRIM = PortablePrimitives.get();
-
-    /** */
     @GridDirectTransient
     private PortableContext ctx;
 
@@ -154,7 +151,7 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
 
     /** {@inheritDoc} */
     @Override public int length() {
-        return PRIM.readInt(arr, start + GridPortableMarshaller.TOTAL_LEN_POS);
+        return PortablePrimitives.readInt(arr, start + GridPortableMarshaller.TOTAL_LEN_POS);
     }
 
     /**
@@ -230,7 +227,7 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        return PRIM.readInt(arr, start + GridPortableMarshaller.TYPE_ID_POS);
+        return PortablePrimitives.readInt(arr, start + GridPortableMarshaller.TYPE_ID_POS);
     }
 
     /** {@inheritDoc} */
@@ -259,86 +256,74 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Nullable @Override protected <F> F fieldByOffset(int fieldOffset) {
+    @Nullable @Override protected <F> F fieldByOrder(int order) {
         Object val;
 
-        int schemaOffset = PRIM.readInt(arr, start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
-        int fieldPos = PRIM.readInt(arr, start + schemaOffset + fieldOffset);
+        // Calculate field position.
+        int schemaOffset = PortablePrimitives.readInt(arr, start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+
+        short flags = PortablePrimitives.readShort(arr, start + GridPortableMarshaller.FLAGS_POS);
+        int fieldOffsetSize = PortableUtils.fieldOffsetSize(flags);
+
+        int fieldOffsetPos = start + schemaOffset + order * (4 + fieldOffsetSize) + 4;
+
+        int fieldPos;
+
+        if (fieldOffsetSize == PortableUtils.OFFSET_1)
+            fieldPos = (int)PortablePrimitives.readByte(arr, fieldOffsetPos) & 0xFF;
+        else if (fieldOffsetSize == PortableUtils.OFFSET_2)
+            fieldPos = (int)PortablePrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF;
+        else
+            fieldPos = PortablePrimitives.readInt(arr, fieldOffsetPos);
 
         // Read header and try performing fast lookup for well-known types (the most common types go first).
-        byte hdr = PRIM.readByte(arr, fieldPos);
+        byte hdr = PortablePrimitives.readByte(arr, fieldPos);
 
         switch (hdr) {
             case INT:
-                val = PRIM.readInt(arr, fieldPos + 1);
+                val = PortablePrimitives.readInt(arr, fieldPos + 1);
 
                 break;
 
             case LONG:
-                val = PRIM.readLong(arr, fieldPos + 1);
+                val = PortablePrimitives.readLong(arr, fieldPos + 1);
 
                 break;
 
             case BOOLEAN:
-                val = PRIM.readBoolean(arr, fieldPos + 1);
+                val = PortablePrimitives.readBoolean(arr, fieldPos + 1);
 
                 break;
 
             case SHORT:
-                val = PRIM.readShort(arr, fieldPos + 1);
+                val = PortablePrimitives.readShort(arr, fieldPos + 1);
 
                 break;
 
             case BYTE:
-                val = PRIM.readByte(arr, fieldPos + 1);
+                val = PortablePrimitives.readByte(arr, fieldPos + 1);
 
                 break;
 
             case CHAR:
-                val = PRIM.readChar(arr, fieldPos + 1);
+                val = PortablePrimitives.readChar(arr, fieldPos + 1);
 
                 break;
 
             case FLOAT:
-                val = PRIM.readFloat(arr, fieldPos + 1);
+                val = PortablePrimitives.readFloat(arr, fieldPos + 1);
 
                 break;
 
             case DOUBLE:
-                val = PRIM.readDouble(arr, fieldPos + 1);
+                val = PortablePrimitives.readDouble(arr, fieldPos + 1);
 
                 break;
 
-//            case DECIMAL:
-//                val = doReadDecimal();
-//
-//                break;
-//
-//            case STRING:
-//                val = doReadString();
-//
-//                break;
-//
-//            case UUID:
-//                val = doReadUuid();
-//
-//                break;
-//
-//            case DATE:
-//                val = doReadDate();
-//
-//                break;
-//
-//            case TIMESTAMP:
-//                val = doReadTimestamp();
-//
-//                break;
-
             default: {
-                // TODO: Pass absolute offset, not relative.
                 PortableReaderExImpl reader = new PortableReaderExImpl(ctx, arr, start, null);
 
-                val = reader.unmarshalFieldByOffset(fieldOffset);
+                val = reader.unmarshalFieldByAbsolutePosition(fieldPos);
             }
         }
 
@@ -393,12 +378,12 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return PRIM.readInt(arr, start + GridPortableMarshaller.HASH_CODE_POS);
+        return PortablePrimitives.readInt(arr, start + GridPortableMarshaller.HASH_CODE_POS);
     }
 
     /** {@inheritDoc} */
     @Override protected int schemaId() {
-        return PRIM.readInt(arr, start + GridPortableMarshaller.SCHEMA_ID_POS);
+        return PortablePrimitives.readInt(arr, start + GridPortableMarshaller.SCHEMA_ID_POS);
     }
 
     /** {@inheritDoc} */
