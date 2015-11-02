@@ -320,8 +320,6 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
 
                 break;
 
-            // TODO: Support other types: DECIMAL, STRING, UUID, DATE, TIMESTAMP.
-
             default: {
                 PortableReaderExImpl reader = new PortableReaderExImpl(ctx, arr, start, null);
 

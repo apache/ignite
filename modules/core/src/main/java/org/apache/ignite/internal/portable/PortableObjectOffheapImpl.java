@@ -252,8 +252,6 @@ public class PortableObjectOffheapImpl extends PortableObjectEx implements Exter
 
                 break;
 
-            // TODO: Support other types: DECIMAL, STRING, UUID, DATE, TIMESTAMP.
-
             default: {
                 PortableReaderExImpl reader = new PortableReaderExImpl(ctx,
                     new PortableOffheapInputStream(ptr, size, false),
