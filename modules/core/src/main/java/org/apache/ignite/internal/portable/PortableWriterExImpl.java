@@ -348,7 +348,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, out.position() - start);
 
             // Write the schema.
-            int offsetByteCnt = schema.writeAndPop(this, fieldCnt);
+            int offsetByteCnt = schema.write(this, fieldCnt);
 
             // Write raw offset if needed.
             if (rawOffPos != 0)
@@ -377,6 +377,17 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
         // 5. Write length.
         out.writeInt(start + TOTAL_LEN_POS, out.position() - start);
+    }
+
+    /**
+     * Pop schema.
+     */
+    public void popSchema() {
+        if (schema != null) {
+            assert fieldCnt > 0;
+
+            schema.pop(fieldCnt);
+        }
     }
 
     /**
@@ -1850,11 +1861,11 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
          * Write collected frames and pop them.
          *
          * @param writer Writer.
-         * @param cnt Count.
+         * @param fieldCnt Count.
          * @return Amount of bytes dedicated to
          */
-        public int writeAndPop(PortableWriterExImpl writer, int cnt) {
-            int startIdx = idx - cnt * 2;
+        public int write(PortableWriterExImpl writer, int fieldCnt) {
+            int startIdx = idx - fieldCnt * 2;
 
             assert startIdx >= 0;
 
@@ -1887,13 +1898,18 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
                 res = PortableUtils.OFFSET_4;
             }
 
-            idx = startIdx;
+            return res;
+        }
+
+        /**
+         * Pop current object's frame.
+         */
+        public void pop(int fieldCnt) {
+            idx = idx - fieldCnt * 2;
 
             // Shrink data array if needed.
             if (idx == 0 && data.length > MAX_SIZE)
                 data = new int[MAX_SIZE];
-
-            return res;
         }
     }
 }

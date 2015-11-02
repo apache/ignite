@@ -202,188 +202,188 @@ public class PortableBuilderImpl implements PortableBuilder {
      * @param serializer Serializer.
      */
     void serializeTo(PortableWriterExImpl writer, PortableBuilderSerializer serializer) {
-        PortableUtils.writeHeader(writer,
-            true,
-            registeredType ? typeId : UNREGISTERED_TYPE_ID,
-            hashCode,
-            registeredType ? null : clsNameToWrite);
+        try {
+            PortableUtils.writeHeader(writer,
+                true,
+                registeredType ? typeId : UNREGISTERED_TYPE_ID,
+                hashCode,
+                registeredType ? null : clsNameToWrite);
 
-        Set<Integer> remainsFlds = null;
+            Set<Integer> remainsFlds = null;
 
-        if (reader != null) {
-            Map<Integer, Object> assignedFldsById;
+            if (reader != null) {
+                Map<Integer, Object> assignedFldsById;
 
-            if (assignedVals != null) {
-                assignedFldsById = U.newHashMap(assignedVals.size());
+                if (assignedVals != null) {
+                    assignedFldsById = U.newHashMap(assignedVals.size());
 
-                for (Map.Entry<String, Object> entry : assignedVals.entrySet()) {
-                    int fldId = ctx.fieldId(typeId, entry.getKey());
+                    for (Map.Entry<String, Object> entry : assignedVals.entrySet()) {
+                        int fldId = ctx.fieldId(typeId, entry.getKey());
 
-                    assignedFldsById.put(fldId, entry.getValue());
-                }
-
-                remainsFlds = assignedFldsById.keySet();
-            }
-            else
-                assignedFldsById = Collections.emptyMap();
-
-            // Get footer details.
-            int fieldOffsetSize = PortableUtils.fieldOffsetSize(flags);
-
-            IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start, fieldOffsetSize);
-
-            int footerPos = footer.get1();
-            int footerEnd = footer.get2();
-
-            // Get raw position.
-            int rawPos = PortableUtils.rawOffsetAbsolute(reader, start, fieldOffsetSize);
-
-            // Position reader on data.
-            reader.position(start + hdrLen);
-
-            while (reader.position() + 4 < rawPos) {
-                int fieldId = reader.readIntPositioned(footerPos);
-                int fieldLen = fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldOffsetSize).get2();
-
-                footerPos += 4 + fieldOffsetSize;
-
-                if (assignedFldsById.containsKey(fieldId)) {
-                    Object assignedVal = assignedFldsById.remove(fieldId);
-
-                    reader.skip(fieldLen);
-
-                    if (assignedVal != REMOVED_FIELD_MARKER) {
-                        writer.writeFieldId(fieldId);
-
-                        serializer.writeValue(writer, assignedVal);
+                        assignedFldsById.put(fldId, entry.getValue());
                     }
-                }
-                else {
-                    int type = fieldLen != 0 ? reader.readByte(0) : 0;
 
-                    if (fieldLen != 0 && !PortableUtils.isPlainArrayType(type) && PortableUtils.isPlainType(type)) {
-                        writer.writeFieldId(fieldId);
-                        writer.write(reader.array(), reader.position(), fieldLen);
+                    remainsFlds = assignedFldsById.keySet();
+                } else
+                    assignedFldsById = Collections.emptyMap();
+
+                // Get footer details.
+                int fieldOffsetSize = PortableUtils.fieldOffsetSize(flags);
+
+                IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(reader, start, fieldOffsetSize);
+
+                int footerPos = footer.get1();
+                int footerEnd = footer.get2();
+
+                // Get raw position.
+                int rawPos = PortableUtils.rawOffsetAbsolute(reader, start, fieldOffsetSize);
+
+                // Position reader on data.
+                reader.position(start + hdrLen);
+
+                while (reader.position() + 4 < rawPos) {
+                    int fieldId = reader.readIntPositioned(footerPos);
+                    int fieldLen = fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldOffsetSize).get2();
+
+                    footerPos += 4 + fieldOffsetSize;
+
+                    if (assignedFldsById.containsKey(fieldId)) {
+                        Object assignedVal = assignedFldsById.remove(fieldId);
 
                         reader.skip(fieldLen);
-                    }
-                    else {
-                        writer.writeFieldId(fieldId);
 
-                        Object val;
+                        if (assignedVal != REMOVED_FIELD_MARKER) {
+                            writer.writeFieldId(fieldId);
 
-                        if (fieldLen == 0)
-                            val = null;
-                        else if (readCache == null) {
-                            int savedPos = reader.position();
-
-                            val = reader.parseValue();
-
-                            assert reader.position() == savedPos + fieldLen;
+                            serializer.writeValue(writer, assignedVal);
                         }
-                        else {
-                            val = readCache.get(fieldId);
+                    } else {
+                        int type = fieldLen != 0 ? reader.readByte(0) : 0;
+
+                        if (fieldLen != 0 && !PortableUtils.isPlainArrayType(type) && PortableUtils.isPlainType(type)) {
+                            writer.writeFieldId(fieldId);
+                            writer.write(reader.array(), reader.position(), fieldLen);
 
                             reader.skip(fieldLen);
-                        }
+                        } else {
+                            writer.writeFieldId(fieldId);
 
-                        serializer.writeValue(writer, val);
-                    }
-                }
-            }
-        }
+                            Object val;
 
-        if (assignedVals != null && (remainsFlds == null || !remainsFlds.isEmpty())) {
-            boolean metadataEnabled = ctx.isMetaDataEnabled(typeId);
+                            if (fieldLen == 0)
+                                val = null;
+                            else if (readCache == null) {
+                                int savedPos = reader.position();
 
-            PortableMetadata metadata = null;
+                                val = reader.parseValue();
 
-            if (metadataEnabled)
-                metadata = ctx.metaData(typeId);
+                                assert reader.position() == savedPos + fieldLen;
+                            } else {
+                                val = readCache.get(fieldId);
 
-            Map<String, String> newFldsMetadata = null;
+                                reader.skip(fieldLen);
+                            }
 
-            for (Map.Entry<String, Object> entry : assignedVals.entrySet()) {
-                Object val = entry.getValue();
-
-                if (val == REMOVED_FIELD_MARKER)
-                    continue;
-
-                String name = entry.getKey();
-
-                int fldId = ctx.fieldId(typeId, name);
-
-                if (remainsFlds != null && !remainsFlds.contains(fldId))
-                    continue;
-
-                writer.writeFieldId(fldId);
-
-                serializer.writeValue(writer, val);
-
-                if (metadataEnabled) {
-                    String oldFldTypeName = metadata == null ? null : metadata.fieldTypeName(name);
-
-                    String newFldTypeName;
-
-                    if (val instanceof PortableValueWithType)
-                        newFldTypeName = ((PortableValueWithType)val).typeName();
-                    else {
-                        byte type = PortableUtils.typeByClass(val.getClass());
-
-                        newFldTypeName = CacheObjectPortableProcessorImpl.fieldTypeName(type);
-                    }
-
-                    if (oldFldTypeName == null) {
-                        // It's a new field, we have to add it to metadata.
-
-                        if (newFldsMetadata == null)
-                            newFldsMetadata = new HashMap<>();
-
-                        newFldsMetadata.put(name, newFldTypeName);
-                    }
-                    else {
-                        if (!"Object".equals(oldFldTypeName) && !oldFldTypeName.equals(newFldTypeName)) {
-                            throw new PortableException(
-                                "Wrong value has been set [" +
-                                    "typeName=" + (typeName == null ? metadata.typeName() : typeName) +
-                                    ", fieldName=" + name +
-                                    ", fieldType=" + oldFldTypeName +
-                                    ", assignedValueType=" + newFldTypeName +
-                                    ", assignedValue=" + (((PortableValueWithType)val).value()) + ']'
-                            );
+                            serializer.writeValue(writer, val);
                         }
                     }
                 }
             }
 
-            if (newFldsMetadata != null) {
-                String typeName = this.typeName;
+            if (assignedVals != null && (remainsFlds == null || !remainsFlds.isEmpty())) {
+                boolean metadataEnabled = ctx.isMetaDataEnabled(typeId);
 
-                if (typeName == null)
-                    typeName = metadata.typeName();
+                PortableMetadata metadata = null;
 
-                ctx.updateMetaData(typeId, typeName, newFldsMetadata);
+                if (metadataEnabled)
+                    metadata = ctx.metaData(typeId);
+
+                Map<String, String> newFldsMetadata = null;
+
+                for (Map.Entry<String, Object> entry : assignedVals.entrySet()) {
+                    Object val = entry.getValue();
+
+                    if (val == REMOVED_FIELD_MARKER)
+                        continue;
+
+                    String name = entry.getKey();
+
+                    int fldId = ctx.fieldId(typeId, name);
+
+                    if (remainsFlds != null && !remainsFlds.contains(fldId))
+                        continue;
+
+                    writer.writeFieldId(fldId);
+
+                    serializer.writeValue(writer, val);
+
+                    if (metadataEnabled) {
+                        String oldFldTypeName = metadata == null ? null : metadata.fieldTypeName(name);
+
+                        String newFldTypeName;
+
+                        if (val instanceof PortableValueWithType)
+                            newFldTypeName = ((PortableValueWithType) val).typeName();
+                        else {
+                            byte type = PortableUtils.typeByClass(val.getClass());
+
+                            newFldTypeName = CacheObjectPortableProcessorImpl.fieldTypeName(type);
+                        }
+
+                        if (oldFldTypeName == null) {
+                            // It's a new field, we have to add it to metadata.
+
+                            if (newFldsMetadata == null)
+                                newFldsMetadata = new HashMap<>();
+
+                            newFldsMetadata.put(name, newFldTypeName);
+                        } else {
+                            if (!"Object".equals(oldFldTypeName) && !oldFldTypeName.equals(newFldTypeName)) {
+                                throw new PortableException(
+                                    "Wrong value has been set [" +
+                                        "typeName=" + (typeName == null ? metadata.typeName() : typeName) +
+                                        ", fieldName=" + name +
+                                        ", fieldType=" + oldFldTypeName +
+                                        ", assignedValueType=" + newFldTypeName +
+                                        ", assignedValue=" + (((PortableValueWithType) val).value()) + ']'
+                                );
+                            }
+                        }
+                    }
+                }
+
+                if (newFldsMetadata != null) {
+                    String typeName = this.typeName;
+
+                    if (typeName == null)
+                        typeName = metadata.typeName();
+
+                    ctx.updateMetaData(typeId, typeName, newFldsMetadata);
+                }
             }
-        }
 
-        if (reader != null) {
-            // Write raw data if any.
-            int fieldOffsetSize = PortableUtils.fieldOffsetSize(flags);
+            if (reader != null) {
+                // Write raw data if any.
+                int fieldOffsetSize = PortableUtils.fieldOffsetSize(flags);
 
-            int rawOff = PortableUtils.rawOffsetAbsolute(reader, start, fieldOffsetSize);
-            int footerStart = PortableUtils.footerStartAbsolute(reader, start);
+                int rawOff = PortableUtils.rawOffsetAbsolute(reader, start, fieldOffsetSize);
+                int footerStart = PortableUtils.footerStartAbsolute(reader, start);
 
-            if (rawOff < footerStart) {
-                writer.rawWriter();
+                if (rawOff < footerStart) {
+                    writer.rawWriter();
 
-                writer.write(reader.array(), rawOff, footerStart - rawOff);
+                    writer.write(reader.array(), rawOff, footerStart - rawOff);
+                }
+
+                // Shift reader to the end of the object.
+                reader.position(start + PortableUtils.length(reader, start));
             }
 
-            // Shift reader to the end of the object.
-            reader.position(start + PortableUtils.length(reader, start));
+            writer.postWrite(true);
         }
-
-        writer.postWrite(true);
+        finally {
+            writer.popSchema();
+        }
     }
 
     /** {@inheritDoc} */
