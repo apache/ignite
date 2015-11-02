@@ -236,7 +236,7 @@ public class PortableBuilderImpl implements PortableBuilder {
             int footerEnd = footer.get2();
 
             // Get raw position.
-            int rawPos = PortableUtils.rawOffsetAbsolute(reader, start);
+            int rawPos = PortableUtils.rawOffsetAbsolute(reader, start, fieldOffsetSize);
 
             // Position reader on data.
             reader.position(start + hdrLen);
@@ -368,7 +368,9 @@ public class PortableBuilderImpl implements PortableBuilder {
 
         if (reader != null) {
             // Write raw data if any.
-            int rawOff = PortableUtils.rawOffsetAbsolute(reader, start);
+            int fieldOffsetSize = PortableUtils.fieldOffsetSize(flags);
+
+            int rawOff = PortableUtils.rawOffsetAbsolute(reader, start, fieldOffsetSize);
             int footerStart = PortableUtils.footerStartAbsolute(reader, start);
 
             if (rawOff < footerStart) {
@@ -433,7 +435,7 @@ public class PortableBuilderImpl implements PortableBuilder {
             int footerPos = footer.get1();
             int footerEnd = footer.get2();
 
-            int rawPos = PortableUtils.rawOffsetAbsolute(reader, start);
+            int rawPos = PortableUtils.rawOffsetAbsolute(reader, start, fieldOffsetSize);
 
             while (footerPos < footerEnd) {
                 int fieldId = reader.readIntPositioned(footerPos);

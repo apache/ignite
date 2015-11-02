@@ -237,7 +237,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         schemaId = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_ID_POS);
 
-        rawOff = PortableUtils.rawOffsetAbsolute(in, start);
+        rawOff = PortableUtils.rawOffsetAbsolute(in, start, offsetSize);
 
         if (typeId == UNREGISTERED_TYPE_ID) {
             // Skip to the class name position.

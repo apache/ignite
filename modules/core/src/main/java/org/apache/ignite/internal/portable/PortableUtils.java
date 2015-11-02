@@ -639,9 +639,10 @@ public class PortableUtils {
      *
      * @param in Input stream.
      * @param start Object start position inside the stream.
+     * @param fieldOffsetSize Field offset size.
      * @return Raw offset.
      */
-    public static int rawOffsetAbsolute(PortablePositionReadable in, int start) {
+    public static int rawOffsetAbsolute(PortablePositionReadable in, int start, int fieldOffsetSize) {
         int len = length(in, start);
 
         short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
@@ -653,7 +654,7 @@ public class PortableUtils {
             // Schema exists.
             int schemaOff = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
-            if ((((len - schemaOff) >> 2) & 0x1) == 0x0)
+            if (((len - schemaOff) % (4 + fieldOffsetSize)) == 0x0)
                 // Even amount of records in schema => no raw offset.
                 return start + schemaOff;
             else
