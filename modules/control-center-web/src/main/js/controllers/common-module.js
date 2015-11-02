@@ -518,7 +518,7 @@ consoleModule.service('$common', [
         function getModel(obj, field) {
             var path = field.path;
 
-            if (!isDefined(path))
+            if (!isDefined(path) || !isDefined(obj))
                 return obj;
 
             path = path.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
