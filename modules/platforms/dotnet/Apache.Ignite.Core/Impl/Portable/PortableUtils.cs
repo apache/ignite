@@ -1774,7 +1774,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>
         /// Schema id.
         /// </returns>
-        public static int GetSchemaId(PortableSchemaArray schema)
+        public static int GetSchemaId(ResizeableArray<PortableObjectSchemaField> schema)
         {
             var hash = Fnv1Hash.Basis;
 

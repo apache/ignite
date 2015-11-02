@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private PortableStructureTracker _curStruct;
 
         /** Current schema. */
-        private PortableSchemaArray _curSchema;
+        private ResizeableArray<PortableObjectSchemaField> _curSchema;
 
         /// <summary>
         /// Gets the marshaller.
@@ -1373,7 +1373,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var fieldId = _curStruct.GetFieldId(fieldName, fieldTypeId);
 
-            _curSchema = _curSchema ?? new PortableSchemaArray(4);
+            _curSchema = _curSchema ?? new ResizeableArray<PortableObjectSchemaField>(4);
 
             _curSchema.Add(new PortableObjectSchemaField(fieldId, _stream.Position - _curPos));
         }
