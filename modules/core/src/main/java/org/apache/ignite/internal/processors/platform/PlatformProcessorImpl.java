@@ -253,6 +253,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         throws IgniteCheckedException {
         IgniteDataStreamer ldr = ctx.dataStream().dataStreamer(cacheName);
 
+        ldr.keepBinary(keepPortable);
+
         return new PlatformDataStreamer(platformCtx, cacheName, (DataStreamerImpl)ldr, keepPortable);
     }
 

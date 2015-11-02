@@ -56,6 +56,9 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
     /** */
     private final StreamReceiver rcvr;
 
+    /** */
+    private boolean keepBinary;
+
     /**
      * @param ctx Context.
      * @param log Log.
@@ -72,6 +75,7 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
         Collection<DataStreamerEntry> col,
         boolean ignoreDepOwnership,
         boolean skipStore,
+        boolean keepBinary,
         StreamReceiver<?, ?> rcvr) {
         this.ctx = ctx;
         this.log = log;
@@ -83,6 +87,7 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
         this.col = col;
         this.ignoreDepOwnership = ignoreDepOwnership;
         this.skipStore = skipStore;
+        this.keepBinary = keepBinary;
         this.rcvr = rcvr;
     }
 
@@ -122,7 +127,7 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
             if (unwrapEntries()) {
                 Collection<Map.Entry> col0 = F.viewReadOnly(col, new C1<DataStreamerEntry, Map.Entry>() {
                     @Override public Map.Entry apply(DataStreamerEntry e) {
-                        return e.toEntry(cctx);
+                        return e.toEntry(cctx, keepBinary);
                     }
                 });
 
