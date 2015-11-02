@@ -53,8 +53,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="fields">Fields.</param>
         /// <param name="stream">Stream.</param>
+        /// <param name="start">Start index.</param>
         /// <param name="count">Field count to write.</param>
-        public static unsafe void WriteArray(PortableObjectSchemaField[] fields, IPortableStream stream, int count)
+        public static unsafe void WriteArray(PortableObjectSchemaField[] fields, IPortableStream stream, int start, int count)
         {
             Debug.Assert(fields != null);
             Debug.Assert(stream != null);
@@ -64,12 +65,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 fixed (PortableObjectSchemaField* ptr = &fields[0])
                 {
-                    stream.Write((byte*) ptr, count * Size);
+                    stream.Write((byte*) ptr + start * Size, count * Size);
                 }
             }
             else
             {
-                for (int i = 0; i < count; i++)
+                for (int i = start; i < count + start; i++)
                 {
                     var field = fields[i];
 
