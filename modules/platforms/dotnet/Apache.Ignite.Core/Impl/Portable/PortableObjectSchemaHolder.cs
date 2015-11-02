@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
@@ -26,6 +27,10 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// </summary>
     internal class PortableObjectSchemaHolder
     {
+        /** Current schema. */
+        private static readonly ThreadLocal<PortableObjectSchemaHolder> CurrentHolder =
+            new ThreadLocal<PortableObjectSchemaHolder>(() => new PortableObjectSchemaHolder());
+
         /** Fields. */
         private PortableObjectSchemaField[] _fields = new PortableObjectSchemaField[16];
 
@@ -34,6 +39,14 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Current field index. */
         private int _idx;
+
+        /// <summary>
+        /// Gets the schema holder for the current thread.
+        /// </summary>
+        public static PortableObjectSchemaHolder Current
+        {
+            get { return CurrentHolder.Value; }
+        }
 
         /// <summary>
         /// Adds a field to the holder.
