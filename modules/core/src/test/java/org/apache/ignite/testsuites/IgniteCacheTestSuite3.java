@@ -18,6 +18,8 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.GridCacheAtomicEntryProcessorDeploymentSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheConditionalDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentOffHeapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryVersionSelfTest;
@@ -25,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOrderedPreloadingSel
 import org.apache.ignite.internal.processors.cache.GridCacheReferenceCleanupSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheReloadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheReplicatedSynchronousCommitTest;
+import org.apache.ignite.internal.processors.cache.GridCacheTransactionalEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheValueBytesPreloadingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheValueConsistencyTransactionalNearEnabledSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheValueConsistencyTransactionalSelfTest;
@@ -116,6 +119,9 @@ public class IgniteCacheTestSuite3 extends TestSuite {
 
         suite.addTestSuite(GridCacheDeploymentSelfTest.class);
         suite.addTestSuite(GridCacheDeploymentOffHeapSelfTest.class);
+        suite.addTestSuite(GridCacheConditionalDeploymentSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicEntryProcessorDeploymentSelfTest.class);
+        suite.addTestSuite(GridCacheTransactionalEntryProcessorDeploymentSelfTest.class);
 
         suite.addTestSuite(GridCachePutArrayValueSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedUnswapAdvancedSelfTest.class);

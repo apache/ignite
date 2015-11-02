@@ -192,9 +192,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         ClusterNode loc = cctx.localNode();
 
-        long startTime = loc.metrics().getStartTime();
-
-        assert startTime > 0;
+        assert loc.metrics().getStartTime() > 0;
 
         final long startTopVer = loc.order();
 
@@ -372,7 +370,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
                 cctx.cacheId(),
                 msg.futureId(),
-                msg.miniId());
+                msg.miniId(),
+                cctx.deploymentEnabled());
 
             for (KeyCacheObject k : msg.keys()) {
                 int p = cctx.affinity().partition(k);

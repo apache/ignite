@@ -1742,7 +1742,8 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                         // There are remote participants.
                         for (ClusterNode node : nodes) {
                             GridCacheEvictionRequest req = F.addIfAbsent(reqMap, node.id(),
-                                new GridCacheEvictionRequest(cctx.cacheId(), id, evictInfos.size(), topVer));
+                                new GridCacheEvictionRequest(cctx.cacheId(), id, evictInfos.size(), topVer,
+                                    cctx.deploymentEnabled()));
 
                             assert req != null;
 

@@ -132,6 +132,10 @@ public class IgniteBenchmarkArguments {
     @Parameter(names = {"-cot", "--cacheOperationTimeout"}, description = "Max timeout for cache operations in seconds")
     private int cacheOpTimeout = 30;
 
+    /** */
+    @Parameter(names = {"-kpt", "--keysPerThread"}, description = "Use not intersecting keys in putAll benchmark")
+    private boolean keysPerThread;
+
     /**
      * @return JDBC url.
      */
@@ -319,6 +323,13 @@ public class IgniteBenchmarkArguments {
      */
     public int cacheOperationTimeoutMillis() {
         return cacheOpTimeout * 1000;
+    }
+
+    /**
+     * @return {@code True} if use not intersecting keys in putAll benchmark.
+     */
+    public boolean keysPerThread() {
+        return keysPerThread;
     }
 
     /**
