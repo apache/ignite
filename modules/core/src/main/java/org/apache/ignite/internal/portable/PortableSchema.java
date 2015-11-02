@@ -36,52 +36,28 @@ public class PortableSchema {
     private final HashMap<Integer, Integer> map;
 
     /** ID 1. */
+    private final int id0;
+
+    /** ID 2. */
     private final int id1;
 
-    /** Offset 1. */
-    private final int pos1;
-
-    /** ID 2. */
+    /** ID 3. */
     private final int id2;
 
-    /** Offset 2. */
-    private final int pos2;
-
-    /** ID 3. */
+    /** ID 4. */
     private final int id3;
 
-    /** Offset 3. */
-    private final int pos3;
-
-    /** ID 4. */
+    /** ID 1. */
     private final int id4;
 
-    /** Offset 4. */
-    private final int pos4;
-
-    /** ID 1. */
+    /** ID 2. */
     private final int id5;
 
-    /** Offset 1. */
-    private final int pos5;
-
-    /** ID 2. */
+    /** ID 3. */
     private final int id6;
 
-    /** Offset 2. */
-    private final int pos6;
-
-    /** ID 3. */
-    private final int id7;
-
-    /** Offset 3. */
-    private final int pos7;
-
     /** ID 4. */
-    private final int id8;
-
-    /** Offset 4. */
-    private final int pos8;
+    private final int id7;
 
     /**
      * Constructor.
@@ -97,84 +73,75 @@ public class PortableSchema {
             Map.Entry<Integer, Integer> entry = iter.hasNext() ? iter.next() : null;
 
             if (entry != null) {
+                id0 = entry.getKey();
+
+                assert entry.getValue() == 0;
+            }
+            else
+                id0 = 0;
+
+            if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id1 = entry.getKey();
-                pos1 = entry.getValue();
+
+                assert entry.getValue() == 1;
             }
-            else{
+            else
                 id1 = 0;
-                pos1 = 0;
-            }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id2 = entry.getKey();
-                pos2 = entry.getValue();
+
+                assert entry.getValue() == 2;
             }
-            else{
+            else
                 id2 = 0;
-                pos2 = 0;
-            }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id3 = entry.getKey();
-                pos3 = entry.getValue();
+
+                assert entry.getValue() == 3;
             }
-            else{
+            else
                 id3 = 0;
-                pos3 = 0;
-            }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id4 = entry.getKey();
-                pos4 = entry.getValue();
+
+                assert entry.getValue() == 4;
             }
-            else{
+            else
                 id4 = 0;
-                pos4 = 0;
-            }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id5 = entry.getKey();
-                pos5 = entry.getValue();
+
+                assert entry.getValue() == 5;
             }
-            else{
+            else
                 id5 = 0;
-                pos5 = 0;
-            }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id6 = entry.getKey();
-                pos6 = entry.getValue();
+
+                assert entry.getValue() == 6;
             }
-            else{
+            else
                 id6 = 0;
-                pos6 = 0;
-            }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id7 = entry.getKey();
-                pos7 = entry.getValue();
-            }
-            else{
-                id7 = 0;
-                pos7 = 0;
-            }
 
-            if ((entry = iter.hasNext() ? iter.next() : null) != null) {
-                id8 = entry.getKey();
-                pos8 = entry.getValue();
+                assert entry.getValue() == 7;
             }
-            else{
-                id8 = 0;
-                pos8 = 0;
-            }
+            else
+                id7 = 0;
 
             map = null;
         }
         else {
             inline = false;
 
-            id1 = id2 = id3 = id4 = id5 = id6 = id7 = id8 = 0;
-            pos1 = pos2 = pos3 = pos4 = pos5 = pos6 = pos7 = pos8 = 0;
+            id0 = id1 = id2 = id3 = id4 = id5 = id6 = id7 = 0;
 
             map = new HashMap<>(vals);
         }
@@ -188,29 +155,29 @@ public class PortableSchema {
      */
     public int order(int id) {
         if (inline) {
+            if (id == id0)
+                return 0;
+
             if (id == id1)
-                return pos1;
+                return 1;
 
             if (id == id2)
-                return pos2;
+                return 2;
 
             if (id == id3)
-                return pos3;
+                return 3;
 
             if (id == id4)
-                return pos4;
+                return 4;
 
             if (id == id5)
-                return pos5;
+                return 5;
 
             if (id == id6)
-                return pos6;
+                return 6;
 
             if (id == id7)
-                return pos7;
-
-            if (id == id8)
-                return pos8;
+                return 7;
 
             return 0;
         }
