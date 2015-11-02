@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Portable object header structure.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 0)]
     internal struct PortableObjectHeader : IEquatable<PortableObjectHeader>
     {
         /** Size, equals to sizeof(PortableObjectHeader). */
