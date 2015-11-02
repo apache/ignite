@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System;
     using System.Collections.Generic;
     using System.Threading;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
@@ -102,21 +103,22 @@ namespace Apache.Ignite.Core.Impl.Portable
         public bool WriteAndPop(IPortableStream stream, out int schemaId)
         {
             var offset = _offsets.Pop();
+
             var count = _idx - offset;
+
             _idx -= count;
 
-            if (count > 0)
-            {
-                PortableObjectSchemaField.WriteArray(_fields, stream, offset, count);
+            schemaId = Fnv1Hash.Basis;
 
-                schemaId = PortableUtils.GetSchemaId(_fields, offset, count);
+            if (count == 0) 
+                return false;
 
-                return true;
-            }
+            PortableObjectSchemaField.WriteArray(_fields, stream, offset, count);
 
-            schemaId = PortableUtils.GetSchemaId(null, 0, 0);
+            for (var i = offset; i < count; i++)
+                schemaId = Fnv1Hash.Update(schemaId, _fields[i].Id);
 
-            return false;
+            return true;
         }
     }
 }

@@ -1768,28 +1768,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Gets the schema id as a Fnv1 hash.
-        /// </summary>
-        /// <param name="schema">The schema.</param>
-        /// <param name="start">Start index.</param>
-        /// <param name="count">Count.</param>
-        /// <returns>
-        /// Schema id.
-        /// </returns>
-        public static int GetSchemaId(PortableObjectSchemaField[] schema, int start, int count)
-        {
-            var hash = Fnv1Hash.Basis;
-
-            if (schema == null || schema.Length == 0)
-                return hash;
-
-            for (int i = start; i < count; i++)
-                hash = Fnv1Hash.Update(hash, schema[i].Id);
-
-            return hash;
-        }
-
-        /// <summary>
         /// Reverses the byte order of an unsigned long.
         /// </summary>
         private static ulong ReverseByteOrder(ulong l)
