@@ -102,13 +102,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public IPortableNameMapper NameConverter
+        public IPortableNameMapper NameMapper
         {
             get { return _cfg.DefaultNameMapper; }
         }
 
         /** <inheritDoc /> */
-        public IPortableIdMapper Mapper
+        public IPortableIdMapper IdMapper
         {
             get { return _cfg.DefaultIdMapper; }
         }
