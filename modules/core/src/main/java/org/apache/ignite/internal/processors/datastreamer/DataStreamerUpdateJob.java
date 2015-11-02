@@ -104,6 +104,9 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
         if (skipStore)
             cache = (IgniteCacheProxy<?, ?>)cache.withSkipStore();
 
+        if (keepBinary)
+            cache = (IgniteCacheProxy<?, ?>)cache.withKeepBinary();
+
         if (ignoreDepOwnership)
             cache.context().deploy().ignoreOwnership(true);
 

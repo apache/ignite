@@ -60,7 +60,7 @@ class CacheContinuousQueryEvent<K, V> extends CacheEntryEvent<K, V> {
     /** {@inheritDoc} */
     @Override
     public K getKey() {
-        return e.key().value(cctx.cacheObjectContext(), false);
+        return (K)cctx.cacheObjectContext().unwrapPortableIfNeeded(e.key(), true, false);
     }
 
     /** {@inheritDoc} */
@@ -71,7 +71,7 @@ class CacheContinuousQueryEvent<K, V> extends CacheEntryEvent<K, V> {
     /** {@inheritDoc} */
     @Override
     public V getOldValue() {
-        return CU.value(e.oldValue(), cctx, false);
+        return (V)cctx.cacheObjectContext().unwrapPortableIfNeeded(e.oldValue(), true, false);
     }
 
     /** {@inheritDoc} */
