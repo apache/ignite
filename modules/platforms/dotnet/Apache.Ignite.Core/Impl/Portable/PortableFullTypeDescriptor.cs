@@ -49,9 +49,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Serializer. */
         private readonly IPortableSerializer _serializer;
 
-        /** Metadata enabled flag. */
-        private readonly bool _metaEnabled;
-
         /** Whether to cache deserialized value in IPortableObject */
         private readonly bool _keepDeserialized;
 
@@ -77,7 +74,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="nameConverter">Name converter.</param>
         /// <param name="mapper">Mapper.</param>
         /// <param name="serializer">Serializer.</param>
-        /// <param name="metaEnabled">Metadata enabled flag.</param>
         /// <param name="keepDeserialized">Whether to cache deserialized value in IPortableObject</param>
         /// <param name="affKeyFieldName">Affinity field key name.</param>
         public PortableFullTypeDescriptor(
@@ -88,7 +84,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             IPortableNameMapper nameConverter, 
             IPortableIdMapper mapper, 
             IPortableSerializer serializer, 
-            bool metaEnabled, 
             bool keepDeserialized, 
             string affKeyFieldName)
         {
@@ -99,7 +94,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             _nameConverter = nameConverter;
             _mapper = mapper;
             _serializer = serializer;
-            _metaEnabled = metaEnabled;
             _keepDeserialized = keepDeserialized;
             _affKeyFieldName = affKeyFieldName;
         }
@@ -134,14 +128,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         public bool UserType
         {
             get { return _userType; }
-        }
-
-        /// <summary>
-        /// Metadata enabled flag.
-        /// </summary>
-        public bool MetadataEnabled
-        {
-            get { return _metaEnabled; }
         }
 
         /// <summary>

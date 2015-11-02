@@ -1726,7 +1726,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                             IdMapper = CreateInstance<IPortableIdMapper>(reader),
                             Serializer = CreateInstance<IPortableSerializer>(reader),
                             AffinityKeyFieldName = reader.ReadString(),
-                            MetadataEnabled = reader.ReadObject<bool?>(),
                             KeepDeserialized = reader.ReadObject<bool?>()
                         });
                     }
@@ -1747,7 +1746,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 cfg.DefaultNameMapper = CreateInstance<IPortableNameMapper>(reader);
                 cfg.DefaultIdMapper = CreateInstance<IPortableIdMapper>(reader);
                 cfg.DefaultSerializer = CreateInstance<IPortableSerializer>(reader);
-                cfg.DefaultMetadataEnabled = reader.ReadBoolean();
                 cfg.DefaultKeepDeserialized = reader.ReadBoolean();
             }
             else

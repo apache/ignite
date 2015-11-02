@@ -89,8 +89,7 @@ namespace Apache.Ignite.Benchmarks.Interop
                     new PortableTypeConfiguration(typeof (Employee)),
                     new PortableTypeConfiguration(typeof (MyClosure)),
                     new PortableTypeConfiguration(typeof (MyJob))
-                },
-                DefaultMetadataEnabled = false
+                }
             };
         }
 

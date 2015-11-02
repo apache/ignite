@@ -96,12 +96,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public bool MetadataEnabled
-        {
-            get { return _cfg.DefaultMetadataEnabled; }
-        }
-
-        /** <inheritDoc /> */
         public bool KeepDeserialized
         {
             get { return _cfg.DefaultKeepDeserialized; }

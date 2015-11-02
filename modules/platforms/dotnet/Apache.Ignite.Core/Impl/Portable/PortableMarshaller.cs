@@ -287,8 +287,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         IDictionary<int, PortableMetadataHolder> metas0 =
                             new Dictionary<int, PortableMetadataHolder>(_metas);
 
-                        holder = desc.MetadataEnabled ? new PortableMetadataHolder(desc.TypeId,
-                            desc.TypeName, desc.AffinityKeyFieldName) : null;
+                        holder = new PortableMetadataHolder(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName);
 
                         metas0[desc.TypeId] = holder;
 
@@ -389,8 +388,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             IPortableIdMapper idMapper = typeCfg.IdMapper ?? cfg.DefaultIdMapper;
 
-            bool metaEnabled = typeCfg.MetadataEnabled ?? cfg.DefaultMetadataEnabled;
-
             bool keepDeserialized = typeCfg.KeepDeserialized ?? cfg.DefaultKeepDeserialized;
 
             // Try resolving type.
@@ -411,7 +408,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (refSerializer != null)
                     refSerializer.Register(type, typeId, nameMapper, idMapper);
 
-                AddType(type, typeId, typeName, true, metaEnabled, keepDeserialized, nameMapper, idMapper, serializer,
+                AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
                     typeCfg.AffinityKeyFieldName);
             }
             else
@@ -421,7 +418,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 int typeId = PortableUtils.TypeId(typeName, nameMapper, idMapper);
 
-                AddType(null, typeId, typeName, true, metaEnabled, keepDeserialized, nameMapper, idMapper, null,
+                AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
                     typeCfg.AffinityKeyFieldName);
             }
         }
@@ -445,13 +442,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="typeId">Type ID.</param>
         /// <param name="typeName">Type name.</param>
         /// <param name="userType">User type flag.</param>
-        /// <param name="metaEnabled">Metadata enabled flag.</param>
         /// <param name="keepDeserialized">Whether to cache deserialized value in IPortableObject</param>
         /// <param name="nameMapper">Name mapper.</param>
         /// <param name="idMapper">ID mapper.</param>
         /// <param name="serializer">Serializer.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
-        private void AddType(Type type, int typeId, string typeName, bool userType, bool metaEnabled,
+        private void AddType(Type type, int typeId, string typeName, bool userType, 
             bool keepDeserialized, IPortableNameMapper nameMapper, IPortableIdMapper idMapper,
             IPortableSerializer serializer, string affKeyFieldName)
         {
@@ -471,7 +467,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             IPortableTypeDescriptor descriptor =
                 new PortableFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, serializer,
-                    metaEnabled, keepDeserialized, affKeyFieldName);
+                    keepDeserialized, affKeyFieldName);
 
             if (type != null)
                 _typeToDesc[type] = descriptor;
@@ -491,7 +487,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var serializer = new PortableSystemTypeSerializer<T>(ctor);
 
-            AddType(type, typeId, GetTypeName(type), false, false, false, null, null, serializer, null);
+            AddType(type, typeId, GetTypeName(type), false, false, null, null, serializer, null);
         }
 
         /// <summary>

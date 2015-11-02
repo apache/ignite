@@ -1420,7 +1420,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         /// <returns>Configuration.</returns>
         private static PortableTypeConfiguration TypeConfigurationNoMeta(Type typ)
         {
-            return new PortableTypeConfiguration(typ) {MetadataEnabled = false};
+            return new PortableTypeConfiguration(typ);
         }
     }
 

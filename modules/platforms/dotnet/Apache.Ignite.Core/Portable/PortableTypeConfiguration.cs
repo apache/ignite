@@ -61,7 +61,6 @@ namespace Apache.Ignite.Core.Portable
             NameMapper = cfg.NameMapper;
             Serializer = cfg.Serializer;
             TypeName = cfg.TypeName;
-            MetadataEnabled = cfg.MetadataEnabled;
             KeepDeserialized = cfg.KeepDeserialized;
         }
 
@@ -95,12 +94,6 @@ namespace Apache.Ignite.Core.Portable
         /// Affinity key field name.
         /// </summary>
         public string AffinityKeyFieldName { get; set; }
-
-        /// <summary>
-        /// Metadata enabled flag. If set to non-null value, overrides default value set in 
-        /// PortableConfiguration.
-        /// </summary>
-        public bool? MetadataEnabled { get; set; }
 
         /// <summary>
         /// Keep deserialized flag. If set to non-null value, overrides default value set in 
