@@ -1243,7 +1243,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             var dt = new SpecialArrayMarshalAware();
 
-            foreach (var i in new[] {1, 5, 10, 100, 200, 1000, 5000, 15000, 30000})
+            foreach (var i in new[] {1, 5, 10, 13, 14, 15, 100, 200, 1000, 5000, 15000, 30000})
             {
                 dt.NGuidArr = Enumerable.Range(1, i).Select(x => (Guid?) Guid.NewGuid()).ToArray();
                 dt.NDateArr = Enumerable.Range(1, i).Select(x => (DateTime?) DateTime.Now.AddDays(x)).ToArray();
