@@ -24,7 +24,7 @@ import org.apache.ignite.yardstick.cache.model.SampleValue;
 /**
  * Ignite benchmark that performs transactional put operations.
  */
-public class IgnitePutTxBenchmark extends IgniteCacheAbstractBenchmark {
+public class IgnitePutTxBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());

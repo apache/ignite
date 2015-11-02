@@ -15,27 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache;
-
-import java.util.Map;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.yardstick.cache.model.Person2;
+package org.apache.ignite.yardstick.cache.failover;
 
 /**
- * Ignite benchmark that performs put operations for entity with indexed fields.
+ * Transactional write read failover benchmark.
+ * <p>
+ * Each client generates a random integer K in a limited range and creates keys in the form 'key-' + K + '-1',
+ * 'key-' + K + '-2', ... Then client starts a pessimistic repeatable read transaction, reads value associated with
+ * each key. Values must be equal. Client increments value by 1, commits the transaction.
  */
-public class IgnitePutIndexedValue2Benchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+public class IgniteTransactionalOffHeapWriteReadBenchmark extends IgniteTransactionalWriteReadBenchmark {
     /** {@inheritDoc} */
-    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        int key = nextRandom(args.range());
-
-        cache.put(key, new Person2(key));
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("atomic-index");
+    @Override protected String cacheName() {
+        return "tx-offheap-write-read";
     }
 }
