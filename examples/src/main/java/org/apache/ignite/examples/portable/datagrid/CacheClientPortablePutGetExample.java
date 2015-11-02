@@ -32,7 +32,7 @@ import org.apache.ignite.examples.portable.Address;
 import org.apache.ignite.examples.portable.ExamplePortableNodeStartup;
 import org.apache.ignite.examples.portable.Organization;
 import org.apache.ignite.examples.portable.OrganizationType;
-import org.apache.ignite.igniteobject.IgniteObject;
+import org.apache.ignite.binary.BinaryObject;
 
 /**
  * This example demonstrates use of portable objects with Ignite cache.
@@ -133,10 +133,10 @@ public class CacheClientPortablePutGetExample {
         cache.put(1, org);
 
         // Get cache that will get values as portable objects.
-        IgniteCache<Integer, IgniteObject> portableCache = cache.withKeepBinary();
+        IgniteCache<Integer, BinaryObject> portableCache = cache.withKeepBinary();
 
         // Get recently created organization as a portable object.
-        IgniteObject po = portableCache.get(1);
+        BinaryObject po = portableCache.get(1);
 
         // Get organization's name from portable object (note that
         // object doesn't need to be fully deserialized).
@@ -212,16 +212,16 @@ public class CacheClientPortablePutGetExample {
         cache.putAll(map);
 
         // Get cache that will get values as portable objects.
-        IgniteCache<Integer, IgniteObject> portableCache = cache.withKeepBinary();
+        IgniteCache<Integer, BinaryObject> portableCache = cache.withKeepBinary();
 
         // Get recently created organizations as portable objects.
-        Map<Integer, IgniteObject> poMap = portableCache.getAll(map.keySet());
+        Map<Integer, BinaryObject> poMap = portableCache.getAll(map.keySet());
 
         Collection<String> names = new ArrayList<>();
 
         // Get organizations' names from portable objects (note that
         // objects don't need to be fully deserialized).
-        for (IgniteObject po : poMap.values())
+        for (BinaryObject po : poMap.values())
             names.add(po.<String>field("name"));
 
         System.out.println();

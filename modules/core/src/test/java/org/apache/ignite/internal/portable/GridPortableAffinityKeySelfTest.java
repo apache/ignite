@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.igniteobject.IgniteObjectConfiguration;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -59,7 +59,7 @@ public class GridPortableAffinityKeySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        IgniteObjectConfiguration typeCfg = new IgniteObjectConfiguration();
+        BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration();
 
         typeCfg.setClassName(TestObject.class.getName());
 

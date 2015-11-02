@@ -21,7 +21,7 @@ import java.util.Arrays;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictionSelfTest;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.igniteobject.IgniteObject;
+import org.apache.ignite.binary.BinaryObject;
 
 /**
  *
@@ -66,7 +66,7 @@ public class GridCacheOffHeapTieredEvictionPortableSelfTest extends GridCacheOff
 
         /** {@inheritDoc} */
         @Override public void checkValue(Object val) {
-            IgniteObject obj = (IgniteObject)val;
+            BinaryObject obj = (BinaryObject)val;
 
             assertEquals(expVal, obj.field("val"));
         }
@@ -87,7 +87,7 @@ public class GridCacheOffHeapTieredEvictionPortableSelfTest extends GridCacheOff
 
         /** {@inheritDoc} */
         @Override public void checkValue(Object val) {
-            IgniteObject obj = (IgniteObject)val;
+            BinaryObject obj = (BinaryObject)val;
 
             assertEquals(expVal, obj.field("val"));
         }

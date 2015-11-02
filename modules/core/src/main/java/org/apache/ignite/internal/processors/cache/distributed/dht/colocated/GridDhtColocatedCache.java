@@ -490,7 +490,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             accessTtl,
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
-            opCtx != null && opCtx.isKeepPortable());
+            opCtx != null && opCtx.isKeepBinary());
 
         // Future will be added to mvcc only if it was mapped to remote nodes.
         fut.map();

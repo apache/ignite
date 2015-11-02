@@ -22,7 +22,7 @@ import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.igniteobject.IgniteObjectConfiguration;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 
 /**
  *
@@ -32,7 +32,7 @@ public class GridCacheAffinityRoutingPortableSelfTest extends GridCacheAffinityR
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        IgniteObjectConfiguration typeCfg = new IgniteObjectConfiguration();
+        BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration();
 
         typeCfg.setClassName(AffinityTestKey.class.getName());
 

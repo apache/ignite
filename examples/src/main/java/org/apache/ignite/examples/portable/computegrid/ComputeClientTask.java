@@ -25,7 +25,7 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.igniteobject.IgniteObject;
+import org.apache.ignite.binary.BinaryObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -37,19 +37,19 @@ import org.jetbrains.annotations.Nullable;
  * for each batch. After all jobs are executed, there results are reduced to
  * get the average salary.
  */
-public class ComputeClientTask extends ComputeTaskSplitAdapter<Collection<IgniteObject>, Long> {
+public class ComputeClientTask extends ComputeTaskSplitAdapter<Collection<BinaryObject>, Long> {
     /** {@inheritDoc} */
     @Override protected Collection<? extends ComputeJob> split(
         int gridSize,
-        Collection<IgniteObject> arg
+        Collection<BinaryObject> arg
     ) {
         Collection<ComputeClientJob> jobs = new ArrayList<>();
 
-        Collection<IgniteObject> employees = new ArrayList<>();
+        Collection<BinaryObject> employees = new ArrayList<>();
 
         // Split provided collection into batches and
         // create a job for each batch.
-        for (IgniteObject employee : arg) {
+        for (BinaryObject employee : arg) {
             employees.add(employee);
 
             if (employees.size() == 3) {
@@ -85,12 +85,12 @@ public class ComputeClientTask extends ComputeTaskSplitAdapter<Collection<Ignite
      */
     private static class ComputeClientJob extends ComputeJobAdapter {
         /** Collection of employees. */
-        private final Collection<IgniteObject> employees;
+        private final Collection<BinaryObject> employees;
 
         /**
          * @param employees Collection of employees.
          */
-        private ComputeClientJob(Collection<IgniteObject> employees) {
+        private ComputeClientJob(Collection<BinaryObject> employees) {
             this.employees = employees;
         }
 
@@ -99,7 +99,7 @@ public class ComputeClientTask extends ComputeTaskSplitAdapter<Collection<Ignite
             long sum = 0;
             int cnt = 0;
 
-            for (IgniteObject employee : employees) {
+            for (BinaryObject employee : employees) {
                 System.out.println(">>> Processing employee: " + employee.field("name"));
 
                 // Get salary from portable object. Note that object

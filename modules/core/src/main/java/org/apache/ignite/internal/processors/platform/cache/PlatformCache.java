@@ -28,8 +28,8 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
-import org.apache.ignite.internal.portable.IgniteObjectRawReaderEx;
-import org.apache.ignite.internal.portable.IgniteObjectRawWriterEx;
+import org.apache.ignite.internal.portable.BinaryRawReaderEx;
+import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -179,7 +179,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
-    /** Whether this cache is created with "keepPortable" flag on the other side. */
+    /** Whether this cache is created with "keepBinary" flag on the other side. */
     private final boolean keepPortable;
 
     /** */
@@ -276,7 +276,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, IgniteObjectRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_PUT:
                 cache.put(reader.readObjectDetached(), reader.readObjectDetached());
@@ -372,7 +372,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Loads cache via localLoadCache or loadCache.
      */
-    private void loadCache0(IgniteObjectRawReaderEx reader, boolean loc) throws IgniteCheckedException {
+    private void loadCache0(BinaryRawReaderEx reader, boolean loc) throws IgniteCheckedException {
         PlatformCacheEntryFilter filter = null;
 
         Object pred = reader.readObjectDetached();
@@ -389,7 +389,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object processInStreamOutObject(int type, IgniteObjectRawReaderEx reader)
+    @Override protected Object processInStreamOutObject(int type, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
             case OP_QRY_SQL:
@@ -432,7 +432,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Arguments.
      */
-    @Nullable private Object[] readQueryArgs(IgniteObjectRawReaderEx reader) {
+    @Nullable private Object[] readQueryArgs(BinaryRawReaderEx reader) {
         int cnt = reader.readInt();
 
         if (cnt > 0) {
@@ -448,7 +448,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutStream(int type, IgniteObjectRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_NAME:
                 writer.writeObject(cache.getName());
@@ -521,7 +521,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "ConstantConditions"})
-    @Override protected void processInStreamOutStream(int type, IgniteObjectRawReaderEx reader, IgniteObjectRawWriterEx writer)
+    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_GET: {
@@ -640,7 +640,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param writer Writer.
      * @param results Results.
      */
-    private static void writeInvokeAllResult(IgniteObjectRawWriterEx writer, Map<Object, EntryProcessorResult> results) {
+    private static void writeInvokeAllResult(BinaryRawWriterEx writer, Map<Object, EntryProcessorResult> results) {
         if (results == null) {
             writer.writeInt(-1);
 
@@ -674,7 +674,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param writer Writer.
      * @param ex Exception.
      */
-    private static void writeError(IgniteObjectRawWriterEx writer, Exception ex) {
+    private static void writeError(BinaryRawWriterEx writer, Exception ex) {
         if (ex.getCause() instanceof PlatformNativeException)
             writer.writeObjectDetached(((PlatformNativeException)ex.getCause()).cause());
         else {
@@ -845,7 +845,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Runs specified query.
      */
-    private PlatformQueryCursor runQuery(IgniteObjectRawReaderEx reader, Query qry) throws IgniteCheckedException {
+    private PlatformQueryCursor runQuery(BinaryRawReaderEx reader, Query qry) throws IgniteCheckedException {
 
         try {
             QueryCursorEx cursor = (QueryCursorEx) cache.query(qry);
@@ -861,7 +861,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Runs specified fields query.
      */
-    private PlatformFieldsQueryCursor runFieldsQuery(IgniteObjectRawReaderEx reader, Query qry)
+    private PlatformFieldsQueryCursor runFieldsQuery(BinaryRawReaderEx reader, Query qry)
         throws IgniteCheckedException {
         try {
             QueryCursorEx cursor = (QueryCursorEx) cache.query(qry);
@@ -877,7 +877,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Reads the query of specified type.
      */
-    private Query readInitialQuery(IgniteObjectRawReaderEx reader) throws IgniteCheckedException {
+    private Query readInitialQuery(BinaryRawReaderEx reader) throws IgniteCheckedException {
         int typ = reader.readInt();
 
         switch (typ) {
@@ -900,7 +900,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Reads sql query.
      */
-    private Query readSqlQuery(IgniteObjectRawReaderEx reader) {
+    private Query readSqlQuery(BinaryRawReaderEx reader) {
         boolean loc = reader.readBoolean();
         String sql = reader.readString();
         String typ = reader.readString();
@@ -914,7 +914,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Reads fields query.
      */
-    private Query readFieldsQuery(IgniteObjectRawReaderEx reader) {
+    private Query readFieldsQuery(BinaryRawReaderEx reader) {
         boolean loc = reader.readBoolean();
         String sql = reader.readString();
         final int pageSize = reader.readInt();
@@ -927,7 +927,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Reads text query.
      */
-    private Query readTextQuery(IgniteObjectRawReaderEx reader) {
+    private Query readTextQuery(BinaryRawReaderEx reader) {
         boolean loc = reader.readBoolean();
         String txt = reader.readString();
         String typ = reader.readString();
@@ -939,7 +939,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Reads scan query.
      */
-    private Query readScanQuery(IgniteObjectRawReaderEx reader) {
+    private Query readScanQuery(BinaryRawReaderEx reader) {
         boolean loc = reader.readBoolean();
         final int pageSize = reader.readInt();
 
@@ -966,7 +966,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      */
     private static class GetAllWriter implements PlatformFutureUtils.Writer {
         /** <inheritDoc /> */
-        @Override public void write(IgniteObjectRawWriterEx writer, Object obj, Throwable err) {
+        @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             assert obj instanceof Map;
 
             PlatformUtils.writeNullableMap(writer, (Map) obj);
@@ -983,7 +983,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      */
     private static class EntryProcessorInvokeWriter implements PlatformFutureUtils.Writer {
         /** <inheritDoc /> */
-        @Override public void write(IgniteObjectRawWriterEx writer, Object obj, Throwable err) {
+        @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             if (err == null) {
                 writer.writeBoolean(false);  // No error.
 
@@ -1007,7 +1007,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      */
     private static class EntryProcessorInvokeAllWriter implements PlatformFutureUtils.Writer {
         /** <inheritDoc /> */
-        @Override public void write(IgniteObjectRawWriterEx writer, Object obj, Throwable err) {
+        @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             writeInvokeAllResult(writer, (Map)obj);
         }
 

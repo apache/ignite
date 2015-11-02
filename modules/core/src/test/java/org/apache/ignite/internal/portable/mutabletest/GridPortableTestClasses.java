@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.igniteobject.IgniteObject;
+import org.apache.ignite.binary.BinaryObject;
 
 /**
  *
@@ -106,7 +106,7 @@ public class GridPortableTestClasses {
      */
     public static class TestObjectPlainPortable {
         /** */
-        public IgniteObject plainPortable;
+        public BinaryObject plainPortable;
 
         /**
          *
@@ -118,7 +118,7 @@ public class GridPortableTestClasses {
         /**
          * @param plainPortable Object.
          */
-        public TestObjectPlainPortable(IgniteObject plainPortable) {
+        public TestObjectPlainPortable(BinaryObject plainPortable) {
             this.plainPortable = plainPortable;
         }
     }

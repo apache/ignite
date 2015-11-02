@@ -20,12 +20,12 @@ import java.util.Arrays;
 import org.apache.ignite.IgniteObjects;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.igniteobject.IgniteObjectBuilder;
-import org.apache.ignite.igniteobject.IgniteObjectException;
-import org.apache.ignite.igniteobject.IgniteObjectMarshalAware;
-import org.apache.ignite.igniteobject.IgniteObjectReader;
-import org.apache.ignite.igniteobject.IgniteObjectConfiguration;
-import org.apache.ignite.igniteobject.IgniteObjectWriter;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -74,7 +74,7 @@ public class GridPortableMetaDataDisabledSelfTest extends GridCommonAbstractTest
             assertEquals(0, portables().metadata(TestObject1.class).fields().size());
             assertEquals(0, portables().metadata(TestObject2.class).fields().size());
 
-            IgniteObjectBuilder bldr = portables().builder("FakeType");
+            BinaryObjectBuilder bldr = portables().builder("FakeType");
 
             bldr.setField("field1", 0).setField("field2", "value").build();
 
@@ -92,12 +92,12 @@ public class GridPortableMetaDataDisabledSelfTest extends GridCommonAbstractTest
     public void testDisableGlobalSimpleClass() throws Exception {
         marsh = new PortableMarshaller();
 
-        IgniteObjectConfiguration typeCfg = new IgniteObjectConfiguration(TestObject2.class.getName());
+        BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(TestObject2.class.getName());
 
         typeCfg.setMetaDataEnabled(true);
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new IgniteObjectConfiguration(TestObject1.class.getName()),
+            new BinaryTypeConfiguration(TestObject1.class.getName()),
             typeCfg
         ));
 
@@ -123,12 +123,12 @@ public class GridPortableMetaDataDisabledSelfTest extends GridCommonAbstractTest
     public void testDisableGlobalMarshalAwareClass() throws Exception {
         marsh = new PortableMarshaller();
 
-        IgniteObjectConfiguration typeCfg = new IgniteObjectConfiguration(TestObject1.class.getName());
+        BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(TestObject1.class.getName());
 
         typeCfg.setMetaDataEnabled(true);
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new IgniteObjectConfiguration(TestObject2.class.getName()),
+            new BinaryTypeConfiguration(TestObject2.class.getName()),
             typeCfg
         ));
 
@@ -154,12 +154,12 @@ public class GridPortableMetaDataDisabledSelfTest extends GridCommonAbstractTest
     public void testDisableSimpleClass() throws Exception {
         marsh = new PortableMarshaller();
 
-        IgniteObjectConfiguration typeCfg = new IgniteObjectConfiguration(TestObject1.class.getName());
+        BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(TestObject1.class.getName());
 
         typeCfg.setMetaDataEnabled(false);
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new IgniteObjectConfiguration(TestObject2.class.getName()),
+            new BinaryTypeConfiguration(TestObject2.class.getName()),
             typeCfg
         ));
 
@@ -183,12 +183,12 @@ public class GridPortableMetaDataDisabledSelfTest extends GridCommonAbstractTest
     public void testDisableMarshalAwareClass() throws Exception {
         marsh = new PortableMarshaller();
 
-        IgniteObjectConfiguration typeCfg = new IgniteObjectConfiguration(TestObject2.class.getName());
+        BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(TestObject2.class.getName());
 
         typeCfg.setMetaDataEnabled(false);
 
         marsh.setTypeConfigurations(Arrays.asList(
-            new IgniteObjectConfiguration(TestObject1.class.getName()),
+            new BinaryTypeConfiguration(TestObject1.class.getName()),
             typeCfg
         ));
 
@@ -216,14 +216,14 @@ public class GridPortableMetaDataDisabledSelfTest extends GridCommonAbstractTest
 
     /**
      */
-    private static class TestObject2 implements IgniteObjectMarshalAware {
+    private static class TestObject2 implements Binarylizable {
         /** {@inheritDoc} */
-        @Override public void writePortable(IgniteObjectWriter writer) throws IgniteObjectException {
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeInt("field", 1);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(IgniteObjectReader reader) throws IgniteObjectException {
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             // No-op.
         }
     }

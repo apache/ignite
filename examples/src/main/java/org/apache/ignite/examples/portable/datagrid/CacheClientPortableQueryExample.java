@@ -39,7 +39,7 @@ import org.apache.ignite.examples.portable.EmployeeKey;
 import org.apache.ignite.examples.portable.ExamplePortableNodeStartup;
 import org.apache.ignite.examples.portable.Organization;
 import org.apache.ignite.examples.portable.OrganizationType;
-import org.apache.ignite.igniteobject.IgniteObject;
+import org.apache.ignite.binary.BinaryObject;
 
 /**
  * This example demonstrates use of portable objects with cache queries.
@@ -98,7 +98,7 @@ public class CacheClientPortableQueryExample {
                 populateCache(orgCache, employeeCache);
 
                 // Get cache that will work with portable objects.
-                IgniteCache<IgniteObject, IgniteObject> portableCache = employeeCache.withKeepBinary();
+                IgniteCache<BinaryObject, BinaryObject> portableCache = employeeCache.withKeepBinary();
 
                 // Run SQL query example.
                 sqlQuery(portableCache);
@@ -180,17 +180,17 @@ public class CacheClientPortableQueryExample {
      *
      * @param cache Ignite cache.
      */
-    private static void sqlQuery(IgniteCache<IgniteObject, IgniteObject> cache) {
-        SqlQuery<IgniteObject, IgniteObject> query = new SqlQuery<>(Employee.class, "zip = ?");
+    private static void sqlQuery(IgniteCache<BinaryObject, BinaryObject> cache) {
+        SqlQuery<BinaryObject, BinaryObject> query = new SqlQuery<>(Employee.class, "zip = ?");
 
         int zip = 94109;
 
-        QueryCursor<Cache.Entry<IgniteObject, IgniteObject>> employees = cache.query(query.setArgs(zip));
+        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> employees = cache.query(query.setArgs(zip));
 
         System.out.println();
         System.out.println(">>> Employees with zip " + zip + ':');
 
-        for (Cache.Entry<IgniteObject, IgniteObject> e : employees.getAll())
+        for (Cache.Entry<BinaryObject, BinaryObject> e : employees.getAll())
             System.out.println(">>>     " + e.getValue().deserialize());
     }
 
@@ -199,20 +199,20 @@ public class CacheClientPortableQueryExample {
      *
      * @param cache Ignite cache.
      */
-    private static void sqlJoinQuery(IgniteCache<IgniteObject, IgniteObject> cache) {
-        SqlQuery<IgniteObject, IgniteObject> query = new SqlQuery<>(Employee.class,
+    private static void sqlJoinQuery(IgniteCache<BinaryObject, BinaryObject> cache) {
+        SqlQuery<BinaryObject, BinaryObject> query = new SqlQuery<>(Employee.class,
             "from Employee, \"" + ORGANIZATION_CACHE_NAME + "\".Organization as org " +
                 "where Employee.organizationId = org._key and org.name = ?");
 
         String organizationName = "GridGain";
 
-        QueryCursor<Cache.Entry<IgniteObject, IgniteObject>> employees =
+        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> employees =
             cache.query(query.setArgs(organizationName));
 
         System.out.println();
         System.out.println(">>> Employees working for " + organizationName + ':');
 
-        for (Cache.Entry<IgniteObject, IgniteObject> e : employees.getAll())
+        for (Cache.Entry<BinaryObject, BinaryObject> e : employees.getAll())
             System.out.println(">>>     " + e.getValue());
     }
 
@@ -221,7 +221,7 @@ public class CacheClientPortableQueryExample {
      *
      * @param cache Ignite cache.
      */
-    private static void sqlFieldsQuery(IgniteCache<IgniteObject, IgniteObject> cache) {
+    private static void sqlFieldsQuery(IgniteCache<BinaryObject, BinaryObject> cache) {
         SqlFieldsQuery query = new SqlFieldsQuery("select name, salary from Employee");
 
         QueryCursor<List<?>> employees = cache.query(query);
@@ -238,15 +238,15 @@ public class CacheClientPortableQueryExample {
      *
      * @param cache Ignite cache.
      */
-    private static void textQuery(IgniteCache<IgniteObject, IgniteObject> cache) {
-        TextQuery<IgniteObject, IgniteObject> query = new TextQuery<>(Employee.class, "TX");
+    private static void textQuery(IgniteCache<BinaryObject, BinaryObject> cache) {
+        TextQuery<BinaryObject, BinaryObject> query = new TextQuery<>(Employee.class, "TX");
 
-        QueryCursor<Cache.Entry<IgniteObject, IgniteObject>> employees = cache.query(query);
+        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> employees = cache.query(query);
 
         System.out.println();
         System.out.println(">>> Employees living in Texas:");
 
-        for (Cache.Entry<IgniteObject, IgniteObject> e : employees.getAll())
+        for (Cache.Entry<BinaryObject, BinaryObject> e : employees.getAll())
             System.out.println(">>>     " + e.getValue().deserialize());
     }
 

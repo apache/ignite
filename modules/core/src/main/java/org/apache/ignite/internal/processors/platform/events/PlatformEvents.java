@@ -24,8 +24,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventAdapter;
-import org.apache.ignite.internal.portable.IgniteObjectRawReaderEx;
-import org.apache.ignite.internal.portable.IgniteObjectRawWriterEx;
+import org.apache.ignite.internal.portable.BinaryRawReaderEx;
+import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -137,7 +137,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, IgniteObjectRawReaderEx reader)
+    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
             case OP_RECORD_LOCAL:
@@ -168,7 +168,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "ConstantConditions", "unchecked"})
-    @Override protected void processInStreamOutStream(int type, IgniteObjectRawReaderEx reader, IgniteObjectRawWriterEx writer)
+    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_LOCAL_QUERY: {
@@ -256,7 +256,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutStream(int type, IgniteObjectRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_ENABLED_EVENTS:
                 writeEventTypes(events.enabledEvents(), writer);
@@ -292,7 +292,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
      * @param reader Reader
      * @return Event types, or null.
      */
-    private int[] readEventTypes(IgniteObjectRawReaderEx reader) {
+    private int[] readEventTypes(BinaryRawReaderEx reader) {
         return reader.readIntArray();
     }
 
@@ -302,7 +302,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
      * @param writer Writer
      * @param types Types.
      */
-    private void writeEventTypes(int[] types, IgniteObjectRawWriterEx writer) {
+    private void writeEventTypes(int[] types, BinaryRawWriterEx writer) {
         if (types == null) {
             writer.writeIntArray(null);
 
@@ -349,7 +349,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
         }
 
         /** <inheritDoc /> */
-        @Override public void write(IgniteObjectRawWriterEx writer, Object obj, Throwable err) {
+        @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             platformCtx.writeEvent(writer, (EventAdapter)obj);
         }
 
@@ -379,7 +379,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
         /** <inheritDoc /> */
         @SuppressWarnings("unchecked")
-        @Override public void write(IgniteObjectRawWriterEx writer, Object obj, Throwable err) {
+        @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             Collection<EventAdapter> events = (Collection<EventAdapter>)obj;
 
             writer.writeInt(events.size());

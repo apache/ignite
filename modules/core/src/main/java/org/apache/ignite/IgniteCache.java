@@ -132,9 +132,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteCache<K, V> withNoRetries();
 
     /**
-     * Returns cache that will operate with portable objects.
+     * Returns cache that will operate with binary objects.
      * <p>
-     * Cache returned by this method will not be forced to deserialize portable objects,
+     * Cache returned by this method will not be forced to deserialize binary objects,
      * so keys and values will be returned from cache API methods without changes. Therefore,
      * signature of the cache can contain only following types:
      * <ul>
@@ -153,16 +153,16 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * </ul>
      * <p>
      * For example, if you use {@link Integer} as a key and {@code Value} class as a value
-     * (which will be stored in portable format), you should acquire following projection
+     * (which will be stored in binary format), you should acquire following projection
      * to avoid deserialization:
      * <pre>
-     * IgniteCache<Integer, PortableObject> prj = cache.withKeepBinary();
+     * IgniteCache<Integer, BinaryObject> prj = cache.withKeepBinary();
      *
      * // Value is not deserialized and returned in portable format.
-     * PortableObject po = prj.get(1);
+     * BinaryObject po = prj.get(1);
      * </pre>
      * <p>
-     * Note that this method makes sense only if cache is working in portable mode ({@link PortableMarshaller} is used).
+     * Note that this method makes sense only if cache is working in binary mode ({@link PortableMarshaller} is used).
      * If not, this method is no-op and will return current cache.
      *
      * @return New cache instance for portable objects.

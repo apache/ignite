@@ -3756,7 +3756,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @Override public <K, V> Cache.Entry<K, V> wrapLazyValue() {
         CacheOperationContext opCtx = cctx.operationContextPerCall();
 
-        return new LazyValueEntry<>(key, opCtx != null && opCtx.isKeepPortable());
+        return new LazyValueEntry<>(key, opCtx != null && opCtx.isKeepBinary());
     }
 
     /** {@inheritDoc} */

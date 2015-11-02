@@ -17,19 +17,19 @@
 
 package org.apache.ignite.examples.portable;
 
-import org.apache.ignite.igniteobject.IgniteObjectException;
-import org.apache.ignite.igniteobject.IgniteObjectMarshalAware;
-import org.apache.ignite.igniteobject.IgniteObjectReader;
-import org.apache.ignite.igniteobject.IgniteObjectWriter;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
 
 /**
  * Employee address.
  * <p>
- * This class implements {@link org.apache.ignite.igniteobject.IgniteObjectMarshalAware} only for example purposes,
+ * This class implements {@link org.apache.ignite.binary.Binarylizable} only for example purposes,
  * in order to show how to customize serialization and deserialization of
  * portable objects.
  */
-public class Address implements IgniteObjectMarshalAware {
+public class Address implements Binarylizable {
     /** Street. */
     private String street;
 
@@ -53,13 +53,13 @@ public class Address implements IgniteObjectMarshalAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(IgniteObjectWriter writer) throws IgniteObjectException {
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         writer.writeString("street", street);
         writer.writeInt("zip", zip);
     }
 
     /** {@inheritDoc} */
-    @Override public void readPortable(IgniteObjectReader reader) throws IgniteObjectException {
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
         street = reader.readString("street");
         zip = reader.readInt("zip");
     }

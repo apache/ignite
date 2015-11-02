@@ -26,10 +26,10 @@ import java.util.LinkedList;
 import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.igniteobject.IgniteObjectBuilder;
-import org.apache.ignite.igniteobject.IgniteObjectException;
-import org.apache.ignite.igniteobject.IgniteObjectMetadata;
-import org.apache.ignite.igniteobject.IgniteObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
  * <li>Automatically convert collections and maps between Java, .NET, and C++.</li>
  * <li>
  *      Optionally avoid deserialization of objects on the server side
- *      (objects are stored in {@link org.apache.ignite.igniteobject.IgniteObject} format).
+ *      (objects are stored in {@link org.apache.ignite.binary.BinaryObject} format).
  * </li>
  * <li>Avoid need to have concrete class definitions on the server side.</li>
  * <li>Dynamically change structure of the classes without having to restart the cluster.</li>
@@ -86,7 +86,7 @@ import org.jetbrains.annotations.Nullable;
  * IgniteCache&lt;Integer.class, PortableObject&gt; prj = cache.withKeepBinary();
  * </pre>
  * <h1 class="header">Automatic Portable Types</h1>
- * Note that only portable classes are converted to {@link org.apache.ignite.igniteobject.IgniteObject} format. Following
+ * Note that only portable classes are converted to {@link org.apache.ignite.binary.BinaryObject} format. Following
  * classes are never converted (e.g., {@link #toPortable(Object)} method will return original
  * object, and instances of these classes will be stored in cache without changes):
  * <ul>
@@ -110,7 +110,7 @@ import org.jetbrains.annotations.Nullable;
  * in Java is {@code Dictionary} in C#, and {@link TreeMap} in Java becomes {@code SortedDictionary}
  * in C#, etc.
  * <h1 class="header">Building Portable Objects</h1>
- * Ignite comes with {@link org.apache.ignite.igniteobject.IgniteObjectBuilder} which allows to build portable objects dynamically:
+ * Ignite comes with {@link org.apache.ignite.binary.BinaryObjectBuilder} which allows to build portable objects dynamically:
  * <pre name=code class=java>
  * PortableBuilder builder = Ignition.ignite().portables().builder();
  *
@@ -188,7 +188,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * cfg.setMarshaller(marsh);
  * </pre>
- * You can also specify class name for a portable object via {@link org.apache.ignite.igniteobject.IgniteObjectConfiguration}.
+ * You can also specify class name for a portable object via {@link org.apache.ignite.binary.BinaryTypeConfiguration}.
  * Do it in case if you need to override other configuration properties on per-type level, like
  * ID-mapper, or serializer.
  * <h1 class="header">Custom Affinity Keys</h1>
@@ -215,7 +215,7 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  * <h1 class="header">Serialization</h1>
  * Serialization and deserialization works out-of-the-box in Ignite. However, you can provide your own custom
- * serialization logic by optionally implementing {@link org.apache.ignite.igniteobject.IgniteObjectMarshalAware} interface, like so:
+ * serialization logic by optionally implementing {@link org.apache.ignite.binary.Binarylizable} interface, like so:
  * <pre name=code class=java>
  * public class Address implements PortableMarshalAware {
  *     private String street;
@@ -224,20 +224,20 @@ import org.jetbrains.annotations.Nullable;
  *     // Empty constructor required for portable deserialization.
  *     public Address() {}
  *
- *     &#64;Override public void writePortable(PortableWriter writer) throws PortableException {
+ *     &#64;Override public void writeBinary(PortableWriter writer) throws PortableException {
  *         writer.writeString("street", street);
  *         writer.writeInt("zip", zip);
  *     }
  *
- *     &#64;Override public void readPortable(PortableReader reader) throws PortableException {
+ *     &#64;Override public void readBinary(PortableReader reader) throws PortableException {
  *         street = reader.readString("street");
  *         zip = reader.readInt("zip");
  *     }
  * }
  * </pre>
  * Alternatively, if you cannot change class definitions, you can provide custom serialization
- * logic in {@link org.apache.ignite.igniteobject.IgniteObjectSerializer} either globally in {@link PortableMarshaller} or
- * for a specific type via {@link org.apache.ignite.igniteobject.IgniteObjectConfiguration} instance.
+ * logic in {@link org.apache.ignite.binary.BinarySerializer} either globally in {@link PortableMarshaller} or
+ * for a specific type via {@link org.apache.ignite.binary.BinaryTypeConfiguration} instance.
  * <p>
  * Similar to java serialization you can use {@code writeReplace()} and {@code readResolve()} methods.
  * <ul>
@@ -254,10 +254,10 @@ import org.jetbrains.annotations.Nullable;
  * <h1 class="header">Custom ID Mappers</h1>
  * Ignite implementation uses name hash codes to generate IDs for class names or field names
  * internally. However, in cases when you want to provide your own ID mapping schema,
- * you can provide your own {@link org.apache.ignite.igniteobject.IgniteObjectIdMapper} implementation.
+ * you can provide your own {@link org.apache.ignite.binary.BinaryTypeIdMapper} implementation.
  * <p>
  * ID-mapper may be provided either globally in {@link PortableMarshaller},
- * or for a specific type via {@link org.apache.ignite.igniteobject.IgniteObjectConfiguration} instance.
+ * or for a specific type via {@link org.apache.ignite.binary.BinaryTypeConfiguration} instance.
  * <h1 class="header">Query Indexing</h1>
  * Portable objects can be indexed for querying by specifying index fields in
  * {@link org.apache.ignite.cache.CacheTypeMetadata} inside of specific
@@ -297,13 +297,13 @@ public interface IgniteObjects {
     public int typeId(String typeName);
 
     /**
-     * Converts provided object to instance of {@link org.apache.ignite.igniteobject.IgniteObject}.
+     * Converts provided object to instance of {@link org.apache.ignite.binary.BinaryObject}.
      *
      * @param obj Object to convert.
      * @return Converted object.
-     * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public <T> T toPortable(@Nullable Object obj) throws IgniteObjectException;
+    public <T> T toPortable(@Nullable Object obj) throws BinaryObjectException;
 
     /**
      * Creates new portable builder.
@@ -311,7 +311,7 @@ public interface IgniteObjects {
      * @param typeId ID of the type.
      * @return Newly portable builder.
      */
-    public IgniteObjectBuilder builder(int typeId);
+    public BinaryObjectBuilder builder(int typeId);
 
     /**
      * Creates new portable builder.
@@ -319,7 +319,7 @@ public interface IgniteObjects {
      * @param typeName Type name.
      * @return Newly portable builder.
      */
-    public IgniteObjectBuilder builder(String typeName);
+    public BinaryObjectBuilder builder(String typeName);
 
     /**
      * Creates portable builder initialized by existing portable object.
@@ -327,40 +327,40 @@ public interface IgniteObjects {
      * @param portableObj Portable object to initialize builder.
      * @return Portable builder.
      */
-    public IgniteObjectBuilder builder(IgniteObject portableObj);
+    public BinaryObjectBuilder builder(BinaryObject portableObj);
 
     /**
      * Gets metadata for provided class.
      *
      * @param cls Class.
      * @return Metadata.
-     * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @Nullable public IgniteObjectMetadata metadata(Class<?> cls) throws IgniteObjectException;
+    @Nullable public BinaryTypeMetadata metadata(Class<?> cls) throws BinaryObjectException;
 
     /**
      * Gets metadata for provided class name.
      *
      * @param typeName Type name.
      * @return Metadata.
-     * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @Nullable public IgniteObjectMetadata metadata(String typeName) throws IgniteObjectException;
+    @Nullable public BinaryTypeMetadata metadata(String typeName) throws BinaryObjectException;
 
     /**
      * Gets metadata for provided type ID.
      *
      * @param typeId Type ID.
      * @return Metadata.
-     * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @Nullable public IgniteObjectMetadata metadata(int typeId) throws IgniteObjectException;
+    @Nullable public BinaryTypeMetadata metadata(int typeId) throws BinaryObjectException;
 
     /**
      * Gets metadata for all known types.
      *
      * @return Metadata.
-     * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public Collection<IgniteObjectMetadata> metadata() throws IgniteObjectException;
+    public Collection<BinaryTypeMetadata> metadata() throws BinaryObjectException;
 }

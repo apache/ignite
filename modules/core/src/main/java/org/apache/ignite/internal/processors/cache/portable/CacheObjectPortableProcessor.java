@@ -22,9 +22,9 @@ import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteObjects;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.igniteobject.IgniteObjectBuilder;
-import org.apache.ignite.igniteobject.IgniteObjectMetadata;
-import org.apache.ignite.igniteobject.IgniteObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -35,13 +35,13 @@ public interface CacheObjectPortableProcessor extends IgniteCacheObjectProcessor
      * @param typeId Type ID.
      * @return Builder.
      */
-    public IgniteObjectBuilder builder(int typeId);
+    public BinaryObjectBuilder builder(int typeId);
 
     /**
      * @param clsName Class name.
      * @return Builder.
      */
-    public IgniteObjectBuilder builder(String clsName);
+    public BinaryObjectBuilder builder(String clsName);
 
     /**
      * Creates builder initialized by existing portable object.
@@ -49,14 +49,14 @@ public interface CacheObjectPortableProcessor extends IgniteCacheObjectProcessor
      * @param portableObj Portable object to edit.
      * @return Portable builder.
      */
-    public IgniteObjectBuilder builder(IgniteObject portableObj);
+    public BinaryObjectBuilder builder(BinaryObject portableObj);
 
     /**
      * @param typeId Type ID.
      * @param newMeta New meta data.
      * @throws IgniteException In case of error.
      */
-    public void addMeta(int typeId, final IgniteObjectMetadata newMeta) throws IgniteException;
+    public void addMeta(int typeId, final BinaryTypeMetadata newMeta) throws IgniteException;
 
     /**
      * @param typeId Type ID.
@@ -73,20 +73,20 @@ public interface CacheObjectPortableProcessor extends IgniteCacheObjectProcessor
      * @return Meta data.
      * @throws IgniteException In case of error.
      */
-    @Nullable public IgniteObjectMetadata metadata(int typeId) throws IgniteException;
+    @Nullable public BinaryTypeMetadata metadata(int typeId) throws IgniteException;
 
     /**
      * @param typeIds Type ID.
      * @return Meta data.
      * @throws IgniteException In case of error.
      */
-    public Map<Integer, IgniteObjectMetadata> metadata(Collection<Integer> typeIds) throws IgniteException;
+    public Map<Integer, BinaryTypeMetadata> metadata(Collection<Integer> typeIds) throws IgniteException;
 
     /**
      * @return Metadata for all types.
      * @throws IgniteException In case of error.
      */
-    public Collection<IgniteObjectMetadata> metadata() throws IgniteException;
+    public Collection<BinaryTypeMetadata> metadata() throws IgniteException;
 
     /**
      * @return Portables interface.

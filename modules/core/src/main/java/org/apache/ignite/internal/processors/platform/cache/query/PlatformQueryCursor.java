@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.cache.query;
 
 import javax.cache.Cache;
-import org.apache.ignite.internal.portable.IgniteObjectRawWriterEx;
+import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 
@@ -38,7 +38,7 @@ public class PlatformQueryCursor extends PlatformAbstractQueryCursor<Cache.Entry
     }
 
     /** {@inheritDoc} */
-    @Override protected void write(IgniteObjectRawWriterEx writer, Cache.Entry val) {
+    @Override protected void write(BinaryRawWriterEx writer, Cache.Entry val) {
         writer.writeObjectDetached(val.getKey());
         writer.writeObjectDetached(val.getValue());
     }

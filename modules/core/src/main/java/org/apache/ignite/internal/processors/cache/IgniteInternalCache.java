@@ -188,7 +188,7 @@ import org.jetbrains.annotations.Nullable;
  * needed for performance reasons. To work with portable format directly you should create special projection
  * using {@link #keepPortable()} method:
  * <pre>
- * IgniteInternalCache<Integer, GridPortableObject> prj = Ignition.grid().cache(null).keepPortable();
+ * IgniteInternalCache<Integer, GridPortableObject> prj = Ignition.grid().cache(null).keepBinary();
  *
  * // Value is not deserialized and returned in portable format.
  * GridPortableObject po = prj.get(1);
@@ -249,7 +249,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * (which will be stored in portable format), you should acquire following projection
      * to avoid deserialization:
      * <pre>
-     * IgniteInternalCache<Integer, GridPortableObject> prj = cache.keepPortable();
+     * IgniteInternalCache<Integer, GridPortableObject> prj = cache.keepBinary();
      *
      * // Value is not deserialized and returned in portable format.
      * GridPortableObject po = prj.get(1);

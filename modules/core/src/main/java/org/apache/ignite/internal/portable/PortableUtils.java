@@ -21,8 +21,8 @@ import org.apache.ignite.internal.portable.builder.PortableLazyValue;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.igniteobject.IgniteObjectException;
-import org.apache.ignite.igniteobject.IgniteObject;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryObject;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -121,7 +121,7 @@ public class PortableUtils {
      * @param writer Writer.
      * @param userType User type flag.
      */
-    public static void writeFlags(IgniteObjectWriterExImpl writer, boolean userType) {
+    public static void writeFlags(BinaryWriterExImpl writer, boolean userType) {
         short val = 0;
 
         if (userType)
@@ -243,7 +243,7 @@ public class PortableUtils {
      * @param writer W
      * @param val Value.
      */
-    public static void writePlainObject(IgniteObjectWriterExImpl writer, Object val) {
+    public static void writePlainObject(BinaryWriterExImpl writer, Object val) {
         Byte flag = PLAIN_CLASS_TO_FLAG.get(val.getClass());
 
         if (flag == null)
@@ -494,7 +494,7 @@ public class PortableUtils {
     public static boolean isPortableType(Class<?> cls) {
         assert cls != null;
 
-        return IgniteObject.class.isAssignableFrom(cls) ||
+        return BinaryObject.class.isAssignableFrom(cls) ||
             PORTABLE_CLS.contains(cls) ||
             cls.isEnum() ||
             (cls.isArray() && cls.getComponentType().isEnum());
@@ -543,7 +543,7 @@ public class PortableUtils {
      */
     public static void checkProtocolVersion(byte protoVer) {
         if (PROTO_VER != protoVer)
-            throw new IgniteObjectException("Unsupported protocol version: " + protoVer);
+            throw new BinaryObjectException("Unsupported protocol version: " + protoVer);
     }
 
     /**
@@ -556,7 +556,7 @@ public class PortableUtils {
      * @param clsName Class name (optional).
      * @return Position where length should be written.
      */
-    public static int writeHeader(IgniteObjectWriterExImpl writer, boolean usrTyp, int typeId, int hashCode,
+    public static int writeHeader(BinaryWriterExImpl writer, boolean usrTyp, int typeId, int hashCode,
         @Nullable String clsName) {
         writer.doWriteByte(GridPortableMarshaller.OBJ);
         writer.doWriteByte(GridPortableMarshaller.PROTO_VER);

@@ -1710,7 +1710,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean keepPortable() {
         CacheOperationContext opCtx = operationContextPerCall();
 
-        return opCtx != null && opCtx.isKeepPortable();
+        return opCtx != null && opCtx.isKeepBinary();
     }
 
     /**

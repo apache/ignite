@@ -31,11 +31,11 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.igniteobject.IgniteObjectException;
-import org.apache.ignite.igniteobject.IgniteObjectMarshalAware;
-import org.apache.ignite.igniteobject.IgniteObject;
-import org.apache.ignite.igniteobject.IgniteObjectReader;
-import org.apache.ignite.igniteobject.IgniteObjectWriter;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -221,12 +221,12 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
             }
 
             // Read random keys. Take values as PortableObject.
-            IgniteCache<Integer, IgniteObject> c2 = ((IgniteCacheProxy)c).keepPortable();
+            IgniteCache<Integer, BinaryObject> c2 = ((IgniteCacheProxy)c).keepPortable();
 
             for (int i = 0; i < 100; i ++) {
                 Integer k = rnd.nextInt(KEYS_COUNT);
 
-                IgniteObject v = c2.get(k);
+                BinaryObject v = c2.get(k);
 
                 assertEquals(k, v.field("val"));
             }
@@ -256,7 +256,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    private static class TestObject implements IgniteObjectMarshalAware, Serializable {
+    private static class TestObject implements Binarylizable, Serializable {
         /** */
         private int val;
 
@@ -289,19 +289,19 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(IgniteObjectWriter writer) throws IgniteObjectException {
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeInt("val", val);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(IgniteObjectReader reader) throws IgniteObjectException {
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             val = reader.readInt("val");
         }
     }
 
     /**
      */
-    private static class TestObject2 implements IgniteObjectMarshalAware, Serializable {
+    private static class TestObject2 implements Binarylizable, Serializable {
         /** */
         private int val;
 
@@ -333,12 +333,12 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void writePortable(IgniteObjectWriter writer) throws IgniteObjectException {
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeInt("val", val);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(IgniteObjectReader reader) throws IgniteObjectException {
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             val = reader.readInt("val");
         }
     }

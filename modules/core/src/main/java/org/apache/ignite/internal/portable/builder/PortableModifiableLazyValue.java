@@ -43,7 +43,7 @@ public class PortableModifiableLazyValue extends PortableAbstractLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(IgniteObjectWriterExImpl writer, PortableBuilderSerializer ctx) {
+    @Override public void writeTo(BinaryWriterExImpl writer, PortableBuilderSerializer ctx) {
         if (val == null)
             writer.write(reader.array(), valOff, len);
         else

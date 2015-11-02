@@ -53,7 +53,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
-import org.apache.ignite.igniteobject.IgniteObject;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -1838,9 +1838,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (isKeyProp0 == 0) {
                     // Key is allowed to be a non-portable object here.
                     // We check key before value consistently with ClassProperty.
-                    if (key instanceof IgniteObject && ((IgniteObject)key).hasField(propName))
+                    if (key instanceof BinaryObject && ((BinaryObject)key).hasField(propName))
                         isKeyProp = isKeyProp0 = 1;
-                    else if (val instanceof IgniteObject && ((IgniteObject)val).hasField(propName))
+                    else if (val instanceof BinaryObject && ((BinaryObject)val).hasField(propName))
                         isKeyProp = isKeyProp0 = -1;
                     else {
                         U.warn(log, "Neither key nor value have property " +

@@ -2829,7 +2829,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 null,
                 opCtx != null && opCtx.skipStore(),
                 false,
-                opCtx != null && opCtx.isKeepPortable());
+                opCtx != null && opCtx.isKeepBinary());
 
             if (pessimistic()) {
                 // Loose all skipped.
@@ -3057,7 +3057,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 drMap,
                 opCtx != null && opCtx.skipStore(),
                 singleRmv,
-                opCtx != null && opCtx.isKeepPortable()
+                opCtx != null && opCtx.isKeepBinary()
             );
 
             if (log.isDebugEnabled())
@@ -3187,7 +3187,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     private boolean deserializePortables(GridCacheContext cacheCtx) {
         CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
-        return opCtx == null || !opCtx.isKeepPortable();
+        return opCtx == null || !opCtx.isKeepBinary();
     }
 
     /**

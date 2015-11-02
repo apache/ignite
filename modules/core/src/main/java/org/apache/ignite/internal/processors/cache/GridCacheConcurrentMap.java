@@ -1878,7 +1878,7 @@ public class GridCacheConcurrentMap {
          * @return Key iterator.
          */
         Iterator<K> keyIterator() {
-            return new KeyIterator<>(map, opCtxPerCall != null && opCtxPerCall.isKeepPortable(), filter);
+            return new KeyIterator<>(map, opCtxPerCall != null && opCtxPerCall.isKeepBinary(), filter);
         }
 
         /**

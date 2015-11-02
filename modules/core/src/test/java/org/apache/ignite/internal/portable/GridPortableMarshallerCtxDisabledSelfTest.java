@@ -27,11 +27,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.MarshallerContextAdapter;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.igniteobject.IgniteObjectException;
-import org.apache.ignite.igniteobject.IgniteObjectMarshalAware;
-import org.apache.ignite.igniteobject.IgniteObjectMetadata;
-import org.apache.ignite.igniteobject.IgniteObjectReader;
-import org.apache.ignite.igniteobject.IgniteObjectWriter;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -40,11 +40,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstractTest {
     /** */
     protected static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, IgniteObjectMetadata meta) {
+        @Override public void addMeta(int typeId, BinaryTypeMetadata meta) {
             // No-op.
         }
 
-        @Override public IgniteObjectMetadata metadata(int typeId) {
+        @Override public BinaryTypeMetadata metadata(int typeId) {
             return null;
         }
     };
@@ -78,7 +78,7 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
 
         assertEquals(simpleObj, marsh.unmarshal(marsh.marshal(simpleObj), null));
 
-        SimpleIgniteObject simplePortable = new SimpleIgniteObject();
+        SimpleBinary simplePortable = new SimpleBinary();
 
         simplePortable.str = "portable";
         simplePortable.arr = new long[] {100, 200, 300};
@@ -180,7 +180,7 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
     /**
      *
      */
-    private static class SimpleIgniteObject implements IgniteObjectMarshalAware {
+    private static class SimpleBinary implements Binarylizable {
         /** */
         private String str;
 
@@ -188,13 +188,13 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
         private long[] arr;
 
         /** {@inheritDoc} */
-        @Override public void writePortable(IgniteObjectWriter writer) throws IgniteObjectException {
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeString("str", str);
             writer.writeLongArray("longArr", arr);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(IgniteObjectReader reader) throws IgniteObjectException {
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             str = reader.readString("str");
             arr = reader.readLongArray("longArr");
         }
@@ -207,7 +207,7 @@ public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstrac
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            SimpleIgniteObject that = (SimpleIgniteObject)o;
+            SimpleBinary that = (SimpleBinary)o;
 
             if (str != null ? !str.equals(that.str) : that.str != null)
                 return false;

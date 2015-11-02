@@ -26,13 +26,13 @@ import org.apache.ignite.IgniteObjects;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.igniteobject.IgniteObjectException;
-import org.apache.ignite.igniteobject.IgniteObjectMarshalAware;
-import org.apache.ignite.igniteobject.IgniteObjectMetadata;
-import org.apache.ignite.igniteobject.IgniteObject;
-import org.apache.ignite.igniteobject.IgniteObjectRawWriter;
-import org.apache.ignite.igniteobject.IgniteObjectReader;
-import org.apache.ignite.igniteobject.IgniteObjectWriter;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -84,11 +84,11 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
     public void testGetAll() throws Exception {
         portables().toPortable(new TestObject2());
 
-        Collection<IgniteObjectMetadata> metas = portables().metadata();
+        Collection<BinaryTypeMetadata> metas = portables().metadata();
 
         assertEquals(2, metas.size());
 
-        for (IgniteObjectMetadata meta : metas) {
+        for (BinaryTypeMetadata meta : metas) {
             Collection<String> fields;
 
             switch (meta.typeName()) {
@@ -159,7 +159,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReflection() throws Exception {
-        IgniteObjectMetadata meta = portables().metadata(TestObject1.class);
+        BinaryTypeMetadata meta = portables().metadata(TestObject1.class);
 
         assertNotNull(meta);
 
@@ -192,7 +192,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
     public void testPortableMarshalAware() throws Exception {
         portables().toPortable(new TestObject2());
 
-        IgniteObjectMetadata meta = portables().metadata(TestObject2.class);
+        BinaryTypeMetadata meta = portables().metadata(TestObject2.class);
 
         assertNotNull(meta);
 
@@ -229,7 +229,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
 
         portables().toPortable(new TestObject2());
 
-        IgniteObjectMetadata meta = portables().metadata(TestObject2.class);
+        BinaryTypeMetadata meta = portables().metadata(TestObject2.class);
 
         assertNotNull(meta);
 
@@ -274,11 +274,11 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
         obj.decVal = BigDecimal.ZERO;
         obj.decArrVal = new BigDecimal[] { BigDecimal.ONE };
 
-        IgniteObject po = portables().toPortable(obj);
+        BinaryObject po = portables().toPortable(obj);
 
         info(po.toString());
 
-        IgniteObjectMetadata meta = po.metaData();
+        BinaryTypeMetadata meta = po.metaData();
 
         assertNotNull(meta);
 
@@ -333,9 +333,9 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    private static class TestObject2 implements IgniteObjectMarshalAware {
+    private static class TestObject2 implements Binarylizable {
         /** {@inheritDoc} */
-        @Override public void writePortable(IgniteObjectWriter writer) throws IgniteObjectException {
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeBoolean("boolVal", false);
             writer.writeDate("dateVal", new Date());
             writer.writeUuidArray("uuidArrVal", null);
@@ -349,14 +349,14 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
                 writer.writeCollection("colVal", null);
             }
 
-            IgniteObjectRawWriter raw = writer.rawWriter();
+            BinaryRawWriter raw = writer.rawWriter();
 
             raw.writeChar((char)0);
             raw.writeCollection(null);
         }
 
         /** {@inheritDoc} */
-        @Override public void readPortable(IgniteObjectReader reader) throws IgniteObjectException {
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             // No-op.
         }
     }

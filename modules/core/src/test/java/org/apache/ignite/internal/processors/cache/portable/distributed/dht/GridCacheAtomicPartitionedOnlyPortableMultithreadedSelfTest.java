@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.portable.distributed.dht;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.cache.portable.GridCacheIgniteObjectsAbstractMultiThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.portable.GridCacheBinaryObjectsAbstractMultiThreadedSelfTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -29,7 +29,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  *
  */
 public class GridCacheAtomicPartitionedOnlyPortableMultithreadedSelfTest extends
-    GridCacheIgniteObjectsAbstractMultiThreadedSelfTest {
+    GridCacheBinaryObjectsAbstractMultiThreadedSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
