@@ -889,8 +889,8 @@ consoleModule.controller('metadataController', [
 
                 var item = $scope.backupItem;
 
-                //if (validate(item))
-                save(item);
+                if (validate(item))
+                    save(item);
             };
 
             // Save cache type metadata with new name.
