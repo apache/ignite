@@ -1225,6 +1225,16 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(nDateArr, obj2.NDateArr);
         }
 
+        /// <summary>
+        /// Writes objects of various sizes to test schema compaction 
+        /// (where field offsets can be stored as 1, 2 or 4 bytes).
+        /// </summary>
+        [Test]
+        public void TestCompactSchema()
+        {
+            // TODO:
+        }
+
         private static void CheckKeepSerialized(PortableConfiguration cfg, bool expKeep)
         {
             if (cfg.TypeConfigurations == null)
