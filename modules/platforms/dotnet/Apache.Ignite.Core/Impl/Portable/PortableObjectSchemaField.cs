@@ -34,6 +34,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Offset. */
         public readonly int Offset;
 
+        /** Size, equals to sizeof(PortableObjectSchemaField) */
+        private const int Size = 8;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PortableObjectSchemaField"/> struct.
         /// </summary>
@@ -96,7 +99,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 {
                     fixed (PortableObjectSchemaField* ptr = &fields[0])
                     {
-                        stream.Write((byte*) ptr, count << 3);
+                        stream.Write((byte*) ptr, count  / Size);
                     }
                 }
                 else

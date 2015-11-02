@@ -17,8 +17,10 @@
 
 namespace Apache.Ignite.Core.Impl.Common
 {
+    using System.Collections.Generic;
+
     /// <summary>
-    /// Append-only PortableSchemaField array.
+    /// Simple append-only <see cref="List{T}"/> alternative which exposes internal array.
     /// </summary>
     internal class ResizeableArray<T>
     {
