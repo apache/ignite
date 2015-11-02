@@ -949,7 +949,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             // Event notification.
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_CREATED))
                 ctx.events().addEvent(created.partition(), created.key(), locNodeId, (IgniteUuid)null, null,
-                    EVT_CACHE_ENTRY_CREATED, null, false, null, false, null, null, null, false);
+                    EVT_CACHE_ENTRY_CREATED, null, false, null, false, null, null, null, true);
 
             if (touch)
                 ctx.evicts().touch(cur, topVer);
