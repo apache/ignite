@@ -64,7 +64,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -449,11 +448,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         // In near-only cache this is a no-op.
         if (ctx.affinityNode())
             dht().promoteAll(keys);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Cache.Entry<K, V> randomEntry() {
-        return ctx.affinityNode() && ctx.isNear() ? dht().randomEntry() : super.randomEntry();
     }
 
     /** {@inheritDoc} */
