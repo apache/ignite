@@ -627,91 +627,101 @@ namespace Apache.Ignite.Core.Impl.Portable
                     var outSchema = PortableObjectSchemaHolder.Current;
 
                     outSchema.PushSchema();
+                    var schemaPushed = true;
 
-                    // Skip header as it is not known at this point.
-                    outStream.Seek(PortableObjectHeader.Size, SeekOrigin.Current);
-
-                    if (inSchema != null)
+                    try
                     {
-                        foreach (var inField in inSchema)
+                        // Skip header as it is not known at this point.
+                        outStream.Seek(PortableObjectHeader.Size, SeekOrigin.Current);
+
+                        if (inSchema != null)
                         {
-                            PortableBuilderField fieldVal;
+                            foreach (var inField in inSchema)
+                            {
+                                PortableBuilderField fieldVal;
 
-                            var fieldFound = vals.TryGetValue(inField.Id, out fieldVal);
+                                var fieldFound = vals.TryGetValue(inField.Id, out fieldVal);
 
-                            if (fieldFound && fieldVal == PortableBuilderField.RmvMarker)
+                                if (fieldFound && fieldVal == PortableBuilderField.RmvMarker)
+                                    continue;
+
+                                // ReSharper disable once PossibleNullReferenceException (can't be null)
+                                outSchema.Push(inField.Id, outStream.Position - outStartPos);
+
+                                if (!fieldFound)
+                                    fieldFound = _parent._cache != null &&
+                                                 _parent._cache.TryGetValue(inField.Offset + inStartPos, out fieldVal);
+
+                                if (fieldFound)
+                                {
+                                    WriteField(ctx, fieldVal);
+
+                                    vals.Remove(inField.Id);
+                                }
+                                else
+                                {
+                                    // Field is not tracked, re-write as is.
+                                    inStream.Seek(inField.Offset + inStartPos, SeekOrigin.Begin);
+
+                                    Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
+                                }
+                            }
+                        }
+
+                        // Write remaining new fields.
+                        foreach (var valEntry in vals)
+                        {
+                            if (valEntry.Value == PortableBuilderField.RmvMarker)
                                 continue;
 
                             // ReSharper disable once PossibleNullReferenceException (can't be null)
-                            outSchema.Push(inField.Id, outStream.Position - outStartPos);
+                            outSchema.Push(valEntry.Key, outStream.Position - outStartPos);
 
-                            if (!fieldFound)
-                                fieldFound = _parent._cache != null &&
-                                             _parent._cache.TryGetValue(inField.Offset + inStartPos, out fieldVal);
-
-                            if (fieldFound)
-                            {
-                                WriteField(ctx, fieldVal);
-
-                                vals.Remove(inField.Id);
-                            }
-                            else
-                            {
-                                // Field is not tracked, re-write as is.
-                                inStream.Seek(inField.Offset + inStartPos, SeekOrigin.Begin);
-
-                                Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
-                            }
+                            WriteField(ctx, valEntry.Value);
                         }
-                    }
 
-                    // Write remaining new fields.
-                    foreach (var valEntry in vals)
-                    {
-                        if (valEntry.Value == PortableBuilderField.RmvMarker)
-                            continue;
+                        // Write raw data.
+                        int outRawOff = outStream.Position - outStartPos;
 
-                        // ReSharper disable once PossibleNullReferenceException (can't be null)
-                        outSchema.Push(valEntry.Key, outStream.Position - outStartPos);
-
-                        WriteField(ctx, valEntry.Value);
-                    }
-
-                    // Write raw data.
-                    int outRawOff = outStream.Position - outStartPos;
-
-                    int inRawOff = inHeader.GetRawOffset(inStream, inStartPos);
-                    int inRawLen = inHeader.SchemaOffset - inRawOff;
-
-                    if (inRawLen > 0)
-                        outStream.Write(inStream.InternalArray, inStartPos + inRawOff, inRawLen);
-
-                    // Write schema
-                    int outSchemaOff = outRawOff;
-
-                    int schemaPos = outStream.Position;
-
-                    int outSchemaId;
-                    var hasSchema = outSchema.WriteAndPop(outStream, out outSchemaId);
-
-                    if (hasSchema)
-                    {
-                        outSchemaOff = schemaPos - outStartPos;
+                        int inRawOff = inHeader.GetRawOffset(inStream, inStartPos);
+                        int inRawLen = inHeader.SchemaOffset - inRawOff;
 
                         if (inRawLen > 0)
-                            outStream.WriteInt(outRawOff);
+                            outStream.Write(inStream.InternalArray, inStartPos + inRawOff, inRawLen);
+
+                        // Write schema
+                        int outSchemaOff = outRawOff;
+
+                        int schemaPos = outStream.Position;
+
+                        int outSchemaId;
+                        var hasSchema = outSchema.WriteAndPop(outStream, out outSchemaId);
+                        schemaPushed = false;
+
+                        if (hasSchema)
+                        {
+                            outSchemaOff = schemaPos - outStartPos;
+
+                            if (inRawLen > 0)
+                                outStream.WriteInt(outRawOff);
+                        }
+
+                        var outLen = outStream.Position - outStartPos;
+
+                        var outHash = changeHash ? hash : inHeader.HashCode;
+
+                        var outHeader = new PortableObjectHeader(inHeader.IsUserType, inHeader.TypeId, outHash,
+                            outLen, outSchemaId, outSchemaOff, !hasSchema);
+
+                        PortableObjectHeader.Write(outHeader, outStream, outStartPos);
+
+                        outStream.Seek(outStartPos + outLen, SeekOrigin.Begin); // seek to the end of the object
                     }
-
-                    var outLen = outStream.Position - outStartPos;
-
-                    var outHash = changeHash ? hash : inHeader.HashCode;
-
-                    var outHeader = new PortableObjectHeader(inHeader.IsUserType, inHeader.TypeId, outHash,
-                        outLen, outSchemaId, outSchemaOff, !hasSchema);
-
-                    PortableObjectHeader.Write(outHeader, outStream, outStartPos);
-
-                    outStream.Seek(outStartPos + outLen, SeekOrigin.Begin); // seek to the end of the object
+                    finally 
+                    {
+                        if (schemaPushed)
+                            outSchema.PopSchema();
+                    }
                 }
             }
             else

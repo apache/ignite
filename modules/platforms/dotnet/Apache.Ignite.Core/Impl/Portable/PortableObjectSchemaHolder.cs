@@ -65,13 +65,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Marks the start of a new schema and returns previous state index.
+        /// Marks the start of a new schema.
         /// </summary>
-        public int PushSchema()
+        public void PushSchema()
         {
             _offsets.Push(_idx);
-
-            return _offsets.Count - 1;
         }
 
         /// <summary>
@@ -80,18 +78,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         public void PopSchema()
         {
             _idx = _offsets.Pop();
-        }
-
-        /// <summary>
-        /// Resets holder to the specified state index returned by <see cref="PushSchema" />.
-        /// </summary>
-        /// <param name="stateIndex">Index of the state.</param>
-        public void Reset(int stateIndex)
-        {
-            while (_offsets.Count > stateIndex)
-            {
-                _idx = _offsets.Pop();
-            }
         }
 
         /// <summary>
