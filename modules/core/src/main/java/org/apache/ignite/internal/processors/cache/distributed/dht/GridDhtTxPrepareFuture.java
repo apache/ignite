@@ -316,7 +316,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      *
      */
     private void onEntriesLocked() {
-        ret = new GridCacheReturn(null, tx.localResult(), null, true);
+        ret = new GridCacheReturn(null, tx.localResult(), true, null, true);
 
         for (IgniteTxEntry writeEntry : writes) {
             IgniteTxEntry txEntry = tx.entry(writeEntry.txKey());
@@ -404,7 +404,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             }
                         }
                         else if (retVal)
-                            ret.value(cacheCtx, val);
+                            ret.value(cacheCtx, val, txEntry.keepBinary());
                     }
 
                     if (hasFilters && !cacheCtx.isAll(cached, txEntry.filters())) {
@@ -1553,7 +1553,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                         false, null, null, null, false);
 
                                 if (retVal && !invoke)
-                                    ret.value(cacheCtx, info.value());
+                                    ret.value(cacheCtx, info.value(), false);
                             }
 
                             break;

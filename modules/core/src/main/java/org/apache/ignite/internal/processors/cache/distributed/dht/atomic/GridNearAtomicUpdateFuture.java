@@ -479,7 +479,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
 
                 if (syncMode == FULL_ASYNC)
-                    onDone(new GridCacheReturn(cctx, true, null, true));
+                    onDone(new GridCacheReturn(cctx, true, true, null, true));
             }
             catch (IgniteCheckedException e) {
                 state.onSendError(req, e);
@@ -528,7 +528,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         }
 
         if (syncMode == FULL_ASYNC)
-            onDone(new GridCacheReturn(cctx, true, null, true));
+            onDone(new GridCacheReturn(cctx, true, true, null, true));
     }
 
     /**
@@ -898,7 +898,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 assert pendingMappings != null;
 
                 if (size == 0)
-                    onDone(new GridCacheReturn(cctx, true, null, true));
+                    onDone(new GridCacheReturn(cctx, true, true, null, true));
                 else
                     doUpdate(pendingMappings);
             }

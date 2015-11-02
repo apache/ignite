@@ -1199,7 +1199,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         }
 
                         if (retVal == null)
-                            retVal = new GridCacheReturn(ctx, node.isLocal(), null, true);
+                            retVal = new GridCacheReturn(ctx, node.isLocal(), true, null, true);
 
                         res.returnValue(retVal);
 
@@ -1883,6 +1883,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         retVal = new GridCacheReturn(ctx,
                             node.isLocal(),
+                            req.keepBinary(),
                             req.returnValue() ? ret : null,
                             updRes.success());
                     }

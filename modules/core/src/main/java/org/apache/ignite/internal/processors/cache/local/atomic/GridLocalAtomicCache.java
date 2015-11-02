@@ -1045,7 +1045,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         if (err != null)
             throw err;
 
-        Object ret = res == null ? null : rawRetval ? new GridCacheReturn(ctx,  true, res.get2(), res.get1()) :
+        Object ret = res == null ? null : rawRetval ? new GridCacheReturn(ctx,  true, keepPortable, res.get2(), res.get1()) :
             (retval || op == TRANSFORM) ? res.get2() : res.get1();
 
         if (op == TRANSFORM && ret == null)
