@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Diagnostics;
     using System.IO;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Portable.Metadata;
     using Apache.Ignite.Core.Portable;
@@ -568,7 +569,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="hash">New hash.</param>
         /// <param name="vals">Values to be replaced.</param>
         /// <returns>Mutated object.</returns>
-        private void Mutate0(Context ctx, PortableHeapStream inStream, IPortableStream outStream,
+        private unsafe void Mutate0(Context ctx, PortableHeapStream inStream, IPortableStream outStream,
             bool changeHash, int hash, IDictionary<int, PortableBuilderField> vals)
         {
             int inStartPos = inStream.Position;
@@ -625,7 +626,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                         // New object, write in full form.
                         var inSchema = inHeader.ReadSchema(inStream, inStartPos);
 
-                        PortableObjectSchemaHolder.Current.PushSchema();
+                        var outSchemaLen = vals.Count + (inSchema == null ? 0 : inSchema.Length);
+                        var outSchema = outSchemaLen > 0 
+                            ? new ResizeableArray<PortableObjectSchemaField>(outSchemaLen)
+                            : null;
 
                         // Skip header as it is not known at this point.
                         outStream.Seek(PortableObjectHeader.Size, SeekOrigin.Current);
@@ -642,7 +646,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                                     continue;
 
                                 // ReSharper disable once PossibleNullReferenceException (can't be null)
-                                PortableObjectSchemaHolder.Current.Push(inField.Id, outStream.Position - outStartPos);
+                                outSchema.Add(new PortableObjectSchemaField(inField.Id, outStream.Position - outStartPos));
 
                                 if (!fieldFound)
                                     fieldFound = _parent._cache != null &&
@@ -671,10 +675,13 @@ namespace Apache.Ignite.Core.Impl.Portable
                                 continue;
 
                             // ReSharper disable once PossibleNullReferenceException (can't be null)
-                            PortableObjectSchemaHolder.Current.Push(valEntry.Key, outStream.Position - outStartPos);
+                            outSchema.Add(new PortableObjectSchemaField(valEntry.Key, outStream.Position - outStartPos));
 
                             WriteField(ctx, valEntry.Value);
                         }
+
+                        if (outSchema != null && outSchema.Count == 0)
+                            outSchema = null;
 
                         // Write raw data.
                         int outRawOff = outStream.Position - outStartPos;
@@ -688,25 +695,24 @@ namespace Apache.Ignite.Core.Impl.Portable
                         // Write schema
                         int outSchemaOff = outRawOff;
 
-                        int schemaPos = outStream.Position;
-
-                        int outSchemaId;
-                        var hasSchema = PortableObjectSchemaHolder.Current.WriteAndPop(outStream, out outSchemaId);
-
-                        if (hasSchema)
+                        if (outSchema != null)
                         {
-                            outSchemaOff = schemaPos - outStartPos;
+                            outSchemaOff = outStream.Position - outStartPos;
+
+                            PortableObjectSchemaField.WriteArray(outSchema.Array, outStream, outSchema.Count);
 
                             if (inRawLen > 0)
                                 outStream.WriteInt(outRawOff);
                         }
+
+                        var outSchemaId = PortableUtils.GetSchemaId(outSchema);
 
                         var outLen = outStream.Position - outStartPos;
 
                         var outHash = changeHash ? hash : inHeader.HashCode;
 
                         var outHeader = new PortableObjectHeader(inHeader.IsUserType, inHeader.TypeId, outHash, 
-                            outLen, outSchemaId, outSchemaOff, !hasSchema);
+                            outLen, outSchemaId, outSchemaOff, outSchema == null);
 
                         PortableObjectHeader.Write(outHeader, outStream, outStartPos);
 
