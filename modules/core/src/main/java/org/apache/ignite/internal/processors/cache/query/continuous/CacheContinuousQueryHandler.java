@@ -29,12 +29,13 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
@@ -54,7 +55,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatchAdapter;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryFilter;
+import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -752,10 +753,27 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      */
     private static class HoleBuffer {
         /** */
-        private final TreeSet<Long> buf = new TreeSet<>();
+        private final NavigableSet<Long> buf = new GridConcurrentSkipListSet<>();
 
         /** */
-        private long lastFiredEvt;
+        private AtomicLong lastFiredCntr = new AtomicLong();
+
+        /**
+         * @param newVal New value.
+         * @return Old value if previous value less than new value otherwise {@code -1}.
+         */
+        private long setLastFiredCounter(long newVal) {
+            long prevVal = lastFiredCntr.get();
+
+            while (prevVal < newVal) {
+                if (lastFiredCntr.compareAndSet(prevVal, newVal))
+                    return prevVal;
+                else
+                    prevVal = lastFiredCntr.get();
+            }
+
+            return prevVal >= newVal ? -1 : prevVal;
+        }
 
         /**
          * Add continuous entry.
@@ -766,50 +784,51 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         public CacheContinuousQueryEntry handle(CacheContinuousQueryEntry e) {
             assert e != null;
 
-            synchronized (buf) {
-                // Handle filtered events.
-                if (e.isFiltered()) {
-                    if (lastFiredEvt > e.updateIndex() || e.updateIndex() == 1)
-                        return e;
-
+            if (e.isFiltered()) {
+                if (lastFiredCntr.get() > e.updateIndex() || e.updateIndex() == 1)
+                    return e;
+                else {
                     buf.add(e.updateIndex());
 
-                    return null;
-                }
-                else {
-                    if (lastFiredEvt < e.updateIndex())
-                        lastFiredEvt = e.updateIndex();
-
-                    // Doesn't have filtered and delayed events.
-                    if (buf.isEmpty() || buf.first() > e.updateIndex())
-                        return e;
-                    else {
-                        GridLongList filteredEvts = new GridLongList(buf.size());
-
-                        int size = 0;
-
-                        Iterator<Long> iter = buf.iterator();
-
-                        while (iter.hasNext()) {
-                            long idx = iter.next();
-
-                            if (idx < e.updateIndex()) {
-                                filteredEvts.add(idx);
-
-                                iter.remove();
-
-                                ++size;
-                            }
-                            else
-                                break;
-                        }
-
-                        filteredEvts.truncate(size, true);
-
-                        e.filteredEvents(filteredEvts);
+                    // Double check. If another thread sent a event with counter higher than this event.
+                    if (lastFiredCntr.get() > e.updateIndex() && buf.contains(e.updateIndex())) {
+                        buf.remove(e.updateIndex());
 
                         return e;
                     }
+                    else
+                        return null;
+                }
+            }
+            else {
+                long prevVal = setLastFiredCounter(e.updateIndex());
+
+                if (prevVal == -1)
+                    return e;
+                else {
+                    NavigableSet<Long> prevHoles = buf.subSet(prevVal, true, e.updateIndex(), true);
+
+                    GridLongList filteredEvts = new GridLongList(10);
+
+                    int size = 0;
+
+                    Iterator<Long> iter = prevHoles.iterator();
+
+                    while (iter.hasNext()) {
+                        long idx = iter.next();
+
+                        filteredEvts.add(idx);
+
+                        iter.remove();
+
+                        ++size;
+                    }
+
+                    filteredEvts.truncate(size, true);
+
+                    e.filteredEvents(filteredEvts);
+
+                    return e;
                 }
             }
         }

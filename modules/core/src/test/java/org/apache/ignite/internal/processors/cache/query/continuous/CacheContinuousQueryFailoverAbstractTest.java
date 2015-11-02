@@ -30,9 +30,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
@@ -91,7 +88,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -900,16 +896,24 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
      */
     private void checkEvents(final List<T3<Object, Object, Object>> expEvts, final CacheEventListener2 lsnr,
         boolean lostAllow) throws Exception {
-        boolean b = GridTestUtils.waitForCondition(new PA() {
+        GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
                 return expEvts.size() == lsnr.size();
             }
         }, 2000L);
 
+        Map<Integer, List<CacheEntryEvent<?, ?>>> prevMap = new HashMap<>(lsnr.evts.size());
+
+        for (Map.Entry<Integer, List<CacheEntryEvent<?, ?>>> e : lsnr.evts.entrySet())
+            prevMap.put(e.getKey(), new ArrayList<>(e.getValue()));
+
         List<T3<Object, Object, Object>> lostEvents = new ArrayList<>();
 
         for (T3<Object, Object, Object> exp : expEvts) {
             List<CacheEntryEvent<?, ?>> rcvdEvts = lsnr.evts.get(exp.get1());
+
+            if (F.eq(exp.get2(), exp.get3()))
+                continue;
 
             if (rcvdEvts == null || rcvdEvts.isEmpty()) {
                 lostEvents.add(exp);
@@ -949,8 +953,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
                         boolean found = false;
 
                         for (T3<Object, Object, Object> lostEvt : lostEvents) {
-                            if (e.getKey().equals(lostEvt.get1()) && e.getValue().equals(lostEvt.get2())
-                                /*&& equalOldValue(e, lostEvt)*/) {
+                            if (e.getKey().equals(lostEvt.get1()) && e.getValue().equals(lostEvt.get2())) {
                                 found = true;
 
                                 lostEvents.remove(lostEvt);
@@ -972,12 +975,20 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
                 for (T3<Object, Object, Object> e : lostEvents)
                     log.error("Lost event: " + e);
 
-                for (List<CacheEntryEvent<?, ?>> e : lsnr.evts.values())
-                    if (!e.isEmpty())
-                        log.error("Duplicate event: " + e);
-            }
+                for (List<CacheEntryEvent<?, ?>> e : lsnr.evts.values()) {
+                    if (!e.isEmpty()) {
+                        for (CacheEntryEvent<?, ?> event : e) {
+                            List<CacheEntryEvent<?, ?>> entries = new ArrayList<>();
 
-            assertFalse("Received duplicate events, see log for details.", !lostEvents.isEmpty());
+                            for (CacheEntryEvent<?, ?> ev0 : prevMap.get(event.getKey())) {
+                                if (F.eq(event.getValue(), ev0.getValue()) && F.eq(event.getOldValue(),
+                                    ev0.getOldValue()))
+                                    entries.add(ev0);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         if (!lostAllow && !lostEvents.isEmpty()) {
@@ -1736,19 +1747,23 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                     log.info("Stop node: " + idx);
 
+                    awaitPartitionMapExchange();
+
+                    Thread.sleep(400);
+
                     stopGrid(idx);
 
                     awaitPartitionMapExchange();
 
-                    Thread.sleep(200);
+                    Thread.sleep(400);
 
                     log.info("Start node: " + idx);
 
                     startGrid(idx);
 
-                    CountDownLatch latch = new CountDownLatch(1);
+                    Thread.sleep(200);
 
-                    awaitPartitionMapExchange();
+                    CountDownLatch latch = new CountDownLatch(1);
 
                     assertTrue(checkLatch.compareAndSet(null, latch));
 
@@ -1968,7 +1983,10 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         final int PARTS = THREAD;
 
-        final List<T3<Object, Object, Object>> expEvts = new CopyOnWriteArrayList<>();
+        final List<List<T3<Object, Object, Object>>> expEvts = new ArrayList<>(THREAD + 5);
+
+        for (int i = 0; i < THREAD; i++)
+            expEvts.add(i, new ArrayList<T3<Object, Object, Object>>());
 
         final AtomicReference<CyclicBarrier> checkBarrier = new AtomicReference<>();
 
@@ -2001,7 +2019,26 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
                     CyclicBarrier bar = new CyclicBarrier(THREAD + 1 /* plus start/stop thread */, new Runnable() {
                         @Override public void run() {
                             try {
-                                checkEvents(expEvts, lsnr, false);
+                                GridTestUtils.waitForCondition(new PA() {
+                                    @Override public boolean apply() {
+                                        int size = 0;
+
+                                        for (List<T3<Object, Object, Object>> evt : expEvts)
+                                            size += evt.size();
+
+                                        return lsnr.size() <= size;
+                                    }
+                                }, 2000L);
+
+                                List<T3<Object, Object, Object>> expEvts0 = new ArrayList<>();
+
+                                for (List<T3<Object, Object, Object>> evt : expEvts)
+                                    expEvts0.addAll(evt);
+
+                                checkEvents(expEvts0, lsnr, false);
+
+                                for (List<T3<Object, Object, Object>> evt : expEvts)
+                                    evt.clear();
                             }
                             catch (Exception e) {
                                 log.error("Failed.", e);
@@ -2018,8 +2055,8 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                     assertTrue(checkBarrier.compareAndSet(null, bar));
 
-                    if (stop.get() && !err)
-                        bar.await(5, SECONDS);
+                    if (!stop.get() && !err)
+                        bar.await(5, MINUTES);
                 }
 
                 return null;
@@ -2030,11 +2067,17 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         final AtomicInteger valCntr = new AtomicInteger(0);
 
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            final ThreadLocalRandom rnd = ThreadLocalRandom.current();
+        final AtomicInteger threadSeq = new AtomicInteger(0);
 
+        GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
                 try {
+                    final ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                    final int threadId = threadSeq.getAndIncrement();
+
+                    log.error("Thread id: " + threadId);
+
                     while (System.currentTimeMillis() < stopTime && !stop.get() && !err) {
                         Integer key = rnd.nextInt(PARTS);
 
@@ -2042,7 +2085,7 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
                         Integer prevVal = (Integer)qryClnCache.getAndPut(key, val);
 
-                        expEvts.add(new T3<>((Object)key, (Object)val, (Object)prevVal));
+                        expEvts.get(threadId).add(new T3<>((Object)key, (Object)val, (Object)prevVal));
 
                         CyclicBarrier bar = checkBarrier.get();
 
@@ -2065,7 +2108,16 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
 
         restartFut.get();
 
-        checkEvents(expEvts, lsnr, true);
+        List<T3<Object, Object, Object>> expEvts0 = new ArrayList<>();
+
+        for (List<T3<Object, Object, Object>> evt : expEvts) {
+            expEvts0.addAll(evt);
+
+            evt.clear();
+        }
+
+        if (!expEvts0.isEmpty())
+            checkEvents(expEvts0, lsnr, true);
 
         cur.close();
 
