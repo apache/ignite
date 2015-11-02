@@ -624,8 +624,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                 {
                     // New object, write in full form.
                     var inSchema = inHeader.ReadSchema(inStream, inStartPos);
+                    var outSchema = PortableObjectSchemaHolder.Current;
 
-                    PortableObjectSchemaHolder.Current.PushSchema();
+                    outSchema.PushSchema();
 
                     // Skip header as it is not known at this point.
                     outStream.Seek(PortableObjectHeader.Size, SeekOrigin.Current);
@@ -642,7 +643,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                                 continue;
 
                             // ReSharper disable once PossibleNullReferenceException (can't be null)
-                            PortableObjectSchemaHolder.Current.Push(inField.Id, outStream.Position - outStartPos);
+                            outSchema.Push(inField.Id, outStream.Position - outStartPos);
 
                             if (!fieldFound)
                                 fieldFound = _parent._cache != null &&
@@ -671,7 +672,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                             continue;
 
                         // ReSharper disable once PossibleNullReferenceException (can't be null)
-                        PortableObjectSchemaHolder.Current.Push(valEntry.Key, outStream.Position - outStartPos);
+                        outSchema.Push(valEntry.Key, outStream.Position - outStartPos);
 
                         WriteField(ctx, valEntry.Value);
                     }
@@ -691,7 +692,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     int schemaPos = outStream.Position;
 
                     int outSchemaId;
-                    var hasSchema = PortableObjectSchemaHolder.Current.WriteAndPop(outStream, out outSchemaId);
+                    var hasSchema = outSchema.WriteAndPop(outStream, out outSchemaId);
 
                     if (hasSchema)
                     {

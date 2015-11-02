@@ -69,6 +69,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Current type structure tracker, */
         private PortableStructureTracker _curStruct;
 
+        /** Schema holder. */
+        private readonly PortableObjectSchemaHolder _schema = PortableObjectSchemaHolder.Current;
+
         /// <summary>
         /// Gets the marshaller.
         /// </summary>
@@ -1078,7 +1081,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 _curPos = pos;
 
                 _curStruct = new PortableStructureTracker(desc, desc.WriterTypeStructure);
-                PortableObjectSchemaHolder.Current.PushSchema();
+                _schema.PushSchema();
 
                 try
                 {
@@ -1087,7 +1090,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 }
                 catch (Exception)
                 {
-                    PortableObjectSchemaHolder.Current.PopSchema();
+                    _schema.PopSchema();
                     throw;
                 }
 
@@ -1095,7 +1098,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 var schemaOffset = _stream.Position - pos;
 
                 int schemaId;
-                var hasSchema = PortableObjectSchemaHolder.Current.WriteAndPop(_stream, out schemaId);
+                var hasSchema = _schema.WriteAndPop(_stream, out schemaId);
 
                 if (!hasSchema)
                     schemaOffset = PortableObjectHeader.Size;
@@ -1375,7 +1378,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var fieldId = _curStruct.GetFieldId(fieldName, fieldTypeId);
 
-            PortableObjectSchemaHolder.Current.Push(fieldId, _stream.Position - _curPos);
+            _schema.Push(fieldId, _stream.Position - _curPos);
         }
 
         /// <summary>
