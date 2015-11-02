@@ -1758,10 +1758,30 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
             res.startBlock('public static IgniteConfiguration createConfiguration() throws Exception {');
         }
 
-        if (res.datasources.length > 0 || cluster.sslEnabled) {
+        var haveDS = _.findIndex(cluster.caches, function(cache) {
+            if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
+                var factory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
+
+                if (factory && factory.dialect)
+                    return true;
+            }
+
+            return false;
+        }) >= 0;
+
+        if (haveDS || cluster.sslEnabled) {
             res.line(res.importClass('java.net.URL') + ' res = IgniteConfiguration.class.getResource("/secret.properties");');
+
+            res.needEmptyLine = true;
+
             res.line(res.importClass('java.io.File') + ' propsFile = new File(res.toURI());');
+
+            res.needEmptyLine = true;
+
             res.line(res.importClass('java.util.Properties') + ' props = new Properties();');
+
+            res.needEmptyLine = true;
+
             res.startBlock('try (' + res.importClass('java.io.InputStream') + ' in = new ' + res.importClass('java.io.FileInputStream') + '(propsFile)) {');
             res.line('props.load(in);');
             res.endBlock('}');
