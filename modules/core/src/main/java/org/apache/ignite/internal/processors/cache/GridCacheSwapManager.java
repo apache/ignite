@@ -550,7 +550,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             assert key != null;
 
             byte[] valBytes = swapMgr.read(spaceName,
-                new SwapKey(key.value(cctx.cacheObjectContext(), false), part, key.valueBytes(cctx.cacheObjectContext())),
+                new SwapKey(key, part, key.valueBytes(cctx.cacheObjectContext())),
                 cctx.deploy().globalLoader());
 
             if (cctx.config().isStatisticsEnabled())
@@ -616,7 +616,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             assert key != null;
 
             byte[] bytes = swapMgr.read(spaceName,
-                new SwapKey(key.value(cctx.cacheObjectContext(), false), part, keyBytes),
+                new SwapKey(key, part, keyBytes),
                 cctx.deploy().globalLoader());
 
             if (bytes == null && lsnr != null)
@@ -691,7 +691,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         final GridTuple<GridCacheSwapEntry> t = F.t1();
         final GridTuple<IgniteCheckedException> err = F.t1();
 
-        SwapKey swapKey = new SwapKey(key.value(cctx.cacheObjectContext(), false),
+        SwapKey swapKey = new SwapKey(key,
             part,
             key.valueBytes(cctx.cacheObjectContext()));
 
@@ -940,7 +940,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                     if (unprocessedKeys == null)
                         unprocessedKeys = new ArrayList<>(keys.size());
 
-                    SwapKey swapKey = new SwapKey(key.value(cctx.cacheObjectContext(), false),
+                    SwapKey swapKey = new SwapKey(key,
                         cctx.affinity().partition(key),
                         key.valueBytes(cctx.cacheObjectContext()));
 
@@ -955,7 +955,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             unprocessedKeys = new ArrayList<>(keys.size());
 
             for (KeyCacheObject key : keys) {
-                SwapKey swapKey = new SwapKey(key.value(cctx.cacheObjectContext(), false),
+                SwapKey swapKey = new SwapKey(key,
                     cctx.affinity().partition(key),
                     key.valueBytes(cctx.cacheObjectContext()));
 
@@ -1223,7 +1223,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         }
 
         if (swapEnabled) {
-            SwapKey swapKey = new SwapKey(key.value(cctx.cacheObjectContext(), false),
+            SwapKey swapKey = new SwapKey(key,
                 part,
                 key.valueBytes(cctx.cacheObjectContext()));
 
@@ -1334,7 +1334,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             Map<SwapKey, byte[]> batch = new LinkedHashMap<>();
 
             for (GridCacheBatchSwapEntry entry : swapped) {
-                SwapKey swapKey = new SwapKey(entry.key().value(cctx.cacheObjectContext(), false),
+                SwapKey swapKey = new SwapKey(entry.key(),
                     entry.partition(),
                     entry.key().valueBytes(cctx.cacheObjectContext()));
 
@@ -1373,7 +1373,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         checkIteratorQueue();
 
         swapMgr.write(spaceName,
-            new SwapKey(key.value(cctx.cacheObjectContext(), false), part, key.valueBytes(cctx.cacheObjectContext())),
+            new SwapKey(key, part, key.valueBytes(cctx.cacheObjectContext())),
             entry, cctx.deploy().globalLoader());
 
         if (cctx.config().isStatisticsEnabled())
