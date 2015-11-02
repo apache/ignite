@@ -1878,7 +1878,7 @@ public class GridCacheConcurrentMap {
          * @return Key iterator.
          */
         Iterator<K> keyIterator() {
-            return new KeyIterator<>(map, filter);
+            return new KeyIterator<>(map, opCtxPerCall.isKeepPortable(), filter);
         }
 
         /**
@@ -2156,6 +2156,9 @@ public class GridCacheConcurrentMap {
         /** Hash table iterator. */
         private Iterator0<K, V> it;
 
+        /** Keep binary flag. */
+        private boolean keepBinary;
+
         /**
          * Empty constructor required for {@link Externalizable}.
          */
@@ -2167,8 +2170,9 @@ public class GridCacheConcurrentMap {
          * @param map Cache map.
          * @param filter Filter.
          */
-        private KeyIterator(GridCacheConcurrentMap map, CacheEntryPredicate[] filter) {
+        private KeyIterator(GridCacheConcurrentMap map, boolean keepBinary, CacheEntryPredicate[] filter) {
             it = new Iterator0<>(map, false, filter, -1, -1);
+            this.keepBinary = keepBinary;
         }
 
         /** {@inheritDoc} */
@@ -2178,7 +2182,7 @@ public class GridCacheConcurrentMap {
 
         /** {@inheritDoc} */
         @Override public K next() {
-            return it.next().key().value(it.ctx.cacheObjectContext(), true);
+            return (K)it.ctx.cacheObjectContext().unwrapPortableIfNeeded(it.next().key(), keepBinary, true);
         }
 
         /** {@inheritDoc} */

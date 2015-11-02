@@ -200,7 +200,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     // Key and value classes still can be available if they are primitive or JDK part.
                     // We need that to set correct types for _key and _val columns.
-                    Class<?> keyCls = U.classForName(qryEntity.getKeyType(), null);
+                    Class<?> keyCls = U.classForName(qryEntity.getKeyType(), Object.class);
                     Class<?> valCls = U.classForName(qryEntity.getValueType(), null);
 
                     String simpleValType = valCls == null ? qryEntity.getValueType() : typeName(valCls);
@@ -262,7 +262,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     // Key and value classes still can be available if they are primitive or JDK part.
                     // We need that to set correct types for _key and _val columns.
-                    Class<?> keyCls = U.classForName(meta.getKeyType(), null);
+                    Class<?> keyCls = U.classForName(meta.getKeyType(), Object.class);
                     Class<?> valCls = U.classForName(meta.getValueType(), null);
 
                     desc.name(meta.getSimpleValueType());
