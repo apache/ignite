@@ -659,4 +659,18 @@ public class PortableUtils {
                 return start + in.readIntPositioned(start + len - 4);
         }
     }
+
+    /**
+     * Get offset size for the given flags.
+     * @param flags Flags.
+     * @return Offset size.
+     */
+    public static int fieldOffsetSize(short flags) {
+        if ((flags & FLAG_OFFSET_ONE_BYTE) == FLAG_OFFSET_ONE_BYTE)
+            return OFFSET_1;
+        else if ((flags & FLAG_OFFSET_TWO_BYTES) == FLAG_OFFSET_TWO_BYTES)
+            return OFFSET_2;
+        else
+            return OFFSET_4;
+    }
 }

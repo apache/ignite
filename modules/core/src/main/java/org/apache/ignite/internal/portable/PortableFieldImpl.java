@@ -45,7 +45,7 @@ public class PortableFieldImpl implements PortableField {
     @Override public boolean exists(PortableObject obj) {
         PortableObjectEx obj0 = (PortableObjectEx)obj;
 
-        return fieldOffset(obj0) != 0;
+        return fieldOrder(obj0) != 0;
     }
 
     /** {@inheritDoc} */
@@ -53,9 +53,9 @@ public class PortableFieldImpl implements PortableField {
     @Override public <T> T value(PortableObject obj) {
         PortableObjectEx obj0 = (PortableObjectEx)obj;
 
-        int offset = fieldOffset(obj0);
+        int order = fieldOrder(obj0);
 
-        return offset != 0 ? (T)obj0.fieldByOffset(offset) : null;
+        return order != 0 ? (T)obj0.fieldByOffset(order * 8 + 4) : null;
     }
 
     /**
@@ -64,7 +64,7 @@ public class PortableFieldImpl implements PortableField {
      * @param obj Object.
      * @return Field offset.
      */
-    private int fieldOffset(PortableObjectEx obj) {
+    private int fieldOrder(PortableObjectEx obj) {
         int schemaId = obj.schemaId();
 
         PortableSchema schema = schemas.schema(schemaId);
@@ -77,6 +77,6 @@ public class PortableFieldImpl implements PortableField {
 
         assert schema != null;
 
-        return schema.offset(fieldId);
+        return schema.order(fieldId);
     }
 }

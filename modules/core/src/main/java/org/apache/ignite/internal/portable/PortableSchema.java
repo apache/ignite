@@ -39,49 +39,49 @@ public class PortableSchema {
     private final int id1;
 
     /** Offset 1. */
-    private final int offset1;
+    private final int pos1;
 
     /** ID 2. */
     private final int id2;
 
     /** Offset 2. */
-    private final int offset2;
+    private final int pos2;
 
     /** ID 3. */
     private final int id3;
 
     /** Offset 3. */
-    private final int offset3;
+    private final int pos3;
 
     /** ID 4. */
     private final int id4;
 
     /** Offset 4. */
-    private final int offset4;
+    private final int pos4;
 
     /** ID 1. */
     private final int id5;
 
     /** Offset 1. */
-    private final int offset5;
+    private final int pos5;
 
     /** ID 2. */
     private final int id6;
 
     /** Offset 2. */
-    private final int offset6;
+    private final int pos6;
 
     /** ID 3. */
     private final int id7;
 
     /** Offset 3. */
-    private final int offset7;
+    private final int pos7;
 
     /** ID 4. */
     private final int id8;
 
     /** Offset 4. */
-    private final int offset8;
+    private final int pos8;
 
     /**
      * Constructor.
@@ -98,74 +98,74 @@ public class PortableSchema {
 
             if (entry != null) {
                 id1 = entry.getKey();
-                offset1 = entry.getValue();
+                pos1 = entry.getValue();
             }
             else{
                 id1 = 0;
-                offset1 = 0;
+                pos1 = 0;
             }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id2 = entry.getKey();
-                offset2 = entry.getValue();
+                pos2 = entry.getValue();
             }
             else{
                 id2 = 0;
-                offset2 = 0;
+                pos2 = 0;
             }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id3 = entry.getKey();
-                offset3 = entry.getValue();
+                pos3 = entry.getValue();
             }
             else{
                 id3 = 0;
-                offset3 = 0;
+                pos3 = 0;
             }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id4 = entry.getKey();
-                offset4 = entry.getValue();
+                pos4 = entry.getValue();
             }
             else{
                 id4 = 0;
-                offset4 = 0;
+                pos4 = 0;
             }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id5 = entry.getKey();
-                offset5 = entry.getValue();
+                pos5 = entry.getValue();
             }
             else{
                 id5 = 0;
-                offset5 = 0;
+                pos5 = 0;
             }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id6 = entry.getKey();
-                offset6 = entry.getValue();
+                pos6 = entry.getValue();
             }
             else{
                 id6 = 0;
-                offset6 = 0;
+                pos6 = 0;
             }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id7 = entry.getKey();
-                offset7 = entry.getValue();
+                pos7 = entry.getValue();
             }
             else{
                 id7 = 0;
-                offset7 = 0;
+                pos7 = 0;
             }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id8 = entry.getKey();
-                offset8 = entry.getValue();
+                pos8 = entry.getValue();
             }
             else{
                 id8 = 0;
-                offset8 = 0;
+                pos8 = 0;
             }
 
             map = null;
@@ -174,43 +174,43 @@ public class PortableSchema {
             inline = false;
 
             id1 = id2 = id3 = id4 = id5 = id6 = id7 = id8 = 0;
-            offset1 = offset2 = offset3 = offset4 = offset5 = offset6 = offset7 = offset8 = 0;
+            pos1 = pos2 = pos3 = pos4 = pos5 = pos6 = pos7 = pos8 = 0;
 
             map = new HashMap<>(vals);
         }
     }
 
     /**
-     * Get offset for the given field ID.
+     * Get field position in footer by schema ID.
      *
      * @param id Field ID.
      * @return Offset or {@code 0} if there is no such field.
      */
-    public int offset(int id) {
+    public int order(int id) {
         if (inline) {
             if (id == id1)
-                return offset1;
+                return pos1;
 
             if (id == id2)
-                return offset2;
+                return pos2;
 
             if (id == id3)
-                return offset3;
+                return pos3;
 
             if (id == id4)
-                return offset4;
+                return pos4;
 
             if (id == id5)
-                return offset5;
+                return pos5;
 
             if (id == id6)
-                return offset6;
+                return pos6;
 
             if (id == id7)
-                return offset7;
+                return pos7;
 
             if (id == id8)
-                return offset8;
+                return pos8;
 
             return 0;
         }

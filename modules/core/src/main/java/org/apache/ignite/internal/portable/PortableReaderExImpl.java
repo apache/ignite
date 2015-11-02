@@ -163,6 +163,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     /** Schema Id. */
     private int schemaId;
 
+    /** Offset size in bytes. */
+    private int offsetSize;
+
     /** Object schema. */
     private PortableSchema schema;
 
@@ -221,7 +224,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         PortableUtils.checkProtocolVersion(in.readByte());
 
-        in.position(in.position() + 2); // Skip flags.
+        short flags = in.readShort();
+
+        offsetSize = PortableUtils.fieldOffsetSize(flags);
 
         typeId = in.readIntPositioned(start + GridPortableMarshaller.TYPE_ID_POS);
 
@@ -2567,12 +2572,14 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         int searchPos = footerStart;
         int searchEnd = searchPos + footerLen;
 
+        int idx = 0;
+
         while (searchPos < searchEnd) {
             int fieldId = in.readIntPositioned(searchPos);
 
-            fields.put(fieldId, searchPos + 4 - footerStart);
+            fields.put(fieldId, idx++);
 
-            searchPos += 8;
+            searchPos += 4 + offsetSize;
         }
 
         return new PortableSchema(fields);
@@ -2624,10 +2631,10 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 schema = schema0;
             }
 
-            int fieldOffsetPos = schema.offset(id);
+            int order = schema.order(id);
 
-            if (fieldOffsetPos != 0) {
-                int pos = start + in.readIntPositioned(footerStart + fieldOffsetPos);
+            if (order != 0) {
+                int pos = start + in.readIntPositioned(footerStart + order * 8 + 4);
 
                 in.position(pos);
 
