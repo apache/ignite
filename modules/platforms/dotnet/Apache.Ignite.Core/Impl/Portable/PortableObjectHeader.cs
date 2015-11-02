@@ -192,27 +192,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Gets the schema end.
-        /// </summary>
-        public int GetSchemaEnd(int position)
-        {
-            var res = position + Length;
-
-            if (HasRawOffset)
-                res -= 4;
-
-            return res;
-        }
-
-        /// <summary>
-        /// Gets the schema start.
-        /// </summary>
-        public int GetSchemaStart(int position)
-        {
-            return IsRawOnly ? GetSchemaEnd(position) : position + SchemaOffset;
-        }
-
-        /// <summary>
         /// Gets the raw offset of this object in specified stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
@@ -308,6 +287,77 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             return schema;
+        }
+
+        /// <summary>
+        /// Writes an array of fields to a stream.
+        /// </summary>
+        /// <param name="fields">Fields.</param>
+        /// <param name="stream">Stream.</param>
+        /// <param name="count">Field count to write.</param>
+        /// <param name="maxOffset">The maximum field offset to determine 
+        /// whether 1, 2 or 4 bytes are needed for offsets.</param>
+        /// <returns>
+        /// Flags according to offset sizes: <see cref="PortableObjectHeader.FlagByteOffsets"/>, 
+        /// <see cref="PortableObjectHeader.FlagShortOffsets"/>, or 0.
+        /// </returns>
+        public static unsafe short WriteSchema(PortableObjectSchemaField[] fields, IPortableStream stream, int count,
+            int maxOffset)
+        {
+            Debug.Assert(fields != null);
+            Debug.Assert(stream != null);
+            Debug.Assert(count > 0);
+
+            unchecked
+            {
+                if (maxOffset <= byte.MaxValue)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        var field = fields[i];
+
+                        stream.WriteInt(field.Id);
+                        stream.WriteByte((byte)field.Offset);
+                    }
+
+                    return FlagByteOffsets;
+                }
+
+                if (maxOffset <= ushort.MaxValue)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        var field = fields[i];
+
+                        stream.WriteInt(field.Id);
+
+                        stream.WriteShort((short)field.Offset);
+                    }
+
+                    return FlagShortOffsets;
+                }
+
+                if (BitConverter.IsLittleEndian)
+                {
+                    fixed (PortableObjectSchemaField* ptr = &fields[0])
+                    {
+                        stream.Write((byte*)ptr, count / PortableObjectSchemaField.Size);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        var field = fields[i];
+
+                        stream.WriteInt(field.Id);
+                        stream.WriteInt(field.Offset);
+                    }
+                }
+
+                return 0;
+            }
+
         }
 
         /// <summary>

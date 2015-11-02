@@ -700,7 +700,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         {
                             outSchemaOff = outStream.Position - outStartPos;
 
-                            flags = PortableObjectSchemaField.WriteArray(outSchema.Array, outStream, outSchema.Count,
+                            flags = PortableObjectHeader.WriteSchema(outSchema.Array, outStream, outSchema.Count,
                                 outStream.Position - outStartPos);
 
                             if (inRawLen > 0)
