@@ -96,6 +96,13 @@ namespace ignite
                 IGNITE_INTEROP_OUT_WRITE(val, int16_t, 2);
             }
 
+            void InteropOutputStream::WriteInt16(const int32_t pos, const int16_t val)
+            {
+                EnsureCapacity(pos + 2);
+
+                *reinterpret_cast<int16_t*>(data + pos) = val;
+            }
+
             void InteropOutputStream::WriteInt16Array(const int16_t* val, const int32_t len)
             {
                 IGNITE_INTEROP_OUT_WRITE_ARRAY(val, len << 1);

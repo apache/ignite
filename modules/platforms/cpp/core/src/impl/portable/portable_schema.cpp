@@ -15,6 +15,8 @@
 * limitations under the License.
 */
 
+#include <cassert>
+
 #include "ignite/impl/portable/portable_schema.h"
 #include "ignite/impl/portable/portable_writer_impl.h"
 
@@ -66,10 +68,43 @@ namespace ignite
 
             void PortableSchema::Write(interop::InteropOutputStream& out) const
             {
-                for (FieldContainer::const_iterator i = fieldsInfo->begin(); i != fieldsInfo->end(); ++i)
+                switch (GetType())
                 {
-                    out.WriteInt32(i->id);
-                    out.WriteInt32(i->offset);
+                    case SCHEMA_TYPE_TINY:
+                    {
+                        for (FieldContainer::const_iterator i = fieldsInfo->begin(); i != fieldsInfo->end(); ++i)
+                        {
+                            out.WriteInt32(i->id);
+                            out.WriteInt8(static_cast<int8_t>(i->offset));
+                        }
+                        break;
+                    }
+
+                    case SCHEMA_TYPE_SMALL:
+                    {
+                        for (FieldContainer::const_iterator i = fieldsInfo->begin(); i != fieldsInfo->end(); ++i)
+                        {
+                            out.WriteInt32(i->id);
+                            out.WriteInt16(static_cast<int16_t>(i->offset));
+                        }
+                        break;
+                    }
+
+                    case SCHEMA_TYPE_BIG:
+                    {
+                        for (FieldContainer::const_iterator i = fieldsInfo->begin(); i != fieldsInfo->end(); ++i)
+                        {
+                            out.WriteInt32(i->id);
+                            out.WriteInt32(i->offset);
+                        }
+                        break;
+                    }
+
+                    default:
+                    {
+                        assert(false);
+                        break;
+                    }
                 }
             }
 
@@ -82,6 +117,18 @@ namespace ignite
             {
                 id = 0;
                 fieldsInfo->clear();
+            }
+
+            SCHEMA_TYPE PortableSchema::GetType() const
+            {
+                int32_t maxOffset = fieldsInfo->back().offset;
+
+                if (maxOffset < 0x100)
+                    return SCHEMA_TYPE_TINY;
+                else if (maxOffset < 0x10000)
+                    return SCHEMA_TYPE_SMALL;
+
+                return SCHEMA_TYPE_BIG;
             }
         }
     }

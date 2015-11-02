@@ -69,6 +69,16 @@ namespace ignite
                 IGNITE_INTEROP_IN_READ(int8_t, 1);
             }
 
+            int32_t InteropInputStream::ReadInt8(int32_t pos)
+            {
+                int delta = pos + 1 - this->pos;
+
+                if (delta > 0)
+                    EnsureEnoughData(delta);
+
+                return *reinterpret_cast<int8_t*>(data + pos);
+            }
+
             void InteropInputStream::ReadInt8Array(int8_t* const res, const int32_t len)
             {
                 IGNITE_INTEROP_IN_READ_ARRAY(len, 0);
@@ -88,6 +98,16 @@ namespace ignite
             int16_t InteropInputStream::ReadInt16()
             {
                 IGNITE_INTEROP_IN_READ(int16_t, 2);
+            }
+
+            int32_t InteropInputStream::ReadInt16(int32_t pos)
+            {
+                int delta = pos + 2 - this->pos;
+
+                if (delta > 0)
+                    EnsureEnoughData(delta);
+
+                return *reinterpret_cast<int16_t*>(data + pos);
             }
 
             void InteropInputStream::ReadInt16Array(int16_t* const res, const int32_t len)
