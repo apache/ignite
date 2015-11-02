@@ -242,43 +242,35 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         U.shutdownNow(GridServiceProcessor.class, depExe, log);
 
-        cancelFutures();
+        Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
+
+        cancelFutures(depFuts, err);
+        cancelFutures(undepFuts, err);
 
         if (log.isDebugEnabled())
             log.debug("Stopped service processor.");
     }
 
-    /**
-     * Cancel all user operations.
-     */
-    private void cancelFutures() {
-        Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
-
-        for (IgniteInternalFuture fut : depFuts.values())
-            ((GridFutureAdapter)fut).onDone(err);
-
-        for (IgniteInternalFuture fut : undepFuts.values())
-            ((GridFutureAdapter)fut).onDone(err);
-    }
-
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
-        for (Map.Entry<String, GridServiceDeploymentFuture> e : depFuts.entrySet()) {
-            GridServiceDeploymentFuture fut = e.getValue();
+        cancelFutures(depFuts, new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
+            "Failed to deploy service, client node disconnected."));
 
-            fut.onDone(new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
-                "Failed to deploy service, client node disconnected."));
+        cancelFutures(undepFuts, new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
+            "Failed to undeploy service, client node disconnected."));
+    }
 
-            depFuts.remove(e.getKey(), fut);
-        }
+    /**
+     * @param futs Futs.
+     * @param err Exception.
+     */
+    private void cancelFutures(ConcurrentMap<String, ? extends GridFutureAdapter<?>> futs, Exception err) {
+        for (Map.Entry<String, ? extends GridFutureAdapter<?>> entry : futs.entrySet()) {
+            GridFutureAdapter fut = entry.getValue();
 
-        for (Map.Entry<String, GridFutureAdapter<?>> e : undepFuts.entrySet()) {
-            GridFutureAdapter fut = e.getValue();
+            fut.onDone(err);
 
-            fut.onDone(new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
-                "Failed to undeploy service, client node disconnected."));
-
-            undepFuts.remove(e.getKey(), fut);
+            futs.remove(entry.getKey(), fut);
         }
     }
 
