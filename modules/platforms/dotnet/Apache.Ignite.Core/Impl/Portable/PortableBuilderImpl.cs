@@ -642,7 +642,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                                 if (fieldFound && fieldVal == PortableBuilderField.RmvMarker)
                                     continue;
 
-                                // ReSharper disable once PossibleNullReferenceException (can't be null)
                                 outSchema.Push(inField.Id, outStream.Position - outStartPos);
 
                                 if (!fieldFound)
@@ -671,7 +670,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                             if (valEntry.Value == PortableBuilderField.RmvMarker) 
                                 continue;
 
-                            // ReSharper disable once PossibleNullReferenceException (can't be null)
                             outSchema.Push(valEntry.Key, outStream.Position - outStartPos);
 
                             WriteField(ctx, valEntry.Value);
