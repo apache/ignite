@@ -74,6 +74,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
+        /// Pops the current schema and discards it.
+        /// </summary>
+        public void PopSchema()
+        {
+            _idx = _offsets.Pop();
+        }
+
+        /// <summary>
         /// Resets holder to the specified state index returned by <see cref="PushSchema" />.
         /// </summary>
         /// <param name="stateIndex">Index of the state.</param>
