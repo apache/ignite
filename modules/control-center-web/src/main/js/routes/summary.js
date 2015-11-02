@@ -45,6 +45,8 @@ router.post('/download', function (req, res) {
         if (!cluster)
             return res.sendStatus(404);
 
+        var clientNearConfiguration = JSON.parse(req.body.clientNearConfiguration);
+
         var JSZip = require('jszip');
 
         var zip = new JSZip();
@@ -63,10 +65,10 @@ router.post('/download', function (req, res) {
 
         var srcPath = 'src/main/java/';
 
-        zip.file('config/' + cluster.name + '.xml', $generatorXml.cluster(cluster));
-        zip.file('config/' + cluster.name + '-client' + '.xml', $generatorXml.cluster(cluster, true));
-        zip.file(srcPath + 'ConfigurationFactory.java', $generatorJava.cluster(cluster, 'ConfigurationFactory'));
-        zip.file(srcPath + 'ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'ClientConfigurationFactory', true));
+        zip.file('config/' + cluster.name + '-server.xml', $generatorXml.cluster(cluster));
+        zip.file('config/' + cluster.name + '-client.xml', $generatorXml.cluster(cluster, clientNearConfiguration));
+        zip.file(srcPath + 'ConfigurationFactory.java', $generatorJava.cluster(cluster, 'ServerConfigurationFactory'));
+        zip.file(srcPath + 'ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'ClientConfigurationFactory', clientNearConfiguration));
         zip.file('pom.xml', $generatorPom.pom(cluster.caches, '1.5.0').asString());
 
         zip.file('README.txt', $generatorReadme.readme().asString());
