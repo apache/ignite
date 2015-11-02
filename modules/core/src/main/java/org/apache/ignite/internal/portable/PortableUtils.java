@@ -100,6 +100,21 @@ public class PortableUtils {
     /** Flag: only raw data exists. */
     public static final short FLAG_RAW_ONLY = 0x2;
 
+    /** Flag: offsets take 1 byte. */
+    public static final short FLAG_OFFSET_ONE_BYTE = 0x4;
+
+    /** Flag: offsets take 2 bytes. */
+    public static final short FLAG_OFFSET_TWO_BYTES = 0x8;
+
+    /** Offset which fits into 1 byte. */
+    public static final int OFFSET_1 = 1;
+
+    /** Offset which fits into 2 bytes. */
+    public static final int OFFSET_2 = 2;
+
+    /** Offset which fits into 4 bytes. */
+    public static final int OFFSET_4 = 4;
+
     /**
      * Write flags.
      *

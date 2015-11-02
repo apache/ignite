@@ -40,9 +40,6 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
  */
 public class PortableBuilderReader implements PortablePositionReadable {
     /** */
-    private static final PortablePrimitives PRIM = PortablePrimitives.get();
-
-    /** */
     private final Map<Integer, IgniteObjectBuilderImpl> objMap = new HashMap<>();
 
     /** */
@@ -120,32 +117,32 @@ public class PortableBuilderReader implements PortablePositionReadable {
      * @return Read int value.
      */
     public int readInt(int off) {
-        return PRIM.readInt(arr, pos + off);
+        return PortablePrimitives.readInt(arr, pos + off);
     }
 
     /**
      * @param pos Position in the source array.
      * @return Read byte value.
      */
-    public byte readByteAbsolute(int pos) {
-        return PRIM.readByte(arr, pos);
+    public byte readBytePositioned(int pos) {
+        return PortablePrimitives.readByte(arr, pos);
     }
 
     /** {@inheritDoc} */
     @Override public short readShortPositioned(int pos) {
-        return PRIM.readShort(arr, pos);
+        return PortablePrimitives.readShort(arr, pos);
     }
 
     /** {@inheritDoc} */
     @Override public int readIntPositioned(int pos) {
-        return PRIM.readInt(arr, pos);
+        return PortablePrimitives.readInt(arr, pos);
     }
 
     /**
      * @return Read length of array.
      */
     public int readLength() {
-        return PRIM.readInt(arr, pos);
+        return PortablePrimitives.readInt(arr, pos);
     }
 
     /**
@@ -154,9 +151,9 @@ public class PortableBuilderReader implements PortablePositionReadable {
      * @return String length.
      */
     public int readStringLength() {
-        boolean utf = PRIM.readBoolean(arr, pos);
+        boolean utf = PortablePrimitives.readBoolean(arr, pos);
 
-        int arrLen = PRIM.readInt(arr, pos + 1);
+        int arrLen = PortablePrimitives.readInt(arr, pos + 1);
 
         return 1 + (utf ? arrLen : arrLen << 1);
     }
@@ -186,7 +183,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
             pos += len;
         }
         else {
-            str = String.valueOf(PRIM.readCharArray(arr, pos, len));
+            str = String.valueOf(PortablePrimitives.readCharArray(arr, pos, len));
 
             pos += len << 1;
         }
@@ -389,22 +386,22 @@ public class PortableBuilderReader implements PortablePositionReadable {
                 return arr[pos + 1];
 
             case GridPortableMarshaller.SHORT:
-                return PRIM.readShort(arr, pos + 1);
+                return PortablePrimitives.readShort(arr, pos + 1);
 
             case GridPortableMarshaller.INT:
-                return PRIM.readInt(arr, pos + 1);
+                return PortablePrimitives.readInt(arr, pos + 1);
 
             case GridPortableMarshaller.LONG:
-                return PRIM.readLong(arr, pos + 1);
+                return PortablePrimitives.readLong(arr, pos + 1);
 
             case GridPortableMarshaller.FLOAT:
-                return PRIM.readFloat(arr, pos + 1);
+                return PortablePrimitives.readFloat(arr, pos + 1);
 
             case GridPortableMarshaller.DOUBLE:
-                return PRIM.readDouble(arr, pos + 1);
+                return PortablePrimitives.readDouble(arr, pos + 1);
 
             case GridPortableMarshaller.CHAR:
-                return PRIM.readChar(arr, pos + 1);
+                return PortablePrimitives.readChar(arr, pos + 1);
 
             case GridPortableMarshaller.BOOLEAN:
                 return arr[pos + 1] != 0;
@@ -518,7 +515,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
                 return arr[pos++];
 
             case GridPortableMarshaller.SHORT: {
-                Object res = PRIM.readShort(arr, pos);
+                Object res = PortablePrimitives.readShort(arr, pos);
                 pos += 2;
                 return res;
             }
@@ -638,7 +635,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
                     if (flag != GridPortableMarshaller.DATE)
                         throw new IgniteObjectException("Invalid flag value: " + flag);
 
-                    long time = PRIM.readLong(arr, pos);
+                    long time = PortablePrimitives.readLong(arr, pos);
 
                     pos += 8;
 
@@ -662,11 +659,11 @@ public class PortableBuilderReader implements PortablePositionReadable {
                     if (flag != GridPortableMarshaller.TIMESTAMP)
                         throw new IgniteObjectException("Invalid flag value: " + flag);
 
-                    long time = PRIM.readLong(arr, pos);
+                    long time = PortablePrimitives.readLong(arr, pos);
 
                     pos += 8;
 
-                    int nano = PRIM.readInt(arr, pos);
+                    int nano = PortablePrimitives.readInt(arr, pos);
 
                     pos += 4;
 

@@ -137,7 +137,7 @@ public class IgniteObjectBuilderImpl implements IgniteObjectBuilder {
         this.reader = reader;
         this.start = start;
 
-        byte ver = reader.readByteAbsolute(start + PROTO_VER_POS);
+        byte ver = reader.readBytePositioned(start + PROTO_VER_POS);
 
         PortableUtils.checkProtocolVersion(ver);
 
