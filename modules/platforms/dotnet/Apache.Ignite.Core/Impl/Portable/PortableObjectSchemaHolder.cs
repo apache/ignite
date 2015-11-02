@@ -103,14 +103,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             var offset = _offsets.Pop();
             var count = _idx - offset;
+            _idx -= count;
 
             if (count > 0)
             {
                 PortableObjectSchemaField.WriteArray(_fields, stream, offset, count);
 
                 schemaId = PortableUtils.GetSchemaId(_fields, offset, count);
-
-                _idx -= count;
 
                 return true;
             }
