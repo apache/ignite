@@ -1245,15 +1245,15 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             foreach (var i in new[] {1, 5, 10, 100, 200, 1000, 5000, 15000, 30000})
             {
-                dt.GuidArr = Enumerable.Range(1, i).Select(x => Guid.NewGuid()).ToArray();
-                dt.DateArr = Enumerable.Range(1, i).Select(x => DateTime.Now.AddDays(x)).ToArray();
+                dt.NGuidArr = Enumerable.Range(1, i).Select(x => (Guid?) Guid.NewGuid()).ToArray();
+                dt.NDateArr = Enumerable.Range(1, i).Select(x => (DateTime?) DateTime.Now.AddDays(x)).ToArray();
 
                 var bytes = marsh.Marshal(dt);
 
                 var res = marsh.Unmarshal<SpecialArrayMarshalAware>(bytes);
 
-                CollectionAssert.AreEquivalent(dt.GuidArr, res.GuidArr);
-                CollectionAssert.AreEquivalent(dt.DateArr, res.DateArr);
+                CollectionAssert.AreEquivalent(dt.NGuidArr, res.NGuidArr);
+                CollectionAssert.AreEquivalent(dt.NDateArr, res.NDateArr);
             }
         }
 
