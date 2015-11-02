@@ -571,158 +571,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         private void Mutate0(Context ctx, PortableHeapStream inStream, IPortableStream outStream,
             bool changeHash, int hash, IDictionary<int, PortableBuilderField> vals)
         {
-            int inStartPos = inStream.Position;
-            int outStartPos = outStream.Position;
-
             byte inHdr = inStream.ReadByte();
 
             if (inHdr == PortableUtils.HdrNull)
                 outStream.WriteByte(PortableUtils.HdrNull);
             else if (inHdr == PortableUtils.HdrHnd)
-            {
-                int inHnd = inStream.ReadInt();
-
-                int oldPos = inStartPos - inHnd;
-                int newPos;
-
-                if (ctx.OldToNew(oldPos, out newPos))
-                {
-                    // Handle is still valid.
-                    outStream.WriteByte(PortableUtils.HdrHnd);
-                    outStream.WriteInt(outStartPos - newPos);
-                }
-                else
-                {
-                    // Handle is invalid, write full object.
-                    int inRetPos = inStream.Position;
-
-                    inStream.Seek(oldPos, SeekOrigin.Begin);
-
-                    Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
-
-                    inStream.Seek(inRetPos, SeekOrigin.Begin);
-                }
-            }
+                WriteHandle(ctx, inStream, outStream);
             else if (inHdr == PortableUtils.HdrFull)
-            {
-                var inHeader = PortableObjectHeader.Read(inStream, inStartPos);
-                
-                PortableUtils.ValidateProtocolVersion(inHeader.Version);
-
-                int hndPos;
-
-                if (ctx.AddOldToNew(inStartPos, outStartPos, out hndPos))
-                {
-                    // Object could be cached in parent builder.
-                    PortableBuilderField cachedVal;
-
-                    if (_parent._cache != null && _parent._cache.TryGetValue(inStartPos, out cachedVal))
-                    {
-                        WriteField(ctx, cachedVal);
-                    }
-                    else
-                    {
-                        // New object, write in full form.
-                        var inSchema = inHeader.ReadSchema(inStream, inStartPos);
-
-                        PortableObjectSchemaHolder.Current.PushSchema();
-
-                        // Skip header as it is not known at this point.
-                        outStream.Seek(PortableObjectHeader.Size, SeekOrigin.Current);
-
-                        if (inSchema != null)
-                        {
-                            foreach (var inField in inSchema)
-                            {
-                                PortableBuilderField fieldVal;
-
-                                var fieldFound = vals.TryGetValue(inField.Id, out fieldVal);
-
-                                if (fieldFound && fieldVal == PortableBuilderField.RmvMarker)
-                                    continue;
-
-                                // ReSharper disable once PossibleNullReferenceException (can't be null)
-                                PortableObjectSchemaHolder.Current.Push(inField.Id, outStream.Position - outStartPos);
-
-                                if (!fieldFound)
-                                    fieldFound = _parent._cache != null &&
-                                                 _parent._cache.TryGetValue(inField.Offset + inStartPos, out fieldVal);
-
-                                if (fieldFound)
-                                {
-                                    WriteField(ctx, fieldVal);
-
-                                    vals.Remove(inField.Id);
-                                }
-                                else
-                                {
-                                    // Field is not tracked, re-write as is.
-                                    inStream.Seek(inField.Offset + inStartPos, SeekOrigin.Begin);
-
-                                    Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
-                                }
-                            }
-                        }
-
-                        // Write remaining new fields.
-                        foreach (var valEntry in vals)
-                        {
-                            if (valEntry.Value == PortableBuilderField.RmvMarker) 
-                                continue;
-
-                            // ReSharper disable once PossibleNullReferenceException (can't be null)
-                            PortableObjectSchemaHolder.Current.Push(valEntry.Key, outStream.Position - outStartPos);
-
-                            WriteField(ctx, valEntry.Value);
-                        }
-
-                        // Write raw data.
-                        int outRawOff = outStream.Position - outStartPos;
-
-                        int inRawOff = inHeader.GetRawOffset(inStream, inStartPos);
-                        int inRawLen = inHeader.SchemaOffset - inRawOff;
-
-                        if (inRawLen > 0)
-                            outStream.Write(inStream.InternalArray, inStartPos + inRawOff, inRawLen);
-
-                        // Write schema
-                        int outSchemaOff = outRawOff;
-
-                        int schemaPos = outStream.Position;
-
-                        int outSchemaId;
-                        var hasSchema = PortableObjectSchemaHolder.Current.WriteAndPop(outStream, out outSchemaId);
-
-                        if (hasSchema)
-                        {
-                            outSchemaOff = schemaPos - outStartPos;
-
-                            if (inRawLen > 0)
-                                outStream.WriteInt(outRawOff);
-                        }
-
-                        var outLen = outStream.Position - outStartPos;
-
-                        var outHash = changeHash ? hash : inHeader.HashCode;
-
-                        var outHeader = new PortableObjectHeader(inHeader.IsUserType, inHeader.TypeId, outHash, 
-                            outLen, outSchemaId, outSchemaOff, !hasSchema);
-
-                        PortableObjectHeader.Write(outHeader, outStream, outStartPos);
-
-                        outStream.Seek(outStartPos + outLen, SeekOrigin.Begin);  // seek to the end of the object
-                    }
-                }
-                else
-                {
-                    // Object has already been written, write as handle.
-                    outStream.WriteByte(PortableUtils.HdrHnd);
-                    outStream.WriteInt(outStartPos - hndPos);
-                }
-
-                // Synchronize input stream position.
-                inStream.Seek(inStartPos + inHeader.Length, SeekOrigin.Begin);
-            }
+                WriteFullObject(ctx, inStream, outStream, changeHash, hash, vals);
             else
             {
                 // Try writing as well-known type with fixed size.
@@ -730,7 +586,176 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 if (!WriteAsPredefined(inHdr, inStream, outStream, ctx))
                     throw new IgniteException("Unexpected header [position=" + (inStream.Position - 1) +
-                        ", header=" + inHdr + ']');
+                                              ", header=" + inHdr + ']');
+            }
+        }
+
+        /// <summary>
+        /// Writes the full object.
+        /// </summary>
+        /// <param name="inStream">Input stream.</param>
+        /// <param name="outStream">Output stream.</param>
+        /// <param name="ctx">Context.</param>
+        /// <param name="changeHash">WHether hash should be changed.</param>
+        /// <param name="hash">New hash.</param>
+        /// <param name="vals">Values to be replaced.</param>
+        private void WriteFullObject(Context ctx, PortableHeapStream inStream, IPortableStream outStream, 
+            bool changeHash, int hash, IDictionary<int, PortableBuilderField> vals)
+        {
+            int inStartPos = inStream.Position;
+            int outStartPos = outStream.Position;
+
+            var inHeader = PortableObjectHeader.Read(inStream, inStartPos);
+
+            PortableUtils.ValidateProtocolVersion(inHeader.Version);
+
+            int hndPos;
+
+            if (ctx.AddOldToNew(inStartPos, outStartPos, out hndPos))
+            {
+                // Object could be cached in parent builder.
+                PortableBuilderField cachedVal;
+
+                if (_parent._cache != null && _parent._cache.TryGetValue(inStartPos, out cachedVal))
+                {
+                    WriteField(ctx, cachedVal);
+                }
+                else
+                {
+                    // New object, write in full form.
+                    var inSchema = inHeader.ReadSchema(inStream, inStartPos);
+
+                    PortableObjectSchemaHolder.Current.PushSchema();
+
+                    // Skip header as it is not known at this point.
+                    outStream.Seek(PortableObjectHeader.Size, SeekOrigin.Current);
+
+                    if (inSchema != null)
+                    {
+                        foreach (var inField in inSchema)
+                        {
+                            PortableBuilderField fieldVal;
+
+                            var fieldFound = vals.TryGetValue(inField.Id, out fieldVal);
+
+                            if (fieldFound && fieldVal == PortableBuilderField.RmvMarker)
+                                continue;
+
+                            // ReSharper disable once PossibleNullReferenceException (can't be null)
+                            PortableObjectSchemaHolder.Current.Push(inField.Id, outStream.Position - outStartPos);
+
+                            if (!fieldFound)
+                                fieldFound = _parent._cache != null &&
+                                             _parent._cache.TryGetValue(inField.Offset + inStartPos, out fieldVal);
+
+                            if (fieldFound)
+                            {
+                                WriteField(ctx, fieldVal);
+
+                                vals.Remove(inField.Id);
+                            }
+                            else
+                            {
+                                // Field is not tracked, re-write as is.
+                                inStream.Seek(inField.Offset + inStartPos, SeekOrigin.Begin);
+
+                                Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
+                            }
+                        }
+                    }
+
+                    // Write remaining new fields.
+                    foreach (var valEntry in vals)
+                    {
+                        if (valEntry.Value == PortableBuilderField.RmvMarker)
+                            continue;
+
+                        // ReSharper disable once PossibleNullReferenceException (can't be null)
+                        PortableObjectSchemaHolder.Current.Push(valEntry.Key, outStream.Position - outStartPos);
+
+                        WriteField(ctx, valEntry.Value);
+                    }
+
+                    // Write raw data.
+                    int outRawOff = outStream.Position - outStartPos;
+
+                    int inRawOff = inHeader.GetRawOffset(inStream, inStartPos);
+                    int inRawLen = inHeader.SchemaOffset - inRawOff;
+
+                    if (inRawLen > 0)
+                        outStream.Write(inStream.InternalArray, inStartPos + inRawOff, inRawLen);
+
+                    // Write schema
+                    int outSchemaOff = outRawOff;
+
+                    int schemaPos = outStream.Position;
+
+                    int outSchemaId;
+                    var hasSchema = PortableObjectSchemaHolder.Current.WriteAndPop(outStream, out outSchemaId);
+
+                    if (hasSchema)
+                    {
+                        outSchemaOff = schemaPos - outStartPos;
+
+                        if (inRawLen > 0)
+                            outStream.WriteInt(outRawOff);
+                    }
+
+                    var outLen = outStream.Position - outStartPos;
+
+                    var outHash = changeHash ? hash : inHeader.HashCode;
+
+                    var outHeader = new PortableObjectHeader(inHeader.IsUserType, inHeader.TypeId, outHash,
+                        outLen, outSchemaId, outSchemaOff, !hasSchema);
+
+                    PortableObjectHeader.Write(outHeader, outStream, outStartPos);
+
+                    outStream.Seek(outStartPos + outLen, SeekOrigin.Begin); // seek to the end of the object
+                }
+            }
+            else
+            {
+                // Object has already been written, write as handle.
+                outStream.WriteByte(PortableUtils.HdrHnd);
+                outStream.WriteInt(outStartPos - hndPos);
+            }
+
+            // Synchronize input stream position.
+            inStream.Seek(inStartPos + inHeader.Length, SeekOrigin.Begin);
+        }
+
+        /// <summary>
+        /// Writes the handle.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="inStream">In stream.</param>
+        /// <param name="outStream">Out stream.</param>
+        private void WriteHandle(Context ctx, PortableHeapStream inStream, IPortableStream outStream)
+        {
+            int inStartPos = inStream.Position;
+            int outStartPos = outStream.Position;
+
+            int inHnd = inStream.ReadInt();
+
+            int oldPos = inStartPos - inHnd;
+            int newPos;
+
+            if (ctx.OldToNew(oldPos, out newPos))
+            {
+                // Handle is still valid.
+                outStream.WriteByte(PortableUtils.HdrHnd);
+                outStream.WriteInt(outStartPos - newPos);
+            }
+            else
+            {
+                // Handle is invalid, write full object.
+                int inRetPos = inStream.Position;
+
+                inStream.Seek(oldPos, SeekOrigin.Begin);
+
+                Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
+
+                inStream.Seek(inRetPos, SeekOrigin.Begin);
             }
         }
 
