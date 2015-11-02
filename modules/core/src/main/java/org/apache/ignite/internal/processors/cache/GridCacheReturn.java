@@ -318,7 +318,7 @@ public class GridCacheReturn implements Externalizable, Message {
         if (cacheObj != null) {
             cacheObj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
 
-            v = cacheObj.value(ctx.cacheObjectContext(), false);
+            v = ctx.cacheObjectContext().unwrapPortableIfNeeded(cacheObj, true, false);
         }
 
         if (invokeRes && invokeResCol != null) {
@@ -329,10 +329,10 @@ public class GridCacheReturn implements Externalizable, Message {
 
             for (CacheInvokeDirectResult res : invokeResCol) {
                 CacheInvokeResult<?> res0 = res.error() == null ?
-                    CacheInvokeResult.fromResult(CU.value(res.result(), ctx, false)) :
+                    CacheInvokeResult.fromResult(ctx.cacheObjectContext().unwrapPortableIfNeeded(res.result(), true, false)) :
                     CacheInvokeResult.fromError(res.error());
 
-                map0.put(res.key().value(ctx.cacheObjectContext(), false), res0);
+                map0.put(ctx.cacheObjectContext().unwrapPortableIfNeeded(res.key(), true, false), res0);
             }
 
             v = map0;
