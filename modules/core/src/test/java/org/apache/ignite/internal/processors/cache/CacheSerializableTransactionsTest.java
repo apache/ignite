@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
@@ -60,6 +61,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -114,6 +116,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         cfg.setPeerClassLoadingEnabled(false);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         cfg.setClientMode(client);
 
@@ -187,7 +191,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 txStreamerLoad(ignite(SRVS), 10_000, cache.getName(), allowOverwrite);
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -290,7 +294,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -348,7 +352,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -414,7 +418,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -495,7 +499,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -562,7 +566,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -609,7 +613,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                     checkValue(key, null, cache.getName());
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -640,7 +644,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -718,7 +722,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -821,7 +825,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -914,7 +918,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -1007,7 +1011,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -1101,7 +1105,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -1187,7 +1191,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -1273,7 +1277,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -1398,7 +1402,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -1523,7 +1527,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -1660,7 +1664,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -1797,7 +1801,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -1968,7 +1972,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -2118,7 +2122,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                     checkValue(i, rmv ? null : i, cache.getName());
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -2208,7 +2212,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -2267,7 +2271,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -2340,7 +2344,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 checkValue(key2, 2, cache.getName());
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -2389,7 +2393,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            ignite0.destroyCache(cacheName);
+            destroyCache(cacheName);
         }
     }
 
@@ -2475,7 +2479,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             checkValue(key3, key3, cacheName);
         }
         finally {
-            ignite0.destroyCache(cacheName);
+            destroyCache(cacheName);
         }
     }
 
@@ -2555,7 +2559,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             checkValue(key3, key3, cacheName);
         }
         finally {
-            ignite0.destroyCache(cacheName);
+            destroyCache(cacheName);
         }
     }
 
@@ -2817,8 +2821,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            ignite0.destroyCache(CACHE1);
-            ignite0.destroyCache(CACHE2);
+            destroyCache(CACHE1);
+            destroyCache(CACHE2);
         }
     }
 
@@ -2876,7 +2880,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }
             finally {
-                destroyCache(ignite0, ccfg.getName());
+                destroyCache(ccfg.getName());
             }
         }
     }
@@ -2975,25 +2979,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                     caches.add(client.<Integer, Integer>cache(cacheName));
             }
 
-            IgniteInternalFuture<?> restartFut = null;
-
-            if (restart) {
-                restartFut = GridTestUtils.runAsync(new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        while (!stop.get()) {
-                            stopGrid(0);
-
-                            U.sleep(300);
-
-                            Ignite ignite = startGrid(0);
-
-                            assertFalse(ignite.configuration().isClientMode());
-                        }
-
-                        return null;
-                    }
-                });
-            }
+            IgniteInternalFuture<?> restartFut = restart ? restartFuture(stop, null) : null;
 
             for (int i = 0; i < 30; i++) {
                 final AtomicInteger cntr = new AtomicInteger();
@@ -3060,7 +3046,125 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         finally {
             stop.set(true);
 
-            destroyCache(srv, cacheName);
+            destroyCache(cacheName);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIncrementTxMultipleNodeRestart() throws Exception {
+        incrementTxMultiple(false, false, true);
+    }
+
+    /**
+     * @param nearCache If {@code true} near cache is enabled.
+     * @param store If {@code true} cache store is enabled.
+     * @param restart If {@code true} restarts one node.
+     * @throws Exception If failed.
+     */
+    private void incrementTxMultiple(boolean nearCache, boolean store, final boolean restart) throws Exception {
+        final Ignite srv = ignite(1);
+
+        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 1, store, false);
+
+        final List<Ignite> clients = clients();
+
+        final String cacheName = srv.createCache(ccfg).getName();
+
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        try {
+            final List<IgniteCache<Integer, Integer>> caches = new ArrayList<>();
+
+            for (Ignite client : clients) {
+                if (nearCache)
+                    caches.add(client.createNearCache(cacheName, new NearCacheConfiguration<Integer, Integer>()));
+                else
+                    caches.add(client.<Integer, Integer>cache(cacheName));
+            }
+
+            IgniteInternalFuture<?> restartFut = restart ? restartFuture(stop, null) : null;
+
+            for (int i = 0; i < 20; i += 2) {
+                final AtomicInteger cntr = new AtomicInteger();
+
+                final Integer key1 = i;
+                final Integer key2 = i + 1;
+
+                final AtomicInteger threadIdx = new AtomicInteger();
+
+                final int THREADS = 10;
+
+                final CyclicBarrier barrier = new CyclicBarrier(THREADS);
+
+                final ConcurrentSkipListSet<Integer> vals1 = new ConcurrentSkipListSet<>();
+                final ConcurrentSkipListSet<Integer> vals2 = new ConcurrentSkipListSet<>();
+
+                GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        int idx = threadIdx.getAndIncrement() % caches.size();
+
+                        IgniteCache<Integer, Integer> cache = caches.get(idx);
+
+                        Ignite ignite = cache.unwrap(Ignite.class);
+
+                        IgniteTransactions txs = ignite.transactions();
+
+                        log.info("Started update thread: " + ignite.name());
+
+                        barrier.await();
+
+                        for (int i = 0; i < 1000; i++) {
+                            try {
+                                try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
+                                    Integer val1 = cache.get(key1);
+                                    Integer val2 = cache.get(key2);
+
+                                    Integer newVal1 = val1 == null ? 1 : val1 + 1;
+                                    Integer newVal2 = val2 == null ? 1 : val2 + 1;
+
+                                    cache.put(key1, newVal1);
+                                    cache.put(key2, newVal2);
+
+                                    tx.commit();
+
+                                    assertTrue(vals1.add(newVal1));
+                                    assertTrue(vals2.add(newVal2));
+                                }
+
+                                cntr.incrementAndGet();
+                            }
+                            catch (TransactionOptimisticException ignore) {
+                                // Retry.
+                            }
+                            catch (IgniteException | CacheException e) {
+                                assertTrue("Unexpected exception [err=" + e + ", cause=" + e.getCause() + ']',
+                                    restart && X.hasCause(e, ClusterTopologyCheckedException.class));
+                            }
+                        }
+
+                        return null;
+                    }
+                }, THREADS, "update-thread").get();
+
+                log.info("Iteration [iter=" + i + ", val=" + cntr.get() + ']');
+
+                assertTrue(cntr.get() > 0);
+
+                checkValue(key1, cntr.get(), cacheName, restart);
+                checkValue(key2, cntr.get(), cacheName, restart);
+            }
+
+            stop.set(true);
+
+            if (restartFut != null)
+                restartFut.get();
+        }
+        finally {
+            stop.set(true);
+
+            destroyCache(cacheName);
         }
     }
 
@@ -3189,7 +3293,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            ignite0.destroyCache(cacheName);
+            destroyCache(cacheName);
         }
     }
 
@@ -3226,6 +3330,13 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      */
     public void testAccountTxOffheapTiered() throws Exception {
         accountTx(false, false, false, false, TestMemoryMode.OFFHEAP_TIERED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountTxNodeRestart() throws Exception {
+        accountTx(false, false, false, true, TestMemoryMode.HEAP);
     }
 
     /**
@@ -3421,25 +3532,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 }
             }, THREADS, "tx-thread");
 
-            IgniteInternalFuture<?> restartFut = null;
-
-            if (restart) {
-                restartFut = GridTestUtils.runAsync(new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        while (!fut.isDone()) {
-                            stopGrid(0);
-
-                            U.sleep(300);
-
-                            Ignite ignite = startGrid(0);
-
-                            assertFalse(ignite.configuration().isClientMode());
-                        }
-
-                        return null;
-                    }
-                });
-            }
+            IgniteInternalFuture<?> restartFut = restart ? restartFuture(null, fut) : null;
 
             fut.get(testTime + 30_000);
 
@@ -3506,7 +3599,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            srv.destroyCache(cacheName);
+            destroyCache(cacheName);
         }
     }
 
@@ -3558,21 +3651,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 cacheNames.add(ccfg.getName());
             }
 
-            IgniteInternalFuture<?> restartFut = GridTestUtils.runAsync(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    while (!finished.get()) {
-                        stopGrid(0);
-
-                        U.sleep(300);
-
-                        Ignite ignite = startGrid(0);
-
-                        assertFalse(ignite.configuration().isClientMode());
-                    }
-
-                    return null;
-                }
-            });
+            IgniteInternalFuture<?> restartFut = restartFuture(finished, null);
 
             List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
@@ -3653,7 +3732,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             finished.set(true);
 
             for (String cacheName : cacheNames)
-                srv.destroyCache(cacheName);
+                destroyCache(cacheName);
         }
     }
 
@@ -3710,7 +3789,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            ignite.destroyCache(cacheName);
+            destroyCache(cacheName);
         }
     }
 
@@ -3785,27 +3864,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
             final AtomicBoolean finished = new AtomicBoolean();
 
-            IgniteInternalFuture<Object> fut = null;
+            IgniteInternalFuture<?> fut = restart ? restartFuture(finished, null) : null;
 
             try {
-                if (restart) {
-                    fut = GridTestUtils.runAsync(new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            while (!finished.get()) {
-                                stopGrid(0);
-
-                                U.sleep(300);
-
-                                Ignite ignite = startGrid(0);
-
-                                assertFalse(ignite.configuration().isClientMode());
-                            }
-
-                            return null;
-                        }
-                    });
-                }
-
                 for (int i = 0; i < 10; i++) {
                     log.info("Iteration: " + i);
 
@@ -3957,7 +4018,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            destroyCache(srv, cacheName);
+            destroyCache(cacheName);
         }
     }
 
@@ -4152,16 +4213,20 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param ignite Node.
      * @param cacheName Cache name.
      */
-    private void destroyCache(Ignite ignite, String cacheName) {
+    private void destroyCache(String cacheName) {
         storeMap.clear();
 
-        ignite.destroyCache(cacheName);
+        for (Ignite ignite : G.allGrids()) {
+            try {
+                ignite.destroyCache(cacheName);
+            }
+            catch (IgniteException ignore) {
+                // No-op.                
+            }
 
-        for (Ignite ignite0 : G.allGrids()) {
-            GridTestSwapSpaceSpi spi = (GridTestSwapSpaceSpi)ignite0.configuration().getSwapSpaceSpi();
+            GridTestSwapSpaceSpi spi = (GridTestSwapSpaceSpi)ignite.configuration().getSwapSpaceSpi();
 
             spi.clearAll();
         }
@@ -4217,6 +4282,36 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         }
 
         return clients;
+    }
+
+    /**
+     * @param stop Stop flag.
+     * @param fut Future.
+     * @return Restart thread future.
+     */
+    private IgniteInternalFuture<?> restartFuture(final AtomicBoolean stop, final IgniteInternalFuture<?> fut) {
+        return GridTestUtils.runAsync(new Callable<Object>() {
+            private boolean stop() {
+                if (stop != null)
+                    return stop.get();
+
+                return fut.isDone();
+            }
+
+            @Override public Object call() throws Exception {
+                while (!stop()) {
+                    Ignite ignite = startGrid(SRVS + CLIENTS);
+
+                    assertFalse(ignite.configuration().isClientMode());
+
+                    U.sleep(300);
+
+                    stopGrid(SRVS + CLIENTS);
+                }
+
+                return null;
+            }
+        }, "restart-thread");
     }
 
     /**
