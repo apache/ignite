@@ -15,49 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.portable;
-
-import java.util.Map;
+package org.apache.ignite.portable;
 
 /**
- * Portable object schema.
+ * Portable object field. Can be used to speed object field lookup.
  */
-public class PortableObjectSchema {
-    /** Schema ID. */
-    private final int schemaId;
-
-    /** Fields. */
-    private final Map<Integer, Integer> fields;
+public interface PortableField {
+    /**
+     * Check whether field exists in the object.
+     *
+     * @param obj Object.
+     * @return {@code True} if exists.
+     */
+    public boolean exists(PortableObject obj);
 
     /**
-     * Constructor.
+     * Get field's value from the given object.
      *
-     * @param schemaId Schema ID.
-     * @param fields Fields.
+     * @param obj Object.
+     * @return Value.
      */
-    public PortableObjectSchema(int schemaId, Map<Integer, Integer> fields) {
-        this.schemaId = schemaId;
-        this.fields = fields;
-    }
-
-    /**
-     * Get schema ID.
-     *
-     * @return Schema ID.
-     */
-    public int schemaId() {
-        return schemaId;
-    }
-
-    /**
-     * Get field offset position.
-     *
-     * @param fieldId Field ID.
-     * @return Field offset position.
-     */
-    public int fieldOffsetPosition(int fieldId) {
-        Integer pos = fields.get(fieldId);
-
-        return pos != null ? pos : 0;
-    }
+    public <T> T value(PortableObject obj);
 }
