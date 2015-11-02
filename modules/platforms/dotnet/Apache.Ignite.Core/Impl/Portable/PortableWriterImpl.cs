@@ -1080,8 +1080,16 @@ namespace Apache.Ignite.Core.Impl.Portable
                 _curStruct = new PortableStructureTracker(desc, desc.WriterTypeStructure);
                 PortableObjectSchemaHolder.Current.PushSchema();
 
-                // Write object fields.
-                desc.Serializer.WritePortable(obj, this);
+                try
+                {
+                    // Write object fields.
+                    desc.Serializer.WritePortable(obj, this);
+                }
+                catch (Exception)
+                {
+                    PortableObjectSchemaHolder.Current.PopSchema();
+                    throw;
+                }
 
                 // Write schema
                 var schemaOffset = _stream.Position - pos;
