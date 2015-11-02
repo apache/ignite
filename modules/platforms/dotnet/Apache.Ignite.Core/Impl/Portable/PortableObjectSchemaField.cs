@@ -63,9 +63,9 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (BitConverter.IsLittleEndian)
             {
-                fixed (PortableObjectSchemaField* ptr = &fields[0])
+                fixed (PortableObjectSchemaField* ptr = &fields[start])
                 {
-                    stream.Write((byte*) ptr + start * Size, count * Size);
+                    stream.Write((byte*) ptr, count * Size);
                 }
             }
             else

@@ -79,15 +79,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>True if current schema was non empty; false otherwise.</returns>
         public bool WriteAndPop(IPortableStream stream, out int schemaId)
         {
-            var count = _offsets.Pop();
+            var offset = _offsets.Pop();
+            var count = _idx - offset;
 
             if (count > 0)
             {
-                var startIdx = _idx - count;
+                PortableObjectSchemaField.WriteArray(_fields, stream, offset, count);
 
-                PortableObjectSchemaField.WriteArray(_fields, stream, startIdx, count);
-
-                schemaId = PortableUtils.GetSchemaId(_fields, startIdx, count);
+                schemaId = PortableUtils.GetSchemaId(_fields, offset, count);
 
                 _idx -= count;
 
