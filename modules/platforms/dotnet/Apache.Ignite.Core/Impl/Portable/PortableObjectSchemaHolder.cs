@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
-    using System.Diagnostics;
+    using System.Collections.Generic;
     using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
@@ -28,6 +28,9 @@ namespace Apache.Ignite.Core.Impl.Portable
     {
         /** Fields. */
         private PortableObjectSchemaField[] _fields = new PortableObjectSchemaField[16];
+
+        /** Offsets for different schemas. */
+        private readonly Stack<int> _offsets = new Stack<int>();
 
         /** Current field index. */
         private int _idx;
@@ -48,17 +51,27 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Writes specified number of collected fields and removes them/
+        /// Marks the start of a new schema.
+        /// </summary>
+        public void PushSchema()
+        {
+            _offsets.Push(_idx);
+        }
+
+        /// <summary>
+        /// Writes collected schema to the stream and pops it.
         /// </summary>
         /// <param name="stream">The stream.</param>
-        /// <param name="count">The count.</param>
-        public void WriteAndPop(IPortableStream stream, int count)
+        public void WriteAndPop(IPortableStream stream)
         {
-            Debug.Assert(count <= _idx);
+            var count = _offsets.Pop();
 
-            PortableObjectSchemaField.WriteArray(_fields, stream, _idx - count, count);
+            if (count > 0)
+            {
+                PortableObjectSchemaField.WriteArray(_fields, stream, _idx - count, count);
 
-            _idx -= count;
+                _idx -= count;
+            }
         }
     }
 }
