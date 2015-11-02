@@ -1084,10 +1084,13 @@ namespace Apache.Ignite.Core.Impl.Portable
                 desc.Serializer.WritePortable(obj, this);
 
                 // Write schema
+                var schemaOffset = _stream.Position - pos;
+
                 int schemaId;
                 var hasSchema = PortableObjectSchemaHolder.Current.WriteAndPop(_stream, out schemaId);
 
-                var schemaOffset = hasSchema ? _stream.Position - pos : PortableObjectHeader.Size;
+                if (!hasSchema)
+                    schemaOffset = PortableObjectHeader.Size;
 
                 // Calculate and write header.
                 if (hasSchema && _curRawPos > 0)
