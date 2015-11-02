@@ -100,6 +100,21 @@ public class PortableUtils {
     /** Flag: only raw data exists. */
     public static final short FLAG_RAW_ONLY = 0x2;
 
+    /** Flag: offsets take 1 byte. */
+    public static final short FLAG_OFFSET_ONE_BYTE = 0x4;
+
+    /** Flag: offsets take 2 bytes. */
+    public static final short FLAG_OFFSET_TWO_BYTES = 0x8;
+
+    /** Offset which fits into 1 byte. */
+    public static final int OFFSET_1 = 1;
+
+    /** Offset which fits into 2 bytes. */
+    public static final int OFFSET_2 = 2;
+
+    /** Offset which fits into 4 bytes. */
+    public static final int OFFSET_4 = 4;
+
     /**
      * Write flags.
      *
@@ -604,14 +619,16 @@ public class PortableUtils {
      *
      * @param in Input stream.
      * @param start Start position.
+     * @param fieldOffsetSize Field offset size.
      * @return Footer.
      */
-    public static IgniteBiTuple<Integer, Integer> footerAbsolute(PortablePositionReadable in, int start) {
+    public static IgniteBiTuple<Integer, Integer> footerAbsolute(PortablePositionReadable in, int start,
+        int fieldOffsetSize) {
         int footerStart = footerStartRelative(in, start);
         int footerEnd = length(in, start);
 
         // Take in count possible raw offset.
-        if ((((footerEnd - footerStart) >> 2) & 0x1) == 0x1)
+        if ((footerEnd - footerStart) % (4 + fieldOffsetSize) != 0)
             footerEnd -= 4;
 
         return F.t(start + footerStart, start + footerEnd);
@@ -622,9 +639,10 @@ public class PortableUtils {
      *
      * @param in Input stream.
      * @param start Object start position inside the stream.
+     * @param fieldOffsetSize Field offset size.
      * @return Raw offset.
      */
-    public static int rawOffsetAbsolute(PortablePositionReadable in, int start) {
+    public static int rawOffsetAbsolute(PortablePositionReadable in, int start, int fieldOffsetSize) {
         int len = length(in, start);
 
         short flags = in.readShortPositioned(start + GridPortableMarshaller.FLAGS_POS);
@@ -636,12 +654,47 @@ public class PortableUtils {
             // Schema exists.
             int schemaOff = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
-            if ((((len - schemaOff) >> 2) & 0x1) == 0x0)
+            if (((len - schemaOff) % (4 + fieldOffsetSize)) == 0x0)
                 // Even amount of records in schema => no raw offset.
                 return start + schemaOff;
             else
                 // Odd amount of records in schema => raw offset is the very last 4 bytes in object.
                 return start + in.readIntPositioned(start + len - 4);
         }
+    }
+
+    /**
+     * Get offset size for the given flags.
+     * @param flags Flags.
+     * @return Offset size.
+     */
+    public static int fieldOffsetSize(short flags) {
+        if ((flags & FLAG_OFFSET_ONE_BYTE) == FLAG_OFFSET_ONE_BYTE)
+            return OFFSET_1;
+        else if ((flags & FLAG_OFFSET_TWO_BYTES) == FLAG_OFFSET_TWO_BYTES)
+            return OFFSET_2;
+        else
+            return OFFSET_4;
+    }
+
+    /**
+     * Get relative field offset.
+     *
+     * @param stream Stream.
+     * @param pos Position.
+     * @param fieldOffsetSize Field offset size.
+     * @return Relative field offset.
+     */
+    public static int fieldOffsetRelative(PortablePositionReadable stream, int pos, int fieldOffsetSize) {
+        int res;
+
+        if (fieldOffsetSize == PortableUtils.OFFSET_1)
+            res = (int)stream.readBytePositioned(pos) & 0xFF;
+        else if (fieldOffsetSize == PortableUtils.OFFSET_2)
+            res = (int)stream.readShortPositioned(pos) & 0xFFFF;
+        else
+            res = stream.readIntPositioned(pos);
+
+        return res;
     }
 }

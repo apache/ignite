@@ -264,50 +264,6 @@ namespace ignite
                 return realLen;
             }
 
-            void PortableReaderImpl::ParseHeaderIfNeeded()
-            {
-                if (footerBegin)
-                    return;
-
-                InteropStreamPositionGuard<InteropInputStream> posGuard(*stream);
-
-                int8_t hdr = stream->ReadInt8();
-
-                if (hdr != IGNITE_HDR_FULL)
-                    IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_PORTABLE, "Invalid header: ", hdr);
-
-                int8_t protoVer = stream->ReadInt8();
-
-                if (protoVer != IGNITE_PROTO_VER) {
-                    IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_PORTABLE,
-                        "Unsupported portable protocol version: ", protoVer);
-                }
-
-                int16_t flags = stream->ReadInt16();
-                int32_t typeId = stream->ReadInt32();
-                int32_t hashCode = stream->ReadInt32();
-                int32_t len = stream->ReadInt32();
-                int32_t schemaId = stream->ReadInt32();
-                int32_t schemaOrRawOff = stream->ReadInt32();
-
-                if (flags & IGNITE_PORTABLE_FLAG_RAW_ONLY)
-                {
-                    footerBegin = len;
-
-                    rawOff = schemaOrRawOff;
-                }
-                else
-                {
-                    footerBegin = schemaOrRawOff;
-
-                    rawOff = (len - footerBegin) % 8 ? stream->ReadInt32(pos + len - 4) : schemaOrRawOff;
-                }
-
-                footerEnd = len - ((len - footerBegin) % 8);
-
-                bool usrType = flags & IGNITE_PORTABLE_FLAG_USER_OBJECT;
-            }
-
             void PortableReaderImpl::ReadGuidArrayInternal(InteropInputStream* stream, Guid* res, const int32_t len)
             {
                 for (int i = 0; i < len; i++)
