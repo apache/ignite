@@ -885,8 +885,8 @@ consoleModule.controller('metadataController', [
 
                 var item = $scope.backupItem;
 
-                if (validate(item))
-                    save(item);
+                //if (validate(item))
+                save(item);
             };
 
             // Save cache type metadata with new name.
@@ -931,6 +931,12 @@ consoleModule.controller('metadataController', [
                                             $scope.selectItem(metadatas[0]);
                                         else
                                             $scope.selectItem(undefined, undefined);
+                                    }
+
+                                    if (!$scope.ui.showValid) {
+                                        var validFilter = $filter('metadatasValidation');
+
+                                        $scope.ui.showValid = validFilter($scope.metadatas, false, true).length == 0;
                                     }
                                 })
                                 .error(function (errMsg) {
