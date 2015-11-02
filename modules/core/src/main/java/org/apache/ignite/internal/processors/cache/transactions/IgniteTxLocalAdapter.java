@@ -740,7 +740,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 if (putMap == null)
                                     putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
 
-                                putMap.put(CU.value(key, cacheCtx, false), F.t(CU.value(val, cacheCtx, false), ver));
+                                putMap.put(key, F.<Object, GridCacheVersion>t(val, ver));
                             }
                         }
                         else if (op == DELETE) {
@@ -782,7 +782,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 if (rmvCol == null)
                                     rmvCol = new ArrayList<>();
 
-                                rmvCol.add(key.value(cacheCtx.cacheObjectContext(), false));
+                                rmvCol.add(key);
                             }
                         }
                         else if (log.isDebugEnabled())
