@@ -60,6 +60,7 @@ block content
             form.panel-tip-container(data-placement='bottom' bs-tooltip data-title='Download configuration' method='post' action='summary/download')
                 input(type='hidden' name='_id' value='{{selectedItem._id}}')
                 input(type='hidden' name='os' value='{{os}}')
+                input(type='hidden' name='clientNearConfiguration' value='{{backupItem.nearConfiguration}}')
                 input(type='hidden' name='useConstructor' value='{{configServer.useConstructor}}')
                 input(type='hidden' name='includeKeyFields' value='{{configServer.includeKeyFields}}')
                 button.btn.btn-primary(id='download' type='submit' ng-click='$event.stopPropagation()') Download
@@ -100,7 +101,7 @@ block content
                                 div(ui-ace='{ onLoad: aceInit, mode: "dockerfile" }' ng-model='dockerServer')
                 .panel.panel-default
                     .panel-heading(role='tab' bs-collapse-toggle)
-                        i.fa(ng-class='panelExpanded(panels, "server") ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+                        i.fa(ng-class='panelExpanded(panels, "client") ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
                         label Client
                     .panel-collapse(id='client' role='tabpanel' bs-collapse-target)
                         div(ng-show='selectedItem')
