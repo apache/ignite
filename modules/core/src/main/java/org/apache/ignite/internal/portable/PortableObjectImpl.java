@@ -63,9 +63,6 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final PortablePrimitives PRIM = PortablePrimitives.get();
-
-    /** */
     @GridDirectTransient
     private PortableContext ctx;
 
@@ -154,7 +151,7 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
 
     /** {@inheritDoc} */
     @Override public int length() {
-        return PRIM.readInt(arr, start + GridPortableMarshaller.TOTAL_LEN_POS);
+        return PortablePrimitives.readInt(arr, start + GridPortableMarshaller.TOTAL_LEN_POS);
     }
 
     /**
@@ -230,7 +227,7 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        return PRIM.readInt(arr, start + GridPortableMarshaller.TYPE_ID_POS);
+        return PortablePrimitives.readInt(arr, start + GridPortableMarshaller.TYPE_ID_POS);
     }
 
     /** {@inheritDoc} */
@@ -262,50 +259,50 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
     @Nullable @Override protected <F> F fieldByOffset(int fieldOffset) {
         Object val;
 
-        int schemaOffset = PRIM.readInt(arr, start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
-        int fieldPos = PRIM.readInt(arr, start + schemaOffset + fieldOffset);
+        int schemaOffset = PortablePrimitives.readInt(arr, start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        int fieldPos = PortablePrimitives.readInt(arr, start + schemaOffset + fieldOffset);
 
         // Read header and try performing fast lookup for well-known types (the most common types go first).
-        byte hdr = PRIM.readByte(arr, fieldPos);
+        byte hdr = PortablePrimitives.readByte(arr, fieldPos);
 
         switch (hdr) {
             case INT:
-                val = PRIM.readInt(arr, fieldPos + 1);
+                val = PortablePrimitives.readInt(arr, fieldPos + 1);
 
                 break;
 
             case LONG:
-                val = PRIM.readLong(arr, fieldPos + 1);
+                val = PortablePrimitives.readLong(arr, fieldPos + 1);
 
                 break;
 
             case BOOLEAN:
-                val = PRIM.readBoolean(arr, fieldPos + 1);
+                val = PortablePrimitives.readBoolean(arr, fieldPos + 1);
 
                 break;
 
             case SHORT:
-                val = PRIM.readShort(arr, fieldPos + 1);
+                val = PortablePrimitives.readShort(arr, fieldPos + 1);
 
                 break;
 
             case BYTE:
-                val = PRIM.readByte(arr, fieldPos + 1);
+                val = PortablePrimitives.readByte(arr, fieldPos + 1);
 
                 break;
 
             case CHAR:
-                val = PRIM.readChar(arr, fieldPos + 1);
+                val = PortablePrimitives.readChar(arr, fieldPos + 1);
 
                 break;
 
             case FLOAT:
-                val = PRIM.readFloat(arr, fieldPos + 1);
+                val = PortablePrimitives.readFloat(arr, fieldPos + 1);
 
                 break;
 
             case DOUBLE:
-                val = PRIM.readDouble(arr, fieldPos + 1);
+                val = PortablePrimitives.readDouble(arr, fieldPos + 1);
 
                 break;
 
@@ -393,12 +390,12 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return PRIM.readInt(arr, start + GridPortableMarshaller.HASH_CODE_POS);
+        return PortablePrimitives.readInt(arr, start + GridPortableMarshaller.HASH_CODE_POS);
     }
 
     /** {@inheritDoc} */
     @Override protected int schemaId() {
-        return PRIM.readInt(arr, start + GridPortableMarshaller.SCHEMA_ID_POS);
+        return PortablePrimitives.readInt(arr, start + GridPortableMarshaller.SCHEMA_ID_POS);
     }
 
     /** {@inheritDoc} */
