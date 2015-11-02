@@ -100,10 +100,10 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     private static final int FNV1_PRIME = 0x01000193;
 
     /** Maximum offset which fits in 1 byte. */
-    private static final int MAX_OFFSET_1 = 2 << 8;
+    private static final int MAX_OFFSET_1 = 1 << 8;
 
     /** Maximum offset which fits in 2 bytes. */
-    private static final int MAX_OFFSET_2 = 2 << 16;
+    private static final int MAX_OFFSET_2 = 1 << 16;
 
     /** Thread-local schema. */
     private static final ThreadLocal<SchemaHolder> SCHEMA = new ThreadLocal<>();
@@ -348,11 +348,22 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, out.position() - start);
 
             // Write the schema.
-            schema.writeAndPop(this, fieldCnt);
+            int offsetByteCnt = schema.writeAndPop(this, fieldCnt);
 
             // Write raw offset if needed.
             if (rawOffPos != 0)
                 out.writeInt(rawOffPos - start);
+
+            if (offsetByteCnt == PortableUtils.OFFSET_1) {
+                int flags = (userType ? PortableUtils.FLAG_USR_TYP : 0) | PortableUtils.FLAG_OFFSET_ONE_BYTE;
+
+                out.writeShort(start + FLAGS_POS, (short)flags);
+            }
+            else if (offsetByteCnt == PortableUtils.OFFSET_2) {
+                int flags = (userType ? PortableUtils.FLAG_USR_TYP : 0) | PortableUtils.FLAG_OFFSET_TWO_BYTES;
+
+                out.writeShort(start + FLAGS_POS, (short)flags);
+            }
         }
         else {
             // Write raw-only flag is needed.
@@ -1840,15 +1851,40 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
          *
          * @param writer Writer.
          * @param cnt Count.
+         * @return Amount of bytes dedicated to
          */
-        public void writeAndPop(PortableWriterExImpl writer, int cnt) {
+        public int writeAndPop(PortableWriterExImpl writer, int cnt) {
             int startIdx = idx - cnt * 2;
 
             assert startIdx >= 0;
 
-            for (int idx0 = startIdx; idx0 < idx;) {
-                writer.writeInt(data[idx0++]);
-                writer.writeInt(data[idx0++]);
+            int lastOffset = data[idx - 1];
+
+            int res;
+
+            if (lastOffset < MAX_OFFSET_1) {
+                for (int idx0 = startIdx; idx0 < idx; ) {
+                    writer.writeInt(data[idx0++]);
+                    writer.writeByte((byte) data[idx0++]);
+                }
+
+                res = PortableUtils.OFFSET_1;
+            }
+            else if (lastOffset < MAX_OFFSET_2) {
+                for (int idx0 = startIdx; idx0 < idx; ) {
+                    writer.writeInt(data[idx0++]);
+                    writer.writeShort((short)data[idx0++]);
+                }
+
+                res = PortableUtils.OFFSET_2;
+            }
+            else {
+                for (int idx0 = startIdx; idx0 < idx; ) {
+                    writer.writeInt(data[idx0++]);
+                    writer.writeInt(data[idx0++]);
+                }
+
+                res = PortableUtils.OFFSET_4;
             }
 
             idx = startIdx;
@@ -1856,6 +1892,8 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             // Shrink data array if needed.
             if (idx == 0 && data.length > MAX_SIZE)
                 data = new int[MAX_SIZE];
+
+            return res;
         }
     }
 }
