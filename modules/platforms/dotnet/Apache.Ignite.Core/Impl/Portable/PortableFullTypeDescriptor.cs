@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private volatile PortableStructure _readerTypeStructure = PortableStructure.CreateEmpty();
         
         /** Type schema. */
-        private readonly PortableObjectSchemaDictionary _schema = new PortableObjectSchemaDictionary();
+        private readonly PortableObjectSchema _schema = new PortableObjectSchema();
 
         /// <summary>
         /// Constructor.
@@ -217,7 +217,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public PortableObjectSchemaDictionary Schema
+        public PortableObjectSchema Schema
         {
             get { return _schema; }
         }
