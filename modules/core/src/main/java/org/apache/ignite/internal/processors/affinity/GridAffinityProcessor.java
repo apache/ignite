@@ -38,6 +38,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.igniteobject.IgniteObject;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -497,7 +498,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     private <K> ClusterNode primary(AffinityInfo aff, K key) throws IgniteCheckedException {
-        if (key instanceof CacheObject)
+        if (key instanceof CacheObject && !(key instanceof IgniteObject))
             key = ((CacheObject)key).value(aff.cacheObjCtx, false);
 
         int part = aff.affFunc.partition(aff.mapper.affinityKey(key));
@@ -516,7 +517,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Primary and backup nodes.
      */
     private <K> List<ClusterNode> primaryAndBackups(AffinityInfo aff, K key) {
-        if (key instanceof CacheObject)
+        if (key instanceof CacheObject && !(key instanceof IgniteObject))
             key = ((CacheObject) key).value(aff.cacheObjCtx, false);
 
         int part = aff.affFunc.partition(aff.mapper.affinityKey(key));
