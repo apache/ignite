@@ -324,6 +324,9 @@ consoleModule.controller('metadataController', [
                     .success(function (schemas) {
                         $scope.loadMeta.schemas = _.map(schemas, function (schema) { return {use: false, name: schema}});
                         $scope.loadMeta.action = 'schemas';
+
+                        if ($scope.loadMeta.schemas.length == 0)
+                            $scope.loadMetadataNext();
                     })
                     .error(function (errMsg) {
                         $common.showError(errMsg);
@@ -628,14 +631,15 @@ consoleModule.controller('metadataController', [
             };
 
             $scope.loadMetadataPrev = function () {
-                if  ($scope.loadMeta.action == 'tables') {
+                if  ($scope.loadMeta.action == 'tables' && $scope.loadMeta.schemas.length > 0) {
                     $scope.loadMeta.action = 'schemas';
                     $scope.loadMeta.button = 'Next';
                     $scope.loadMeta.info = INFO_SELECT_SCHEMAS;
                     $scope.loadMeta.loadingOptions = LOADING_TABLES;
                 }
-                else if  ($scope.loadMeta.action == 'schemas') {
+                else {
                     $scope.loadMeta.action = 'connect';
+                    $scope.loadMeta.button = 'Next';
                     $scope.loadMeta.info = INFO_CONNECT_TO_DB;
                     $scope.loadMeta.loadingOptions = LOADING_SCHEMAS;
                 }
