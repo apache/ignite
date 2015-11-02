@@ -262,7 +262,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @param n Node to check.
      * @param part Partition.
      * @param topVer Topology version.
-     * @return {@code True} if checked node is primary for given key.
+     * @return {@code True} if checked node is primary for given partition.
      */
     public boolean primary(ClusterNode n, int part, AffinityTopologyVersion topVer) {
         return F.eq(primary(part, topVer), n);
@@ -291,6 +291,20 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
             return Collections.emptyList();
 
         return F.view(nodes, F.notEqualTo(nodes.get(0)));
+    }
+
+    /**
+     * @param n Node to check.
+     * @param part Partition.
+     * @param topVer Topology version.
+     * @return {@code True} if checked node is a backup node for given partition.
+     */
+    public boolean backup(ClusterNode n, int part, AffinityTopologyVersion topVer) {
+        List<ClusterNode> nodes = nodes(part, topVer);
+
+        assert !F.isEmpty(nodes);
+
+        return nodes.indexOf(n) > 0;
     }
 
     /**
