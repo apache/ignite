@@ -788,9 +788,8 @@ namespace ignite
                             else
                                 footerBegin = schemaOrRawOff;
 
-                            PortableOffsetType schemaType = OFFSET_TYPE_4_BYTE;
-
-                            int32_t trailingBytes = (len - footerBegin) % 8;
+                            PortableOffsetType schemaType;
+                            int32_t trailingBytes;
 
                             if (flags & IGNITE_PORTABLE_FLAG_OFFSET_1_BYTE)
                             {
@@ -803,6 +802,12 @@ namespace ignite
                                 schemaType = OFFSET_TYPE_2_BYTE;
 
                                 trailingBytes = (len - footerBegin) % 6;
+                            }
+                            else
+                            {
+                                schemaType = OFFSET_TYPE_4_BYTE;
+
+                                trailingBytes = (len - footerBegin) % 8;
                             }
 
                             int32_t footerEnd = len - trailingBytes;
