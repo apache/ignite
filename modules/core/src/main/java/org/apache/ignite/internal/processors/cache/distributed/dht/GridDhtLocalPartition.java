@@ -604,6 +604,14 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
+     * @param topVer Topology version.
+     * @return {@code True} if local node is backup for this partition.
+     */
+    public boolean backup(AffinityTopologyVersion topVer) {
+        return cctx.affinity().backup(cctx.localNode(), id, topVer);
+    }
+
+    /**
      * Clears values for this partition.
      */
     private void clearAll() {

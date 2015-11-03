@@ -15,27 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache;
-
-import java.util.Map;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.yardstick.cache.model.Person2;
+package org.apache.ignite.yardstick.cache.failover;
 
 /**
- * Ignite benchmark that performs put operations for entity with indexed fields.
+ * Invoke retry failover benchmark. <p> Each client maintains a local map that it updates together with cache. Client
+ * invokes an increment closure for all generated keys and atomically increments value for corresponding keys in the
+ * local map. To validate cache contents, all writes from the client are stopped, values in the local map are compared
+ * to the values in the cache.
  */
-public class IgnitePutIndexedValue2Benchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+public class IgniteAtomicOffHeapInvokeRetryBenchmark extends IgniteAtomicInvokeRetryBenchmark {
     /** {@inheritDoc} */
-    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        int key = nextRandom(args.range());
-
-        cache.put(key, new Person2(key));
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("atomic-index");
+    @Override protected String cacheName() {
+        return "atomic-offheap-invoke-retry";
     }
 }

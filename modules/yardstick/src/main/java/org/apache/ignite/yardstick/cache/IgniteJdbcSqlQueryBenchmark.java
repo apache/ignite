@@ -37,7 +37,7 @@ import static org.yardstickframework.BenchmarkUtils.println;
 /**
  * Ignite benchmark that performs query operations.
  */
-public class IgniteJdbcSqlQueryBenchmark extends IgniteCacheAbstractBenchmark {
+public class IgniteJdbcSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** Statements for closing. */
     Set<PreparedStatement> stms = Collections.synchronizedSet(new HashSet<PreparedStatement>());
 
