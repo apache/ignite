@@ -1252,7 +1252,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @throws Exception If failed.
      */
     public void testFailover() throws Exception {
-        this.backups = 2;
+        this.backups = 3;
 
         final int SRV_NODES = 4;
 
@@ -1289,12 +1289,18 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                     startGrid(idx);
 
+                    awaitPartitionMapExchange();
+
                     Thread.sleep(200);
 
                     log.info("Stop node: " + idx);
 
                     try {
                         stopGrid(idx);
+
+                        awaitPartitionMapExchange();
+
+                        Thread.sleep(200);
                     }
                     catch (Exception e) {
                         log.warning("Failed to stop nodes.", e);
