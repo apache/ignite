@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.DataStructures
 {
-    using System;
     using System.Diagnostics;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Impl.Portable;
@@ -54,8 +53,7 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** <inheritDoc /> */
         public long Read()
         {
-            // TODO:
-            throw new NotImplementedException();
+            return UnmanagedUtils.AtomicSequenceGet(Target);
         }
     }
 }
