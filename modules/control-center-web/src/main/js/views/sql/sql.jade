@@ -199,10 +199,8 @@ block container
                                                 | &nbspquery
                                     div(ng-show='queryExecuted(paragraph) && !paragraph.refreshExecuting()')
                                         -var nextVisibleCondition = 'paragraph.queryId && (paragraph.table() || paragraph.chart() && paragraph.queryExecute() && (paragraph.timeLineSupported() || !paragraph.chartTimeLineEnabled()))'
-                                        -var queryLinkStyle = 'float: left; margin-left: 5px; margin-bottom: 5px;'
 
                                         hr(style='margin-top: 0; margin-bottom: 5px')
-                                        a(ng-show='paragraph.queryArgs.type != "SCAN"' style=queryLinkStyle ng-click='showMessage("Query", [paragraph.queryArgs.query])') Show query
-                                        label(ng-show='paragraph.queryArgs.type == "SCAN"' style=queryLinkStyle) Scan query
+                                        a(ng-show='paragraph.queryArgs.type' style='float: left; margin-left: 5px; margin-bottom: 5px' ng-click='showResultQuery(paragraph)') Show query
                                         i.fa.fa-chevron-circle-right(ng-show=nextVisibleCondition style='float: right;margin-right: 10px;' ng-click='nextPage(paragraph)')
                                         a(ng-show=nextVisibleCondition style='float: right; margin-bottom: 5px;margin-right: 5px;' ng-click='nextPage(paragraph)') Next

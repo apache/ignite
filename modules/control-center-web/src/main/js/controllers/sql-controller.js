@@ -26,8 +26,6 @@ consoleModule.controller('sqlController',
     $scope.agentGoal = 'execute sql statements';
     $scope.agentTestDriveOption = '--test-drive-sql';
 
-    $scope.showMessage = $message.message;
-
     $scope.joinTip = $common.joinTip;
 
     $scope.caches = [];
@@ -1305,6 +1303,33 @@ consoleModule.controller('sqlController',
                 .finally(function() {
                     $loading.finish('loadingCacheMetadata');
                 });
+        }
+    };
+
+    $scope.showResultQuery = function (paragraph) {
+        if ($common.isDefined(paragraph)) {
+            var title;
+            var queryMsg;
+
+            switch (paragraph.queryArgs.type) {
+                case 'QUERY':
+                    title = 'SQL query';
+                    queryMsg = paragraph.queryArgs.query;
+
+                    break;
+
+                case 'EXPLAIN':
+                    title = 'Explain query';
+                    queryMsg = paragraph.queryArgs.query;
+
+                    break;
+
+                default:
+                    title = 'SCAN query';
+                    queryMsg = 'SCAN query for cache <b>' + paragraph.queryArgs.cacheName + '</b>';
+            }
+
+            $message.message(title, [queryMsg]);
         }
     }
 }]);
