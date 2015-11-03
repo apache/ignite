@@ -1564,19 +1564,6 @@ public class IgfsDataManager extends IgfsManager {
         }
     }
 
-//    /**
-//     * Allows output stream to await for all current acks.
-//     *
-//     * @param fileId File ID.
-//     * @throws IgniteInterruptedCheckedException In case of interrupt.
-//     */
-//    void awaitAllAcksReceived(IgniteUuid fileId) throws IgniteInterruptedCheckedException {
-//        WriteCompletionFuture fut = pendingWrites.get(fileId);
-//
-//        if (fut != null)
-//            fut.awaitAllAcksReceived();
-//    }
-
     /**
      * Future that is completed when all participating
      * parts of the file are written.
