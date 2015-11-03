@@ -250,7 +250,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
         GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-        if (cctx != null && initUpdIdx != null) {
+        if (!internal && cctx != null && initUpdIdx != null) {
             Map<Integer, Long> map = cctx.topology().updateCounters();
 
             for (Map.Entry<Integer, Long> e : map.entrySet()) {
@@ -575,6 +575,13 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         CacheContinuousQueryEntry e) {
         assert e != null;
 
+        if (internal) {
+            if (e.isFiltered())
+                return Collections.emptyList();
+            else
+                return F.asList(e);
+        }
+
         // Initial query entry or evicted entry.
         // This events should be fired immediately.
         if (e.updateIndex() == -1)
@@ -602,6 +609,13 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     private CacheContinuousQueryEntry handleEntry(CacheContinuousQueryEntry e) {
         assert e != null;
         assert snds != null;
+
+        if (internal) {
+            if (e.isFiltered())
+                return null;
+            else
+                return e;
+        }
 
         // Initial query entry.
         // This events should be fired immediately.
