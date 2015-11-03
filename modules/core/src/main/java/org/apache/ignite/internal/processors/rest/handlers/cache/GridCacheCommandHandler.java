@@ -924,20 +924,22 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             int hash = discovery.nodeCaches(F.first(subgrid)).hashCode();
 
-            for (int i = 1; i < subgrid.size(); i++)
+            for (int i = 1; i < subgrid.size(); i++) {
                 if (hash != discovery.nodeCaches(subgrid.get(i)).hashCode()) {
                     sameCaches = false;
 
                     break;
                 }
+            }
 
             Map<ComputeJob, ClusterNode> map = U.newHashMap(sameCaches ? 1 : subgrid.size());
 
             if (sameCaches)
-                map.put(new MetadataJob(cacheName), ignite.localNode());
-            else
+                map.put(new MetadataJob(), ignite.localNode());
+            else {
                 for (ClusterNode node : subgrid)
-                    map.put(new MetadataJob(cacheName), node);
+                    map.put(new MetadataJob(), node);
+            }
 
             return map;
         }
@@ -947,11 +949,14 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         @Nullable @Override public GridRestResponse reduce(List<ComputeJobResult> results) throws IgniteException {
             Map<String, GridCacheSqlMetadata> map = new HashMap<>();
 
-            for (ComputeJobResult r : results)
-                if (!r.isCancelled() && r.getException() == null)
-                    for (GridCacheSqlMetadata m : r.<Collection<GridCacheSqlMetadata>>getData())
+            for (ComputeJobResult r : results) {
+                if (!r.isCancelled() && r.getException() == null) {
+                    for (GridCacheSqlMetadata m : r.<Collection<GridCacheSqlMetadata>>getData()) {
                         if (!map.containsKey(m.cacheName()))
                             map.put(m.cacheName(), m);
+                    }
+                }
+            }
 
             Collection<GridCacheSqlMetadata> metas = new ArrayList<>(map.size());
 
@@ -976,31 +981,17 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     private static class MetadataJob extends ComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
-        /** */
-        private final String cacheName;
+
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
-        protected transient IgniteKernal ignite;
-
-        /**
-         * @param cacheName Cache name.
-         */
-        private MetadataJob(String cacheName) {
-            this.cacheName = cacheName;
-        }
+        private transient IgniteKernal ignite;
 
         /** {@inheritDoc} */
         @Override public Collection<GridCacheSqlMetadata> execute() {
-            IgniteCacheProxy<?, ?> cache;
+            IgniteCacheProxy<?, ?> cache = F.first(ignite.context().cache().publicCaches());
 
-            try {
-                cache = (IgniteCacheProxy<?, ?>)ignite.cache(cacheName);
-            } catch (IllegalArgumentException ignore) {
-                cache = F.first(ignite.context().cache().publicCaches());
-
-                if (cache == null)
-                    return Collections.emptyList();
-            }
+            if (cache == null)
+                return Collections.emptyList();
 
             try {
                 return cache.context().queries().sqlMetadata();
