@@ -1259,8 +1259,8 @@ $generatorXml.igfsMisc = function(igfs, res) {
     $generatorXml.property(res, igfs, 'blockSize', undefined, 65536);
     $generatorXml.property(res, igfs, 'streamBufferSize', undefined, 65536);
     $generatorXml.property(res, igfs, 'defaultMode', undefined, "DUAL_ASYNC");
-    $generatorXml.property(res, igfs, 'maxSpaceSize');
-    $generatorXml.property(res, igfs, 'maximumTaskRangeLength');
+    $generatorXml.property(res, igfs, 'maxSpaceSize', undefined, 0);
+    $generatorXml.property(res, igfs, 'maximumTaskRangeLength', undefined, 0);
     $generatorXml.property(res, igfs, 'managementPort', undefined, 11400);
 
     res.needEmptyLine = true;

@@ -425,7 +425,8 @@ var ClusterSchema = new Schema({
 ClusterSchema.plugin(deepPopulate, {
     whitelist: [
         'caches',
-        'caches.metadatas'
+        'caches.metadatas',
+        'igfss'
     ]
 });
 

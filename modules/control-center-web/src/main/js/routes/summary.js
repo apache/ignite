@@ -38,7 +38,7 @@ router.get('/', function (req, res) {
 
 router.post('/download', function (req, res) {
     // Get cluster with all inner objects (caches, metadata).
-    db.Cluster.findById(req.body._id).deepPopulate('caches caches.metadatas').exec(function (err, cluster) {
+    db.Cluster.findById(req.body._id).deepPopulate('caches caches.metadatas igfss').exec(function (err, cluster) {
         if (err)
             return res.status(500).send(err.message);
 
