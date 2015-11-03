@@ -1078,6 +1078,12 @@ consoleModule.controller('sqlController',
         }
     };
 
+    var _yAxisFormat = function(d) {
+        var fmt = d < 1000 ? ',.2f' : '.3s';
+
+        return d3.format(fmt)(d);
+    };
+
     function _updateCharts(paragraph) {
         $timeout(function () {
             _.forEach(paragraph.charts, function (chart) {
@@ -1142,7 +1148,7 @@ consoleModule.controller('sqlController',
                     },
                     yAxis: {
                         axisLabel:  _chartAxisLabel(paragraph.chartValCols, 'Y'),
-                        tickFormat: d3.format(',.2f')
+                        tickFormat: _yAxisFormat
                     },
                     color: CHART_COLORS,
                     stacked: true,
@@ -1210,7 +1216,7 @@ consoleModule.controller('sqlController',
                     },
                     yAxis: {
                         axisLabel:  _chartAxisLabel(paragraph.chartValCols, 'Y'),
-                        tickFormat: d3.format(',.2f')
+                        tickFormat: _yAxisFormat
                     },
                     color: CHART_COLORS,
                     useInteractiveGuideline: true
@@ -1244,7 +1250,7 @@ consoleModule.controller('sqlController',
                     },
                     yAxis: {
                         axisLabel:  _chartAxisLabel(paragraph.chartValCols, 'Y'),
-                        tickFormat: d3.format(',.2f')
+                        tickFormat: _yAxisFormat
                     },
                     color: CHART_COLORS
                 }
