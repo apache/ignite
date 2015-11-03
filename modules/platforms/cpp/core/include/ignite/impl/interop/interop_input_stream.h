@@ -44,6 +44,14 @@ namespace ignite
                  * @return Value.
                  */
                 int8_t ReadInt8();
+
+                /**
+                 * Read signed 8-byte int at the given position.
+                 *
+                 * @param pos Position.
+                 * @return Value.
+                 */
+                int32_t ReadInt8(int32_t pos);
                     
                 /**
                  * Read signed 8-byte int array.
@@ -74,6 +82,14 @@ namespace ignite
                  * @return Value.
                  */
                 int16_t ReadInt16();
+
+                /**
+                 * Read signed 16-byte int at the given position.
+                 *
+                 * @param pos Position.
+                 * @return Value.
+                 */
+                int32_t ReadInt16(int32_t pos);
 
                 /**
                  * Read signed 16-byte int array.

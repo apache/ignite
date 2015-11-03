@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -27,9 +27,6 @@ namespace Apache.Ignite.Core.Impl.Common
         /** Array. */
         private T[] _arr;
 
-        /** Items count. */
-        private int _count;
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -50,10 +47,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Count.
         /// </summary>
-        public int Count
-        {
-            get { return _count; }
-        }
+        public int Count { get; private set; }
 
         /// <summary>
         /// Add element.
@@ -61,10 +55,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="element">Element.</param>
         public void Add(T element)
         {
-            if (_count == _arr.Length)
+            if (Count == _arr.Length)
                 System.Array.Resize(ref _arr, _arr.Length*2);
 
-            _arr[_count++] = element;
+            _arr[Count++] = element;
         }
     }
 }
