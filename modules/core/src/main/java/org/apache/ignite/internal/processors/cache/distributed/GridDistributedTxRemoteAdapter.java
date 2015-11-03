@@ -286,8 +286,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         if (writeMap != null && !writeMap.isEmpty() && idxs != null && idxs.length > 0) {
             int i = 0;
 
-            assert writeMap.size() == idxs.length : "Map size: " + writeMap.size() + ", idxs size: " + idxs.length;
-
             for (IgniteTxEntry txEntry : writeMap.values()) {
                 txEntry.partIdx(idxs[i]);
 
