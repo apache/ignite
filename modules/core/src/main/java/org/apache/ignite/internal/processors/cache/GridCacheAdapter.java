@@ -1823,7 +1823,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 @Override public IgniteInternalFuture<Map<K1, V1>> op(IgniteTxLocalAdapter tx) {
                     return tx.getAllAsync(ctx, keys, deserializePortable, skipVals, false, !readThrough);
                 }
-            });
+            }, ctx.operationContextPerCall());
         }
     }
 
@@ -3987,10 +3987,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         IgniteTxLocalAdapter tx = ctx.tm().threadLocalTx(ctx);
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         if (tx == null || tx.implicit()) {
             boolean skipStore = ctx.skipStore(); // Save value of thread-local flag.
-
-            CacheOperationContext opCtx = ctx.operationContextPerCall();
 
             int retries = opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES;
 
@@ -4005,10 +4005,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     !skipStore,
                     0);
 
-                return asyncOp(tx, op);
+                return asyncOp(tx, op, opCtx);
             }
             else {
-                AsyncOpRetryFuture<T> fut = new AsyncOpRetryFuture<>(op, skipStore, retries);
+                AsyncOpRetryFuture<T> fut = new AsyncOpRetryFuture<>(op, retries, opCtx);
 
                 fut.execute();
 
@@ -4016,7 +4016,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         }
         else
-            return asyncOp(tx, op);
+            return asyncOp(tx, op, opCtx);
     }
 
     /**
@@ -4026,7 +4026,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Future.
      */
     @SuppressWarnings("unchecked")
-    protected <T> IgniteInternalFuture<T> asyncOp(IgniteTxLocalAdapter tx, final AsyncOp<T> op) {
+    protected <T> IgniteInternalFuture<T> asyncOp(
+        IgniteTxLocalAdapter tx,
+        final AsyncOp<T> op,
+        final CacheOperationContext opCtx
+    ) {
         IgniteInternalFuture<T> fail = asyncOpAcquire();
 
         if (fail != null)
@@ -4049,24 +4053,31 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 return new GridFinishedFuture<>(
                                     new IgniteCheckedException("Operation has been cancelled (node is stopping)."));
 
-                            return op.op(tx0).chain(new CX1<IgniteInternalFuture<T>, T>() {
-                                @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
-                                    try {
-                                        return tFut.get();
-                                    }
-                                    catch (IgniteTxRollbackCheckedException e) {
-                                        throw e;
-                                    }
-                                    catch (IgniteCheckedException e1) {
-                                        tx0.rollbackAsync();
+                            ctx.operationContextPerCall(opCtx);
 
-                                        throw e1;
+                            try {
+                                return op.op(tx0).chain(new CX1<IgniteInternalFuture<T>, T>() {
+                                    @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
+                                        try {
+                                            return tFut.get();
+                                        }
+                                        catch (IgniteTxRollbackCheckedException e) {
+                                            throw e;
+                                        }
+                                        catch (IgniteCheckedException e1) {
+                                            tx0.rollbackAsync();
+
+                                            throw e1;
+                                        }
+                                        finally {
+                                            ctx.shared().txContextReset();
+                                        }
                                     }
-                                    finally {
-                                        ctx.shared().txContextReset();
-                                    }
-                                }
-                            });
+                                });
+                            }
+                            finally {
+                                ctx.operationContextPerCall(null);
+                            }
                         }
                     });
 
@@ -4631,28 +4642,31 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         private AsyncOp<T> op;
 
         /** */
-        private boolean skipStore;
-
-        /** */
         private int retries;
 
         /** */
         private IgniteTxLocalAdapter tx;
 
+        /** */
+        private CacheOperationContext opCtx;
+
         /**
          * @param op Operation.
-         * @param skipStore Skip store flag.
          * @param retries Number of retries.
+         * @param opCtx Operation context per call to save.
          */
-        public AsyncOpRetryFuture(AsyncOp<T> op,
-            boolean skipStore,
-            int retries) {
+        public AsyncOpRetryFuture(
+            AsyncOp<T> op,
+            int retries,
+            CacheOperationContext opCtx
+        ) {
             assert retries > 1 : retries;
 
+            tx = null;
+
             this.op = op;
-            this.tx = null;
-            this.skipStore = skipStore;
             this.retries = retries;
+            this.opCtx = opCtx;
         }
 
         /**
@@ -4666,10 +4680,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 OPTIMISTIC,
                 READ_COMMITTED,
                 ctx.kernalContext().config().getTransactionConfiguration().getDefaultTxTimeout(),
-                !skipStore,
+                !opCtx.skipStore(),
                 0);
 
-            IgniteInternalFuture<T> fut = asyncOp(tx, op);
+            IgniteInternalFuture<T> fut = asyncOp(tx, op, opCtx);
 
             fut.listen(new IgniteInClosure<IgniteInternalFuture<T>>() {
                 @Override public void apply(IgniteInternalFuture<T> fut) {

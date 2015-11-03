@@ -147,7 +147,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         false,
                         skipStore);
                 }
-            });
+            }, opCtx);
         }
 
         subjId = ctx.subjectIdPerCall(subjId, opCtx);
