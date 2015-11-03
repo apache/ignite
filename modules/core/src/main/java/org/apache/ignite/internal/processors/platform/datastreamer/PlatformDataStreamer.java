@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -84,6 +85,8 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
         this.cacheName = cacheName;
         this.ldr = ldr;
         this.keepPortable = keepPortable;
+
+        U.debug(log, "Created platform streamer [keepBinary=" + ldr.keepBinary() + ']');
     }
 
     /** {@inheritDoc}  */

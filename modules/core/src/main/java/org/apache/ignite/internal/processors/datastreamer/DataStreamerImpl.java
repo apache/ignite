@@ -1336,6 +1336,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 if (topVer == null)
                     topVer = ctx.cache().context().exchange().readyAffinityVersion();
 
+                U.debug(log, "Creating data streamer request [keepBinary=" + keepBinary + ']');
+
                 DataStreamerRequest req = new DataStreamerRequest(
                     reqId,
                     topicBytes,

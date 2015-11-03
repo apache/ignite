@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -719,6 +720,8 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @throws org.apache.ignite.IgniteCheckedException In case of error.
      */
     public void removeAll() throws IgniteCheckedException {
+        U.debug(log, "Will removeAll on platform cache: " + cache.operationContext());
+
         cache.removeAll();
     }
 
