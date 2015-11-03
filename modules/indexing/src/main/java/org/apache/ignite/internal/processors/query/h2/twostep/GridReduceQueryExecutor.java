@@ -482,9 +482,15 @@ public class GridReduceQueryExecutor {
      * @param cctx Cache context.
      * @param qry Query.
      * @param keepPortable Keep portable.
+     * @param enforceJoinOrder Enforce join order of tables.
      * @return Cursor.
      */
-    public Iterator<List<?>> query(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry, boolean keepPortable) {
+    public Iterator<List<?>> query(
+        GridCacheContext<?,?> cctx,
+        GridCacheTwoStepQuery qry,
+        boolean keepPortable,
+        boolean enforceJoinOrder
+    ) {
         for (int attempt = 0;; attempt++) {
             if (attempt != 0) {
                 try {
@@ -588,7 +594,7 @@ public class GridReduceQueryExecutor {
                 boolean retry = false;
 
                 final boolean oldStyle = true; oldNodesInTopology(); // TODO =
-                final boolean distributedJoins = !qry.collocated();
+                final boolean distributedJoins = !qry.fullCollocation();
 
                 if (send(nodes,
                     oldStyle ?
@@ -637,6 +643,8 @@ public class GridReduceQueryExecutor {
                     GridH2QueryContext.set(
                         new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE).pageSize(r.pageSize));
 
+                    h2.enforceJoinOrder(enforceJoinOrder);
+
                     try {
                         if (qry.explain())
                             return explainPlan(r.conn, space, qry);
@@ -646,6 +654,8 @@ public class GridReduceQueryExecutor {
                         res = h2.executeSqlQueryWithTimer(space, r.conn, rdc.query(), F.asList(rdc.parameters()));
                     }
                     finally {
+                        h2.enforceJoinOrder(false);
+
                         GridH2QueryContext.clear(false);
                     }
                 }

@@ -51,7 +51,7 @@ public class GridCacheTwoStepQuery {
     private Set<String> tbls;
 
     /** */
-    private boolean collocated;
+    private boolean fullCollocation;
 
     /**
      * @param spaces All spaces accessed in query.
@@ -63,17 +63,17 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @param collocated If it is a collocated query and no distributed joins can occur.
+     * @param fullCollocation If it is a collocated query and no distributed joins can occur.
      */
-    public void collocated(boolean collocated) {
-        this.collocated = collocated;
+    public void fullCollocation(boolean fullCollocation) {
+        this.fullCollocation = fullCollocation;
     }
 
     /**
      * @return {@code true} If it is a collocated query and no distributed joins can occur.
      */
-    public boolean collocated() {
-        return collocated;
+    public boolean fullCollocation() {
+        return fullCollocation;
     }
 
     /**

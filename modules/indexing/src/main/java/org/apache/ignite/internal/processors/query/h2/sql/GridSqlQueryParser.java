@@ -21,6 +21,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
@@ -137,7 +138,7 @@ public class GridSqlQueryParser {
     private static final Getter<ConditionAndOr, Expression> ANDOR_RIGHT = getter(ConditionAndOr.class, "right");
 
     /** */
-    private static final Getter<TableView, Query> VIEW_QUERY = getter(TableView.class, "viewQuery");
+    public static final Getter<TableView, Query> VIEW_QUERY = getter(TableView.class, "viewQuery");
 
     /** */
     private static final Getter<TableFilter, String> ALIAS = getter(TableFilter.class, "alias");
@@ -374,7 +375,7 @@ public class GridSqlQueryParser {
         if (qry instanceof Explain)
             return parse(EXPLAIN_COMMAND.get((Explain)qry)).explain(true);
 
-        throw new UnsupportedOperationException("Unknown query type: " + qry);
+        throw new CacheException("Unsupported query: " + qry);
     }
 
     /**
@@ -679,7 +680,7 @@ public class GridSqlQueryParser {
      * Field getter.
      */
     @SuppressWarnings("unchecked")
-    private static class Getter<T, R> {
+    public static class Getter<T, R> {
         /** */
         private final Field fld;
 

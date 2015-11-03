@@ -62,7 +62,6 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
-import org.h2.index.IndexCondition;
 import org.h2.index.IndexLookupBatch;
 import org.h2.index.IndexType;
 import org.h2.index.SingleRowCursor;
@@ -284,11 +283,6 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Table getTable() {
-        return (GridH2Table)super.getTable();
-    }
-
-    /** {@inheritDoc} */
     @Override protected Object doTakeSnapshot() {
         return tree instanceof SnapTreeMap ?
             ((SnapTreeMap)tree).clone() :
@@ -370,30 +364,13 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         return sb.toString();
     }
 
-    /**
-     * @param masks Masks.
-     * @param colId Column ID.
-     * @return {@code true} If set of index conditions contains equality condition for the given column.
-     */
-    private static boolean hasEqualityCondition(int[] masks, int colId) {
-        return (masks[colId] & IndexCondition.EQUALITY) == IndexCondition.EQUALITY;
-    }
-
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter filter, SortOrder sortOrder) {
-        int rmtMultiplier = 1;
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
+        long rowCnt = getRowCountApproximation();
+        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder);
+        int mul = getDistributedMultiplier(masks, filters, filter);
 
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        if (qctx != null && qctx.distributedJoins()) {
-            int affColId = getTable().getAffinityKeyColumn().column.getColumnId();
-
-            // If we don't have affinity or pk conditions we will multiply cost by 10.
-            if (masks == null || (!hasEqualityCondition(masks, affColId) && !hasEqualityCondition(masks, KEY_COL)))
-                rmtMultiplier = 10;
-        }
-
-        return rmtMultiplier * getCostRangeIndex(masks, getRowCountApproximation(), filter, sortOrder);
+        return mul * baseCost;
     }
 
     /** {@inheritDoc} */
@@ -666,11 +643,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         if (qctx == null || !qctx.distributedJoins())
             return null;
 
-        IndexColumn affCol = getTable().getAffinityKeyColumn();
-
-        assert affCol != null;
-
-        final int affColId = affCol.column.getColumnId();
+        final int affColId = affinityColumn();
         final GridCacheContext<?,?> cctx = getTable().rowDescriptor().context();
 
         final int batchLookupId = qctx.nextBatchLookupId();
@@ -711,7 +684,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                 if (pkFirst == ValueNull.INSTANCE || pkLast == ValueNull.INSTANCE)
                     return EXPLICIT_NULL;
 
-                if (pkFirst == null || pkLast == null)
+                if (pkFirst == null || pkLast == null || !equal(pkFirst, pkLast))
                     return null;
 
                 Object pkAffKeyFirst;

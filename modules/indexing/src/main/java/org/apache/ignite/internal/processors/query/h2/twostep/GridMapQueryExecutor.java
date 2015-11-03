@@ -81,6 +81,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REPLICATED;
 import static org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor.QUERY_POOL;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
 
@@ -481,8 +482,9 @@ public class GridMapQueryExecutor {
                 throw new IllegalStateException();
 
             // Prepare query context.
-            GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(), node.id(), reqId, MAP)
-                .filter(h2.backupFilter(caches, topVer, parts))
+            GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(), node.id(), reqId,
+                mainCctx.isReplicated() ? REPLICATED : MAP)
+                .filter(h2.backupFilter(topVer, parts))
                 .partitionsMap(partsMap)
                 .distributedJoins(distributedJoins)
                 .pageSize(pageSize)

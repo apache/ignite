@@ -31,6 +31,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
@@ -129,6 +130,13 @@ public class GridH2Table extends TableBase {
 
         // Add scan index at 0 which is required by H2.
         idxs.add(0, new ScanIndex(index(0)));
+    }
+
+    /**
+     * @return {@code true} If this is a partitioned table.
+     */
+    public boolean isPartitioned() {
+        return desc != null && IgniteH2Indexing.isPartitioned(desc.context());
     }
 
     /**
@@ -883,8 +891,12 @@ public class GridH2Table extends TableBase {
         }
 
         /** {@inheritDoc} */
-        @Override public double getCost(Session ses, int[] masks, TableFilter tblFilter, SortOrder sortOrder) {
-            return getRowCountApproximation() + Constants.COST_ROW_OFFSET;
+        @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
+            SortOrder sortOrder) {
+            long rows = getRowCountApproximation();
+            int mul = delegate.getDistributedMultiplier(masks, filters, filter);
+
+            return  mul * (rows + Constants.COST_ROW_OFFSET);
         }
 
         /** {@inheritDoc} */

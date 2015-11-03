@@ -88,7 +88,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2TreeIndex;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
@@ -148,6 +147,7 @@ import org.h2.value.ValueNull;
 import org.h2.value.ValueShort;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
+import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -159,6 +159,7 @@ import static org.apache.ignite.internal.processors.query.GridQueryIndexType.GEO
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.SORTED;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.LOCAL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
 
 /**
  * Indexing implementation based on H2 database engine. In this implementation main query language is SQL,
@@ -872,13 +873,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cctx Cache context.
      * @param qry Query.
      * @param keepCacheObj Flag to keep cache object.
+     * @param enforceJoinOrder Enforce join order of tables.
      * @return Iterable result.
      */
     private Iterable<List<?>> runQueryTwoStep(final GridCacheContext<?,?> cctx, final GridCacheTwoStepQuery qry,
-        final boolean keepCacheObj) {
+        final boolean keepCacheObj, final boolean enforceJoinOrder) {
         return new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
-                return rdcQryExec.query(cctx, qry, keepCacheObj);
+                return rdcQryExec.query(cctx, qry, keepCacheObj, enforceJoinOrder);
             }
         };
     }
@@ -952,6 +954,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         OptimizerHints.set(hints);
     }
 
+    /**
+     * @param cctx Cache context.
+     * @return {@code true} If the given cache is partitioned.
+     */
+    public static boolean isPartitioned(GridCacheContext<?,?> cctx) {
+        return !cctx.isReplicated() && !cctx.isLocal();
+    }
+
     /** {@inheritDoc} */
     @Override public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, SqlFieldsQuery qry) {
         String space = cctx.name();
@@ -961,10 +971,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         PreparedStatement stmt;
 
-        boolean enforceJoinOrder = qry.isEnforceJoinOrder();
+        final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
 
-        if (enforceJoinOrder)
-            enforceJoinOrder(true);
+        final UUID locNodeId = ctx.localNodeId();
+
+        enforceJoinOrder(enforceJoinOrder);
+        GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
+            .distributedJoins(isPartitioned(cctx)));
 
         try {
             stmt = c.prepareStatement(sqlQry);
@@ -973,8 +986,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new CacheException("Failed to parse query: " + sqlQry, e);
         }
         finally {
-            if (enforceJoinOrder)
-                enforceJoinOrder(false);
+            enforceJoinOrder(false);
+            GridH2QueryContext.clear(false);
         }
 
         GridCacheTwoStepQuery twoStepQry;
@@ -1003,7 +1016,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         twoStepQry.pageSize(qry.getPageSize());
 
-        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(runQueryTwoStep(cctx, twoStepQry, cctx.keepPortable()));
+        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
+            runQueryTwoStep(cctx, twoStepQry, cctx.keepPortable(), enforceJoinOrder));
 
         cursor.fieldsMeta(meta);
 
@@ -1569,7 +1583,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public IndexingQueryFilter backupFilter(
-        @Nullable final List<String> caches,
         @Nullable final AffinityTopologyVersion topVer,
         @Nullable final int[] parts
     ) {
@@ -2401,7 +2414,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     if (obj instanceof java.util.Date && !(obj instanceof Timestamp))
                         obj = new Timestamp(((java.util.Date) obj).getTime());
 
-                    return GridH2Utils.toValueTimestamp((Timestamp)obj);
+                    return ValueTimestamp.get((Timestamp)obj);
                 case Value.DECIMAL:
                     return ValueDecimal.get((BigDecimal)obj);
                 case Value.STRING:

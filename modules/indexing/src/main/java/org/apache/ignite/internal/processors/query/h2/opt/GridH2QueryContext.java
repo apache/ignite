@@ -28,10 +28,12 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.h2.table.TableFilter;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.LOCAL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 
 /**
  * Thread local SQL query context which is intended to be accessible from everywhere.
@@ -77,6 +79,9 @@ public class GridH2QueryContext {
     /** */
     private int pageSize;
 
+    /** */
+    private Map<TableFilter, GridH2TableFilterCollocation>  tableFilterStateCache;
+
     /**
      * @param locNodeId Local node ID.
      * @param nodeId The node who initiated the query.
@@ -106,6 +111,16 @@ public class GridH2QueryContext {
      */
     public long queryId() {
         return key.qryId;
+    }
+
+    /**
+     * @return Cache for table filter collocation states.
+     */
+    public Map<TableFilter, GridH2TableFilterCollocation> tableFilterStateCache() {
+        if (tableFilterStateCache == null)
+            tableFilterStateCache = new HashMap<>();
+
+        return tableFilterStateCache;
     }
 
     /**
@@ -299,7 +314,7 @@ public class GridH2QueryContext {
      public static void set(GridH2QueryContext x) {
          assert qctx.get() == null;
 
-         if (x.key.type != LOCAL && qctxs.putIfAbsent(x.key, x) != null)
+         if (x.key.type == MAP && qctxs.putIfAbsent(x.key, x) != null)
              throw new IllegalStateException("Query context is already set.");
 
          qctx.set(x);

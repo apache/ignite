@@ -79,6 +79,11 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
         this.expirationTime = expirationTime;
     }
 
+    /** {@inheritDoc} */
+    @Override public Value[] getValueList() {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Protected constructor for {@link GridH2KeyValueRowOffheap}
      *

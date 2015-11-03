@@ -18,32 +18,47 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 /**
- * Query type.
+ * Collocation of H2 table filter.
  */
-public enum GridH2QueryType {
-    /**
-     * Map query. Runs over local partitions, possibly with distributed joins.
-     */
-    MAP,
+public enum GridH2TableFilterCollocation {
+    /** */
+    PARTITIONED_FIRST(true, true),
+
+    /** */
+    PARTITIONED_COLLOCATED(true, true),
+
+    /** */
+    PARTITIONED_NOT_COLLOCATED(true, false),
+
+    /** */
+    REPLICATED(false, true);
+
+    /** */
+    private final boolean partitioned;
+
+    /** */
+    private final boolean collocated;
 
     /**
-     * Reduce query. Local query on a node which initiated the original query.
+     * @param partitioned Partitioned.
+     * @param collocated Collocated.
      */
-    REDUCE,
+    GridH2TableFilterCollocation(boolean partitioned, boolean collocated) {
+        this.partitioned = partitioned;
+        this.collocated = collocated;
+    }
 
     /**
-     * Local query. It may be also a query over replicated cache but all the data is available locally.
+     * @return {@code true} If partitioned.
      */
-    LOCAL,
+    public boolean isPartitioned() {
+        return partitioned;
+    }
 
     /**
-     * Replicated query over a network. Such a query can be sent from a client node or node which
-     * did not load all the partitions yet.
+     * @return {@code true} If collocated.
      */
-    REPLICATED,
-
-    /**
-     * Parsing and optimization stage.
-     */
-    PREPARE,
+    public boolean isCollocated() {
+        return collocated;
+    }
 }
