@@ -170,11 +170,11 @@ namespace ignite
             /** Raw only flag. */
             const int16_t IGNITE_PORTABLE_FLAG_RAW_ONLY = 0x0002;
 
-            /** Tiny object flag. */
-            const int16_t IGNITE_PORTABLE_FLAG_TINY = 0x0004;
+            /** Flag indicating that schema field offset is one byte long. */
+            const int16_t IGNITE_PORTABLE_FLAG_OFFSET_1_BYTE = 0x0004;
 
-            /** Small object flag. */
-            const int16_t IGNITE_PORTABLE_FLAG_SMALL = 0x0008;
+            /** Flag indicating that schema field offset is two byte long. */
+            const int16_t IGNITE_PORTABLE_FLAG_OFFSET_2_BYTE = 0x0008;
         }
     }    
 }

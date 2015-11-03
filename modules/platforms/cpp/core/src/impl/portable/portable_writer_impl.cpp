@@ -592,12 +592,12 @@ namespace ignite
                     if (schemaType == SCHEMA_TYPE_TINY)
                     {
                         stream->WriteInt16(start + IGNITE_OFFSET_FLAGS, 
-                            IGNITE_PORTABLE_FLAG_USER_OBJECT | IGNITE_PORTABLE_FLAG_TINY);
+                            IGNITE_PORTABLE_FLAG_USER_OBJECT | IGNITE_PORTABLE_FLAG_OFFSET_1_BYTE);
                     }
                     else if (schemaType == SCHEMA_TYPE_SMALL)
                     {
                         stream->WriteInt16(start + IGNITE_OFFSET_FLAGS, 
-                            IGNITE_PORTABLE_FLAG_USER_OBJECT | IGNITE_PORTABLE_FLAG_SMALL);
+                            IGNITE_PORTABLE_FLAG_USER_OBJECT | IGNITE_PORTABLE_FLAG_OFFSET_2_BYTE);
                     }
 
                     stream->WriteInt32(start + IGNITE_OFFSET_LEN, length);

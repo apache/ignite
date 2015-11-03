@@ -792,13 +792,13 @@ namespace ignite
 
                             int32_t trailingBytes = (len - footerBegin) % 8;
 
-                            if (flags & IGNITE_PORTABLE_FLAG_TINY)
+                            if (flags & IGNITE_PORTABLE_FLAG_OFFSET_1_BYTE)
                             {
                                 schemaType = SCHEMA_TYPE_TINY;
 
                                 trailingBytes = (len - footerBegin) % 5;
                             }
-                            else if (flags & IGNITE_PORTABLE_FLAG_SMALL)
+                            else if (flags & IGNITE_PORTABLE_FLAG_OFFSET_2_BYTE)
                             {
                                 schemaType = SCHEMA_TYPE_SMALL;
 
