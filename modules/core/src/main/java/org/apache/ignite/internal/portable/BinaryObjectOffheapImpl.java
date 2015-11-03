@@ -253,7 +253,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
                 break;
 
             default: {
-                PortableReaderExImpl reader = new PortableReaderExImpl(ctx,
+                BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx,
                     new PortableOffheapInputStream(ptr, size, false),
                     start,
                     null);
