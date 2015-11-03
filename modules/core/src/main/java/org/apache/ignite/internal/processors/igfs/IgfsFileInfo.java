@@ -288,13 +288,16 @@ public final class IgfsFileInfo implements Externalizable {
     /**
      * Constructs file information.
      *
+     * @param len File length.
      * @param info File information to copy data from.
-     * @param len  Size of a file.
+     * @param reservedDelta The reserved delta.
      */
-    IgfsFileInfo(IgfsFileInfo info, long len) {
+    IgfsFileInfo(long len, long reservedDelta, IgfsFileInfo info) {
         this(info);
 
         this.len = len;
+
+        this.reservedDelta = reservedDelta;
 
         assert isValid();
     }
@@ -592,7 +595,7 @@ public final class IgfsFileInfo implements Externalizable {
     /**
      * @param fileMap File affinity map.
      */
-    public void fileMap(IgfsFileMap fileMap) {
+    void fileMap(IgfsFileMap fileMap) {
         this.fileMap = fileMap;
     }
 

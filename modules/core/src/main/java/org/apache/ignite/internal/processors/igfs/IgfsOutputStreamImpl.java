@@ -78,7 +78,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     private int remainderDataLen;
 
     /** Write completion future. */
-    private final IgfsDataManager.WriteCompletionFuture writeCompletionFut;
+    final IgfsDataManager.WriteCompletionFuture writeCompletionFut;
 
     /** IGFS mode. */
     private final IgfsMode mode;
@@ -548,11 +548,8 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
 
             newMap.addRange(range);
 
-            // Update file length:
-            IgfsFileInfo updated = space == 0 ? oldInfo : new IgfsFileInfo(oldInfo, oldInfo.length() + space);
-
-            // Update the reserved delta:
-            updated = new IgfsFileInfo(reservedDelta, updated);
+            // Update file length and reserved delta:
+            IgfsFileInfo updated = new IgfsFileInfo(oldInfo.length() + space, reservedDelta, oldInfo);
 
             updated.fileMap(newMap);
 

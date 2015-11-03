@@ -360,7 +360,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         // Validate last actual data received from 'remove' operation.
         IgfsFileInfo newF2 = mgr.updateInfo(f2.id(), new C1<IgfsFileInfo, IgfsFileInfo>() {
             @Override public IgfsFileInfo apply(IgfsFileInfo e) {
-                return new IgfsFileInfo(e, e.length() + 20);
+                return new IgfsFileInfo(e.length() + 20, 0L, e);
             }
         });
 

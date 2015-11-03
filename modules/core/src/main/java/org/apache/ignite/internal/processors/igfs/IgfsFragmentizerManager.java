@@ -352,7 +352,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
                     log.debug("Updated file map for range [fileId=" + info.id() + ", range=" + range +
                         ", status=" + status + ", oldMap=" + info.fileMap() + ", newMap=" + map + ']');
 
-                IgfsFileInfo updated = new IgfsFileInfo(info, info.length());
+                IgfsFileInfo updated = new IgfsFileInfo(info);
 
                 updated.fileMap(map);
 
@@ -378,7 +378,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
                     log.debug("Deleted range from file map [fileId=" + info.id() + ", range=" + range +
                         ", oldMap=" + info.fileMap() + ", newMap=" + map + ']');
 
-                IgfsFileInfo updated = new IgfsFileInfo(info, info.length());
+                IgfsFileInfo updated = new IgfsFileInfo(info);
 
                 updated.fileMap(map);
 

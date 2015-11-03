@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsBackupsPrimarySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsCachePerBlockLruEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsCacheSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsClientCacheSelfTest;
-//import org.apache.ignite.internal.processors.igfs.IgfsDataManagerSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsDataManagerSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAsyncSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsDualSyncSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsFileInfoSelfTest;
@@ -78,7 +78,7 @@ public class IgniteIgfsTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgfsAttributesSelfTest.class));
         suite.addTest(new TestSuite(IgfsFileInfoSelfTest.class));
         suite.addTest(new TestSuite(IgfsMetaManagerSelfTest.class));
-        //suite.addTest(new TestSuite(IgfsDataManagerSelfTest.class));
+        suite.addTest(new TestSuite(IgfsDataManagerSelfTest.class));
         suite.addTest(new TestSuite(IgfsProcessorSelfTest.class));
         suite.addTest(new TestSuite(IgfsProcessorValidationSelfTest.class));
         suite.addTest(new TestSuite(IgfsCacheSelfTest.class));
@@ -91,12 +91,6 @@ public class IgniteIgfsTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgfsStreamsSelfTest.class));
         suite.addTest(new TestSuite(IgfsModesSelfTest.class));
         suite.addTest(new TestSuite(IgfsMetricsSelfTest.class));
-
-//        suite.addTest(new TestSuite(IgfsPrimarySelfTest.class));
-//        suite.addTest(new TestSuite(IgfsPrimaryOffheapTieredSelfTest.class));
-//        suite.addTest(new TestSuite(IgfsPrimaryOffheapValuesSelfTest.class));
-//        suite.addTest(new TestSuite(IgfsDualSyncSelfTest.class));
-//        suite.addTest(new TestSuite(IgfsDualAsyncSelfTest.class));
 
         suite.addTest(new TestSuite(IgfsClientCacheSelfTest.class));
         suite.addTest(new TestSuite(IgfsOneClientNodeTest.class));
