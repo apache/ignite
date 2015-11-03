@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Portable
 {
     using System;
-    using System.Collections.Generic;
     using System.Threading;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -34,9 +33,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Fields. */
         private PortableObjectSchemaField[] _fields = new PortableObjectSchemaField[32];
-
-        /** Offsets for different schemas. */
-        private readonly Stack<int> _offsets = new Stack<int>(32);
 
         /** Current field index. */
         private int _idx;
@@ -65,46 +61,45 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Marks the start of a new schema.
+        /// Gets the start of a new schema
         /// </summary>
-        public void PushSchema()
+        public int PushSchema()
         {
-            _offsets.Push(_idx);
+            return _idx;
         }
 
         /// <summary>
-        /// Pops the current schema and discards it.
+        /// Resets schema position to specified index.
         /// </summary>
-        public void PopSchema()
+        public void PopSchema(int idx)
         {
-            _idx = _offsets.Pop();
+            _idx = idx;
         }
 
         /// <summary>
         /// Writes collected schema to the stream and pops it.
         /// </summary>
         /// <param name="stream">The stream.</param>
+        /// <param name="schemaOffset">The schema offset.</param>
         /// <param name="schemaId">The schema identifier.</param>
         /// <param name="flags">Flags according to offset sizes: <see cref="PortableObjectHeader.FlagByteOffsets" />,
         /// <see cref="PortableObjectHeader.FlagShortOffsets" />, or 0.</param>
         /// <returns>
         /// True if current schema was non empty; false otherwise.
         /// </returns>
-        public bool WriteSchema(IPortableStream stream, out int schemaId, out short flags)
+        public bool WriteSchema(IPortableStream stream, int schemaOffset, out int schemaId, out short flags)
         {
-            var offset = _offsets.Peek();
-
-            var count = _idx - offset;
-
             schemaId = Fnv1Hash.Basis;
             flags = 0;
+
+            var count = _idx - schemaOffset;
 
             if (count == 0) 
                 return false;
 
-            flags = PortableObjectHeader.WriteSchema(_fields, stream, offset, count);
+            flags = PortableObjectHeader.WriteSchema(_fields, stream, schemaOffset, count);
 
-            for (var i = offset; i < count + offset; i++)
+            for (var i = schemaOffset; i < _idx; i++)
                 schemaId = Fnv1Hash.Update(schemaId, _fields[i].Id);
 
             return true;

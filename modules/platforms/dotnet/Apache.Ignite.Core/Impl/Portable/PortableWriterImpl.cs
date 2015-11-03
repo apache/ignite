@@ -1081,7 +1081,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 _curPos = pos;
 
                 _curStruct = new PortableStructureTracker(desc, desc.WriterTypeStructure);
-                _schema.PushSchema();
+                var schemaIdx = _schema.PushSchema();
 
                 try
                 {
@@ -1093,7 +1093,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     int schemaId;
                     short flags;
-                    var hasSchema = _schema.WriteSchema(_stream, out schemaId, out flags);
+                    var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, out flags);
 
                     if (!hasSchema)
                         schemaOffset = PortableObjectHeader.Size;
@@ -1113,7 +1113,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 }
                 finally
                 {
-                    _schema.PopSchema();
+                    _schema.PopSchema(schemaIdx);
                 }
 
                 // Apply structure updates if any.

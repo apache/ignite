@@ -626,7 +626,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         var inSchema = inHeader.ReadSchema(inStream, inStartPos);
 
                         var outSchema = PortableObjectSchemaHolder.Current;
-                        outSchema.PushSchema();
+                        var schemaIdx = outSchema.PushSchema();
 
                         try
                         {
@@ -693,7 +693,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                             int outSchemaId;
                             short flags;
 
-                            var hasSchema = outSchema.WriteSchema(outStream, out outSchemaId, out flags);
+                            var hasSchema = outSchema.WriteSchema(outStream, schemaIdx, out outSchemaId, out flags);
 
                             if (hasSchema)
                             {
@@ -716,7 +716,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         }
                         finally
                         {
-                            outSchema.PopSchema();
+                            outSchema.PopSchema(schemaIdx);
                         }
                     }
                 }
