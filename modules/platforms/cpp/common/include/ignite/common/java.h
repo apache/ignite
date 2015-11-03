@@ -356,7 +356,7 @@ namespace ignite
                 jmethodID m_PlatformAtomicSequence_getAndAdd;
                 jmethodID m_PlatformAtomicSequence_getBatchSize;
                 jmethodID m_PlatformAtomicSequence_setBatchSize;
-                jmethodID m_PlatformAtomicSequence_removed;
+                jmethodID m_PlatformAtomicSequence_isClosed;
                 jmethodID m_PlatformAtomicSequence_close;
 
                 /**
@@ -609,7 +609,7 @@ namespace ignite
                 long long AtomicSequenceGetAndAdd(jobject obj, long long l);
                 int AtomicSequenceGetBatchSize(jobject obj);
                 void AtomicSequenceSetBatchSize(jobject obj, int size);
-                bool AtomicSequenceRemoved(jobject obj);
+                bool AtomicSequenceIsClosed(jobject obj);
                 void AtomicSequenceClose(jobject obj);
 
                 jobject Acquire(jobject obj);

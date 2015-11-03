@@ -491,8 +491,8 @@ extern "C" {
         return ctx->AtomicSequenceSetBatchSize(static_cast<jobject>(obj), size);
     }
 
-    bool IGNITE_CALL IgniteAtomicSequenceRemoved(gcj::JniContext* ctx, void* obj) {
-        return ctx->AtomicSequenceRemoved(static_cast<jobject>(obj));
+    bool IGNITE_CALL IgniteAtomicSequenceIsClosed(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicSequenceIsClosed(static_cast<jobject>(obj));
     }
 
     void IGNITE_CALL IgniteAtomicSequenceClose(gcj::JniContext* ctx, void* obj) {

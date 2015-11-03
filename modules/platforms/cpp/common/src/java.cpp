@@ -373,7 +373,7 @@ namespace ignite
             JniMethod M_PLATFORM_ATOMIC_SEQUENCE_GET_AND_ADD = JniMethod("getAndAdd", "(J)J", false);
             JniMethod M_PLATFORM_ATOMIC_SEQUENCE_GET_BATCH_SIZE = JniMethod("getBatchSize", "()I", false);
             JniMethod M_PLATFORM_ATOMIC_SEQUENCE_SET_BATCH_SIZE = JniMethod("setBatchSize", "(I)V", false);
-            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_REMOVED = JniMethod("removed", "()Z", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_IS_CLOSED = JniMethod("isClosed", "()Z", false);
             JniMethod M_PLATFORM_ATOMIC_SEQUENCE_CLOSE = JniMethod("close", "()V", false);
 
             /* STATIC STATE. */
@@ -674,7 +674,7 @@ namespace ignite
                 m_PlatformAtomicSequence_getAndAdd = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_GET_AND_ADD);
                 m_PlatformAtomicSequence_getBatchSize = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_GET_BATCH_SIZE);
                 m_PlatformAtomicSequence_setBatchSize = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_SET_BATCH_SIZE);
-                m_PlatformAtomicSequence_removed = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_REMOVED);
+                m_PlatformAtomicSequence_isClosed = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_IS_CLOSED);
                 m_PlatformAtomicSequence_close = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_CLOSE);
 
                 // Find utility classes which are not used from context, but are still required in other places.
@@ -2126,11 +2126,11 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
-            bool JniContext::AtomicSequenceRemoved(jobject obj)
+            bool JniContext::AtomicSequenceIsClosed(jobject obj)
             {
                 JNIEnv* env = Attach();
 
-                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_removed);
+                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_isClosed);
 
                 ExceptionCheck(env);
 

@@ -162,7 +162,7 @@ extern "C" {
     long long IGNITE_CALL IgniteAtomicSequenceGetAndAdd(gcj::JniContext* ctx, void* obj, long long l);
     int IGNITE_CALL IgniteAtomicSequenceGetBatchSize(gcj::JniContext* ctx, void* obj);
     void IGNITE_CALL IgniteAtomicSequenceSetBatchSize(gcj::JniContext* ctx, void* obj, int size);
-    bool IGNITE_CALL IgniteAtomicSequenceRemoved(gcj::JniContext* ctx, void* obj);
+    bool IGNITE_CALL IgniteAtomicSequenceIsClosed(gcj::JniContext* ctx, void* obj);
     void IGNITE_CALL IgniteAtomicSequenceClose(gcj::JniContext* ctx, void* obj);
 }
 

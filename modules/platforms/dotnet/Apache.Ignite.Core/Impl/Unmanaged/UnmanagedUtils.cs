@@ -169,7 +169,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcAtomicSequenceGetAndAdd = "IgniteAtomicSequenceGetAndAdd";
         private const string ProcAtomicSequenceGetBatchSize = "IgniteAtomicSequenceGetBatchSize";
         private const string ProcAtomicSequenceSetBatchSize = "IgniteAtomicSequenceSetBatchSize";
-        private const string ProcAtomicSequenceRemoved = "IgniteAtomicSequenceRemoved";
+        private const string ProcAtomicSequenceIsClosed = "IgniteAtomicSequenceIsClosed";
         private const string ProcAtomicSequenceClose = "IgniteAtomicSequenceClose";
 
         #endregion
@@ -454,7 +454,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly AtomicSequenceGetAndAddDelegate ATOMIC_SEQUENCE_GET_AND_ADD;
         private static readonly AtomicSequenceGetBatchSizeDelegate ATOMIC_SEQUENCE_GET_BATCH_SIZE;
         private static readonly AtomicSequenceSetBatchSizeDelegate ATOMIC_SEQUENCE_SET_BATCH_SIZE;
-        private static readonly AtomicSequenceRemovedDelegate ATOMIC_SEQUENCE_REMOVED;
+        private static readonly AtomicSequenceRemovedDelegate ATOMIC_SEQUENCE_IS_CLOSED;
         private static readonly AtomicSequenceCloseDelegate ATOMIC_SEQUENCE_CLOSE;
 
         // ReSharper restore InconsistentNaming
@@ -612,7 +612,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             ATOMIC_SEQUENCE_GET_AND_ADD = CreateDelegate<AtomicSequenceGetAndAddDelegate>(ProcAtomicSequenceGetAndAdd);
             ATOMIC_SEQUENCE_GET_BATCH_SIZE = CreateDelegate<AtomicSequenceGetBatchSizeDelegate>(ProcAtomicSequenceGetBatchSize);
             ATOMIC_SEQUENCE_SET_BATCH_SIZE = CreateDelegate<AtomicSequenceSetBatchSizeDelegate>(ProcAtomicSequenceSetBatchSize);
-            ATOMIC_SEQUENCE_REMOVED = CreateDelegate<AtomicSequenceRemovedDelegate>(ProcAtomicSequenceRemoved);
+            ATOMIC_SEQUENCE_IS_CLOSED = CreateDelegate<AtomicSequenceRemovedDelegate>(ProcAtomicSequenceIsClosed);
             ATOMIC_SEQUENCE_CLOSE = CreateDelegate<AtomicSequenceCloseDelegate>(ProcAtomicSequenceClose);
         }
 
@@ -1432,9 +1432,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             ATOMIC_SEQUENCE_SET_BATCH_SIZE(target.Context, target.Target, size);
         }
 
-        internal static bool AtomicSequenceRemoved(IUnmanagedTarget target)
+        internal static bool AtomicSequenceIsClosed(IUnmanagedTarget target)
         {
-            return ATOMIC_SEQUENCE_REMOVED(target.Context, target.Target);
+            return ATOMIC_SEQUENCE_IS_CLOSED(target.Context, target.Target);
         }
 
         internal static void AtomicSequenceClose(IUnmanagedTarget target)

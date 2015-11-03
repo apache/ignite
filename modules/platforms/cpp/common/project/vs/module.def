@@ -117,5 +117,5 @@ IgniteAtomicSequenceAddAndGet @114
 IgniteAtomicSequenceGetAndAdd @115
 IgniteAtomicSequenceGetBatchSize @116
 IgniteAtomicSequenceSetBatchSize @117
-IgniteAtomicSequenceRemoved @118
+IgniteAtomicSequenceIsClosed @118
 IgniteAtomicSequenceClose @119
