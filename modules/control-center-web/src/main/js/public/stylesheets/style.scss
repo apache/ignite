@@ -1008,6 +1008,7 @@ button.form-control {
 .theme-line .popover.cache-metadata {
     @extend .popover.settings;
 
+    z-index: 1030;
     min-width: 305px;
 
     .popover-title {
