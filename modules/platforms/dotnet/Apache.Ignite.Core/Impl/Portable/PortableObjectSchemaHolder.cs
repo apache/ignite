@@ -106,7 +106,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             flags = PortableObjectHeader.WriteSchema(_fields, stream, offset, count);
 
-            for (var i = offset; i < count; i++)
+            for (var i = offset; i < count + offset; i++)
                 schemaId = Fnv1Hash.Update(schemaId, _fields[i].Id);
 
             return true;
