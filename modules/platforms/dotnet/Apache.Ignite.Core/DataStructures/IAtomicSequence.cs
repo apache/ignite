@@ -36,5 +36,40 @@ namespace Apache.Ignite.Core.DataStructures
         /// <returns>Current value of the atomic sequence.</returns>
         long Read();
 
+        /// <summary>
+        /// Increments current value and returns result.
+        /// </summary>
+        /// <returns>Current value of the atomic sequence.</returns>
+        long Increment();
+
+        /// <summary>
+        /// Adds specified value to the current value and returns result.
+        /// </summary>
+        /// <param name="value">The value to add.</param>
+        /// <returns>Current value of the atomic sequence.</returns>
+        long Add(long value);
+
+        /// <summary>
+        /// Gets local batch size for this atomic sequence.
+        /// </summary>
+        /// <returns>Sequence batch size.</returns>
+        long GetBatchSize();
+
+        /// <summary>
+        /// Sets local batch size for this atomic sequence.
+        /// </summary>
+        /// <param name="batchSize">Size of the batch.</param>
+        void SetBatchSize(long batchSize);
+
+        /// <summary>
+        /// Determines whether this instance was removed from cache.
+        /// </summary>
+        /// <returns>True if this atomic was removed from cache; otherwise, false.</returns>
+        bool IsClosed();
+
+        /// <summary>
+        /// Closes this instance.
+        /// </summary>
+        void Close();
     }
 }
