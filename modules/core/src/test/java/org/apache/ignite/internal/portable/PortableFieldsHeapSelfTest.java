@@ -15,32 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.portable;
+package org.apache.ignite.internal.portable;
+
+import org.apache.ignite.marshaller.portable.PortableMarshaller;
 
 /**
- * Portable object field. Can be used to speed object field lookup.
+ * Field tests for heap-based portables.
  */
-public interface PortableField {
-    /**
-     * Get field's name.
-     *
-     * @return Name.
-     */
-    public String name();
+public class PortableFieldsHeapSelfTest extends PortableFieldsAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected PortableObjectEx toPortable(PortableMarshaller marsh, Object obj) throws Exception {
+        byte[] bytes = marsh.marshal(obj);
 
-    /**
-     * Check whether field exists in the object.
-     *
-     * @param obj Object.
-     * @return {@code True} if exists.
-     */
-    public boolean exists(PortableObject obj);
-
-    /**
-     * Get field's value from the given object.
-     *
-     * @param obj Object.
-     * @return Value.
-     */
-    public <T> T value(PortableObject obj);
+        return new PortableObjectImpl(ctx, bytes, 0);
+    }
 }

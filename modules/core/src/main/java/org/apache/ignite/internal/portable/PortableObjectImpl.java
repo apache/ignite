@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -39,16 +40,28 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.UUID;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.DECIMAL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.NULL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID;
 
 /**
  * Portable object implementation.
@@ -178,13 +191,6 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
     }
 
     /**
-     * @return {@code True} if detach is allowed.
-     */
-    public boolean detachAllowed() {
-        return true;
-    }
-
-    /**
      * @param detachAllowed Detach allowed flag.
      */
     public void detachAllowed(boolean detachAllowed) {
@@ -270,9 +276,9 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
         int fieldPos;
 
         if (fieldOffsetSize == PortableUtils.OFFSET_1)
-            fieldPos = start + (int)PortablePrimitives.readByte(arr, fieldOffsetPos) & 0xFF;
+            fieldPos = start + ((int)PortablePrimitives.readByte(arr, fieldOffsetPos) & 0xFF);
         else if (fieldOffsetSize == PortableUtils.OFFSET_2)
-            fieldPos = start + (int)PortablePrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF;
+            fieldPos = start + ((int)PortablePrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF);
         else
             fieldPos = start + PortablePrimitives.readInt(arr, fieldOffsetPos);
 
@@ -317,6 +323,78 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
 
             case DOUBLE:
                 val = PortablePrimitives.readDouble(arr, fieldPos + 1);
+
+                break;
+
+            case STRING: {
+                boolean utf = PortablePrimitives.readBoolean(arr, fieldPos + 1);
+
+                if (utf) {
+                    int dataLen = PortablePrimitives.readInt(arr, fieldPos + 2);
+
+                    val = new String(arr, fieldPos + 6, dataLen, UTF_8);
+                }
+                else {
+                    int dataLen = PortablePrimitives.readInt(arr, fieldPos + 2);
+                    char[] data = PortablePrimitives.readCharArray(arr, fieldPos + 6, dataLen);
+
+                    val = String.valueOf(data);
+                }
+
+                break;
+            }
+
+            case DATE: {
+                long time = PortablePrimitives.readLong(arr, fieldPos + 1);
+
+                val = new Date(time);
+
+                break;
+            }
+
+            case TIMESTAMP: {
+                long time = PortablePrimitives.readLong(arr, fieldPos + 1);
+                int nanos = PortablePrimitives.readInt(arr, fieldPos + 1 + 8);
+
+                Timestamp ts = new Timestamp(time);
+
+                ts.setNanos(ts.getNanos() + nanos);
+
+                val = ts;
+
+                break;
+            }
+
+            case UUID: {
+                long most = PortablePrimitives.readLong(arr, fieldPos + 1);
+                long least = PortablePrimitives.readLong(arr, fieldPos + 1 + 8);
+
+                val = new UUID(most, least);
+
+                break;
+            }
+
+            case DECIMAL: {
+                int scale = PortablePrimitives.readInt(arr, fieldPos + 1);
+
+                int dataLen = PortablePrimitives.readInt(arr, fieldPos + 5);
+                byte[] data = PortablePrimitives.readByteArray(arr, fieldPos + 9, dataLen);
+
+                BigInteger intVal = new BigInteger(data);
+
+                if (scale < 0) {
+                    scale &= 0x7FFFFFFF;
+
+                    intVal = intVal.negate();
+                }
+
+                val = new BigDecimal(intVal, scale);
+
+                break;
+            }
+
+            case NULL:
+                val = null;
 
                 break;
 
@@ -395,13 +473,15 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
 
     /** {@inheritDoc} */
     @Override public PortableField fieldDescriptor(String fieldName) throws PortableException {
+        A.notNull(fieldName, "fieldName");
+
         int typeId = typeId();
 
         PortableSchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
 
         int fieldId = ctx.userTypeIdMapper(typeId).fieldId(typeId, fieldName);
 
-        return new PortableFieldImpl(schemaReg, fieldId);
+        return new PortableFieldImpl(schemaReg, fieldName, fieldId);
     }
 
     /** {@inheritDoc} */
