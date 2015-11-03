@@ -39,9 +39,6 @@ public class PlatformDotNetPortableTypeConfiguration {
     /** Affinity key field name. */
     private String affinityKeyFieldName;
 
-    /** Metadata enabled. */
-    private Boolean metadataEnabled;
-
     /** Whether to cache deserialized value in IGridPortableObject. */
     private Boolean keepDeserialized;
 
@@ -62,7 +59,6 @@ public class PlatformDotNetPortableTypeConfiguration {
         idMapper = cfg.getIdMapper();
         serializer = cfg.getSerializer();
         affinityKeyFieldName = cfg.getAffinityKeyFieldName();
-        metadataEnabled = cfg.getMetadataEnabled();
         keepDeserialized = cfg.isKeepDeserialized();
     }
 
@@ -120,27 +116,6 @@ public class PlatformDotNetPortableTypeConfiguration {
      */
     public void setSerializer(String serializer) {
         this.serializer = serializer;
-    }
-
-    /**
-     * Gets metadata enabled flag. See {@link #setMetadataEnabled(Boolean)} for more information.
-     *
-     * @return Metadata enabled flag.
-     */
-    public Boolean getMetadataEnabled() {
-        return metadataEnabled;
-    }
-
-    /**
-     * Sets metadata enabled flag.
-     * <p />
-     * When set to {@code null} default value taken from
-     * {@link PlatformDotNetPortableConfiguration#isDefaultMetadataEnabled()} will be used.
-     *
-     * @param metadataEnabled New metadata enabled.
-     */
-    public void setMetadataEnabled(Boolean metadataEnabled) {
-        this.metadataEnabled = metadataEnabled;
     }
 
     /**
