@@ -4680,7 +4680,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 OPTIMISTIC,
                 READ_COMMITTED,
                 ctx.kernalContext().config().getTransactionConfiguration().getDefaultTxTimeout(),
-                !opCtx.skipStore(),
+                opCtx == null || !opCtx.skipStore(),
                 0);
 
             IgniteInternalFuture<T> fut = asyncOp(tx, op, opCtx);
