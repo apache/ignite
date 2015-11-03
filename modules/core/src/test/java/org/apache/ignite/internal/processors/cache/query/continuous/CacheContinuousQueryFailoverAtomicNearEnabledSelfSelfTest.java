@@ -19,22 +19,28 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
  */
-public class CacheContinuousQueryFailoverAtomicReplicatedTest
-    extends CacheContinuousQueryFailoverAtomicPrimaryWriteOrderTest {
+public class CacheContinuousQueryFailoverAtomicNearEnabledSelfSelfTest
+    extends CacheContinuousQueryFailoverAtomicPrimaryWriteOrderSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
-        return REPLICATED;
+        return PARTITIONED;
     }
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicWriteOrderMode writeOrderMode() {
         return PRIMARY;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected NearCacheConfiguration nearCacheConfiguration() {
+        return super.nearCacheConfiguration();
     }
 }

@@ -60,6 +60,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -98,7 +99,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommonAbstractTest {
+public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -135,12 +136,20 @@ public abstract class CacheContinuousQueryFailoverAbstractTest extends GridCommo
         ccfg.setAtomicWriteOrderMode(writeOrderMode());
         ccfg.setBackups(backups);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setNearConfiguration(nearCacheConfiguration());
 
         cfg.setCacheConfiguration(ccfg);
 
         cfg.setClientMode(client);
 
         return cfg;
+    }
+
+    /**
+     * @return Near cache configuration.
+     */
+    protected NearCacheConfiguration nearCacheConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */
