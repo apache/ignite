@@ -33,10 +33,10 @@ namespace Apache.Ignite.Core.Impl.Portable
             new ThreadLocal<PortableObjectSchemaHolder>(() => new PortableObjectSchemaHolder());
 
         /** Fields. */
-        private PortableObjectSchemaField[] _fields = new PortableObjectSchemaField[16];
+        private PortableObjectSchemaField[] _fields = new PortableObjectSchemaField[32];
 
         /** Offsets for different schemas. */
-        private readonly Stack<int> _offsets = new Stack<int>();
+        private readonly Stack<int> _offsets = new Stack<int>(32);
 
         /** Current field index. */
         private int _idx;
@@ -95,8 +95,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             var offset = _offsets.Peek();
 
             var count = _idx - offset;
-
-            _idx = offset;
 
             schemaId = Fnv1Hash.Basis;
             flags = 0;
