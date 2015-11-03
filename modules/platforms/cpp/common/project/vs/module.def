@@ -109,3 +109,4 @@ IgniteAtomicLongGetAndSet @106
 IgniteAtomicLongCompareAndSetAndGet @107
 IgniteAtomicLongIsClosed @108
 IgniteAtomicLongClose @109
+IgniteProcessorAtomicSequence @110

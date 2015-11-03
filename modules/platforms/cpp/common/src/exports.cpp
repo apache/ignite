@@ -102,6 +102,10 @@ extern "C" {
         return ctx->ProcessorAtomicLong(static_cast<jobject>(obj), name, initVal, create);
     }
 
+    void* IGNITE_CALL IgniteProcessorAtomicSequence(gcj::JniContext* ctx, void* obj, char* name, long long initVal, bool create) {
+        return ctx->ProcessorAtomicSequence(static_cast<jobject>(obj), name, initVal, create);
+    }
+
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
         return ctx->TargetInStreamOutLong(static_cast<jobject>(obj), opType, memPtr);
     }

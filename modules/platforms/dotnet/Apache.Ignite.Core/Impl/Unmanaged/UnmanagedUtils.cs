@@ -54,6 +54,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcProcessorServices = "IgniteProcessorServices";
         private const string ProcProcessorExtensions = "IgniteProcessorExtensions";
         private const string ProcProcessorAtomicLong = "IgniteProcessorAtomicLong";
+        private const string ProcProcessorAtomicSequence = "IgniteProcessorAtomicSequence";
         
         private const string ProcTargetInStreamOutLong = "IgniteTargetInStreamOutLong";
         private const string ProcTargetInStreamOutStream = "IgniteTargetInStreamOutStream";
@@ -185,6 +186,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void* ProcessorServicesDelegate(void* ctx, void* obj, void* prj);
         private delegate void* ProcessorExtensionsDelegate(void* ctx, void* obj);
         private delegate void* ProcessorAtomicLongDelegate(void* ctx, void* obj, sbyte* name, long initVal, bool create);
+        private delegate void* ProcessorAtomicSequenceDelegate(void* ctx, void* obj, sbyte* name, long initVal, bool create);
         
         private delegate long TargetInStreamOutLongDelegate(void* ctx, void* target, int opType, long memPtr);
         private delegate void TargetInStreamOutStreamDelegate(void* ctx, void* target, int opType, long inMemPtr, long outMemPtr);
@@ -317,6 +319,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly ProcessorServicesDelegate PROCESSOR_SERVICES;
         private static readonly ProcessorExtensionsDelegate PROCESSOR_EXTENSIONS;
         private static readonly ProcessorAtomicLongDelegate PROCESSOR_ATOMIC_LONG;
+        private static readonly ProcessorAtomicSequenceDelegate PROCESSOR_ATOMIC_SEQUENCE;
         
         private static readonly TargetInStreamOutLongDelegate TARGET_IN_STREAM_OUT_LONG;
         private static readonly TargetInStreamOutStreamDelegate TARGET_IN_STREAM_OUT_STREAM;
@@ -465,6 +468,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             PROCESSOR_SERVICES = CreateDelegate<ProcessorServicesDelegate>(ProcProcessorServices);
             PROCESSOR_EXTENSIONS = CreateDelegate<ProcessorExtensionsDelegate>(ProcProcessorExtensions);
             PROCESSOR_ATOMIC_LONG = CreateDelegate<ProcessorAtomicLongDelegate>(ProcProcessorAtomicLong);
+            PROCESSOR_ATOMIC_SEQUENCE = CreateDelegate<ProcessorAtomicSequenceDelegate>(ProcProcessorAtomicSequence);
             
             TARGET_IN_STREAM_OUT_LONG = CreateDelegate<TargetInStreamOutLongDelegate>(ProcTargetInStreamOutLong);
             TARGET_IN_STREAM_OUT_STREAM = CreateDelegate<TargetInStreamOutStreamDelegate>(ProcTargetInStreamOutStream);
@@ -760,6 +764,23 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             try
             {
                 var res = PROCESSOR_ATOMIC_LONG(target.Context, target.Target, name0, initialValue, create);
+
+                return res == null ? null : target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
+        internal static IUnmanagedTarget ProcessorAtomicSequence(IUnmanagedTarget target, string name, 
+            long initialValue, bool create)
+        {
+            var name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                var res = PROCESSOR_ATOMIC_SEQUENCE(target.Context, target.Target, name0, initialValue, create);
 
                 return res == null ? null : target.ChangeTarget(res);
             }
