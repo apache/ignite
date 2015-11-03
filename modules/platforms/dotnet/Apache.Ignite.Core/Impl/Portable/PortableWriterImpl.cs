@@ -73,7 +73,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Current schema. */
         private ResizeableArray<PortableObjectSchemaField> _curSchema;
 
-
         /// <summary>
         /// Gets the marshaller.
         /// </summary>
@@ -1092,9 +1091,11 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Write schema
                 var hasSchema = _curSchema != null;
                 var schemaOffset = hasSchema ? _stream.Position - pos : PortableObjectHeader.Size;
+                short flags = 0;
 
                 if (hasSchema)
-                    PortableObjectSchemaField.WriteArray(_curSchema.Array, _stream, _curSchema.Count);
+                    flags = PortableObjectHeader.WriteSchema(_curSchema.Array, _stream, _curSchema.Count,
+                        _curSchema.Array[_curSchema.Count - 1].Offset);
 
                 // Calculate and write header.
                 if (hasSchema && _curRawPos > 0)
@@ -1103,7 +1104,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 var len = _stream.Position - pos;
 
                 var header = new PortableObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len,
-                    PU.GetSchemaId(_curSchema), schemaOffset, !hasSchema);
+                    PU.GetSchemaId(_curSchema), schemaOffset, !hasSchema, flags);
 
                 PortableObjectHeader.Write(header, _stream, pos);
 

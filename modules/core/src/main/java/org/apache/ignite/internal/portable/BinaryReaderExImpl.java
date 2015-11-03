@@ -162,6 +162,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
     /** Schema Id. */
     private int schemaId;
 
+    /** Offset size in bytes. */
+    private int offsetSize;
+
     /** Object schema. */
     private PortableSchema schema;
 
@@ -220,18 +223,20 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
 
         PortableUtils.checkProtocolVersion(in.readByte());
 
-        in.position(in.position() + 2); // Skip flags.
+        short flags = in.readShort();
+
+        offsetSize = PortableUtils.fieldOffsetSize(flags);
 
         typeId = in.readIntPositioned(start + GridPortableMarshaller.TYPE_ID_POS);
 
-        IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(in, start);
+        IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(in, start, offsetSize);
 
         footerStart = footer.get1();
         footerLen = footer.get2() - footerStart;
 
         schemaId = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_ID_POS);
 
-        rawOff = PortableUtils.rawOffsetAbsolute(in, start);
+        rawOff = PortableUtils.rawOffsetAbsolute(in, start, offsetSize);
 
         if (typeId == UNREGISTERED_TYPE_ID) {
             // Skip to the class name position.
@@ -306,16 +311,16 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
     }
 
     /**
-     * @param fieldOffset Field offset.
-     * @return Unmarshalled value.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * Unmarshal field by absolute position.
+     *
+     * @param pos Absolute position.
+     * @return Field value.
+     * @throws BinaryObjectException In case of error.
      */
-    @Nullable Object unmarshalFieldByOffset(int fieldOffset) throws BinaryObjectException {
-        assert fieldOffset != 0;
-
+    @Nullable Object unmarshalFieldByAbsolutePosition(int pos) throws BinaryObjectException {
         parseHeaderIfNeeded();
 
-        in.position(start + in.readIntPositioned(footerStart + fieldOffset));
+        in.position(pos);
 
         return unmarshal();
     }
@@ -2566,12 +2571,14 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
         int searchPos = footerStart;
         int searchEnd = searchPos + footerLen;
 
+        int idx = 0;
+
         while (searchPos < searchEnd) {
             int fieldId = in.readIntPositioned(searchPos);
 
-            fields.put(fieldId, searchPos + 4 - footerStart);
+            fields.put(fieldId, idx++);
 
-            searchPos += 8;
+            searchPos += 4 + offsetSize;
         }
 
         return new PortableSchema(fields);
@@ -2598,14 +2605,14 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
                 int id0 = in.readIntPositioned(searchPos);
 
                 if (id0 == id) {
-                    int pos = start + in.readIntPositioned(searchPos + 4);
+                    int pos = start + PortableUtils.fieldOffsetRelative(in, searchPos + 4, offsetSize);
 
                     in.position(pos);
 
                     return pos;
                 }
 
-                searchPos += 8;
+                searchPos += 4 + offsetSize;
             }
         }
         else {
@@ -2623,10 +2630,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
                 schema = schema0;
             }
 
-            int fieldOffsetPos = schema.offset(id);
+            int order = schema.order(id);
 
-            if (fieldOffsetPos != 0) {
-                int pos = start + in.readIntPositioned(footerStart + fieldOffsetPos);
+            if (order != 0) {
+                int offsetPos = footerStart + order * (4 + offsetSize) + 4;
+
+                int pos = start + PortableUtils.fieldOffsetRelative(in, offsetPos, offsetSize);
 
                 in.position(pos);
 

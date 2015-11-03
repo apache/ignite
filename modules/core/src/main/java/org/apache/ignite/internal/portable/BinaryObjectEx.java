@@ -72,7 +72,7 @@ public abstract class BinaryObjectEx implements BinaryObject {
      * @param fieldOffset Field offset.
      * @return Field value.
      */
-    @Nullable protected abstract <F> F fieldByOffset(int fieldOffset);
+    @Nullable protected abstract <F> F fieldByOrder(int fieldOffset);
 
     /**
      * @param ctx Reader context.

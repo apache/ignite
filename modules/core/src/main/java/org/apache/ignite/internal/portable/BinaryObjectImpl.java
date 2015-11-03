@@ -266,11 +266,25 @@ public final class BinaryObjectImpl extends BinaryObjectEx implements Externaliz
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Nullable @Override protected <F> F fieldByOffset(int fieldOffset) {
+    @Nullable @Override protected <F> F fieldByOrder(int order) {
         Object val;
 
+        // Calculate field position.
         int schemaOffset = PortablePrimitives.readInt(arr, start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
-        int fieldPos = PortablePrimitives.readInt(arr, start + schemaOffset + fieldOffset);
+
+        short flags = PortablePrimitives.readShort(arr, start + GridPortableMarshaller.FLAGS_POS);
+        int fieldOffsetSize = PortableUtils.fieldOffsetSize(flags);
+
+        int fieldOffsetPos = start + schemaOffset + order * (4 + fieldOffsetSize) + 4;
+
+        int fieldPos;
+
+        if (fieldOffsetSize == PortableUtils.OFFSET_1)
+            fieldPos = start + (int)PortablePrimitives.readByte(arr, fieldOffsetPos) & 0xFF;
+        else if (fieldOffsetSize == PortableUtils.OFFSET_2)
+            fieldPos = start + (int)PortablePrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF;
+        else
+            fieldPos = start + PortablePrimitives.readInt(arr, fieldOffsetPos);
 
         // Read header and try performing fast lookup for well-known types (the most common types go first).
         byte hdr = PortablePrimitives.readByte(arr, fieldPos);
@@ -316,36 +330,10 @@ public final class BinaryObjectImpl extends BinaryObjectEx implements Externaliz
 
                 break;
 
-//            case DECIMAL:
-//                val = doReadDecimal();
-//
-//                break;
-//
-//            case STRING:
-//                val = doReadString();
-//
-//                break;
-//
-//            case UUID:
-//                val = doReadUuid();
-//
-//                break;
-//
-//            case DATE:
-//                val = doReadDate();
-//
-//                break;
-//
-//            case TIMESTAMP:
-//                val = doReadTimestamp();
-//
-//                break;
-
             default: {
-                // TODO: Pass absolute offset, not relative.
                 BinaryReaderExImpl reader = new BinaryReaderExImpl(ctx, arr, start, null);
 
-                val = reader.unmarshalFieldByOffset(fieldOffset);
+                val = reader.unmarshalFieldByAbsolutePosition(fieldPos);
             }
         }
 

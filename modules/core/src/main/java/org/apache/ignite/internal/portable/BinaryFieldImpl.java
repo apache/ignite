@@ -45,7 +45,7 @@ public class BinaryFieldImpl implements BinaryField {
     @Override public boolean exists(BinaryObject obj) {
         BinaryObjectEx obj0 = (BinaryObjectEx)obj;
 
-        return fieldOffset(obj0) != 0;
+        return fieldOrder(obj0) != 0;
     }
 
     /** {@inheritDoc} */
@@ -53,9 +53,9 @@ public class BinaryFieldImpl implements BinaryField {
     @Override public <T> T value(BinaryObject obj) {
         BinaryObjectEx obj0 = (BinaryObjectEx)obj;
 
-        int offset = fieldOffset(obj0);
+        int order = fieldOrder(obj0);
 
-        return offset != 0 ? (T)obj0.fieldByOffset(offset) : null;
+        return order != 0 ? (T)obj0.fieldByOrder(order) : null;
     }
 
     /**
@@ -64,7 +64,7 @@ public class BinaryFieldImpl implements BinaryField {
      * @param obj Object.
      * @return Field offset.
      */
-    private int fieldOffset(BinaryObjectEx obj) {
+    private int fieldOrder(BinaryObjectEx obj) {
         int schemaId = obj.schemaId();
 
         PortableSchema schema = schemas.schema(schemaId);
@@ -77,6 +77,6 @@ public class BinaryFieldImpl implements BinaryField {
 
         assert schema != null;
 
-        return schema.offset(fieldId);
+        return schema.order(fieldId);
     }
 }
