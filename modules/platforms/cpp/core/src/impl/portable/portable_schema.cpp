@@ -70,7 +70,7 @@ namespace ignite
             {
                 switch (GetType())
                 {
-                    case SCHEMA_TYPE_TINY:
+                    case OFFSET_TYPE_1_BYTE:
                     {
                         for (FieldContainer::const_iterator i = fieldsInfo->begin(); i != fieldsInfo->end(); ++i)
                         {
@@ -80,7 +80,7 @@ namespace ignite
                         break;
                     }
 
-                    case SCHEMA_TYPE_SMALL:
+                    case OFFSET_TYPE_2_BYTE:
                     {
                         for (FieldContainer::const_iterator i = fieldsInfo->begin(); i != fieldsInfo->end(); ++i)
                         {
@@ -90,7 +90,7 @@ namespace ignite
                         break;
                     }
 
-                    case SCHEMA_TYPE_BIG:
+                    case OFFSET_TYPE_4_BYTE:
                     {
                         for (FieldContainer::const_iterator i = fieldsInfo->begin(); i != fieldsInfo->end(); ++i)
                         {
@@ -119,16 +119,16 @@ namespace ignite
                 fieldsInfo->clear();
             }
 
-            SCHEMA_TYPE PortableSchema::GetType() const
+            PortableOffsetType PortableSchema::GetType() const
             {
                 int32_t maxOffset = fieldsInfo->back().offset;
 
                 if (maxOffset < 0x100)
-                    return SCHEMA_TYPE_TINY;
+                    return OFFSET_TYPE_1_BYTE;
                 else if (maxOffset < 0x10000)
-                    return SCHEMA_TYPE_SMALL;
+                    return OFFSET_TYPE_2_BYTE;
 
-                return SCHEMA_TYPE_BIG;
+                return OFFSET_TYPE_4_BYTE;
             }
         }
     }

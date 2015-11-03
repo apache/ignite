@@ -580,7 +580,7 @@ namespace ignite
                 else
                 {
                     int32_t schemaId = schema.GetId();
-                    SCHEMA_TYPE schemaType = schema.GetType();
+                    PortableOffsetType schemaType = schema.GetType();
 
                     WriteAndClearSchema();
 
@@ -589,12 +589,12 @@ namespace ignite
 
                     int32_t length = stream->Position() - start;
 
-                    if (schemaType == SCHEMA_TYPE_TINY)
+                    if (schemaType == OFFSET_TYPE_1_BYTE)
                     {
                         stream->WriteInt16(start + IGNITE_OFFSET_FLAGS, 
                             IGNITE_PORTABLE_FLAG_USER_OBJECT | IGNITE_PORTABLE_FLAG_OFFSET_1_BYTE);
                     }
-                    else if (schemaType == SCHEMA_TYPE_SMALL)
+                    else if (schemaType == OFFSET_TYPE_2_BYTE)
                     {
                         stream->WriteInt16(start + IGNITE_OFFSET_FLAGS, 
                             IGNITE_PORTABLE_FLAG_USER_OBJECT | IGNITE_PORTABLE_FLAG_OFFSET_2_BYTE);

@@ -59,7 +59,7 @@ namespace ignite
                  */
                 PortableReaderImpl(interop::InteropInputStream* stream, PortableIdResolver* idRslvr,
                     int32_t pos, bool usrType, int32_t typeId, int32_t hashCode, int32_t len, int32_t rawOff,
-                    int32_t footerBegin, int32_t footerEnd, SCHEMA_TYPE schemaType);
+                    int32_t footerBegin, int32_t footerEnd, PortableOffsetType schemaType);
 
                 /**
                  * Constructor used to construct light-weight reader allowing only raw operations 
@@ -788,19 +788,19 @@ namespace ignite
                             else
                                 footerBegin = schemaOrRawOff;
 
-                            SCHEMA_TYPE schemaType = SCHEMA_TYPE_BIG;
+                            PortableOffsetType schemaType = OFFSET_TYPE_4_BYTE;
 
                             int32_t trailingBytes = (len - footerBegin) % 8;
 
                             if (flags & IGNITE_PORTABLE_FLAG_OFFSET_1_BYTE)
                             {
-                                schemaType = SCHEMA_TYPE_TINY;
+                                schemaType = OFFSET_TYPE_1_BYTE;
 
                                 trailingBytes = (len - footerBegin) % 5;
                             }
                             else if (flags & IGNITE_PORTABLE_FLAG_OFFSET_2_BYTE)
                             {
-                                schemaType = SCHEMA_TYPE_SMALL;
+                                schemaType = OFFSET_TYPE_2_BYTE;
 
                                 trailingBytes = (len - footerBegin) % 6;
                             }
@@ -903,7 +903,7 @@ namespace ignite
                 int32_t footerEnd;
 
                 /** Object schema type. */
-                SCHEMA_TYPE schemaType;
+                PortableOffsetType schemaType;
 
                 IGNITE_NO_COPY_ASSIGNMENT(PortableReaderImpl)
                     

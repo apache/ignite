@@ -34,18 +34,18 @@ namespace ignite
             class PortableWriterImpl;
 
             /**
-            * Schema size variants.
-            */
-            enum SCHEMA_TYPE
+             * Schema size variants.
+             */
+            enum PortableOffsetType
             {
-                /** Tiny schema type. Means all field sizes can be fit in uint8_t. */
-                SCHEMA_TYPE_TINY,
+                /** Means all field offsets can be fit in one byte. */
+                OFFSET_TYPE_1_BYTE,
 
-                /** Small schema type. Means all field sizes can be fit in uint16_t. */
-                SCHEMA_TYPE_SMALL,
+                /** Means all field offsets can be fit in two bytes. */
+                OFFSET_TYPE_2_BYTE,
 
-                /** Big schema type. Means field sizes have type uint32_t. */
-                SCHEMA_TYPE_BIG
+                /** Means field offsets should be stored in four bytes. */
+                OFFSET_TYPE_4_BYTE
             };
 
             /**
@@ -106,7 +106,7 @@ namespace ignite
                  *
                  * @return Type of schema.
                  */
-                SCHEMA_TYPE GetType() const;
+                PortableOffsetType GetType() const;
 
             private:
                 /**
