@@ -1098,7 +1098,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 var schemaOffset = _stream.Position - pos;
 
                 int schemaId;
-                var hasSchema = _schema.WriteAndPopSchema(_stream, out schemaId);
+                short flags;
+                var hasSchema = _schema.WriteAndPopSchema(_stream, out schemaId, out flags);
 
                 if (!hasSchema)
                     schemaOffset = PortableObjectHeader.Size;
@@ -1110,7 +1111,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 var len = _stream.Position - pos;
 
                 var header = new PortableObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len,
-                    schemaId, schemaOffset, !hasSchema);
+                    schemaId, schemaOffset, !hasSchema, flags);
 
                 PortableObjectHeader.Write(header, _stream, pos);
 

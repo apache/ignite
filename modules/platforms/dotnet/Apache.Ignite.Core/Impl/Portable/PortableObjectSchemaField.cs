@@ -45,6 +45,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             Offset = offset;
         }
 
+        /*
         /// <summary>
         /// Writes an array of fields to a stream.
         /// </summary>
@@ -105,6 +106,6 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             return res;
-        }
+        }*/
     }
 }

@@ -294,15 +294,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="fields">Fields.</param>
         /// <param name="stream">Stream.</param>
+        /// <param name="offset">Offset in the array.</param>
         /// <param name="count">Field count to write.</param>
-        /// <param name="maxOffset">The maximum field offset to determine 
-        /// whether 1, 2 or 4 bytes are needed for offsets.</param>
         /// <returns>
-        /// Flags according to offset sizes: <see cref="PortableObjectHeader.FlagByteOffsets"/>, 
-        /// <see cref="PortableObjectHeader.FlagShortOffsets"/>, or 0.
+        /// Flags according to offset sizes: <see cref="PortableObjectHeader.FlagByteOffsets" />,
+        /// <see cref="PortableObjectHeader.FlagShortOffsets" />, or 0.
         /// </returns>
-        public static unsafe short WriteSchema(PortableObjectSchemaField[] fields, IPortableStream stream, int count,
-            int maxOffset)
+        public static unsafe short WriteSchema(PortableObjectSchemaField[] fields, IPortableStream stream, int offset,
+            int count)
         {
             Debug.Assert(fields != null);
             Debug.Assert(stream != null);
@@ -310,9 +309,11 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             unchecked
             {
-                if (maxOffset <= byte.MaxValue)
+                var maxFieldOffset = fields[offset + count].Offset;
+
+                if (maxFieldOffset <= byte.MaxValue)
                 {
-                    for (int i = 0; i < count; i++)
+                    for (int i = offset; i < count + offset; i++)
                     {
                         var field = fields[i];
 
@@ -323,9 +324,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                     return FlagByteOffsets;
                 }
 
-                if (maxOffset <= ushort.MaxValue)
+                if (maxFieldOffset <= ushort.MaxValue)
                 {
-                    for (int i = 0; i < count; i++)
+                    for (int i = offset; i < count + offset; i++)
                     {
                         var field = fields[i];
 
@@ -339,14 +340,14 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 if (BitConverter.IsLittleEndian)
                 {
-                    fixed (PortableObjectSchemaField* ptr = &fields[0])
+                    fixed (PortableObjectSchemaField* ptr = &fields[offset])
                     {
                         stream.Write((byte*)ptr, count / PortableObjectSchemaField.Size);
                     }
                 }
                 else
                 {
-                    for (int i = 0; i < count; i++)
+                    for (int i = offset; i < count + offset; i++)
                     {
                         var field = fields[i];
 

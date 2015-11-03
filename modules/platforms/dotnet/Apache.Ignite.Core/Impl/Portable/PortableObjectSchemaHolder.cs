@@ -85,8 +85,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <param name="schemaId">The schema identifier.</param>
-        /// <returns>True if current schema was non empty; false otherwise.</returns>
-        public bool WriteAndPopSchema(IPortableStream stream, out int schemaId)
+        /// <param name="flags">Flags according to offset sizes: <see cref="PortableObjectHeader.FlagByteOffsets" />,
+        /// <see cref="PortableObjectHeader.FlagShortOffsets" />, or 0.</param>
+        /// <returns>
+        /// True if current schema was non empty; false otherwise.
+        /// </returns>
+        public bool WriteAndPopSchema(IPortableStream stream, out int schemaId, out short flags)
         {
             var offset = _offsets.Pop();
 
@@ -95,11 +99,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             _idx = offset;
 
             schemaId = Fnv1Hash.Basis;
+            flags = 0;
 
             if (count == 0) 
                 return false;
 
-            PortableObjectSchemaField.WriteArray(_fields, stream, offset, count);
+            flags = PortableObjectHeader.WriteSchema(_fields, stream, offset, count);
 
             for (var i = offset; i < count; i++)
                 schemaId = Fnv1Hash.Update(schemaId, _fields[i].Id);
