@@ -131,7 +131,7 @@
                   "model": "addressRequestAttempts",
                   "placeholder": 2,
                   "tip": [
-                    "Number of attempts to send multicast address request.",
+                    "Number of attempts to send multicast address request",
                     "IP finder re-sends request only in case if no reply for previous request is received"
                   ]
                 },
@@ -1084,7 +1084,8 @@
           "placeholder": "Choose marshaller",
           "items": "marshallers",
           "tip": [
-            "Instance of marshaller to use in grid. If not provided, OptimizedMarshaller will be used on Java HotSpot VM, and JdkMarshaller will be used on other VMs"
+            "Instance of marshaller to use in grid",
+            "If not provided, OptimizedMarshaller will be used on Java HotSpot VM, and JdkMarshaller will be used on other VMs"
           ],
           "details": {
             "OptimizedMarshaller": {

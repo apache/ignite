@@ -199,7 +199,8 @@
           "items": "evictionPolicies",
           "hide": "backupItem.memoryMode == 'OFFHEAP_TIERED'",
           "tip": [
-            "Optional cache eviction policy. Must be set for entries to be evicted from on-heap to off-heap or swap"
+            "Optional cache eviction policy",
+            "Must be set for entries to be evicted from on-heap to off-heap or swap"
           ],
           "details": {
             "LRU": {
