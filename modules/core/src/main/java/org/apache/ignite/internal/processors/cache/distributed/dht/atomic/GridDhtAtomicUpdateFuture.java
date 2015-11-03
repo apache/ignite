@@ -336,7 +336,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                     updateRes.addFailedKey(key, err);
             }
             else {
-                assert keys.size() == updates.size();
+                assert keys.size() >= updates.size();
 
                 int i = 0;
 
@@ -353,6 +353,9 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                     }
 
                     ++i;
+
+                    if (i == updates.size())
+                        break;
                 }
             }
 

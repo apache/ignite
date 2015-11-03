@@ -211,22 +211,28 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             LocalRoutineInfo routine = locInfos.get(msg.routineId());
 
                             if (routine != null) {
-                                Map<Integer, Long> idxs = msg.updateIdxs();
+                                try {
+                                    Map<Integer, Long> idxs = msg.updateIdxs();
 
-                                GridCacheAdapter<Object, Object> interCache =
-                                    ctx.cache().internalCache(routine.handler().cacheName());
+                                    GridCacheAdapter<Object, Object> interCache =
+                                        ctx.cache().internalCache(routine.handler().cacheName());
 
-                                if (interCache != null && idxs != null && interCache.context() != null
-                                    && !interCache.isLocal() && !CU.clientNode(ctx.grid().localNode())) {
-                                    Map<Integer, Long> map = interCache.context().topology().updateCounters();
+                                    if (interCache != null && idxs != null && interCache.context() != null
+                                        && !interCache.isLocal() && !CU.clientNode(ctx.grid().localNode())) {
+                                        Map<Integer, Long> map = interCache.context().topology().updateCounters();
 
-                                    for (Map.Entry<Integer, Long> e : map.entrySet()) {
-                                        Long cntr0 = idxs.get(e.getKey());
-                                        Long cntr1 = e.getValue();
+                                        for (Map.Entry<Integer, Long> e : map.entrySet()) {
+                                            Long cntr0 = idxs.get(e.getKey());
+                                            Long cntr1 = e.getValue();
 
-                                        if (cntr0 == null || cntr1 > cntr0)
-                                            idxs.put(e.getKey(), cntr1);
+                                            if (cntr0 == null || cntr1 > cntr0)
+                                                idxs.put(e.getKey(), cntr1);
+                                        }
                                     }
+                                }
+                                catch (Exception e) {
+                                    if (log.isDebugEnabled())
+                                        log.warning("Failed to load update counters.", e);
                                 }
 
                                 routine.handler().updateIdx(msg.updateIdxs());
