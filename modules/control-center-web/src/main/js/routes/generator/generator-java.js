@@ -1578,9 +1578,11 @@ $generatorJava.clusterSsl = function(cluster, res) {
         res = $generatorCommon.builder();
 
     if (cluster.sslEnabled && $commonUtils.isDefined(cluster.sslContextFactory)) {
-        cluster.sslContextFactory.keyStorePassword = 'props.getProperty("ssl.key.storage.password").toCharArray()';
 
-        cluster.sslContextFactory.trustStorePassword = ($commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath)) ?
+        cluster.sslContextFactory.keyStorePassword = $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.keyStoreFilePath) ?
+            'props.getProperty("ssl.key.storage.password").toCharArray()' : undefined;
+
+        cluster.sslContextFactory.trustStorePassword = $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath) ?
             'props.getProperty("ssl.trust.storage.password").toCharArray()' : undefined;
 
         var propsDesc = $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustManagers) ?
@@ -1588,7 +1590,7 @@ $generatorJava.clusterSsl = function(cluster, res) {
             $generatorCommon.SSL_CONFIGURATION_TRUST_FILE_FACTORY.fields;
 
         $generatorJava.beanProperty(res, 'cfg', cluster.sslContextFactory, 'sslContextFactory', 'sslContextFactory',
-            'org.apache.ignite.ssl.SslContextFactory', propsDesc, false);
+            'org.apache.ignite.ssl.SslContextFactory', propsDesc, true);
 
         res.needEmptyLine = true;
     }

@@ -251,7 +251,7 @@ $generatorCommon.igfsDataCache = function(igfs) {
         atomicityMode: 'TRANSACTIONAL',
         writeSynchronizationMode: 'FULL_SYNC',
         backups: 0,
-        igfsAffinnityGroupSize: igfs.affinnityGroupSize
+        igfsAffinnityGroupSize: igfs.affinnityGroupSize || 512
     };
 };
 

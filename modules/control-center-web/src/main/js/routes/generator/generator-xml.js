@@ -616,16 +616,16 @@ $generatorXml.clusterSsl = function(cluster, res) {
 
     if (cluster.sslEnabled && $commonUtils.isDefined(cluster.sslContextFactory)) {
         cluster.sslContextFactory.keyStorePassword =
-            ($commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.keyStoreFilePath)) ? '${ssl.key.storage.password}' : undefined;
+            $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.keyStoreFilePath) ? '${ssl.key.storage.password}' : undefined;
 
         cluster.sslContextFactory.trustStorePassword =
-            ($commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath)) ? '${ssl.trust.storage.password}' : undefined;
+            $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath) ? '${ssl.trust.storage.password}' : undefined;
 
         var propsDesc = $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustManagers) ?
             $generatorCommon.SSL_CONFIGURATION_TRUST_MANAGER_FACTORY :
             $generatorCommon.SSL_CONFIGURATION_TRUST_FILE_FACTORY;
 
-        $generatorXml.beanProperty(res, cluster.sslContextFactory, 'sslContextFactory', propsDesc, false);
+        $generatorXml.beanProperty(res, cluster.sslContextFactory, 'sslContextFactory', propsDesc, true);
 
         res.needEmptyLine = true;
     }

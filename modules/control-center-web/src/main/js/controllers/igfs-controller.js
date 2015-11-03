@@ -257,9 +257,6 @@ consoleModule.controller('igfsController', [
                 if ($common.isEmptyString(item.name))
                     return showPopoverMessage($scope.panels, 'general', 'igfsName', 'Name should not be empty');
 
-                if (!item.affinnityGroupSize || item.affinnityGroupSize < 1)
-                    return showPopoverMessage($scope.panels, 'general', 'affinnityGroupSize', 'Group size should be specified and more or equal to 1');
-
                 if (!$common.isEmptyString(item.dualModePutExecutorService) &&
                     !$common.isValidJavaClass('Put executor service', item.dualModePutExecutorService, false, 'dualModePutExecutorService', false, $scope.panels, 'dualMode'))
                     return false;
