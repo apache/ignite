@@ -318,6 +318,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create)
+        {
+            return _ignite.GetAtomicSequence(name, initialValue, create);
+        }
+
+        /** <inheritdoc /> */
         public void WritePortable(IPortableWriter writer)
         {
             // No-op.

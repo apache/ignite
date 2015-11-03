@@ -164,5 +164,19 @@ namespace Apache.Ignite.Core
         /// or null if it does not exist and <see cref="create"/> flag is not set.</returns>
         /// <exception cref="IgniteException">If atomic long could not be fetched or created.</exception>
         IAtomicLong GetAtomicLong(string name, long initialValue, bool create);
+
+        /// <summary>
+        /// Gets an atomic sequence with specified name from cache.
+        /// Creates new atomic sequence in cache if it does not exist and <see cref="create"/> is true.
+        /// </summary>
+        /// <param name="name">Name of the atomic sequence.</param>
+        /// <param name="initialValue">
+        /// Initial value for the atomic sequence. Ignored if <see cref="create"/> is false.
+        /// </param>
+        /// <param name="create">Flag indicating whether atomic sequence should be created if it does not exist.</param>
+        /// <returns>Atomic sequence instance with specified name, 
+        /// or null if it does not exist and <see cref="create"/> flag is not set.</returns>
+        /// <exception cref="IgniteException">If atomic sequence could not be fetched or created.</exception>
+        IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create);
     }
 }

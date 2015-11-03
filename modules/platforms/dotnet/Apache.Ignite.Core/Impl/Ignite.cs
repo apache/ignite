@@ -443,6 +443,15 @@ namespace Apache.Ignite.Core.Impl
             return new AtomicLong(nativeLong, Marshaller, name);
         }
 
+        /** <inheritdoc /> */
+        public IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            // TODO:
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Gets internal projection.
         /// </summary>
