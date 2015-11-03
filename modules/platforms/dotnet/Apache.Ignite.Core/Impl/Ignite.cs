@@ -448,8 +448,12 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            // TODO:
-            throw new NotImplementedException();
+            var nativeSeq = UU.ProcessorAtomicSequence(_proc, name, initialValue, create);
+
+            if (nativeSeq == null)
+                return null;
+
+            return new AtomicSequence(nativeSeq, Marshaller, name);
         }
 
         /// <summary>
