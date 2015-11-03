@@ -180,4 +180,14 @@ public interface PlatformProcessor extends GridProcessor {
      * @throws IgniteException
      */
     public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException;
+
+    /**
+     * Get or create AtomicSequence.
+     * @param name Name.
+     * @param initVal Initial value.
+     * @param create Create flag.
+     * @return Platform atomic long.
+     * @throws IgniteException
+     */
+    public PlatformTarget atomicSequence(String name, long initVal, boolean create) throws IgniteException;
 }
