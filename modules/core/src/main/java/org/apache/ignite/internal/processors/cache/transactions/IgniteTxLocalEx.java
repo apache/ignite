@@ -166,5 +166,6 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
         Collection<KeyCacheObject> keys,
         boolean skipVals,
         boolean needVer,
+        boolean keepBinary,
         GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c);
 }

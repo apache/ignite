@@ -432,6 +432,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         final Collection<KeyCacheObject> keys,
         boolean skipVals,
         boolean needVer,
+        boolean keepBinary,
         final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c
     ) {
         assert cacheCtx.isLocal() : cacheCtx.name();
@@ -468,7 +469,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             null,
                             resolveTaskName(),
                             expiryPlc,
-                            txEntry.keepBinary());
+                            txEntry == null ? keepBinary : txEntry.keepBinary());
 
                         if (res == null) {
                             if (misses == null)
@@ -1485,7 +1486,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                         null,
                                         resolveTaskName(),
                                         accessPlc,
-                                        txEntry.keepBinary()) : null;
+                                        !deserializePortable) : null;
 
                                 if (res != null) {
                                     val = res.get1();
@@ -1505,7 +1506,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     null,
                                     resolveTaskName(),
                                     accessPlc,
-                                    txEntry.keepBinary());
+                                    !deserializePortable);
                             }
 
                             if (val != null) {
@@ -1537,7 +1538,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 -1L,
                                 null,
                                 skipStore,
-                                keepCacheObjects);
+                                !deserializePortable);
 
                             // As optimization, mark as checked immediately
                             // for non-pessimistic if value is not null.
@@ -1661,6 +1662,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 missedMap.keySet(),
                 skipVals,
                 needReadVer,
+                !deserializePortable,
                 new GridInClosure3<KeyCacheObject, Object, GridCacheVersion>() {
                     @Override public void apply(KeyCacheObject key, Object val, GridCacheVersion loadVer) {
                         if (isRollbackOnly()) {
@@ -2169,7 +2171,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                                 entryProcessor,
                                                 resolveTaskName(),
                                                 null,
-                                                txEntry.keepBinary()) : null;
+                                                keepBinary) : null;
 
                                         if (res != null) {
                                             old = res.get1();
@@ -2189,7 +2191,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             entryProcessor,
                                             resolveTaskName(),
                                             null,
-                                            txEntry.keepBinary());
+                                            keepBinary);
                                     }
                                 }
                                 catch (ClusterTopologyCheckedException e) {
@@ -2412,6 +2414,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 missedForLoad,
                 skipVals,
                 needReadVer,
+                keepBinary,
                 new GridInClosure3<KeyCacheObject, Object, GridCacheVersion>() {
                     @Override public void apply(KeyCacheObject key,
                         @Nullable Object val,

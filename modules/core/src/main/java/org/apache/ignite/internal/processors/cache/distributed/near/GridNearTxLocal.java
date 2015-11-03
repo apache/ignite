@@ -350,6 +350,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         final Collection<KeyCacheObject> keys,
         boolean skipVals,
         final boolean needVer,
+        boolean keepBinary,
         final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c
     ) {
         if (cacheCtx.isNear()) {
@@ -410,7 +411,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         else {
             assert cacheCtx.isLocal();
 
-            return super.loadMissing(cacheCtx, readThrough, async, keys, skipVals, needVer, c);
+            return super.loadMissing(cacheCtx, readThrough, async, keys, skipVals, keepBinary, needVer, c);
         }
     }
 
