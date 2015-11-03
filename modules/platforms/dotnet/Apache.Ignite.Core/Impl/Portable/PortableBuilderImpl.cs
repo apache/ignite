@@ -694,7 +694,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                             int outSchemaId;
                             short flags;
 
-                            if (outSchema.WriteAndPopSchema(outStream, out outSchemaId, out flags))
+                            var hasSchema = outSchema.WriteAndPopSchema(outStream, out outSchemaId, out flags);
+
+                            if (hasSchema)
                             {
                                 outSchemaOff = schemaPos - outStartPos;
 
@@ -709,7 +711,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                             var outHash = changeHash ? hash : inHeader.HashCode;
 
                             var outHeader = new PortableObjectHeader(inHeader.IsUserType, inHeader.TypeId, outHash,
-                                outLen, outSchemaId, outSchemaOff, outSchema == null, flags);
+                                outLen, outSchemaId, outSchemaOff, !hasSchema, flags);
 
                             PortableObjectHeader.Write(outHeader, outStream, outStartPos);
 
