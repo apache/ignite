@@ -802,16 +802,16 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
     if (cache.indexedTypes && cache.indexedTypes.length > 0) {
         res.emptyLineIfNeeded();
 
-        res.append(varName + '.setIndexedTypes(');
+        res.startBlock(varName + '.setIndexedTypes(');
+
+        var len = cache.indexedTypes.length - 1;
 
         _.forEach(cache.indexedTypes, function(pair, ix) {
-            if (ix > 0)
-                res.append(', ');
-
-            res.append($generatorJava.toJavaCode(res.importClass(pair.keyClass), 'class')).append(', ').append($generatorJava.toJavaCode(res.importClass(pair.valueClass), 'class'))
+            res.line($generatorJava.toJavaCode(res.importClass(pair.keyClass), 'class') + ', ' +
+                $generatorJava.toJavaCode(res.importClass(pair.valueClass), 'class') + (ix < len ? ',' : ''));
         });
 
-        res.line(');');
+        res.endBlock(');');
     }
 
     $generatorJava.multiparamProperty(res, varName, cache, 'sqlFunctionClasses', 'class');
@@ -862,9 +862,9 @@ $generatorJava.cacheStore = function (cache, cacheVarName, res) {
                     switch (storeFactory.dialect) {
                         case 'DB2':
                             res.line('dataSource.setServerName(props.getProperty("' + dataSourceBean + '.jdbc.server_name"));');
-                            res.line('dataSource.setPortNumber(props.getProperty("' + dataSourceBean + '.jdbc.port_number"));');
+                            res.line('dataSource.setPortNumber(Integer.valueOf(props.getProperty("' + dataSourceBean + '.jdbc.port_number")));');
                             res.line('dataSource.setDatabaseName(props.getProperty("' + dataSourceBean + '.jdbc.database_name"));');
-                            res.line('dataSource.setDriverType(props.getProperty("' + dataSourceBean + '.jdbc.driver_type"));');
+                            res.line('dataSource.setDriverType(Integer.valueOf(props.getProperty("' + dataSourceBean + '.jdbc.driver_type")));');
                             break;
 
                         default:
@@ -1578,10 +1578,10 @@ $generatorJava.clusterSsl = function(cluster, res) {
         res = $generatorCommon.builder();
 
     if (cluster.sslEnabled && $commonUtils.isDefined(cluster.sslContextFactory)) {
-        cluster.sslContextFactory.keyStorePassword = 'props.getProperty("ssl.key.storage.password")';
+        cluster.sslContextFactory.keyStorePassword = 'props.getProperty("ssl.key.storage.password").toCharArray()';
 
         cluster.sslContextFactory.trustStorePassword = ($commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath)) ?
-            'props.getProperty("ssl.trust.storage.password")' : undefined;
+            'props.getProperty("ssl.trust.storage.password").toCharArray()' : undefined;
 
         var propsDesc = $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustManagers) ?
             $generatorCommon.SSL_CONFIGURATION_TRUST_MANAGER_FACTORY.fields :
