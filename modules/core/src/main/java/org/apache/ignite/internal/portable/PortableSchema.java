@@ -36,52 +36,28 @@ public class PortableSchema {
     private final HashMap<Integer, Integer> map;
 
     /** ID 1. */
+    private final int id0;
+
+    /** ID 2. */
     private final int id1;
 
-    /** Offset 1. */
-    private final int offset1;
-
-    /** ID 2. */
+    /** ID 3. */
     private final int id2;
 
-    /** Offset 2. */
-    private final int offset2;
-
-    /** ID 3. */
+    /** ID 4. */
     private final int id3;
 
-    /** Offset 3. */
-    private final int offset3;
-
-    /** ID 4. */
+    /** ID 1. */
     private final int id4;
 
-    /** Offset 4. */
-    private final int offset4;
-
-    /** ID 1. */
+    /** ID 2. */
     private final int id5;
 
-    /** Offset 1. */
-    private final int offset5;
-
-    /** ID 2. */
+    /** ID 3. */
     private final int id6;
 
-    /** Offset 2. */
-    private final int offset6;
-
-    /** ID 3. */
-    private final int id7;
-
-    /** Offset 3. */
-    private final int offset7;
-
     /** ID 4. */
-    private final int id8;
-
-    /** Offset 4. */
-    private final int offset8;
+    private final int id7;
 
     /**
      * Constructor.
@@ -97,120 +73,111 @@ public class PortableSchema {
             Map.Entry<Integer, Integer> entry = iter.hasNext() ? iter.next() : null;
 
             if (entry != null) {
+                id0 = entry.getKey();
+
+                assert entry.getValue() == 0;
+            }
+            else
+                id0 = 0;
+
+            if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id1 = entry.getKey();
-                offset1 = entry.getValue();
+
+                assert entry.getValue() == 1;
             }
-            else{
+            else
                 id1 = 0;
-                offset1 = 0;
-            }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id2 = entry.getKey();
-                offset2 = entry.getValue();
+
+                assert entry.getValue() == 2;
             }
-            else{
+            else
                 id2 = 0;
-                offset2 = 0;
-            }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id3 = entry.getKey();
-                offset3 = entry.getValue();
+
+                assert entry.getValue() == 3;
             }
-            else{
+            else
                 id3 = 0;
-                offset3 = 0;
-            }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id4 = entry.getKey();
-                offset4 = entry.getValue();
+
+                assert entry.getValue() == 4;
             }
-            else{
+            else
                 id4 = 0;
-                offset4 = 0;
-            }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id5 = entry.getKey();
-                offset5 = entry.getValue();
+
+                assert entry.getValue() == 5;
             }
-            else{
+            else
                 id5 = 0;
-                offset5 = 0;
-            }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id6 = entry.getKey();
-                offset6 = entry.getValue();
+
+                assert entry.getValue() == 6;
             }
-            else{
+            else
                 id6 = 0;
-                offset6 = 0;
-            }
 
             if ((entry = iter.hasNext() ? iter.next() : null) != null) {
                 id7 = entry.getKey();
-                offset7 = entry.getValue();
-            }
-            else{
-                id7 = 0;
-                offset7 = 0;
-            }
 
-            if ((entry = iter.hasNext() ? iter.next() : null) != null) {
-                id8 = entry.getKey();
-                offset8 = entry.getValue();
+                assert entry.getValue() == 7;
             }
-            else{
-                id8 = 0;
-                offset8 = 0;
-            }
+            else
+                id7 = 0;
 
             map = null;
         }
         else {
             inline = false;
 
-            id1 = id2 = id3 = id4 = id5 = id6 = id7 = id8 = 0;
-            offset1 = offset2 = offset3 = offset4 = offset5 = offset6 = offset7 = offset8 = 0;
+            id0 = id1 = id2 = id3 = id4 = id5 = id6 = id7 = 0;
 
             map = new HashMap<>(vals);
         }
     }
 
     /**
-     * Get offset for the given field ID.
+     * Get field position in footer by schema ID.
      *
      * @param id Field ID.
      * @return Offset or {@code 0} if there is no such field.
      */
-    public int offset(int id) {
+    public int order(int id) {
         if (inline) {
+            if (id == id0)
+                return 0;
+
             if (id == id1)
-                return offset1;
+                return 1;
 
             if (id == id2)
-                return offset2;
+                return 2;
 
             if (id == id3)
-                return offset3;
+                return 3;
 
             if (id == id4)
-                return offset4;
+                return 4;
 
             if (id == id5)
-                return offset5;
+                return 5;
 
             if (id == id6)
-                return offset6;
+                return 6;
 
             if (id == id7)
-                return offset7;
-
-            if (id == id8)
-                return offset8;
+                return 7;
 
             return 0;
         }

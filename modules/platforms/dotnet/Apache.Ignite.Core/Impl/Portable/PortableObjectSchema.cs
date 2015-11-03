@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Collections.Generic;
 
     /// <summary>
-    /// Holds and manages portable object schema for a specific type.
+    /// Holds and manages portable object schemas for a specific type.
     /// </summary>
     internal class PortableObjectSchema
     {
@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="id">Schema id.</param>
         /// <returns>Schema or null.</returns>
-        public int[] GetSchema(int id)
+        public int[] Get(int id)
         {
             if (_schemaId1 == id)
                 return _schema1;
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="id">Schema id.</param>
         /// <param name="schema">Schema.</param>
-        public void AddSchema(int id, int[] schema)
+        public void Add(int id, int[] schema)
         {
             lock (this)
             {

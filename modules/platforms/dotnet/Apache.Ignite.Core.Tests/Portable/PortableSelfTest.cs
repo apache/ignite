@@ -1225,6 +1225,38 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(nDateArr, obj2.NDateArr);
         }
 
+        /// <summary>
+        /// Writes objects of various sizes to test schema compaction 
+        /// (where field offsets can be stored as 1, 2 or 4 bytes).
+        /// </summary>
+        [Test]
+        public void TestCompactSchema()
+        {
+            var marsh = new PortableMarshaller(new PortableConfiguration
+            {
+                TypeConfigurations = new List<PortableTypeConfiguration>
+                {
+                    new PortableTypeConfiguration(typeof (SpecialArray)),
+                    new PortableTypeConfiguration(typeof (SpecialArrayMarshalAware))
+                }
+            });
+
+            var dt = new SpecialArrayMarshalAware();
+
+            foreach (var i in new[] {1, 5, 10, 13, 14, 15, 100, 200, 1000, 5000, 15000, 30000})
+            {
+                dt.NGuidArr = Enumerable.Range(1, i).Select(x => (Guid?) Guid.NewGuid()).ToArray();
+                dt.NDateArr = Enumerable.Range(1, i).Select(x => (DateTime?) DateTime.Now.AddDays(x)).ToArray();
+
+                var bytes = marsh.Marshal(dt);
+
+                var res = marsh.Unmarshal<SpecialArrayMarshalAware>(bytes);
+
+                CollectionAssert.AreEquivalent(dt.NGuidArr, res.NGuidArr);
+                CollectionAssert.AreEquivalent(dt.NDateArr, res.NDateArr);
+            }
+        }
+
         private static void CheckKeepSerialized(PortableConfiguration cfg, bool expKeep)
         {
             if (cfg.TypeConfigurations == null)

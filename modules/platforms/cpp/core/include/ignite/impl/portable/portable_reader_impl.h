@@ -59,7 +59,7 @@ namespace ignite
                  */
                 PortableReaderImpl(interop::InteropInputStream* stream, PortableIdResolver* idRslvr,
                     int32_t pos, bool usrType, int32_t typeId, int32_t hashCode, int32_t len, int32_t rawOff,
-                    int32_t footerBegin, int32_t footerEnd);
+                    int32_t footerBegin, int32_t footerEnd, PortableOffsetType schemaType);
 
                 /**
                  * Constructor used to construct light-weight reader allowing only raw operations 
@@ -788,7 +788,27 @@ namespace ignite
                             else
                                 footerBegin = schemaOrRawOff;
 
-                            int32_t trailingBytes = (len - footerBegin) % 8;
+                            PortableOffsetType schemaType;
+                            int32_t trailingBytes;
+
+                            if (flags & IGNITE_PORTABLE_FLAG_OFFSET_1_BYTE)
+                            {
+                                schemaType = OFFSET_TYPE_1_BYTE;
+
+                                trailingBytes = (len - footerBegin) % 5;
+                            }
+                            else if (flags & IGNITE_PORTABLE_FLAG_OFFSET_2_BYTE)
+                            {
+                                schemaType = OFFSET_TYPE_2_BYTE;
+
+                                trailingBytes = (len - footerBegin) % 6;
+                            }
+                            else
+                            {
+                                schemaType = OFFSET_TYPE_4_BYTE;
+
+                                trailingBytes = (len - footerBegin) % 8;
+                            }
 
                             int32_t footerEnd = len - trailingBytes;
 
@@ -806,7 +826,7 @@ namespace ignite
                             TemplatedPortableIdResolver<T> idRslvr(type);
                             PortableReaderImpl readerImpl(stream, &idRslvr, pos, usrType,
                                                           typeId, hashCode, len, rawOff,
-                                                          footerBegin, footerEnd);
+                                                          footerBegin, footerEnd, schemaType);
                             ignite::portable::PortableReader reader(&readerImpl);
 
                             T val = type.Read(reader);
@@ -886,6 +906,9 @@ namespace ignite
 
                 /** Footer ending position. */
                 int32_t footerEnd;
+
+                /** Object schema type. */
+                PortableOffsetType schemaType;
 
                 IGNITE_NO_COPY_ASSIGNMENT(PortableReaderImpl)
                     
