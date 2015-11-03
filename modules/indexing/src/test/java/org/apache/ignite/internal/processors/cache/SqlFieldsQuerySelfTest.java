@@ -74,8 +74,6 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If error.
      */
     public void testSqlFieldsQueryWithTopologyChanges() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1698");
-
         startGrid(0);
 
         createAndFillCache();

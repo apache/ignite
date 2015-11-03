@@ -27,9 +27,9 @@ import org.yardstickframework.BenchmarkUtils;
 /**
  * Abstract class for Ignite benchmarks which use cache.
  */
-public abstract class IgniteCacheAbstractBenchmark extends IgniteAbstractBenchmark {
+public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractBenchmark {
     /** Cache. */
-    protected IgniteCache<Integer, Object> cache;
+    protected IgniteCache<K, V> cache;
 
     /** */
     private ThreadLocal<ThreadRange> threadRange = new ThreadLocal<>();
@@ -77,7 +77,7 @@ public abstract class IgniteCacheAbstractBenchmark extends IgniteAbstractBenchma
      *
      * @return IgniteCache Cache to use.
      */
-    protected abstract IgniteCache<Integer, Object> cache();
+    protected abstract IgniteCache<K, V> cache();
 
     /**
      *

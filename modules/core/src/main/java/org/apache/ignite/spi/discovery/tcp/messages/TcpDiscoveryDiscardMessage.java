@@ -40,6 +40,7 @@ public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage {
      *
      * @param creatorNodeId Creator node ID.
      * @param msgId Message ID.
+     * @param customMsgDiscard Flag indicating whether the ID to discard is for a custom message or not.
      */
     public TcpDiscoveryDiscardMessage(UUID creatorNodeId, IgniteUuid msgId, boolean customMsgDiscard) {
         super(creatorNodeId);
