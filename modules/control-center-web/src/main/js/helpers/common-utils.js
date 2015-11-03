@@ -79,7 +79,7 @@ $commonUtils.hasAtLeastOneProperty = function (obj, props) {
  * @returns {string} Valid java name.
  */
 $commonUtils.toJavaName = function (prefix, name) {
-    var javaName = name ? name.replace(/[^A-Za-z_0-9]+/, '_') : 'dflt';
+    var javaName = name ? name.replace(/[^A-Za-z_0-9]+/g, '_') : 'dflt';
 
     return prefix + javaName.charAt(0).toLocaleUpperCase() + javaName.slice(1);
 };
