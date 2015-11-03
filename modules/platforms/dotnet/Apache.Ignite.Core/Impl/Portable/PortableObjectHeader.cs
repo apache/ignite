@@ -306,10 +306,13 @@ namespace Apache.Ignite.Core.Impl.Portable
             Debug.Assert(fields != null);
             Debug.Assert(stream != null);
             Debug.Assert(count > 0);
+            Debug.Assert(offset >= 0);
+            Debug.Assert(offset < fields.Length);
 
             unchecked
             {
-                var maxFieldOffset = fields[offset + count].Offset;
+                // Last field is the farthest in the stream
+                var maxFieldOffset = fields[offset + count - 1].Offset;
 
                 if (maxFieldOffset <= byte.MaxValue)
                 {
