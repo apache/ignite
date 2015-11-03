@@ -91,7 +91,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 5 * 60_000;
+        return 10 * 60_000;
     }
 
     /**
@@ -114,6 +114,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
 
     /**
      * Executes one test iteration.
+     *
      * @throws Exception If failed.
      */
     private void doTestFailover() throws Exception {
