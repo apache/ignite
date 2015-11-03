@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
     public class AtomicSequenceTest : IgniteTestBase
     {
         /** */
-        private const string AtomicSeqName = "testAtomicSeqLong";
+        private const string AtomicSeqName = "testAtomicSeq";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AtomicSequenceTest"/> class.
@@ -42,19 +42,18 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             base.TestSetUp();
 
             // Close test atomic if there is any
-            //Grid.GetAtomicSequence(AtomicSeqName, 0, true).Close();
+            Grid.GetAtomicSequence(AtomicSeqName, 0, true).Close();
         }
 
         /// <summary>
-        /// Tests lifecycle of the AtomicLong.
+        /// Tests lifecycle of the AtomicSequence.
         /// </summary>
         [Test]
         public void TestCreateClose()
         {
             Assert.IsNull(Grid.GetAtomicSequence(AtomicSeqName, 10, false));
 
-            /*
-            // Nonexistent long returns null
+            // Nonexistent atomic returns null
             Assert.IsNull(Grid.GetAtomicSequence(AtomicSeqName, 10, false));
 
             // Create new
@@ -81,7 +80,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             Assert.AreEqual(true, al2.IsClosed());
             Assert.AreEqual(true, al3.IsClosed());
 
-            Assert.IsNull(Grid.GetAtomicSequence(AtomicSeqName, 10, false));*/
+            Assert.IsNull(Grid.GetAtomicSequence(AtomicSeqName, 10, false));
         }
 
         /// <summary>
@@ -90,7 +89,6 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         [Test]
         public void TestModify()
         {
-            /*
             var atomics = Enumerable.Range(1, 10)
                 .Select(x => Grid.GetAtomicSequence(AtomicSeqName, 5, true)).ToList();
 
@@ -99,20 +97,11 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             Assert.AreEqual(10, atomics[0].Add(5));
             atomics.ForEach(x => Assert.AreEqual(10, x.Read()));
 
-            Assert.AreEqual(10, atomics[0].CompareExchange(33, 10));  // successful exchange
-            atomics.ForEach(x => Assert.AreEqual(33, x.Read()));
+            Assert.AreEqual(11, atomics[0].Increment());
+            atomics.ForEach(x => Assert.AreEqual(11, x.Read()));
 
-            Assert.AreEqual(33, atomics[0].CompareExchange(44, 10));  // failed exchange
-            atomics.ForEach(x => Assert.AreEqual(33, x.Read()));
-
-            Assert.AreEqual(33, atomics[0].Exchange(42));
-            atomics.ForEach(x => Assert.AreEqual(42, x.Read()));
-
-            Assert.AreEqual(41, atomics[0].Decrement());
-            atomics.ForEach(x => Assert.AreEqual(41, x.Read()));
-            
-            Assert.AreEqual(42, atomics[0].Increment());
-            atomics.ForEach(x => Assert.AreEqual(42, x.Read()));*/
+            atomics.ForEach(x => x.SetBatchSize(42));
+            atomics.ForEach(x => Assert.AreEqual(42, x.GetBatchSize()));
         }
 
         /// <summary>
@@ -121,7 +110,6 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         [Test]
         public void TestMultithreaded()
         {
-            /*
             const int atomicCnt = 10;
             const int threadCnt = 5;
             const int iterations = 3000;
@@ -137,7 +125,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
                     atomics.ForEach(x => x.Increment());
             }, threadCnt);
 
-            atomics.ForEach(x => Assert.AreEqual(atomicCnt*threadCnt*iterations, x.Read()));*/
+            atomics.ForEach(x => Assert.AreEqual(atomicCnt*threadCnt*iterations, x.Read()));
         }
     }
 }
