@@ -505,8 +505,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     for (IgniteTxEntry txEntry : (near() ? allEntries() : writeEntries())) {
                         GridCacheContext cacheCtx = txEntry.context();
 
-                        U.debug(log, "Will write transactional entry: " + txEntry);
-
                         boolean replicate = cacheCtx.isDrEnabled();
 
                         try {

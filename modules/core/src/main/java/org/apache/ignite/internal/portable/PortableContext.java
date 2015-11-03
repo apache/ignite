@@ -496,10 +496,6 @@ public class PortableContext implements Externalizable {
             if (userType && !ldr.equals(dfltLdr) && (desc = descriptorForTypeId(true, typeId, dfltLdr)) != null)
                 return desc;
 
-            e.printStackTrace();
-
-            U.dumpStack("Failed resolve class for ID: " + typeId);
-
             throw new BinaryObjectException("Failed resolve class for ID: " + typeId, e);
         }
 

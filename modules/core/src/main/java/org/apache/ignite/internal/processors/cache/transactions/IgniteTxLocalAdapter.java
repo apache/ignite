@@ -2076,9 +2076,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             return new GridFinishedFuture<>(e);
         }
 
-        if (!keepBinary)
-            U.dumpStack("Writing to cache without keepBinary: " + keys);
-
         Set<KeyCacheObject> skipped = null;
 
         boolean rmv = lookup == null && invokeMap == null;

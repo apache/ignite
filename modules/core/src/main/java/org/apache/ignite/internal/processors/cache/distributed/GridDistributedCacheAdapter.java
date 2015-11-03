@@ -395,8 +395,6 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                     dataLdr.skipStore(skipStore);
                     dataLdr.keepBinary(keepBinary);
 
-                    U.debug("Will use streamer [skipStore=" + skipStore + ", keepBinary=" + keepBinary + ']');
-
                     dataLdr.receiver(DataStreamerCacheUpdaters.<KeyCacheObject, Object>batched());
 
                     for (int part : ctx.affinity().primaryPartitions(ctx.localNodeId(), topVer)) {
