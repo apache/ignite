@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+var fs = require('fs');
 var express = require('express');
 var compress = require('compression');
 var path = require('path');
@@ -52,8 +53,21 @@ app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 // Views engine setup.
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+app.set('views', path.join(__dirname, 'build'));
+// app.set("view options", {layout: false});
+// app.use(express.static(__dirname + '/dist'));
+
+// app.set('views', path.join(__dirname, 'dist'));
+app.engine('html', require('ejs').renderFile);
+// app.register('html', {
+//     compile: function(str) {
+//         return function() {
+//             return str;
+//         }
+//     }
+// })
+// app.set('view engine', 'jade');
+app.set('view engine', 'html');
 
 // Site favicon.
 app.use(favicon(__dirname + '/public/favicon.ico'));
