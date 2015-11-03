@@ -45,14 +45,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Handles. */
         private PortableReaderHandleDictionary _hnds;
 
-        /** Current type ID. */
-        private int _curTypeId;
-
         /** Current position. */
         private int _curPos;
-
-        /** Current raw data offset. */
-        private int _curRawOffset;
 
         /** Current raw flag. */
         private bool _curRaw;
@@ -66,14 +60,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Current type structure tracker. */
         private PortableStructureTracker _curStruct;
 
-        /** */
-        private int _curFooterStart;
-
-        /** */
-        private int _curFooterEnd;
-
-        /** */
+        /** Current schema. */
         private int[] _curSchema;
+
+        /** Current schema with positions. */
+        private Dictionary<int, int> _curSchemaMap;
+
+        /** Current header. */
+        private PortableObjectHeader _curHdr;
 
         /// <summary>
         /// Constructor.
@@ -432,9 +426,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (_curRaw)
                 throw new PortableException("Cannot read named fields after raw data is read.");
 
-            int fieldId = _curStruct.GetFieldId(fieldName);
-
-            if (SeekField(fieldId))
+            if (SeekField(fieldName))
                 return Deserialize<T>();
 
             return default(T);
@@ -669,31 +661,26 @@ namespace Apache.Ignite.Core.Impl.Portable
                                                     desc.TypeId + ", typeName=" + desc.TypeName + ']');
 
                     // Preserve old frame.
-                    int oldTypeId = _curTypeId;
+                    var oldHdr = _curHdr;
                     int oldPos = _curPos;
-                    int oldRawOffset = _curRawOffset;
                     var oldStruct = _curStruct;
                     bool oldRaw = _curRaw;
-                    var oldFooterStart = _curFooterStart;
-                    var oldFooterEnd = _curFooterEnd;
                     var oldSchema = _curSchema;
+                    var oldSchemaMap = _curSchemaMap;
 
                     // Set new frame.
-                    _curTypeId = hdr.TypeId;
+                    _curHdr = hdr;
                     _curPos = pos;
-                    _curFooterEnd = hdr.GetSchemaEnd(pos);
-                    _curFooterStart = hdr.GetSchemaStart(pos);
                     
-                    _curSchema = desc.Schema.GetSchema(hdr.SchemaId);
+                    _curSchema = desc.Schema.Get(hdr.SchemaId);
 
                     if (_curSchema == null)
                     {
                         _curSchema = ReadSchema();
 
-                        desc.Schema.AddSchema(hdr.SchemaId, _curSchema);
+                        desc.Schema.Add(hdr.SchemaId, _curSchema);
                     }
 
-                    _curRawOffset = hdr.GetRawOffset(Stream, pos);
                     _curStruct = new PortableStructureTracker(desc, desc.ReaderTypeStructure);
                     _curRaw = false;
 
@@ -727,14 +714,12 @@ namespace Apache.Ignite.Core.Impl.Portable
                     _curStruct.UpdateReaderStructure();
 
                     // Restore old frame.
-                    _curTypeId = oldTypeId;
+                    _curHdr = oldHdr;
                     _curPos = oldPos;
-                    _curRawOffset = oldRawOffset;
                     _curStruct = oldStruct;
                     _curRaw = oldRaw;
-                    _curFooterStart = oldFooterStart;
-                    _curFooterEnd = oldFooterEnd;
                     _curSchema = oldSchema;
+                    _curSchemaMap = oldSchemaMap;
 
                     // Process wrappers. We could introduce a common interface, but for only 2 if-else is faster.
                     var wrappedSerializable = obj as SerializableObjectHolder;
@@ -762,21 +747,22 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private int[] ReadSchema()
         {
-            Stream.Seek(_curFooterStart, SeekOrigin.Begin);
-            
-            var count = (_curFooterEnd - _curFooterStart) >> 3;
-            
+            Stream.Seek(_curPos + _curHdr.SchemaOffset, SeekOrigin.Begin);
+
+            var count = _curHdr.SchemaFieldCount;
+
+            var offsetSize = _curHdr.SchemaFieldOffsetSize;
+
             var res = new int[count];
 
             for (int i = 0; i < count; i++)
             {
                 res[i] = Stream.ReadInt();
-                Stream.Seek(4, SeekOrigin.Current);
+                Stream.Seek(offsetSize, SeekOrigin.Current);
             }
 
             return res;
         }
-
         /// <summary>
         /// Reads the handle object.
         /// </summary>
@@ -846,35 +832,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 _curRaw = true;
 
-                Stream.Seek(_curPos + _curRawOffset, SeekOrigin.Begin);
+                Stream.Seek(_curPos + _curHdr.GetRawOffset(Stream, _curPos), SeekOrigin.Begin);
             }
-        }
-
-        /// <summary>
-        /// Seek field with the given ID in the current object.
-        /// </summary>
-        /// <param name="fieldId">Field ID.</param>
-        /// <returns>True in case the field was found and position adjusted, false otherwise.</returns>
-        private bool SeekField(int fieldId)
-        {
-            Stream.Seek(_curFooterStart, SeekOrigin.Begin);
-
-            while (Stream.Position < _curFooterEnd)
-            {
-                var id = Stream.ReadInt();
-
-                if (id == fieldId)
-                {
-                    var fieldOffset = Stream.ReadInt();
-
-                    Stream.Seek(_curPos + fieldOffset, SeekOrigin.Begin);
-                    return true;
-                }
-
-                Stream.Seek(4, SeekOrigin.Current);
-            }
-
-            return false;
         }
 
         /// <summary>
@@ -899,8 +858,23 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private bool SeekField(string fieldName, byte expHdr)
         {
+            if (!SeekField(fieldName)) 
+                return false;
+
+            // Expected read order, no need to seek.
+            return IsNotNullHeader(expHdr);
+        }
+
+        /// <summary>
+        /// Seeks the field by name.
+        /// </summary>
+        private bool SeekField(string fieldName)
+        {
             if (_curRaw)
                 throw new PortableException("Cannot read named fields after raw data is read.");
+
+            if (_curHdr.IsRawOnly)
+                return false;
 
             var actionId = _curStruct.CurStructAction;
 
@@ -908,14 +882,19 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (_curSchema == null || actionId >= _curSchema.Length || fieldId != _curSchema[actionId])
             {
-                _curSchema = null;   // read order is different, ignore schema for future reads
+                _curSchema = null; // read order is different, ignore schema for future reads
 
-                if (!SeekField(fieldId))
+                _curSchemaMap = _curSchemaMap ?? _curHdr.ReadSchemaAsDictionary(Stream, _curPos);
+
+                int pos;
+
+                if (!_curSchemaMap.TryGetValue(fieldId, out pos))
                     return false;
+
+                Stream.Seek(pos, SeekOrigin.Begin);
             }
 
-            // Expected read order, no need to seek.
-            return IsNotNullHeader(expHdr);
+            return true;
         }
 
         /// <summary>

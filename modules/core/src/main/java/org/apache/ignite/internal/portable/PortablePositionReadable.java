@@ -22,6 +22,14 @@ package org.apache.ignite.internal.portable;
  */
 public interface PortablePositionReadable {
     /**
+     * Read byte at the given position.
+     *
+     * @param pos Position.
+     * @return Value.
+     */
+    public byte readBytePositioned(int pos);
+
+    /**
      * Read short at the given position.
      *
      * @param pos Position.

@@ -567,13 +567,12 @@ namespace ignite
             {
                 int32_t lenWithoutSchema = stream->Position() - start;
 
+                int32_t nonRawLen = rawPos == -1 ? lenWithoutSchema : rawPos - start;
+                
                 if (schema.Empty())
                 {
-                    InteropStreamPositionGuard<InteropOutputStream> guard(*stream);
-
-                    stream->Position(start + IGNITE_OFFSET_FLAGS);
-                    stream->WriteInt16(IGNITE_PORTABLE_FLAG_USER_OBJECT | IGNITE_PORTABLE_FLAG_RAW_ONLY);
-
+                    stream->WriteInt16(start + IGNITE_OFFSET_FLAGS, IGNITE_PORTABLE_FLAG_USER_OBJECT | 
+                                                                    IGNITE_PORTABLE_FLAG_RAW_ONLY);
                     stream->WriteInt32(start + IGNITE_OFFSET_LEN, lenWithoutSchema);
                     stream->WriteInt32(start + IGNITE_OFFSET_SCHEMA_ID, 0);
                     stream->WriteInt32(start + IGNITE_OFFSET_SCHEMA_OR_RAW_OFF, GetRawPosition() - start);
@@ -581,6 +580,7 @@ namespace ignite
                 else
                 {
                     int32_t schemaId = schema.GetId();
+                    PortableOffsetType schemaType = schema.GetType();
 
                     WriteAndClearSchema();
 
@@ -588,6 +588,17 @@ namespace ignite
                         stream->WriteInt32(rawPos - start);
 
                     int32_t length = stream->Position() - start;
+
+                    if (schemaType == OFFSET_TYPE_1_BYTE)
+                    {
+                        stream->WriteInt16(start + IGNITE_OFFSET_FLAGS, 
+                            IGNITE_PORTABLE_FLAG_USER_OBJECT | IGNITE_PORTABLE_FLAG_OFFSET_1_BYTE);
+                    }
+                    else if (schemaType == OFFSET_TYPE_2_BYTE)
+                    {
+                        stream->WriteInt16(start + IGNITE_OFFSET_FLAGS, 
+                            IGNITE_PORTABLE_FLAG_USER_OBJECT | IGNITE_PORTABLE_FLAG_OFFSET_2_BYTE);
+                    }
 
                     stream->WriteInt32(start + IGNITE_OFFSET_LEN, length);
                     stream->WriteInt32(start + IGNITE_OFFSET_SCHEMA_ID, schemaId);

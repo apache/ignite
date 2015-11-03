@@ -524,12 +524,17 @@ public class PortableClassDescriptor {
 
             case PORTABLE:
                 if (writeHeader(obj, writer)) {
-                    if (serializer != null)
-                        serializer.writePortable(obj, writer);
-                    else
-                        ((PortableMarshalAware)obj).writePortable(writer);
+                    try {
+                        if (serializer != null)
+                            serializer.writePortable(obj, writer);
+                        else
+                            ((PortableMarshalAware) obj).writePortable(writer);
 
-                    writer.postWrite(userType);
+                        writer.postWrite(userType);
+                    }
+                    finally {
+                        writer.popSchema();
+                    }
 
                     if (obj.getClass() != PortableMetaDataImpl.class
                         && ctx.isMetaDataChanged(typeId, writer.metaDataHashSum())) {
@@ -552,22 +557,30 @@ public class PortableClassDescriptor {
 
                     try {
                         ((Externalizable)obj).writeExternal(writer);
+
+                        writer.postWrite(userType);
                     }
                     catch (IOException e) {
                         throw new PortableException("Failed to write Externalizable object: " + obj, e);
                     }
-
-                    writer.postWrite(userType);
+                    finally {
+                        writer.popSchema();
+                    }
                 }
 
                 break;
 
             case OBJECT:
                 if (writeHeader(obj, writer)) {
-                    for (FieldInfo info : fields)
-                        info.write(obj, writer);
+                    try {
+                        for (FieldInfo info : fields)
+                            info.write(obj, writer);
 
-                    writer.postWrite(userType);
+                        writer.postWrite(userType);
+                    }
+                    finally {
+                        writer.popSchema();
+                    }
                 }
 
                 break;

@@ -166,7 +166,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             var len = PortableObjectHeader.Size;
 
-            var hdr = new PortableObjectHeader(desc.UserType, desc.TypeId, 0, len, 0, len, true);
+            var hdr = new PortableObjectHeader(desc.UserType, desc.TypeId, 0, len, 0, len, true, 0);
 
             var stream = new PortableHeapStream(len);
 

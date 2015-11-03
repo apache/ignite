@@ -1802,7 +1802,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Struct with .Net-style Guid memory layout.
         /// </summary>
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 0)]
         private struct GuidAccessor
         {
             public readonly ulong ABC;
@@ -1826,7 +1826,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Struct with Java-style Guid memory layout.
         /// </summary>
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 0)]
         private struct JavaGuid
         {
             public readonly ulong CBA;
