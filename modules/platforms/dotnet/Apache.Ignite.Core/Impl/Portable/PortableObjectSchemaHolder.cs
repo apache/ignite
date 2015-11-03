@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="id">The identifier.</param>
         /// <param name="offset">The offset.</param>
-        public void Push(int id, int offset)
+        public void PushField(int id, int offset)
         {
             if (_idx == _fields.Length)
                 Array.Resize(ref _fields, _fields.Length * 2);
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Pops the current schema and discards it.
         /// </summary>
-        public void PopSchema()
+        public void DiscardSchema()
         {
             _idx = _offsets.Pop();
         }
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="stream">The stream.</param>
         /// <param name="schemaId">The schema identifier.</param>
         /// <returns>True if current schema was non empty; false otherwise.</returns>
-        public bool WriteAndPop(IPortableStream stream, out int schemaId)
+        public bool WriteAndPopSchema(IPortableStream stream, out int schemaId)
         {
             var offset = _offsets.Pop();
 

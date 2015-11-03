@@ -1090,7 +1090,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 }
                 catch (Exception)
                 {
-                    _schema.PopSchema();
+                    _schema.DiscardSchema();
                     throw;
                 }
 
@@ -1098,7 +1098,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 var schemaOffset = _stream.Position - pos;
 
                 int schemaId;
-                var hasSchema = _schema.WriteAndPop(_stream, out schemaId);
+                var hasSchema = _schema.WriteAndPopSchema(_stream, out schemaId);
 
                 if (!hasSchema)
                     schemaOffset = PortableObjectHeader.Size;
@@ -1378,7 +1378,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var fieldId = _curStruct.GetFieldId(fieldName, fieldTypeId);
 
-            _schema.Push(fieldId, _stream.Position - _curPos);
+            _schema.PushField(fieldId, _stream.Position - _curPos);
         }
 
         /// <summary>

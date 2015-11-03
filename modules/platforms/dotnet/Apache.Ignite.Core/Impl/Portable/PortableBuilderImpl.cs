@@ -645,7 +645,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                                     if (fieldFound && fieldVal == PortableBuilderField.RmvMarker)
                                         continue;
 
-                                    outSchema.Push(inField.Id, outStream.Position - outStartPos);
+                                    outSchema.PushField(inField.Id, outStream.Position - outStartPos);
 
                                     if (!fieldFound)
                                         fieldFound = _parent._cache != null &&
@@ -674,7 +674,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                                 if (valEntry.Value == PortableBuilderField.RmvMarker)
                                     continue;
 
-                                outSchema.Push(valEntry.Key, outStream.Position - outStartPos);
+                                outSchema.PushField(valEntry.Key, outStream.Position - outStartPos);
 
                                 WriteField(ctx, valEntry.Value);
                             }
@@ -693,7 +693,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                             var schemaPos = outStream.Position;
                             int outSchemaId;
 
-                            if (outSchema.WriteAndPop(outStream, out outSchemaId))
+                            if (outSchema.WriteAndPopSchema(outStream, out outSchemaId))
                             {
                                 outSchemaOff = schemaPos - outStartPos;
 
@@ -717,7 +717,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         finally 
                         {
                             if (schemaPushed)
-                                outSchema.PopSchema();
+                                outSchema.DiscardSchema();
                         }
                     }
                 }
