@@ -348,6 +348,17 @@ namespace ignite
                 jmethodID m_PlatformAtomicLong_isClosed;
                 jmethodID m_PlatformAtomicLong_close;
 
+                jclass c_PlatformAtomicSequence;
+                jmethodID m_PlatformAtomicSequence_get;
+                jmethodID m_PlatformAtomicSequence_incrementAndGet;
+                jmethodID m_PlatformAtomicSequence_getAndIncrement;
+                jmethodID m_PlatformAtomicSequence_addAndGet;
+                jmethodID m_PlatformAtomicSequence_getAndAdd;
+                jmethodID m_PlatformAtomicSequence_getBatchSize;
+                jmethodID m_PlatformAtomicSequence_setBatchSize;
+                jmethodID m_PlatformAtomicSequence_removed;
+                jmethodID m_PlatformAtomicSequence_close;
+
                 /**
                  * Constructor.
                  */
@@ -590,6 +601,16 @@ namespace ignite
                 long long AtomicLongCompareAndSetAndGet(jobject obj, long long expVal, long long newVal);
                 bool AtomicLongIsClosed(jobject obj);
                 void AtomicLongClose(jobject obj);
+
+                long long AtomicSequenceGet(jobject obj);
+                long long AtomicSequenceIncrementAndGet(jobject obj);
+                long long AtomicSequenceGetAndIncrement(jobject obj);
+                long long AtomicSequenceAddAndGet(jobject obj, long long l);
+                long long AtomicSequenceGetAndAdd(jobject obj, long long l);
+                int AtomicSequenceGetBatchSize(jobject obj);
+                void AtomicSequenceSetBatchSize(jobject obj, int size);
+                bool AtomicSequenceRemoved(jobject obj);
+                void AtomicSequenceClose(jobject obj);
 
                 jobject Acquire(jobject obj);
 

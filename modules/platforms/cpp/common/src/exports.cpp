@@ -462,4 +462,40 @@ extern "C" {
     void IGNITE_CALL IgniteAtomicLongClose(gcj::JniContext* ctx, void* obj) {
         return ctx->AtomicLongClose(static_cast<jobject>(obj));
     }
+
+    long long IGNITE_CALL IgniteAtomicSequenceGet(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicSequenceGet(static_cast<jobject>(obj));
+    }
+
+    long long IGNITE_CALL IgniteAtomicSequenceIncrementAndGet(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicSequenceIncrementAndGet(static_cast<jobject>(obj));
+    }
+
+    long long IGNITE_CALL IgniteAtomicSequenceGetAndIncrement(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicSequenceGetAndIncrement(static_cast<jobject>(obj));
+    }
+
+    long long IGNITE_CALL IgniteAtomicSequenceAddAndGet(gcj::JniContext* ctx, void* obj, long long l) {
+        return ctx->AtomicSequenceAddAndGet(static_cast<jobject>(obj), l);
+    }
+
+    long long IGNITE_CALL IgniteAtomicSequenceGetAndAdd(gcj::JniContext* ctx, void* obj, long long l) {
+        return ctx->AtomicSequenceGetAndAdd(static_cast<jobject>(obj), l);
+    }
+
+    int IGNITE_CALL IgniteAtomicSequenceGetBatchSize(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicSequenceGetBatchSize(static_cast<jobject>(obj));
+    }
+
+    void IGNITE_CALL IgniteAtomicSequenceSetBatchSize(gcj::JniContext* ctx, void* obj, int size) {
+        return ctx->AtomicSequenceSetBatchSize(static_cast<jobject>(obj), size);
+    }
+
+    bool IGNITE_CALL IgniteAtomicSequenceRemoved(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicSequenceRemoved(static_cast<jobject>(obj));
+    }
+
+    void IGNITE_CALL IgniteAtomicSequenceClose(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicSequenceClose(static_cast<jobject>(obj));
+    }
 }

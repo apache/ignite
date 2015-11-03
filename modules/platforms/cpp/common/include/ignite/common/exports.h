@@ -154,6 +154,16 @@ extern "C" {
     long long IGNITE_CALL IgniteAtomicLongCompareAndSetAndGet(gcj::JniContext* ctx, void* obj, long long expVal, long long newVal);
     bool IGNITE_CALL IgniteAtomicLongIsClosed(gcj::JniContext* ctx, void* obj);
     void IGNITE_CALL IgniteAtomicLongClose(gcj::JniContext* ctx, void* obj);
+
+    long long IGNITE_CALL IgniteAtomicSequenceGet(gcj::JniContext* ctx, void* obj);
+    long long IGNITE_CALL IgniteAtomicSequenceIncrementAndGet(gcj::JniContext* ctx, void* obj);
+    long long IGNITE_CALL IgniteAtomicSequenceGetAndIncrement(gcj::JniContext* ctx, void* obj);
+    long long IGNITE_CALL IgniteAtomicSequenceAddAndGet(gcj::JniContext* ctx, void* obj, long long l);
+    long long IGNITE_CALL IgniteAtomicSequenceGetAndAdd(gcj::JniContext* ctx, void* obj, long long l);
+    int IGNITE_CALL IgniteAtomicSequenceGetBatchSize(gcj::JniContext* ctx, void* obj);
+    void IGNITE_CALL IgniteAtomicSequenceSetBatchSize(gcj::JniContext* ctx, void* obj, int size);
+    bool IGNITE_CALL IgniteAtomicSequenceRemoved(gcj::JniContext* ctx, void* obj);
+    void IGNITE_CALL IgniteAtomicSequenceClose(gcj::JniContext* ctx, void* obj);
 }
 
 #endif

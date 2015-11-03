@@ -365,6 +365,17 @@ namespace ignite
             JniMethod M_PLATFORM_ATOMIC_LONG_IS_CLOSED = JniMethod("isClosed", "()Z", false);
             JniMethod M_PLATFORM_ATOMIC_LONG_CLOSE = JniMethod("close", "()V", false);
 
+            const char* C_PLATFORM_ATOMIC_SEQUENCE = "org/apache/ignite/internal/processors/platform/datastructures/PlatformAtomicSequence";
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_GET = JniMethod("get", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_INCREMENT_AND_GET = JniMethod("incrementAndGet", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_GET_AND_INCREMENT = JniMethod("getAndIncrement", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_ADD_AND_GET = JniMethod("addAndGet", "(J)J", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_GET_AND_ADD = JniMethod("getAndAdd", "(J)J", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_GET_BATCH_SIZE = JniMethod("getBatchSize", "()I", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_SET_BATCH_SIZE = JniMethod("setBatchSize", "(I)V", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_REMOVED = JniMethod("removed", "()Z", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_CLOSE = JniMethod("close", "()V", false);
+
             /* STATIC STATE. */
             gcc::CriticalSection JVM_LOCK;
             JniJvm JVM;
@@ -654,6 +665,17 @@ namespace ignite
                 m_PlatformAtomicLong_compareAndSetAndGet = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_COMPARE_AND_SET_AND_GET);
                 m_PlatformAtomicLong_isClosed = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_IS_CLOSED);
                 m_PlatformAtomicLong_close = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_CLOSE);
+
+                jclass c_PlatformAtomicSequence = FindClass(env, C_PLATFORM_ATOMIC_SEQUENCE);
+                m_PlatformAtomicSequence_get = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_GET);
+                m_PlatformAtomicSequence_incrementAndGet = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_INCREMENT_AND_GET);
+                m_PlatformAtomicSequence_getAndIncrement = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_GET_AND_INCREMENT);
+                m_PlatformAtomicSequence_addAndGet = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_ADD_AND_GET);
+                m_PlatformAtomicSequence_getAndAdd = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_GET_AND_ADD);
+                m_PlatformAtomicSequence_getBatchSize = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_GET_BATCH_SIZE);
+                m_PlatformAtomicSequence_setBatchSize = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_SET_BATCH_SIZE);
+                m_PlatformAtomicSequence_removed = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_REMOVED);
+                m_PlatformAtomicSequence_close = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_CLOSE);
 
                 // Find utility classes which are not used from context, but are still required in other places.
                 CheckClass(env, C_PLATFORM_NO_CALLBACK_EXCEPTION);
@@ -2028,6 +2050,102 @@ namespace ignite
 
                 ExceptionCheck(env);
             }
+
+            long long JniContext::AtomicSequenceGet(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_get);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicSequenceIncrementAndGet(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_incrementAndGet);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicSequenceGetAndIncrement(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_getAndIncrement);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicSequenceAddAndGet(jobject obj, long long l)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_addAndGet, l);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicSequenceGetAndAdd(jobject obj, long long l)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_getAndAdd, l);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            int JniContext::AtomicSequenceGetBatchSize(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                int res = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_getBatchSize);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            void JniContext::AtomicSequenceSetBatchSize(jobject obj, int size)
+            {
+                JNIEnv* env = Attach();
+
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_setBatchSize, size);
+
+                ExceptionCheck(env);
+            }
+
+            bool JniContext::AtomicSequenceRemoved(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_removed);
+
+                ExceptionCheck(env);
+
+                return res != 0;
+            }
+
+            void JniContext::AtomicSequenceClose(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_close);
+
+                ExceptionCheck(env);
+            }
+
 
 			jobject JniContext::Acquire(jobject obj)
             {
