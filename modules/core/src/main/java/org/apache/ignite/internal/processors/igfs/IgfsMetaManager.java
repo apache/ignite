@@ -1768,7 +1768,7 @@ public class IgfsMetaManager extends IgfsManager {
         while (true) {
             if (busyLock.enterBusy()) {
                 try {
-                    b = new DirectoryChainBuilder(path, props, props);
+                    b = new DirectoryChainBuilder(path, IgfsImpl.DFLT_DIR_META, props);
 
                     // Start TX.
                     IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
@@ -3372,7 +3372,7 @@ public class IgfsMetaManager extends IgfsManager {
         final IgfsPath path,
         final boolean append,
         final boolean overwrite,
-        Map<String, String> dirProps,
+        final Map<String, String> dirProps,
         final int blockSize,
         final @Nullable IgniteUuid affKey,
         final boolean evictExclude,

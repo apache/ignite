@@ -1016,18 +1016,8 @@ public final class IgfsImpl implements IgfsEx {
                     return os;
                 }
 
-                final Map<String, String> dirProps, fileProps;
-
-                if (props == null) {
-                    dirProps = DFLT_DIR_META;
-
-                    fileProps = null;
-                }
-                else
-                    dirProps = fileProps = new HashMap<>(props);
-
-                IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = meta.create(path, false/*append*/, overwrite, dirProps,
-                    cfg.getBlockSize(), affKey, evictExclude(path, true), fileProps);
+                IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = meta.create(path, false/*append*/, overwrite,
+                    DFLT_DIR_META, cfg.getBlockSize(), affKey, evictExclude(path, true), props);
 
                 assert t2 != null;
 
@@ -1044,7 +1034,7 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @Override public IgfsOutputStream append(final IgfsPath path, final int bufSize, final boolean create,
-        @Nullable final Map<String, String> props) {
+        @Nullable final Map<String, String> fileProps) {
         A.notNull(path, "path");
         A.ensure(bufSize >= 0, "bufSize >= 0");
 
@@ -1052,7 +1042,7 @@ public final class IgfsImpl implements IgfsEx {
             @Override public IgfsOutputStream call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Open file for appending [path=" + path + ", bufSize=" + bufSize + ", create=" + create +
-                        ", props=" + props + ']');
+                        ", props=" + fileProps + ']');
 
                 final IgfsMode mode = resolveMode(path);
 
@@ -1087,18 +1077,8 @@ public final class IgfsImpl implements IgfsEx {
                 if (ids.size() == 1)
                     throw new IgfsPathIsDirectoryException("Failed to open file (not a file): " + path);
 
-                final Map<String, String> dirProps, fileProps;
-
-                if (props == null) {
-                    dirProps = DFLT_DIR_META;
-
-                    fileProps = null;
-                }
-                else
-                    dirProps = fileProps = new HashMap<>(props);
-
                 IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = meta.create(path, true/*append*/, false/*overwrite*/,
-                    dirProps, cfg.getBlockSize(), null/*affKey*/, evictExclude(path, true), fileProps);
+                    DFLT_DIR_META, cfg.getBlockSize(), null/*affKey*/, evictExclude(path, true), fileProps);
 
                 assert t2 != null;
 
