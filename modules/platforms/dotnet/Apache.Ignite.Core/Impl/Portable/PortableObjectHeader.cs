@@ -27,17 +27,23 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Portable object header structure.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 0)]
     internal struct PortableObjectHeader : IEquatable<PortableObjectHeader>
     {
-        /** Size, equals to sizeof(PortableObjectHeader) */
+        /** Size, equals to sizeof(PortableObjectHeader). */
         public const int Size = 24;
 
-        /** User type flag */
-        private const int FlagUserType = 0x1;
+        /** User type flag. */
+        public const short FlagUserType = 0x1;
 
-        /** Raw only flag */
-        private const int FlagRawOnly = 0x2;
+        /** Raw only flag. */
+        public const short FlagRawOnly = 0x2;
+
+        /** Byte-sized field offsets flag. */
+        public const short FlagByteOffsets = 0x4;
+
+        /** Short-sized field offsets flag. */
+        public const short FlagShortOffsets = 0x8;
 
         /** Actual header layout */
         public readonly byte Header;        // Header code, always 103 (HdrFull)
@@ -50,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         public readonly int SchemaOffset;   // Schema offset, or raw offset when RawOnly flag is set.
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PortableObjectHeader"/> struct.
+        /// Initializes a new instance of the <see cref="PortableObjectHeader" /> struct.
         /// </summary>
         /// <param name="userType">User type flag.</param>
         /// <param name="typeId">Type ID.</param>
@@ -59,18 +65,23 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="schemaId">Schema ID.</param>
         /// <param name="schemaOffset">Schema offset.</param>
         /// <param name="rawOnly">Raw flag.</param>
-        public PortableObjectHeader(bool userType, int typeId, int hashCode, int length, int schemaId, int schemaOffset, bool rawOnly)
+        /// <param name="flags">The flags.</param>
+        public PortableObjectHeader(bool userType, int typeId, int hashCode, int length, int schemaId, int schemaOffset, 
+            bool rawOnly, short flags)
         {
             Header = PortableUtils.HdrFull;
             Version = PortableUtils.ProtoVer;
 
             Debug.Assert(schemaOffset <= length);
             Debug.Assert(schemaOffset >= Size);
-            
-            Flags = (short) (userType ? FlagUserType : 0);
+
+            if (userType)
+                flags |= FlagUserType;
 
             if (rawOnly)
-                Flags = (short) (Flags | FlagRawOnly);
+                flags |= FlagRawOnly;
+
+            Flags = flags;
 
             TypeId = typeId;
             HashCode = hashCode;
@@ -134,9 +145,34 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             get
             {
-                // Odd amount of records in schema => raw offset is the very last 4 bytes in object.
-                return !IsRawOnly && (((Length - SchemaOffset) >> 2) & 0x1) != 0x0;
+                // Remainder => raw offset is the very last 4 bytes in object.
+                return !IsRawOnly && ((Length - SchemaOffset) % SchemaFieldSize) == 4;
             }
+        }
+
+        /// <summary>
+        /// Gets the size of the schema field offset (1, 2 or 4 bytes).
+        /// </summary>
+        public int SchemaFieldOffsetSize
+        {
+            get
+            {
+                if ((Flags & FlagByteOffsets) == FlagByteOffsets)
+                    return 1;
+
+                if ((Flags & FlagShortOffsets) == FlagShortOffsets)
+                    return 2;
+
+                return 4;
+            }
+        }
+
+        /// <summary>
+        /// Gets the size of the schema field.
+        /// </summary>
+        public int SchemaFieldSize
+        {
+            get { return SchemaFieldOffsetSize + 4; }
         }
 
         /// <summary>
@@ -151,32 +187,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 var schemaSize = Length - SchemaOffset;
 
-                if (HasRawOffset)
-                    schemaSize -= 4;
-
-                return schemaSize >> 3;  // 8 == PortableObjectSchemaField.Size
+                return schemaSize / SchemaFieldSize;
             }
-        }
-
-        /// <summary>
-        /// Gets the schema end.
-        /// </summary>
-        public int GetSchemaEnd(int position)
-        {
-            var res = position + Length;
-
-            if (HasRawOffset)
-                res -= 4;
-
-            return res;
-        }
-
-        /// <summary>
-        /// Gets the schema start.
-        /// </summary>
-        public int GetSchemaStart(int position)
-        {
-            return IsRawOnly ? GetSchemaEnd(position) : position + SchemaOffset;
         }
 
         /// <summary>
@@ -214,10 +226,25 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             stream.Seek(position + SchemaOffset, SeekOrigin.Begin);
 
-            var schema = new Dictionary<int, int>(schemaSize >> 3);
+            var schema = new Dictionary<int, int>(schemaSize);
 
-            for (var i = 0; i < schemaSize; i++)
-                schema.Add(stream.ReadInt(), stream.ReadInt());
+            var offsetSize = SchemaFieldOffsetSize;
+
+            if (offsetSize == 1)
+            {
+                for (var i = 0; i < schemaSize; i++)
+                    schema.Add(stream.ReadInt(), stream.ReadByte());
+            }
+            else if (offsetSize == 2)
+            {
+                for (var i = 0; i < schemaSize; i++)
+                    schema.Add(stream.ReadInt(), stream.ReadShort());
+            }
+            else
+            {
+                for (var i = 0; i < schemaSize; i++)
+                    schema.Add(stream.ReadInt(), stream.ReadInt());
+            }
 
             return schema;
         }
@@ -239,7 +266,98 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             stream.Seek(position + SchemaOffset, SeekOrigin.Begin);
 
-            return PortableObjectSchemaField.ReadArray(stream, schemaSize);
+            var schema = new PortableObjectSchemaField[schemaSize];
+
+            var offsetSize = SchemaFieldOffsetSize;
+
+            if (offsetSize == 1)
+            {
+                for (var i = 0; i < schemaSize; i++)
+                    schema[i] = new PortableObjectSchemaField(stream.ReadInt(), stream.ReadByte());
+            }
+            else if (offsetSize == 2)
+            {
+                for (var i = 0; i < schemaSize; i++)
+                    schema[i] = new PortableObjectSchemaField(stream.ReadInt(), stream.ReadShort());
+            }
+            else
+            {
+                for (var i = 0; i < schemaSize; i++)
+                    schema[i] = new PortableObjectSchemaField(stream.ReadInt(), stream.ReadInt());
+            }
+
+            return schema;
+        }
+
+        /// <summary>
+        /// Writes an array of fields to a stream.
+        /// </summary>
+        /// <param name="fields">Fields.</param>
+        /// <param name="stream">Stream.</param>
+        /// <param name="count">Field count to write.</param>
+        /// <param name="maxOffset">The maximum field offset to determine 
+        /// whether 1, 2 or 4 bytes are needed for offsets.</param>
+        /// <returns>
+        /// Flags according to offset sizes: <see cref="PortableObjectHeader.FlagByteOffsets"/>, 
+        /// <see cref="PortableObjectHeader.FlagShortOffsets"/>, or 0.
+        /// </returns>
+        public static unsafe short WriteSchema(PortableObjectSchemaField[] fields, IPortableStream stream, int count,
+            int maxOffset)
+        {
+            Debug.Assert(fields != null);
+            Debug.Assert(stream != null);
+            Debug.Assert(count > 0);
+
+            unchecked
+            {
+                if (maxOffset <= byte.MaxValue)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        var field = fields[i];
+
+                        stream.WriteInt(field.Id);
+                        stream.WriteByte((byte)field.Offset);
+                    }
+
+                    return FlagByteOffsets;
+                }
+
+                if (maxOffset <= ushort.MaxValue)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        var field = fields[i];
+
+                        stream.WriteInt(field.Id);
+
+                        stream.WriteShort((short)field.Offset);
+                    }
+
+                    return FlagShortOffsets;
+                }
+
+                if (BitConverter.IsLittleEndian)
+                {
+                    fixed (PortableObjectSchemaField* ptr = &fields[0])
+                    {
+                        stream.Write((byte*)ptr, count / PortableObjectSchemaField.Size);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        var field = fields[i];
+
+                        stream.WriteInt(field.Id);
+                        stream.WriteInt(field.Offset);
+                    }
+                }
+
+                return 0;
+            }
+
         }
 
         /// <summary>
@@ -283,6 +401,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                 Debug.Assert(hdr.Version == PortableUtils.ProtoVer);
                 Debug.Assert(hdr.SchemaOffset <= hdr.Length);
                 Debug.Assert(hdr.SchemaOffset >= Size);
+
+                // Only one of the flags can be set
+                var f = hdr.Flags;
+                Debug.Assert((f & (FlagShortOffsets | FlagByteOffsets)) != (FlagShortOffsets | FlagByteOffsets));
 
                 return hdr;
             }

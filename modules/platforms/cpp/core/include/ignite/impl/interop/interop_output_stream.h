@@ -83,6 +83,14 @@ namespace ignite
                 void WriteInt16(const int16_t val);
 
                 /**
+                 * Write signed 16-byte integer at the given position.
+                 *
+                 * @param pos Position.
+                 * @param val Value.
+                 */
+                void WriteInt16(const int32_t pos, const int16_t val);
+
+                /**
                  * Write signed 16-byte integer array.
                  *
                  * @param val Value.

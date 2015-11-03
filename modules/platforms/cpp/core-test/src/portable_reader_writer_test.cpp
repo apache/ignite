@@ -68,9 +68,9 @@ void CheckPrimitive(T val)
     in.Synchronize();
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8;
+    int32_t footerEnd = footerBegin + 5;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
 
     try
@@ -148,9 +148,9 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
         in.Synchronize();
 
         int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-        int32_t footerEnd = footerBegin + 8;
+        int32_t footerEnd = footerBegin + 5;
 
-        PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+        PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
         PortableReader reader(&readerImpl);
 
         in.Position(IGNITE_DFLT_HDR_LEN);
@@ -181,9 +181,9 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
         in.Synchronize();
 
         int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-        int32_t footerEnd = footerBegin + 8;
+        int32_t footerEnd = footerBegin + 5;
 
-        PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+        PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
         PortableReader reader(&readerImpl);
 
         in.Position(IGNITE_DFLT_HDR_LEN);
@@ -218,9 +218,9 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
         in.Synchronize();
 
         int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-        int32_t footerEnd = footerBegin + 8;
+        int32_t footerEnd = footerBegin + 5;
 
-        PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+        PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
         PortableReader reader(&readerImpl);
 
         in.Position(IGNITE_DFLT_HDR_LEN);
@@ -258,9 +258,9 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
         in.Synchronize();
 
         int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-        int32_t footerEnd = footerBegin + 8;
+        int32_t footerEnd = footerBegin + 5;
 
-        PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+        PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
         PortableReader reader(&readerImpl);
 
         in.Position(IGNITE_DFLT_HDR_LEN);
@@ -510,9 +510,9 @@ void CheckCollectionEmpty(CollectionType* colType)
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8 * 2;
+    int32_t footerEnd = footerBegin + 5 * 2;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -600,9 +600,9 @@ void CheckCollection(CollectionType* colType)
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8 * 2;
+    int32_t footerEnd = footerBegin + 5 * 2;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -677,9 +677,9 @@ void CheckCollectionIterators(CollectionType* colType)
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8 * 2;
+    int32_t footerEnd = footerBegin + 5 * 2;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -753,9 +753,9 @@ void CheckMapEmpty(MapType* mapType)
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8 * 2;
+    int32_t footerEnd = footerBegin + 5 * 2;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -846,9 +846,9 @@ void CheckMap(MapType* mapType)
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8 * 2;
+    int32_t footerEnd = footerBegin + 5 * 2;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1028,9 +1028,9 @@ BOOST_AUTO_TEST_CASE(TestGuidNull)
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8;
+    int32_t footerEnd = footerBegin + 5;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
     
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1113,9 +1113,9 @@ BOOST_AUTO_TEST_CASE(TestString) {
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8 * 5;
+    int32_t footerEnd = footerBegin + 5 * 5;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1191,9 +1191,9 @@ BOOST_AUTO_TEST_CASE(TestStringArrayNull)
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8 * 2;
+    int32_t footerEnd = footerBegin + 5 * 2;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1308,9 +1308,9 @@ BOOST_AUTO_TEST_CASE(TestStringArrayEmpty)
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8 * 2;
+    int32_t footerEnd = footerBegin + 5 * 2;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1435,9 +1435,9 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8 * 2;
+    int32_t footerEnd = footerBegin + 5 * 2;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1549,14 +1549,15 @@ BOOST_AUTO_TEST_CASE(TestObject)
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8 * 3;
+    int32_t footerEnd = footerBegin + 5 * 3;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN); 
 
     PortableInner readVal1 = reader.ReadObject<PortableInner>("field1");
+
     BOOST_REQUIRE(writeVal1.GetValue() == readVal1.GetValue());
 
     PortableInner readVal2 = reader.ReadObject<PortableInner>("field2");
@@ -1592,9 +1593,9 @@ BOOST_AUTO_TEST_CASE(TestNestedObject)
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8 * 3;
+    int32_t footerEnd = footerBegin + 5 * 3;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1634,9 +1635,9 @@ BOOST_AUTO_TEST_CASE(TestArrayNull)
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8 * 2;
+    int32_t footerEnd = footerBegin + 5 * 2;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1710,9 +1711,9 @@ BOOST_AUTO_TEST_CASE(TestArrayEmpty)
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8 * 2;
+    int32_t footerEnd = footerBegin + 5 * 2;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1794,9 +1795,9 @@ BOOST_AUTO_TEST_CASE(TestArray)
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8 * 2;
+    int32_t footerEnd = footerBegin + 5 * 2;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1855,9 +1856,9 @@ BOOST_AUTO_TEST_CASE(TestCollectionNull)
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8 * 2;
+    int32_t footerEnd = footerBegin + 5 * 2;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1941,9 +1942,9 @@ BOOST_AUTO_TEST_CASE(TestMapNull)
     InteropInputStream in(&mem);
 
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 8 * 2;
+    int32_t footerEnd = footerBegin + 5 * 2;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -2034,7 +2035,7 @@ BOOST_AUTO_TEST_CASE(TestRawMode)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin;
 
-    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, footerBegin, footerBegin, footerEnd);
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, footerBegin, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
     PortableReader reader(&readerImpl);
     
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -2111,7 +2112,7 @@ BOOST_AUTO_TEST_CASE(TestFieldSeek)
 
     PortableReaderImpl readerImpl(&in, &idRslvr, pos, usrType, 
                                   typeId, hashCode, len, rawOff, 
-                                  footerBegin, footerEnd);
+                                  footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
 
     PortableReader reader(&readerImpl);
 
@@ -2209,6 +2210,164 @@ BOOST_AUTO_TEST_CASE(TestFieldSeek)
 
     PortableMapReader<int32_t, PortableFields> mapReader = reader.ReadMap<int32_t, PortableFields>("missing");
     BOOST_REQUIRE(mapReader.IsNull());
+}
+
+BOOST_AUTO_TEST_CASE(TestSchemaOffset2ByteFields)
+{
+    const int fieldsNum = 64;
+
+    TemplatedPortableIdResolver<PortableDummy> idRslvr;
+
+    InteropUnpooledMemory mem(4096);
+
+    InteropOutputStream out(&mem);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
+    PortableWriter writer(&writerImpl);
+
+    out.Position(IGNITE_DFLT_HDR_LEN);
+
+    for (int i = 0; i < fieldsNum; ++i)
+    {
+        std::stringstream tmp;
+        tmp << "field" << i;
+
+        writer.WriteInt32(tmp.str().c_str(), i * 10);
+    }
+
+    writerImpl.PostWrite();
+
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+
+    int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
+    int32_t footerEnd = footerBegin + 6 * fieldsNum;
+
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_2_BYTE);
+    PortableReader reader(&readerImpl);
+
+    in.Position(IGNITE_DFLT_HDR_LEN);
+
+    for (int i = 0; i < fieldsNum; ++i)
+    {
+        std::stringstream tmp;
+        tmp << "field" << i;
+
+        BOOST_REQUIRE(reader.ReadInt32(tmp.str().c_str()) == i * 10);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(TestSchemaOffset4ByteFields)
+{
+    const int fieldsNum = 0x10000 / 4;
+
+    TemplatedPortableIdResolver<PortableDummy> idRslvr;
+
+    InteropUnpooledMemory mem(1024 * 1024);
+
+    InteropOutputStream out(&mem);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
+    PortableWriter writer(&writerImpl);
+
+    out.Position(IGNITE_DFLT_HDR_LEN);
+
+    for (int i = 0; i < fieldsNum; ++i)
+    {
+        std::stringstream tmp;
+        tmp << "field" << i;
+
+        writer.WriteInt32(tmp.str().c_str(), i * 10);
+    }
+
+    writerImpl.PostWrite();
+
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+
+    int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
+    int32_t footerEnd = footerBegin + 8 * fieldsNum;
+
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_4_BYTE);
+    PortableReader reader(&readerImpl);
+
+    in.Position(IGNITE_DFLT_HDR_LEN);
+
+    for (int i = 0; i < fieldsNum; ++i)
+    {
+        std::stringstream tmp;
+        tmp << "field" << i;
+
+        BOOST_REQUIRE(reader.ReadInt32(tmp.str().c_str()) == i * 10);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(TestSchemaOffset2ByteArray)
+{
+    TemplatedPortableIdResolver<PortableDummy> idRslvr;
+
+    InteropUnpooledMemory mem(4096);
+
+    InteropOutputStream out(&mem);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
+    PortableWriter writer(&writerImpl);
+
+    out.Position(IGNITE_DFLT_HDR_LEN);
+
+    int8_t dummyArray[256] = {};
+
+    writer.WriteInt8Array("field1", dummyArray, sizeof(dummyArray));
+    writer.WriteInt32("field2", 42);
+
+    writerImpl.PostWrite();
+
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+
+    int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
+    int32_t footerEnd = footerBegin + 6 * 2;
+
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_2_BYTE);
+    PortableReader reader(&readerImpl);
+
+    in.Position(IGNITE_DFLT_HDR_LEN);
+
+    BOOST_REQUIRE(reader.ReadInt32("field2") == 42);
+}
+
+BOOST_AUTO_TEST_CASE(TestSchemaOffset4ByteArray)
+{
+    TemplatedPortableIdResolver<PortableDummy> idRslvr;
+
+    InteropUnpooledMemory mem(1024 * 1024);
+
+    InteropOutputStream out(&mem);
+    PortableWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
+    PortableWriter writer(&writerImpl);
+
+    out.Position(IGNITE_DFLT_HDR_LEN);
+
+    int8_t dummyArray[0x10000] = {};
+
+    writer.WriteInt8Array("field1", dummyArray, sizeof(dummyArray));
+    writer.WriteInt32("field2", 42);
+
+    writerImpl.PostWrite();
+
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+
+    int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
+    int32_t footerEnd = footerBegin + 8 * 2;
+
+    PortableReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_4_BYTE);
+    PortableReader reader(&readerImpl);
+
+    in.Position(IGNITE_DFLT_HDR_LEN);
+
+    BOOST_REQUIRE(reader.ReadInt32("field2") == 42);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
