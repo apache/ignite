@@ -720,8 +720,6 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @throws org.apache.ignite.IgniteCheckedException In case of error.
      */
     public void removeAll() throws IgniteCheckedException {
-        U.debug(log, "Will removeAll on platform cache: " + cache.operationContext());
-
         cache.removeAll();
     }
 

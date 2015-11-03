@@ -283,8 +283,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
             Collection<DataStreamerEntry> col = req.entries();
 
-            U.debug(log, "Processing data streamer update request [keepBinary=" + req.keepBinary() + ", keys=" + col + ']');
-
             DataStreamerUpdateJob job = new DataStreamerUpdateJob(ctx,
                 log,
                 req.cacheName(),

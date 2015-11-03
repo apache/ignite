@@ -1255,8 +1255,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             IgniteInternalFuture<Object> fut;
 
             if (isLocNode) {
-                U.dumpStack("Submitting local streamer job [entries=" + entries + ", keepBinary=" + keepBinary + ']');
-
                 fut = ctx.closure().callLocalSafe(
                     new DataStreamerUpdateJob(ctx, log, cacheName, entries, false, skipStore, keepBinary, rcvr), false);
 
@@ -1337,8 +1335,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 if (topVer == null)
                     topVer = ctx.cache().context().exchange().readyAffinityVersion();
-
-                U.debug(log, "Creating data streamer request [keepBinary=" + keepBinary + ']');
 
                 DataStreamerRequest req = new DataStreamerRequest(
                     reqId,

@@ -85,8 +85,6 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
         this.cacheName = cacheName;
         this.ldr = ldr;
         this.keepPortable = keepPortable;
-
-        U.debug(log, "Created platform streamer [keepBinary=" + ldr.keepBinary() + ']');
     }
 
     /** {@inheritDoc}  */
