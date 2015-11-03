@@ -889,10 +889,17 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (ctx.cache() != null && ctx.cache().internalCache(hnd.cacheName()) != null) {
-            Map<Integer, Long> idx = ctx.cache().internalCache(hnd.cacheName()).context().topology().updateCounters();
+        try {
+            if (ctx.cache() != null && ctx.cache().internalCache(hnd.cacheName()) != null) {
+                Map<Integer, Long> idx = ctx.cache().internalCache(hnd.cacheName())
+                    .context().topology().updateCounters();
 
-            req.addUpdateIdxs(idx);
+                req.addUpdateIdxs(idx);
+            }
+        }
+        catch (Exception e) {
+            if (log.isDebugEnabled())
+                log.warning("Failed to load partition counters.", e);
         }
 
         if (err != null)
