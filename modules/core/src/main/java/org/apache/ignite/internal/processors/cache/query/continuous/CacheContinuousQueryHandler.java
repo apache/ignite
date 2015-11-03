@@ -337,7 +337,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
                                     locLsnr.onUpdated(evts);
 
-                                    if (!skipPrimaryCheck)
+                                    if (!internal && !skipPrimaryCheck)
                                         sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
                                 }
                             }
@@ -357,9 +357,11 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                         }
                     }
                     else {
-                        entry.markBackup();
+                        if (!internal) {
+                            entry.markBackup();
 
-                        backupQueue.add(entry);
+                            backupQueue.add(entry);
+                        }
                     }
                 }
                 catch (ClusterTopologyCheckedException ex) {

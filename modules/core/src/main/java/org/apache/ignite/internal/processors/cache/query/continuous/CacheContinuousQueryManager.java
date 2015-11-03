@@ -127,9 +127,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             @Override public void run() {
                 for (CacheContinuousQueryListener lsnr : lsnrs.values())
                     lsnr.acknowledgeBackupOnTimeout(cctx.kernalContext());
-
-                for (CacheContinuousQueryListener lsnr : intLsnrs.values())
-                    lsnr.acknowledgeBackupOnTimeout(cctx.kernalContext());
             }
         }, BACKUP_ACK_FREQ, BACKUP_ACK_FREQ);
     }
@@ -412,9 +409,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      */
     public void beforeExchange(AffinityTopologyVersion topVer) {
         for (CacheContinuousQueryListener lsnr : lsnrs.values())
-            lsnr.flushBackupQueue(cctx.kernalContext(), topVer);
-
-        for (CacheContinuousQueryListener lsnr : intLsnrs.values())
             lsnr.flushBackupQueue(cctx.kernalContext(), topVer);
     }
 
