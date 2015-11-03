@@ -54,19 +54,7 @@ app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 // Views engine setup.
 app.set('views', path.join(__dirname, 'build'));
-// app.set("view options", {layout: false});
-// app.use(express.static(__dirname + '/dist'));
-
-// app.set('views', path.join(__dirname, 'dist'));
 app.engine('html', require('ejs').renderFile);
-// app.register('html', {
-//     compile: function(str) {
-//         return function() {
-//             return str;
-//         }
-//     }
-// })
-// app.set('view engine', 'jade');
 app.set('view engine', 'html');
 
 // Site favicon.
