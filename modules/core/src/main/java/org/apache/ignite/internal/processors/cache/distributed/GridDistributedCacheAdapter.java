@@ -370,8 +370,6 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             if (cache == null)
                 return true;
 
-            U.debug(">>>> Running global remove all job: " + cache.name());
-
             final GridCacheContext<K, V> ctx = cache.context();
 
             ctx.gate().enter();
@@ -396,6 +394,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
                     dataLdr.skipStore(skipStore);
                     dataLdr.keepBinary(keepBinary);
+
+                    U.debug("Will use streamer [skipStore=" + skipStore + ", keepBinary=" + keepBinary + ']');
 
                     dataLdr.receiver(DataStreamerCacheUpdaters.<KeyCacheObject, Object>batched());
 
