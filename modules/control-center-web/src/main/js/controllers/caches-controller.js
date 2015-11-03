@@ -273,7 +273,6 @@ consoleModule.controller('cachesController', [
 
                                         selectFirstItem();
                                     }
-
                                 }
                                 else
                                     selectFirstItem();
