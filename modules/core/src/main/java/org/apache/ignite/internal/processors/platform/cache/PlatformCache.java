@@ -232,7 +232,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (keepPortable)
             return this;
 
-        return new PlatformCache(platformCtx, cache.withSkipStore(), true);
+        return new PlatformCache(platformCtx, cache.withKeepBinary(), true);
     }
 
     /**
