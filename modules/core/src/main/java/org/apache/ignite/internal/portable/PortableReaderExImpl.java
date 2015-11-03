@@ -1614,7 +1614,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 return doReadEnumArray(doReadClass());
 
             case CLASS:
-                return in.readInt();
+                return doReadClass();
 
             case OPTM_MARSH:
                 int len = in.readInt();
