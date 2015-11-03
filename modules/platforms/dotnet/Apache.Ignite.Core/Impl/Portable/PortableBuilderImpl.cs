@@ -627,7 +627,6 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                         var outSchema = PortableObjectSchemaHolder.Current;
                         outSchema.PushSchema();
-                        var schemaPushed = true;
 
                         try
                         {
@@ -694,7 +693,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                             int outSchemaId;
                             short flags;
 
-                            var hasSchema = outSchema.WriteAndPopSchema(outStream, out outSchemaId, out flags);
+                            var hasSchema = outSchema.WriteSchema(outStream, out outSchemaId, out flags);
 
                             if (hasSchema)
                             {
@@ -703,8 +702,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                                 if (inRawLen > 0)
                                     outStream.WriteInt(outRawOff);
                             }
-
-                            schemaPushed = false;
 
                             var outLen = outStream.Position - outStartPos;
 
@@ -717,10 +714,9 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                             outStream.Seek(outStartPos + outLen, SeekOrigin.Begin);  // seek to the end of the object
                         }
-                        finally 
+                        finally
                         {
-                            if (schemaPushed)
-                                outSchema.DiscardSchema();
+                            outSchema.PopSchema();
                         }
                     }
                 }

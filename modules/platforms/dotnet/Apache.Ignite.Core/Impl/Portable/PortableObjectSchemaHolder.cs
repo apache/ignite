@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Pops the current schema and discards it.
         /// </summary>
-        public void DiscardSchema()
+        public void PopSchema()
         {
             _idx = _offsets.Pop();
         }
@@ -90,9 +90,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>
         /// True if current schema was non empty; false otherwise.
         /// </returns>
-        public bool WriteAndPopSchema(IPortableStream stream, out int schemaId, out short flags)
+        public bool WriteSchema(IPortableStream stream, out int schemaId, out short flags)
         {
-            var offset = _offsets.Pop();
+            var offset = _offsets.Peek();
 
             var count = _idx - offset;
 

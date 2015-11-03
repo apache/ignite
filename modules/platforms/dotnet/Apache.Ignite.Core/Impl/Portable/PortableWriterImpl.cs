@@ -1087,35 +1087,34 @@ namespace Apache.Ignite.Core.Impl.Portable
                 {
                     // Write object fields.
                     desc.Serializer.WritePortable(obj, this);
+
+                    // Write schema
+                    var schemaOffset = _stream.Position - pos;
+
+                    int schemaId;
+                    short flags;
+                    var hasSchema = _schema.WriteSchema(_stream, out schemaId, out flags);
+
+                    if (!hasSchema)
+                        schemaOffset = PortableObjectHeader.Size;
+
+                    // Calculate and write header.
+                    if (hasSchema && _curRawPos > 0)
+                        _stream.WriteInt(_curRawPos - pos); // raw offset is in the last 4 bytes
+
+                    var len = _stream.Position - pos;
+
+                    var header = new PortableObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len,
+                        schemaId, schemaOffset, !hasSchema, flags);
+
+                    PortableObjectHeader.Write(header, _stream, pos);
+
+                    Stream.Seek(pos + len, SeekOrigin.Begin); // Seek to the end
                 }
-                catch (Exception)
+                finally
                 {
-                    _schema.DiscardSchema();
-                    throw;
+                    _schema.PopSchema();
                 }
-
-                // Write schema
-                var schemaOffset = _stream.Position - pos;
-
-                int schemaId;
-                short flags;
-                var hasSchema = _schema.WriteAndPopSchema(_stream, out schemaId, out flags);
-
-                if (!hasSchema)
-                    schemaOffset = PortableObjectHeader.Size;
-
-                // Calculate and write header.
-                if (hasSchema && _curRawPos > 0)
-                    _stream.WriteInt(_curRawPos - pos); // raw offset is in the last 4 bytes
-
-                var len = _stream.Position - pos;
-
-                var header = new PortableObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len,
-                    schemaId, schemaOffset, !hasSchema, flags);
-
-                PortableObjectHeader.Write(header, _stream, pos);
-
-                Stream.Seek(pos + len, SeekOrigin.Begin);  // Seek to the end
 
                 // Apply structure updates if any.
                 _curStruct.UpdateWriterStructure(this);
