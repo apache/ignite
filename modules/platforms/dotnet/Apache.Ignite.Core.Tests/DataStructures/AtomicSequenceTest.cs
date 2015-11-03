@@ -55,22 +55,22 @@ namespace Apache.Ignite.Core.Tests.DataStructures
 
             /*
             // Nonexistent long returns null
-            Assert.IsNull(Grid.GetAtomicLong(AtomicSeqName, 10, false));
+            Assert.IsNull(Grid.GetAtomicSequence(AtomicSeqName, 10, false));
 
             // Create new
-            var al = Grid.GetAtomicLong(AtomicSeqName, 10, true);
+            var al = Grid.GetAtomicSequence(AtomicSeqName, 10, true);
             Assert.AreEqual(AtomicSeqName, al.Name);
             Assert.AreEqual(10, al.Read());
             Assert.AreEqual(false, al.IsClosed());
 
             // Get existing with create flag
-            var al2 = Grid.GetAtomicLong(AtomicSeqName, 5, true);
+            var al2 = Grid.GetAtomicSequence(AtomicSeqName, 5, true);
             Assert.AreEqual(AtomicSeqName, al2.Name);
             Assert.AreEqual(10, al2.Read());
             Assert.AreEqual(false, al2.IsClosed());
 
             // Get existing without create flag
-            var al3 = Grid.GetAtomicLong(AtomicSeqName, 5, false);
+            var al3 = Grid.GetAtomicSequence(AtomicSeqName, 5, false);
             Assert.AreEqual(AtomicSeqName, al3.Name);
             Assert.AreEqual(10, al3.Read());
             Assert.AreEqual(false, al3.IsClosed());
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             Assert.AreEqual(true, al2.IsClosed());
             Assert.AreEqual(true, al3.IsClosed());
 
-            Assert.IsNull(Grid.GetAtomicLong(AtomicSeqName, 10, false));*/
+            Assert.IsNull(Grid.GetAtomicSequence(AtomicSeqName, 10, false));*/
         }
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         {
             /*
             var atomics = Enumerable.Range(1, 10)
-                .Select(x => Grid.GetAtomicLong(AtomicSeqName, 5, true)).ToList();
+                .Select(x => Grid.GetAtomicSequence(AtomicSeqName, 5, true)).ToList();
 
             atomics.ForEach(x => Assert.AreEqual(5, x.Read()));
 
@@ -128,7 +128,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
 
             // 10 atomics with same name
             var atomics = Enumerable.Range(1, atomicCnt)
-                .Select(x => Grid.GetAtomicLong(AtomicSeqName, 0, true)).ToList();
+                .Select(x => Grid.GetAtomicSequence(AtomicSeqName, 0, true)).ToList();
 
             // 5 threads increment 30000 times
             TestUtils.RunMultiThreaded(() =>
