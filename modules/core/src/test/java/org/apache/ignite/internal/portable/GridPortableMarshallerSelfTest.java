@@ -47,7 +47,7 @@ import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryTypeIdMapper;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
@@ -83,11 +83,11 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
     /** */
     protected static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, BinaryTypeMetadata meta) {
+        @Override public void addMeta(int typeId, BinaryType meta) {
             // No-op.
         }
 
-        @Override public BinaryTypeMetadata metadata(int typeId) {
+        @Override public BinaryType metadata(int typeId) {
             return null;
         }
     };

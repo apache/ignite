@@ -29,7 +29,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteObjects;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -836,7 +836,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
                     Ignite ignite = e.unwrap(Ignite.class);
 
-                    IgniteObjects portables = ignite.portables();
+                    IgniteBinary portables = ignite.binary();
 
                     BinaryObjectBuilder builder = portables.builder(val);
 

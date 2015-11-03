@@ -20,15 +20,15 @@ package org.apache.ignite.internal.processors.cache.portable;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteObjects;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Extended cache object processor interface with additional methods for portables.
+ * Extended cache object processor interface with additional methods for binary.
  */
 public interface CacheObjectPortableProcessor extends IgniteCacheObjectProcessor {
     /**
@@ -56,7 +56,7 @@ public interface CacheObjectPortableProcessor extends IgniteCacheObjectProcessor
      * @param newMeta New meta data.
      * @throws IgniteException In case of error.
      */
-    public void addMeta(int typeId, final BinaryTypeMetadata newMeta) throws IgniteException;
+    public void addMeta(int typeId, final BinaryType newMeta) throws IgniteException;
 
     /**
      * @param typeId Type ID.
@@ -73,26 +73,26 @@ public interface CacheObjectPortableProcessor extends IgniteCacheObjectProcessor
      * @return Meta data.
      * @throws IgniteException In case of error.
      */
-    @Nullable public BinaryTypeMetadata metadata(int typeId) throws IgniteException;
+    @Nullable public BinaryType metadata(int typeId) throws IgniteException;
 
     /**
      * @param typeIds Type ID.
      * @return Meta data.
      * @throws IgniteException In case of error.
      */
-    public Map<Integer, BinaryTypeMetadata> metadata(Collection<Integer> typeIds) throws IgniteException;
+    public Map<Integer, BinaryType> metadata(Collection<Integer> typeIds) throws IgniteException;
 
     /**
      * @return Metadata for all types.
      * @throws IgniteException In case of error.
      */
-    public Collection<BinaryTypeMetadata> metadata() throws IgniteException;
+    public Collection<BinaryType> metadata() throws IgniteException;
 
     /**
      * @return Portables interface.
      * @throws IgniteException If failed.
      */
-    public IgniteObjects portables() throws IgniteException;
+    public IgniteBinary portables() throws IgniteException;
 
     /**
      * @param obj Original object.

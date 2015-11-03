@@ -36,18 +36,18 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteObjects;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.portable.builder.PortableBuilderEnum;
 import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.portable.mutabletest.GridBinaryMarshalerAwareTestClass;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
-import org.apache.ignite.internal.processors.cache.portable.IgniteObjectsImpl;
+import org.apache.ignite.internal.processors.cache.portable.IgniteBinaryImpl;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -114,8 +114,8 @@ public class GridBinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstrac
     /**
      * @return Portables API.
      */
-    protected IgniteObjects portables() {
-        return grid(0).portables();
+    protected IgniteBinary portables() {
+        return grid(0).binary();
     }
 
     /**
@@ -965,7 +965,7 @@ public class GridBinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstrac
 
         mutableObj.build();
 
-        BinaryTypeMetadata metadata = portables().metadata(TestObjectContainer.class);
+        BinaryType metadata = portables().metadata(TestObjectContainer.class);
 
         assertEquals("String", metadata.fieldTypeName("xx567"));
     }
@@ -981,7 +981,7 @@ public class GridBinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstrac
 
         mutableObj.build();
 
-        BinaryTypeMetadata metadata = portables().metadata(TestObjectContainer.class);
+        BinaryType metadata = portables().metadata(TestObjectContainer.class);
 
         assertEquals("String", metadata.fieldTypeName("xx567"));
     }
@@ -1005,7 +1005,7 @@ public class GridBinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstrac
 
         mutableObj.build();
 
-        BinaryTypeMetadata metadata = portables().metadata(c.getClass());
+        BinaryType metadata = portables().metadata(c.getClass());
 
         assertTrue(metadata.fields().containsAll(Arrays.asList("intField", "intArrField", "arrField", "strField",
             "colField", "mapField", "enumField", "enumArrField")));
@@ -1264,7 +1264,7 @@ public class GridBinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstrac
      * @return Object in portable format.
      */
     private BinaryObject toPortable(Object obj) {
-        return portables().toPortable(obj);
+        return portables().toBinary(obj);
     }
 
     /**
@@ -1281,7 +1281,7 @@ public class GridBinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstrac
      */
     private BinaryObjectBuilderImpl newWrapper(Class<?> aCls) {
         CacheObjectPortableProcessorImpl processor = (CacheObjectPortableProcessorImpl)(
-            (IgniteObjectsImpl)portables()).processor();
+            (IgniteBinaryImpl)portables()).processor();
 
         return new BinaryObjectBuilderImpl(processor.portableContext(), processor.typeId(aCls.getName()),
             aCls.getSimpleName());

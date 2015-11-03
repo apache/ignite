@@ -198,7 +198,7 @@ import org.apache.ignite.internal.util.typedef.F;
     }
 
     /**
-     * Unwraps set with portables.
+     * Unwraps set with binary.
      *
      * @param set Set to unwrap.
      * @return Unwrapped set.

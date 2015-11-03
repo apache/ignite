@@ -28,7 +28,7 @@ import java.util.UUID;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryObject;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,7 +61,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * // Convert instance of MyKey to portable format.
  * // We could also use PortableBuilder to create the key in portable format directly.
- * PortableObject key = grid.portables().toPortable(new MyKey());
+ * PortableObject key = grid.binary().toBinary(new MyKey());
  *
  * PortableObject val = prj.get(key);
  *
@@ -87,7 +87,7 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  * <h1 class="header">Automatic Portable Types</h1>
  * Note that only portable classes are converted to {@link org.apache.ignite.binary.BinaryObject} format. Following
- * classes are never converted (e.g., {@link #toPortable(Object)} method will return original
+ * classes are never converted (e.g., {@link #toBinary(Object)} method will return original
  * object, and instances of these classes will be stored in cache without changes):
  * <ul>
  *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
@@ -112,7 +112,7 @@ import org.jetbrains.annotations.Nullable;
  * <h1 class="header">Building Portable Objects</h1>
  * Ignite comes with {@link org.apache.ignite.binary.BinaryObjectBuilder} which allows to build portable objects dynamically:
  * <pre name=code class=java>
- * PortableBuilder builder = Ignition.ignite().portables().builder();
+ * PortableBuilder builder = Ignition.ignite().binary().builder();
  *
  * builder.typeId("MyObject");
  *
@@ -130,14 +130,14 @@ import org.jetbrains.annotations.Nullable;
  * obj.setFieldA("A");
  * obj.setFieldB(123);
  *
- * PortableObject portableObj = Ignition.ignite().portables().toPortable(obj);
+ * PortableObject portableObj = Ignition.ignite().binary().toBinary(obj);
  * </pre>
  * NOTE: you don't need to convert typed objects to portable format before storing
  * them in cache, Ignite will do that automatically.
  * <h1 class="header">Portable Metadata</h1>
  * Even though Ignite portable protocol only works with hash codes for type and field names
  * to achieve better performance, Ignite provides metadata for all portable types which
- * can be queried ar runtime via any of the {@link IgniteObjects#metadata(Class)}
+ * can be queried ar runtime via any of the {@link IgniteBinary#metadata(Class)}
  * methods. Having metadata also allows for proper formatting of {@code PortableObject#toString()} method,
  * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
  * <h1 class="header">Dynamic Structure Changes</h1>
@@ -150,7 +150,7 @@ import org.jetbrains.annotations.Nullable;
  * As the structure of a portable object changes, the new fields become available for SQL queries
  * automatically.
  * <h1 class="header">Configuration</h1>
- * By default all your objects are considered as portables and no specific configuration is needed.
+ * By default all your objects are considered as binary and no specific configuration is needed.
  * However, in some cases, like when an object is used by both Java and .Net, you may need to specify portable objects
  * explicitly by calling {@link PortableMarshaller#setClassNames(Collection)}.
  * The only requirement Ignite imposes is that your object has an empty
@@ -287,7 +287,7 @@ import org.jetbrains.annotations.Nullable;
  * &lt;/bean&gt;
  * </pre>
  */
-public interface IgniteObjects {
+public interface IgniteBinary {
     /**
      * Gets type ID for given type name.
      *
@@ -303,7 +303,7 @@ public interface IgniteObjects {
      * @return Converted object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public <T> T toPortable(@Nullable Object obj) throws BinaryObjectException;
+    public <T> T toBinary(@Nullable Object obj) throws BinaryObjectException;
 
     /**
      * Creates new portable builder.
@@ -336,7 +336,7 @@ public interface IgniteObjects {
      * @return Metadata.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @Nullable public BinaryTypeMetadata metadata(Class<?> cls) throws BinaryObjectException;
+    public BinaryType metadata(Class<?> cls) throws BinaryObjectException;
 
     /**
      * Gets metadata for provided class name.
@@ -345,7 +345,7 @@ public interface IgniteObjects {
      * @return Metadata.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @Nullable public BinaryTypeMetadata metadata(String typeName) throws BinaryObjectException;
+    public BinaryType metadata(String typeName) throws BinaryObjectException;
 
     /**
      * Gets metadata for provided type ID.
@@ -354,7 +354,7 @@ public interface IgniteObjects {
      * @return Metadata.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @Nullable public BinaryTypeMetadata metadata(int typeId) throws BinaryObjectException;
+    public BinaryType metadata(int typeId) throws BinaryObjectException;
 
     /**
      * Gets metadata for all known types.
@@ -362,5 +362,5 @@ public interface IgniteObjects {
      * @return Metadata.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public Collection<BinaryTypeMetadata> metadata() throws BinaryObjectException;
+    public Collection<BinaryType> metadata() throws BinaryObjectException;
 }

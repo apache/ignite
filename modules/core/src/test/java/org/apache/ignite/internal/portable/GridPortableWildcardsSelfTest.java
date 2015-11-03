@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.binary.BinaryTypeIdMapper;
-import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -34,11 +34,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, BinaryTypeMetadata meta) {
+        @Override public void addMeta(int typeId, BinaryType meta) {
             // No-op.
         }
 
-        @Override public BinaryTypeMetadata metadata(int typeId) {
+        @Override public BinaryType metadata(int typeId) {
             return null;
         }
     };

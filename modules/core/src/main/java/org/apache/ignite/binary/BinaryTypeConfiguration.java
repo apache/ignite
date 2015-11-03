@@ -41,6 +41,7 @@ public class BinaryTypeConfiguration {
     private BinarySerializer serializer;
 
     /** Meta data enabled flag. */
+    // TODO ignite-1282.
     private Boolean metaDataEnabled;
 
     /** Keep deserialized flag. */

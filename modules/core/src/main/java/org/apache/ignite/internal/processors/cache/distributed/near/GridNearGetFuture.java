@@ -270,9 +270,30 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
         Map<KeyCacheObject, GridNearCacheEntry> savedEntries = null;
 
-        // Assign keys to primary nodes.
-        for (KeyCacheObject key : keys)
-            savedEntries = map(key, mappings, topVer, mapped, savedEntries);
+        {
+            boolean success = false;
+
+            try {
+                // Assign keys to primary nodes.
+                for (KeyCacheObject key : keys)
+                    savedEntries = map(key, mappings, topVer, mapped, savedEntries);
+
+                success = true;
+            }
+            finally {
+                // Exception has been thrown, must release reserved near entries.
+                if (!success) {
+                    GridCacheVersion obsolete = cctx.versions().next(topVer);
+
+                    for (GridNearCacheEntry reserved : savedEntries.values()) {
+                        reserved.releaseEviction();
+
+                        if (reserved.markObsolete(obsolete))
+                            reserved.context().cache().removeEntry(reserved);
+                    }
+                }
+            }
+        }
 
         if (isDone())
             return;

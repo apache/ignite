@@ -20,7 +20,7 @@ import java.util.Map;
 import org.apache.ignite.binary.BinaryObject;
 
 /**
- * Tests for cache store with portables.
+ * Tests for cache store with binary.
  */
 public class GridCachePortableStorePortablesSelfTest extends GridCachePortableStoreAbstractSelfTest {
     /** {@inheritDoc} */
@@ -61,6 +61,6 @@ public class GridCachePortableStorePortablesSelfTest extends GridCachePortableSt
      * @return Portable object.
      */
     private Object portable(Object obj) {
-        return grid().portables().toPortable(obj);
+        return grid().binary().toBinary(obj);
     }
 }

@@ -1752,7 +1752,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Unwraps object for portables.
+     * Unwraps object for binary.
      *
      * @param o Object to unwrap.
      * @param keepPortable Keep portable flag.

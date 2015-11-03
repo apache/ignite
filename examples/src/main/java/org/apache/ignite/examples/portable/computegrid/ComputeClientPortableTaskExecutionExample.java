@@ -74,7 +74,7 @@ public class ComputeClientPortableTaskExecutionExample {
             // Convert collection of employees to collection of portable objects.
             // This allows to send objects across nodes without requiring to have
             // Employee class on classpath of these nodes.
-            Collection<BinaryObject> portables = ignite.portables().toPortable(employees);
+            Collection<BinaryObject> portables = ignite.binary().toBinary(employees);
 
             // Execute task and get average salary.
             Long avgSalary = ignite.compute(ignite.cluster().forRemotes()).execute(new ComputeClientTask(), portables);

@@ -30,7 +30,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -117,7 +117,7 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
         }
 
         {
-            BinaryObjectBuilder builder = ignite0.portables().builder("TestObject3");
+            BinaryObjectBuilder builder = ignite0.binary().builder("TestObject3");
 
             builder.setField("f1", 1);
 
@@ -127,24 +127,24 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
 
             BinaryObject obj = cache.get(0);
 
-            BinaryTypeMetadata meta = obj.metaData();
+            BinaryType meta = obj.metaData();
 
             assertNotNull(meta);
             assertEquals(1, meta.fields().size());
 
-            meta = ignite0.portables().metadata(TestObject1.class);
+            meta = ignite0.binary().metadata(TestObject1.class);
 
             assertNotNull(meta);
             assertEquals("val2", meta.affinityKeyFieldName());
 
-            meta = ignite0.portables().metadata(TestObject2.class);
+            meta = ignite0.binary().metadata(TestObject2.class);
 
             assertNotNull(meta);
             assertNull(meta.affinityKeyFieldName());
         }
 
         {
-            BinaryObjectBuilder builder = ignite1.portables().builder("TestObject3");
+            BinaryObjectBuilder builder = ignite1.binary().builder("TestObject3");
 
             builder.setField("f2", 2);
 
@@ -154,23 +154,23 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
 
             BinaryObject obj = cache.get(0);
 
-            BinaryTypeMetadata meta = obj.metaData();
+            BinaryType meta = obj.metaData();
 
             assertNotNull(meta);
             assertEquals(2, meta.fields().size());
 
-            meta = ignite1.portables().metadata(TestObject1.class);
+            meta = ignite1.binary().metadata(TestObject1.class);
 
             assertNotNull(meta);
             assertEquals("val2", meta.affinityKeyFieldName());
 
-            meta = ignite1.portables().metadata(TestObject2.class);
+            meta = ignite1.binary().metadata(TestObject2.class);
 
             assertNotNull(meta);
             assertNull(meta.affinityKeyFieldName());
         }
 
-        BinaryTypeMetadata meta = ignite0.portables().metadata("TestObject3");
+        BinaryType meta = ignite0.binary().metadata("TestObject3");
 
         assertNotNull(meta);
         assertEquals(2, meta.fields().size());
@@ -187,15 +187,15 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
         assertNotNull(meta);
         assertEquals(2, meta.fields().size());
 
-        Collection<BinaryTypeMetadata> meta1 = ignite1.portables().metadata();
-        Collection<BinaryTypeMetadata> meta2 = ignite1.portables().metadata();
+        Collection<BinaryType> meta1 = ignite1.binary().metadata();
+        Collection<BinaryType> meta2 = ignite1.binary().metadata();
 
         assertEquals(meta1.size(), meta2.size());
 
-        for (BinaryTypeMetadata m1 : meta1) {
+        for (BinaryType m1 : meta1) {
             boolean found = false;
 
-            for (BinaryTypeMetadata m2 : meta1) {
+            for (BinaryType m2 : meta1) {
                 if (m1.typeName().equals(m2.typeName())) {
                     assertEquals(m1.affinityKeyFieldName(), m2.affinityKeyFieldName());
                     assertEquals(m1.fields(), m2.fields());

@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteObjects;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -99,7 +99,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
             // Update portable metadata concurrently with client nodes start.
             fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    IgniteObjects portables = ignite(0).portables();
+                    IgniteBinary portables = ignite(0).binary();
 
                     IgniteCache<Object, Object> cache = ignite(0).cache(null).withKeepBinary();
 
@@ -156,15 +156,15 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
             assertEquals((Object)client, ignite(i).configuration().isClientMode());
 
-            IgniteObjects portables = ignite(i).portables();
+            IgniteBinary portables = ignite(i).binary();
 
-            Collection<BinaryTypeMetadata> metaCol = portables.metadata();
+            Collection<BinaryType> metaCol = portables.metadata();
 
             assertEquals(allTypes.size(), metaCol.size());
 
             Set<String> names = new HashSet<>();
 
-            for (BinaryTypeMetadata meta : metaCol) {
+            for (BinaryType meta : metaCol) {
                 assertTrue(names.add(meta.typeName()));
 
                 assertNull(meta.affinityKeyFieldName());
@@ -182,7 +182,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
     public void testFailoverOnStart() throws Exception {
         startGrids(4);
 
-        IgniteObjects portables = ignite(0).portables();
+        IgniteBinary portables = ignite(0).binary();
 
         IgniteCache<Object, Object> cache = ignite(0).cache(null).withKeepBinary();
 
@@ -232,25 +232,25 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
             assertEquals((Object) client, ignite(i).configuration().isClientMode());
 
-            portables = ignite(i).portables();
+            portables = ignite(i).binary();
 
-            final IgniteObjects p0 = portables;
+            final IgniteBinary p0 = portables;
 
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    Collection<BinaryTypeMetadata> metaCol = p0.metadata();
+                    Collection<BinaryType> metaCol = p0.metadata();
 
                     return metaCol.size() == 1000;
                 }
             }, getTestTimeout());
 
-            Collection<BinaryTypeMetadata> metaCol = portables.metadata();
+            Collection<BinaryType> metaCol = portables.metadata();
 
             assertEquals(1000, metaCol.size());
 
             Set<String> names = new HashSet<>();
 
-            for (BinaryTypeMetadata meta : metaCol) {
+            for (BinaryType meta : metaCol) {
                 assertTrue(names.add(meta.typeName()));
 
                 assertNull(meta.affinityKeyFieldName());
@@ -278,7 +278,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
         assertFalse(ignite1.configuration().isClientMode());
 
-        IgniteObjects portables = ignite(1).portables();
+        IgniteBinary portables = ignite(1).binary();
 
         IgniteCache<Object, Object> cache = ignite(1).cache(null).withKeepBinary();
 
@@ -290,6 +290,6 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
             cache.put(i, builder.build());
         }
 
-        assertEquals(100, ignite(0).portables().metadata().size());
+        assertEquals(100, ignite(0).binary().metadata().size());
     }
 }

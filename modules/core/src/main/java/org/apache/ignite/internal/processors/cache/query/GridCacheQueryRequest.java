@@ -165,7 +165,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
      * @param incBackups {@code true} if need to include backups.
      * @param fields Fields query flag.
      * @param all Whether to load all pages.
-     * @param keepPortable Whether to keep portables.
+     * @param keepPortable Whether to keep binary.
      * @param subjId Subject ID.
      * @param taskHash Task name hash code.
      * @param topVer Topology version.
@@ -452,7 +452,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     }
 
     /**
-     * @return Whether to keep portables.
+     * @return Whether to keep binary.
      */
     public boolean keepPortable() {
         return keepPortable;

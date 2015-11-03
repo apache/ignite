@@ -27,7 +27,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryType;
 
 /**
  *
@@ -40,11 +40,11 @@ public class GridPortableCacheEntryMemorySizeSelfTest extends GridCacheEntryMemo
         marsh.setContext(new MarshallerContextTestImpl(null));
 
         PortableContext pCtx = new PortableContext(new PortableMetaDataHandler() {
-            @Override public void addMeta(int typeId, BinaryTypeMetadata meta) throws BinaryObjectException {
+            @Override public void addMeta(int typeId, BinaryType meta) throws BinaryObjectException {
                 // No-op
             }
 
-            @Override public BinaryTypeMetadata metadata(int typeId) throws BinaryObjectException {
+            @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
                 return null;
             }
         }, new IgniteConfiguration());

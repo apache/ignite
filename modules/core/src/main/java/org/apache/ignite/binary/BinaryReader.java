@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Reader for portable objects used in {@link Binarylizable} implementations.
@@ -99,147 +98,147 @@ public interface BinaryReader {
      * @return Decimal value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public BigDecimal readDecimal(String fieldName) throws BinaryObjectException;
+    public BigDecimal readDecimal(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return String value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public String readString(String fieldName) throws BinaryObjectException;
+    public String readString(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return UUID.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public UUID readUuid(String fieldName) throws BinaryObjectException;
+    public UUID readUuid(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return Date.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public Date readDate(String fieldName) throws BinaryObjectException;
+    public Date readDate(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return Timestamp.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public Timestamp readTimestamp(String fieldName) throws BinaryObjectException;
+    public Timestamp readTimestamp(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return Object.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public <T> T readObject(String fieldName) throws BinaryObjectException;
+    public <T> T readObject(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return Byte array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public byte[] readByteArray(String fieldName) throws BinaryObjectException;
+    public byte[] readByteArray(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return Short array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public short[] readShortArray(String fieldName) throws BinaryObjectException;
+    public short[] readShortArray(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return Integer array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public int[] readIntArray(String fieldName) throws BinaryObjectException;
+    public int[] readIntArray(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return Long array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public long[] readLongArray(String fieldName) throws BinaryObjectException;
+    public long[] readLongArray(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return Float array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public float[] readFloatArray(String fieldName) throws BinaryObjectException;
+    public float[] readFloatArray(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return Byte array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public double[] readDoubleArray(String fieldName) throws BinaryObjectException;
+    public double[] readDoubleArray(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return Char array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public char[] readCharArray(String fieldName) throws BinaryObjectException;
+    public char[] readCharArray(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return Boolean array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public boolean[] readBooleanArray(String fieldName) throws BinaryObjectException;
+    public boolean[] readBooleanArray(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return Decimal array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public BigDecimal[] readDecimalArray(String fieldName) throws BinaryObjectException;
+    public BigDecimal[] readDecimalArray(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return String array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public String[] readStringArray(String fieldName) throws BinaryObjectException;
+    public String[] readStringArray(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return UUID array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public UUID[] readUuidArray(String fieldName) throws BinaryObjectException;
+    public UUID[] readUuidArray(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return Date array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public Date[] readDateArray(String fieldName) throws BinaryObjectException;
+    public Date[] readDateArray(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return Timestamp array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public Timestamp[] readTimestampArray(String fieldName) throws BinaryObjectException;
+    public Timestamp[] readTimestampArray(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return Object array.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public Object[] readObjectArray(String fieldName) throws BinaryObjectException;
+    public Object[] readObjectArray(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return Collection.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public <T> Collection<T> readCollection(String fieldName) throws BinaryObjectException;
+    public <T> Collection<T> readCollection(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
@@ -247,7 +246,7 @@ public interface BinaryReader {
      * @return Collection.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public <T> Collection<T> readCollection(String fieldName, Class<? extends Collection<T>> colCls)
+    public <T> Collection<T> readCollection(String fieldName, Class<? extends Collection<T>> colCls)
         throws BinaryObjectException;
 
     /**
@@ -255,7 +254,7 @@ public interface BinaryReader {
      * @return Map.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public <K, V> Map<K, V> readMap(String fieldName) throws BinaryObjectException;
+    public <K, V> Map<K, V> readMap(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
@@ -263,7 +262,7 @@ public interface BinaryReader {
      * @return Map.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public <K, V> Map<K, V> readMap(String fieldName, Class<? extends Map<K, V>> mapCls)
+    public <K, V> Map<K, V> readMap(String fieldName, Class<? extends Map<K, V>> mapCls)
         throws BinaryObjectException;
 
     /**
@@ -271,14 +270,14 @@ public interface BinaryReader {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public <T extends Enum<?>> T readEnum(String fieldName) throws BinaryObjectException;
+    public <T extends Enum<?>> T readEnum(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public <T extends Enum<?>> T[] readEnumArray(String fieldName) throws BinaryObjectException;
+    public <T extends Enum<?>> T[] readEnumArray(String fieldName) throws BinaryObjectException;
 
     /**
      * Gets raw reader. Raw reader does not use field name hash codes, therefore,

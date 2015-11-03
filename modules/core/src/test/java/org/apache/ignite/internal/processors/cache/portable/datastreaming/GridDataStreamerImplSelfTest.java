@@ -54,7 +54,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** Number of keys to load via data streamer. */
     private static final int KEYS_COUNT = 1000;
 
-    /** Flag indicating should be cache configured with portables or not.  */
+    /** Flag indicating should be cache configured with binary or not.  */
     private static boolean portables;
 
     /** {@inheritDoc} */

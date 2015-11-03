@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryObject;
 import org.jetbrains.annotations.Nullable;
 
@@ -160,7 +160,7 @@ public abstract class BinaryObjectEx implements BinaryObject {
     private String toString(PortableReaderContext ctx, IdentityHashMap<BinaryObject, Integer> handles) {
         int idHash = System.identityHashCode(this);
 
-        BinaryTypeMetadata meta;
+        BinaryType meta;
 
         try {
             meta = metaData();
@@ -209,7 +209,7 @@ public abstract class BinaryObjectEx implements BinaryObject {
                         Integer idHash0 = handles.get(val);
 
                         if (idHash0 != null) {  // Circular reference.
-                            BinaryTypeMetadata meta0 = po.metaData();
+                            BinaryType meta0 = po.metaData();
 
                             assert meta0 != null;
 

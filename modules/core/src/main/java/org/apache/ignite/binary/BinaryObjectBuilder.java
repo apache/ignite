@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Here is an example of how a portable object can be built dynamically:
  * <pre name=code class=java>
- * PortableBuilder builder = Ignition.ignite().portables().builder("org.project.MyObject");
+ * PortableBuilder builder = Ignition.ignite().binary().builder("org.project.MyObject");
  *
  * builder.setField("fieldA", "A");
  * builder.setField("fieldB", "B");
@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  * Also builder can be initialized by existing portable object. This allows changing some fields without affecting
  * other fields.
  * <pre name=code class=java>
- * PortableBuilder builder = Ignition.ignite().portables().builder(person);
+ * PortableBuilder builder = Ignition.ignite().binary().builder(person);
  *
  * builder.setField("name", "John");
  *
@@ -49,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
  * for example:
  *
  * <pre name=code class=java>
- * PortableBuilder personBuilder = grid.portables().createBuilder(personPortableObj);
+ * PortableBuilder personBuilder = grid.binary().createBuilder(personPortableObj);
  * PortableBuilder addressBuilder = personBuilder.setField("address");
  *
  * addressBuilder.setField("city", "New York");
@@ -60,9 +60,9 @@ import org.jetbrains.annotations.Nullable;
  * String city = personPortableObj.getField("address").getField("city");
  * </pre>
  *
- * @see org.apache.ignite.IgniteObjects#builder(int)
- * @see org.apache.ignite.IgniteObjects#builder(String)
- * @see org.apache.ignite.IgniteObjects#builder(BinaryObject)
+ * @see org.apache.ignite.IgniteBinary#builder(int)
+ * @see org.apache.ignite.IgniteBinary#builder(String)
+ * @see org.apache.ignite.IgniteBinary#builder(BinaryObject)
  */
 public interface BinaryObjectBuilder {
     /**

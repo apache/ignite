@@ -18,15 +18,14 @@
 package org.apache.ignite.binary;
 
 import java.util.Collection;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Portable type meta data. Metadata for portable types can be accessed from any of the
- * {@link org.apache.ignite.IgniteObjects#metadata(String)} methods.
+ * {@link org.apache.ignite.IgniteBinary#metadata(String)} methods.
  * Having metadata also allows for proper formatting of {@code PortableObject#toString()} method,
  * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
  */
-public interface BinaryTypeMetadata {
+public interface BinaryType {
     /**
      * Gets portable type name.
      *
@@ -47,7 +46,7 @@ public interface BinaryTypeMetadata {
      * @param fieldName Field name.
      * @return Field type name.
      */
-    @Nullable public String fieldTypeName(String fieldName);
+    public String fieldTypeName(String fieldName);
 
     /**
      * Portable objects can optionally specify custom key-affinity mapping in the
@@ -56,5 +55,5 @@ public interface BinaryTypeMetadata {
      *
      * @return Affinity key field name.
      */
-    @Nullable public String affinityKeyFieldName();
+    public String affinityKeyFieldName();
 }

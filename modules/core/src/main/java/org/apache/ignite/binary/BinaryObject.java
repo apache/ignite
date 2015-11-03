@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.TreeMap;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Wrapper for portable object in portable binary format. Once an object is defined as portable,
@@ -40,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * // Convert instance of MyKey to portable format.
  * // We could also use GridPortableBuilder to create the key in portable format directly.
- * PortableObject key = grid.portables().toPortable(new MyKey());
+ * PortableObject key = grid.binary().toBinary(new MyKey());
  *
  * PortableObject val = prj.get(key);
  *
@@ -77,7 +76,7 @@ import org.jetbrains.annotations.Nullable;
  * <h1 class="header">Building Portable Objects</h1>
  * Ignite comes with {@link BinaryObjectBuilder} which allows to build portable objects dynamically:
  * <pre name=code class=java>
- * PortableBuilder builder = Ignition.ignite().portables().builder("org.project.MyObject");
+ * PortableBuilder builder = Ignition.ignite().binary().builder("org.project.MyObject");
  *
  * builder.setField("fieldA", "A");
  * builder.setField("fieldB", "B");
@@ -93,12 +92,12 @@ import org.jetbrains.annotations.Nullable;
  * obj.setFieldA("A");
  * obj.setFieldB(123);
  *
- * PortableObject portableObj = Ignition.ignite().portables().toPortable(obj);
+ * PortableObject portableObj = Ignition.ignite().binary().toBinary(obj);
  * </pre>
  * <h1 class="header">Portable Metadata</h1>
  * Even though Ignite portable protocol only works with hash codes for type and field names
  * to achieve better performance, Ignite provides metadata for all portable types which
- * can be queried ar runtime via any of the {@link org.apache.ignite.IgniteObjects#metadata(Class)}
+ * can be queried ar runtime via any of the {@link org.apache.ignite.IgniteBinary#metadata(Class)}
  * methods. Having metadata also allows for proper formatting of {@code PortableObject.toString()} method,
  * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
  */
@@ -115,8 +114,9 @@ public interface BinaryObject extends Serializable, Cloneable {
      *
      * @return Meta data.
      * @throws BinaryObjectException In case of error.
+     * TODO ignite-950 rename to type().
      */
-    @Nullable public BinaryTypeMetadata metaData() throws BinaryObjectException;
+    public BinaryType metaData() throws BinaryObjectException;
 
     /**
      * Gets field value.
@@ -124,11 +124,13 @@ public interface BinaryObject extends Serializable, Cloneable {
      * @param fieldName Field name.
      * @return Field value.
      * @throws BinaryObjectException In case of any other error.
+     * TODO ignite-950 remove.
      */
-    @Nullable public <F> F field(String fieldName) throws BinaryObjectException;
+    public <F> F field(String fieldName) throws BinaryObjectException;
 
     /**
      * Checks whether field is set.
+     ** TODO ignite-950 remove.
      *
      * @param fieldName Field name.
      * @return {@code true} if field is set.
@@ -151,7 +153,7 @@ public interface BinaryObject extends Serializable, Cloneable {
      * @throws BinaryInvalidTypeException If class doesn't exist.
      * @throws BinaryObjectException In case of any other error.
      */
-    @Nullable public <T> T deserialize() throws BinaryObjectException;
+    public <T> T deserialize() throws BinaryObjectException;
 
     /**
      * Copies this portable object.

@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -40,11 +40,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class GridPortableMarshallerCtxDisabledSelfTest extends GridCommonAbstractTest {
     /** */
     protected static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, BinaryTypeMetadata meta) {
+        @Override public void addMeta(int typeId, BinaryType meta) {
             // No-op.
         }
 
-        @Override public BinaryTypeMetadata metadata(int typeId) {
+        @Override public BinaryType metadata(int typeId) {
             return null;
         }
     };

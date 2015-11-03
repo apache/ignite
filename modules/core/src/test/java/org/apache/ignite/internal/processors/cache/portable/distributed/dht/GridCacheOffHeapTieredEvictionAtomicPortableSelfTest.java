@@ -29,7 +29,7 @@ import org.apache.ignite.binary.BinaryObject;
 public class GridCacheOffHeapTieredEvictionAtomicPortableSelfTest extends GridCacheOffHeapTieredEvictionAtomicSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        // Enable portables.
+        // Enable binary.
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         PortableMarshaller marsh = new PortableMarshaller();

@@ -295,7 +295,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @return Result.
      */
     private Object toPortable(Object src) {
-        return platformCtx.kernalContext().grid().portables().toPortable(src);
+        return platformCtx.kernalContext().grid().binary().toBinary(src);
     }
 
     /**

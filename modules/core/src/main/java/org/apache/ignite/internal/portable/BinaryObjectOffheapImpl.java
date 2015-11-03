@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryField;
 import org.jetbrains.annotations.Nullable;
@@ -148,7 +148,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryTypeMetadata metaData() throws BinaryObjectException {
+    @Nullable @Override public BinaryType metaData() throws BinaryObjectException {
         if (ctx == null)
             throw new BinaryObjectException("PortableContext is not set for the object.");
 

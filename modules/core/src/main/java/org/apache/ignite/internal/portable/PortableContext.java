@@ -56,7 +56,7 @@ import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryTypeIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
@@ -813,7 +813,7 @@ public class PortableContext implements Externalizable {
      * @return Meta data.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @Nullable public BinaryTypeMetadata metaData(int typeId) throws BinaryObjectException {
+    @Nullable public BinaryType metaData(int typeId) throws BinaryObjectException {
         return metaHnd != null ? metaHnd.metadata(typeId) : null;
     }
 

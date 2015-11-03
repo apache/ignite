@@ -70,7 +70,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryType;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.Timestamp;
@@ -370,11 +370,11 @@ public class PlatformContextImpl implements PlatformContext {
 
     /** {@inheritDoc} */
     @Override public void writeAllMetadata(BinaryRawWriterEx writer) {
-        Collection<BinaryTypeMetadata> metas = cacheObjProc.metadata();
+        Collection<BinaryType> metas = cacheObjProc.metadata();
 
         writer.writeInt(metas.size());
 
-        for (BinaryTypeMetadata m : metas)
+        for (BinaryType m : metas)
             writeMetadata0(writer, cacheObjProc.typeId(m.typeName()), m);
     }
 
@@ -385,7 +385,7 @@ public class PlatformContextImpl implements PlatformContext {
      * @param typeId Type id.
      * @param meta Metadata.
      */
-    private void writeMetadata0(BinaryRawWriterEx writer, int typeId, BinaryTypeMetadata meta) {
+    private void writeMetadata0(BinaryRawWriterEx writer, int typeId, BinaryType meta) {
         if (meta == null)
             writer.writeBoolean(false);
         else {

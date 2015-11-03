@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteObjects;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectAllTypes;
@@ -42,7 +42,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryTypeIdMapper;
-import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -775,7 +775,7 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         BinaryObject po = builder.build();
 
-        BinaryTypeMetadata meta = po.metaData();
+        BinaryType meta = po.metaData();
 
         assertEquals("MetaTest2", meta.typeName());
         assertEquals("Object", meta.fieldTypeName("objectField"));
@@ -794,7 +794,7 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         BinaryObject po = builder.build();
 
-        BinaryTypeMetadata meta = po.metaData();
+        BinaryType meta = po.metaData();
 
         assertEquals("MetaTest", meta.typeName());
 
@@ -965,8 +965,8 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @return Portables.
      */
-    private IgniteObjects portables() {
-        return grid(0).portables();
+    private IgniteBinary portables() {
+        return grid(0).binary();
     }
 
     /**
@@ -974,7 +974,7 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
      * @return Portable object.
      */
     private BinaryObject toPortable(Object obj) {
-        return portables().toPortable(obj);
+        return portables().toBinary(obj);
     }
 
     /**

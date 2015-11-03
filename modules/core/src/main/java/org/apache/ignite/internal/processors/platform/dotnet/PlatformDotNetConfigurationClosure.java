@@ -40,7 +40,7 @@ import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryType;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -229,12 +229,12 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     private static GridPortableMarshaller marshaller() {
         try {
             PortableContext ctx = new PortableContext(new PortableMetaDataHandler() {
-                @Override public void addMeta(int typeId, BinaryTypeMetadata meta)
+                @Override public void addMeta(int typeId, BinaryType meta)
                     throws BinaryObjectException {
                     // No-op.
                 }
 
-                @Override public BinaryTypeMetadata metadata(int typeId) throws BinaryObjectException {
+                @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
                     return null;
                 }
             }, new IgniteConfiguration());

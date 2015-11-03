@@ -459,11 +459,11 @@ public interface Ignite extends AutoCloseable {
     public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException;
 
     /**
-     * Gets an instance of {@link IgniteObjects} interface.
+     * Gets an instance of {@link IgniteBinary} interface.
      *
-     * @return Instance of {@link IgniteObjects} interface.
+     * @return Instance of {@link IgniteBinary} interface.
      */
-    public IgniteObjects portables();
+    public IgniteBinary binary();
 
     /**
      * Closes {@code this} instance of grid. This method is identical to calling

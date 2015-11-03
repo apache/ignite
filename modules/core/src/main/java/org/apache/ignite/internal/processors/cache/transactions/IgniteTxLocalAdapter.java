@@ -3185,7 +3185,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * Checks if portable values should be deserialized.
      *
      * @param cacheCtx Cache context.
-     * @return {@code True} if portables should be deserialized, {@code false} otherwise.
+     * @return {@code True} if binary should be deserialized, {@code false} otherwise.
      */
     private boolean deserializePortables(GridCacheContext cacheCtx) {
         CacheOperationContext opCtx = cacheCtx.operationContextPerCall();

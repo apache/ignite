@@ -26,7 +26,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.portable.BinaryObjectImpl;
 import org.apache.ignite.internal.portable.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.portable.BinaryWriterExImpl;
@@ -289,7 +289,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         if (assignedVals != null && (remainsFlds == null || !remainsFlds.isEmpty())) {
             boolean metadataEnabled = ctx.isMetaDataEnabled(typeId);
 
-            BinaryTypeMetadata metadata = null;
+            BinaryType metadata = null;
 
             if (metadataEnabled)
                 metadata = ctx.metaData(typeId);

@@ -18,19 +18,19 @@
 package org.apache.ignite.internal.processors.cache.portable;
 
 import java.util.Collection;
-import org.apache.ignite.IgniteObjects;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryTypeMetadata;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * {@link org.apache.ignite.IgniteObjects} implementation.
+ * {@link org.apache.ignite.IgniteBinary} implementation.
  */
-public class IgniteObjectsImpl implements IgniteObjects {
+public class IgniteBinaryImpl implements IgniteBinary {
     /** */
     private GridKernalContext ctx;
 
@@ -40,7 +40,7 @@ public class IgniteObjectsImpl implements IgniteObjects {
     /**
      * @param ctx Context.
      */
-    public IgniteObjectsImpl(GridKernalContext ctx, CacheObjectPortableProcessor proc) {
+    public IgniteBinaryImpl(GridKernalContext ctx, CacheObjectPortableProcessor proc) {
         this.ctx = ctx;
 
         this.proc = proc;
@@ -59,7 +59,7 @@ public class IgniteObjectsImpl implements IgniteObjects {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T toPortable(@Nullable Object obj) throws BinaryObjectException {
+    @Override public <T> T toBinary(@Nullable Object obj) throws BinaryObjectException {
         guard();
 
         try {
@@ -107,7 +107,7 @@ public class IgniteObjectsImpl implements IgniteObjects {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryTypeMetadata metadata(Class<?> cls) throws BinaryObjectException {
+    @Nullable @Override public BinaryType metadata(Class<?> cls) throws BinaryObjectException {
         guard();
 
         try {
@@ -119,7 +119,7 @@ public class IgniteObjectsImpl implements IgniteObjects {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryTypeMetadata metadata(String typeName) throws BinaryObjectException {
+    @Nullable @Override public BinaryType metadata(String typeName) throws BinaryObjectException {
         guard();
 
         try {
@@ -131,7 +131,7 @@ public class IgniteObjectsImpl implements IgniteObjects {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryTypeMetadata metadata(int typeId) throws BinaryObjectException {
+    @Nullable @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
         guard();
 
         try {
@@ -143,7 +143,7 @@ public class IgniteObjectsImpl implements IgniteObjects {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<BinaryTypeMetadata> metadata() throws BinaryObjectException {
+    @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
         guard();
 
         try {

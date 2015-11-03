@@ -17,7 +17,7 @@
 package org.apache.ignite.internal.portable;
 
 import java.util.Arrays;
-import org.apache.ignite.IgniteObjects;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -47,8 +47,8 @@ public class GridPortableMetaDataDisabledSelfTest extends GridCommonAbstractTest
     /**
      * @return Portables.
      */
-    private IgniteObjects portables() {
-        return grid().portables();
+    private IgniteBinary portables() {
+        return grid().binary();
     }
 
     /**
@@ -67,9 +67,9 @@ public class GridPortableMetaDataDisabledSelfTest extends GridCommonAbstractTest
         try {
             startGrid();
 
-            portables().toPortable(new TestObject1());
-            portables().toPortable(new TestObject2());
-            portables().toPortable(new TestObject3());
+            portables().toBinary(new TestObject1());
+            portables().toBinary(new TestObject2());
+            portables().toBinary(new TestObject3());
 
             assertEquals(0, portables().metadata(TestObject1.class).fields().size());
             assertEquals(0, portables().metadata(TestObject2.class).fields().size());
@@ -106,8 +106,8 @@ public class GridPortableMetaDataDisabledSelfTest extends GridCommonAbstractTest
         try {
             startGrid();
 
-            portables().toPortable(new TestObject1());
-            portables().toPortable(new TestObject2());
+            portables().toBinary(new TestObject1());
+            portables().toBinary(new TestObject2());
 
             assertEquals(0, portables().metadata(TestObject1.class).fields().size());
             assertEquals(1, portables().metadata(TestObject2.class).fields().size());
@@ -137,8 +137,8 @@ public class GridPortableMetaDataDisabledSelfTest extends GridCommonAbstractTest
         try {
             startGrid();
 
-            portables().toPortable(new TestObject1());
-            portables().toPortable(new TestObject2());
+            portables().toBinary(new TestObject1());
+            portables().toBinary(new TestObject2());
 
             assertEquals(1, portables().metadata(TestObject1.class).fields().size());
             assertEquals(0, portables().metadata(TestObject2.class).fields().size());
@@ -166,8 +166,8 @@ public class GridPortableMetaDataDisabledSelfTest extends GridCommonAbstractTest
         try {
             startGrid();
 
-            portables().toPortable(new TestObject1());
-            portables().toPortable(new TestObject2());
+            portables().toBinary(new TestObject1());
+            portables().toBinary(new TestObject2());
 
             assertEquals(0, portables().metadata(TestObject1.class).fields().size());
             assertEquals(1, portables().metadata(TestObject2.class).fields().size());
@@ -195,8 +195,8 @@ public class GridPortableMetaDataDisabledSelfTest extends GridCommonAbstractTest
         try {
             startGrid();
 
-            portables().toPortable(new TestObject1());
-            portables().toPortable(new TestObject2());
+            portables().toBinary(new TestObject1());
+            portables().toBinary(new TestObject2());
 
             assertEquals(1, portables().metadata(TestObject1.class).fields().size());
             assertEquals(0, portables().metadata(TestObject2.class).fields().size());

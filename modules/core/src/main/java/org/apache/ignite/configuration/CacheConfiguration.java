@@ -883,19 +883,19 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * store implementation in some cases, but it can cause performance
      * degradation due to additional serializations and deserializations
      * of portable objects. You will also need to have key and value
-     * classes on all nodes since portables will be deserialized when
+     * classes on all nodes since binary will be deserialized when
      * store is called.
      *
-     * @return Keep portables in store flag.
+     * @return Keep binary in store flag.
      */
     public Boolean isKeepPortableInStore() {
         return keepPortableInStore;
     }
 
     /**
-     * Sets keep portables in store flag.
+     * Sets keep binary in store flag.
      *
-     * @param keepPortableInStore Keep portables in store flag.
+     * @param keepPortableInStore Keep binary in store flag.
      */
     public void setKeepPortableInStore(boolean keepPortableInStore) {
         this.keepPortableInStore = keepPortableInStore;

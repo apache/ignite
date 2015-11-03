@@ -27,7 +27,7 @@ package org.apache.ignite.binary;
  * interface, which allows users to override default serialization logic,
  * usually for performance reasons. The only difference here is that portable
  * serialization is already very fast and implementing custom serialization
- * logic for portables does not provide significant performance gains.
+ * logic for binary does not provide significant performance gains.
  */
 public interface Binarylizable {
     /**
