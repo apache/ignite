@@ -341,6 +341,9 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                 int i = 0;
 
                 for (KeyCacheObject key : keys) {
+                    if (i == updates.size())
+                        break;
+
                     T4<GridDhtCacheEntry, CacheObject, CacheObject, Long> upd = updates.get(i);
 
                     try {
@@ -353,9 +356,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                     }
 
                     ++i;
-
-                    if (i == updates.size())
-                        break;
                 }
             }
 
