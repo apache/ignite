@@ -583,7 +583,8 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         PartitionRecovery rec = rcvs.get(e.partition());
 
         if (rec == null) {
-            rec = new PartitionRecovery(ctx.log(getClass()), cacheContext(ctx), initUpdIdx.get(e.partition()));
+            rec = new PartitionRecovery(ctx.log(getClass()), cacheContext(ctx),
+                initUpdIdx == null ? null : initUpdIdx.get(e.partition()));
 
             PartitionRecovery oldRec = rcvs.putIfAbsent(e.partition(), rec);
 
@@ -645,8 +646,10 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
         /**
          * @param log Logger.
+         * @param cctx Cache context.
+         * @param initIdx Update counters.
          */
-        public PartitionRecovery(IgniteLogger log, GridCacheContext cctx, Long initIdx) {
+        public PartitionRecovery(IgniteLogger log, GridCacheContext cctx, @Nullable Long initIdx) {
             this.log = log;
             this.cctx = cctx;
 

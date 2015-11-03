@@ -38,7 +38,7 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     private final Map<UUID, IgniteCheckedException> errs = new HashMap<>();
 
     /** */
-    private final Map<Integer, Long> updateIdxes = new HashMap<>();
+    private Map<Integer, Long> updateIdxes;
 
     /**
      * @param routineId Routine id.
@@ -69,6 +69,9 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
      * @param idx Update indexes.
      */
     public void addUpdateIdxs(Map<Integer, Long> idx) {
+        if (updateIdxes == null)
+            updateIdxes = new HashMap<>();
+
         for (Map.Entry<Integer, Long> e : idx.entrySet()) {
             Long cntr0 = updateIdxes.get(e.getKey());
             Long cntr1 = e.getValue();
