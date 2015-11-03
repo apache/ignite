@@ -1121,7 +1121,7 @@ $generatorJava.metadataDatabaseFields = function (res, meta, fieldProperty) {
         _.forEach(dbFields, function (field, ix) {
             res.line('new JdbcTypeField(' +
                 'Types.' + field.databaseType + ', ' + '"' + field.databaseName + '", ' +
-                field.javaType + '.class, ' + '"' + field.javaName + '"'+ ')' + (ix < lastIx ? ',' : ''));
+                res.importClass(field.javaType) + '.class, ' + '"' + field.javaName + '"'+ ')' + (ix < lastIx ? ',' : ''));
         });
 
         res.endBlock(');');
