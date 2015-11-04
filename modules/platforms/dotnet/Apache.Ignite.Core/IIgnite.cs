@@ -178,5 +178,19 @@ namespace Apache.Ignite.Core
         /// or null if it does not exist and <see cref="create"/> flag is not set.</returns>
         /// <exception cref="IgniteException">If atomic sequence could not be fetched or created.</exception>
         IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create);
+
+        /// <summary>
+        /// Gets an atomic reference with specified name from cache.
+        /// Creates new atomic reference in cache if it does not exist and <see cref="create"/> is true.
+        /// </summary>
+        /// <param name="name">Name of the atomic reference.</param>
+        /// <param name="initialValue">
+        /// Initial value for the atomic reference. Ignored if <see cref="create"/> is false.
+        /// </param>
+        /// <param name="create">Flag indicating whether atomic reference should be created if it does not exist.</param>
+        /// <returns>Atomic reference instance with specified name, 
+        /// or null if it does not exist and <see cref="create"/> flag is not set.</returns>
+        /// <exception cref="IgniteException">If atomic reference could not be fetched or created.</exception>
+        IAtomicReference<T> GetAtomicReference<T>(string name, T initialValue, bool create);
     }
 }
