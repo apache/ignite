@@ -1691,6 +1691,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private void ackOsInfo() {
         assert log != null;
 
+        if (log.isQuiet())
+            U.quiet(false, "OS: " + U.osString());
+
         if (log.isInfoEnabled()) {
             log.info("OS: " + U.osString());
             log.info("OS user: " + System.getProperty("user.name"));
@@ -1702,6 +1705,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     private void ackLanguageRuntime() {
         assert log != null;
+
+        if (log.isQuiet())
+            U.quiet(false, "VM information: " + U.jdkString());
 
         if (log.isInfoEnabled()) {
             log.info("Language runtime: " + getLanguage());
