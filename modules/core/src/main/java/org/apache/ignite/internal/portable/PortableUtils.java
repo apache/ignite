@@ -119,6 +119,9 @@ public class PortableUtils {
     /** Offset which fits into 4 bytes. */
     public static final int OFFSET_4 = 4;
 
+    /** Length of a single field ID value. */
+    public static final int FIELD_ID_LEN = 4;
+
     /**
      * Check if user type flag is set.
      *

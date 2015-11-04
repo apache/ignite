@@ -118,9 +118,6 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_AR
  */
 @SuppressWarnings("unchecked")
 public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx, ObjectInput {
-    /** Length of a single field ID value. */
-    private static final int FIELD_ID_LEN = 4;
-
     /** */
     private final PortableContext ctx;
 
@@ -230,7 +227,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         short flags = in.readShort();
 
         offsetSize = PortableUtils.fieldOffsetSize(flags);
-        fieldIdLen = PortableUtils.isNoFieldIds(flags) ? 0 : FIELD_ID_LEN;
+        fieldIdLen = PortableUtils.isNoFieldIds(flags) ? 0 : PortableUtils.FIELD_ID_LEN;
 
         typeId = in.readIntPositioned(start + GridPortableMarshaller.TYPE_ID_POS);
 
@@ -2571,7 +2568,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     public PortableSchema createSchema() {
         parseHeaderIfNeeded();
 
-        assert fieldIdLen == FIELD_ID_LEN;
+        assert fieldIdLen == PortableUtils.FIELD_ID_LEN;
 
         LinkedHashMap<Integer, Integer> fields = new LinkedHashMap<>();
 
@@ -2585,7 +2582,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             fields.put(fieldId, idx++);
 
-            searchPos += FIELD_ID_LEN + offsetSize;
+            searchPos += PortableUtils.FIELD_ID_LEN + offsetSize;
         }
 
         return new PortableSchema(fields);
@@ -2612,14 +2609,15 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 int id0 = in.readIntPositioned(searchPos);
 
                 if (id0 == id) {
-                    int pos = start + PortableUtils.fieldOffsetRelative(in, searchPos + FIELD_ID_LEN, offsetSize);
+                    int pos = start + PortableUtils.fieldOffsetRelative(in, searchPos + PortableUtils.FIELD_ID_LEN,
+                        offsetSize);
 
                     in.position(pos);
 
                     return pos;
                 }
 
-                searchPos += FIELD_ID_LEN + offsetSize;
+                searchPos += PortableUtils.FIELD_ID_LEN + offsetSize;
             }
         }
         else {
