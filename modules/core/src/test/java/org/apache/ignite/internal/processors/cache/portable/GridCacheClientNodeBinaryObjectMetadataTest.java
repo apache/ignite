@@ -127,7 +127,7 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
 
             BinaryObject obj = cache.get(0);
 
-            BinaryType meta = obj.metaData();
+            BinaryType meta = obj.type();
 
             assertNotNull(meta);
             assertEquals(1, meta.fields().size());
@@ -154,7 +154,7 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
 
             BinaryObject obj = cache.get(0);
 
-            BinaryType meta = obj.metaData();
+            BinaryType meta = obj.type();
 
             assertNotNull(meta);
             assertEquals(2, meta.fields().size());
@@ -182,7 +182,7 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
         assertEquals(Integer.valueOf(2), obj.field("f2"));
         assertNull(obj.field("f1"));
 
-        meta = obj.metaData();
+        meta = obj.type();
 
         assertNotNull(meta);
         assertEquals(2, meta.fields().size());

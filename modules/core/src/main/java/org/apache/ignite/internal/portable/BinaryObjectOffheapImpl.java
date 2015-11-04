@@ -173,7 +173,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryType metaData() throws BinaryObjectException {
+    @Nullable @Override public BinaryType type() throws BinaryObjectException {
         if (ctx == null)
             throw new BinaryObjectException("PortableContext is not set for the object.");
 

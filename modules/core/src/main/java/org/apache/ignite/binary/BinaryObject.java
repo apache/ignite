@@ -112,11 +112,10 @@ public interface BinaryObject extends Serializable, Cloneable {
     /**
      * Gets type information for this binary object.
      *
-     * @return Meta data.
+     * @return Binary object type information.
      * @throws BinaryObjectException In case of error.
-     * TODO ignite-950 rename to type().
      */
-    public BinaryType metaData() throws BinaryObjectException;
+    public BinaryType type() throws BinaryObjectException;
 
     /**
      * Gets field value.
@@ -124,13 +123,13 @@ public interface BinaryObject extends Serializable, Cloneable {
      * @param fieldName Field name.
      * @return Field value.
      * @throws BinaryObjectException In case of any other error.
-     * TODO ignite-950 remove.
+     * TODO ignite-1282 remove.
      */
     public <F> F field(String fieldName) throws BinaryObjectException;
 
     /**
      * Checks whether field is set.
-     ** TODO ignite-950 remove.
+     ** TODO ignite-1282 remove.
      *
      * @param fieldName Field name.
      * @return {@code true} if field is set.

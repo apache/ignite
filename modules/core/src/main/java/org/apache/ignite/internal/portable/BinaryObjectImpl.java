@@ -247,7 +247,7 @@ public final class BinaryObjectImpl extends BinaryObjectEx implements Externaliz
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryType metaData() throws BinaryObjectException {
+    @Nullable @Override public BinaryType type() throws BinaryObjectException {
         if (ctx == null)
             throw new BinaryObjectException("PortableContext is not set for the object.");
 

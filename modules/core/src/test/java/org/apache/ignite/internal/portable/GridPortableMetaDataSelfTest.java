@@ -278,7 +278,7 @@ public class GridPortableMetaDataSelfTest extends GridCommonAbstractTest {
 
         info(po.toString());
 
-        BinaryType meta = po.metaData();
+        BinaryType meta = po.type();
 
         assertNotNull(meta);
 

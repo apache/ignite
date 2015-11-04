@@ -82,7 +82,7 @@ public interface BinaryObjectBuilder {
      *
      * @param name Field name.
      * @param val Field value (cannot be {@code null}).
-     * @see BinaryObject#metaData()
+     * @see BinaryObject#type()
      */
     public BinaryObjectBuilder setField(String name, Object val);
 
@@ -94,7 +94,7 @@ public interface BinaryObjectBuilder {
      * @param name Field name.
      * @param val Field value.
      * @param type Field type.
-     * @see BinaryObject#metaData()
+     * @see BinaryObject#type()
      */
     public <T> BinaryObjectBuilder setField(String name, @Nullable T val, Class<? super T> type);
 

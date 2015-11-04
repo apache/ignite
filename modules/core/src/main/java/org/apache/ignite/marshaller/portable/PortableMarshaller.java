@@ -74,6 +74,7 @@ import org.jetbrains.annotations.Nullable;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public class PortableMarshaller extends AbstractMarshaller {
+    // TODO ignite-1282 Move to IgniteConfiguration.
     /** Class names. */
     private Collection<String> clsNames;
 

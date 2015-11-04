@@ -659,7 +659,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
      */
     public Object affinityKey(BinaryObject po) {
         try {
-            BinaryType meta = po.metaData();
+            BinaryType meta = po.type();
 
             if (meta != null) {
                 String affKeyFieldName = meta.affinityKeyFieldName();

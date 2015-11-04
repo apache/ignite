@@ -51,7 +51,7 @@ public class GridCachePortableStorePortablesSelfTest extends GridCachePortableSt
 
             BinaryObject po = (BinaryObject)val;
 
-            assertEquals("Value", po.metaData().typeName());
+            assertEquals("Value", po.type().typeName());
             assertEquals(new Integer(idx), po.field("idx"));
         }
     }

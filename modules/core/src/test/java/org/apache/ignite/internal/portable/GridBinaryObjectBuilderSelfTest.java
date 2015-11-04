@@ -775,7 +775,7 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         BinaryObject po = builder.build();
 
-        BinaryType meta = po.metaData();
+        BinaryType meta = po.type();
 
         assertEquals("MetaTest2", meta.typeName());
         assertEquals("Object", meta.fieldTypeName("objectField"));
@@ -794,7 +794,7 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         BinaryObject po = builder.build();
 
-        BinaryType meta = po.metaData();
+        BinaryType meta = po.type();
 
         assertEquals("MetaTest", meta.typeName());
 
@@ -817,7 +817,7 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         po = builder.build();
 
-        meta = po.metaData();
+        meta = po.type();
 
         assertEquals("MetaTest", meta.typeName());
 
