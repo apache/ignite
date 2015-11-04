@@ -3170,6 +3170,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         U.warn(log, "Dumping debug info for node [id=" + locNode.id() +
             ", name=" + ctx.gridName() +
             ", order=" + locNode.order() +
+            ", topVer=" + ctx.discovery().topologyVersion() +
             ", client=" + client +
             (client && routerId != null ? ", routerId=" + routerId : "") + ']');
 
