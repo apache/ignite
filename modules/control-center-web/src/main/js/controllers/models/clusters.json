@@ -724,7 +724,8 @@
           "hide": "!backupItem.connector.enabled",
           "placeholder": "IgniteConfiguration#getLocalHost()",
           "tip": [
-            "Host for TCP binary protocol server. This can be either an IP address or a domain name",
+            "Host for TCP binary protocol server",
+            "This can be either an IP address or a domain name",
             "If not defined, system-wide local address will be used IgniteConfiguration#getLocalHost()",
             "You can also use '0.0.0.0' value to bind to all locally-available IP addresses"
           ]
@@ -802,7 +803,8 @@
           "hide": "!backupItem.connector.enabled",
           "placeholder": "unlimited",
           "tip": [
-            "REST TCP server send queue limit. If the limit exceeds, all successive writes will block until the queue has enough capacity"
+            "REST TCP server send queue limit",
+            "If the limit exceeds, all successive writes will block until the queue has enough capacity"
           ]
         },
         {
