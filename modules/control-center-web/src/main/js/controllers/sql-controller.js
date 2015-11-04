@@ -884,7 +884,8 @@ consoleModule.controller('sqlController',
         paragraph.rate.unit = unit;
         paragraph.rate.installed = true;
 
-        _tryStartRefresh(paragraph);
+        if (paragraph.queryArgs && paragraph.queryArgs.type == "QUERY")
+            _tryStartRefresh(paragraph);
     };
 
     $scope.stopRefresh = function (paragraph) {
