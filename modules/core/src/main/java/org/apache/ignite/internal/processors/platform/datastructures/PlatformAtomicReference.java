@@ -60,6 +60,7 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
 
     /**
      * Ctor.
+     *
      * @param ctx Context.
      * @param ref Atomic reference to wrap.
      */
@@ -71,9 +72,18 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
         atomicRef = ref;
     }
 
+    /**
+     * Returns a value indicating whether this instance has been closed.
+     *
+     * @return Value indicating whether this instance has been closed.
+     */
     public boolean isClosed() {
         return atomicRef.removed();
     }
+
+    /**
+     * Closes this instance.
+     */
     public void close() {
         atomicRef.close();
     }
