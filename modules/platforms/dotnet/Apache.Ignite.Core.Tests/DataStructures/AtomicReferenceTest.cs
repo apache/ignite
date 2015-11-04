@@ -82,6 +82,8 @@
 
             Assert.AreEqual(15, atomics[0].CompareExchange(42, 15));
             atomics.ForEach(x => Assert.AreEqual(42, x.Get()));
+
+            // TODO: Test with portable and serializable
         }
     }
 }
