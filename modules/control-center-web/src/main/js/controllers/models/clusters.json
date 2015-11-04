@@ -708,7 +708,7 @@
           "type": "text",
           "path": "connector",
           "model": "jettyPath",
-          "hide": "!backupItem.connector.enabled",
+          "disabled": "!backupItem.connector.enabled",
           "tip": [
             "Path, either absolute or relative to IGNITE_HOME, to Jetty XML configuration file",
             "Jetty is used to support REST over HTTP protocol for accessing Ignite APIs remotely",
@@ -721,7 +721,7 @@
           "type": "text",
           "path": "connector",
           "model": "host",
-          "hide": "!backupItem.connector.enabled",
+          "disabled": "!backupItem.connector.enabled",
           "placeholder": "IgniteConfiguration#getLocalHost()",
           "tip": [
             "Host for TCP binary protocol server",
@@ -736,7 +736,7 @@
           "type": "number",
           "path": "connector",
           "model": "port",
-          "hide": "!backupItem.connector.enabled",
+          "disabled": "!backupItem.connector.enabled",
           "placeholder": 11211,
           "min": 1024,
           "max": 65535,
@@ -750,7 +750,7 @@
           "type": "number",
           "path": "connector",
           "model": "portRange",
-          "hide": "!backupItem.connector.enabled",
+          "disabled": "!backupItem.connector.enabled",
           "placeholder": 100,
           "tip": [
             "Number of ports for TCP binary protocol server to try if configured port is already in use"
@@ -762,7 +762,7 @@
           "type": "number",
           "path": "connector",
           "model": "idleTimeout",
-          "hide": "!backupItem.connector.enabled",
+          "disabled": "!backupItem.connector.enabled",
           "placeholder": 7000,
           "tip": [
             "Idle timeout for REST server",
@@ -776,7 +776,7 @@
           "type": "number",
           "path": "connector",
           "model": "receiveBufferSize",
-          "hide": "!backupItem.connector.enabled",
+          "disabled": "!backupItem.connector.enabled",
           "placeholder": 32768,
           "tip": [
             "REST TCP server receive buffer size"
@@ -788,7 +788,7 @@
           "type": "number",
           "path": "connector",
           "model": "sendBufferSize",
-          "hide": "!backupItem.connector.enabled",
+          "disabled": "!backupItem.connector.enabled",
           "placeholder": 32768,
           "tip": [
             "REST TCP server send buffer size"
@@ -800,7 +800,7 @@
           "type": "number",
           "path": "connector",
           "model": "sendQueueLimit",
-          "hide": "!backupItem.connector.enabled",
+          "disabled": "!backupItem.connector.enabled",
           "placeholder": "unlimited",
           "tip": [
             "REST TCP server send queue limit",
@@ -813,7 +813,7 @@
           "type": "check",
           "path": "connector",
           "model": "directBuffer",
-          "hide": "!backupItem.connector.enabled",
+          "disabled": "!backupItem.connector.enabled",
           "tip": [
             "Flag indicating whether REST TCP server should use direct buffers",
             "A direct buffer is a buffer that is allocated and accessed using native system calls, without using JVM heap",
@@ -826,7 +826,7 @@
           "type": "check",
           "path": "connector",
           "model": "noDelay",
-          "hide": "!backupItem.connector.enabled",
+          "disabled": "!backupItem.connector.enabled",
           "tip": [
             "Flag indicating whether TCP_NODELAY option should be set for accepted client connections",
             "Setting this option reduces network latency and should be enabled in majority of cases",
@@ -839,7 +839,7 @@
           "type": "number",
           "path": "connector",
           "model": "selectorCount",
-          "hide": "!backupItem.connector.enabled",
+          "disabled": "!backupItem.connector.enabled",
           "placeholder": "min(4, availableProcessors)",
           "tip": [
             "Number of selector threads in REST TCP server",
@@ -852,7 +852,7 @@
           "type": "number",
           "path": "connector",
           "model": "threadPoolSize",
-          "hide": "!backupItem.connector.enabled",
+          "disabled": "!backupItem.connector.enabled",
           "placeholder": "max(8, availableProcessors) * 2",
           "tip": [
             "Thread pool size to use for processing of client messages (REST requests)"
@@ -864,7 +864,7 @@
           "type": "text",
           "path": "connector",
           "model": "messageInterceptor",
-          "hide": "!backupItem.connector.enabled",
+          "disabled": "!backupItem.connector.enabled",
           "placeholder": "Enter fully qualified class name",
           "tip": [
             "Interceptor allows to transform all objects exchanged via REST protocol",
@@ -877,7 +877,7 @@
           "type": "text",
           "path": "connector",
           "model": "secretKey",
-          "hide": "!backupItem.connector.enabled",
+          "disabled": "!backupItem.connector.enabled",
           "placeholder": "Specify to enable authentication",
           "tip": [
             "Secret key to authenticate REST requests"
@@ -889,7 +889,7 @@
           "type": "check",
           "path": "connector",
           "model": "sslEnabled",
-          "hide": "!backupItem.connector.enabled",
+          "disabled": "!backupItem.connector.enabled",
           "tip": [
             "Enables/disables SSL for REST TCP binary protocol"
           ]
@@ -900,7 +900,7 @@
           "type": "check",
           "path": "connector",
           "model": "sslClientAuth",
-          "hide": "!backupItem.connector.enabled || !backupItem.connector.sslEnabled",
+          "disabled": "!backupItem.connector.enabled || !backupItem.connector.sslEnabled",
           "tip": [
             "Flag indicating whether or not SSL client authentication is required"
           ]
@@ -912,7 +912,7 @@
           "path": "connector",
           "model": "sslFactory",
           "required": true,
-          "hide": "!backupItem.connector.enabled || !backupItem.connector.sslEnabled",
+          "disabled": "!backupItem.connector.enabled || !backupItem.connector.sslEnabled",
           "placeholder": "Enter fully qualified class name",
           "tip": [
             "Instance of Factory that will be used to create an instance of SSLContext for Secure Socket Layer on TCP binary protocol"
