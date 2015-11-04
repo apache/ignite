@@ -119,5 +119,6 @@ IgniteAtomicSequenceGetBatchSize @116
 IgniteAtomicSequenceSetBatchSize @117
 IgniteAtomicSequenceIsClosed @118
 IgniteAtomicSequenceClose @119
-IgniteAtomicReferenceIsClosed @120
-IgniteAtomicReferenceClose @121
+IgniteProcessorAtomicReference @120
+IgniteAtomicReferenceIsClosed @121
+IgniteAtomicReferenceClose @122

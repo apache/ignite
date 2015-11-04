@@ -66,13 +66,13 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** <inheritDoc /> */
         public bool IsClosed()
         {
-            throw new System.NotImplementedException();
+            return UnmanagedUtils.AtomicReferenceIsClosed(Target);
         }
 
         /** <inheritDoc /> */
         public void Close()
         {
-            throw new System.NotImplementedException();
+            UnmanagedUtils.AtomicReferenceClose(Target);
         }
     }
 }
