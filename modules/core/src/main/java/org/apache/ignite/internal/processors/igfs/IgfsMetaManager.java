@@ -3368,18 +3368,6 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
-     * Calculates new reserved delta. (Currently uses an heuristic algorythm.)
-     *
-     * @param blockSize The block size.
-     * @param length The currect file length.
-     * @param expectedWriteDelta The length delta that is known to be expected to be written to the file.
-     * @return The new delta to reserve, in bytes.
-     */
-    static long calculateNextReservedDelta(int blockSize, long length, long expectedWriteDelta) {
-        return Math.max(256 * blockSize, expectedWriteDelta);
-    }
-
-    /**
      * Create a new file.
      *
      * @param path Path.
@@ -3416,7 +3404,7 @@ public class IgfsMetaManager extends IgfsManager {
                             IgfsFileInfo x = new IgfsFileInfo(blockSize, 0L, affKey, composeLockId(false),
                                 evictExclude, leafProps);
 
-                            long reserved = calculateNextReservedDelta(blockSize, 0L, 0L);
+                            long reserved = IgfsUtils.calculateNextReservedDelta(blockSize, 0L, 0L);
 
                             return new IgfsFileInfo(reserved, x);
                         }
@@ -3535,7 +3523,7 @@ public class IgfsMetaManager extends IgfsManager {
                                         final IgfsFileInfo x = new IgfsFileInfo(cfg.getBlockSize(), 0L,
                                             affKey, composeLockId(false), evictExclude, fileProps);
 
-                                        long reserved = calculateNextReservedDelta(cfg.getBlockSize(), 0L, 0L);
+                                        long reserved = IgfsUtils.calculateNextReservedDelta(cfg.getBlockSize(), 0L, 0L);
 
                                         IgfsFileInfo newFileInfo = new IgfsFileInfo(reserved, x);
 
@@ -3831,7 +3819,7 @@ public class IgfsMetaManager extends IgfsManager {
             assert info != null;
 
             long newReservedDelta =
-                newLockId == null ? 0L : calculateNextReservedDelta(info.blockSize(), info.length(), 0L);
+                newLockId == null ? 0L : IgfsUtils.calculateNextReservedDelta(info.blockSize(), info.length(), 0L);
 
             IgfsFileInfo x = new IgfsFileInfo(info, newLockId, info.modificationTime());
 

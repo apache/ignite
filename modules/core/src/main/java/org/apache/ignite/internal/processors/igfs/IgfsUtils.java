@@ -181,4 +181,16 @@ public class IgfsUtils {
         if (evts.isRecordable(type))
             evts.record(new IgfsEvent(path, locNode, type));
     }
+
+    /**
+     * Calculates new reserved delta. (Currently uses an heuristic algorythm.)
+     *
+     * @param blockSize The block size.
+     * @param length The currect file length.
+     * @param expectedWriteDelta The length delta that is known to be expected to be written to the file.
+     * @return The new delta to reserve, in bytes.
+     */
+    static long calculateNextReservedDelta(int blockSize, long length, long expectedWriteDelta) {
+        return Math.max(256 * blockSize, expectedWriteDelta);
+    }
 }

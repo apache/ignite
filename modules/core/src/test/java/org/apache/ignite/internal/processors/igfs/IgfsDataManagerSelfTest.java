@@ -180,7 +180,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             IgfsOutputStreamImpl os = (IgfsOutputStreamImpl)igfs.create(path, true);
 
-            IgfsDataManager.WriteCompletionFuture fut = os.writeCompletionFut;
+            WriteCompletionFuture fut = os.writeCompletionFut;
 
             expectsStoreFail(info, data, "Not enough space reserved to store data", fut);
 
@@ -269,7 +269,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             info = new IgfsFileInfo(info.length() + data.length + remainder.length, info.reservedDelta(), info);
 
-            IgfsDataManager.WriteCompletionFuture fut
+            WriteCompletionFuture fut
                 = ((IgfsOutputStreamImpl)igfs.create(path, true)).writeCompletionFut;
 
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
@@ -358,7 +358,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             info = new IgfsFileInfo(info.length() + data.length * writesCnt, info.reservedDelta(), info);
 
-            IgfsDataManager.WriteCompletionFuture fut
+            WriteCompletionFuture fut
                 = ((IgfsOutputStreamImpl)igfs.create(path, true)).writeCompletionFut;
 
             for (int j = 0; j < 64; j++) {
@@ -493,7 +493,6 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     public void testAffinityFileMap() throws Exception {
         int blockSize = BLOCK_SIZE;
 
-        IgfsFileInfo info = new IgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null);
 
         IgniteUuid affKey = IgniteUuid.randomUuid();
 
@@ -502,7 +501,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         map.addRange(new IgfsFileAffinityRange(3 * BLOCK_SIZE, 5 * BLOCK_SIZE - 1, affKey));
         map.addRange(new IgfsFileAffinityRange(13 * BLOCK_SIZE, 17 * BLOCK_SIZE - 1, affKey));
 
-        info.fileMap(map);
+        IgfsFileInfo info = new IgfsFileInfo(blockSize, 1024 * 1024, 0L, map);
 
         Collection<IgfsBlockLocation> affinity = mgr.affinity(info, 0, info.length());
 
@@ -569,7 +568,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      * @param msg Expected failure message.
      */
     private void expectsStoreFail(final IgfsFileInfo reserved, final byte[] data, @Nullable String msg,
-        final IgfsDataManager.WriteCompletionFuture fut) {
+        final WriteCompletionFuture fut) {
         GridTestUtils.assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {
                 IgfsFileAffinityRange range = new IgfsFileAffinityRange();

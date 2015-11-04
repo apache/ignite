@@ -1659,12 +1659,9 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /**
-     * IGFS output stream extension that fires events.
+     * IGFS output stream extension that fires events & updates metrics.
      */
     private class IgfsEventAwareOutputStream extends IgfsOutputStreamImpl {
-        /** Close guard. */
-        private final AtomicBoolean closeGuard = new AtomicBoolean(false);
-
         /**
          * Constructs file output stream.
          *
@@ -1684,15 +1681,11 @@ public final class IgfsImpl implements IgfsEx {
 
         /** {@inheritDoc} */
         @SuppressWarnings("NonSynchronizedMethodOverridesSynchronizedMethod")
-        @Override protected void onClose() throws IOException {
-            if (closeGuard.compareAndSet(false, true)) {
-                super.onClose();
+        @Override protected void afterClose() {
+            metrics.decrementFilesOpenedForWrite();
 
-                metrics.decrementFilesOpenedForWrite();
-
-                if (evts.isRecordable(EVT_IGFS_FILE_CLOSED_WRITE))
-                    evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_CLOSED_WRITE, bytes()));
-            }
+            if (evts.isRecordable(EVT_IGFS_FILE_CLOSED_WRITE))
+                evts.record(new IgfsEvent(path, localNode(), EVT_IGFS_FILE_CLOSED_WRITE, bytes()));
         }
     }
 

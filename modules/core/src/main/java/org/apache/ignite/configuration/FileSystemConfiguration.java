@@ -143,10 +143,7 @@ public class FileSystemConfiguration {
     /** Maximum space. */
     private long maxSpace;
 
-    /** Trash purge await timeout.
-     * @deprecated This parameter in no longer used, its value is ignored.
-     */
-    @Deprecated
+    /** Trash purge await timeout. */
     private long trashPurgeTimeout = DFLT_TRASH_PURGE_TIMEOUT;
 
     /** Dual mode PUT operations executor service. */

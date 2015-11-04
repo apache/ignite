@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.FileSystemConfiguration;
@@ -41,24 +42,16 @@ public final class IgfsFileInfo implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * ID for the root directory.
-     */
+    /** ID for the root directory. */
     public static final IgniteUuid ROOT_ID = new IgniteUuid(new UUID(0, 0), 0);
 
-    /**
-     * ID of the trash directory.
-     */
+    /** ID of the trash directory. */
     public static final IgniteUuid TRASH_ID = new IgniteUuid(new UUID(0, 1), 0);
 
-    /**
-     * Info ID.
-     */
+    /** Info ID. */
     private IgniteUuid id;
 
-    /**
-     * File length in bytes.
-     */
+    /** File length in bytes. */
     private long len;
 
     /**
@@ -69,56 +62,35 @@ public final class IgfsFileInfo implements Externalizable {
      */
     private long reservedDelta;
 
-    /**
-     * File block size, {@code zero} for directories.
-     */
+    /** File block size, {@code zero} for directories. */
     private int blockSize;
 
-    /**
-     * File properties.
-     */
+    /** File properties. */
     private @Nullable Map<String, String> props;
 
-    /**
-     * File lock ID.
-     */
+    /** File lock ID. */
     private IgniteUuid lockId;
 
-    /**
-     * Affinity key used for single-node file collocation.
-     */
+    /** Affinity key used for single-node file collocation. */
     private IgniteUuid affKey;
 
-    /**
-     * File affinity map.
-     */
+    /** File affinity map. */
     private IgfsFileMap fileMap;
 
-    /**
-     * Last access time. Modified on-demand.
-     */
+    /** Last access time. Modified on-demand. */
     private long accessTime;
 
-    /**
-     * Last modification time.
-     */
+    /** Last modification time. */
     private long modificationTime;
 
-    /**
-     * Directory listing.
-     */
+    /** Directory listing. */
     @GridToStringInclude
     private Map<String, IgfsListingEntry> listing;
 
-    /**
-     * Whether data blocks of this entry should never be excluded.
-     */
+    /** Whether data blocks of this entry should never be excluded. */
     private boolean evictExclude;
 
-    /**
-     * Original file path. This is a helper field used only in some
-     * operations like delete.
-     */
+    /** Original file path. This is a helper field used only in some operations like delete. */
     private IgfsPath path;
 
     /**
@@ -134,27 +106,36 @@ public final class IgfsFileInfo implements Externalizable {
      * @param x The info to copy.
      */
     public IgfsFileInfo(IgfsFileInfo x) {
-        assert x != null;
-
-        this.id = x.id;
-        this.len = x.len;
-        this.reservedDelta = x.reservedDelta;
-        this.blockSize = x.blockSize;
-        this.props = F.isEmpty(x.props) ? null : new GridLeanMap<>(x.props);
-        this.lockId = x.lockId;
-        this.affKey = x.affKey;
-        this.fileMap = x.fileMap == null && this.isFile() ? new IgfsFileMap() : x.fileMap();
-        this.accessTime = x.accessTime;
-        this.modificationTime = x.modificationTime;
-        if (x.listing == null && x.isDirectory())
-            this.listing = Collections.emptyMap();
-        else
-            this.listing = x.listing; // Note that the map is not copied.
-        this.evictExclude = x.evictExclude;
-        this.path = x.path;
+        this(x.isDirectory(),
+            x.id,
+            x.blockSize,
+            x.len,
+            x.reservedDelta,
+            x.affKey,
+            x.listing,
+            x.props,
+            x.fileMap,
+            x.lockId,
+            true,
+            x.accessTime,
+            x.modificationTime,
+            x.evictExclude);
 
         assert isValid();
         assert equals(x);
+    }
+
+    /**
+     * A copy constructor.
+     *
+     * @param x The info to copy.
+     */
+    public IgfsFileInfo(IgfsFileInfo x, IgfsFileMap fileMap) {
+        this(x);
+
+        this.fileMap = fileMap;
+
+        assert isValid();
     }
 
     /**
@@ -296,8 +277,51 @@ public final class IgfsFileInfo implements Externalizable {
         this(info);
 
         this.len = len;
-
         this.reservedDelta = reservedDelta;
+
+        assert isValid();
+    }
+
+    /**
+     * Constructs file information.
+     *
+     * @param len File length.
+     * @param info File information to copy data from.
+     * @param reservedDelta The reserved delta.
+     */
+    IgfsFileInfo(long len, long reservedDelta, IgfsFileInfo info, IgfsFileMap fileMap) {
+        this(info);
+
+        this.len = len;
+        this.reservedDelta = reservedDelta;
+        this.fileMap = fileMap;
+
+        assert isValid();
+    }
+
+    /**
+     * Constructs file information.
+     *
+     * @param blockSize Block size.
+     * @param len File length.
+     * @param reservedDelta The reserved delta.
+     * @param fileMap File map.
+     */
+    IgfsFileInfo(int blockSize, long len, long reservedDelta, IgfsFileMap fileMap) {
+        this(false,
+            null,
+            blockSize,
+            len,
+            reservedDelta,
+            null,
+            null,
+            null,
+            fileMap,
+            null,
+            true,
+            System.currentTimeMillis(),
+            System.currentTimeMillis(),
+            false);
 
         assert isValid();
     }
@@ -388,10 +412,10 @@ public final class IgfsFileInfo implements Externalizable {
     IgfsFileInfo(@Nullable Map<String, IgfsListingEntry> listing, IgfsFileInfo old) {
         this(old);
 
-        if (listing == null && old.isDirectory())
-            this.listing = Collections.emptyMap();
+        if (listing == null)
+            this.listing = old.isDirectory() ? Collections.<String, IgfsListingEntry>emptyMap() : null;
         else
-            this.listing = listing; // Note that the map is not copied.
+            this.listing = new HashMap<>(listing); // Copy the map.
 
         assert isValid();
     }
@@ -414,7 +438,7 @@ public final class IgfsFileInfo implements Externalizable {
     private IgfsFileInfo(boolean isDir, @Nullable IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey,
                          @Nullable Map<String, IgfsListingEntry> listing, @Nullable Map<String, String> props,
                          @Nullable IgniteUuid lockId, boolean cpProps, long modificationTime, boolean evictExclude) {
-        this(isDir, id, blockSize, len, affKey, listing, props, null, lockId, cpProps, modificationTime,
+        this(isDir, id, blockSize, len, 0L, affKey, listing, props, null, lockId, cpProps, modificationTime,
             modificationTime, evictExclude);
 
         assert isValid();
@@ -427,6 +451,7 @@ public final class IgfsFileInfo implements Externalizable {
      * @param id               ID or {@code null} to generate it automatically.
      * @param blockSize        Block size.
      * @param len              Size of a file.
+     * @param reservedDelta    Number of bytes reserved for further writing.
      * @param affKey           Affinity key for data blocks.
      * @param listing          Directory listing.
      * @param props            File properties.
@@ -437,10 +462,10 @@ public final class IgfsFileInfo implements Externalizable {
      * @param modificationTime Last modification time.
      * @param evictExclude     Evict exclude flag.
      */
-    private IgfsFileInfo(boolean isDir, @Nullable IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey,
-                         @Nullable Map<String, IgfsListingEntry> listing, @Nullable Map<String, String> props,
-                         @Nullable IgfsFileMap fileMap, @Nullable IgniteUuid lockId, boolean cpProps, long accessTime,
-                         long modificationTime, boolean evictExclude) {
+    private IgfsFileInfo(boolean isDir, @Nullable IgniteUuid id, int blockSize, long len, long reservedDelta,
+        @Nullable IgniteUuid affKey, @Nullable Map<String, IgfsListingEntry> listing,
+        @Nullable Map<String, String> props, @Nullable IgfsFileMap fileMap, @Nullable IgniteUuid lockId,
+        boolean cpProps, long accessTime, long modificationTime, boolean evictExclude) {
         assert F.isEmpty(listing) || isDir;
 
         if (isDir) {
@@ -454,9 +479,14 @@ public final class IgfsFileInfo implements Externalizable {
 
         this.id = id == null ? IgniteUuid.randomUuid() : id;
         this.len = isDir ? 0 : len;
+        this.reservedDelta = isDir ? 0 : reservedDelta;
         this.blockSize = isDir ? 0 : blockSize;
         this.affKey = affKey;
-        this.listing = listing;
+
+        if (listing == null)
+            this.listing = isDir ? Collections.<String, IgfsListingEntry>emptyMap() : null;
+        else
+            this.listing = new HashMap<>(listing); // Copy the map.
 
         if (fileMap == null && !isDir)
             fileMap = new IgfsFileMap();
@@ -468,9 +498,6 @@ public final class IgfsFileInfo implements Externalizable {
         // Always make a copy of passed properties collection to escape concurrent modifications.
         this.props = props == null || props.isEmpty() ? null :
             cpProps ? new GridLeanMap<>(props) : props;
-
-        if (listing == null && isDir)
-            this.listing = Collections.emptyMap();
 
         this.lockId = lockId;
         this.evictExclude = evictExclude;
@@ -579,24 +606,10 @@ public final class IgfsFileInfo implements Externalizable {
     }
 
     /**
-     * @param affKey Affinity key used for single-node file collocation.
-     */
-    void affinityKey(IgniteUuid affKey) {
-        this.affKey = affKey;
-    }
-
-    /**
      * @return File affinity map.
      */
     public IgfsFileMap fileMap() {
         return fileMap;
-    }
-
-    /**
-     * @param fileMap File affinity map.
-     */
-    void fileMap(IgfsFileMap fileMap) {
-        this.fileMap = fileMap;
     }
 
     /**
@@ -693,8 +706,12 @@ public final class IgfsFileInfo implements Externalizable {
 
         IgfsFileInfo that = (IgfsFileInfo) obj;
 
-        return id.equals(that.id) && blockSize == that.blockSize && len == that.len && F.eq(affKey, that.affKey) &&
-            F.eq(props, that.props) && F.eq(lockId, that.lockId);
+        return id.equals(that.id)
+            && blockSize == that.blockSize
+            && len == that.len
+            && F.eq(affKey, that.affKey)
+            && F.eq(props, that.props)
+            && F.eq(lockId, that.lockId);
     }
 
     /**

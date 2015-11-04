@@ -40,7 +40,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -58,7 +57,6 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
-import org.apache.ignite.igfs.IgfsOutOfSpaceException;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -921,7 +919,7 @@ public class IgfsDataManager extends IgfsManager {
         if (completionFut == null) {
             if (log.isDebugEnabled())
                 log.debug("Missing completion future for file write request (most likely exception occurred " +
-                    "which will be thrown upon stream close) [fileId=" + completionFut.fileId + ']');
+                    "which will be thrown upon stream close).");
 
             return;
         }
@@ -1385,7 +1383,7 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
-     *
+     * Truncates existing data block, if needed.
      */
     private static final class TruncateDataBlockProcessor implements EntryProcessor<IgfsBlockKey, byte[], Void>,
         Externalizable {
@@ -1397,7 +1395,6 @@ public class IgfsDataManager extends IgfsManager {
 
         /**
          * Empty constructor required for {@link Externalizable}.
-         *
          */
         public TruncateDataBlockProcessor() {
             // No-op.
@@ -1561,135 +1558,6 @@ public class IgfsDataManager extends IgfsManager {
                     req = delReqs.poll();
                 }
             }
-        }
-    }
-
-    /**
-     * Future that is completed when all participating
-     * parts of the file are written.
-     */
-    public static class WriteCompletionFuture extends GridFutureAdapter<Boolean> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** File id to remove future from map. */
-        private final IgniteUuid fileId;
-
-        /** Non-completed blocks count. It may both increase and decrease. */
-        private final AtomicInteger awaitingAckBlocksCnt = new AtomicInteger(0);
-
-        /** Lock for map-related conditions. */
-        private final Lock lock = new ReentrantLock();
-
-        /** Condition to wait for empty map. */
-        private final Condition allAcksRcvCond = lock.newCondition();
-
-        /** Flag indicating future is waiting for last ack. */
-        private volatile boolean awaitingLast;
-
-        /**
-         * @param fileId File id.
-         */
-        WriteCompletionFuture(IgniteUuid fileId) {
-            assert fileId != null;
-
-            this.fileId = fileId;
-        }
-
-        /**
-         * Await all pending data blockes to be acked.
-         *
-         * @throws IgniteInterruptedCheckedException In case of interrupt.
-         */
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-        public void awaitAllAcksReceived() throws IgniteInterruptedCheckedException {
-            lock.lock();
-
-            try {
-                while (!isDone() && awaitingAckBlocksCnt.get() > 0)
-                    U.await(allAcksRcvCond);
-            }
-            finally {
-                lock.unlock();
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
-            assert err != null || awaitingAckBlocksCnt.get() == 0;
-
-            boolean res1 = super.onDone(res, err);
-
-            signalNoAcks();
-
-            return res1;
-        }
-
-        /**
-         * Write request will be asynchronously executed on node with given ID.
-         */
-        private void onWriteRequest() {
-            assert !awaitingLast; // Writing is finished, we should not receive more write requests.
-
-            if (!isDone())
-                awaitingAckBlocksCnt.incrementAndGet();
-        }
-
-        /**
-         * Error occurred on node with given ID.
-         *
-         * @param e Caught exception.
-         */
-        private void onError(IgniteCheckedException e) {
-            if (e.hasCause(IgfsOutOfSpaceException.class))
-                onDone(new IgniteCheckedException("Failed to write data (not enough space on node): ", e));
-            else
-                onDone(new IgniteCheckedException(
-                    "Failed to wait for write completion (write failed on node): ", e));
-        }
-
-        /**
-         * Write ack received.
-         */
-        private void onWriteAck() {
-            if (!isDone()) {
-                int afterAck = awaitingAckBlocksCnt.decrementAndGet();
-
-                // This assertion is true because the number of counter decrements cannot exceed
-                // the number of counter increments:
-                assert afterAck >= 0 : "Received acknowledgement message for not registered batch.";
-
-                if (afterAck == 0) {
-                    if (awaitingLast)
-                        onDone(true);
-                    else
-                        signalNoAcks();
-                }
-            }
-        }
-
-        /**
-         * Signal that currenlty there are no more pending acks.
-         */
-        private void signalNoAcks() {
-            lock.lock();
-
-            try {
-                allAcksRcvCond.signalAll();
-            }
-            finally {
-                lock.unlock();
-            }
-        }
-
-        /**
-         * Marks this future as waiting last ack.
-         */
-        private void markWaitingLastAck() {
-            awaitingLast = true;
-
-            if (awaitingAckBlocksCnt.get() == 0)
-                onDone(true);
         }
     }
 
