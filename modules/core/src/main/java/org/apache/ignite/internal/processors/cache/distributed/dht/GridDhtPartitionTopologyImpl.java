@@ -1258,8 +1258,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (part.own()) {
                 updateLocal(part.id(), loc.id(), part.state(), updateSeq.incrementAndGet());
 
-                updateRebalanceVersion();
-
                 consistencyCheck();
 
                 return true;
