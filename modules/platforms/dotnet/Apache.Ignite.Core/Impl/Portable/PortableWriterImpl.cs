@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Portable
     using System.Collections;
     using System.Collections.Generic;
     using System.IO;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Portable.Metadata;
     using Apache.Ignite.Core.Impl.Portable.Structure;
@@ -70,8 +69,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Current type structure tracker, */
         private PortableStructureTracker _curStruct;
 
-        /** Current schema. */
-        private ResizeableArray<PortableObjectSchemaField> _curSchema;
+        /** Schema holder. */
+        private readonly PortableObjectSchemaHolder _schema = PortableObjectSchemaHolder.Current;
 
         /// <summary>
         /// Gets the marshaller.
@@ -1073,42 +1072,49 @@ namespace Apache.Ignite.Core.Impl.Portable
                 var oldPos = _curPos;
                 
                 var oldStruct = _curStruct;
-                var oldSchema = _curSchema;
 
                 // Push new frame.
                 _curTypeId = desc.TypeId;
-                _curConverter = desc.NameConverter;
-                _curMapper = desc.Mapper;
+                _curConverter = desc.NameMapper;
+                _curMapper = desc.IdMapper;
                 _curRawPos = 0;
                 _curPos = pos;
 
                 _curStruct = new PortableStructureTracker(desc, desc.WriterTypeStructure);
-                _curSchema = null;
+                var schemaIdx = _schema.PushSchema();
 
-                // Write object fields.
-                desc.Serializer.WritePortable(obj, this);
+                try
+                {
+                    // Write object fields.
+                    desc.Serializer.WritePortable(obj, this);
 
-                // Write schema
-                var hasSchema = _curSchema != null;
-                var schemaOffset = hasSchema ? _stream.Position - pos : PortableObjectHeader.Size;
-                short flags = 0;
+                    // Write schema
+                    var schemaOffset = _stream.Position - pos;
 
-                if (hasSchema)
-                    flags = PortableObjectHeader.WriteSchema(_curSchema.Array, _stream, _curSchema.Count,
-                        _curSchema.Array[_curSchema.Count - 1].Offset);
+                    int schemaId;
+                    short flags;
+                    var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, out flags);
 
-                // Calculate and write header.
-                if (hasSchema && _curRawPos > 0)
-                    _stream.WriteInt(_curRawPos - pos); // raw offset is in the last 4 bytes
+                    if (!hasSchema)
+                        schemaOffset = PortableObjectHeader.Size;
 
-                var len = _stream.Position - pos;
+                    // Calculate and write header.
+                    if (hasSchema && _curRawPos > 0)
+                        _stream.WriteInt(_curRawPos - pos); // raw offset is in the last 4 bytes
 
-                var header = new PortableObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len,
-                    PU.GetSchemaId(_curSchema), schemaOffset, !hasSchema, flags);
+                    var len = _stream.Position - pos;
 
-                PortableObjectHeader.Write(header, _stream, pos);
+                    var header = new PortableObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len,
+                        schemaId, schemaOffset, !hasSchema, flags);
 
-                Stream.Seek(pos + len, SeekOrigin.Begin);  // Seek to the end
+                    PortableObjectHeader.Write(header, _stream, pos);
+
+                    Stream.Seek(pos + len, SeekOrigin.Begin); // Seek to the end
+                }
+                finally
+                {
+                    _schema.PopSchema(schemaIdx);
+                }
 
                 // Apply structure updates if any.
                 _curStruct.UpdateWriterStructure(this);
@@ -1121,7 +1127,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 _curPos = oldPos;
 
                 _curStruct = oldStruct;
-                _curSchema = oldSchema;
             }
             else
             {
@@ -1373,9 +1378,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             var fieldId = _curStruct.GetFieldId(fieldName, fieldTypeId);
 
-            _curSchema = _curSchema ?? new ResizeableArray<PortableObjectSchemaField>(4);
-
-            _curSchema.Add(new PortableObjectSchemaField(fieldId, _stream.Position - _curPos));
+            _schema.PushField(fieldId, _stream.Position - _curPos);
         }
 
         /// <summary>

@@ -95,6 +95,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR_ARR;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLASS;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.COL;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE_ARR;
@@ -111,6 +112,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT_ARR
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP;
+import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP_ENTRY;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.PORTABLE_OBJ;
@@ -198,6 +200,8 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
         FIELD_TYPE_NAMES[PORTABLE_OBJ] = "Object";
         FIELD_TYPE_NAMES[COL] = "Collection";
         FIELD_TYPE_NAMES[MAP] = "Map";
+        FIELD_TYPE_NAMES[MAP_ENTRY] = "Entry";
+        FIELD_TYPE_NAMES[CLASS] = "Class";
         FIELD_TYPE_NAMES[BYTE_ARR] = "byte[]";
         FIELD_TYPE_NAMES[SHORT_ARR] = "short[]";
         FIELD_TYPE_NAMES[INT_ARR] = "int[]";

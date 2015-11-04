@@ -39,6 +39,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.binary.BinaryObject;
@@ -66,6 +67,29 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentHashMap8;
 import sun.misc.Unsafe;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.InetSocketAddress;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import static org.apache.ignite.internal.portable.PortableThreadLocalMemoryAllocator.THREAD_LOCAL_ALLOC;
 import static org.junit.Assert.assertArrayEquals;
@@ -2134,6 +2158,21 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testClass() throws Exception {
+        PortableMarshaller marsh = new PortableMarshaller();
+
+        initPortableContext(marsh);
+
+        Class cls = GridPortableMarshallerSelfTest.class;
+
+        Class unmarshalledCls = marshalUnmarshal(cls, marsh);
+
+        Assert.assertEquals(cls, unmarshalledCls);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testClassFieldsMarshalling() throws Exception {
         PortableMarshaller marsh = new PortableMarshaller();
 
@@ -2148,6 +2187,12 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(obj.cls1, obj2.cls1);
         assertNull(obj2.cls2);
+
+        PortableObject portObj = marshal(obj, marsh);
+
+        Class cls1 = portObj.field("cls1");
+
+        assertEquals(obj.cls1, cls1);
     }
 
     /**
@@ -2265,11 +2310,13 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Object with class fields.
      */
     private static class ObjectWithClassFields {
+        /** */
         private Class<?> cls1;
 
+        /** */
         private Class<?> cls2;
     }
 

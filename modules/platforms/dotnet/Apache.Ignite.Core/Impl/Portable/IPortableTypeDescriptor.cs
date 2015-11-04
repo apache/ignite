@@ -61,14 +61,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Metadata enabled flag.
-        /// </summary>
-        bool MetadataEnabled
-        {
-            get;
-        }
-
-        /// <summary>
         /// Whether to cache deserialized value in IPortableObject
         /// </summary>
         bool KeepDeserialized
@@ -79,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Name converter.
         /// </summary>
-        IPortableNameMapper NameConverter
+        IPortableNameMapper NameMapper
         {
             get;
         }
@@ -87,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Mapper.
         /// </summary>
-        IPortableIdMapper Mapper
+        IPortableIdMapper IdMapper
         {
             get;
         }

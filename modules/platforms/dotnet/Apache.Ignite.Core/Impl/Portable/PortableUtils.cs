@@ -1726,7 +1726,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                             IdMapper = CreateInstance<IPortableIdMapper>(reader),
                             Serializer = CreateInstance<IPortableSerializer>(reader),
                             AffinityKeyFieldName = reader.ReadString(),
-                            MetadataEnabled = reader.ReadObject<bool?>(),
                             KeepDeserialized = reader.ReadObject<bool?>()
                         });
                     }
@@ -1747,7 +1746,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 cfg.DefaultNameMapper = CreateInstance<IPortableNameMapper>(reader);
                 cfg.DefaultIdMapper = CreateInstance<IPortableIdMapper>(reader);
                 cfg.DefaultSerializer = CreateInstance<IPortableSerializer>(reader);
-                cfg.DefaultMetadataEnabled = reader.ReadBoolean();
                 cfg.DefaultKeepDeserialized = reader.ReadBoolean();
             }
             else
@@ -1765,28 +1763,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 return default(T);
 
             return IgniteUtils.CreateInstance<T>(typeName);
-        }
-
-        /// <summary>
-        /// Gets the schema id as a Fnv1 hash.
-        /// </summary>
-        /// <param name="schema">The schema.</param>
-        /// <returns>
-        /// Schema id.
-        /// </returns>
-        public static int GetSchemaId(ResizeableArray<PortableObjectSchemaField> schema)
-        {
-            var hash = Fnv1Hash.Basis;
-
-            if (schema == null || schema.Count == 0)
-                return hash;
-
-            var arr = schema.Array;
-
-            for (int i = 0; i < schema.Count; i++)
-                hash = Fnv1Hash.Update(hash, arr[i].Id);
-
-            return hash;
         }
 
         /// <summary>

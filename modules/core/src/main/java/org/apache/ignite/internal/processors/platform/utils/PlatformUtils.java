@@ -786,7 +786,6 @@ public class PlatformUtils {
                     writer.writeString(typ.getIdMapper());
                     writer.writeString(typ.getSerializer());
                     writer.writeString(typ.getAffinityKeyFieldName());
-                    writer.writeObject(typ.getMetadataEnabled());
                     writer.writeObject(typ.getKeepDeserialized());
                 }
             });
@@ -795,7 +794,6 @@ public class PlatformUtils {
             writer.writeString(portableCfg.getDefaultNameMapper());
             writer.writeString(portableCfg.getDefaultIdMapper());
             writer.writeString(portableCfg.getDefaultSerializer());
-            writer.writeBoolean(portableCfg.isDefaultMetadataEnabled());
             writer.writeBoolean(portableCfg.isDefaultKeepDeserialized());
         }
         else

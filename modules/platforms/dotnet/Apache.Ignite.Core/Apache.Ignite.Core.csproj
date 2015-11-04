@@ -258,6 +258,7 @@
     <Compile Include="Impl\Portable\PortableObjectHeader.cs" />
     <Compile Include="Impl\Portable\PortableObjectSchema.cs" />
     <Compile Include="Impl\Portable\PortableObjectSchemaField.cs" />
+    <Compile Include="Impl\Portable\PortableObjectSchemaHolder.cs" />
     <Compile Include="Impl\Portable\PortableReaderExtensions.cs" />
     <Compile Include="Impl\Portable\PortableReaderHandleDictionary.cs" />
     <Compile Include="Impl\Portable\PortableReaderImpl.cs" />

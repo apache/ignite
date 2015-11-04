@@ -68,6 +68,32 @@ public abstract class PortablePrimitives {
     /**
      * @param arr Array.
      * @param off Offset.
+     * @return Value.
+     */
+    public static byte[] readByteArray(byte[] arr, int off, int len) {
+        byte[] arr0 = new byte[len];
+
+        UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, BYTE_ARR_OFF, len);
+
+        return arr0;
+    }
+
+    /**
+     * @param ptr Pointer.
+     * @param off Offset.
+     * @return Value.
+     */
+    public static byte[] readByteArray(long ptr, int off, int len) {
+        byte[] arr0 = new byte[len];
+
+        UNSAFE.copyMemory(null, ptr + off, arr0, BYTE_ARR_OFF, len);
+
+        return arr0;
+    }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
      * @param val Value.
      */
     public static void writeBoolean(byte[] arr, int off, boolean val) {
@@ -181,6 +207,24 @@ public abstract class PortablePrimitives {
         char[] arr0 = new char[len];
 
         UNSAFE.copyMemory(arr, BYTE_ARR_OFF + off, arr0, CHAR_ARR_OFF, len << 1);
+
+        if (BIG_ENDIAN) {
+            for (int i = 0; i < len; i++)
+                arr0[i] = Character.reverseBytes(arr0[i]);
+        }
+
+        return arr0;
+    }
+
+    /**
+     * @param ptr Pointer.
+     * @param off Offset.
+     * @return Value.
+     */
+    public static char[] readCharArray(long ptr, int off, int len) {
+        char[] arr0 = new char[len];
+
+        UNSAFE.copyMemory(null, ptr + off, arr0, CHAR_ARR_OFF, len << 1);
 
         if (BIG_ENDIAN) {
             for (int i = 0; i < len; i++)
