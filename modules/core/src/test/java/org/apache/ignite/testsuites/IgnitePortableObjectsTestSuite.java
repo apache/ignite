@@ -28,7 +28,6 @@ import org.apache.ignite.internal.portable.GridPortableMarshallerSelfTest;
 import org.apache.ignite.internal.portable.GridPortableMetaDataDisabledSelfTest;
 import org.apache.ignite.internal.portable.GridPortableMetaDataSelfTest;
 import org.apache.ignite.internal.portable.GridPortableWildcardsSelfTest;
-import org.apache.ignite.internal.portable.PortableCompactOffsetsAbstractSelfTest;
 import org.apache.ignite.internal.portable.PortableCompactOffsetsHeapSelfTest;
 import org.apache.ignite.internal.portable.PortableCompactOffsetsOffheapSelfTest;
 import org.apache.ignite.internal.portable.PortableFieldsHeapSelfTest;
@@ -65,6 +64,8 @@ public class IgnitePortableObjectsTestSuite extends TestSuite {
         suite.addTestSuite(GridPortableMarshallerCtxDisabledSelfTest.class);
         suite.addTestSuite(GridPortableBuilderSelfTest.class);
         suite.addTestSuite(GridPortableBuilderStringAsCharsSelfTest.class);
+        suite.addTestSuite(GridPortableBuilderAdditionalSelfTest.class);
+        suite.addTestSuite(GridPortableBuilderStringAsCharsAdditionalSelfTest.class);
         suite.addTestSuite(PortableFieldsHeapSelfTest.class);
         suite.addTestSuite(PortableFieldsOffheapSelfTest.class);
         suite.addTestSuite(PortableCompactOffsetsHeapSelfTest.class);
@@ -73,8 +74,6 @@ public class IgnitePortableObjectsTestSuite extends TestSuite {
         suite.addTestSuite(GridPortableMetaDataDisabledSelfTest.class);
         suite.addTestSuite(GridPortableAffinityKeySelfTest.class);
         suite.addTestSuite(GridPortableWildcardsSelfTest.class);
-        suite.addTestSuite(GridPortableBuilderAdditionalSelfTest.class);
-        suite.addTestSuite(GridPortableBuilderStringAsCharsAdditionalSelfTest.class);
 
         suite.addTestSuite(GridCachePortableObjectsLocalSelfTest.class);
         suite.addTestSuite(GridCachePortableObjectsAtomicLocalSelfTest.class);

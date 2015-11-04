@@ -245,27 +245,28 @@ public class PortableBuilderImpl implements PortableBuilder {
                     int fieldId = reader.readIntPositioned(footerPos);
                     int fieldLen = fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldOffsetSize).get2();
 
+                    int postLen = reader.position() + fieldLen; // Position where reader will be placed afterwards.
+
                     footerPos += 4 + fieldOffsetSize;
 
                     if (assignedFldsById.containsKey(fieldId)) {
                         Object assignedVal = assignedFldsById.remove(fieldId);
-
-                        reader.skip(fieldLen);
 
                         if (assignedVal != REMOVED_FIELD_MARKER) {
                             writer.writeFieldId(fieldId);
 
                             serializer.writeValue(writer, assignedVal);
                         }
-                    } else {
+                    }
+                    else {
                         int type = fieldLen != 0 ? reader.readByte(0) : 0;
 
                         if (fieldLen != 0 && !PortableUtils.isPlainArrayType(type) && PortableUtils.isPlainType(type)) {
                             writer.writeFieldId(fieldId);
-                            writer.write(reader.array(), reader.position(), fieldLen);
 
-                            reader.skip(fieldLen);
-                        } else {
+                            writer.write(reader.array(), reader.position(), fieldLen);
+                        }
+                        else {
                             writer.writeFieldId(fieldId);
 
                             Object val;
@@ -273,20 +274,18 @@ public class PortableBuilderImpl implements PortableBuilder {
                             if (fieldLen == 0)
                                 val = null;
                             else if (readCache == null) {
-                                int savedPos = reader.position();
-
                                 val = reader.parseValue();
 
-                                assert reader.position() == savedPos + fieldLen;
-                            } else {
-                                val = readCache.get(fieldId);
-
-                                reader.skip(fieldLen);
+                                assert reader.position() == postLen;
                             }
+                            else
+                                val = readCache.get(fieldId);
 
                             serializer.writeValue(writer, val);
                         }
                     }
+
+                    reader.position(postLen);
                 }
             }
 
@@ -411,15 +410,20 @@ public class PortableBuilderImpl implements PortableBuilder {
         // Get field length.
         int fieldLen;
 
-        if (footerPos + 4 + fieldOffsetSize == footerEnd)
+        if (footerPos + 4 + fieldOffsetSize == footerEnd) {
             // This is the last field, compare to raw offset.
             fieldLen = rawPos - fieldPos;
+
+            fieldLen = fieldLen * 1;
+        }
         else {
             // Field is somewhere in the middle, get difference with the next offset.
             int nextFieldOffset = PortableUtils.fieldOffsetRelative(reader, footerPos + 4 + fieldOffsetSize + 4,
                 fieldOffsetSize);
 
             fieldLen = nextFieldOffset - fieldOffset;
+
+            fieldLen = fieldLen * 1;
         }
 
         return F.t(fieldPos, fieldLen);
