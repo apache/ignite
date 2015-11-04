@@ -459,7 +459,11 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IAtomicReference<T> GetAtomicReference<T>(string name, T initialValue, bool create)
         {
-            throw new NotImplementedException();
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+            
+            // TODO
+
+            return new AtomicReference<T>(null, Marshaller, name);
         }
 
         /// <summary>
