@@ -70,7 +70,7 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID;
 public final class BinaryObjectImpl extends BinaryObjectEx implements Externalizable,
     Message, CacheObject, KeyCacheObject {
     /** */
-    public static final byte TYPE_PORTABLE = 100;
+    public static final byte TYPE_BINARY = 100;
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -115,8 +115,8 @@ public final class BinaryObjectImpl extends BinaryObjectEx implements Externaliz
     }
 
     /** {@inheritDoc} */
-    @Override public byte type() {
-        return TYPE_PORTABLE;
+    @Override public byte cacheObjectType() {
+        return TYPE_BINARY;
     }
 
     /** {@inheritDoc} */

@@ -75,7 +75,7 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public byte type() {
+    @Override public byte cacheObjectType() {
         return TYPE_BYTE_ARR;
     }
 

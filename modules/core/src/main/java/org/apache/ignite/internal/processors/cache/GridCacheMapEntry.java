@@ -234,7 +234,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (cctx.kernalContext().config().isPeerClassLoadingEnabled()) {
                     Object val0 = null;
 
-                    if (val != null && val.type() != CacheObject.TYPE_BYTE_ARR) {
+                    if (val != null && val.cacheObjectType() != CacheObject.TYPE_BYTE_ARR) {
                         val0 = cctx.cacheObjects().unmarshal(cctx.cacheObjectContext(),
                             val.valueBytes(cctx.cacheObjectContext()), cctx.deploy().globalLoader());
 
@@ -253,7 +253,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 assert mem != null;
 
                 if (val != null) {
-                    byte type = val.type();
+                    byte type = val.cacheObjectType();
 
                     offHeapPointer(mem.putOffHeap(offHeapPointer(), val.valueBytes(cctx.cacheObjectContext()), type));
                 }
@@ -625,7 +625,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             try {
                 byte[] bytes = val.valueBytes(cctx.cacheObjectContext());
 
-                return new IgniteBiTuple<>(bytes, val.type());
+                return new IgniteBiTuple<>(bytes, val.cacheObjectType());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

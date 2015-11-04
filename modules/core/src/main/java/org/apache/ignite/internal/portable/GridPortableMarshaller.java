@@ -232,7 +232,7 @@ public class GridPortableMarshaller {
     /**
      * @param obj Object to marshal.
      * @return Byte array.
-.     * @throws org.apache.ignite.igniteobject.IgniteObjectException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public byte[] marshal(@Nullable Object obj) throws BinaryObjectException {
         if (obj == null)

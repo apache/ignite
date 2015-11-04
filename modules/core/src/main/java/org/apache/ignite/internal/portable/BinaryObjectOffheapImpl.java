@@ -389,7 +389,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
     }
 
     /** {@inheritDoc} */
-    @Override public byte type() {
+    @Override public byte cacheObjectType() {
         throw new UnsupportedOperationException();
     }
 

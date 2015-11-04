@@ -48,7 +48,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean isPlatformType() {
-        return true; // TODO not true.
+        return true;
     }
 
     /** {@inheritDoc} */

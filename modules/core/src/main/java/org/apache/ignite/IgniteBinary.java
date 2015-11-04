@@ -311,7 +311,7 @@ public interface IgniteBinary {
      * @param typeId ID of the type.
      * @return Newly portable builder.
      */
-    public BinaryObjectBuilder builder(int typeId);
+    public BinaryObjectBuilder builder(int typeId) throws BinaryObjectException;
 
     /**
      * Creates new portable builder.
@@ -319,7 +319,7 @@ public interface IgniteBinary {
      * @param typeName Type name.
      * @return Newly portable builder.
      */
-    public BinaryObjectBuilder builder(String typeName);
+    public BinaryObjectBuilder builder(String typeName) throws BinaryObjectException;
 
     /**
      * Creates portable builder initialized by existing portable object.
@@ -327,7 +327,7 @@ public interface IgniteBinary {
      * @param portableObj Portable object to initialize builder.
      * @return Portable builder.
      */
-    public BinaryObjectBuilder builder(BinaryObject portableObj);
+    public BinaryObjectBuilder builder(BinaryObject portableObj) throws BinaryObjectException;
 
     /**
      * Gets metadata for provided class.

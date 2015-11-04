@@ -48,7 +48,7 @@ public interface CacheObject extends Message {
     /**
      * @return Object type.
      */
-    public byte type();
+    public byte cacheObjectType();
 
     /**
      * Gets flag indicating whether object value is a platform type. Platform types will be automatically

@@ -104,7 +104,7 @@ public class GridH2ValueCacheObject extends Value {
 
     /** {@inheritDoc} */
     @Override public byte[] getBytesNoCopy() {
-        if (obj.type() == CacheObject.TYPE_REGULAR) {
+        if (obj.cacheObjectType() == CacheObject.TYPE_REGULAR) {
             // Result must be the same as `marshaller.marshall(obj.value(coctx, false));`
             try {
                 return obj.valueBytes(objectContext());

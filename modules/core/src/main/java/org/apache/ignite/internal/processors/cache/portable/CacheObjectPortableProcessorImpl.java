@@ -781,7 +781,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
 
     /** {@inheritDoc} */
     @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
-        if (type == BinaryObjectImpl.TYPE_PORTABLE)
+        if (type == BinaryObjectImpl.TYPE_BINARY)
             return new BinaryObjectImpl(portableContext(), bytes, 0);
 
         return super.toCacheObject(ctx, type, bytes);
