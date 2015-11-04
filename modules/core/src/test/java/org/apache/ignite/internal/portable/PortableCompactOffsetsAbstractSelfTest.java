@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.portable;
 
+import java.util.Arrays;
+import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableField;
-import org.apache.ignite.portable.PortableMetadata;
-import org.apache.ignite.portable.PortableTypeConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.Arrays;
 
 /**
  * Contains tests for compact offsets.
@@ -39,11 +38,11 @@ public abstract class PortableCompactOffsetsAbstractSelfTest extends GridCommonA
 
     /** Dummy metadata handler. */
     protected static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, PortableMetadata meta) {
+        @Override public void addMeta(int typeId, BinaryType meta) {
             // No-op.
         }
 
-        @Override public PortableMetadata metadata(int typeId) {
+        @Override public BinaryType metadata(int typeId) {
             return null;
         }
     };
@@ -62,7 +61,7 @@ public abstract class PortableCompactOffsetsAbstractSelfTest extends GridCommonA
 
         marsh = new PortableMarshaller();
 
-        marsh.setTypeConfigurations(Arrays.asList(new PortableTypeConfiguration(TestObject.class.getName())));
+        marsh.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(TestObject.class.getName())));
         marsh.setContext(new MarshallerContextTestImpl(null));
 
         IgniteUtils.invoke(PortableMarshaller.class, marsh, "setPortableContext", ctx);
@@ -123,7 +122,7 @@ public abstract class PortableCompactOffsetsAbstractSelfTest extends GridCommonA
     private void check(int len) throws Exception {
         TestObject obj = new TestObject(len);
 
-        PortableObjectEx portObj = toPortable(marsh, obj);
+        BinaryObjectEx portObj = toPortable(marsh, obj);
 
         // 1. Test portable object content.
         assert portObj.hasField("field1");
@@ -139,8 +138,8 @@ public abstract class PortableCompactOffsetsAbstractSelfTest extends GridCommonA
         assert obj.field2 == field2;
 
         // 2. Test fields API.
-        PortableField field1Desc = portObj.fieldDescriptor("field1");
-        PortableField field2Desc = portObj.fieldDescriptor("field2");
+        BinaryField field1Desc = portObj.fieldDescriptor("field1");
+        BinaryField field2Desc = portObj.fieldDescriptor("field2");
 
         assert field1Desc.exists(portObj);
         assert field2Desc.exists(portObj);
@@ -165,7 +164,7 @@ public abstract class PortableCompactOffsetsAbstractSelfTest extends GridCommonA
      * @return Portable object.
      * @throws Exception If failed.
      */
-    protected abstract PortableObjectEx toPortable(PortableMarshaller marsh, Object obj) throws Exception;
+    protected abstract BinaryObjectEx toPortable(PortableMarshaller marsh, Object obj) throws Exception;
 
     /**
      * Test object.

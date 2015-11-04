@@ -41,19 +41,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryTypeIdMapper;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.binary.BinaryTypeIdMapper;
 import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -67,29 +67,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentHashMap8;
 import sun.misc.Unsafe;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.net.InetSocketAddress;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 import static org.apache.ignite.internal.portable.PortableThreadLocalMemoryAllocator.THREAD_LOCAL_ALLOC;
 import static org.junit.Assert.assertArrayEquals;
@@ -417,7 +394,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPortableObject() throws Exception {
+    public void testBinaryObject() throws Exception {
         PortableMarshaller marsh = new PortableMarshaller();
 
         marsh.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
@@ -581,7 +558,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             new BinaryTypeConfiguration(TestBinary.class.getName())
         ));
 
-        TestBinary obj = portableObject();
+        TestBinary obj = BinaryObject();
 
         BinaryObject po = marshal(obj, marsh);
 
@@ -1129,7 +1106,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
             customMappingType
         ));
 
-        TestBinary obj = portableObject();
+        TestBinary obj = BinaryObject();
 
         BinaryObjectImpl po = marshal(obj, marsh1);
 
@@ -2188,7 +2165,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.cls1, obj2.cls1);
         assertNull(obj2.cls2);
 
-        PortableObject portObj = marshal(obj, marsh);
+        BinaryObject portObj = marshal(obj, marsh);
 
         Class cls1 = portObj.field("cls1");
 
@@ -2561,7 +2538,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @return Portable object.
      */
-    private TestBinary portableObject() {
+    private TestBinary BinaryObject() {
         SimpleObject innerSimple = new SimpleObject();
 
         innerSimple.b = 1;
