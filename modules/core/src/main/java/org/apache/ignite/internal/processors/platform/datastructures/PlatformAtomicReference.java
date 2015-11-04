@@ -32,10 +32,10 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
     private static final int OP_GET = 1;
 
     /** */
-    private static final int OP_SET = 1;
+    private static final int OP_SET = 2;
 
     /** */
-    private static final int OP_COMPARE_AND_SET_AND_GET = 1;
+    private static final int OP_COMPARE_AND_SET_AND_GET = 3;
 
     /** */
     private final GridCacheAtomicReferenceImpl atomicRef;
