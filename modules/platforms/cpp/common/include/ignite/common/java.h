@@ -360,6 +360,10 @@ namespace ignite
                 jmethodID m_PlatformAtomicSequence_isClosed;
                 jmethodID m_PlatformAtomicSequence_close;
 
+                jclass c_PlatformAtomicReference;
+                jmethodID m_PlatformAtomicReference_isClosed;
+                jmethodID m_PlatformAtomicReference_close;
+
                 /**
                  * Constructor.
                  */
@@ -613,6 +617,9 @@ namespace ignite
                 void AtomicSequenceSetBatchSize(jobject obj, int size);
                 bool AtomicSequenceIsClosed(jobject obj);
                 void AtomicSequenceClose(jobject obj);
+
+                bool AtomicReferenceIsClosed(jobject obj);
+                void AtomicReferenceClose(jobject obj);
 
                 jobject Acquire(jobject obj);
 

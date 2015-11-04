@@ -164,6 +164,9 @@ extern "C" {
     void IGNITE_CALL IgniteAtomicSequenceSetBatchSize(gcj::JniContext* ctx, void* obj, int size);
     bool IGNITE_CALL IgniteAtomicSequenceIsClosed(gcj::JniContext* ctx, void* obj);
     void IGNITE_CALL IgniteAtomicSequenceClose(gcj::JniContext* ctx, void* obj);
+
+    bool IGNITE_CALL IgniteAtomicReferenceIsClosed(gcj::JniContext* ctx, void* obj);
+    void IGNITE_CALL IgniteAtomicReferenceClose(gcj::JniContext* ctx, void* obj);
 }
 
 #endif

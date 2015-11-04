@@ -502,4 +502,12 @@ extern "C" {
     void IGNITE_CALL IgniteAtomicSequenceClose(gcj::JniContext* ctx, void* obj) {
         return ctx->AtomicSequenceClose(static_cast<jobject>(obj));
     }
+
+    bool IGNITE_CALL IgniteAtomicReferenceIsClosed(gcj::JniContext* ctx, void* obj) {
+        return ctx->AtomicReferenceIsClosed(static_cast<jobject>(obj));
+    }
+
+    void IGNITE_CALL IgniteAtomicReferenceClose(gcj::JniContext* ctx, void* obj) {
+        ctx->AtomicReferenceClose(static_cast<jobject>(obj));
+    }
 }
