@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.portable;
 
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
@@ -59,7 +60,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     protected static PortableMarshaller createMarshaller(boolean stringAsBytes) throws Exception {
-        PortableContext ctx = new PortableContext(META_HND, null);
+        PortableContext ctx = new PortableContext(META_HND, new IgniteConfiguration());
 
         PortableMarshaller marsh = new PortableMarshaller();
 

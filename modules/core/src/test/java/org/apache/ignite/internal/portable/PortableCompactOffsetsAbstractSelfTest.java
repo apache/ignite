@@ -21,6 +21,7 @@ import java.util.Arrays;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
@@ -57,7 +58,7 @@ public abstract class PortableCompactOffsetsAbstractSelfTest extends GridCommonA
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        ctx = new PortableContext(META_HND, null);
+        ctx = new PortableContext(META_HND, new IgniteConfiguration());
 
         marsh = new PortableMarshaller();
 
