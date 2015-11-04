@@ -27,6 +27,14 @@ namespace Apache.Ignite.Core.Impl.DataStructures
     /// </summary>
     internal class AtomicReference<T> : PlatformTarget, IAtomicReference<T>
     {
+        /** Opcodes. */
+        private enum Op
+        {
+            Get = 1,
+            Set = 2,
+            CompareAndSet = 3
+        }
+
         /** */
         private readonly string _name;
 
@@ -48,18 +56,19 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** <inheritDoc /> */
         public T Get()
         {
-            throw new System.NotImplementedException();
+            return DoInOp<T>((int) Op.Get);
         }
 
         /** <inheritDoc /> */
         public void Set(T value)
         {
-            throw new System.NotImplementedException();
+            DoOutOp((int) Op.Set, value);
         }
 
         /** <inheritDoc /> */
         public T CompareExchange(T value, T comparand)
         {
+            // TODO: need CompareAndSetAndGet in Java
             throw new System.NotImplementedException();
         }
 
