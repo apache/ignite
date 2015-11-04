@@ -16,6 +16,6 @@
  */
 
 /**
- * Contains portable classes and examples.
+ * Contains Ignite Binary objects classes and examples.
  */
-package org.apache.ignite.examples.portable;
+package org.apache.ignite.examples.binary;

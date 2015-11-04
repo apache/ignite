@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.portable.computegrid;
+package org.apache.ignite.examples.binary.computegrid;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,7 +29,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Task that is used for {@link ComputeClientPortableTaskExecutionExample} and
+ * Task that is used for {@link ComputeClientBinaryTaskExecutionExample} and
  * similar examples in .NET and C++.
  * <p>
  * This task calculates average salary for provided collection of employees.
@@ -102,7 +102,7 @@ public class ComputeClientTask extends ComputeTaskSplitAdapter<Collection<Binary
             for (BinaryObject employee : employees) {
                 System.out.println(">>> Processing employee: " + employee.field("name"));
 
-                // Get salary from portable object. Note that object
+                // Get salary from binary object. Note that object
                 // doesn't need to be fully deserialized.
                 long salary = employee.field("salary");
 

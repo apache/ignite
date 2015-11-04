@@ -15,18 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.portable;
-
 /**
- * Organization type enum.
+ * Demonstrates the usage of binary objects with task execution.
  */
-public enum OrganizationType {
-    /** Non-profit organization. */
-    NON_PROFIT,
-
-    /** Private organization. */
-    PRIVATE,
-
-    /** Government organization. */
-    GOVERNMENT
-}
+package org.apache.ignite.examples.binary.computegrid;

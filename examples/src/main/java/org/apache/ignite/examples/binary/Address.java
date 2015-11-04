@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.portable;
+package org.apache.ignite.examples.binary;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.Binarylizable;
@@ -27,7 +27,7 @@ import org.apache.ignite.binary.BinaryWriter;
  * <p>
  * This class implements {@link org.apache.ignite.binary.Binarylizable} only for example purposes,
  * in order to show how to customize serialization and deserialization of
- * portable objects.
+ * binary objects.
  */
 public class Address implements Binarylizable {
     /** Street. */
@@ -37,7 +37,7 @@ public class Address implements Binarylizable {
     private int zip;
 
     /**
-     * Required for portable deserialization.
+     * Required for binary deserialization.
      */
     public Address() {
         // No-op.

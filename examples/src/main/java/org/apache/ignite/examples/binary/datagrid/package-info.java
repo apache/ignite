@@ -16,6 +16,6 @@
  */
 
 /**
- * Demonstrates the usage of portable objects with cache.
+ * Demonstrates the usage of binary objects with cache.
  */
-package org.apache.ignite.examples.portable.datagrid;
+package org.apache.ignite.examples.binary.datagrid;

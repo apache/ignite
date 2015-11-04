@@ -15,42 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.portable.computegrid;
+package org.apache.ignite.examples.binary.computegrid;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.examples.portable.Address;
-import org.apache.ignite.examples.portable.Employee;
-import org.apache.ignite.examples.portable.ExamplePortableNodeStartup;
+import org.apache.ignite.examples.binary.Address;
+import org.apache.ignite.examples.binary.Employee;
 import org.apache.ignite.binary.BinaryObject;
 
 /**
- * This example demonstrates use of portable objects with task execution.
- * Specifically it shows that portable objects are simple Java POJOs and do not require any special treatment.
+ * This example demonstrates use of binary objects with task execution.
+ * Specifically it shows that binary objects are simple Java POJOs and do not require any special treatment.
  * <p>
- * The example executes map-reduce task that accepts collection of portable objects as an argument.
+ * The example executes map-reduce task that accepts collection of binary objects as an argument.
  * Since these objects are never deserialized on remote nodes, classes are not required on classpath
  * of these nodes.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables the portable marshaller: {@code 'ignite.{sh|bat} examples/config/portable/example-ignite-portable.xml'}.
+ * enables the binary marshaller: {@code 'ignite.{sh|bat} examples/config/binary/example-ignite-binary.xml'}.
  * <p>
- * Alternatively you can run {@link ExamplePortableNodeStartup} in another JVM which will
- * start node with {@code examples/config/portable/example-ignite-portable.xml} configuration.
+ * Alternatively you can run {@link org.apache.ignite.examples.binary.ExampleBinaryNodeStartup} in another JVM which will
+ * start node with {@code examples/config/binary/example-ignite-binary.xml} configuration.
  */
-public class ComputeClientPortableTaskExecutionExample {
+public class ComputeClientBinaryTaskExecutionExample {
     /**
      * Executes example.
      *
      * @param args Command line arguments, none required.
      */
     public static void main(String[] args) {
-        try (Ignite ignite = Ignition.start("examples/config/portable/example-ignite-portable.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/binary/example-ignite-binary.xml")) {
             System.out.println();
-            System.out.println(">>> Portable objects task execution example started.");
+            System.out.println(">>> Binary objects task execution example started.");
 
             if (ignite.cluster().forRemotes().nodes().isEmpty()) {
                 System.out.println();
@@ -71,13 +70,13 @@ public class ComputeClientPortableTaskExecutionExample {
             for (Employee employee : employees)
                 System.out.println(">>>     " + employee);
 
-            // Convert collection of employees to collection of portable objects.
+            // Convert collection of employees to collection of binary objects.
             // This allows to send objects across nodes without requiring to have
             // Employee class on classpath of these nodes.
-            Collection<BinaryObject> portables = ignite.binary().toBinary(employees);
+            Collection<BinaryObject> binaries = ignite.binary().toBinary(employees);
 
             // Execute task and get average salary.
-            Long avgSalary = ignite.compute(ignite.cluster().forRemotes()).execute(new ComputeClientTask(), portables);
+            Long avgSalary = ignite.compute(ignite.cluster().forRemotes()).execute(new ComputeClientTask(), binaries);
 
             System.out.println();
             System.out.println(">>> Average salary for all employees: " + avgSalary);

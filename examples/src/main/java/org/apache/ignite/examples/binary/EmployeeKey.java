@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.portable;
+package org.apache.ignite.examples.binary;
 
 /**
  * This class represents key for employee object.
@@ -31,7 +31,7 @@ public class EmployeeKey {
     private int organizationId;
 
     /**
-     * Required for portable deserialization.
+     * Required for binary deserialization.
      */
     public EmployeeKey() {
         // No-op.

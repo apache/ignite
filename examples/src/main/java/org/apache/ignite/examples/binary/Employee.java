@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.portable;
+package org.apache.ignite.examples.binary;
 
 import java.util.Collection;
 
@@ -36,7 +36,7 @@ public class Employee {
     private Collection<String> departments;
 
     /**
-     * Required for portable deserialization.
+     * Required for binary deserialization.
      */
     public Employee() {
         // No-op.

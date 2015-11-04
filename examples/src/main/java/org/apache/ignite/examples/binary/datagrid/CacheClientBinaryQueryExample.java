@@ -15,46 +15,46 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.portable.datagrid;
+package org.apache.ignite.examples.binary.datagrid;
 
 import java.sql.Timestamp;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheTypeMetadata;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.examples.portable.Address;
-import org.apache.ignite.examples.portable.Employee;
-import org.apache.ignite.examples.portable.EmployeeKey;
-import org.apache.ignite.examples.portable.ExamplePortableNodeStartup;
-import org.apache.ignite.examples.portable.Organization;
-import org.apache.ignite.examples.portable.OrganizationType;
+import org.apache.ignite.examples.binary.Address;
+import org.apache.ignite.examples.binary.Employee;
+import org.apache.ignite.examples.binary.EmployeeKey;
+import org.apache.ignite.examples.binary.Organization;
+import org.apache.ignite.examples.binary.OrganizationType;
 import org.apache.ignite.binary.BinaryObject;
 
 /**
- * This example demonstrates use of portable objects with cache queries.
+ * This example demonstrates use of binary objects with cache queries.
  * The example populates cache with sample data and runs several SQL and full text queries over this data.
  * <p>
- * Remote nodes should always be started with {@link ExamplePortableNodeStartup} which starts a node with
- * {@code examples/config/portable/example-ignite-portable.xml} configuration.
+ * Remote nodes should always be started with {@link org.apache.ignite.examples.binary.ExampleBinaryNodeStartup} which starts a node with
+ * {@code examples/config/binary/example-ignite-binary.xml} configuration.
  */
-public class CacheClientPortableQueryExample {
+public class CacheClientBinaryQueryExample {
     /** Organization cache name. */
-    private static final String ORGANIZATION_CACHE_NAME = CacheClientPortableQueryExample.class.getSimpleName()
+    private static final String ORGANIZATION_CACHE_NAME = CacheClientBinaryQueryExample.class.getSimpleName()
         + "Organizations";
 
     /** Employee cache name. */
-    private static final String EMPLOYEE_CACHE_NAME = CacheClientPortableQueryExample.class.getSimpleName()
+    private static final String EMPLOYEE_CACHE_NAME = CacheClientBinaryQueryExample.class.getSimpleName()
         + "Employees";
 
     /**
@@ -63,23 +63,23 @@ public class CacheClientPortableQueryExample {
      * @param args Command line arguments, none required.
      */
     public static void main(String[] args) {
-        try (Ignite ignite = Ignition.start("examples/config/portable/example-ignite-portable.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/binary/example-ignite-binary.xml")) {
             System.out.println();
-            System.out.println(">>> Portable objects cache query example started.");
+            System.out.println(">>> Binary objects cache query example started.");
 
             CacheConfiguration<Integer, Organization> orgCacheCfg = new CacheConfiguration<>();
 
             orgCacheCfg.setCacheMode(CacheMode.PARTITIONED);
             orgCacheCfg.setName(ORGANIZATION_CACHE_NAME);
 
-            orgCacheCfg.setTypeMetadata(Arrays.asList(createOrganizationTypeMetadata()));
+            orgCacheCfg.setQueryEntities(Arrays.asList(createOrganizationQueryEntity()));
 
             CacheConfiguration<EmployeeKey, Employee> employeeCacheCfg = new CacheConfiguration<>();
 
             employeeCacheCfg.setCacheMode(CacheMode.PARTITIONED);
             employeeCacheCfg.setName(EMPLOYEE_CACHE_NAME);
 
-            employeeCacheCfg.setTypeMetadata(Arrays.asList(createEmployeeTypeMetadata()));
+            employeeCacheCfg.setQueryEntities(Arrays.asList(createEmployeeQueryEntity()));
 
             try (IgniteCache<Integer, Organization> orgCache = ignite.createCache(orgCacheCfg);
                  IgniteCache<EmployeeKey, Employee> employeeCache = ignite.createCache(employeeCacheCfg)
@@ -97,20 +97,20 @@ public class CacheClientPortableQueryExample {
                 // Populate cache with sample data entries.
                 populateCache(orgCache, employeeCache);
 
-                // Get cache that will work with portable objects.
-                IgniteCache<BinaryObject, BinaryObject> portableCache = employeeCache.withKeepBinary();
+                // Get cache that will work with binary objects.
+                IgniteCache<BinaryObject, BinaryObject> binaryCache = employeeCache.withKeepBinary();
 
                 // Run SQL query example.
-                sqlQuery(portableCache);
+                sqlQuery(binaryCache);
 
                 // Run SQL query with join example.
-                sqlJoinQuery(portableCache);
+                sqlJoinQuery(binaryCache);
 
                 // Run SQL fields query example.
-                sqlFieldsQuery(portableCache);
+                sqlFieldsQuery(binaryCache);
 
                 // Run full text query example.
-                textQuery(portableCache);
+                textQuery(binaryCache);
 
                 System.out.println();
             }
@@ -127,25 +127,30 @@ public class CacheClientPortableQueryExample {
      *
      * @return Cache type metadata.
      */
-    private static CacheTypeMetadata createEmployeeTypeMetadata() {
-        CacheTypeMetadata employeeTypeMeta = new CacheTypeMetadata();
+    private static QueryEntity createEmployeeQueryEntity() {
+        QueryEntity employeeEntity = new QueryEntity();
 
-        employeeTypeMeta.setValueType(Employee.class);
+        employeeEntity.setValueType(Employee.class.getName());
+        employeeEntity.setKeyType(EmployeeKey.class.getName());
 
-        employeeTypeMeta.setKeyType(EmployeeKey.class);
+        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
-        Map<String, Class<?>> ascFields = new HashMap<>();
+        fields.put("name", String.class.getName());
+        fields.put("salary", Long.class.getName());
+        fields.put("address.zip", Integer.class.getName());
+        fields.put("organizationId", Integer.class.getName());
 
-        ascFields.put("name", String.class);
-        ascFields.put("salary", Long.class);
-        ascFields.put("address.zip", Integer.class);
-        ascFields.put("organizationId", Integer.class);
+        employeeEntity.setFields(fields);
 
-        employeeTypeMeta.setAscendingFields(ascFields);
+        employeeEntity.setIndexes(Arrays.asList(
+            new QueryIndex("name"),
+            new QueryIndex("salary"),
+            new QueryIndex("address.zip"),
+            new QueryIndex("organizationId"),
+            new QueryIndex("address.street", QueryIndexType.FULLTEXT)
+        ));
 
-        employeeTypeMeta.setTextFields(Arrays.asList("address.street"));
-
-        return employeeTypeMeta;
+        return employeeEntity;
     }
 
     /**
@@ -153,26 +158,24 @@ public class CacheClientPortableQueryExample {
      *
      * @return Cache type metadata.
      */
-    private static CacheTypeMetadata createOrganizationTypeMetadata() {
-        CacheTypeMetadata organizationTypeMeta = new CacheTypeMetadata();
+    private static QueryEntity createOrganizationQueryEntity() {
+        QueryEntity organizationEntity = new QueryEntity();
 
-        organizationTypeMeta.setValueType(Organization.class);
+        organizationEntity.setValueType(Organization.class.getName());
+        organizationEntity.setKeyType(Integer.class.getName());
 
-        organizationTypeMeta.setKeyType(Integer.class);
+        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
-        Map<String, Class<?>> ascFields = new HashMap<>();
+        fields.put("name", String.class.getName());
+        fields.put("address.street", String.class.getName());
 
-        ascFields.put("name", String.class);
+        organizationEntity.setFields(fields);
 
-        Map<String, Class<?>> queryFields = new HashMap<>();
+        organizationEntity.setIndexes(Arrays.asList(
+            new QueryIndex("name")
+        ));
 
-        queryFields.put("address.street", String.class);
-
-        organizationTypeMeta.setAscendingFields(ascFields);
-
-        organizationTypeMeta.setQueryFields(queryFields);
-
-        return organizationTypeMeta;
+        return organizationEntity;
     }
 
     /**
@@ -256,6 +259,7 @@ public class CacheClientPortableQueryExample {
      * @param orgCache Organization cache.
      * @param employeeCache Employee cache.
      */
+    @SuppressWarnings("TypeMayBeWeakened")
     private static void populateCache(IgniteCache<Integer, Organization> orgCache,
         IgniteCache<EmployeeKey, Employee> employeeCache) {
         orgCache.put(1, new Organization(

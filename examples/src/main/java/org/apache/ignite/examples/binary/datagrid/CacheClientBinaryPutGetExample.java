@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.portable.datagrid;
+package org.apache.ignite.examples.binary.datagrid;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -28,29 +28,29 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.examples.portable.Address;
-import org.apache.ignite.examples.portable.ExamplePortableNodeStartup;
-import org.apache.ignite.examples.portable.Organization;
-import org.apache.ignite.examples.portable.OrganizationType;
+import org.apache.ignite.examples.binary.Address;
+import org.apache.ignite.examples.binary.Organization;
+import org.apache.ignite.examples.binary.OrganizationType;
 import org.apache.ignite.binary.BinaryObject;
 
 /**
- * This example demonstrates use of portable objects with Ignite cache.
- * Specifically it shows that portable objects are simple Java POJOs and do not require any special treatment.
+ * This example demonstrates use of binary objects with Ignite cache.
+ * Specifically it shows that binary objects are simple Java POJOs and do not require any special treatment.
  * <p>
- * The example executes several put-get operations on Ignite cache with portable values. Note that
- * it demonstrates how portable object can be retrieved in fully-deserialized form or in portable object
+ * The example executes several put-get operations on Ignite cache with binary values. Note that
+ * it demonstrates how binary object can be retrieved in fully-deserialized form or in binary object
  * format using special cache projection.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables the portable marshaller: {@code 'ignite.{sh|bat} examples/config/portable/example-ignite-portable.xml'}.
+ * enables the binary marshaller: {@code 'ignite.{sh|bat} examples/config/binary/example-ignite-binary.xml'}.
  * <p>
- * Alternatively you can run {@link ExamplePortableNodeStartup} in another JVM which will
- * start node with {@code examples/config/portable/example-ignite-portable.xml} configuration.
+ * Alternatively you can run {@link org.apache.ignite.examples.binary.ExampleBinaryNodeStartup} in another JVM which will
+ * start node with {@code examples/config/binary/example-ignite-binary.xml} configuration.
  */
-public class CacheClientPortablePutGetExample {
+@SuppressWarnings("TypeMayBeWeakened")
+public class CacheClientBinaryPutGetExample {
     /** Cache name. */
-    private static final String CACHE_NAME = CacheClientPortablePutGetExample.class.getSimpleName();
+    private static final String CACHE_NAME = CacheClientBinaryPutGetExample.class.getSimpleName();
 
     /**
      * Executes example.
@@ -58,9 +58,9 @@ public class CacheClientPortablePutGetExample {
      * @param args Command line arguments, none required.
      */
     public static void main(String[] args) {
-        try (Ignite ignite = Ignition.start("examples/config/portable/example-ignite-portable.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/binary/example-ignite-binary.xml")) {
             System.out.println();
-            System.out.println(">>> Portable objects cache put-get example started.");
+            System.out.println(">>> Binary objects cache put-get example started.");
 
             CacheConfiguration<Integer, Organization> cfg = new CacheConfiguration<>();
 
@@ -80,9 +80,9 @@ public class CacheClientPortablePutGetExample {
                 }
 
                 putGet(cache);
-                putGetPortable(cache);
+                putGetBinary(cache);
                 putGetAll(cache);
-                putGetAllPortable(cache);
+                putGetAllBinary(cache);
 
                 System.out.println();
             }
@@ -99,7 +99,7 @@ public class CacheClientPortablePutGetExample {
      * @param cache Cache.
      */
     private static void putGet(IgniteCache<Integer, Organization> cache) {
-        // Create new Organization portable object to store in cache.
+        // Create new Organization binary object to store in cache.
         Organization org = new Organization(
             "Microsoft", // Name.
             new Address("1096 Eddy Street, San Francisco, CA", 94109), // Address.
@@ -117,12 +117,12 @@ public class CacheClientPortablePutGetExample {
     }
 
     /**
-     * Execute individual put and get, getting value in portable format, without de-serializing it.
+     * Execute individual put and get, getting value in binary format, without de-serializing it.
      *
      * @param cache Cache.
      */
-    private static void putGetPortable(IgniteCache<Integer, Organization> cache) {
-        // Create new Organization portable object to store in cache.
+    private static void putGetBinary(IgniteCache<Integer, Organization> cache) {
+        // Create new Organization binary object to store in cache.
         Organization org = new Organization(
             "Microsoft", // Name.
             new Address("1096 Eddy Street, San Francisco, CA", 94109), // Address.
@@ -132,18 +132,18 @@ public class CacheClientPortablePutGetExample {
         // Put created data entry to cache.
         cache.put(1, org);
 
-        // Get cache that will get values as portable objects.
-        IgniteCache<Integer, BinaryObject> portableCache = cache.withKeepBinary();
+        // Get cache that will get values as binary objects.
+        IgniteCache<Integer, BinaryObject> binaryCache = cache.withKeepBinary();
 
-        // Get recently created organization as a portable object.
-        BinaryObject po = portableCache.get(1);
+        // Get recently created organization as a binary object.
+        BinaryObject po = binaryCache.get(1);
 
-        // Get organization's name from portable object (note that
+        // Get organization's name from binary object (note that
         // object doesn't need to be fully deserialized).
         String name = po.field("name");
 
         System.out.println();
-        System.out.println(">>> Retrieved organization name from portable object: " + name);
+        System.out.println(">>> Retrieved organization name from binary object: " + name);
     }
 
     /**
@@ -152,7 +152,7 @@ public class CacheClientPortablePutGetExample {
      * @param cache Cache.
      */
     private static void putGetAll(IgniteCache<Integer, Organization> cache) {
-        // Create new Organization portable objects to store in cache.
+        // Create new Organization binary objects to store in cache.
         Organization org1 = new Organization(
             "Microsoft", // Name.
             new Address("1096 Eddy Street, San Francisco, CA", 94109), // Address.
@@ -185,12 +185,12 @@ public class CacheClientPortablePutGetExample {
 
     /**
      * Execute bulk {@code putAll(...)} and {@code getAll(...)} operations,
-     * getting values in portable format, without de-serializing it.
+     * getting values in binary format, without de-serializing it.
      *
      * @param cache Cache.
      */
-    private static void putGetAllPortable(IgniteCache<Integer, Organization> cache) {
-        // Create new Organization portable objects to store in cache.
+    private static void putGetAllBinary(IgniteCache<Integer, Organization> cache) {
+        // Create new Organization binary objects to store in cache.
         Organization org1 = new Organization(
             "Microsoft", // Name.
             new Address("1096 Eddy Street, San Francisco, CA", 94109), // Address.
@@ -211,20 +211,20 @@ public class CacheClientPortablePutGetExample {
         // Put created data entries to cache.
         cache.putAll(map);
 
-        // Get cache that will get values as portable objects.
-        IgniteCache<Integer, BinaryObject> portableCache = cache.withKeepBinary();
+        // Get cache that will get values as binary objects.
+        IgniteCache<Integer, BinaryObject> binaryCache = cache.withKeepBinary();
 
-        // Get recently created organizations as portable objects.
-        Map<Integer, BinaryObject> poMap = portableCache.getAll(map.keySet());
+        // Get recently created organizations as binary objects.
+        Map<Integer, BinaryObject> poMap = binaryCache.getAll(map.keySet());
 
         Collection<String> names = new ArrayList<>();
 
-        // Get organizations' names from portable objects (note that
+        // Get organizations' names from binary objects (note that
         // objects don't need to be fully deserialized).
         for (BinaryObject po : poMap.values())
             names.add(po.<String>field("name"));
 
         System.out.println();
-        System.out.println(">>> Retrieved organization names from portable objects: " + names);
+        System.out.println(">>> Retrieved organization names from binary objects: " + names);
     }
 }

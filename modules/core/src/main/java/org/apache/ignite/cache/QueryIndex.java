@@ -48,6 +48,25 @@ public class QueryIndex implements Serializable {
     }
 
     /**
+     * Creates single-field sorted ascending index.
+     *
+     * @param name Field name.
+     */
+    public QueryIndex(String name) {
+        this(name, QueryIndexType.SORTED, true);
+    }
+
+    /**
+     * Creates single-field sorted index.
+     *
+     * @param name Field name.
+     * @param asc Ascending flag.
+     */
+    public QueryIndex(String name, boolean asc) {
+        this(name, QueryIndexType.SORTED, asc);
+    }
+
+    /**
      * Creates index for one field.
      * If index is sorted, then ascending sorting is used by default.
      * To specify sort order, use the next method.

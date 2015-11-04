@@ -15,22 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.portable;
-
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
+package org.apache.ignite.examples.binary;
 
 /**
- * Starts up an empty node with example configuration and portable marshaller enabled.
+ * Organization type enum.
  */
-public class ExamplePortableNodeStartup {
-    /**
-     * Start up an empty node with example configuration and portable marshaller enabled.
-     *
-     * @param args Command line arguments, none required.
-     * @throws IgniteException If failed.
-     */
-    public static void main(String[] args) throws IgniteException {
-        Ignition.start("examples/config/portable/example-ignite-portable.xml");
-    }
+public enum OrganizationType {
+    /** Non-profit organization. */
+    NON_PROFIT,
+
+    /** Private organization. */
+    PRIVATE,
+
+    /** Government organization. */
+    GOVERNMENT
 }

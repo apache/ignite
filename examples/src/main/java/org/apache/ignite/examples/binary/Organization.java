@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.portable;
+package org.apache.ignite.examples.binary;
 
 import java.sql.Timestamp;
 
@@ -36,7 +36,7 @@ public class Organization {
     private Timestamp lastUpdated;
 
     /**
-     * Required for portable deserialization.
+     * Required for binary deserialization.
      */
     public Organization() {
         // No-op.

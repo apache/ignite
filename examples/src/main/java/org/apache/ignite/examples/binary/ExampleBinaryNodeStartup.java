@@ -15,7 +15,22 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.examples.binary;
+
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+
 /**
- * Demonstrates the usage of portable objects with task execution.
+ * Starts up an empty node with example configuration and binary marshaller enabled.
  */
-package org.apache.ignite.examples.portable.computegrid;
+public class ExampleBinaryNodeStartup {
+    /**
+     * Start up an empty node with example configuration and binary marshaller enabled.
+     *
+     * @param args Command line arguments, none required.
+     * @throws IgniteException If failed.
+     */
+    public static void main(String[] args) throws IgniteException {
+        Ignition.start("examples/config/binary/example-ignite-binary.xml");
+    }
+}

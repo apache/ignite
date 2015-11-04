@@ -17,9 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.portable.datastreaming;
 
+import java.util.Collection;
+import java.util.Map;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.stream.StreamReceiver;
 
 /**
  *
@@ -34,5 +39,33 @@ public class DataStreamProcessorPortableSelfTest extends DataStreamProcessorSelf
         cfg.setMarshaller(marsh);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected StreamReceiver<String, TestObject> getStreamReceiver() {
+        return new TestDataReceiver();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean customKeepBinary() {
+        return true;
+    }
+
+    /**
+     *
+     */
+    private static class TestDataReceiver implements StreamReceiver<String, TestObject> {
+        /** {@inheritDoc} */
+        @Override public void receive(IgniteCache<String, TestObject> cache,
+            Collection<Map.Entry<String, TestObject>> entries) {
+            for (Map.Entry<String, TestObject> e : entries) {
+                assertTrue(e.getKey() instanceof String);
+                assertTrue(String.valueOf(e.getValue()), e.getValue() instanceof BinaryObject);
+
+                TestObject obj = ((BinaryObject)e.getValue()).deserialize();
+
+                cache.put(e.getKey(), new TestObject(obj.val + 1));
+            }
+        }
     }
 }
