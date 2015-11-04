@@ -40,7 +40,6 @@
     "mongoose": "^4.2.2",
     "mongoose-deep-populate": "2.0.2",
     "nconf": "^0.8.2",
-    "node-sass-middleware": "0.9.7",
     "nodemailer": "1.8.0",
     "passport": "^0.3.0",
     "passport-local": "^1.0.0",

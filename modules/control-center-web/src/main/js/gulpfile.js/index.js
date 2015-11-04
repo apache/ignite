@@ -6,4 +6,4 @@ gulp.task('default', ['build']);
 
 gulp.task('build', ['jade', 'sass']);
 
-gulp.task('watch', ['sass:watch', 'jade:watch']);
+gulp.task('watch', ['build', 'sass:watch', 'jade:watch']);

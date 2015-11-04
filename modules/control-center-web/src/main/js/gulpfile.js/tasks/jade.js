@@ -2,7 +2,7 @@ var gulp = require('gulp');
 var jade = require('gulp-jade');
 
 var paths = [
-    '!./views/error.jade', 
+    '!./views/error.jade',
     './views/*.jade',
     './views/**/*.jade'
 ];
