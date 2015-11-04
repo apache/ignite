@@ -96,9 +96,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     private ConcurrentMap<AffinityTopologyVersion, GridDhtAssignmentFetchFuture> pendingAssignmentFetchFuts =
         new ConcurrentHashMap8<>();
 
-    /** Stop flag. */
-    private volatile boolean stopping;
-
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
@@ -221,8 +218,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (log.isDebugEnabled())
             log.debug("DHT rebalancer onKernalStop callback.");
 
-        stopping = true;
-
         cctx.events().removeListener(discoLsnr);
 
         // Acquire write busy lock.
@@ -233,11 +228,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         if (demandPool != null)
             demandPool.stop();
-
-        IgniteCheckedException err = stopError();
-
-        for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
-            fut.onDone(err);
 
         top = null;
     }
@@ -605,9 +595,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      */
     void addFuture(GridDhtForceKeysFuture<?, ?> fut) {
         forceKeyFuts.put(fut.futureId(), fut);
-
-        if (stopping)
-            fut.onDone(stopError());
     }
 
     /**
@@ -617,13 +604,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      */
     void remoteFuture(GridDhtForceKeysFuture<?, ?> fut) {
         forceKeyFuts.remove(fut.futureId(), fut);
-    }
-
-    /**
-     * @return Node stop exception.
-     */
-    private IgniteCheckedException stopError() {
-        return new IgniteCheckedException("Operation has been cancelled (cache or node is stopping).");
     }
 
     /** {@inheritDoc} */
