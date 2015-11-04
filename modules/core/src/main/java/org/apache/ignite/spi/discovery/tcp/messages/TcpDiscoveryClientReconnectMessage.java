@@ -26,6 +26,7 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  * Message telling that client node is reconnecting to topology.
  */
+@TcpDiscoveryEnsureDelivery
 public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;

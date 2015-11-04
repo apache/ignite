@@ -146,4 +146,9 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     @Override public void addAssignments(GridDhtPreloaderAssignments assignments, boolean forcePreload) {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override public void dumpDebugInfo() {
+        // No-op.
+    }
 }
