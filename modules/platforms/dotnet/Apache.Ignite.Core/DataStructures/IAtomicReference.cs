@@ -30,10 +30,24 @@ namespace Apache.Ignite.Core.DataStructures
         /// </value>
         string Name { get; }
 
+        /// <summary>
+        /// Gets current value of an atomic reference.
+        /// </summary>
+        /// <returns>Current value of an atomic reference.</returns>
         T Get();
 
+        /// <summary>
+        /// Sets current value of an atomic reference.
+        /// </summary>
+        /// <param name="value">The value to set.</param>
         void Set(T value);
 
+        /// <summary>
+        /// Compares current value with specified value for equality and, if they are equal, replaces current value.
+        /// </summary>
+        /// <param name="value">The value to set.</param>
+        /// <param name="comparand">The value that is compared to the current value.</param>
+        /// <returns>Original value of the atomic reference.</returns>
         T CompareExchange(T value, T comparand);
 
         /// <summary>
