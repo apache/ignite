@@ -324,6 +324,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public IAtomicReference<T> GetAtomicReference<T>(string name, T initialValue, bool create)
+        {
+            return _ignite.GetAtomicReference(name, initialValue, create);
+        }
+
+        /** <inheritdoc /> */
         public void WritePortable(IPortableWriter writer)
         {
             // No-op.

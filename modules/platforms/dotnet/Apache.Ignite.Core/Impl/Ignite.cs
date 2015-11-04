@@ -456,6 +456,12 @@ namespace Apache.Ignite.Core.Impl
             return new AtomicSequence(nativeSeq, Marshaller, name);
         }
 
+        /** <inheritdoc /> */
+        public IAtomicReference<T> GetAtomicReference<T>(string name, T initialValue, bool create)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Gets internal projection.
         /// </summary>
