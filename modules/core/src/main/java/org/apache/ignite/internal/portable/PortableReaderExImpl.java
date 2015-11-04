@@ -118,8 +118,8 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_AR
  */
 @SuppressWarnings("unchecked")
 public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx, ObjectInput {
-    /** Length of a single field descriptor. */
-    private static final int FIELD_DESC_LEN = 16;
+    /** Length of a single field ID value. */
+    private static final int FIELD_ID_LEN = 4;
 
     /** */
     private final PortableContext ctx;
@@ -165,6 +165,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
     /** Offset size in bytes. */
     private int offsetSize;
+
+    /** Whether field IDs exist. */
+    private int fieldIdLen;
 
     /** Object schema. */
     private PortableSchema schema;
@@ -227,6 +230,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         short flags = in.readShort();
 
         offsetSize = PortableUtils.fieldOffsetSize(flags);
+        fieldIdLen = PortableUtils.isNoFieldIds(flags) ? 0 : FIELD_ID_LEN;
 
         typeId = in.readIntPositioned(start + GridPortableMarshaller.TYPE_ID_POS);
 
@@ -2567,6 +2571,8 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     public PortableSchema createSchema() {
         parseHeaderIfNeeded();
 
+        assert fieldIdLen == FIELD_ID_LEN;
+
         LinkedHashMap<Integer, Integer> fields = new LinkedHashMap<>();
 
         int searchPos = footerStart;
@@ -2579,7 +2585,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             fields.put(fieldId, idx++);
 
-            searchPos += 4 + offsetSize;
+            searchPos += FIELD_ID_LEN + offsetSize;
         }
 
         return new PortableSchema(fields);
@@ -2598,7 +2604,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
         int searchPos = footerStart;
         int searchTail = searchPos + footerLen;
 
-        if (hasLowFieldsCount(footerLen)) {
+        if (fieldIdLen != 0 && hasLowFieldsCount(footerLen)) {
             while (true) {
                 if (searchPos >= searchTail)
                     return 0;
@@ -2606,14 +2612,14 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 int id0 = in.readIntPositioned(searchPos);
 
                 if (id0 == id) {
-                    int pos = start + PortableUtils.fieldOffsetRelative(in, searchPos + 4, offsetSize);
+                    int pos = start + PortableUtils.fieldOffsetRelative(in, searchPos + FIELD_ID_LEN, offsetSize);
 
                     in.position(pos);
 
                     return pos;
                 }
 
-                searchPos += 4 + offsetSize;
+                searchPos += FIELD_ID_LEN + offsetSize;
             }
         }
         else {
@@ -2623,6 +2629,10 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 schema0 = ctx.schemaRegistry(typeId).schema(schemaId);
 
                 if (schema0 == null) {
+                    if (fieldIdLen == 0)
+                        throw new PortableException("Cannot find schema for object without field IDs [" +
+                            "typeId=" + typeId + ", schemaId=" + schemaId + ']');
+
                     schema0 = createSchema();
 
                     ctx.schemaRegistry(typeId).addSchema(schemaId, schema0);
@@ -2631,10 +2641,12 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
                 schema = schema0;
             }
 
+            assert schema != null;
+
             int order = schema.order(id);
 
             if (order != PortableSchema.ORDER_NOT_FOUND) {
-                int offsetPos = footerStart + order * (4 + offsetSize) + 4;
+                int offsetPos = footerStart + order * (fieldIdLen + offsetSize) + fieldIdLen;
 
                 int pos = start + PortableUtils.fieldOffsetRelative(in, offsetPos, offsetSize);
 
@@ -2655,7 +2667,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private boolean hasLowFieldsCount(int footerLen) {
         assert hdrParsed;
 
-        return footerLen < (FIELD_DESC_LEN << 4);
+        return footerLen < ((offsetSize + fieldIdLen) << 3);
     }
 
     /** {@inheritDoc} */
