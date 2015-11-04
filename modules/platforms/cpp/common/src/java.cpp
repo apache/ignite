@@ -2176,11 +2176,11 @@ namespace ignite
             {
                 JNIEnv* env = Attach();
 
-                bool res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicReference_isClosed);
+                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicReference_isClosed);
 
                 ExceptionCheck(env);
 
-                return res;
+                return res != 0;
             }
 
             void JniContext::AtomicReferenceClose(jobject obj)
