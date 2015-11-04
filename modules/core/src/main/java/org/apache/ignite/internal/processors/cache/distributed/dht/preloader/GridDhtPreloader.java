@@ -606,6 +606,23 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         forceKeyFuts.remove(fut.futureId(), fut);
     }
 
+    /** {@inheritDoc} */
+    @Override public void dumpDebugInfo() {
+        if (!forceKeyFuts.isEmpty()) {
+            U.warn(log, "Pending force key futures [cache=" + cctx.name() +"]:");
+
+            for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
+                U.warn(log, ">>> " + fut);
+        }
+
+        if (!pendingAssignmentFetchFuts.isEmpty()) {
+            U.warn(log, "Pending assignment fetch futures [cache=" + cctx.name() +"]:");
+
+            for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())
+                U.warn(log, ">>> " + fut);
+        }
+    }
+
     /**
      *
      */
