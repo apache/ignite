@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.portable.builder;
 
+import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableObjectImpl;
 import org.apache.ignite.internal.portable.PortableObjectOffheapImpl;
@@ -245,7 +246,7 @@ public class PortableBuilderImpl implements PortableBuilder {
                     int fieldId = reader.readIntPositioned(footerPos);
                     int fieldLen = fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldOffsetSize).get2();
 
-                    int postLen = reader.position() + fieldLen; // Position where reader will be placed afterwards.
+                    int postPos = reader.position() + fieldLen; // Position where reader will be placed afterwards.
 
                     footerPos += 4 + fieldOffsetSize;
 
@@ -276,7 +277,7 @@ public class PortableBuilderImpl implements PortableBuilder {
                             else if (readCache == null) {
                                 val = reader.parseValue();
 
-                                assert reader.position() == postLen;
+                                assert reader.position() == postPos;
                             }
                             else
                                 val = readCache.get(fieldId);
@@ -285,7 +286,7 @@ public class PortableBuilderImpl implements PortableBuilder {
                         }
                     }
 
-                    reader.position(postLen);
+                    reader.position(postPos);
                 }
             }
 
@@ -336,15 +337,18 @@ public class PortableBuilderImpl implements PortableBuilder {
                                 newFldsMetadata = new HashMap<>();
 
                             newFldsMetadata.put(name, newFldTypeName);
-                        } else {
-                            if (!"Object".equals(oldFldTypeName) && !oldFldTypeName.equals(newFldTypeName)) {
+                        }
+                        else {
+                            String objTypeName =
+                                CacheObjectPortableProcessorImpl.FIELD_TYPE_NAMES[GridPortableMarshaller.OBJ];
+
+                            if (!objTypeName.equals(oldFldTypeName) && !oldFldTypeName.equals(newFldTypeName)) {
                                 throw new PortableException(
                                     "Wrong value has been set [" +
                                         "typeName=" + (typeName == null ? metadata.typeName() : typeName) +
                                         ", fieldName=" + name +
                                         ", fieldType=" + oldFldTypeName +
-                                        ", assignedValueType=" + newFldTypeName +
-                                        ", assignedValue=" + (((PortableValueWithType) val).value()) + ']'
+                                        ", assignedValueType=" + newFldTypeName + ']'
                                 );
                             }
                         }
