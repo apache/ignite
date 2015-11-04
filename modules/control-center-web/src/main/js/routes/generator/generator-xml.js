@@ -406,6 +406,26 @@ $generatorXml.clusterCommunication = function (cluster, res) {
     return res;
 };
 
+/**
+ * XML generator for cluster's REST access configuration.
+ *
+ * @param cluster Cluster to get REST configuration.
+ * @param res Optional configuration presentation builder object.
+ * @returns Configuration presentation builder object
+ */
+$generatorXml.clusterConnector = function(cluster, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if ($commonUtils.isDefined(cluster.connector) && cluster.connector.enabled) {
+        $generatorXml.beanProperty(res, cluster.connector, 'connectorConfiguration', $generatorCommon.CONNECTOR_CONFIGURATION, true);
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
 // Generate deployment group.
 $generatorXml.clusterDeployment = function (cluster, res) {
     if (!res)
@@ -616,16 +636,16 @@ $generatorXml.clusterSsl = function(cluster, res) {
 
     if (cluster.sslEnabled && $commonUtils.isDefined(cluster.sslContextFactory)) {
         cluster.sslContextFactory.keyStorePassword =
-            ($commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.keyStoreFilePath)) ? '${ssl.key.storage.password}' : undefined;
+            $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.keyStoreFilePath) ? '${ssl.key.storage.password}' : undefined;
 
         cluster.sslContextFactory.trustStorePassword =
-            ($commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath)) ? '${ssl.trust.storage.password}' : undefined;
+            $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath) ? '${ssl.trust.storage.password}' : undefined;
 
         var propsDesc = $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustManagers) ?
             $generatorCommon.SSL_CONFIGURATION_TRUST_MANAGER_FACTORY :
             $generatorCommon.SSL_CONFIGURATION_TRUST_FILE_FACTORY;
 
-        $generatorXml.beanProperty(res, cluster.sslContextFactory, 'sslContextFactory', propsDesc, false);
+        $generatorXml.beanProperty(res, cluster.sslContextFactory, 'sslContextFactory', propsDesc, true);
 
         res.needEmptyLine = true;
     }
@@ -1259,8 +1279,8 @@ $generatorXml.igfsMisc = function(igfs, res) {
     $generatorXml.property(res, igfs, 'blockSize', undefined, 65536);
     $generatorXml.property(res, igfs, 'streamBufferSize', undefined, 65536);
     $generatorXml.property(res, igfs, 'defaultMode', undefined, "DUAL_ASYNC");
-    $generatorXml.property(res, igfs, 'maxSpaceSize');
-    $generatorXml.property(res, igfs, 'maximumTaskRangeLength');
+    $generatorXml.property(res, igfs, 'maxSpaceSize', undefined, 0);
+    $generatorXml.property(res, igfs, 'maximumTaskRangeLength', undefined, 0);
     $generatorXml.property(res, igfs, 'managementPort', undefined, 11400);
 
     res.needEmptyLine = true;
@@ -1323,6 +1343,8 @@ $generatorXml.cluster = function (cluster, clientNearCfg) {
         $generatorXml.clusterAtomics(cluster, res);
 
         $generatorXml.clusterCommunication(cluster, res);
+
+        $generatorXml.clusterConnector(cluster, res);
 
         $generatorXml.clusterDeployment(cluster, res);
 

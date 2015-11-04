@@ -382,6 +382,25 @@ var ClusterSchema = new Schema({
         selectorsCount: Number,
         addressResolver: String
     },
+    connector: {
+        enabled: Boolean,
+        jettyPath: String,
+        host: String,
+        port: Number,
+        portRange: Number,
+        idleTimeout: Number,
+        receiveBufferSize: Number,
+        sendBufferSize: Number,
+        directBuffer: Boolean,
+        noDelay: Boolean,
+        selectorCount: Number,
+        threadPoolSize: Number,
+        messageInterceptor: String,
+        secretKey: String,
+        sslEnabled: Boolean,
+        sslClientAuth: Boolean,
+        sslFactory: String
+    },
     peerClassLoadingEnabled: Boolean,
     peerClassLoadingLocalClassPathExclude: [String],
     peerClassLoadingMissedResourcesCacheSize: Number,
@@ -425,7 +444,8 @@ var ClusterSchema = new Schema({
 ClusterSchema.plugin(deepPopulate, {
     whitelist: [
         'caches',
-        'caches.metadatas'
+        'caches.metadatas',
+        'igfss'
     ]
 });
 

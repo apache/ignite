@@ -56,7 +56,6 @@
           "id": "affinnityGroupSize",
           "type": "number",
           "model": "affinnityGroupSize",
-          "required": true,
           "placeholder": "512",
           "min": 1,
           "tip": [
@@ -274,6 +273,7 @@
           "id": "maxSpaceSize",
           "type": "number",
           "model": "maxSpaceSize",
+          "placeholder": 0,
           "tip": [
             "Maximum space available for data cache to store file system entries"
           ]
@@ -283,6 +283,7 @@
           "id": "maximumTaskRangeLength",
           "type": "number",
           "model": "maximumTaskRangeLength",
+          "placeholder": 0,
           "tip": [
             "Maximum default range size of a file being split during IGFS task execution"
           ]

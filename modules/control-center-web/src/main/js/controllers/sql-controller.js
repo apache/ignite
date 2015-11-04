@@ -26,8 +26,6 @@ consoleModule.controller('sqlController',
     $scope.agentGoal = 'execute sql statements';
     $scope.agentTestDriveOption = '--test-drive-sql';
 
-    $scope.showMessage = $message.message;
-
     $scope.joinTip = $common.joinTip;
 
     $scope.caches = [];
@@ -886,7 +884,8 @@ consoleModule.controller('sqlController',
         paragraph.rate.unit = unit;
         paragraph.rate.installed = true;
 
-        _tryStartRefresh(paragraph);
+        if (paragraph.queryArgs && paragraph.queryArgs.type == "QUERY")
+            _tryStartRefresh(paragraph);
     };
 
     $scope.stopRefresh = function (paragraph) {
@@ -1080,6 +1079,12 @@ consoleModule.controller('sqlController',
         }
     };
 
+    var _yAxisFormat = function(d) {
+        var fmt = d < 1000 ? ',.2f' : '.3s';
+
+        return d3.format(fmt)(d);
+    };
+
     function _updateCharts(paragraph) {
         $timeout(function () {
             _.forEach(paragraph.charts, function (chart) {
@@ -1144,7 +1149,7 @@ consoleModule.controller('sqlController',
                     },
                     yAxis: {
                         axisLabel:  _chartAxisLabel(paragraph.chartValCols, 'Y'),
-                        tickFormat: d3.format(',.2f')
+                        tickFormat: _yAxisFormat
                     },
                     color: CHART_COLORS,
                     stacked: true,
@@ -1212,7 +1217,7 @@ consoleModule.controller('sqlController',
                     },
                     yAxis: {
                         axisLabel:  _chartAxisLabel(paragraph.chartValCols, 'Y'),
-                        tickFormat: d3.format(',.2f')
+                        tickFormat: _yAxisFormat
                     },
                     color: CHART_COLORS,
                     useInteractiveGuideline: true
@@ -1246,7 +1251,7 @@ consoleModule.controller('sqlController',
                     },
                     yAxis: {
                         axisLabel:  _chartAxisLabel(paragraph.chartValCols, 'Y'),
-                        tickFormat: d3.format(',.2f')
+                        tickFormat: _yAxisFormat
                     },
                     color: CHART_COLORS
                 }
@@ -1305,6 +1310,33 @@ consoleModule.controller('sqlController',
                 .finally(function() {
                     $loading.finish('loadingCacheMetadata');
                 });
+        }
+    };
+
+    $scope.showResultQuery = function (paragraph) {
+        if ($common.isDefined(paragraph)) {
+            var title;
+            var queryMsg;
+
+            switch (paragraph.queryArgs.type) {
+                case 'QUERY':
+                    title = 'SQL query';
+                    queryMsg = paragraph.queryArgs.query;
+
+                    break;
+
+                case 'EXPLAIN':
+                    title = 'Explain query';
+                    queryMsg = paragraph.queryArgs.query;
+
+                    break;
+
+                default:
+                    title = 'SCAN query';
+                    queryMsg = 'SCAN query for cache <b>' + paragraph.queryArgs.cacheName + '</b>';
+            }
+
+            $message.message(title, [queryMsg]);
         }
     }
 }]);

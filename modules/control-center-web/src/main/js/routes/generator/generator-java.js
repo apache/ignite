@@ -516,6 +516,23 @@ $generatorJava.clusterCommunication = function (cluster, res) {
     return res;
 };
 
+// Generate REST access group.
+$generatorJava.clusterConnector = function (cluster, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    var cfg = $generatorCommon.CONNECTOR_CONFIGURATION;
+
+    if ($commonUtils.isDefined($commonUtils.isDefined(cluster.connector) && cluster.connector.enabled)) {
+        $generatorJava.beanProperty(res, 'cfg', cluster.connector, 'connectorConfiguration', 'clientCfg',
+            $generatorCommon.CONNECTOR_CONFIGURATION.className, $generatorCommon.CONNECTOR_CONFIGURATION.fields, true);
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
 // Generate deployment group.
 $generatorJava.clusterDeployment = function (cluster, res) {
     if (!res)
@@ -802,16 +819,16 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
     if (cache.indexedTypes && cache.indexedTypes.length > 0) {
         res.emptyLineIfNeeded();
 
-        res.append(varName + '.setIndexedTypes(');
+        res.startBlock(varName + '.setIndexedTypes(');
+
+        var len = cache.indexedTypes.length - 1;
 
         _.forEach(cache.indexedTypes, function(pair, ix) {
-            if (ix > 0)
-                res.append(', ');
-
-            res.append($generatorJava.toJavaCode(res.importClass(pair.keyClass), 'class')).append(', ').append($generatorJava.toJavaCode(res.importClass(pair.valueClass), 'class'))
+            res.line($generatorJava.toJavaCode(res.importClass(pair.keyClass), 'class') + ', ' +
+                $generatorJava.toJavaCode(res.importClass(pair.valueClass), 'class') + (ix < len ? ',' : ''));
         });
 
-        res.line(');');
+        res.endBlock(');');
     }
 
     $generatorJava.multiparamProperty(res, varName, cache, 'sqlFunctionClasses', 'class');
@@ -862,9 +879,9 @@ $generatorJava.cacheStore = function (cache, cacheVarName, res) {
                     switch (storeFactory.dialect) {
                         case 'DB2':
                             res.line('dataSource.setServerName(props.getProperty("' + dataSourceBean + '.jdbc.server_name"));');
-                            res.line('dataSource.setPortNumber(props.getProperty("' + dataSourceBean + '.jdbc.port_number"));');
+                            res.line('dataSource.setPortNumber(Integer.valueOf(props.getProperty("' + dataSourceBean + '.jdbc.port_number")));');
                             res.line('dataSource.setDatabaseName(props.getProperty("' + dataSourceBean + '.jdbc.database_name"));');
-                            res.line('dataSource.setDriverType(props.getProperty("' + dataSourceBean + '.jdbc.driver_type"));');
+                            res.line('dataSource.setDriverType(Integer.valueOf(props.getProperty("' + dataSourceBean + '.jdbc.driver_type")));');
                             break;
 
                         default:
@@ -1121,7 +1138,7 @@ $generatorJava.metadataDatabaseFields = function (res, meta, fieldProperty) {
         _.forEach(dbFields, function (field, ix) {
             res.line('new JdbcTypeField(' +
                 'Types.' + field.databaseType + ', ' + '"' + field.databaseName + '", ' +
-                field.javaType + '.class, ' + '"' + field.javaName + '"'+ ')' + (ix < lastIx ? ',' : ''));
+                res.importClass(field.javaType) + '.class, ' + '"' + field.javaName + '"'+ ')' + (ix < lastIx ? ',' : ''));
         });
 
         res.endBlock(');');
@@ -1578,17 +1595,19 @@ $generatorJava.clusterSsl = function(cluster, res) {
         res = $generatorCommon.builder();
 
     if (cluster.sslEnabled && $commonUtils.isDefined(cluster.sslContextFactory)) {
-        cluster.sslContextFactory.keyStorePassword = 'props.getProperty("ssl.key.storage.password")';
 
-        cluster.sslContextFactory.trustStorePassword = ($commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath)) ?
-            'props.getProperty("ssl.trust.storage.password")' : undefined;
+        cluster.sslContextFactory.keyStorePassword = $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.keyStoreFilePath) ?
+            'props.getProperty("ssl.key.storage.password").toCharArray()' : undefined;
+
+        cluster.sslContextFactory.trustStorePassword = $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath) ?
+            'props.getProperty("ssl.trust.storage.password").toCharArray()' : undefined;
 
         var propsDesc = $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustManagers) ?
             $generatorCommon.SSL_CONFIGURATION_TRUST_MANAGER_FACTORY.fields :
             $generatorCommon.SSL_CONFIGURATION_TRUST_FILE_FACTORY.fields;
 
         $generatorJava.beanProperty(res, 'cfg', cluster.sslContextFactory, 'sslContextFactory', 'sslContextFactory',
-            'org.apache.ignite.ssl.SslContextFactory', propsDesc, false);
+            'org.apache.ignite.ssl.SslContextFactory', propsDesc, true);
 
         res.needEmptyLine = true;
     }
@@ -1704,8 +1723,8 @@ $generatorJava.igfsMisc = function(igfs, varName, res) {
     $generatorJava.property(res, varName, igfs, 'blockSize', null, null, 65536);
     $generatorJava.property(res, varName, igfs, 'streamBufferSize', null, null, 65536);
     $generatorJava.property(res, varName, igfs, 'defaultMode', res.importClass('org.apache.ignite.igfs.IgfsMode'), undefined, "DUAL_ASYNC");
-    $generatorJava.property(res, varName, igfs, 'maxSpaceSize');
-    $generatorJava.property(res, varName, igfs, 'maximumTaskRangeLength');
+    $generatorJava.property(res, varName, igfs, 'maxSpaceSize', null, null, 0);
+    $generatorJava.property(res, varName, igfs, 'maximumTaskRangeLength', null, null, 0);
     $generatorJava.property(res, varName, igfs, 'managementPort', null, null, 11400);
 
     if (igfs.pathModes && igfs.pathModes.length > 0) {
@@ -1758,10 +1777,30 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
             res.startBlock('public static IgniteConfiguration createConfiguration() throws Exception {');
         }
 
-        if (res.datasources.length > 0 || cluster.sslEnabled) {
+        var haveDS = _.findIndex(cluster.caches, function(cache) {
+            if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
+                var factory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
+
+                if (factory && factory.dialect)
+                    return true;
+            }
+
+            return false;
+        }) >= 0;
+
+        if (haveDS || cluster.sslEnabled) {
             res.line(res.importClass('java.net.URL') + ' res = IgniteConfiguration.class.getResource("/secret.properties");');
+
+            res.needEmptyLine = true;
+
             res.line(res.importClass('java.io.File') + ' propsFile = new File(res.toURI());');
+
+            res.needEmptyLine = true;
+
             res.line(res.importClass('java.util.Properties') + ' props = new Properties();');
+
+            res.needEmptyLine = true;
+
             res.startBlock('try (' + res.importClass('java.io.InputStream') + ' in = new ' + res.importClass('java.io.FileInputStream') + '(propsFile)) {');
             res.line('props.load(in);');
             res.endBlock('}');
@@ -1774,6 +1813,8 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
         $generatorJava.clusterAtomics(cluster, res);
 
         $generatorJava.clusterCommunication(cluster, res);
+
+        $generatorJava.clusterConnector(cluster, res);
 
         $generatorJava.clusterDeployment(cluster, res);
 

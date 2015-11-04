@@ -518,7 +518,7 @@ consoleModule.service('$common', [
         function getModel(obj, field) {
             var path = field.path;
 
-            if (!isDefined(path))
+            if (!isDefined(path) || !isDefined(obj))
                 return obj;
 
             path = path.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
@@ -544,38 +544,37 @@ consoleModule.service('$common', [
                 var curModel = getModel(curItem, field);
                 var srcModel = getModel(srcItem, field);
 
-                if (field.model == 'kind' && isDefined(curModel.kind)) {
-                    if (curModel.kind != srcModel.kind)
-                        return true;
+                if (field.model) {
+                    if (field.model == 'kind' && isDefined(curModel.kind)) {
+                        if (curModel.kind != srcModel.kind)
+                            return true;
 
-                    if (_compareFields(field.details[curModel.kind].fields))
-                        return true;
+                        if (_compareFields(field.details[curModel.kind].fields))
+                            return true;
+                    }
+
+                    var curValue = curModel[field.model];
+                    var srcValue = srcModel[field.model];
+
+                    if ((_.isArray(curValue) || _.isString(curValue)) && (curValue.length == 0) && (srcValue === undefined))
+                        curValue = undefined;
+
+                    if (_.isBoolean(curValue) && !curValue && srcValue === undefined)
+                        curValue = undefined;
+
+                    var isCur = isDefined(curValue);
+                    var isSrc = isDefined(srcValue);
+
+                    return !!((isCur && !isSrc) || (!isCur && isSrc) || (isCur && isSrc && !angular.equals(curValue, srcValue)));
                 }
+                else if (field.type == 'panel-details' &&  _compareFields(field.details))
+                    return true;
 
-                var curValue = curModel[field.model];
-                var srcValue = srcModel[field.model];
-
-                if ((_.isArray(curValue) || _.isString(curValue)) && (curValue.length == 0) && (srcValue === undefined))
-                    curValue = undefined;
-
-                if (_.isBoolean(curValue) && !curValue && srcValue === undefined)
-                    curValue = undefined;
-
-                var isCur = isDefined(curValue);
-                var isSrc = isDefined(srcValue);
-
-                return !!((isCur && !isSrc) || (!isCur && isSrc) || (isCur && isSrc && !angular.equals(curValue, srcValue)));
+                return false;
             }
 
             function _compareFields(fields) {
-                for (var fldIx = 0; fldIx < fields.length; fldIx++) {
-                    var field = fields[fldIx];
-
-                    if (_compareField(field))
-                        return true;
-                }
-
-                return false;
+                return _.findIndex(fields, _compareField) >= 0;
             }
 
             group.dirty = _compareFields(group.fields);
@@ -779,37 +778,41 @@ consoleModule.service('$common', [
                     for (var fldIx = 0; fldIx < fields.length; fldIx ++) {
                         var field = fields[fldIx];
 
-                        var destMdl = getModel(backupItem, field);
+                        if (field.model) {
+                            var destMdl = getModel(backupItem, field);
 
-                        if (isDefined(destMdl)) {
-                            if (isDefined(selectedItem)) {
-                                var srcMdl = getModel(selectedItem, field);
+                            if (isDefined(destMdl)) {
+                                if (isDefined(selectedItem)) {
+                                    var srcMdl = getModel(selectedItem, field);
 
-                                if (isDefined(srcMdl)) {
-                                    // For array create copy.
-                                    if ($.isArray(srcMdl[field.model]))
-                                        destMdl[field.model] = srcMdl[field.model].slice();
+                                    if (isDefined(srcMdl)) {
+                                        // For array create copy.
+                                        if ($.isArray(srcMdl[field.model]))
+                                            destMdl[field.model] = srcMdl[field.model].slice();
+                                        else
+                                            destMdl[field.model] = srcMdl[field.model];
+                                    }
                                     else
-                                        destMdl[field.model] = srcMdl[field.model];
+                                        destMdl[field.model] = undefined;
                                 }
                                 else
                                     destMdl[field.model] = undefined;
-                            }
-                            else
-                                destMdl[field.model] = undefined;
 
-                            // For kind field restore kind value and all configured kinds.
-                            if (field.model == 'kind') {
-                                var kind = getModel(backupItem, field)[field.model];
+                                // For kind field restore kind value and all configured kinds.
+                                if (field.model == 'kind') {
+                                    var kind = getModel(backupItem, field)[field.model];
 
-                                var details = field.details;
+                                    var details = field.details;
 
-                                var keys = Object.keys(details);
+                                    var keys = Object.keys(details);
 
-                                for (var detIx = 0; detIx < keys.length; detIx++)
-                                    restoreFields(details[keys[detIx]].fields);
+                                    for (var detIx = 0; detIx < keys.length; detIx++)
+                                        restoreFields(details[keys[detIx]].fields);
+                                }
                             }
                         }
+                        else if (field.type == 'panel-details')
+                            restoreFields(field.details);
                     }
                 }
 

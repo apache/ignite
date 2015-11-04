@@ -136,7 +136,7 @@ consoleModule.controller('igfsController', [
                             $scope.ui.addGroups(data.general, data.advanced);
 
                             if ($common.getQueryVariable('new'))
-                                $scope.createItem();
+                                $scope.createItem($common.getQueryVariable('id'));
                             else {
                                 var lastSelectedIgfs = angular.fromJson(sessionStorage.lastSelectedIgfs);
 
@@ -232,32 +232,30 @@ consoleModule.controller('igfsController', [
                     'Selected IGFS: ' + $scope.backupItem.name : 'New IGFS';
             };
 
-            function prepareNewItem() {
+            function prepareNewItem(id) {
                 return {
                     space: $scope.spaces[0]._id,
                     ipcEndpointEnabled: true,
-                    fragmentizerEnabled: true
+                    fragmentizerEnabled: true,
+                    clusters: id && _.find($scope.clusters, {value: id}) ? [id] : []
                 }
             }
 
             // Add new IGFS.
-            $scope.createItem = function () {
+            $scope.createItem = function (id) {
                 $table.tableReset();
 
                 $timeout(function () {
                     $common.ensureActivePanel($scope.panels, 'general', 'igfsName');
                 });
 
-                $scope.selectItem(undefined, prepareNewItem());
+                $scope.selectItem(undefined, prepareNewItem(id));
             };
 
             // Check IGFS logical consistency.
             function validate(item) {
                 if ($common.isEmptyString(item.name))
                     return showPopoverMessage($scope.panels, 'general', 'igfsName', 'Name should not be empty');
-
-                if (!item.affinnityGroupSize || item.affinnityGroupSize < 1)
-                    return showPopoverMessage($scope.panels, 'general', 'affinnityGroupSize', 'Group size should be specified and more or equal to 1');
 
                 if (!$common.isEmptyString(item.dualModePutExecutorService) &&
                     !$common.isValidJavaClass('Put executor service', item.dualModePutExecutorService, false, 'dualModePutExecutorService', false, $scope.panels, 'dualMode'))

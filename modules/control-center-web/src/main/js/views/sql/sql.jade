@@ -35,11 +35,11 @@ mixin btn-toolbar-data(btn, kind, tip)
 
 mixin result-toolbar
     .btn-group(ng-model='paragraph.result' ng-click='$event.stopPropagation()' style='left: 50%; margin: 0 0 0 -70px;display: block;')
-        +btn-toolbar-data('fa-table', 'table', 'Show data in tabular form.')
-        +btn-toolbar-data('fa-bar-chart', 'bar', 'Show bar chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
-        +btn-toolbar-data('fa-pie-chart', 'pie', 'Show pie chart.<br/>By default first column - pie labels, second column - pie values.<br/>In case of one column it will be treated as pie values.')
-        +btn-toolbar-data('fa-line-chart', 'line', 'Show line chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
-        +btn-toolbar-data('fa-area-chart', 'area', 'Show area chart.<br/>By default first column - X values, second column - Y values.<br/>In case of one column it will be treated as Y values.')
+        +btn-toolbar-data('fa-table', 'table', 'Show data in tabular form')
+        +btn-toolbar-data('fa-bar-chart', 'bar', 'Show bar chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values')
+        +btn-toolbar-data('fa-pie-chart', 'pie', 'Show pie chart<br/>By default first column - pie labels, second column - pie values<br/>In case of one column it will be treated as pie values')
+        +btn-toolbar-data('fa-line-chart', 'line', 'Show line chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values')
+        +btn-toolbar-data('fa-area-chart', 'area', 'Show area chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values')
 
 mixin chart-settings(mdl)
     .row(ng-show='paragraph.chart')
@@ -194,15 +194,13 @@ block container
                                                     +result-toolbar
                                             label.margin-top-dflt Charts do not support&nbsp
                                                 b Explain
-                                                | &nbspand&nbsp
+                                                | &nbsp;and&nbsp;
                                                 b Scan
-                                                | &nbspquery
+                                                | &nbsp;query
                                     div(ng-show='queryExecuted(paragraph) && !paragraph.refreshExecuting()')
                                         -var nextVisibleCondition = 'paragraph.queryId && (paragraph.table() || paragraph.chart() && paragraph.queryExecute() && (paragraph.timeLineSupported() || !paragraph.chartTimeLineEnabled()))'
-                                        -var queryLinkStyle = 'float: left; margin-left: 5px; margin-bottom: 5px;'
 
                                         hr(style='margin-top: 0; margin-bottom: 5px')
-                                        a(ng-show='paragraph.queryArgs.type != "SCAN"' style=queryLinkStyle ng-click='showMessage("Query", [paragraph.queryArgs.query])') Show query
-                                        label(ng-show='paragraph.queryArgs.type == "SCAN"' style=queryLinkStyle) Scan query
+                                        a(ng-show='paragraph.queryArgs.type' style='float: left; margin-left: 5px; margin-bottom: 5px' ng-click='showResultQuery(paragraph)') Show query
                                         i.fa.fa-chevron-circle-right(ng-show=nextVisibleCondition style='float: right;margin-right: 10px;' ng-click='nextPage(paragraph)')
                                         a(ng-show=nextVisibleCondition style='float: right; margin-bottom: 5px;margin-right: 5px;' ng-click='nextPage(paragraph)') Next

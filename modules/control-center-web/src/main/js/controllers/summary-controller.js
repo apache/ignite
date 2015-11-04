@@ -82,8 +82,9 @@ consoleModule.controller('summaryController', [
 
         renderer.setHighlightGutterLine(false);
         renderer.setShowPrintMargin(false);
+        renderer.setOption('fontFamily', 'monospace');
         renderer.setOption('fontSize', '12px');
-        renderer.setOption('minLines', '3');
+        renderer.setOption('minLines', '25');
         renderer.setOption('maxLines', '25');
 
         editor.setTheme('ace/theme/chrome');

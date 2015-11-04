@@ -324,6 +324,9 @@ consoleModule.controller('metadataController', [
                     .success(function (schemas) {
                         $scope.loadMeta.schemas = _.map(schemas, function (schema) { return {use: false, name: schema}});
                         $scope.loadMeta.action = 'schemas';
+
+                        if ($scope.loadMeta.schemas.length == 0)
+                            $scope.loadMetadataNext();
                     })
                     .error(function (errMsg) {
                         $common.showError(errMsg);
@@ -628,14 +631,15 @@ consoleModule.controller('metadataController', [
             };
 
             $scope.loadMetadataPrev = function () {
-                if  ($scope.loadMeta.action == 'tables') {
+                if  ($scope.loadMeta.action == 'tables' && $scope.loadMeta.schemas.length > 0) {
                     $scope.loadMeta.action = 'schemas';
                     $scope.loadMeta.button = 'Next';
                     $scope.loadMeta.info = INFO_SELECT_SCHEMAS;
                     $scope.loadMeta.loadingOptions = LOADING_TABLES;
                 }
-                else if  ($scope.loadMeta.action == 'schemas') {
+                else {
                     $scope.loadMeta.action = 'connect';
+                    $scope.loadMeta.button = 'Next';
                     $scope.loadMeta.info = INFO_CONNECT_TO_DB;
                     $scope.loadMeta.loadingOptions = LOADING_SCHEMAS;
                 }
@@ -932,6 +936,12 @@ consoleModule.controller('metadataController', [
                                         else
                                             $scope.selectItem(undefined, undefined);
                                     }
+
+                                    if (!$scope.ui.showValid) {
+                                        var validFilter = $filter('metadatasValidation');
+
+                                        $scope.ui.showValid = validFilter($scope.metadatas, false, true).length == 0;
+                                    }
                                 })
                                 .error(function (errMsg) {
                                     $common.showError(errMsg);
@@ -975,7 +985,21 @@ consoleModule.controller('metadataController', [
                 return true;
             };
 
-            var pairFields = {
+            $scope.toggleValid = function () {
+                $scope.ui.showValid = !$scope.ui.showValid;
+
+                var validFilter = $filter('metadatasValidation');
+
+                var idx = _.findIndex(validFilter($scope.metadatas, $scope.ui.showValid, true), function (metadata) {
+                    return metadata._id == $scope.selectedItem._id;
+                });
+
+                if (idx == -1)
+                    $scope.selectItem(undefined, undefined);
+            };
+
+
+        var pairFields = {
                 fields: {msg: 'Query field class', id: 'QryField', idPrefix: 'Key', searchCol: 'name', valueCol: 'key', classValidation: true, dupObjName: 'name'},
                 aliases: {id: 'Alias', idPrefix: 'Value', searchCol: 'alias', valueCol: 'value', dupObjName: 'alias'}
             };
