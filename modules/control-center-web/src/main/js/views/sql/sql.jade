@@ -35,7 +35,7 @@ mixin btn-toolbar-data(btn, kind, tip)
 
 mixin result-toolbar
     .btn-group(ng-model='paragraph.result' ng-click='$event.stopPropagation()' style='left: 50%; margin: 0 0 0 -70px;display: block;')
-        +btn-toolbar-data('fa-table', 'table', 'Show data in tabular form.')
+        +btn-toolbar-data('fa-table', 'table', 'Show data in tabular form')
         +btn-toolbar-data('fa-bar-chart', 'bar', 'Show bar chart.<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values')
         +btn-toolbar-data('fa-pie-chart', 'pie', 'Show pie chart.<br/>By default first column - pie labels, second column - pie values<br/>In case of one column it will be treated as pie values')
         +btn-toolbar-data('fa-line-chart', 'line', 'Show line chart.<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values')
