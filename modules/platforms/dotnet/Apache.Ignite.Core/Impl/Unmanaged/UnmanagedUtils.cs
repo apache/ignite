@@ -173,6 +173,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private const string ProcAtomicSequenceIsClosed = "IgniteAtomicSequenceIsClosed";
         private const string ProcAtomicSequenceClose = "IgniteAtomicSequenceClose";
 
+        private const string ProcAtomicReferenceIsClosed = "IgniteAtomicReferenceIsClosed";
+        private const string ProcAtomicReferenceClose = "IgniteAtomicReferenceClose";
+
         #endregion
 
         #region DELEGATE DEFINITIONS
@@ -313,8 +316,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate long AtomicSequenceGetAndAddDelegate(void* ctx, void* target, long l);
         private delegate int AtomicSequenceGetBatchSizeDelegate(void* ctx, void* target);
         private delegate void AtomicSequenceSetBatchSizeDelegate(void* ctx, void* target, int size);
-        private delegate bool AtomicSequenceRemovedDelegate(void* ctx, void* target);
+        private delegate bool AtomicSequenceIsClosedDelegate(void* ctx, void* target);
         private delegate void AtomicSequenceCloseDelegate(void* ctx, void* target);
+
+        private delegate bool AtomicReferenceIsClosedDelegate(void* ctx, void* target);
+        private delegate void AtomicReferenceCloseDelegate(void* ctx, void* target); 
 
         #endregion
 
@@ -457,8 +463,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static readonly AtomicSequenceGetAndAddDelegate ATOMIC_SEQUENCE_GET_AND_ADD;
         private static readonly AtomicSequenceGetBatchSizeDelegate ATOMIC_SEQUENCE_GET_BATCH_SIZE;
         private static readonly AtomicSequenceSetBatchSizeDelegate ATOMIC_SEQUENCE_SET_BATCH_SIZE;
-        private static readonly AtomicSequenceRemovedDelegate ATOMIC_SEQUENCE_IS_CLOSED;
+        private static readonly AtomicSequenceIsClosedDelegate ATOMIC_SEQUENCE_IS_CLOSED;
         private static readonly AtomicSequenceCloseDelegate ATOMIC_SEQUENCE_CLOSE;
+
+        private static readonly AtomicReferenceIsClosedDelegate ATOMIC_REFERENCE_IS_CLOSED;
+        private static readonly AtomicReferenceCloseDelegate ATOMIC_REFERENCE_CLOSE;
 
         // ReSharper restore InconsistentNaming
 
@@ -616,8 +625,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             ATOMIC_SEQUENCE_GET_AND_ADD = CreateDelegate<AtomicSequenceGetAndAddDelegate>(ProcAtomicSequenceGetAndAdd);
             ATOMIC_SEQUENCE_GET_BATCH_SIZE = CreateDelegate<AtomicSequenceGetBatchSizeDelegate>(ProcAtomicSequenceGetBatchSize);
             ATOMIC_SEQUENCE_SET_BATCH_SIZE = CreateDelegate<AtomicSequenceSetBatchSizeDelegate>(ProcAtomicSequenceSetBatchSize);
-            ATOMIC_SEQUENCE_IS_CLOSED = CreateDelegate<AtomicSequenceRemovedDelegate>(ProcAtomicSequenceIsClosed);
+            ATOMIC_SEQUENCE_IS_CLOSED = CreateDelegate<AtomicSequenceIsClosedDelegate>(ProcAtomicSequenceIsClosed);
             ATOMIC_SEQUENCE_CLOSE = CreateDelegate<AtomicSequenceCloseDelegate>(ProcAtomicSequenceClose);
+
+            ATOMIC_REFERENCE_IS_CLOSED = CreateDelegate<AtomicReferenceIsClosedDelegate>(ProcAtomicReferenceIsClosed);
+            ATOMIC_REFERENCE_CLOSE = CreateDelegate<AtomicReferenceCloseDelegate>(ProcAtomicReferenceClose);
         }
 
         #region NATIVE METHODS: PROCESSOR
@@ -1462,6 +1474,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             ATOMIC_SEQUENCE_CLOSE(target.Context, target.Target);
         }
+
+        internal static bool AtomicReferenceIsClosed(IUnmanagedTarget target)
+        {
+            return ATOMIC_REFERENCE_IS_CLOSED(target.Context, target.Target);
+        }
+
+        internal static void AtomicReferenceClose(IUnmanagedTarget target)
+        {
+            ATOMIC_REFERENCE_CLOSE(target.Context, target.Target);
+        } 
 
         #endregion
 
