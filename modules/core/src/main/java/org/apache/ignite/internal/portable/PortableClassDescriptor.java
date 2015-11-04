@@ -675,7 +675,6 @@ public class PortableClassDescriptor {
 
         PortableUtils.writeHeader(
             writer,
-            userType,
             registered ? typeId : GridPortableMarshaller.UNREGISTERED_TYPE_ID,
             obj instanceof CacheObjectImpl ? 0 : obj.hashCode(),
             registered ? null : cls.getName()
@@ -710,6 +709,9 @@ public class PortableClassDescriptor {
         try {
             Constructor<?> ctor = U.forceEmptyConstructor(cls);
 
+            if (ctor == null)
+                throw new PortableException("Failed to find empty constructor for class: " + cls.getName());
+
             ctor.setAccessible(true);
 
             return ctor;
@@ -732,11 +734,8 @@ public class PortableClassDescriptor {
             Method writeObj = cls.getDeclaredMethod("writeObject", ObjectOutputStream.class);
             Method readObj = cls.getDeclaredMethod("readObject", ObjectInputStream.class);
 
-            if (!Modifier.isStatic(writeObj.getModifiers()) && !Modifier.isStatic(readObj.getModifiers()) &&
-                writeObj.getReturnType() == void.class && readObj.getReturnType() == void.class)
-                use = true;
-            else
-                use = false;
+            use = !Modifier.isStatic(writeObj.getModifiers()) && !Modifier.isStatic(readObj.getModifiers()) &&
+                writeObj.getReturnType() == void.class && readObj.getReturnType() == void.class;
         }
         catch (NoSuchMethodException e) {
             use = false;

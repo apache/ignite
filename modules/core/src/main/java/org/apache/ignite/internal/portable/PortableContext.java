@@ -850,6 +850,13 @@ public class PortableContext implements Externalizable {
     }
 
     /**
+     * @return Whether field IDs should be skipped in footer or not.
+     */
+    public boolean isNoFieldIds() {
+        return false; // TODO: IGNITE-1816: Take from config.
+    }
+
+    /**
      * @return Whether to convert string to UTF8 bytes.
      */
     public boolean isConvertString() {

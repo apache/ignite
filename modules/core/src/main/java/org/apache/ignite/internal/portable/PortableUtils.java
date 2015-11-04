@@ -120,28 +120,13 @@ public class PortableUtils {
     public static final int OFFSET_4 = 4;
 
     /**
-     * Write flags.
-     *
-     * @param writer Writer.
-     * @param userType User type flag.
-     */
-    public static void writeFlags(PortableWriterExImpl writer, boolean userType) {
-        short val = 0;
-
-        if (userType)
-            val |= FLAG_USR_TYP;
-
-        writer.doWriteShort(val);
-    }
-
-    /**
      * Check if user type flag is set.
      *
      * @param flags Flags.
      * @return {@code True} if set.
      */
     public static boolean isUserType(short flags) {
-        return (flags & FLAG_USR_TYP) == FLAG_USR_TYP;
+        return isFlagSet(flags, FLAG_USR_TYP);
     }
 
     /**
@@ -151,8 +136,30 @@ public class PortableUtils {
      * @return {@code True} if set.
      */
     public static boolean isRawOnly(short flags) {
-        return (flags & FLAG_RAW_ONLY) == FLAG_RAW_ONLY;
+        return isFlagSet(flags, FLAG_RAW_ONLY);
     }
+
+    /**
+     * Check if "no-field-ids" flag is set.
+     *
+     * @param flags Flags.
+     * @return {@code True} if set.
+     */
+    public static boolean isNoFieldIds(short flags) {
+        return isFlagSet(flags, FLAG_NO_FIELD_IDS);
+    }
+
+    /**
+     * Check whether particular flag is set.
+     *
+     * @param flags Flags.
+     * @param flag Flag.
+     * @return {@code True} if flag is set in flags.
+     */
+    private static boolean isFlagSet(short flags, short flag) {
+        return (flags & flag) == flag;
+    }
+
 
     /**
      *
@@ -554,18 +561,17 @@ public class PortableUtils {
      * Write portable header.
      *
      * @param writer Writer.
-     * @param usrTyp User type flag.
      * @param typeId Type ID.
      * @param hashCode Hash code.
      * @param clsName Class name (optional).
      * @return Position where length should be written.
      */
-    public static int writeHeader(PortableWriterExImpl writer, boolean usrTyp, int typeId, int hashCode,
-        @Nullable String clsName) {
+    public static int writeHeader(PortableWriterExImpl writer, int typeId, int hashCode, @Nullable String clsName) {
         writer.doWriteByte(GridPortableMarshaller.OBJ);
         writer.doWriteByte(GridPortableMarshaller.PROTO_VER);
 
-        PortableUtils.writeFlags(writer, usrTyp);
+        // Skip flags, they will be written in post-write step.
+        writer.position(writer.position() + 2);
 
         writer.doWriteInt(typeId);
         writer.doWriteInt(hashCode);

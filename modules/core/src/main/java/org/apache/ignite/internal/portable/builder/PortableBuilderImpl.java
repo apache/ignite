@@ -205,10 +205,10 @@ public class PortableBuilderImpl implements PortableBuilder {
     void serializeTo(PortableWriterExImpl writer, PortableBuilderSerializer serializer) {
         try {
             PortableUtils.writeHeader(writer,
-                true,
                 registeredType ? typeId : UNREGISTERED_TYPE_ID,
                 hashCode,
-                registeredType ? null : clsNameToWrite);
+                registeredType ? null : clsNameToWrite
+            );
 
             Set<Integer> remainsFlds = null;
 

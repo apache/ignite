@@ -90,7 +90,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
     /** Length: integer. */
     private static final int LEN_INT = 4;
 
-    /** */
+    /** Initial capacity. */
     private static final int INIT_CAP = 1024;
 
     /** FNV1 hash offset basis. */
@@ -333,6 +333,7 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
 
     /**
      * Perform post-write activity. This includes:
+     * - writing flags;
      * - writing object length;
      * - writing schema offset;
      * - writing schema to the tail.
@@ -340,6 +341,11 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      * @param userType User type flag.
      */
     public void postWrite(boolean userType) {
+        short flags = userType ? PortableUtils.FLAG_USR_TYP : 0;
+
+        if (ctx.isNoFieldIds())
+            flags |= PortableUtils.FLAG_NO_FIELD_IDS;
+
         if (schema != null) {
             // Write schema ID.
             out.writeInt(start + SCHEMA_ID_POS, schemaId);
@@ -354,28 +360,23 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
             if (rawOffPos != 0)
                 out.writeInt(rawOffPos - start);
 
-            if (offsetByteCnt == PortableUtils.OFFSET_1) {
-                int flags = (userType ? PortableUtils.FLAG_USR_TYP : 0) | PortableUtils.FLAG_OFFSET_ONE_BYTE;
-
-                out.writeShort(start + FLAGS_POS, (short)flags);
-            }
-            else if (offsetByteCnt == PortableUtils.OFFSET_2) {
-                int flags = (userType ? PortableUtils.FLAG_USR_TYP : 0) | PortableUtils.FLAG_OFFSET_TWO_BYTES;
-
-                out.writeShort(start + FLAGS_POS, (short)flags);
-            }
+            if (offsetByteCnt == PortableUtils.OFFSET_1)
+                flags |= PortableUtils.FLAG_OFFSET_ONE_BYTE;
+            else if (offsetByteCnt == PortableUtils.OFFSET_2)
+                flags |= PortableUtils.FLAG_OFFSET_TWO_BYTES;
         }
         else {
             // Write raw-only flag is needed.
-            int flags = (userType ? PortableUtils.FLAG_USR_TYP : 0) | PortableUtils.FLAG_RAW_ONLY;
-
-            out.writeShort(start + FLAGS_POS, (short)flags);
+            flags |= PortableUtils.FLAG_RAW_ONLY;
 
             // If there are no schema, we are free to write raw offset to schema offset.
             out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, (rawOffPos == 0 ? out.position() : rawOffPos) - start);
         }
 
-        // 5. Write length.
+        // Write flags as we know them at this point.
+        out.writeShort(start + FLAGS_POS, flags);
+
+        // Write length.
         out.writeInt(start + TOTAL_LEN_POS, out.position() - start);
     }
 
