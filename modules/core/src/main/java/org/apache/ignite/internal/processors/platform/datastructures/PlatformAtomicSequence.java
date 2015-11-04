@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.datastructures;
 
-import org.apache.ignite.internal.processors.datastructures.*;
+import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.platform.*;
 
 /**
@@ -25,14 +25,14 @@ import org.apache.ignite.internal.processors.platform.*;
  */
 public class PlatformAtomicSequence extends PlatformAbstractTarget {
     /** */
-    private final GridCacheAtomicSequenceImpl atomicSeq;
+    private final IgniteAtomicSequence atomicSeq;
 
     /**
      * Ctor.
      * @param ctx Context.
      * @param atomicSeq AtomicSequence to wrap.
      */
-    public PlatformAtomicSequence(PlatformContext ctx, GridCacheAtomicSequenceImpl atomicSeq) {
+    public PlatformAtomicSequence(PlatformContext ctx, IgniteAtomicSequence atomicSeq) {
         super(ctx);
 
         assert atomicSeq != null;

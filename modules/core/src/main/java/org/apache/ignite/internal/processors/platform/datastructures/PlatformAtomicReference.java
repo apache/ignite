@@ -28,6 +28,15 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
     /** */
     private final GridCacheAtomicReferenceImpl atomicRef;
 
+    /**
+     * Creates an instance or returns null.
+     *
+     * @param ctx Context.
+     * @param name Name.
+     * @param memPtr Pointer to a stream with initial value. 0 for default value.
+     * @param create Create flag.
+     * @return Instance of a PlatformAtomicReference, or null when Ignite reference with specific name is null.
+     */
     public static PlatformAtomicReference createInstance(PlatformContext ctx, String name, long memPtr, boolean create) {
         assert ctx != null;
         assert name != null;

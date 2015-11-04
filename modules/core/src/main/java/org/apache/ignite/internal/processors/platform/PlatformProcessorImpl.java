@@ -17,11 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComputeImpl;
@@ -333,8 +329,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformTarget atomicSequence(String name, long initVal, boolean create) throws IgniteException {
-        GridCacheAtomicSequenceImpl atomicSeq =
-                (GridCacheAtomicSequenceImpl)ignite().atomicSequence(name, initVal, create);
+        IgniteAtomicSequence atomicSeq = ignite().atomicSequence(name, initVal, create);
 
         if (atomicSeq == null)
             return null;
