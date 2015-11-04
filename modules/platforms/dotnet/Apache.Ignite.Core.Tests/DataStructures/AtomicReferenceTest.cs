@@ -1,5 +1,6 @@
 ﻿namespace Apache.Ignite.Core.Tests.DataStructures
 {
+    using System;
     using System.Linq;
     using NUnit.Framework;
 
@@ -82,8 +83,86 @@
 
             Assert.AreEqual(15, atomics[0].CompareExchange(42, 15));
             atomics.ForEach(x => Assert.AreEqual(42, x.Get()));
+        }
 
-            // TODO: Test with portable and serializable
+        /// <summary>
+        /// Tests serializable objects in the atomic.
+        /// </summary>
+        [Test]
+        public void TestSerializable()
+        {
+            TestOperations(new SerializableObj {Foo = 16});
+        }
+
+        /// <summary>
+        /// Tests portable objects in the atomic.
+        /// </summary>
+        [Test]
+        public void TestPortable()
+        {
+            TestOperations(new PortableObj {Foo = 16});
+        }
+
+        /// <summary>
+        /// Tests operations on specific object.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="obj">The object.</param>
+        private void TestOperations<T>(T obj)
+        {
+            var atomic = Grid.GetAtomicReference(AtomicRefName, obj, true);
+
+            Assert.AreEqual(obj, atomic.Get());
+
+            atomic.Set(default(T));
+            Assert.AreEqual(default(T), atomic.Get());
+
+            var old = atomic.CompareExchange(obj, default(T));
+            Assert.AreEqual(default(T), old);
+            Assert.AreEqual(obj, atomic.Get());
+
+            old = atomic.CompareExchange(obj, default(T));
+            Assert.AreEqual(obj, old);
+            Assert.AreEqual(obj, atomic.Get());
+        }
+
+        /// <summary>
+        /// Serializable.
+        /// </summary>
+        [Serializable]
+        private class SerializableObj
+        {
+            /** */
+            public int Foo { get; set; }
+
+            /** <inheritdoc /> */
+            private bool Equals(SerializableObj other)
+            {
+                return Foo == other.Foo;
+            }
+
+            /** <inheritdoc /> */
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != GetType()) return false;
+                return Equals((SerializableObj) obj);
+            }
+
+            /** <inheritdoc /> */
+            public override int GetHashCode()
+            {
+                return Foo;
+            }
+        }
+
+        /// <summary>
+        /// Portable.
+        /// </summary>
+        private sealed class PortableObj : SerializableObj
+        {
+            // No-op.
         }
     }
 }
