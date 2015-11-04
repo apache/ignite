@@ -230,9 +230,9 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /**
-     * @param idxs Partition indexes.
+     * @param cntrs Partition indexes.
      */
-    @Override public void setPartitionUpdateIdx(long[] idxs) {
+    @Override public void setPartitionUpdateCounters(long[] cntrs) {
         // No-op.
     }
 

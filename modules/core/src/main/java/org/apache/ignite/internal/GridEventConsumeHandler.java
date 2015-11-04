@@ -130,7 +130,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateIdx(Map<Integer, Long> idx) {
+    @Override public void updateCounters(Map<Integer, Long> cntrs) {
         // No-op.
     }
 

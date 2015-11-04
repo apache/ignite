@@ -48,9 +48,9 @@ interface CacheContinuousQueryListener<K, V> {
     /**
      * Cleans backup queue.
      *
-     * @param updateIdxs Update indexes map.
+     * @param updateCntrs Update indexes map.
      */
-    public void cleanupBackupQueue(Map<Integer, Long> updateIdxs);
+    public void cleanupBackupQueue(Map<Integer, Long> updateCntrs);
 
     /**
      * Flushes backup queue.

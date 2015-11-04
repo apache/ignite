@@ -45,7 +45,7 @@ public interface IgniteTxRemoteEx extends IgniteInternalTx {
     public boolean setWriteValue(IgniteTxEntry e);
 
     /**
-     * @param idxs Partition update indexes.
+     * @param cntrs Partition update indexes.
      */
-    public void setPartitionUpdateIdx(long[] idxs);
+    public void setPartitionUpdateCounters(long[] cntrs);
 }

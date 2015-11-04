@@ -212,30 +212,29 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                             if (routine != null) {
                                 try {
-                                    Map<Integer, Long> idxs = msg.updateIdxs();
+                                    Map<Integer, Long> cntrs = msg.updateCntrs();
 
                                     GridCacheAdapter<Object, Object> interCache =
                                         ctx.cache().internalCache(routine.handler().cacheName());
 
-                                    if (interCache != null && idxs != null && interCache.context() != null
+                                    if (interCache != null && cntrs != null && interCache.context() != null
                                         && !interCache.isLocal() && !CU.clientNode(ctx.grid().localNode())) {
                                         Map<Integer, Long> map = interCache.context().topology().updateCounters();
 
                                         for (Map.Entry<Integer, Long> e : map.entrySet()) {
-                                            Long cntr0 = idxs.get(e.getKey());
+                                            Long cntr0 = cntrs.get(e.getKey());
                                             Long cntr1 = e.getValue();
 
                                             if (cntr0 == null || cntr1 > cntr0)
-                                                idxs.put(e.getKey(), cntr1);
+                                                cntrs.put(e.getKey(), cntr1);
                                         }
                                     }
                                 }
                                 catch (Exception e) {
-                                    if (log.isDebugEnabled())
-                                        log.warning("Failed to load update counters.", e);
+                                    U.warn(log, "Failed to load update counters.", e);
                                 }
 
-                                routine.handler().updateIdx(msg.updateIdxs());
+                                routine.handler().updateCounters(msg.updateCntrs());
                             }
 
                             fut.onRemoteRegistered();
@@ -891,15 +890,14 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         try {
             if (ctx.cache() != null && ctx.cache().internalCache(hnd.cacheName()) != null) {
-                Map<Integer, Long> idx = ctx.cache().internalCache(hnd.cacheName())
+                Map<Integer, Long> cntrs = ctx.cache().internalCache(hnd.cacheName())
                     .context().topology().updateCounters();
 
-                req.addUpdateIdxs(idx);
+                req.addUpdateIdxs(cntrs);
             }
         }
         catch (Exception e) {
-            if (log.isDebugEnabled())
-                log.warning("Failed to load partition counters.", e);
+            U.warn(log, "Failed to load partition counters.");
         }
 
         if (err != null)

@@ -183,7 +183,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** Partition update index. */
     @GridDirectTransient
-    private long partIdx;
+    private long partUpdateCntr;
 
     /** */
     private GridCacheVersion serReadVer;
@@ -381,15 +381,15 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      *
      * @param partIdx Partition index.
      */
-    public void partIdx(long partIdx) {
-        this.partIdx = partIdx;
+    public void updateCounter(long partIdx) {
+        this.partUpdateCntr = partIdx;
     }
 
     /**
      * @return Partition index.
      */
-    public long partIdx() {
-        return partIdx;
+    public long updateCounter() {
+        return partUpdateCntr;
     }
 
     /**

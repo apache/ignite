@@ -941,7 +941,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     Long cntr = cntrMap.get(part.id());
 
                     if (cntr != null)
-                        part.updateIndex(cntr);
+                        part.updateCounter(cntr);
                 }
             }
 
@@ -1054,7 +1054,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     Long cntr = cntrMap.get(part.id());
 
                     if (cntr != null)
-                        part.updateIndex(cntr);
+                        part.updateCounter(cntr);
                 }
             }
 
@@ -1316,7 +1316,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             for (GridDhtLocalPartition part : locParts.values()) {
                 Long cntr0 = res.get(part.id());
-                Long cntr1 = part.updateIndex();
+                Long cntr1 = part.updateCounter();
 
                 if (cntr0 == null || cntr1 > cntr0)
                     res.put(part.id(), cntr1);

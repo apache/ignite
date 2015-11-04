@@ -38,10 +38,10 @@ public class CacheContinuousQueryBatchAck extends GridCacheMessage {
     /** Routine ID. */
     private UUID routineId;
 
-    /** Update indexes. */
+    /** Update counters. */
     @GridToStringInclude
     @GridDirectMap(keyType = Integer.class, valueType = Long.class)
-    private Map<Integer, Long> updateIdxs;
+    private Map<Integer, Long> updateCntrs;
 
     /**
      * Default constructor.
@@ -53,12 +53,12 @@ public class CacheContinuousQueryBatchAck extends GridCacheMessage {
     /**
      * @param cacheId Cache ID.
      * @param routineId Routine ID.
-     * @param updateIdxs Update indexes.
+     * @param updateCntrs Update counters.
      */
-    CacheContinuousQueryBatchAck(int cacheId, UUID routineId, Map<Integer, Long> updateIdxs) {
+    CacheContinuousQueryBatchAck(int cacheId, UUID routineId, Map<Integer, Long> updateCntrs) {
         this.cacheId = cacheId;
         this.routineId = routineId;
-        this.updateIdxs = updateIdxs;
+        this.updateCntrs = updateCntrs;
     }
 
     /**
@@ -69,10 +69,10 @@ public class CacheContinuousQueryBatchAck extends GridCacheMessage {
     }
 
     /**
-     * @return Update indexes.
+     * @return Update counters.
      */
-    Map<Integer, Long> updateIndexes() {
-        return updateIdxs;
+    Map<Integer, Long> updateCntrs() {
+        return updateCntrs;
     }
 
     /** {@inheritDoc} */
@@ -97,7 +97,7 @@ public class CacheContinuousQueryBatchAck extends GridCacheMessage {
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMap("updateIdxs", updateIdxs, MessageCollectionItemType.INT,
+                if (!writer.writeMap("updateCntrs", updateCntrs, MessageCollectionItemType.INT,
                     MessageCollectionItemType.LONG))
                     return false;
 
@@ -128,7 +128,7 @@ public class CacheContinuousQueryBatchAck extends GridCacheMessage {
                 reader.incrementState();
 
             case 4:
-                updateIdxs = reader.readMap("updateIdxs", MessageCollectionItemType.INT, MessageCollectionItemType.LONG,
+                updateCntrs = reader.readMap("updateCntrs", MessageCollectionItemType.INT, MessageCollectionItemType.LONG,
                     false);
 
                 if (!reader.isLastRead())

@@ -53,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -1765,7 +1764,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     filteredReaders = F.view(entry.readers(), F.notEqualTo(node.id()));
                 }
 
-                final GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
+                GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
                     ver,
                     node.id(),
                     locNodeId,
@@ -1819,7 +1818,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 newConflictVer,
                                 sndPrevVal,
                                 updRes.oldValue(),
-                                updRes.updateIdx());
+                                updRes.updateCounter());
                         }
 
                         if (!F.isEmpty(filteredReaders))
@@ -1838,7 +1837,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
                 else if (!entry.isNear() && updRes.success()) {
                     ctx.continuousQueries().onEntryUpdated(entry, entry.key(), updRes.newValue(), updRes.oldValue(),
-                        primary, false, updRes.updateIdx(), topVer);
+                        primary, false, updRes.updateCounter(), topVer);
                 }
 
                 if (hasNear) {
@@ -2113,7 +2112,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 null,
                                 sndPrevVal,
                                 updRes.oldValue(),
-                                updRes.updateIdx());
+                                updRes.updateCounter());
 
                         if (!F.isEmpty(filteredReaders))
                             dhtFut.addNearWriteEntries(filteredReaders,
@@ -2567,7 +2566,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         if (updRes.success() && !entry.isNear())
                             ctx.continuousQueries().onEntryUpdated(entry, entry.key(), updRes.newValue(),
-                                updRes.oldValue(), false, false, updRes.updateIdx(), req.topologyVersion());
+                                updRes.oldValue(), false, false, updRes.updateCounter(), req.topologyVersion());
 
                         entry.onUnlock();
 

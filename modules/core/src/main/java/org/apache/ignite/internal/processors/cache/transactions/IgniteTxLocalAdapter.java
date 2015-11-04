@@ -1029,7 +1029,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             null);
 
                                         if (updRes.success())
-                                            txEntry.partIdx(updRes.partIdx());
+                                            txEntry.updateCounter(updRes.updatePartitionCounter());
 
                                         if (nearCached != null && updRes.success()) {
                                             nearCached.innerSet(
@@ -1072,7 +1072,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             null);
 
                                         if (updRes.success())
-                                            txEntry.partIdx(updRes.partIdx());
+                                            txEntry.updateCounter(updRes.updatePartitionCounter());
 
                                         if (nearCached != null && updRes.success()) {
                                             nearCached.innerRemove(

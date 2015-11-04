@@ -148,7 +148,7 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     public String cacheName();
 
     /**
-     * @param idx Init state for partition indexies.
+     * @param cntrs Init state for partition counters.
      */
-    public void updateIdx(Map<Integer, Long> idx);
+    public void updateCounters(Map<Integer, Long> cntrs);
 }

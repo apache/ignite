@@ -143,7 +143,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     private transient int cacheId;
 
     /** */
-    private Map<Integer, Long> initUpdIdx;
+    private Map<Integer, Long> initUpdCntrs;
 
     /**
      * Required by {@link Externalizable}.
@@ -221,8 +221,8 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateIdx(Map<Integer, Long> idx) {
-        this.initUpdIdx = idx;
+    @Override public void updateCounters(Map<Integer, Long> cntrs) {
+        this.initUpdCntrs = cntrs;
     }
 
     /** {@inheritDoc} */
@@ -250,15 +250,15 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
         GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-        if (!internal && cctx != null && initUpdIdx != null) {
+        if (!internal && cctx != null && initUpdCntrs != null) {
             Map<Integer, Long> map = cctx.topology().updateCounters();
 
             for (Map.Entry<Integer, Long> e : map.entrySet()) {
-                Long cntr0 = initUpdIdx.get(e.getKey());
+                Long cntr0 = initUpdCntrs.get(e.getKey());
                 Long cntr1 = e.getValue();
 
                 if (cntr0 == null || cntr1 > cntr0)
-                    initUpdIdx.put(e.getKey(), cntr1);
+                    initUpdCntrs.put(e.getKey(), cntr1);
             }
         }
 
@@ -402,15 +402,15 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                     ((PlatformContinuousQueryFilter)rmtFilter).onQueryUnregister();
             }
 
-            @Override public void cleanupBackupQueue(Map<Integer, Long> updateIdxs) {
+            @Override public void cleanupBackupQueue(Map<Integer, Long> updateCntrs) {
                 Iterator<CacheContinuousQueryEntry> it = backupQueue.iterator();
 
                 while (it.hasNext()) {
                     CacheContinuousQueryEntry backupEntry = it.next();
 
-                    Long updateIdx = updateIdxs.get(backupEntry.partition());
+                    Long updateCntr = updateCntrs.get(backupEntry.partition());
 
-                    if (updateIdx != null && backupEntry.updateIndex() <= updateIdx)
+                    if (updateCntr != null && backupEntry.updateCounter() <= updateCntr)
                         it.remove();
                 }
             }
@@ -586,14 +586,14 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
         // Initial query entry or evicted entry.
         // This events should be fired immediately.
-        if (e.updateIndex() == -1)
+        if (e.updateCounter() == -1)
             return F.asList(e);
 
         PartitionRecovery rec = rcvs.get(e.partition());
 
         if (rec == null) {
             rec = new PartitionRecovery(ctx.log(getClass()), cacheContext(ctx),
-                initUpdIdx == null ? null : initUpdIdx.get(e.partition()));
+                initUpdCntrs == null ? null : initUpdCntrs.get(e.partition()));
 
             PartitionRecovery oldRec = rcvs.putIfAbsent(e.partition(), rec);
 
@@ -621,7 +621,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
         // Initial query entry.
         // This events should be fired immediately.
-        if (e.updateIndex() == -1)
+        if (e.updateCounter() == -1)
             return e;
 
         HoleBuffer buf = snds.get(e.partition());
@@ -663,14 +663,14 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         /**
          * @param log Logger.
          * @param cctx Cache context.
-         * @param initIdx Update counters.
+         * @param initCntr Update counters.
          */
-        public PartitionRecovery(IgniteLogger log, GridCacheContext cctx, @Nullable Long initIdx) {
+        public PartitionRecovery(IgniteLogger log, GridCacheContext cctx, @Nullable Long initCntr) {
             this.log = log;
             this.cctx = cctx;
 
-            if (initIdx != null) {
-                this.lastFiredEvt = initIdx;
+            if (initCntr != null) {
+                this.lastFiredEvt = initCntr;
 
                 curTop = cctx.topology().topologyVersion();
             }
@@ -690,7 +690,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             synchronized (pendingEvts) {
                 // Received first event.
                 if (curTop == AffinityTopologyVersion.NONE) {
-                    lastFiredEvt = entry.updateIndex();
+                    lastFiredEvt = entry.updateCounter();
 
                     curTop = entry.topologyVersion();
 
@@ -698,7 +698,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 }
 
                 if (curTop.compareTo(entry.topologyVersion()) < 0) {
-                    if (entry.updateIndex() == 1 && !entry.isBackup()) {
+                    if (entry.updateCounter() == 1 && !entry.isBackup()) {
                         entries = new ArrayList<>(pendingEvts.size());
 
                         for (CacheContinuousQueryEntry evt : pendingEvts.values()) {
@@ -710,7 +710,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
                         curTop = entry.topologyVersion();
 
-                        lastFiredEvt = entry.updateIndex();
+                        lastFiredEvt = entry.updateCounter();
 
                         entries.add(entry);
 
@@ -721,14 +721,14 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 }
 
                 // Check duplicate.
-                if (entry.updateIndex() > lastFiredEvt) {
-                    pendingEvts.put(entry.updateIndex(), entry);
+                if (entry.updateCounter() > lastFiredEvt) {
+                    pendingEvts.put(entry.updateCounter(), entry);
 
                     // Put filtered events.
                     if (entry.filteredEvents() != null) {
-                        for (long idx : entry.filteredEvents()) {
-                            if (idx > lastFiredEvt)
-                                pendingEvts.put(idx, HOLE);
+                        for (long cnrt : entry.filteredEvents()) {
+                            if (cnrt > lastFiredEvt)
+                                pendingEvts.put(cnrt, HOLE);
                         }
                     }
                 }
@@ -804,14 +804,14 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             assert e != null;
 
             if (e.isFiltered()) {
-                if (lastFiredCntr.get() > e.updateIndex() || e.updateIndex() == 1)
+                if (lastFiredCntr.get() > e.updateCounter() || e.updateCounter() == 1)
                     return e;
                 else {
-                    buf.add(e.updateIndex());
+                    buf.add(e.updateCounter());
 
                     // Double check. If another thread sent a event with counter higher than this event.
-                    if (lastFiredCntr.get() > e.updateIndex() && buf.contains(e.updateIndex())) {
-                        buf.remove(e.updateIndex());
+                    if (lastFiredCntr.get() > e.updateCounter() && buf.contains(e.updateCounter())) {
+                        buf.remove(e.updateCounter());
 
                         return e;
                     }
@@ -820,12 +820,12 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 }
             }
             else {
-                long prevVal = setLastFiredCounter(e.updateIndex());
+                long prevVal = setLastFiredCounter(e.updateCounter());
 
                 if (prevVal == -1)
                     return e;
                 else {
-                    NavigableSet<Long> prevHoles = buf.subSet(prevVal, true, e.updateIndex(), true);
+                    NavigableSet<Long> prevHoles = buf.subSet(prevVal, true, e.updateCounter(), true);
 
                     GridLongList filteredEvts = new GridLongList(10);
 
@@ -834,9 +834,9 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                     Iterator<Long> iter = prevHoles.iterator();
 
                     while (iter.hasNext()) {
-                        long idx = iter.next();
+                        long cntr = iter.next();
 
-                        filteredEvts.add(idx);
+                        filteredEvts.add(cntr);
 
                         iter.remove();
 
@@ -1013,7 +1013,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
         /** */
         @GridToStringInclude
-        private Map<Integer, Long> updateIdxs = new HashMap<>();
+        private Map<Integer, Long> updateCntrs = new HashMap<>();
 
         /** */
         @GridToStringInclude
@@ -1055,10 +1055,10 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         private void addEntry(CacheContinuousQueryEntry e) {
             topVers.add(e.topologyVersion());
 
-            Long cntr0 = updateIdxs.get(e.partition());
+            Long cntr0 = updateCntrs.get(e.partition());
 
-            if (cntr0 == null || e.updateIndex() > cntr0)
-                updateIdxs.put(e.partition(), e.updateIndex());
+            if (cntr0 == null || e.updateCounter() > cntr0)
+                updateCntrs.put(e.partition(), e.updateCounter());
         }
 
         /**
@@ -1075,10 +1075,10 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         private IgniteBiTuple<Map<Integer, Long>, Set<AffinityTopologyVersion>> acknowledgeData() {
             assert size > 0;
 
-            Map<Integer, Long> idxs = new HashMap<>(updateIdxs);
+            Map<Integer, Long> cntrs = new HashMap<>(updateCntrs);
 
             IgniteBiTuple<Map<Integer, Long>, Set<AffinityTopologyVersion>> res =
-                new IgniteBiTuple<>(idxs, topVers);
+                new IgniteBiTuple<>(cntrs, topVers);
 
             topVers = U.newHashSet(1);
 

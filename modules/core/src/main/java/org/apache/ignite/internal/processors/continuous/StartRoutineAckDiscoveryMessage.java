@@ -36,18 +36,18 @@ public class StartRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
     private final Map<UUID, IgniteCheckedException> errs;
 
     /** */
-    private final Map<Integer, Long> updateIdxs;
+    private final Map<Integer, Long> updateCntrs;
 
     /**
      * @param routineId Routine id.
      * @param errs Errs.
      */
     public StartRoutineAckDiscoveryMessage(UUID routineId, Map<UUID, IgniteCheckedException> errs,
-        Map<Integer, Long> idx) {
+        Map<Integer, Long> cntrs) {
         super(routineId);
 
         this.errs = new HashMap<>(errs);
-        this.updateIdxs = idx;
+        this.updateCntrs = cntrs;
     }
 
     /** {@inheritDoc} */
@@ -55,9 +55,11 @@ public class StartRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
         return null;
     }
 
-    /** {@inheritDoc} */
-    public Map<Integer, Long> updateIdxs() {
-        return updateIdxs;
+    /**
+     * @return Update counters for partitions.
+     */
+    public Map<Integer, Long> updateCntrs() {
+        return updateCntrs;
     }
 
     /**

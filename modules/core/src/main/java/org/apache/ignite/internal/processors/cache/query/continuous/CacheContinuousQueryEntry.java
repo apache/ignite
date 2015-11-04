@@ -86,8 +86,8 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     /** Partition. */
     private int part;
 
-    /** Update index. */
-    private long updateIdx;
+    /** Update counter. */
+    private long updateCntr;
 
     /** Flags. */
     private byte flags;
@@ -113,7 +113,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @param newVal New value.
      * @param oldVal Old value.
      * @param part Partition.
-     * @param updateIdx Update index.
+     * @param updateCntr Update partition counter.
      * @param topVer Topology version if applicable.
      */
     CacheContinuousQueryEntry(
@@ -123,7 +123,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         @Nullable CacheObject newVal,
         @Nullable CacheObject oldVal,
         int part,
-        long updateIdx,
+        long updateCntr,
         @Nullable AffinityTopologyVersion topVer) {
         this.cacheId = cacheId;
         this.evtType = evtType;
@@ -131,7 +131,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         this.newVal = newVal;
         this.oldVal = oldVal;
         this.part = part;
-        this.updateIdx = updateIdx;
+        this.updateCntr = updateCntr;
         this.topVer = topVer;
     }
 
@@ -164,10 +164,10 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /**
-     * @return Update index.
+     * @return Update counter.
      */
-    long updateIndex() {
-        return updateIdx;
+    long updateCounter() {
+        return updateCntr;
     }
 
     /**
@@ -203,10 +203,10 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /**
-     * @param idxs Filtered indexes.
+     * @param cntrs Filtered events.
      */
-    void filteredEvents(GridLongList idxs) {
-        filteredEvts = idxs;
+    void filteredEvents(GridLongList cntrs) {
+        filteredEvts = cntrs;
     }
 
     /**
@@ -334,7 +334,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeLong("updateIdx", updateIdx))
+                if (!writer.writeLong("updateCntr", updateCntr))
                     return false;
 
                 writer.incrementState();
@@ -423,7 +423,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 reader.incrementState();
 
             case 6:
-                updateIdx = reader.readLong("updateIdx");
+                updateCntr = reader.readLong("updateCntr");
 
                 if (!reader.isLastRead())
                     return false;

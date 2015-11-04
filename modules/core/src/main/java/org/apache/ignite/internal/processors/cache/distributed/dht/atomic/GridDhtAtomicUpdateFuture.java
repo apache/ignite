@@ -351,7 +351,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                             upd.get4(), updateRes.topologyVersion());
                     }
                     catch (IgniteCheckedException e) {
-                        log.warning("Failed to send continuous query message. [key=" + key + ", newVal="
+                        U.warn(log, "Failed to send continuous query message. [key=" + key + ", newVal="
                             + upd.get1() + ", err=" + e + "]");
                     }
 

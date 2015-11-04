@@ -117,8 +117,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /** Group reservations. */
     private final CopyOnWriteArrayList<GridDhtPartitionsReservation> reservations = new CopyOnWriteArrayList<>();
 
-    /** Update index. */
-    private final AtomicLong updIdx = new AtomicLong();
+    /** Update counter. */
+    private final AtomicLong cntr = new AtomicLong();
 
     /**
      * @param cctx Context.
@@ -620,28 +620,28 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /**
      * @return Next update index.
      */
-    public long nextUpdateIndex() {
-        return updIdx.incrementAndGet();
+    public long nextUpdateCounter() {
+        return cntr.incrementAndGet();
     }
 
     /**
      * @return Current update index.
      */
-    public long updateIndex() {
-        return updIdx.get();
+    public long updateCounter() {
+        return cntr.get();
     }
 
     /**
      * @param val Update index value.
      */
-    public void updateIndex(long val) {
+    public void updateCounter(long val) {
         while (true) {
-            long val0 = updIdx.get();
+            long val0 = cntr.get();
 
             if (val0 >= val)
                 break;
 
-            if (updIdx.compareAndSet(val0, val))
+            if (cntr.compareAndSet(val0, val))
                 break;
         }
     }

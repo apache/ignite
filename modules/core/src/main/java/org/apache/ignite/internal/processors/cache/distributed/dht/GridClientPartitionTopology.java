@@ -94,7 +94,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** Lock. */
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-    /** Partition update counter. */
+    /** Partition update counters. */
     private Map<Integer, Long> cntrMap = new HashMap<>();
 
     /**

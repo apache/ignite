@@ -119,7 +119,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                     CacheContinuousQueryListener lsnr = lsnrs.get(msg.routineId());
 
                     if (lsnr != null)
-                        lsnr.cleanupBackupQueue(msg.updateIndexes());
+                        lsnr.cleanupBackupQueue(msg.updateCntrs());
                 }
             });
 
@@ -164,7 +164,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param oldVal Old value.
      * @param primary {@code True} if called on primary node.
      * @param preload Whether update happened during preloading.
-     * @param updateIdx Update index.
+     * @param updateCntr Update counter.
      * @param topVer Topology version.
      * @throws IgniteCheckedException In case of error.
      */
@@ -174,7 +174,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         CacheObject oldVal,
         boolean primary,
         boolean preload,
-        long updateIdx,
+        long updateCntr,
         AffinityTopologyVersion topVer)
         throws IgniteCheckedException
     {
@@ -233,7 +233,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 newVal,
                 lsnr.oldValueRequired() ? oldVal : null,
                 e.partition(),
-                updateIdx,
+                updateCntr,
                 topVer);
 
             CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent<>(

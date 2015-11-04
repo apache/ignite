@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import javax.cache.processor.EntryProcessor;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -60,7 +58,7 @@ public class GridCacheUpdateAtomicResult {
     private final boolean sndToDht;
 
     /** */
-    private final Long updateIdx;
+    private final Long updateCntr;
 
     /** Value computed by entry processor. */
     private IgniteBiTuple<Object, Exception> res;
@@ -77,7 +75,7 @@ public class GridCacheUpdateAtomicResult {
      * @param rmvVer Version for deferred delete.
      * @param conflictRes DR resolution result.
      * @param sndToDht Whether update should be propagated to DHT node.
-     * @param updateIdx Partition update counter.
+     * @param updateCntr Partition update counter.
      */
     public GridCacheUpdateAtomicResult(boolean success,
         @Nullable CacheObject oldVal,
@@ -88,7 +86,7 @@ public class GridCacheUpdateAtomicResult {
         @Nullable GridCacheVersion rmvVer,
         @Nullable GridCacheVersionConflictContext<?, ?> conflictRes,
         boolean sndToDht,
-        long updateIdx) {
+        long updateCntr) {
         this.success = success;
         this.oldVal = oldVal;
         this.newVal = newVal;
@@ -98,7 +96,7 @@ public class GridCacheUpdateAtomicResult {
         this.rmvVer = rmvVer;
         this.conflictRes = conflictRes;
         this.sndToDht = sndToDht;
-        this.updateIdx = updateIdx;
+        this.updateCntr = updateCntr;
     }
 
     /**
@@ -139,8 +137,8 @@ public class GridCacheUpdateAtomicResult {
     /**
      * @return Partition update index.
      */
-    public Long updateIdx() {
-        return updateIdx;
+    public Long updateCounter() {
+        return updateCntr;
     }
 
     /**

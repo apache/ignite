@@ -282,12 +282,12 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void setPartitionUpdateIdx(long[] idxs) {
-        if (writeMap != null && !writeMap.isEmpty() && idxs != null && idxs.length > 0) {
+    @Override public void setPartitionUpdateCounters(long[] cntrs) {
+        if (writeMap != null && !writeMap.isEmpty() && cntrs != null && cntrs.length > 0) {
             int i = 0;
 
             for (IgniteTxEntry txEntry : writeMap.values()) {
-                txEntry.partIdx(idxs[i]);
+                txEntry.updateCounter(cntrs[i]);
 
                 ++i;
             }
@@ -605,7 +605,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 near() ? null : explicitVer, CU.subjectId(this, cctx),
                                                 resolveTaskName(),
                                                 dhtVer,
-                                                txEntry.partIdx());
+                                                txEntry.updateCounter());
                                         else {
                                             cached.innerSet(this,
                                                 eventNodeId(),
@@ -624,7 +624,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
                                                 dhtVer,
-                                                txEntry.partIdx());
+                                                txEntry.updateCounter());
 
                                             // Keep near entry up to date.
                                             if (nearCached != null) {
@@ -654,7 +654,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                             CU.subjectId(this, cctx),
                                             resolveTaskName(),
                                             dhtVer,
-                                            txEntry.partIdx());
+                                            txEntry.updateCounter());
 
                                         // Keep near entry up to date.
                                         if (nearCached != null)

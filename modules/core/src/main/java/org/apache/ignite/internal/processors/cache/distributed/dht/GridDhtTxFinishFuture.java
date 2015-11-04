@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -377,13 +377,10 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
             add(fut); // Append new future.
 
-            Collection<Long> updateIdxs = F.transform(dhtMapping.entries(), new C1<IgniteTxEntry, Long>() {
-                @Override public Long apply(IgniteTxEntry entry) {
-                    assert entry != null;
+            Collection<Long> updCntrs = new ArrayList<>(dhtMapping.entries().size());
 
-                    return entry.partIdx();
-                }
-            });
+            for (IgniteTxEntry e : dhtMapping.entries())
+                updCntrs.add(e.updateCounter());
 
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
@@ -409,7 +406,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.subjectId(),
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
-                updateIdxs);
+                updCntrs);
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
