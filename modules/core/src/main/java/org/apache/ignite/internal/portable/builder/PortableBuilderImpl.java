@@ -410,20 +410,15 @@ public class PortableBuilderImpl implements PortableBuilder {
         // Get field length.
         int fieldLen;
 
-        if (footerPos + 4 + fieldOffsetSize == footerEnd) {
+        if (footerPos + 4 + fieldOffsetSize == footerEnd)
             // This is the last field, compare to raw offset.
             fieldLen = rawPos - fieldPos;
-
-            fieldLen = fieldLen * 1;
-        }
         else {
             // Field is somewhere in the middle, get difference with the next offset.
             int nextFieldOffset = PortableUtils.fieldOffsetRelative(reader, footerPos + 4 + fieldOffsetSize + 4,
                 fieldOffsetSize);
 
             fieldLen = nextFieldOffset - fieldOffset;
-
-            fieldLen = fieldLen * 1;
         }
 
         return F.t(fieldPos, fieldLen);
