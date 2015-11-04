@@ -460,6 +460,11 @@ namespace Apache.Ignite.Core.Impl
         public IAtomicReference<T> GetAtomicReference<T>(string name, T initialValue, bool create)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            // Do not allocate memory to pass default value.
+            if (EqualityComparer<T>.Default.Equals(initialValue, default(T)))
+                return new AtomicReference<T>(
+                    UU.ProcessorAtomicReference(_proc, name, 0, create), Marshaller, name);
             
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
