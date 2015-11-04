@@ -164,6 +164,9 @@ class OptimizedClassDescriptor {
     /** Access order field offset. */
     private long accessOrderFieldOff;
 
+    /** Check object on EXTERNALIZABLE or SERIALIZABLE sum.  */
+    private boolean verifyChecksum;
+
     /**
      * Creates descriptor for class.
      *
@@ -179,13 +182,15 @@ class OptimizedClassDescriptor {
         int typeId,
         ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper)
+        OptimizedMarshallerIdMapper mapper,
+        boolean verifyChecksum)
         throws IOException {
         this.cls = cls;
         this.typeId = typeId;
         this.clsMap = clsMap;
         this.ctx = ctx;
         this.mapper = mapper;
+        this.verifyChecksum = verifyChecksum;
 
         name = cls.getName();
 
@@ -675,7 +680,8 @@ class OptimizedClassDescriptor {
                 OptimizedClassDescriptor compDesc = classDescriptor(clsMap,
                     obj.getClass().getComponentType(),
                     ctx,
-                    mapper);
+                    mapper,
+                    verifyChecksum);
 
                 compDesc.writeTypeData(out);
 
@@ -734,7 +740,7 @@ class OptimizedClassDescriptor {
                 break;
 
             case CLS:
-                OptimizedClassDescriptor clsDesc = classDescriptor(clsMap, (Class<?>)obj, ctx, mapper);
+                OptimizedClassDescriptor clsDesc = classDescriptor(clsMap, (Class<?>)obj, ctx, mapper, verifyChecksum);
 
                 clsDesc.writeTypeData(out);
 
@@ -798,12 +804,16 @@ class OptimizedClassDescriptor {
                 return enumVals[in.readInt()];
 
             case EXTERNALIZABLE:
-                verifyChecksum(in.readShort());
+                if(verifyChecksum) {
+                    verifyChecksum(in.readShort());
+                }
 
                 return in.readExternalizable(constructor, readResolveMtd);
 
             case SERIALIZABLE:
-                verifyChecksum(in.readShort());
+                if(verifyChecksum) {
+                    verifyChecksum(in.readShort());
+                }
 
                 return in.readSerializable(cls, readObjMtds, readResolveMtd, fields);
 

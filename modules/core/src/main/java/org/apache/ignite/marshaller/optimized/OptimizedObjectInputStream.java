@@ -131,6 +131,9 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     /** */
     private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
 
+    /** */
+    private boolean verifyChecksum;
+
     /**
      * @param in Input.
      * @throws IOException In case of error.
@@ -144,17 +147,20 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * @param ctx Context.
      * @param mapper ID mapper.
      * @param clsLdr Class loader.
+     * @param verifyChecksum check object on EXTERNALIZABLE or SERIALIZABLE sum.
      */
     void context(
         ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper,
-        ClassLoader clsLdr)
+        ClassLoader clsLdr,
+        boolean verifyChecksum)
     {
         this.clsMap = clsMap;
         this.ctx = ctx;
         this.mapper = mapper;
         this.clsLdr = clsLdr;
+        this.verifyChecksum = verifyChecksum;
     }
 
     /**
@@ -307,8 +313,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 int typeId = readInt();
 
                 OptimizedClassDescriptor desc = typeId == 0 ?
-                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr), ctx, mapper):
-                    classDescriptor(clsMap, typeId, clsLdr, ctx, mapper);
+                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr), ctx, mapper, verifyChecksum):
+                    classDescriptor(clsMap, typeId, clsLdr, ctx, mapper, verifyChecksum);
 
                 curCls = desc.describedClass();
 
@@ -338,7 +344,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         int compTypeId = readInt();
 
         return compTypeId == 0 ? U.forName(readUTF(), clsLdr) :
-            classDescriptor(clsMap, compTypeId, clsLdr, ctx, mapper).describedClass();
+            classDescriptor(clsMap, compTypeId, clsLdr, ctx, mapper, verifyChecksum).describedClass();
     }
 
     /**
