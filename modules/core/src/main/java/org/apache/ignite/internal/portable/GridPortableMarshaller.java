@@ -239,7 +239,7 @@ public class GridPortableMarshaller {
             return new byte[] { NULL };
 
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
-            writer.marshal(obj, false);
+            writer.marshal(obj);
 
             return writer.array();
         }
