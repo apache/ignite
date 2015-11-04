@@ -27,6 +27,6 @@ public class PortableFieldsHeapSelfTest extends PortableFieldsAbstractSelfTest {
     @Override protected PortableObjectEx toPortable(PortableMarshaller marsh, Object obj) throws Exception {
         byte[] bytes = marsh.marshal(obj);
 
-        return new PortableObjectImpl(ctx, bytes, 0);
+        return new PortableObjectImpl(portableContext(marsh), bytes, 0);
     }
 }

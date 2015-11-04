@@ -49,18 +49,21 @@ public abstract class PortableFieldsAbstractSelfTest extends GridCommonAbstractT
     };
 
     /** Marshaller. */
-    protected PortableMarshaller marsh;
+    protected PortableMarshaller dfltMarsh;
 
-    /** Portable context. */
-    protected PortableContext ctx;
+    /**
+     * Create marshaller.
+     *
+     * @param stringAsBytes Whether to marshal strings as bytes (UTF8).
+     * @return Portable marshaller.
+     * @throws Exception If failed.
+     */
+    protected static PortableMarshaller createMarshaller(boolean stringAsBytes) throws Exception {
+        PortableContext ctx = new PortableContext(META_HND, null);
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+        PortableMarshaller marsh = new PortableMarshaller();
 
-        ctx = new PortableContext(META_HND, null);
-
-        marsh = new PortableMarshaller();
+        marsh.setConvertStringToBytes(stringAsBytes);
 
         marsh.setTypeConfigurations(Arrays.asList(
             new PortableTypeConfiguration(TestObject.class.getName()),
@@ -71,6 +74,27 @@ public abstract class PortableFieldsAbstractSelfTest extends GridCommonAbstractT
         marsh.setContext(new MarshallerContextTestImpl(null));
 
         IgniteUtils.invoke(PortableMarshaller.class, marsh, "setPortableContext", ctx);
+
+        return marsh;
+    }
+
+    /**
+     * Get portable context for the current marshaller.
+     *
+     * @param marsh Marshaller.
+     * @return Portable context.
+     */
+    protected static PortableContext portableContext(PortableMarshaller marsh) {
+        GridPortableMarshaller impl = U.field(marsh, "impl");
+
+        return impl.context();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        dfltMarsh = createMarshaller(true);
     }
 
     /**
@@ -227,6 +251,18 @@ public abstract class PortableFieldsAbstractSelfTest extends GridCommonAbstractT
     }
 
     /**
+     * Test string field.
+     *
+     * @throws Exception If failed.
+     */
+    public void testStringAsChars() throws Exception {
+        PortableMarshaller marsh = createMarshaller(false);
+
+        checkNormal(marsh, "fString", true);
+        checkNested(marsh, "fString", true);
+    }
+
+    /**
      * Test string array field.
      *
      * @throws Exception If failed.
@@ -342,8 +378,8 @@ public abstract class PortableFieldsAbstractSelfTest extends GridCommonAbstractT
     public void testMissing() throws Exception {
         String fieldName = "fMissing";
 
-        checkNormal(fieldName, false);
-        checkNested(fieldName, false);
+        checkNormal(dfltMarsh, fieldName, false);
+        checkNested(dfltMarsh, fieldName, false);
     }
 
     /**
@@ -353,34 +389,36 @@ public abstract class PortableFieldsAbstractSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void check(String fieldName) throws Exception {
-        checkNormal(fieldName, true);
-        checkNested(fieldName, true);
+        checkNormal(dfltMarsh, fieldName, true);
+        checkNested(dfltMarsh, fieldName, true);
     }
 
     /**
      * Check field.
      *
+     * @param marsh Marshaller.
      * @param fieldName Field name.
      * @param exists Whether field should exist.
      * @throws Exception If failed.
      */
-    private void checkNormal(String fieldName, boolean exists) throws Exception {
-        TestContext ctx = context(fieldName);
+    private void checkNormal(PortableMarshaller marsh, String fieldName, boolean exists) throws Exception {
+        TestContext testCtx = context(marsh, fieldName);
 
-        check0(fieldName, ctx, exists);
+        check0(fieldName, testCtx, exists);
     }
 
     /**
      * Check nested field.
      *
+     * @param marsh Marshaller.
      * @param fieldName Field name.
      * @param exists Whether field should exist.
      * @throws Exception If failed.
      */
-    private void checkNested(String fieldName, boolean exists) throws Exception {
-        TestContext ctx = nestedContext(fieldName);
+    private void checkNested(PortableMarshaller marsh, String fieldName, boolean exists) throws Exception {
+        TestContext testCtx = nestedContext(marsh, fieldName);
 
-        check0(fieldName, ctx, exists);
+        check0(fieldName, testCtx, exists);
     }
 
     /**
@@ -451,11 +489,12 @@ public abstract class PortableFieldsAbstractSelfTest extends GridCommonAbstractT
     /**
      * Get test context.
      *
+     * @param marsh Portable marshaller.
      * @param fieldName Field name.
      * @return Test context.
      * @throws Exception If failed.
      */
-    private TestContext context(String fieldName) throws Exception {
+    private TestContext context(PortableMarshaller marsh, String fieldName) throws Exception {
         TestObject obj = createObject();
 
         PortableObjectEx portObj = toPortable(marsh, obj);
@@ -468,11 +507,13 @@ public abstract class PortableFieldsAbstractSelfTest extends GridCommonAbstractT
     /**
      * Get test context with nested test object.
      *
+     * @param marsh Portable marshaller.
      * @param fieldName Field name.
      * @return Test context.
      * @throws Exception If failed.
      */
-    private TestContext nestedContext(String fieldName) throws Exception {
+    private TestContext nestedContext(PortableMarshaller marsh, String fieldName)
+        throws Exception {
         TestObject obj = createObject();
         TestOuterObject outObj = new TestOuterObject(obj);
 

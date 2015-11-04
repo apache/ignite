@@ -56,6 +56,6 @@ public class PortableFieldsOffheapSelfTest extends PortableFieldsAbstractSelfTes
 
         UNSAFE.copyMemory(arr, BYTE_ARR_OFF, null, ptr, arr.length);
 
-        return new PortableObjectOffheapImpl(ctx, ptr, 0, arr.length);
+        return new PortableObjectOffheapImpl(portableContext(marsh), ptr, 0, arr.length);
     }
 }
