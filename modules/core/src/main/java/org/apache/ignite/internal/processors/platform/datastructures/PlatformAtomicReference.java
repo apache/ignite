@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.datastructures;
 
+import org.apache.ignite.*;
+import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.platform.*;
 import org.apache.ignite.internal.processors.platform.memory.*;
@@ -25,6 +27,9 @@ import org.apache.ignite.internal.processors.platform.memory.*;
  * Platform atomic reference wrapper.
  */
 public class PlatformAtomicReference extends PlatformAbstractTarget {
+    /** */
+    private static final int OP_GET = 1;
+
     /** */
     private final GridCacheAtomicReferenceImpl atomicRef;
 
@@ -86,5 +91,13 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
      */
     public void close() {
         atomicRef.close();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void processOutStream(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
+        if (type == OP_GET)
+            writer.writeObject(atomicRef.get());
+        else
+            super.processOutStream(type, writer);
     }
 }
