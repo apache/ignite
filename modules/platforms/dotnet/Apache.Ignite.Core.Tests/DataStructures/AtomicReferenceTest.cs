@@ -91,7 +91,7 @@
         [Test]
         public void TestSerializable()
         {
-            TestOperations(new SerializableObj {Foo = 16});
+            TestOperations(new SerializableObj {Foo = 16}, new SerializableObj {Foo = -5});
         }
 
         /// <summary>
@@ -100,30 +100,31 @@
         [Test]
         public void TestPortable()
         {
-            TestOperations(new PortableObj {Foo = 16});
+            TestOperations(new PortableObj {Foo = 16}, new PortableObj {Foo = -5});
         }
 
         /// <summary>
         /// Tests operations on specific object.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="obj">The object.</param>
-        private void TestOperations<T>(T obj)
+        /// <param name="x">The x.</param>
+        /// <param name="y">The y.</param>
+        private void TestOperations<T>(T x, T y)
         {
-            var atomic = Grid.GetAtomicReference(AtomicRefName, obj, true);
+            var atomic = Grid.GetAtomicReference(AtomicRefName, x, true);
 
-            Assert.AreEqual(obj, atomic.Get());
+            Assert.AreEqual(x, atomic.Get());
 
-            atomic.Set(default(T));
-            Assert.AreEqual(default(T), atomic.Get());
+            atomic.Set(y);
+            Assert.AreEqual(y, atomic.Get());
 
-            var old = atomic.CompareExchange(obj, default(T));
-            Assert.AreEqual(default(T), old);
-            Assert.AreEqual(obj, atomic.Get());
+            var old = atomic.CompareExchange(x, y);
+            Assert.AreEqual(y, old);
+            Assert.AreEqual(x, atomic.Get());
 
-            old = atomic.CompareExchange(obj, default(T));
-            Assert.AreEqual(obj, old);
-            Assert.AreEqual(obj, atomic.Get());
+            old = atomic.CompareExchange(x, y);
+            Assert.AreEqual(x, old);
+            Assert.AreEqual(x, atomic.Get());
         }
 
         /// <summary>
@@ -154,6 +155,12 @@
             public override int GetHashCode()
             {
                 return Foo;
+            }
+
+            /** <inheritdoc /> */
+            public override string ToString()
+            {
+                return base.ToString() + "[" + Foo + "]";
             }
         }
 
