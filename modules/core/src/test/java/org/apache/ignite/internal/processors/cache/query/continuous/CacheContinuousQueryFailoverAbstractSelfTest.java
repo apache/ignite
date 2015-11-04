@@ -394,10 +394,10 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @param nodes Count nodes.
      * @param killedNodeIdx Killed node index.
-     * @param updCntrs Update counters.
+     * @param expCntrs Update counters.
      * @return {@code True} if counters matches.
      */
-    private boolean checkPartCounter(int nodes, int killedNodeIdx, Map<Integer, Long> updCntrs) {
+    private boolean checkPartCounter(int nodes, int killedNodeIdx, Map<Integer, Long> expCntrs) throws Exception {
         for (int i = 0; i < nodes; i++) {
             if (i == killedNodeIdx)
                 continue;
@@ -406,10 +406,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
             Map<Integer, Long> act = grid(i).cachex(null).context().topology().updateCounters();
 
-            for (Map.Entry<Integer, Long> e : updCntrs.entrySet()) {
+            for (Map.Entry<Integer, Long> e : expCntrs.entrySet())
                 if (aff.mapPartitionToPrimaryAndBackups(e.getKey()).contains(grid(i).localNode()))
                     assertEquals(e.getValue(), act.get(e.getKey()));
-            }
         }
 
         return true;
