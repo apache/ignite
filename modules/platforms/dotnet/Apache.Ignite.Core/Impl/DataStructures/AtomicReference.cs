@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         {
             Get = 1,
             Set = 2,
-            CompareAndSet = 3
+            CompareAndSetAndGet = 3
         }
 
         /** */
@@ -68,8 +68,13 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** <inheritDoc /> */
         public T CompareExchange(T value, T comparand)
         {
-            // TODO: need CompareAndSetAndGet in Java
-            throw new System.NotImplementedException();
+            return DoOutInOp((int) Op.CompareAndSetAndGet,
+                writer =>
+                {
+                    writer.WriteObject(value);
+                    writer.WriteObject(comparand);
+                },
+                stream => Marshaller.StartUnmarshal(stream).Deserialize<T>());
         }
 
         /** <inheritDoc /> */
