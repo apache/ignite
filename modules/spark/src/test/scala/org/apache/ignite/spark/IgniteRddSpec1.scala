@@ -27,12 +27,12 @@ import org.junit.runner.RunWith
 import org.scalatest._
 import org.scalatest.junit.JUnitRunner
 
-import IgniteRddSpec._
+import IgniteRddSpec1._
 
 import scala.annotation.meta.field
 
 @RunWith(classOf[JUnitRunner])
-class IgniteRddSpec extends FunSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
+class IgniteRddSpec1 extends FunSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
     describe("IgniteRDD") {
         it("should successfully store data to ignite") {
             val sc = new SparkContext("local[*]", "test")
@@ -191,7 +191,7 @@ class IgniteRddSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
 /**
  * Constants and utility methods.
  */
-object IgniteRddSpec {
+object IgniteRddSpec1 {
     /** IP finder for the test. */
     val IP_FINDER = new TcpDiscoveryVmIpFinder(true)
 
@@ -216,7 +216,7 @@ object IgniteRddSpec {
 
         val discoSpi = new TcpDiscoverySpi
 
-        discoSpi.setIpFinder(IgniteRddSpec.IP_FINDER)
+        discoSpi.setIpFinder(IgniteRddSpec1.IP_FINDER)
 
         cfg.setDiscoverySpi(discoSpi)
 
