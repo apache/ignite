@@ -21,14 +21,14 @@ import org.apache.ignite.IgniteException;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Exception indicating portable object serialization error.
+ * Exception indicating binary object serialization error.
  */
 public class BinaryObjectException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates portable exception with error message.
+     * Creates binary exception with error message.
      *
      * @param msg Error message.
      */
@@ -37,7 +37,7 @@ public class BinaryObjectException extends IgniteException {
     }
 
     /**
-     * Creates portable exception with {@link Throwable} as a cause.
+     * Creates binary exception with {@link Throwable} as a cause.
      *
      * @param cause Cause.
      */
@@ -46,7 +46,7 @@ public class BinaryObjectException extends IgniteException {
     }
 
     /**
-     * Creates portable exception with error message and {@link Throwable} as a cause.
+     * Creates binary exception with error message and {@link Throwable} as a cause.
      *
      * @param msg Error message.
      * @param cause Cause.

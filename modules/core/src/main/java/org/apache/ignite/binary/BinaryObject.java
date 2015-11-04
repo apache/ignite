@@ -25,23 +25,23 @@ import java.util.TreeMap;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 
 /**
- * Wrapper for portable object in portable binary format. Once an object is defined as portable,
- * Ignite will always store it in memory in the portable (i.e. binary) format.
- * User can choose to work either with the portable format or with the deserialized form
+ * Wrapper for binary object in binary format. Once an object is defined as binary,
+ * Ignite will always store it in memory in the binary format.
+ * User can choose to work either with the binary format or with the deserialized form
  * (assuming that class definitions are present in the classpath).
  * <p>
  * <b>NOTE:</b> user does not need to (and should not) implement this interface directly.
  * <p>
- * To work with the portable format directly, user should create a cache projection
- * over {@code PortableObject} class and then retrieve individual fields as needed:
+ * To work with the binary format directly, user should create a cache projection
+ * over {@code BinaryObject} class and then retrieve individual fields as needed:
  * <pre name=code class=java>
- * IgniteCache&lt;PortableObject, PortableObject&gt; prj = cache.withKeepBinary();
+ * IgniteCache&lt;BinaryObject, BinaryObject&gt; prj = cache.withKeepBinary();
  *
- * // Convert instance of MyKey to portable format.
- * // We could also use GridPortableBuilder to create the key in portable format directly.
- * PortableObject key = grid.binary().toBinary(new MyKey());
+ * // Convert instance of MyKey to binary format.
+ * // We could also use BinaryObjectBuilder to create the key in binary format directly.
+ * BinaryObject key = ignite.binary().toBinary(new MyKey());
  *
- * PortableObject val = prj.get(key);
+ * BinaryObject val = prj.get(key);
  *
  * String field = val.field("myFieldName");
  * </pre>
@@ -58,59 +58,59 @@ import org.apache.ignite.marshaller.portable.PortableMarshaller;
  * String fieldVal = val.getMyFieldName();
  * </pre>
  * <h1 class="header">Working With Maps and Collections</h1>
- * All maps and collections in the portable objects are serialized automatically. When working
+ * All maps and collections in binary objects are serialized automatically. When working
  * with different platforms, e.g. C++ or .NET, Ignite will automatically pick the most
  * adequate collection or map in either language. For example, {@link ArrayList} in Java will become
  * {@code List} in C#, {@link LinkedList} in Java is {@link LinkedList} in C#, {@link HashMap}
  * in Java is {@code Dictionary} in C#, and {@link TreeMap} in Java becomes {@code SortedDictionary}
  * in C#, etc.
  * <h1 class="header">Dynamic Structure Changes</h1>
- * Since objects are always cached in the portable binary format, server does not need to
+ * Since objects are always cached in the binary format, server does not need to
  * be aware of the class definitions. Moreover, if class definitions are not present or not
- * used on the server, then clients can continuously change the structure of the portable
+ * used on the server, then clients can continuously change the structure of the binary
  * objects without having to restart the cluster. For example, if one client stores a
  * certain class with fields A and B, and another client stores the same class with
- * fields B and C, then the server-side portable object will have the fields A, B, and C.
- * As the structure of a portable object changes, the new fields become available for SQL queries
+ * fields B and C, then the server-side binary object will have the fields A, B, and C.
+ * As the structure of a binary object changes, the new fields become available for SQL queries
  * automatically.
- * <h1 class="header">Building Portable Objects</h1>
- * Ignite comes with {@link BinaryObjectBuilder} which allows to build portable objects dynamically:
+ * <h1 class="header">Building Binary Objects</h1>
+ * Ignite comes with {@link BinaryObjectBuilder} which allows to build binary objects dynamically:
  * <pre name=code class=java>
- * PortableBuilder builder = Ignition.ignite().binary().builder("org.project.MyObject");
+ * BinaryObjectBuilder builder = Ignition.ignite().binary().builder("org.project.MyObject");
  *
  * builder.setField("fieldA", "A");
  * builder.setField("fieldB", "B");
  *
- * PortableObject portableObj = builder.build();
+ * BinaryObject binaryObj = builder.build();
  * </pre>
  * For the cases when class definition is present
  * in the class path, it is also possible to populate a standard POJO and then
- * convert it to portable format, like so:
+ * convert it to binary format, like so:
  * <pre name=code class=java>
  * MyObject obj = new MyObject();
  *
  * obj.setFieldA("A");
  * obj.setFieldB(123);
  *
- * PortableObject portableObj = Ignition.ignite().binary().toBinary(obj);
+ * BinaryObject binaryObj = Ignition.ignite().binary().toBinary(obj);
  * </pre>
- * <h1 class="header">Portable Metadata</h1>
- * Even though Ignite portable protocol only works with hash codes for type and field names
- * to achieve better performance, Ignite provides metadata for all portable types which
+ * <h1 class="header">Binary Type Metadata</h1>
+ * Even though Ignite binary protocol only works with hash codes for type and field names
+ * to achieve better performance, Ignite provides metadata for all binary types which
  * can be queried ar runtime via any of the {@link org.apache.ignite.IgniteBinary#metadata(Class)}
- * methods. Having metadata also allows for proper formatting of {@code PortableObject.toString()} method,
- * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
+ * methods. Having metadata also allows for proper formatting of {@code BinaryObject.toString()} method,
+ * even when binary objects are kept in binary format only, which may be necessary for audit reasons.
  */
 public interface BinaryObject extends Serializable, Cloneable {
     /**
-     * Gets portable object type ID.
+     * Gets binary object type ID.
      *
      * @return Type ID.
      */
     public int typeId();
 
     /**
-     * Gets meta data for this portable object.
+     * Gets type information for this binary object.
      *
      * @return Meta data.
      * @throws BinaryObjectException In case of error.
@@ -147,18 +147,18 @@ public interface BinaryObject extends Serializable, Cloneable {
     public BinaryField fieldDescriptor(String fieldName) throws BinaryObjectException;
 
     /**
-     * Gets fully deserialized instance of portable object.
+     * Gets fully deserialized instance of binary object.
      *
-     * @return Fully deserialized instance of portable object.
+     * @return Fully deserialized instance of binary object.
      * @throws BinaryInvalidTypeException If class doesn't exist.
      * @throws BinaryObjectException In case of any other error.
      */
     public <T> T deserialize() throws BinaryObjectException;
 
     /**
-     * Copies this portable object.
+     * Copies this binary object.
      *
-     * @return Copy of this portable object.
+     * @return Copy of this binary object.
      */
     public BinaryObject clone() throws CloneNotSupportedException;
 }

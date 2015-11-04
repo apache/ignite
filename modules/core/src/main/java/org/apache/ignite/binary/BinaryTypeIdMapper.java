@@ -20,17 +20,17 @@ package org.apache.ignite.binary;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 
 /**
- * Type and field ID mapper for portable objects. Ignite never writes full
+ * Type and field ID mapper for binary objects. Ignite never writes full
  * strings for field or type names. Instead, for performance reasons, Ignite
  * writes integer hash codes for type and field names. It has been tested that
  * hash code conflicts for the type names or the field names
  * within the same type are virtually non-existent and, to gain performance, it is safe
  * to work with hash codes. For the cases when hash codes for different types or fields
- * actually do collide {@code PortableIdMapper} allows to override the automatically
+ * actually do collide {@code BinaryTypeIdMapper} allows to override the automatically
  * generated hash code IDs for the type and field names.
  * <p>
- * Portable ID mapper can be configured for all portable objects via {@link PortableMarshaller#getIdMapper()} method,
- * or for a specific portable type via {@link BinaryTypeConfiguration#getIdMapper()} method.
+ * Binary ID mapper can be configured for all binary objects via {@link PortableMarshaller#getIdMapper()} method,
+ * or for a specific binary type via {@link BinaryTypeConfiguration#getIdMapper()} method.
  */
 public interface BinaryTypeIdMapper {
     /**

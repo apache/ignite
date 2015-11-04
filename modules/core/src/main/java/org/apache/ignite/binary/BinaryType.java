@@ -20,23 +20,23 @@ package org.apache.ignite.binary;
 import java.util.Collection;
 
 /**
- * Portable type meta data. Metadata for portable types can be accessed from any of the
+ * Binary type meta data. Metadata for binary types can be accessed from any of the
  * {@link org.apache.ignite.IgniteBinary#metadata(String)} methods.
- * Having metadata also allows for proper formatting of {@code PortableObject#toString()} method,
- * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
+ * Having metadata also allows for proper formatting of {@code BinaryObject#toString()} method,
+ * even when binary objects are kept in binary format only, which may be necessary for audit reasons.
  */
 public interface BinaryType {
     /**
-     * Gets portable type name.
+     * Gets binary type name.
      *
-     * @return Portable type name.
+     * @return Binary type name.
      */
     public String typeName();
 
     /**
-     * Gets collection of all field names for this portable type.
+     * Gets collection of all field names for this binary type.
      *
-     * @return Collection of all field names for this portable type.
+     * @return Collection of all field names for this binary type.
      */
     public Collection<String> fields();
 
@@ -49,7 +49,7 @@ public interface BinaryType {
     public String fieldTypeName(String fieldName);
 
     /**
-     * Portable objects can optionally specify custom key-affinity mapping in the
+     * Binary objects can optionally specify custom key-affinity mapping in the
      * configuration. This method returns the name of the field which should be
      * used for the key-affinity mapping.
      *

@@ -22,13 +22,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 
 /**
- * Defines configuration properties for a specific portable type. Providing per-type
- * configuration is optional, as it is generally enough, and also optional, to provide global portable
+ * Defines configuration properties for a specific binary type. Providing per-type
+ * configuration is optional, as it is generally enough, and also optional, to provide global binary
  * configuration using {@link PortableMarshaller#setClassNames(Collection)}.
  * However, this class allows you to change configuration properties for a specific
- * portable type without affecting configuration for other portable types.
+ * binary type without affecting configuration for other binary types.
  * <p>
- * Per-type portable configuration can be specified in {@link PortableMarshaller#getTypeConfigurations()} method.
+ * Per-type binary configuration can be specified in {@link PortableMarshaller#getTypeConfigurations()} method.
  */
 public class BinaryTypeConfiguration {
     /** Class name. */

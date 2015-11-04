@@ -20,20 +20,20 @@ package org.apache.ignite.binary;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 
 /**
- * Interface that allows to implement custom serialization logic for portable objects.
+ * Interface that allows to implement custom serialization logic for binary objects.
  * Can be used instead of {@link Binarylizable} in case if the class
  * cannot be changed directly.
  * <p>
- * Portable serializer can be configured for all portable objects via
+ * Binary serializer can be configured for all binary objects via
  * {@link PortableMarshaller#getSerializer()} method, or for a specific
- * portable type via {@link BinaryTypeConfiguration#getSerializer()} method.
+ * binary type via {@link BinaryTypeConfiguration#getSerializer()} method.
  */
 public interface BinarySerializer {
     /**
      * Writes fields to provided writer.
      *
      * @param obj Empty object.
-     * @param writer Portable object writer.
+     * @param writer Binary object writer.
      * @throws BinaryObjectException In case of error.
      */
     public void writeBinary(Object obj, BinaryWriter writer) throws BinaryObjectException;
@@ -42,7 +42,7 @@ public interface BinarySerializer {
      * Reads fields from provided reader.
      *
      * @param obj Empty object
-     * @param reader Portable object reader.
+     * @param reader Binary object reader.
      * @throws BinaryObjectException In case of error.
      */
     public void readBinary(Object obj, BinaryReader reader) throws BinaryObjectException;

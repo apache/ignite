@@ -19,13 +19,13 @@ package org.apache.ignite.binary;
 
 /**
  * Interface that allows to implement custom serialization
- * logic for portable objects. IgniteObject is not required
+ * logic for binary objects. IgniteObject is not required
  * to implement this interface, in which case Ignite will automatically
- * serialize portable objects using reflection.
+ * serialize binary objects using reflection.
  * <p>
  * This interface, in a way, is analogous to {@link java.io.Externalizable}
  * interface, which allows users to override default serialization logic,
- * usually for performance reasons. The only difference here is that portable
+ * usually for performance reasons. The only difference here is that binary
  * serialization is already very fast and implementing custom serialization
  * logic for binary does not provide significant performance gains.
  */
@@ -33,7 +33,7 @@ public interface Binarylizable {
     /**
      * Writes fields to provided writer.
      *
-     * @param writer Portable object writer.
+     * @param writer Binary object writer.
      * @throws BinaryObjectException In case of error.
      */
     public void writeBinary(BinaryWriter writer) throws BinaryObjectException;
@@ -41,7 +41,7 @@ public interface Binarylizable {
     /**
      * Reads fields from provided reader.
      *
-     * @param reader Portable object reader.
+     * @param reader Binary object reader.
      * @throws BinaryObjectException In case of error.
      */
     public void readBinary(BinaryReader reader) throws BinaryObjectException;

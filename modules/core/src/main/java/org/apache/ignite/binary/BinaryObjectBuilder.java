@@ -20,23 +20,23 @@ package org.apache.ignite.binary;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Portable object builder. Provides ability to build portable objects dynamically without having class definitions.
+ * Binary object builder. Provides ability to build binary objects dynamically without having class definitions.
  * <p>
- * Here is an example of how a portable object can be built dynamically:
+ * Here is an example of how a binary object can be built dynamically:
  * <pre name=code class=java>
- * PortableBuilder builder = Ignition.ignite().binary().builder("org.project.MyObject");
+ * BinaryObjectBuilder builder = Ignition.ignite().binary().builder("org.project.MyObject");
  *
  * builder.setField("fieldA", "A");
  * builder.setField("fieldB", "B");
  *
- * PortableObject portableObj = builder.build();
+ * BinaryObject binaryObj = builder.build();
  * </pre>
  *
  * <p>
- * Also builder can be initialized by existing portable object. This allows changing some fields without affecting
+ * Also builder can be initialized by existing binary object. This allows changing some fields without affecting
  * other fields.
  * <pre name=code class=java>
- * PortableBuilder builder = Ignition.ignite().binary().builder(person);
+ * BinaryObjectBuilder builder = Ignition.ignite().binary().builder(person);
  *
  * builder.setField("name", "John");
  *
@@ -44,20 +44,20 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  * </p>
  *
- * If you need to modify nested portable object you can get builder for nested object using
+ * If you need to modify nested binary object you can get builder for nested object using
  * {@link #getField(String)}, changes made on nested builder will affect parent object,
  * for example:
  *
  * <pre name=code class=java>
- * PortableBuilder personBuilder = grid.binary().createBuilder(personPortableObj);
- * PortableBuilder addressBuilder = personBuilder.setField("address");
+ * BinaryObjectBuilder personBuilder = grid.binary().createBuilder(personBinaryObj);
+ * BinaryObjectBuilder addressBuilder = personBuilder.setField("address");
  *
  * addressBuilder.setField("city", "New York");
  *
- * personPortableObj = personBuilder.build();
+ * personBinaryObj = personBuilder.build();
  *
  * // Should be "New York".
- * String city = personPortableObj.getField("address").getField("city");
+ * String city = personBinaryObj.getField("address").getField("city");
  * </pre>
  *
  * @see org.apache.ignite.IgniteBinary#builder(int)
@@ -67,7 +67,7 @@ import org.jetbrains.annotations.Nullable;
 public interface BinaryObjectBuilder {
     /**
      * Returns value assigned to the specified field.
-     * If the value is a portable object instance of {@code GridPortableBuilder} will be returned,
+     * If the value is a binary object instance of {@code BinaryObjectBuilder} will be returned,
      * which can be modified.
      * <p>
      * Collections and maps returned from this method are modifiable.
@@ -101,7 +101,7 @@ public interface BinaryObjectBuilder {
     /**
      * Sets field value.
      * <p>
-     * This method should be used if field is portable object.
+     * This method should be used if field is binary object.
      *
      * @param name Field name.
      * @param builder Builder for object field.
@@ -117,7 +117,7 @@ public interface BinaryObjectBuilder {
     public BinaryObjectBuilder removeField(String fieldName);
 
     /**
-     * Sets hash code for resulting portable object returned by {@link #build()} method.
+     * Sets hash code for resulting binary object returned by {@link #build()} method.
      * <p>
      * If not set {@code 0} is used.
      *
@@ -127,9 +127,9 @@ public interface BinaryObjectBuilder {
     public BinaryObjectBuilder hashCode(int hashCode);
 
     /**
-     * Builds portable object.
+     * Builds binary object.
      *
-     * @return Portable object.
+     * @return Binary object.
      * @throws BinaryObjectException In case of error.
      */
     public BinaryObject build() throws BinaryObjectException;

@@ -282,7 +282,7 @@ public interface BinaryReader {
     /**
      * Gets raw reader. Raw reader does not use field name hash codes, therefore,
      * making the format even more compact. However, if the raw reader is used,
-     * dynamic structure changes to the portable objects are not supported.
+     * dynamic structure changes to the binary objects are not supported.
      *
      * @return Raw reader.
      */

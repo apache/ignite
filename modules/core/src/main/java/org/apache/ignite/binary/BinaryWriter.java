@@ -26,7 +26,7 @@ import java.util.UUID;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Writer for portable object used in {@link Binarylizable} implementations.
+ * Writer for binary object used in {@link Binarylizable} implementations.
  * Useful for the cases when user wants a fine-grained control over serialization.
  * <p>
  * Note that Ignite never writes full strings for field or type names. Instead,
@@ -265,7 +265,7 @@ public interface BinaryWriter {
     /**
      * Gets raw writer. Raw writer does not write field name hash codes, therefore,
      * making the format even more compact. However, if the raw writer is used,
-     * dynamic structure changes to the portable objects are not supported.
+     * dynamic structure changes to the binary objects are not supported.
      *
      * @return Raw writer.
      */

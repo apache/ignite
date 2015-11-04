@@ -18,7 +18,7 @@
 package org.apache.ignite.binary;
 
 /**
- * Portable object field. Can be used to speed object field lookup.
+ * Binary object field. Can be used to speed object field lookup.
  */
 public interface BinaryField {
     /**

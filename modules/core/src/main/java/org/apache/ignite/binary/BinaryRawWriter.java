@@ -26,9 +26,9 @@ import java.util.UUID;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Raw writer for portable object. Raw writer does not write field name hash codes, therefore,
+ * Raw writer for binary object. Raw writer does not write field name hash codes, therefore,
  * making the format even more compact. However, if the raw writer is used,
- * dynamic structure changes to the portable objects are not supported.
+ * dynamic structure changes to the binary objects are not supported.
  */
 public interface BinaryRawWriter {
     /**

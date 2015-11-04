@@ -20,7 +20,7 @@ package org.apache.ignite.binary;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Exception indicating that class needed for deserialization of portable object does not exist.
+ * Exception indicating that class needed for deserialization of binary object does not exist.
  * <p>
  * Thrown from {@link BinaryObject#deserialize()} method.
  */
