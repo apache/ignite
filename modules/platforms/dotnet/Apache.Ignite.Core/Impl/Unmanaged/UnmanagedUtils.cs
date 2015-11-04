@@ -830,6 +830,23 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        internal static IUnmanagedTarget ProcessorAtomicReference(IUnmanagedTarget target, string name, 
+            long memPtr, bool create)
+        {
+            var name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                var res = PROCESSOR_ATOMIC_REFERENCE(target.Context, target.Target, name0, memPtr, create);
+
+                return res == null ? null : target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
         #endregion
 
         #region NATIVE METHODS: TARGET

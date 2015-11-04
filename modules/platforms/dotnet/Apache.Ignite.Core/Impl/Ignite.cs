@@ -461,9 +461,17 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             
-            // TODO
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = Marshaller.StartMarshal(stream);
 
-            return new AtomicReference<T>(null, Marshaller, name);
+                writer.Write(initialValue);
+
+                var memPtr = stream.SynchronizeOutput();
+
+                return new AtomicReference<T>(
+                    UU.ProcessorAtomicReference(_proc, name, memPtr, create), Marshaller, name);
+            }
         }
 
         /// <summary>
