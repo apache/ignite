@@ -677,17 +677,28 @@ public class PortableUtils {
     }
 
     /**
-     * Get offset size for the given flags.
+     * Get offset length for the given flags.
+     *
      * @param flags Flags.
      * @return Offset size.
      */
-    public static int fieldOffsetSize(short flags) {
+    public static int fieldOffsetLength(short flags) {
         if ((flags & FLAG_OFFSET_ONE_BYTE) == FLAG_OFFSET_ONE_BYTE)
             return OFFSET_1;
         else if ((flags & FLAG_OFFSET_TWO_BYTES) == FLAG_OFFSET_TWO_BYTES)
             return OFFSET_2;
         else
             return OFFSET_4;
+    }
+
+    /**
+     * Get field ID length.
+     *
+     * @param flags Flags.
+     * @return Field ID length.
+     */
+    public static int fieldIdLength(short flags) {
+        return isNoFieldIds(flags) ? 0 : FIELD_ID_LEN;
     }
 
     /**

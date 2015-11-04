@@ -160,11 +160,11 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     /** Schema Id. */
     private int schemaId;
 
-    /** Offset size in bytes. */
-    private int offsetSize;
-
     /** Whether field IDs exist. */
     private int fieldIdLen;
+
+    /** Offset size in bytes. */
+    private int fieldOffsetLen;
 
     /** Object schema. */
     private PortableSchema schema;
@@ -226,19 +226,19 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
         short flags = in.readShort();
 
-        offsetSize = PortableUtils.fieldOffsetSize(flags);
-        fieldIdLen = PortableUtils.isNoFieldIds(flags) ? 0 : PortableUtils.FIELD_ID_LEN;
+        fieldIdLen = PortableUtils.fieldIdLength(flags);
+        fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
 
         typeId = in.readIntPositioned(start + GridPortableMarshaller.TYPE_ID_POS);
 
-        IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(in, start, offsetSize);
+        IgniteBiTuple<Integer, Integer> footer = PortableUtils.footerAbsolute(in, start, fieldOffsetLen);
 
         footerStart = footer.get1();
         footerLen = footer.get2() - footerStart;
 
         schemaId = in.readIntPositioned(start + GridPortableMarshaller.SCHEMA_ID_POS);
 
-        rawOff = PortableUtils.rawOffsetAbsolute(in, start, offsetSize);
+        rawOff = PortableUtils.rawOffsetAbsolute(in, start, fieldOffsetLen);
 
         if (typeId == UNREGISTERED_TYPE_ID) {
             // Skip to the class name position.
@@ -2582,7 +2582,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             fields.put(fieldId, idx++);
 
-            searchPos += PortableUtils.FIELD_ID_LEN + offsetSize;
+            searchPos += PortableUtils.FIELD_ID_LEN + fieldOffsetLen;
         }
 
         return new PortableSchema(fields);
@@ -2610,14 +2610,14 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
                 if (id0 == id) {
                     int pos = start + PortableUtils.fieldOffsetRelative(in, searchPos + PortableUtils.FIELD_ID_LEN,
-                        offsetSize);
+                        fieldOffsetLen);
 
                     in.position(pos);
 
                     return pos;
                 }
 
-                searchPos += PortableUtils.FIELD_ID_LEN + offsetSize;
+                searchPos += PortableUtils.FIELD_ID_LEN + fieldOffsetLen;
             }
         }
         else {
@@ -2644,9 +2644,9 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
             int order = schema.order(id);
 
             if (order != PortableSchema.ORDER_NOT_FOUND) {
-                int offsetPos = footerStart + order * (fieldIdLen + offsetSize) + fieldIdLen;
+                int offsetPos = footerStart + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
 
-                int pos = start + PortableUtils.fieldOffsetRelative(in, offsetPos, offsetSize);
+                int pos = start + PortableUtils.fieldOffsetRelative(in, offsetPos, fieldOffsetLen);
 
                 in.position(pos);
 
@@ -2665,7 +2665,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
     private boolean hasLowFieldsCount(int footerLen) {
         assert hdrParsed;
 
-        return footerLen < ((offsetSize + fieldIdLen) << 3);
+        return footerLen < ((fieldOffsetLen + fieldIdLen) << 3);
     }
 
     /** {@inheritDoc} */

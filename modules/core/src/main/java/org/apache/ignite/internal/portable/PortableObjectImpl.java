@@ -269,15 +269,15 @@ public final class PortableObjectImpl extends PortableObjectEx implements Extern
         int schemaOffset = PortablePrimitives.readInt(arr, start + GridPortableMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
         short flags = PortablePrimitives.readShort(arr, start + GridPortableMarshaller.FLAGS_POS);
-        int fieldOffsetSize = PortableUtils.fieldOffsetSize(flags);
+        int fieldOffsetLen = PortableUtils.fieldOffsetLength(flags);
 
-        int fieldOffsetPos = start + schemaOffset + order * (4 + fieldOffsetSize) + 4;
+        int fieldOffsetPos = start + schemaOffset + order * (4 + fieldOffsetLen) + 4;
 
         int fieldPos;
 
-        if (fieldOffsetSize == PortableUtils.OFFSET_1)
+        if (fieldOffsetLen == PortableUtils.OFFSET_1)
             fieldPos = start + ((int)PortablePrimitives.readByte(arr, fieldOffsetPos) & 0xFF);
-        else if (fieldOffsetSize == PortableUtils.OFFSET_2)
+        else if (fieldOffsetLen == PortableUtils.OFFSET_2)
             fieldPos = start + ((int)PortablePrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF);
         else
             fieldPos = start + PortablePrimitives.readInt(arr, fieldOffsetPos);
