@@ -1818,10 +1818,10 @@ public class PortableWriterExImpl implements PortableWriter, PortableRawWriterEx
      */
     private static class SchemaHolder {
         /** Grow step. */
-        private static final int GROW_STEP = 16;
+        private static final int GROW_STEP = 64;
 
         /** Maximum stable size. */
-        private static final int MAX_SIZE = 256;
+        private static final int MAX_SIZE = 1024;
 
         /** Data. */
         private int[] data;
