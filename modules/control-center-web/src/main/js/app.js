@@ -69,14 +69,7 @@ app.use(logger('dev', {
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 
-app.use(require('node-sass-middleware')({
-    /* Options */
-    src: path.join(__dirname, 'public'),
-    dest: path.join(__dirname, 'public'),
-    debug: true,
-    outputStyle: 'nested'
-}));
-
+app.use(express.static(path.join(__dirname, 'build')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'controllers')));
 app.use(express.static(path.join(__dirname, 'helpers')));

@@ -33,6 +33,7 @@
     "express-session": "^1.12.0",
     "gulp": "^3.9.0",
     "gulp-jade": "^1.1.0",
+    "gulp-sass": "^2.1.0",
     "jade": "~1.11.0",
     "jszip": "^2.5.0",
     "lodash": "3.10.1",
