@@ -12,3 +12,7 @@ gulp.task('jade', function() {
         .pipe(jade({}))
         .pipe(gulp.dest('./build'))
 });
+
+gulp.task('jade:watch', function () {
+    gulp.watch(paths, ['jade']);
+});

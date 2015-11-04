@@ -4,4 +4,4 @@ var gulp_sass = require('./tasks/sass');
 
 gulp.task('default', ['jade'])
 
-gulp.task('watch', ['sass:watch']);
+gulp.task('watch', ['sass:watch', 'jade:watch']);
