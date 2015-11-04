@@ -1836,7 +1836,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 "[entry=" + entry + ", filter=" + Arrays.toString(req.filter()) + ']');
                     }
                 }
-                else if (!entry.isNear()) {
+                else if (!entry.isNear() && updRes.success()) {
                     ctx.continuousQueries().onEntryUpdated(entry, entry.key(), updRes.newValue(), updRes.oldValue(),
                         primary, false, updRes.updateIdx(), topVer);
                 }
