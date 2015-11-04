@@ -152,6 +152,17 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
 
     /** {@inheritDoc} */
     @Override public boolean compareAndSet(T expVal, T newVal) {
+        return compareAndSetAndGet(expVal, newVal) == expVal;
+    }
+
+    /**
+     * Compares current value with specified value for equality and, if they are equal, replaces current value.
+     *
+     * @param expVal Expected value.
+     * @param newVal New value to set.
+     * @return Original value.
+     */
+    public T compareAndSetAndGet(T expVal, T newVal) {
         checkRemoved();
 
         try {
@@ -263,10 +274,10 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      * @param newValClos Closure which generates new value.
      * @return Callable for execution in async and sync mode.
      */
-    private Callable<Boolean> internalCompareAndSet(final IgnitePredicate<T> expValPred,
+    private Callable<T> internalCompareAndSet(final IgnitePredicate<T> expValPred,
         final IgniteClosure<T, T> newValClos) {
-        return new Callable<Boolean>() {
-            @Override public Boolean call() throws Exception {
+        return new Callable<T>() {
+            @Override public T call() throws Exception {
                 try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
 
@@ -275,8 +286,6 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
 
                     if (!expValPred.apply(ref.get())) {
                         tx.setRollbackOnly();
-
-                        return false;
                     }
                     else {
                         ref.set(newValClos.apply(ref.get()));
@@ -284,9 +293,9 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
                         atomicView.getAndPut(key, ref);
 
                         tx.commit();
-
-                        return true;
                     }
+
+                    return ref.get();
                 }
                 catch (Error | Exception e) {
                     U.error(log, "Failed to compare and value [expValPred=" + expValPred + ", newValClos" +

@@ -26,9 +26,16 @@ import org.apache.ignite.internal.processors.platform.memory.*;
 /**
  * Platform atomic reference wrapper.
  */
+@SuppressWarnings("unchecked")
 public class PlatformAtomicReference extends PlatformAbstractTarget {
     /** */
     private static final int OP_GET = 1;
+
+    /** */
+    private static final int OP_SET = 1;
+
+    /** */
+    private static final int OP_COMPARE_AND_SET_AND_GET = 1;
 
     /** */
     private final GridCacheAtomicReferenceImpl atomicRef;
@@ -99,5 +106,32 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
             writer.writeObject(atomicRef.get());
         else
             super.processOutStream(type, writer);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader)
+            throws IgniteCheckedException {
+        if (type == OP_SET) {
+            atomicRef.set(reader.readObjectDetached());
+
+            return 0;
+        }
+
+        return super.processInStreamOutLong(type, reader);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void processInStreamOutStream(int type, PortableRawReaderEx reader,
+                                                      PortableRawWriterEx writer) throws IgniteCheckedException {
+        if (type == OP_COMPARE_AND_SET_AND_GET){
+            Object val = reader.readObjectDetached();
+            Object cmp = reader.readObjectDetached();
+
+            Object res = atomicRef.compareAndSetAndGet(cmp, val);
+
+            writer.writeObject(res);
+        }
+        else
+            super.processInStreamOutStream(type, reader, writer);
     }
 }
