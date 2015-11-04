@@ -96,16 +96,19 @@ public class PortableUtils {
     private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
 
     /** Flag: user type. */
-    public static final short FLAG_USR_TYP = 0x1;
+    public static final short FLAG_USR_TYP = 0x0001;
 
     /** Flag: only raw data exists. */
-    public static final short FLAG_RAW_ONLY = 0x2;
+    public static final short FLAG_RAW_ONLY = 0x0002;
 
     /** Flag: offsets take 1 byte. */
-    public static final short FLAG_OFFSET_ONE_BYTE = 0x4;
+    public static final short FLAG_OFFSET_ONE_BYTE = 0x0004;
 
     /** Flag: offsets take 2 bytes. */
-    public static final short FLAG_OFFSET_TWO_BYTES = 0x8;
+    public static final short FLAG_OFFSET_TWO_BYTES = 0x0008;
+
+    /** Flag: no field IDs in object's footer. */
+    public static final short FLAG_NO_FIELD_IDS = 0x0010;
 
     /** Offset which fits into 1 byte. */
     public static final int OFFSET_1 = 1;
