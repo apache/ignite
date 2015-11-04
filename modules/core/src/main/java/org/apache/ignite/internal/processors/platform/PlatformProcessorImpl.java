@@ -342,6 +342,11 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         return new PlatformAtomicSequence(platformCtx, atomicSeq);
     }
 
+    /** {@inheritDoc} */
+    @Override public PlatformTarget atomicReference(String name, long memPtr, boolean create) throws IgniteException {
+        return new PlatformAtomicReference(platformCtx, name, memPtr, create);
+    }
+
     /**
      * Internal store initialization routine.
      *

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.datastructures;
 
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.platform.*;
+import org.apache.ignite.internal.processors.platform.memory.*;
 
 /**
  * Platform atomic reference wrapper.
@@ -30,14 +31,24 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
     /**
      * Ctor.
      * @param ctx Context.
-     * @param atomicRef AtomicReference to wrap.
+     * @param name Name.
+     * @param memPtr Pointer to a stream with initial value. 0 for null initial value.
+     * @param create Create flag.
      */
-    public PlatformAtomicReference(PlatformContext ctx, GridCacheAtomicReferenceImpl atomicRef) {
+    public PlatformAtomicReference(PlatformContext ctx, String name, long memPtr, boolean create) {
         super(ctx);
 
-        assert atomicRef != null;
+        assert name != null;
 
-        this.atomicRef = atomicRef;
+        Object initVal = null;
+
+        if (memPtr != 0) {
+            try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
+                initVal = platformCtx.reader(mem).readObjectDetached();
+            }
+        }
+
+        atomicRef = (GridCacheAtomicReferenceImpl)ctx.kernalContext().grid().atomicReference(name, initVal, create);
     }
 
     public boolean isClosed() {
@@ -46,5 +57,4 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
     public void close() {
         atomicRef.close();
     }
-
 }
