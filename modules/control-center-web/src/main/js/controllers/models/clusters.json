@@ -685,6 +685,240 @@
       ]
     },
     {
+      "label": "Connector configuration",
+      "group": "connector",
+      "previewMinLines": 1,
+      "tip": [
+        "REST access configuration"
+      ],
+      "fields": [
+        {
+          "label": "Enabled",
+          "id": "restEnabled",
+          "type": "check",
+          "path": "connector",
+          "model": "enabled",
+          "tip": [
+            "Flag indicating whether to configure connector configuration"
+          ]
+        },
+        {
+          "label": "Jetty configuration path",
+          "id": "connectorJettyPath",
+          "type": "text",
+          "path": "connector",
+          "model": "jettyPath",
+          "hide": "!backupItem.connector.enabled",
+          "tip": [
+            "Path, either absolute or relative to IGNITE_HOME, to Jetty XML configuration file",
+            "Jetty is used to support REST over HTTP protocol for accessing Ignite APIs remotely",
+            "If not provided, Jetty instance with default configuration will be started picking IgniteSystemProperties.IGNITE_JETTY_HOST and IgniteSystemProperties.IGNITE_JETTY_PORT as host and port respectively"
+          ]
+        },
+        {
+          "label": "TCP host",
+          "id": "connectorHost",
+          "type": "text",
+          "path": "connector",
+          "model": "host",
+          "hide": "!backupItem.connector.enabled",
+          "placeholder": "IgniteConfiguration#getLocalHost()",
+          "tip": [
+            "Host for TCP binary protocol server. This can be either an IP address or a domain name",
+            "If not defined, system-wide local address will be used IgniteConfiguration#getLocalHost()",
+            "You can also use '0.0.0.0' value to bind to all locally-available IP addresses"
+          ]
+        },
+        {
+          "label": "TCP port",
+          "id": "connectorPort",
+          "type": "number",
+          "path": "connector",
+          "model": "port",
+          "hide": "!backupItem.connector.enabled",
+          "placeholder": 11211,
+          "min": 1024,
+          "max": 65535,
+          "tip": [
+            "Port for TCP binary protocol server"
+          ]
+        },
+        {
+          "label": "TCP port range",
+          "id": "connectorPortRange",
+          "type": "number",
+          "path": "connector",
+          "model": "portRange",
+          "hide": "!backupItem.connector.enabled",
+          "placeholder": 100,
+          "tip": [
+            "Number of ports for TCP binary protocol server to try if configured port is already in use"
+          ]
+        },
+        {
+          "label": "Idle timeout",
+          "id": "connectorIdleTimeout",
+          "type": "number",
+          "path": "connector",
+          "model": "idleTimeout",
+          "hide": "!backupItem.connector.enabled",
+          "placeholder": 7000,
+          "tip": [
+            "Idle timeout for REST server",
+            "This setting is used to reject half-opened sockets",
+            "If no packets come within idle timeout, the connection is closed"
+          ]
+        },
+        {
+          "label": "Receive buffer size",
+          "id": "connectorReceiveBufferSize",
+          "type": "number",
+          "path": "connector",
+          "model": "receiveBufferSize",
+          "hide": "!backupItem.connector.enabled",
+          "placeholder": 32768,
+          "tip": [
+            "REST TCP server receive buffer size"
+          ]
+        },
+        {
+          "label": "Send buffer size",
+          "id": "connectorSendBufferSize",
+          "type": "number",
+          "path": "connector",
+          "model": "sendBufferSize",
+          "hide": "!backupItem.connector.enabled",
+          "placeholder": 32768,
+          "tip": [
+            "REST TCP server send buffer size"
+          ]
+        },
+        {
+          "label": "Send queue limit",
+          "id": "connectorSendQueueLimit",
+          "type": "number",
+          "path": "connector",
+          "model": "sendQueueLimit",
+          "hide": "!backupItem.connector.enabled",
+          "placeholder": "unlimited",
+          "tip": [
+            "REST TCP server send queue limit. If the limit exceeds, all successive writes will block until the queue has enough capacity"
+          ]
+        },
+        {
+          "label": "Direct buffer",
+          "id": "connectorDirectBuffer",
+          "type": "check",
+          "path": "connector",
+          "model": "directBuffer",
+          "hide": "!backupItem.connector.enabled",
+          "tip": [
+            "Flag indicating whether REST TCP server should use direct buffers",
+            "A direct buffer is a buffer that is allocated and accessed using native system calls, without using JVM heap",
+            "Enabling direct buffer may improve performance and avoid memory issues (long GC pauses due to huge buffer size)"
+          ]
+        },
+        {
+          "label": "TCP_NODELAY option",
+          "id": "connectorNoDelay",
+          "type": "check",
+          "path": "connector",
+          "model": "noDelay",
+          "hide": "!backupItem.connector.enabled",
+          "tip": [
+            "Flag indicating whether TCP_NODELAY option should be set for accepted client connections",
+            "Setting this option reduces network latency and should be enabled in majority of cases",
+            "For more information, see Socket#setTcpNoDelay(boolean)"
+          ]
+        },
+        {
+          "label": "Selector count",
+          "id": "connectorSelectorCount",
+          "type": "number",
+          "path": "connector",
+          "model": "selectorCount",
+          "hide": "!backupItem.connector.enabled",
+          "placeholder": "min(4, availableProcessors)",
+          "tip": [
+            "Number of selector threads in REST TCP server",
+            "Higher value for this parameter may increase throughput, but also increases context switching"
+          ]
+        },
+        {
+          "label": "Thread pool size",
+          "id": "connectorThreadPoolSize",
+          "type": "number",
+          "path": "connector",
+          "model": "threadPoolSize",
+          "hide": "!backupItem.connector.enabled",
+          "placeholder": "max(8, availableProcessors) * 2",
+          "tip": [
+            "Thread pool size to use for processing of client messages (REST requests)"
+          ]
+        },
+        {
+          "label": "Message interceptor",
+          "id": "connectorMessageInterceptor",
+          "type": "text",
+          "path": "connector",
+          "model": "messageInterceptor",
+          "hide": "!backupItem.connector.enabled",
+          "placeholder": "Enter fully qualified class name",
+          "tip": [
+            "Interceptor allows to transform all objects exchanged via REST protocol",
+            "For example if you use custom serialisation on client you can write interceptor to transform binary representations received from client to Java objects and later access them from java code directly"
+          ]
+        },
+        {
+          "label": "Secret key",
+          "id": "connectorSecretKey",
+          "type": "text",
+          "path": "connector",
+          "model": "secretKey",
+          "hide": "!backupItem.connector.enabled",
+          "placeholder": "Authentication is disabled",
+          "tip": [
+            "Secret key to authenticate REST requests"
+          ]
+        },
+        {
+          "label": "Enable SSL",
+          "id": "connectorSslEnabled",
+          "type": "check",
+          "path": "connector",
+          "model": "sslEnabled",
+          "hide": "!backupItem.connector.enabled",
+          "tip": [
+            "Enables/disables SSL for REST TCP binary protocol"
+          ]
+        },
+        {
+          "label": "Enable SSL client auth",
+          "id": "connectorSslClientAuth",
+          "type": "check",
+          "path": "connector",
+          "model": "sslClientAuth",
+          "hide": "!backupItem.connector.enabled || !backupItem.connector.sslEnabled",
+          "tip": [
+            "Flag indicating whether or not SSL client authentication is required"
+          ]
+        },
+        {
+          "label": "SSL factory",
+          "id": "connectorSslFactory",
+          "type": "text",
+          "path": "connector",
+          "model": "sslFactory",
+          "required": true,
+          "hide": "!backupItem.connector.enabled || !backupItem.connector.sslEnabled",
+          "placeholder": "Enter fully qualified class name",
+          "tip": [
+            "Instance of Factory that will be used to create an instance of SSLContext for Secure Socket Layer on TCP binary protocol"
+          ]
+        }
+      ]
+    },
+    {
       "label": "Class deployment",
       "group": "deployment",
       "previewMinLines": 1,

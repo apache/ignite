@@ -367,6 +367,30 @@ $generatorCommon.SSL_CONFIGURATION_TRUST_MANAGER_FACTORY = {
 };
 
 // Communication configuration code generation descriptor.
+$generatorCommon.CONNECTOR_CONFIGURATION = {
+    className: 'org.apache.ignite.configuration.ConnectorConfiguration',
+    fields: {
+        jettyPath: null,
+        host: null,
+        port: {dflt: 11211},
+        portRange: {dflt: 100},
+        idleTimeout: {dflt: 7000},
+        receiveBufferSize: {dflt: 32768},
+        sendBufferSize: {dflt: 32768},
+        sendQueueLimit: {dflt: 0},
+        directBuffer: {dflt: false},
+        noDelay: {dflt: false},
+        selectorCount: null,
+        threadPoolSize: null,
+        messageInterceptor: null,
+        secretKey: null,
+        sslEnabled: {dflt: false},
+        sslClientAuth: {dflt: false},
+        sslFactory: null
+    }
+};
+
+// Communication configuration code generation descriptor.
 $generatorCommon.COMMUNICATION_CONFIGURATION = {
     className: 'org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi',
     fields: {

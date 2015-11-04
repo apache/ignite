@@ -516,6 +516,23 @@ $generatorJava.clusterCommunication = function (cluster, res) {
     return res;
 };
 
+// Generate REST access group.
+$generatorJava.clusterConnector = function (cluster, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    var cfg = $generatorCommon.CONNECTOR_CONFIGURATION;
+
+    if ($commonUtils.isDefined($commonUtils.isDefined(cluster.connector) && cluster.connector.enabled)) {
+        $generatorJava.beanProperty(res, 'cfg', cluster.connector, 'connectorConfiguration', 'clientCfg',
+            $generatorCommon.CONNECTOR_CONFIGURATION.className, $generatorCommon.CONNECTOR_CONFIGURATION.fields, true);
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
 // Generate deployment group.
 $generatorJava.clusterDeployment = function (cluster, res) {
     if (!res)
@@ -1796,6 +1813,8 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
         $generatorJava.clusterAtomics(cluster, res);
 
         $generatorJava.clusterCommunication(cluster, res);
+
+        $generatorJava.clusterConnector(cluster, res);
 
         $generatorJava.clusterDeployment(cluster, res);
 

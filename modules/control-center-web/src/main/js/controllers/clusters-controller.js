@@ -96,6 +96,7 @@ consoleModule.controller('clustersController', [
             general: {xml: '', java: '', allDefaults: true},
             atomics: {xml: '', java: '', allDefaults: true},
             communication: {xml: '', java: '', allDefaults: true},
+            connector: {xml: '', java: '', allDefaults: true},
             deployment: {xml: '', java: '', allDefaults: true},
             discovery: {xml: '', java: '', allDefaults: true},
             events: {xml: '', java: '', allDefaults: true},
@@ -255,6 +256,10 @@ consoleModule.controller('clustersController', [
                                 $scope.preview.communication.java = $generatorJava.clusterCommunication(val).asString();
                                 $scope.preview.communication.allDefaults = $common.isEmptyString($scope.preview.communication.xml);
 
+                                $scope.preview.connector.xml = $generatorXml.clusterConnector(val).asString();
+                                $scope.preview.connector.java = $generatorJava.clusterConnector(val).asString();
+                                $scope.preview.connector.allDefaults = $common.isEmptyString($scope.preview.connector.xml);
+
                                 $scope.preview.deployment.xml = $generatorXml.clusterDeployment(val).asString();
                                 $scope.preview.deployment.java = $generatorJava.clusterDeployment(val).asString();
                                 $scope.preview.deployment.allDefaults = $common.isEmptyString($scope.preview.deployment.xml);
@@ -397,6 +402,16 @@ consoleModule.controller('clustersController', [
                         if (c.unacknowledgedMessagesBufferSize < 5 * c.ackSendThreshold)
                             return showPopoverMessage($scope.panels, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * ack send threshold');
                 }
+            }
+
+            var r = item.connector;
+
+            if ($common.isDefined(r)) {
+                if (!$common.isEmptyString(r.messageInterceptor) && !$common.isValidJavaClass('Message interceptor', r.messageInterceptor, false, 'connectorMessageInterceptor', false, $scope.panels, 'connector'))
+                    return false;
+
+                if (!$common.isEmptyString(r.sslFactory) && !$common.isValidJavaClass('SSL factory', r.sslFactory, false, 'connectorSslFactory', false, $scope.panels, 'connector'))
+                    return false;
             }
 
             var d = item.discovery;

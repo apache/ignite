@@ -406,6 +406,26 @@ $generatorXml.clusterCommunication = function (cluster, res) {
     return res;
 };
 
+/**
+ * XML generator for cluster's REST access configuration.
+ *
+ * @param cluster Cluster to get REST configuration.
+ * @param res Optional configuration presentation builder object.
+ * @returns Configuration presentation builder object
+ */
+$generatorXml.clusterConnector = function(cluster, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if ($commonUtils.isDefined(cluster.connector) && cluster.connector.enabled) {
+        $generatorXml.beanProperty(res, cluster.connector, 'connectorConfiguration', $generatorCommon.CONNECTOR_CONFIGURATION, true);
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
 // Generate deployment group.
 $generatorXml.clusterDeployment = function (cluster, res) {
     if (!res)
@@ -1323,6 +1343,8 @@ $generatorXml.cluster = function (cluster, clientNearCfg) {
         $generatorXml.clusterAtomics(cluster, res);
 
         $generatorXml.clusterCommunication(cluster, res);
+
+        $generatorXml.clusterConnector(cluster, res);
 
         $generatorXml.clusterDeployment(cluster, res);
 
