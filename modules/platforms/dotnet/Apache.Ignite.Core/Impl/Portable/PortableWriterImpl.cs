@@ -1077,8 +1077,8 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 // Push new frame.
                 _curTypeId = desc.TypeId;
-                _curConverter = desc.NameConverter;
-                _curMapper = desc.Mapper;
+                _curConverter = desc.NameMapper;
+                _curMapper = desc.IdMapper;
                 _curRawPos = 0;
                 _curPos = pos;
 

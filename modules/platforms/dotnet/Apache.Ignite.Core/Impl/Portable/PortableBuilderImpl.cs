@@ -523,7 +523,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     foreach (KeyValuePair<string, PortableBuilderField> valEntry in vals)
                     {
-                        int fieldId = PortableUtils.FieldId(desc.TypeId, valEntry.Key, desc.NameConverter, desc.Mapper);
+                        int fieldId = PortableUtils.FieldId(desc.TypeId, valEntry.Key, desc.NameMapper, desc.IdMapper);
 
                         if (vals0.ContainsKey(fieldId))
                             throw new IgniteException("Collision in field ID detected (change field name or " +

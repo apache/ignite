@@ -250,7 +250,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             portObj = api.ToPortable<IPortableObject>(new ToPortableNoMeta(1));
 
-            Assert.AreEqual(0, portObj.GetMetadata().Fields.Count);
+            Assert.AreEqual(1, portObj.GetMetadata().Fields.Count);
 
             Assert.AreEqual(1, portObj.GetField<int>("Val"));
             Assert.AreEqual(1, portObj.Deserialize<ToPortableNoMeta>().Val);
@@ -1420,7 +1420,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         /// <returns>Configuration.</returns>
         private static PortableTypeConfiguration TypeConfigurationNoMeta(Type typ)
         {
-            return new PortableTypeConfiguration(typ) {MetadataEnabled = false};
+            return new PortableTypeConfiguration(typ);
         }
     }
 
