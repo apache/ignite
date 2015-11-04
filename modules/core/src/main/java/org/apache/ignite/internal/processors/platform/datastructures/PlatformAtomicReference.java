@@ -28,27 +28,38 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
     /** */
     private final GridCacheAtomicReferenceImpl atomicRef;
 
-    /**
-     * Ctor.
-     * @param ctx Context.
-     * @param name Name.
-     * @param memPtr Pointer to a stream with initial value. 0 for null initial value.
-     * @param create Create flag.
-     */
-    public PlatformAtomicReference(PlatformContext ctx, String name, long memPtr, boolean create) {
-        super(ctx);
-
+    public static PlatformAtomicReference createInstance(PlatformContext ctx, String name, long memPtr, boolean create) {
+        assert ctx != null;
         assert name != null;
 
         Object initVal = null;
 
         if (memPtr != 0) {
-            try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
-                initVal = platformCtx.reader(mem).readObjectDetached();
+            try (PlatformMemory mem = ctx.memory().get(memPtr)) {
+                initVal = ctx.reader(mem).readObjectDetached();
             }
         }
 
-        atomicRef = (GridCacheAtomicReferenceImpl)ctx.kernalContext().grid().atomicReference(name, initVal, create);
+        GridCacheAtomicReferenceImpl atomicRef =
+                (GridCacheAtomicReferenceImpl)ctx.kernalContext().grid().atomicReference(name, initVal, create);
+
+        if (atomicRef == null)
+            return null;
+
+        return new PlatformAtomicReference(ctx, atomicRef);
+    }
+
+    /**
+     * Ctor.
+     * @param ctx Context.
+     * @param ref Atomic reference to wrap.
+     */
+    private PlatformAtomicReference(PlatformContext ctx, GridCacheAtomicReferenceImpl ref) {
+        super(ctx);
+
+        assert ref != null;
+
+        atomicRef = ref;
     }
 
     public boolean isClosed() {

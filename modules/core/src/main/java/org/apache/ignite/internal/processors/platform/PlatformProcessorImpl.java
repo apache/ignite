@@ -344,7 +344,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformTarget atomicReference(String name, long memPtr, boolean create) throws IgniteException {
-        return new PlatformAtomicReference(platformCtx, name, memPtr, create);
+        return PlatformAtomicReference.createInstance(platformCtx, name, memPtr, create);
     }
 
     /**
