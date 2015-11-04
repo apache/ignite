@@ -410,7 +410,10 @@ consoleModule.controller('clustersController', [
                 if (!$common.isEmptyString(r.messageInterceptor) && !$common.isValidJavaClass('Message interceptor', r.messageInterceptor, false, 'connectorMessageInterceptor', false, $scope.panels, 'connector'))
                     return false;
 
-                if (!$common.isEmptyString(r.sslFactory) && !$common.isValidJavaClass('SSL factory', r.sslFactory, false, 'connectorSslFactory', false, $scope.panels, 'connector'))
+                if (r.sslEnabled && $common.isEmptyString(r.sslFactory))
+                    return showPopoverMessage($scope.panels, 'connector', 'connectorSslFactory', 'SSL factory should not be empty');
+
+                if (r.sslEnabled && !$common.isEmptyString(r.sslFactory) && !$common.isValidJavaClass('SSL factory', r.sslFactory, false, 'connectorSslFactory', false, $scope.panels, 'connector'))
                     return false;
             }
 

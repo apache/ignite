@@ -878,7 +878,7 @@
           "path": "connector",
           "model": "secretKey",
           "hide": "!backupItem.connector.enabled",
-          "placeholder": "Authentication is disabled",
+          "placeholder": "Specify to enable authentication",
           "tip": [
             "Secret key to authenticate REST requests"
           ]
