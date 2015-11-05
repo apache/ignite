@@ -22,11 +22,15 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableMarshalAware;
+import org.apache.ignite.portable.PortableReader;
+import org.apache.ignite.portable.PortableWriter;
 
 /**
  * Organization record used for query test.
  */
-public class Organization implements Externalizable {
+public class Organization implements Externalizable, PortableMarshalAware {
     /** Organization ID. */
     @QuerySqlField(index = true)
     private int id;
@@ -94,9 +98,20 @@ public class Organization implements Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
+        writer.writeInt("id", id);
+        writer.writeString("name", name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(PortableReader reader) throws PortableException {
+        id = reader.readInt("id");
+        name = reader.readString("name");
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         return this == o || (o instanceof Organization) && id == ((Organization)o).id;
-
     }
 
     /** {@inheritDoc} */

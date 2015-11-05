@@ -22,11 +22,15 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableMarshalAware;
+import org.apache.ignite.portable.PortableReader;
+import org.apache.ignite.portable.PortableWriter;
 
 /**
  * Person record used for query test.
  */
-public class Person implements Externalizable {
+public class Person implements Externalizable, PortableMarshalAware {
     /** Person ID. */
     @QuerySqlField(index = true)
     private int id;
@@ -169,6 +173,24 @@ public class Person implements Externalizable {
         firstName = in.readUTF();
         lastName = in.readUTF();
         salary = in.readDouble();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
+        writer.writeInt("id", id);
+        writer.writeInt("orgId", orgId);
+        writer.writeString("firstName", firstName);
+        writer.writeString("lastName", lastName);
+        writer.writeDouble("salary", salary);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(PortableReader reader) throws PortableException {
+        id = reader.readInt("id");
+        orgId = reader.readInt("orgId");
+        firstName = reader.readString("firstName");
+        lastName = reader.readString("lastName");
+        salary = reader.readDouble("salary");
     }
 
     /** {@inheritDoc} */
