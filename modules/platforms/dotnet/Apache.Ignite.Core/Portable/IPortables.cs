@@ -97,24 +97,24 @@ namespace Apache.Ignite.Core.Portable
         /// Gets metadata for all known types.
         /// </summary>
         /// <returns>Metadata.</returns>
-        ICollection<IPortableMetadata> GetMetadata();
+        ICollection<IBinaryType> GetMetadata();
 
         /// <summary>
         /// Gets metadata for specified type id.
         /// </summary>
         /// <returns>Metadata.</returns>
-        IPortableMetadata GetMetadata(int typeId);
+        IBinaryType GetMetadata(int typeId);
 
         /// <summary>
         /// Gets metadata for specified type name.
         /// </summary>
         /// <returns>Metadata.</returns>
-        IPortableMetadata GetMetadata(string typeName);
+        IBinaryType GetMetadata(string typeName);
 
         /// <summary>
         /// Gets metadata for specified type.
         /// </summary>
         /// <returns>Metadata.</returns>
-        IPortableMetadata GetMetadata(Type type);
+        IBinaryType GetMetadata(Type type);
     }
 }

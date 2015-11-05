@@ -472,13 +472,13 @@ namespace Apache.Ignite.Core.Impl
         /// Put metadata to Grid.
         /// </summary>
         /// <param name="metas">Metadata.</param>
-        internal void PutMetadata(IDictionary<int, IPortableMetadata> metas)
+        internal void PutMetadata(IDictionary<int, IBinaryType> metas)
         {
             _prj.PutMetadata(metas);
         }
 
         /** <inheritDoc /> */
-        public IPortableMetadata GetMetadata(int typeId)
+        public IBinaryType GetMetadata(int typeId)
         {
             return _prj.GetMetadata(typeId);
         }

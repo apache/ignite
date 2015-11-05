@@ -22,14 +22,14 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
-    /// Portable metadata implementation.
+    /// Binary metadata implementation.
     /// </summary>
-    internal class PortableMetadataImpl : IPortableMetadata
+    internal class BinaryType : IBinaryType
     {
         /** Empty metadata. */
         [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-        public static readonly PortableMetadataImpl EmptyMeta =
-            new PortableMetadataImpl(PortableUtils.TypeObject, PortableTypeNames.TypeNameObject, null, null);
+        public static readonly BinaryType EmptyMeta =
+            new BinaryType(BinaryUtils.TypeObject, PortableTypeNames.TypeNameObject, null, null);
 
         /** Empty dictionary. */
         private static readonly IDictionary<string, int> EmptyDict = new Dictionary<string, int>();
@@ -49,66 +49,66 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         {
             switch (typeId)
             {
-                case PortableUtils.TypeBool:
+                case BinaryUtils.TypeBool:
                     return PortableTypeNames.TypeNameBool;
-                case PortableUtils.TypeByte:
+                case BinaryUtils.TypeByte:
                     return PortableTypeNames.TypeNameByte;
-                case PortableUtils.TypeShort:
+                case BinaryUtils.TypeShort:
                     return PortableTypeNames.TypeNameShort;
-                case PortableUtils.TypeChar:
+                case BinaryUtils.TypeChar:
                     return PortableTypeNames.TypeNameChar;
-                case PortableUtils.TypeInt:
+                case BinaryUtils.TypeInt:
                     return PortableTypeNames.TypeNameInt;
-                case PortableUtils.TypeLong:
+                case BinaryUtils.TypeLong:
                     return PortableTypeNames.TypeNameLong;
-                case PortableUtils.TypeFloat:
+                case BinaryUtils.TypeFloat:
                     return PortableTypeNames.TypeNameFloat;
-                case PortableUtils.TypeDouble:
+                case BinaryUtils.TypeDouble:
                     return PortableTypeNames.TypeNameDouble;
-                case PortableUtils.TypeDecimal:
+                case BinaryUtils.TypeDecimal:
                     return PortableTypeNames.TypeNameDecimal;
-                case PortableUtils.TypeString:
+                case BinaryUtils.TypeString:
                     return PortableTypeNames.TypeNameString;
-                case PortableUtils.TypeGuid:
+                case BinaryUtils.TypeGuid:
                     return PortableTypeNames.TypeNameGuid;
-                case PortableUtils.TypeTimestamp:
+                case BinaryUtils.TypeTimestamp:
                     return PortableTypeNames.TypeNameTimestamp;
-                case PortableUtils.TypeEnum:
+                case BinaryUtils.TypeEnum:
                     return PortableTypeNames.TypeNameEnum;
-                case PortableUtils.TypePortable:
-                case PortableUtils.TypeObject:
+                case BinaryUtils.TypePortable:
+                case BinaryUtils.TypeObject:
                     return PortableTypeNames.TypeNameObject;
-                case PortableUtils.TypeArrayBool:
+                case BinaryUtils.TypeArrayBool:
                     return PortableTypeNames.TypeNameArrayBool;
-                case PortableUtils.TypeArrayByte:
+                case BinaryUtils.TypeArrayByte:
                     return PortableTypeNames.TypeNameArrayByte;
-                case PortableUtils.TypeArrayShort:
+                case BinaryUtils.TypeArrayShort:
                     return PortableTypeNames.TypeNameArrayShort;
-                case PortableUtils.TypeArrayChar:
+                case BinaryUtils.TypeArrayChar:
                     return PortableTypeNames.TypeNameArrayChar;
-                case PortableUtils.TypeArrayInt:
+                case BinaryUtils.TypeArrayInt:
                     return PortableTypeNames.TypeNameArrayInt;
-                case PortableUtils.TypeArrayLong:
+                case BinaryUtils.TypeArrayLong:
                     return PortableTypeNames.TypeNameArrayLong;
-                case PortableUtils.TypeArrayFloat:
+                case BinaryUtils.TypeArrayFloat:
                     return PortableTypeNames.TypeNameArrayFloat;
-                case PortableUtils.TypeArrayDouble:
+                case BinaryUtils.TypeArrayDouble:
                     return PortableTypeNames.TypeNameArrayDouble;
-                case PortableUtils.TypeArrayDecimal:
+                case BinaryUtils.TypeArrayDecimal:
                     return PortableTypeNames.TypeNameArrayDecimal;
-                case PortableUtils.TypeArrayString:
+                case BinaryUtils.TypeArrayString:
                     return PortableTypeNames.TypeNameArrayString;
-                case PortableUtils.TypeArrayGuid:
+                case BinaryUtils.TypeArrayGuid:
                     return PortableTypeNames.TypeNameArrayGuid;
-                case PortableUtils.TypeArrayTimestamp:
+                case BinaryUtils.TypeArrayTimestamp:
                     return PortableTypeNames.TypeNameArrayTimestamp;
-                case PortableUtils.TypeArrayEnum:
+                case BinaryUtils.TypeArrayEnum:
                     return PortableTypeNames.TypeNameArrayEnum;
-                case PortableUtils.TypeArray:
+                case BinaryUtils.TypeArray:
                     return PortableTypeNames.TypeNameArrayObject;
-                case PortableUtils.TypeCollection:
+                case BinaryUtils.TypeCollection:
                     return PortableTypeNames.TypeNameCollection;
-                case PortableUtils.TypeDictionary:
+                case BinaryUtils.TypeDictionary:
                     return PortableTypeNames.TypeNameMap;
                 default:
                     throw new BinaryObjectException("Invalid type ID: " + typeId);
@@ -116,10 +116,10 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PortableMetadataImpl" /> class.
+        /// Initializes a new instance of the <see cref="BinaryType" /> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public PortableMetadataImpl(IPortableRawReader reader)
+        public BinaryType(IPortableRawReader reader)
         {
             TypeId = reader.ReadInt();
             TypeName = reader.ReadString();
@@ -134,7 +134,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// <param name="typeName">Type name.</param>
         /// <param name="fields">Fields.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
-        public PortableMetadataImpl(int typeId, string typeName, IDictionary<string, int> fields,
+        public BinaryType(int typeId, string typeName, IDictionary<string, int> fields,
             string affKeyFieldName)
         {
             TypeId = typeId;

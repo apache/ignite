@@ -30,6 +30,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </summary>
         /// <param name="typeId">Type ID.</param>
         /// <returns>Metadata.</returns>
-        IPortableMetadata GetMetadata(int typeId);
+        IBinaryType GetMetadata(int typeId);
     }
 }

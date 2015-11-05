@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public bool ReadBoolean(string fieldName)
         {
-            return ReadField(fieldName, r => r.ReadBoolean(), PortableUtils.TypeBool);
+            return ReadField(fieldName, r => r.ReadBoolean(), BinaryUtils.TypeBool);
         }
 
         /** <inheritdoc /> */
@@ -123,19 +123,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public bool[] ReadBooleanArray(string fieldName)
         {
-            return ReadField(fieldName, PortableUtils.ReadBooleanArray, PortableUtils.TypeArrayBool);
+            return ReadField(fieldName, BinaryUtils.ReadBooleanArray, BinaryUtils.TypeArrayBool);
         }
 
         /** <inheritdoc /> */
         public bool[] ReadBooleanArray()
         {
-            return Read(PortableUtils.ReadBooleanArray, PortableUtils.TypeArrayBool);
+            return Read(BinaryUtils.ReadBooleanArray, BinaryUtils.TypeArrayBool);
         }
 
         /** <inheritdoc /> */
         public byte ReadByte(string fieldName)
         {
-            return ReadField(fieldName, ReadByte, PortableUtils.TypeByte);
+            return ReadField(fieldName, ReadByte, BinaryUtils.TypeByte);
         }
 
         /** <inheritdoc /> */
@@ -147,19 +147,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public byte[] ReadByteArray(string fieldName)
         {
-            return ReadField(fieldName, PortableUtils.ReadByteArray, PortableUtils.TypeArrayByte);
+            return ReadField(fieldName, BinaryUtils.ReadByteArray, BinaryUtils.TypeArrayByte);
         }
 
         /** <inheritdoc /> */
         public byte[] ReadByteArray()
         {
-            return Read(PortableUtils.ReadByteArray, PortableUtils.TypeArrayByte);
+            return Read(BinaryUtils.ReadByteArray, BinaryUtils.TypeArrayByte);
         }
 
         /** <inheritdoc /> */
         public short ReadShort(string fieldName)
         {
-            return ReadField(fieldName, ReadShort, PortableUtils.TypeShort);
+            return ReadField(fieldName, ReadShort, BinaryUtils.TypeShort);
         }
 
         /** <inheritdoc /> */
@@ -171,19 +171,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public short[] ReadShortArray(string fieldName)
         {
-            return ReadField(fieldName, PortableUtils.ReadShortArray, PortableUtils.TypeArrayShort);
+            return ReadField(fieldName, BinaryUtils.ReadShortArray, BinaryUtils.TypeArrayShort);
         }
 
         /** <inheritdoc /> */
         public short[] ReadShortArray()
         {
-            return Read(PortableUtils.ReadShortArray, PortableUtils.TypeArrayShort);
+            return Read(BinaryUtils.ReadShortArray, BinaryUtils.TypeArrayShort);
         }
 
         /** <inheritdoc /> */
         public char ReadChar(string fieldName)
         {
-            return ReadField(fieldName, ReadChar, PortableUtils.TypeChar);
+            return ReadField(fieldName, ReadChar, BinaryUtils.TypeChar);
         }
 
         /** <inheritdoc /> */
@@ -195,19 +195,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public char[] ReadCharArray(string fieldName)
         {
-            return ReadField(fieldName, PortableUtils.ReadCharArray, PortableUtils.TypeArrayChar);
+            return ReadField(fieldName, BinaryUtils.ReadCharArray, BinaryUtils.TypeArrayChar);
         }
 
         /** <inheritdoc /> */
         public char[] ReadCharArray()
         {
-            return Read(PortableUtils.ReadCharArray, PortableUtils.TypeArrayChar);
+            return Read(BinaryUtils.ReadCharArray, BinaryUtils.TypeArrayChar);
         }
 
         /** <inheritdoc /> */
         public int ReadInt(string fieldName)
         {
-            return ReadField(fieldName, ReadInt, PortableUtils.TypeInt);
+            return ReadField(fieldName, ReadInt, BinaryUtils.TypeInt);
         }
 
         /** <inheritdoc /> */
@@ -219,19 +219,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public int[] ReadIntArray(string fieldName)
         {
-            return ReadField(fieldName, PortableUtils.ReadIntArray, PortableUtils.TypeArrayInt);
+            return ReadField(fieldName, BinaryUtils.ReadIntArray, BinaryUtils.TypeArrayInt);
         }
 
         /** <inheritdoc /> */
         public int[] ReadIntArray()
         {
-            return Read(PortableUtils.ReadIntArray, PortableUtils.TypeArrayInt);
+            return Read(BinaryUtils.ReadIntArray, BinaryUtils.TypeArrayInt);
         }
 
         /** <inheritdoc /> */
         public long ReadLong(string fieldName)
         {
-            return ReadField(fieldName, ReadLong, PortableUtils.TypeLong);
+            return ReadField(fieldName, ReadLong, BinaryUtils.TypeLong);
         }
 
         /** <inheritdoc /> */
@@ -243,19 +243,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public long[] ReadLongArray(string fieldName)
         {
-            return ReadField(fieldName, PortableUtils.ReadLongArray, PortableUtils.TypeArrayLong);
+            return ReadField(fieldName, BinaryUtils.ReadLongArray, BinaryUtils.TypeArrayLong);
         }
 
         /** <inheritdoc /> */
         public long[] ReadLongArray()
         {
-            return Read(PortableUtils.ReadLongArray, PortableUtils.TypeArrayLong);
+            return Read(BinaryUtils.ReadLongArray, BinaryUtils.TypeArrayLong);
         }
 
         /** <inheritdoc /> */
         public float ReadFloat(string fieldName)
         {
-            return ReadField(fieldName, ReadFloat, PortableUtils.TypeFloat);
+            return ReadField(fieldName, ReadFloat, BinaryUtils.TypeFloat);
         }
 
         /** <inheritdoc /> */
@@ -267,19 +267,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public float[] ReadFloatArray(string fieldName)
         {
-            return ReadField(fieldName, PortableUtils.ReadFloatArray, PortableUtils.TypeArrayFloat);
+            return ReadField(fieldName, BinaryUtils.ReadFloatArray, BinaryUtils.TypeArrayFloat);
         }
 
         /** <inheritdoc /> */
         public float[] ReadFloatArray()
         {
-            return Read(PortableUtils.ReadFloatArray, PortableUtils.TypeArrayFloat);
+            return Read(BinaryUtils.ReadFloatArray, BinaryUtils.TypeArrayFloat);
         }
 
         /** <inheritdoc /> */
         public double ReadDouble(string fieldName)
         {
-            return ReadField(fieldName, ReadDouble, PortableUtils.TypeDouble);
+            return ReadField(fieldName, ReadDouble, BinaryUtils.TypeDouble);
         }
 
         /** <inheritdoc /> */
@@ -291,133 +291,133 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public double[] ReadDoubleArray(string fieldName)
         {
-            return ReadField(fieldName, PortableUtils.ReadDoubleArray, PortableUtils.TypeArrayDouble);
+            return ReadField(fieldName, BinaryUtils.ReadDoubleArray, BinaryUtils.TypeArrayDouble);
         }
 
         /** <inheritdoc /> */
         public double[] ReadDoubleArray()
         {
-            return Read(PortableUtils.ReadDoubleArray, PortableUtils.TypeArrayDouble);
+            return Read(BinaryUtils.ReadDoubleArray, BinaryUtils.TypeArrayDouble);
         }
 
         /** <inheritdoc /> */
         public decimal? ReadDecimal(string fieldName)
         {
-            return ReadField(fieldName, PortableUtils.ReadDecimal, PortableUtils.TypeDecimal);
+            return ReadField(fieldName, BinaryUtils.ReadDecimal, BinaryUtils.TypeDecimal);
         }
 
         /** <inheritdoc /> */
         public decimal? ReadDecimal()
         {
-            return Read(PortableUtils.ReadDecimal, PortableUtils.TypeDecimal);
+            return Read(BinaryUtils.ReadDecimal, BinaryUtils.TypeDecimal);
         }
 
         /** <inheritdoc /> */
         public decimal?[] ReadDecimalArray(string fieldName)
         {
-            return ReadField(fieldName, PortableUtils.ReadDecimalArray, PortableUtils.TypeArrayDecimal);
+            return ReadField(fieldName, BinaryUtils.ReadDecimalArray, BinaryUtils.TypeArrayDecimal);
         }
 
         /** <inheritdoc /> */
         public decimal?[] ReadDecimalArray()
         {
-            return Read(PortableUtils.ReadDecimalArray, PortableUtils.TypeArrayDecimal);
+            return Read(BinaryUtils.ReadDecimalArray, BinaryUtils.TypeArrayDecimal);
         }
 
         /** <inheritdoc /> */
         public DateTime? ReadTimestamp(string fieldName)
         {
-            return ReadField(fieldName, PortableUtils.ReadTimestamp, PortableUtils.TypeTimestamp);
+            return ReadField(fieldName, BinaryUtils.ReadTimestamp, BinaryUtils.TypeTimestamp);
         }
 
         /** <inheritdoc /> */
         public DateTime? ReadTimestamp()
         {
-            return Read(PortableUtils.ReadTimestamp, PortableUtils.TypeTimestamp);
+            return Read(BinaryUtils.ReadTimestamp, BinaryUtils.TypeTimestamp);
         }
         
         /** <inheritdoc /> */
         public DateTime?[] ReadTimestampArray(string fieldName)
         {
-            return ReadField(fieldName, PortableUtils.ReadTimestampArray, PortableUtils.TypeArrayTimestamp);
+            return ReadField(fieldName, BinaryUtils.ReadTimestampArray, BinaryUtils.TypeArrayTimestamp);
         }
         
         /** <inheritdoc /> */
         public DateTime?[] ReadTimestampArray()
         {
-            return Read(PortableUtils.ReadTimestampArray, PortableUtils.TypeArrayTimestamp);
+            return Read(BinaryUtils.ReadTimestampArray, BinaryUtils.TypeArrayTimestamp);
         }
         
         /** <inheritdoc /> */
         public string ReadString(string fieldName)
         {
-            return ReadField(fieldName, PortableUtils.ReadString, PortableUtils.TypeString);
+            return ReadField(fieldName, BinaryUtils.ReadString, BinaryUtils.TypeString);
         }
 
         /** <inheritdoc /> */
         public string ReadString()
         {
-            return Read(PortableUtils.ReadString, PortableUtils.TypeString);
+            return Read(BinaryUtils.ReadString, BinaryUtils.TypeString);
         }
 
         /** <inheritdoc /> */
         public string[] ReadStringArray(string fieldName)
         {
-            return ReadField(fieldName, r => PortableUtils.ReadArray<string>(r, false), PortableUtils.TypeArrayString);
+            return ReadField(fieldName, r => BinaryUtils.ReadArray<string>(r, false), BinaryUtils.TypeArrayString);
         }
 
         /** <inheritdoc /> */
         public string[] ReadStringArray()
         {
-            return Read(r => PortableUtils.ReadArray<string>(r, false), PortableUtils.TypeArrayString);
+            return Read(r => BinaryUtils.ReadArray<string>(r, false), BinaryUtils.TypeArrayString);
         }
 
         /** <inheritdoc /> */
         public Guid? ReadGuid(string fieldName)
         {
-            return ReadField(fieldName, PortableUtils.ReadGuid, PortableUtils.TypeGuid);
+            return ReadField(fieldName, BinaryUtils.ReadGuid, BinaryUtils.TypeGuid);
         }
 
         /** <inheritdoc /> */
         public Guid? ReadGuid()
         {
-            return Read(PortableUtils.ReadGuid, PortableUtils.TypeGuid);
+            return Read(BinaryUtils.ReadGuid, BinaryUtils.TypeGuid);
         }
 
         /** <inheritdoc /> */
         public Guid?[] ReadGuidArray(string fieldName)
         {
-            return ReadField(fieldName, r => PortableUtils.ReadArray<Guid?>(r, false), PortableUtils.TypeArrayGuid);
+            return ReadField(fieldName, r => BinaryUtils.ReadArray<Guid?>(r, false), BinaryUtils.TypeArrayGuid);
         }
 
         /** <inheritdoc /> */
         public Guid?[] ReadGuidArray()
         {
-            return Read(r => PortableUtils.ReadArray<Guid?>(r, false), PortableUtils.TypeArrayGuid);
+            return Read(r => BinaryUtils.ReadArray<Guid?>(r, false), BinaryUtils.TypeArrayGuid);
         }
 
         /** <inheritdoc /> */
         public T ReadEnum<T>(string fieldName)
         {
-            return ReadField(fieldName, PortableUtils.ReadEnum<T>, PortableUtils.TypeEnum);
+            return ReadField(fieldName, BinaryUtils.ReadEnum<T>, BinaryUtils.TypeEnum);
         }
 
         /** <inheritdoc /> */
         public T ReadEnum<T>()
         {
-            return Read(PortableUtils.ReadEnum<T>, PortableUtils.TypeEnum);
+            return Read(BinaryUtils.ReadEnum<T>, BinaryUtils.TypeEnum);
         }
 
         /** <inheritdoc /> */
         public T[] ReadEnumArray<T>(string fieldName)
         {
-            return ReadField(fieldName, r => PortableUtils.ReadArray<T>(r, true), PortableUtils.TypeArrayEnum);
+            return ReadField(fieldName, r => BinaryUtils.ReadArray<T>(r, true), BinaryUtils.TypeArrayEnum);
         }
 
         /** <inheritdoc /> */
         public T[] ReadEnumArray<T>()
         {
-            return Read(r => PortableUtils.ReadArray<T>(r, true), PortableUtils.TypeArrayEnum);
+            return Read(r => BinaryUtils.ReadArray<T>(r, true), BinaryUtils.TypeArrayEnum);
         }
 
         /** <inheritdoc /> */
@@ -441,13 +441,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public T[] ReadArray<T>(string fieldName)
         {
-            return ReadField(fieldName, r => PortableUtils.ReadArray<T>(r, true), PortableUtils.TypeArray);
+            return ReadField(fieldName, r => BinaryUtils.ReadArray<T>(r, true), BinaryUtils.TypeArray);
         }
 
         /** <inheritdoc /> */
         public T[] ReadArray<T>()
         {
-            return Read(r => PortableUtils.ReadArray<T>(r, true), PortableUtils.TypeArray);
+            return Read(r => BinaryUtils.ReadArray<T>(r, true), BinaryUtils.TypeArray);
         }
 
         /** <inheritdoc /> */
@@ -466,14 +466,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         public ICollection ReadCollection(string fieldName, PortableCollectionFactory factory,
             PortableCollectionAdder adder)
         {
-            return ReadField(fieldName, r => PortableUtils.ReadCollection(r, factory, adder), PortableUtils.TypeCollection);
+            return ReadField(fieldName, r => BinaryUtils.ReadCollection(r, factory, adder), BinaryUtils.TypeCollection);
         }
 
         /** <inheritdoc /> */
         public ICollection ReadCollection(PortableCollectionFactory factory,
             PortableCollectionAdder adder)
         {
-            return Read(r => PortableUtils.ReadCollection(r, factory, adder), PortableUtils.TypeCollection);
+            return Read(r => BinaryUtils.ReadCollection(r, factory, adder), BinaryUtils.TypeCollection);
         }
 
         /** <inheritdoc /> */
@@ -491,13 +491,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public IDictionary ReadDictionary(string fieldName, PortableDictionaryFactory factory)
         {
-            return ReadField(fieldName, r => PortableUtils.ReadDictionary(r, factory), PortableUtils.TypeDictionary);
+            return ReadField(fieldName, r => BinaryUtils.ReadDictionary(r, factory), BinaryUtils.TypeDictionary);
         }
 
         /** <inheritdoc /> */
         public IDictionary ReadDictionary(PortableDictionaryFactory factory)
         {
-            return Read(r => PortableUtils.ReadDictionary(r, factory), PortableUtils.TypeDictionary);
+            return Read(r => BinaryUtils.ReadDictionary(r, factory), BinaryUtils.TypeDictionary);
         }
 
         /// <summary>
@@ -524,24 +524,24 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             switch (hdr)
             {
-                case PortableUtils.HdrNull:
+                case BinaryUtils.HdrNull:
                     if (default(T) != null)
                         throw new BinaryObjectException(string.Format("Invalid data on deserialization. " +
                             "Expected: '{0}' But was: null", typeof (T)));
 
                     return default(T);
 
-                case PortableUtils.HdrHnd:
+                case BinaryUtils.HdrHnd:
                     return ReadHandleObject<T>(pos);
 
-                case PortableUtils.HdrFull:
+                case BinaryUtils.HdrFull:
                     return ReadFullObject<T>(pos);
 
-                case PortableUtils.TypePortable:
+                case BinaryUtils.TypePortable:
                     return ReadPortableObject<T>(doDetach);
             }
 
-            if (PortableUtils.IsPredefinedType(hdr))
+            if (BinaryUtils.IsPredefinedType(hdr))
                 return PortableSystemHandlers.ReadSystemType<T>(hdr, this);
 
             throw new BinaryObjectException("Invalid header on deserialization [pos=" + pos + ", hdr=" + hdr + ']');
@@ -618,7 +618,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             var hdr = PortableObjectHeader.Read(Stream, pos);
 
             // Validate protocol version.
-            PortableUtils.ValidateProtocolVersion(hdr.Version);
+            BinaryUtils.ValidateProtocolVersion(hdr.Version);
 
             try
             {
@@ -652,7 +652,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     // Find descriptor.
                     IBinaryTypeDescriptor desc;
 
-                    if (!_descs.TryGetValue(PortableUtils.TypeKey(hdr.IsUserType, hdr.TypeId), out desc))
+                    if (!_descs.TryGetValue(BinaryUtils.TypeKey(hdr.IsUserType, hdr.TypeId), out desc))
                         throw new BinaryObjectException("Unknown type ID: " + hdr.TypeId);
 
                     // Instantiate object. 
@@ -843,7 +843,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             var hdr = ReadByte();
             
-            if (hdr == PortableUtils.HdrNull)
+            if (hdr == BinaryUtils.HdrNull)
                 return false;
 
             if (expHdr != hdr)

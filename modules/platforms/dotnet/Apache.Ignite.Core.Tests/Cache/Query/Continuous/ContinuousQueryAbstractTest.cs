@@ -1114,7 +1114,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 {
                     IPortableObject val = evt.Value;
 
-                    IPortableMetadata meta = val.GetMetadata();
+                    IBinaryType meta = val.GetMetadata();
 
                     Assert.AreEqual(typeof(PortableEntry).Name, meta.TypeName);
                 }

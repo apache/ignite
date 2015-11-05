@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Portable
     /// <summary>
     /// Portable type metadata.
     /// </summary>
-    public interface IPortableMetadata
+    public interface IBinaryType
     {
         /// <summary>
         /// Gets type name.

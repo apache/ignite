@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             _cfg = cfg;
             _name = name;
 
-            _id = PortableUtils.TypeId(name, cfg.DefaultNameMapper, cfg.DefaultIdMapper);
+            _id = BinaryUtils.TypeId(name, cfg.DefaultNameMapper, cfg.DefaultIdMapper);
         }
 
         /** <inheritDoc /> */

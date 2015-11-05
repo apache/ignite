@@ -69,8 +69,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         public PortableObjectHeader(bool userType, int typeId, int hashCode, int length, int schemaId, int schemaOffset, 
             bool rawOnly, short flags)
         {
-            Header = PortableUtils.HdrFull;
-            Version = PortableUtils.ProtoVer;
+            Header = BinaryUtils.HdrFull;
+            Version = BinaryUtils.ProtoVer;
 
             Debug.Assert(schemaOffset <= length);
             Debug.Assert(schemaOffset >= Size);
@@ -402,7 +402,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 stream.Read((byte*) &hdr, Size);
 
-                Debug.Assert(hdr.Version == PortableUtils.ProtoVer);
+                Debug.Assert(hdr.Version == BinaryUtils.ProtoVer);
                 Debug.Assert(hdr.SchemaOffset <= hdr.Length);
                 Debug.Assert(hdr.SchemaOffset >= Size);
 

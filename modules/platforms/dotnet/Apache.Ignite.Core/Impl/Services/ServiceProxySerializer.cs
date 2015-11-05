@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Services
 
             var writer = marsh.StartMarshal(stream);
 
-            PortableUtils.WriteInvocationResult(writer, invocationError == null, invocationError ?? methodResult);
+            BinaryUtils.WriteInvocationResult(writer, invocationError == null, invocationError ?? methodResult);
         }
 
         /// <summary>
@@ -123,7 +123,7 @@ namespace Apache.Ignite.Core.Impl.Services
 
             object err;
 
-            var res = PortableUtils.ReadInvocationResult(reader, out err);
+            var res = BinaryUtils.ReadInvocationResult(reader, out err);
 
             if (err == null)
                 return res;

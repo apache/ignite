@@ -579,7 +579,7 @@ namespace Apache.Ignite.Core.Impl
         /// Put metadata to Grid.
         /// </summary>
         /// <param name="metas">Metadatas.</param>
-        internal void PutMetadata(IDictionary<int, IPortableMetadata> metas)
+        internal void PutMetadata(IDictionary<int, IBinaryType> metas)
         {
             DoOutOp(OpMeta, stream =>
             {
@@ -589,7 +589,7 @@ namespace Apache.Ignite.Core.Impl
 
                 foreach (var meta in metas.Values)
                 {
-                    PortableMetadataImpl meta0 = (PortableMetadataImpl)meta;
+                    BinaryType meta0 = (BinaryType)meta;
 
                     metaWriter.WriteInt(meta0.TypeId);
                     metaWriter.WriteString(meta0.TypeName);

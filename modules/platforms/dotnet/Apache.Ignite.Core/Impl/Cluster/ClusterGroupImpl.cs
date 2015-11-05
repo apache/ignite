@@ -538,15 +538,15 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
         
         /** <inheritDoc /> */
-        public IPortableMetadata GetMetadata(int typeId)
+        public IBinaryType GetMetadata(int typeId)
         {
-            return DoOutInOp<IPortableMetadata>(OpMetadata, 
+            return DoOutInOp<IBinaryType>(OpMetadata, 
                 writer => writer.WriteInt(typeId),
                 stream =>
                 {
                     var reader = Marshaller.StartUnmarshal(stream, false);
 
-                    return reader.ReadBoolean() ? new PortableMetadataImpl(reader) : null;
+                    return reader.ReadBoolean() ? new BinaryType(reader) : null;
                 }
             );
         }
@@ -554,7 +554,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <summary>
         /// Gets metadata for all known types.
         /// </summary>
-        public List<IPortableMetadata> Metadata()
+        public List<IBinaryType> Metadata()
         {
             return DoInOp(OpAllMetadata, s =>
             {
@@ -562,10 +562,10 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
                 var size = reader.ReadInt();
 
-                var res = new List<IPortableMetadata>(size);
+                var res = new List<IBinaryType>(size);
 
                 for (var i = 0; i < size; i++)
-                    res.Add(reader.ReadBoolean() ? new PortableMetadataImpl(reader) : null);
+                    res.Add(reader.ReadBoolean() ? new BinaryType(reader) : null);
 
                 return res;
             });

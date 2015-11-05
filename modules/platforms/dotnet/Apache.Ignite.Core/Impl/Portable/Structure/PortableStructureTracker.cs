@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         /// </returns>
         private int GetNewFieldId(string fieldName, byte fieldTypeId, int action)
         {
-            var fieldId = PortableUtils.FieldId(_desc.TypeId, fieldName, _desc.NameMapper, _desc.IdMapper);
+            var fieldId = BinaryUtils.FieldId(_desc.TypeId, fieldName, _desc.NameMapper, _desc.IdMapper);
 
             if (_curStructUpdates == null)
                 _curStructUpdates = new List<PortableStructureUpdate>();

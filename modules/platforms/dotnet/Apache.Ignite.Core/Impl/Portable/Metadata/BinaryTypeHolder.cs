@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
     /// <summary>
     /// Metadata for particular type.
     /// </summary>
-    internal class PortableMetadataHolder
+    internal class BinaryTypeHolder
     {
         /** Type ID. */
         private readonly int _typeId;
@@ -36,13 +36,13 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         private readonly string _affKeyFieldName;
 
         /** Empty metadata when nothig is know about object fields yet. */
-        private readonly IPortableMetadata _emptyMeta;
+        private readonly IBinaryType _emptyMeta;
 
         /** Collection of know field IDs. */
         private volatile ICollection<int> _ids;
 
         /** Last known unmodifiable metadata which is given to the user. */
-        private volatile PortableMetadataImpl _meta;
+        private volatile BinaryType _meta;
 
         /** Saved flag (set if type metadata was saved at least once). */
         private volatile bool _saved;
@@ -53,13 +53,13 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// <param name="typeId">Type ID.</param>
         /// <param name="typeName">Type name.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
-        public PortableMetadataHolder(int typeId, string typeName, string affKeyFieldName)
+        public BinaryTypeHolder(int typeId, string typeName, string affKeyFieldName)
         {
             _typeId = typeId;
             _typeName = typeName;
             _affKeyFieldName = affKeyFieldName;
 
-            _emptyMeta = new PortableMetadataImpl(typeId, typeName, null, affKeyFieldName);
+            _emptyMeta = new BinaryType(typeId, typeName, null, affKeyFieldName);
         }
 
         /// <summary>
@@ -75,9 +75,9 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
         /// Get current type metadata.
         /// </summary>
         /// <returns>Type metadata.</returns>
-        public IPortableMetadata Metadata()
+        public IBinaryType Metadata()
         {
-            PortableMetadataImpl meta0 = _meta;
+            BinaryType meta0 = _meta;
 
             return meta0 != null ? _meta : _emptyMeta;
         }
@@ -123,7 +123,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
             {
                 // 1. Create copies of the old meta.
                 ICollection<int> ids0 = _ids;
-                PortableMetadataImpl meta0 = _meta;
+                BinaryType meta0 = _meta;
 
                 ICollection<int> newIds = ids0 != null ? new HashSet<int>(ids0) : new HashSet<int>();
 
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
                 }
 
                 // 3. Assign new meta. Order is important here: meta must be assigned before field IDs.
-                _meta = new PortableMetadataImpl(_typeId, _typeName, newFields, _affKeyFieldName);
+                _meta = new BinaryType(_typeId, _typeName, newFields, _affKeyFieldName);
                 _ids = newIds;
             }
         }

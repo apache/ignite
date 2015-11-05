@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritdoc /> */
-        public IPortableMetadata GetMetadata()
+        public IBinaryType GetMetadata()
         {
             return _marsh.GetMetadata(_header.TypeId);
         }
@@ -160,7 +160,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             InitializeFields();
 
-            int fieldId = PortableUtils.FieldId(_header.TypeId, fieldName, desc.NameMapper, desc.IdMapper);
+            int fieldId = BinaryUtils.FieldId(_header.TypeId, fieldName, desc.NameMapper, desc.IdMapper);
 
             return _fields.TryGetValue(fieldId, out pos);
         }
@@ -234,7 +234,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     var thatRawOffset = that._header.GetRawOffset(thatStream, that._offset);
                     // ReSharper restore ImpureMethodCallOnReadonlyValueField
 
-                    return PortableUtils.CompareArrays(_data, _offset + rawOffset, _header.Length - rawOffset, 
+                    return BinaryUtils.CompareArrays(_data, _offset + rawOffset, _header.Length - rawOffset, 
                         that._data, that._offset + thatRawOffset, that._header.Length - thatRawOffset);
                 }
             }
@@ -266,7 +266,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             IBinaryTypeDescriptor desc = _marsh.GetDescriptor(true, _header.TypeId);
 
-            IPortableMetadata meta;
+            IBinaryType meta;
 
             try
             {
@@ -293,7 +293,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     {
                         sb.Append(", ");
 
-                        int fieldId = PortableUtils.FieldId(_header.TypeId, fieldName, desc.NameMapper, desc.IdMapper);
+                        int fieldId = BinaryUtils.FieldId(_header.TypeId, fieldName, desc.NameMapper, desc.IdMapper);
 
                         int fieldPos;
 

@@ -110,9 +110,9 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             foreach (FieldInfo field in fields)
             {
-                string fieldName = PortableUtils.CleanFieldName(field.Name);
+                string fieldName = BinaryUtils.CleanFieldName(field.Name);
 
-                int fieldId = PortableUtils.FieldId(typeId, fieldName, converter, idMapper);
+                int fieldId = BinaryUtils.FieldId(typeId, fieldName, converter, idMapper);
 
                 if (idMap.ContainsKey(fieldId))
                 {
@@ -150,8 +150,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Compare two FieldInfo instances. 
         /// </summary>
         private static int Compare(FieldInfo info1, FieldInfo info2) {
-            string name1 = PortableUtils.CleanFieldName(info1.Name);
-            string name2 = PortableUtils.CleanFieldName(info2.Name);
+            string name1 = BinaryUtils.CleanFieldName(info1.Name);
+            string name2 = BinaryUtils.CleanFieldName(info2.Name);
 
             return string.Compare(name1, name2, StringComparison.OrdinalIgnoreCase);
         }

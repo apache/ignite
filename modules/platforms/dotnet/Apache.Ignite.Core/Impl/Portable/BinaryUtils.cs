@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /**
      * <summary>Utilities for portable serialization.</summary>
      */
-    static class PortableUtils
+    internal static class BinaryUtils
     {
         /** Header of NULL object. */
         public const byte HdrNull = 101;
@@ -259,7 +259,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Method: ReadArray. */
         public static readonly MethodInfo MtdhReadArray =
-            typeof(PortableUtils).GetMethod("ReadArray", _bindFlagsStatic);
+            typeof(BinaryUtils).GetMethod("ReadArray", _bindFlagsStatic);
 
         /** Cached UTF8 encoding. */
         private static readonly Encoding Utf8 = Encoding.UTF8;

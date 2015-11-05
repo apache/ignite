@@ -117,19 +117,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public ICollection<IPortableMetadata> GetMetadata()
+        public ICollection<IBinaryType> GetMetadata()
         {
             return Marshaller.Ignite.ClusterGroup.Metadata();
         }
 
         /** <inheritDoc /> */
-        public IPortableMetadata GetMetadata(int typeId)
+        public IBinaryType GetMetadata(int typeId)
         {
             return Marshaller.GetMetadata(typeId);
         }
 
         /** <inheritDoc /> */
-        public IPortableMetadata GetMetadata(string typeName)
+        public IBinaryType GetMetadata(string typeName)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public IPortableMetadata GetMetadata(Type type)
+        public IBinaryType GetMetadata(Type type)
         {
             IgniteArgumentCheck.NotNull(type, "type");
 

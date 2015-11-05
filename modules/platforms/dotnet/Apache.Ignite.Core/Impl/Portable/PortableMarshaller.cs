@@ -52,8 +52,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             new Dictionary<long, IBinaryTypeDescriptor>();
 
         /** Cached metadatas. */
-        private volatile IDictionary<int, PortableMetadataHolder> _metas =
-            new Dictionary<int, PortableMetadataHolder>();
+        private volatile IDictionary<int, BinaryTypeHolder> _metas =
+            new Dictionary<int, BinaryTypeHolder>();
 
         /// <summary>
         /// Constructor.
@@ -256,17 +256,17 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="typeId">Type ID.</param>
         /// <returns>Metadata or null.</returns>
-        public IPortableMetadata GetMetadata(int typeId)
+        public IBinaryType GetMetadata(int typeId)
         {
             if (Ignite != null)
             {
-                IPortableMetadata meta = Ignite.GetMetadata(typeId);
+                IBinaryType meta = Ignite.GetMetadata(typeId);
 
                 if (meta != null)
                     return meta;
             }
 
-            return PortableMetadataImpl.EmptyMeta;
+            return BinaryType.EmptyMeta;
         }
 
         /// <summary>
@@ -276,7 +276,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Metadata handler.</returns>
         public IPortableMetadataHandler GetMetadataHandler(IBinaryTypeDescriptor desc)
         {
-            PortableMetadataHolder holder;
+            BinaryTypeHolder holder;
 
             if (!_metas.TryGetValue(desc.TypeId, out holder))
             {
@@ -284,10 +284,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                 {
                     if (!_metas.TryGetValue(desc.TypeId, out holder))
                     {
-                        IDictionary<int, PortableMetadataHolder> metas0 =
-                            new Dictionary<int, PortableMetadataHolder>(_metas);
+                        IDictionary<int, BinaryTypeHolder> metas0 =
+                            new Dictionary<int, BinaryTypeHolder>(_metas);
 
-                        holder = new PortableMetadataHolder(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName);
+                        holder = new BinaryTypeHolder(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName);
 
                         metas0[desc.TypeId] = holder;
 
@@ -312,18 +312,18 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Callback invoked when metadata has been sent to the server and acknowledged by it.
         /// </summary>
         /// <param name="newMetas"></param>
-        public void OnMetadataSent(IDictionary<int, IPortableMetadata> newMetas)
+        public void OnMetadataSent(IDictionary<int, IBinaryType> newMetas)
         {
-            foreach (KeyValuePair<int, IPortableMetadata> metaEntry in newMetas)
+            foreach (KeyValuePair<int, IBinaryType> metaEntry in newMetas)
             {
-                PortableMetadataImpl meta = (PortableMetadataImpl) metaEntry.Value;
+                BinaryType meta = (BinaryType) metaEntry.Value;
 
                 IDictionary<int, Tuple<string, int>> mergeInfo =
                     new Dictionary<int, Tuple<string, int>>(meta.FieldsMap().Count);
 
                 foreach (KeyValuePair<string, int> fieldMeta in meta.FieldsMap())
                 {
-                    int fieldId = PortableUtils.FieldId(metaEntry.Key, fieldMeta.Key, null, null);
+                    int fieldId = BinaryUtils.FieldId(metaEntry.Key, fieldMeta.Key, null, null);
 
                     mergeInfo[fieldId] = new Tuple<string, int>(fieldMeta.Key, fieldMeta.Value);
                 }
@@ -369,7 +369,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             IBinaryTypeDescriptor desc;
 
-            return _idToDesc.TryGetValue(PortableUtils.TypeKey(userType, typeId), out desc) ? desc :
+            return _idToDesc.TryGetValue(BinaryUtils.TypeKey(userType, typeId), out desc) ? desc :
                 userType ? new BinarySurrogateTypeDescriptor(_cfg, typeId) : null;
         }
 
@@ -398,7 +398,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 // Type is found.
                 var typeName = GetTypeName(type);
 
-                int typeId = PortableUtils.TypeId(typeName, nameMapper, idMapper);
+                int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
 
                 var serializer = typeCfg.Serializer ?? cfg.DefaultSerializer
                                  ?? GetPortableMarshalAwareSerializer(type) ?? dfltSerializer;
@@ -414,9 +414,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             else
             {
                 // Type is not found.
-                string typeName = PortableUtils.SimpleTypeName(typeCfg.TypeName);
+                string typeName = BinaryUtils.SimpleTypeName(typeCfg.TypeName);
 
-                int typeId = PortableUtils.TypeId(typeName, nameMapper, idMapper);
+                int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
 
                 AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
                     typeCfg.AffinityKeyFieldName);
@@ -451,7 +451,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             bool keepDeserialized, INameMapper nameMapper, IIdMapper idMapper,
             IBinarySerializer serializer, string affKeyFieldName)
         {
-            long typeKey = PortableUtils.TypeKey(userType, typeId);
+            long typeKey = BinaryUtils.TypeKey(userType, typeId);
 
             if (_idToDesc.ContainsKey(typeKey))
             {
@@ -495,21 +495,21 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private void AddSystemTypes()
         {
-            AddSystemType(PortableUtils.TypeNativeJobHolder, w => new ComputeJobHolder(w));
-            AddSystemType(PortableUtils.TypeComputeJobWrapper, w => new ComputeJobWrapper(w));
-            AddSystemType(PortableUtils.TypeIgniteProxy, w => new IgniteProxy());
-            AddSystemType(PortableUtils.TypeComputeOutFuncJob, w => new ComputeOutFuncJob(w));
-            AddSystemType(PortableUtils.TypeComputeOutFuncWrapper, w => new ComputeOutFuncWrapper(w));
-            AddSystemType(PortableUtils.TypeComputeFuncWrapper, w => new ComputeFuncWrapper(w));
-            AddSystemType(PortableUtils.TypeComputeFuncJob, w => new ComputeFuncJob(w));
-            AddSystemType(PortableUtils.TypeComputeActionJob, w => new ComputeActionJob(w));
-            AddSystemType(PortableUtils.TypeContinuousQueryRemoteFilterHolder, w => new ContinuousQueryFilterHolder(w));
-            AddSystemType(PortableUtils.TypeSerializableHolder, w => new SerializableObjectHolder(w));
-            AddSystemType(PortableUtils.TypeDateTimeHolder, w => new DateTimeHolder(w));
-            AddSystemType(PortableUtils.TypeCacheEntryProcessorHolder, w => new CacheEntryProcessorHolder(w));
-            AddSystemType(PortableUtils.TypeCacheEntryPredicateHolder, w => new CacheEntryFilterHolder(w));
-            AddSystemType(PortableUtils.TypeMessageListenerHolder, w => new MessageListenerHolder(w));
-            AddSystemType(PortableUtils.TypeStreamReceiverHolder, w => new StreamReceiverHolder(w));
+            AddSystemType(BinaryUtils.TypeNativeJobHolder, w => new ComputeJobHolder(w));
+            AddSystemType(BinaryUtils.TypeComputeJobWrapper, w => new ComputeJobWrapper(w));
+            AddSystemType(BinaryUtils.TypeIgniteProxy, w => new IgniteProxy());
+            AddSystemType(BinaryUtils.TypeComputeOutFuncJob, w => new ComputeOutFuncJob(w));
+            AddSystemType(BinaryUtils.TypeComputeOutFuncWrapper, w => new ComputeOutFuncWrapper(w));
+            AddSystemType(BinaryUtils.TypeComputeFuncWrapper, w => new ComputeFuncWrapper(w));
+            AddSystemType(BinaryUtils.TypeComputeFuncJob, w => new ComputeFuncJob(w));
+            AddSystemType(BinaryUtils.TypeComputeActionJob, w => new ComputeActionJob(w));
+            AddSystemType(BinaryUtils.TypeContinuousQueryRemoteFilterHolder, w => new ContinuousQueryFilterHolder(w));
+            AddSystemType(BinaryUtils.TypeSerializableHolder, w => new SerializableObjectHolder(w));
+            AddSystemType(BinaryUtils.TypeDateTimeHolder, w => new DateTimeHolder(w));
+            AddSystemType(BinaryUtils.TypeCacheEntryProcessorHolder, w => new CacheEntryProcessorHolder(w));
+            AddSystemType(BinaryUtils.TypeCacheEntryPredicateHolder, w => new CacheEntryFilterHolder(w));
+            AddSystemType(BinaryUtils.TypeMessageListenerHolder, w => new MessageListenerHolder(w));
+            AddSystemType(BinaryUtils.TypeStreamReceiverHolder, w => new StreamReceiverHolder(w));
         }
 
         /// <summary>

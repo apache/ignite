@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             try
             {
                 // 3. Marshal results.
-                PortableUtils.WriteInvocationResult(writer, success, res);
+                BinaryUtils.WriteInvocationResult(writer, success, res);
             }
             finally
             {

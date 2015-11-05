@@ -37,8 +37,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
-    using PU = Apache.Ignite.Core.Impl.Portable.PortableUtils;
-    
+
     /// <summary>
     /// This class defines a factory for the main Ignite API.
     /// <p/>
@@ -253,7 +252,7 @@ namespace Apache.Ignite.Core
         {
             try
             {
-                BinaryReaderImpl reader = PU.Marshaller.StartUnmarshal(inStream);
+                BinaryReaderImpl reader = BinaryUtils.Marshaller.StartUnmarshal(inStream);
 
                 PrepareConfiguration(reader);
 
@@ -281,7 +280,7 @@ namespace Apache.Ignite.Core
             ICollection<string> cfgAssembllies;
             PortableConfiguration portableCfg;
 
-            PortableUtils.ReadConfiguration(reader, out cfgAssembllies, out portableCfg);
+            BinaryUtils.ReadConfiguration(reader, out cfgAssembllies, out portableCfg);
 
             LoadAssemblies(cfgAssembllies);
 
@@ -358,7 +357,7 @@ namespace Apache.Ignite.Core
             try
             {
                 // 1. Read data and leave critical state ASAP.
-                BinaryReaderImpl reader = PU.Marshaller.StartUnmarshal(stream);
+                BinaryReaderImpl reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
                 
                 // ReSharper disable once PossibleInvalidOperationException
                 var name = reader.ReadString();

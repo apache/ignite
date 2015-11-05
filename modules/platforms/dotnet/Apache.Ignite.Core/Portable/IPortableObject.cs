@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Portable
         /// <returns>Metadata.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
             Justification = "Expensive operation.")]
-        IPortableMetadata GetMetadata();
+        IBinaryType GetMetadata();
 
         /// <summary>
         /// Gets field value.

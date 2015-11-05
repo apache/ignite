@@ -299,7 +299,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             {
                 object err;
 
-                var data = PortableUtils.ReadInvocationResult(reader, out err);
+                var data = BinaryUtils.ReadInvocationResult(reader, out err);
 
                 // 2. Process the result.
                 return (int) JobResult0(new ComputeJobResultImpl(data, (Exception) err, job.Job, nodeId.Value, cancelled));

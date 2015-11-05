@@ -308,12 +308,12 @@ namespace Apache.Ignite.Core.Impl.Portable
                 writeAction = GetWriter<object>(field, (f, w, o) => w.WriteEnum(f, o), true);
                 readAction = GetReader(field, MthdReadEnum);
             }
-            else if (type == PortableUtils.TypDictionary || type.GetInterface(PortableUtils.TypDictionary.FullName) != null && !type.IsGenericType)
+            else if (type == BinaryUtils.TypDictionary || type.GetInterface(BinaryUtils.TypDictionary.FullName) != null && !type.IsGenericType)
             {
                 writeAction = GetWriter<IDictionary>(field, (f, w, o) => w.WriteDictionary(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadDictionary(f));
             }
-            else if (type == PortableUtils.TypCollection || type.GetInterface(PortableUtils.TypCollection.FullName) != null && !type.IsGenericType)
+            else if (type == BinaryUtils.TypCollection || type.GetInterface(BinaryUtils.TypCollection.FullName) != null && !type.IsGenericType)
             {
                 writeAction = GetWriter<ICollection>(field, (f, w, o) => w.WriteCollection(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadCollection(f));
@@ -345,7 +345,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             // Call IPortableWriter method
             var writerParam = Expression.Parameter(typeof(IBinaryWriter));
-            var fldNameParam = Expression.Constant(PortableUtils.CleanFieldName(field.Name));
+            var fldNameParam = Expression.Constant(BinaryUtils.CleanFieldName(field.Name));
             var writeExpr = Expression.Invoke(write, fldNameParam, writerParam, fldExpr);
 
             // Compile and return
@@ -371,7 +371,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             // Call IPortableWriter method
             var writerParam = Expression.Parameter(typeof(IBinaryWriter));
-            var fldNameParam = Expression.Constant(PortableUtils.CleanFieldName(field.Name));
+            var fldNameParam = Expression.Constant(BinaryUtils.CleanFieldName(field.Name));
             var writeMethod = method.MakeGenericMethod(genericArgs);
             var writeExpr = Expression.Call(writerParam, writeMethod, fldNameParam, fldExpr);
 
@@ -390,7 +390,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             // Call IPortableReader method
             var readerParam = Expression.Parameter(typeof(IBinaryReader));
-            var fldNameParam = Expression.Constant(PortableUtils.CleanFieldName(field.Name));
+            var fldNameParam = Expression.Constant(BinaryUtils.CleanFieldName(field.Name));
             Expression readExpr = Expression.Invoke(read, fldNameParam, readerParam);
 
             if (typeof(T) != field.FieldType)
@@ -420,7 +420,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             // Call IPortableReader method
             var readerParam = Expression.Parameter(typeof (IBinaryReader));
-            var fldNameParam = Expression.Constant(PortableUtils.CleanFieldName(field.Name));
+            var fldNameParam = Expression.Constant(BinaryUtils.CleanFieldName(field.Name));
             var readMethod = method.MakeGenericMethod(genericArgs);
             Expression readExpr = Expression.Call(readerParam, readMethod, fldNameParam);
 

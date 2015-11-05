@@ -26,8 +26,6 @@ namespace Apache.Ignite.Core.Impl.Portable
     using Apache.Ignite.Core.Impl.Portable.Structure;
     using Apache.Ignite.Core.Portable;
 
-    using PU = PortableUtils;
-
     /// <summary>
     /// Portable writer implementation.
     /// </summary>
@@ -46,7 +44,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private PortableHandleDictionary<object, long> _hnds;
 
         /** Metadatas collected during this write session. */
-        private IDictionary<int, IPortableMetadata> _metas;
+        private IDictionary<int, IBinaryType> _metas;
 
         /** Current type ID. */
         private int _curTypeId;
@@ -87,9 +85,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Boolean value.</param>
         public void WriteBoolean(string fieldName, bool val)
         {
-            WriteFieldId(fieldName, PU.TypeBool);
+            WriteFieldId(fieldName, BinaryUtils.TypeBool);
 
-            _stream.WriteByte(PU.TypeBool);
+            _stream.WriteByte(BinaryUtils.TypeBool);
             _stream.WriteBool(val);
         }
         
@@ -109,14 +107,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Boolean array.</param>
         public void WriteBooleanArray(string fieldName, bool[] val)
         {
-            WriteFieldId(fieldName, PU.TypeArrayBool);
+            WriteFieldId(fieldName, BinaryUtils.TypeArrayBool);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayBool);
-                PU.WriteBooleanArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayBool);
+                BinaryUtils.WriteBooleanArray(val, _stream);
             }
         }
 
@@ -130,8 +128,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayBool);
-                PU.WriteBooleanArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayBool);
+                BinaryUtils.WriteBooleanArray(val, _stream);
             }
         }
 
@@ -142,9 +140,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Byte value.</param>
         public void WriteByte(string fieldName, byte val)
         {
-            WriteFieldId(fieldName, PU.TypeBool);
+            WriteFieldId(fieldName, BinaryUtils.TypeBool);
 
-            _stream.WriteByte(PU.TypeByte);
+            _stream.WriteByte(BinaryUtils.TypeByte);
             _stream.WriteByte(val);
         }
 
@@ -164,14 +162,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Byte array.</param>
         public void WriteByteArray(string fieldName, byte[] val)
         {
-            WriteFieldId(fieldName, PU.TypeArrayByte);
+            WriteFieldId(fieldName, BinaryUtils.TypeArrayByte);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayByte);
-                PU.WriteByteArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayByte);
+                BinaryUtils.WriteByteArray(val, _stream);
             }
         }
 
@@ -185,8 +183,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayByte);
-                PU.WriteByteArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayByte);
+                BinaryUtils.WriteByteArray(val, _stream);
             }
         }
 
@@ -197,9 +195,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Short value.</param>
         public void WriteShort(string fieldName, short val)
         {
-            WriteFieldId(fieldName, PU.TypeShort);
+            WriteFieldId(fieldName, BinaryUtils.TypeShort);
 
-            _stream.WriteByte(PU.TypeShort);
+            _stream.WriteByte(BinaryUtils.TypeShort);
             _stream.WriteShort(val);
         }
 
@@ -219,14 +217,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Short array.</param>
         public void WriteShortArray(string fieldName, short[] val)
         {
-            WriteFieldId(fieldName, PU.TypeArrayShort);
+            WriteFieldId(fieldName, BinaryUtils.TypeArrayShort);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayShort);
-                PU.WriteShortArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayShort);
+                BinaryUtils.WriteShortArray(val, _stream);
             }
         }
 
@@ -240,8 +238,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayShort);
-                PU.WriteShortArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayShort);
+                BinaryUtils.WriteShortArray(val, _stream);
             }
         }
 
@@ -252,9 +250,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Char value.</param>
         public void WriteChar(string fieldName, char val)
         {
-            WriteFieldId(fieldName, PU.TypeChar);
+            WriteFieldId(fieldName, BinaryUtils.TypeChar);
 
-            _stream.WriteByte(PU.TypeChar);
+            _stream.WriteByte(BinaryUtils.TypeChar);
             _stream.WriteChar(val);
         }
 
@@ -274,14 +272,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Char array.</param>
         public void WriteCharArray(string fieldName, char[] val)
         {
-            WriteFieldId(fieldName, PU.TypeArrayChar);
+            WriteFieldId(fieldName, BinaryUtils.TypeArrayChar);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayChar);
-                PU.WriteCharArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayChar);
+                BinaryUtils.WriteCharArray(val, _stream);
             }
         }
 
@@ -295,8 +293,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayChar);
-                PU.WriteCharArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayChar);
+                BinaryUtils.WriteCharArray(val, _stream);
             }
         }
 
@@ -307,9 +305,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Int value.</param>
         public void WriteInt(string fieldName, int val)
         {
-            WriteFieldId(fieldName, PU.TypeInt);
+            WriteFieldId(fieldName, BinaryUtils.TypeInt);
 
-            _stream.WriteByte(PU.TypeInt);
+            _stream.WriteByte(BinaryUtils.TypeInt);
             _stream.WriteInt(val);
         }
 
@@ -329,14 +327,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Int array.</param>
         public void WriteIntArray(string fieldName, int[] val)
         {
-            WriteFieldId(fieldName, PU.TypeArrayInt);
+            WriteFieldId(fieldName, BinaryUtils.TypeArrayInt);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayInt);
-                PU.WriteIntArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayInt);
+                BinaryUtils.WriteIntArray(val, _stream);
             }
         }
 
@@ -350,8 +348,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayInt);
-                PU.WriteIntArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayInt);
+                BinaryUtils.WriteIntArray(val, _stream);
             }
         }
 
@@ -362,9 +360,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Long value.</param>
         public void WriteLong(string fieldName, long val)
         {
-            WriteFieldId(fieldName, PU.TypeLong);
+            WriteFieldId(fieldName, BinaryUtils.TypeLong);
 
-            _stream.WriteByte(PU.TypeLong);
+            _stream.WriteByte(BinaryUtils.TypeLong);
             _stream.WriteLong(val);
         }
 
@@ -384,14 +382,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Long array.</param>
         public void WriteLongArray(string fieldName, long[] val)
         {
-            WriteFieldId(fieldName, PU.TypeArrayLong);
+            WriteFieldId(fieldName, BinaryUtils.TypeArrayLong);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayLong);
-                PU.WriteLongArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayLong);
+                BinaryUtils.WriteLongArray(val, _stream);
             }
         }
 
@@ -405,8 +403,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayLong);
-                PU.WriteLongArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayLong);
+                BinaryUtils.WriteLongArray(val, _stream);
             }
         }
 
@@ -417,9 +415,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Float value.</param>
         public void WriteFloat(string fieldName, float val)
         {
-            WriteFieldId(fieldName, PU.TypeFloat);
+            WriteFieldId(fieldName, BinaryUtils.TypeFloat);
 
-            _stream.WriteByte(PU.TypeFloat);
+            _stream.WriteByte(BinaryUtils.TypeFloat);
             _stream.WriteFloat(val);
         }
 
@@ -439,14 +437,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Float array.</param>
         public void WriteFloatArray(string fieldName, float[] val)
         {
-            WriteFieldId(fieldName, PU.TypeArrayFloat);
+            WriteFieldId(fieldName, BinaryUtils.TypeArrayFloat);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayFloat);
-                PU.WriteFloatArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayFloat);
+                BinaryUtils.WriteFloatArray(val, _stream);
             }
         }
 
@@ -460,8 +458,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayFloat);
-                PU.WriteFloatArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayFloat);
+                BinaryUtils.WriteFloatArray(val, _stream);
             }
         }
 
@@ -472,9 +470,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Double value.</param>
         public void WriteDouble(string fieldName, double val)
         {
-            WriteFieldId(fieldName, PU.TypeDouble);
+            WriteFieldId(fieldName, BinaryUtils.TypeDouble);
 
-            _stream.WriteByte(PU.TypeDouble);
+            _stream.WriteByte(BinaryUtils.TypeDouble);
             _stream.WriteDouble(val);
         }
 
@@ -494,14 +492,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Double array.</param>
         public void WriteDoubleArray(string fieldName, double[] val)
         {
-            WriteFieldId(fieldName, PU.TypeArrayDouble);
+            WriteFieldId(fieldName, BinaryUtils.TypeArrayDouble);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayDouble);
-                PU.WriteDoubleArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayDouble);
+                BinaryUtils.WriteDoubleArray(val, _stream);
             }
         }
 
@@ -515,8 +513,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayDouble);
-                PU.WriteDoubleArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayDouble);
+                BinaryUtils.WriteDoubleArray(val, _stream);
             }
         }
 
@@ -527,14 +525,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Decimal value.</param>
         public void WriteDecimal(string fieldName, decimal? val)
         {
-            WriteFieldId(fieldName, PU.TypeDecimal);
+            WriteFieldId(fieldName, BinaryUtils.TypeDecimal);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PU.TypeDecimal);
-                PortableUtils.WriteDecimal(val.Value, _stream);
+                _stream.WriteByte(BinaryUtils.TypeDecimal);
+                BinaryUtils.WriteDecimal(val.Value, _stream);
             }
         }
 
@@ -548,8 +546,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PU.TypeDecimal);
-                PortableUtils.WriteDecimal(val.Value, _stream);
+                _stream.WriteByte(BinaryUtils.TypeDecimal);
+                BinaryUtils.WriteDecimal(val.Value, _stream);
             }
         }
 
@@ -560,14 +558,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Decimal array.</param>
         public void WriteDecimalArray(string fieldName, decimal?[] val)
         {
-            WriteFieldId(fieldName, PU.TypeArrayDecimal);
+            WriteFieldId(fieldName, BinaryUtils.TypeArrayDecimal);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayDecimal);
-                PU.WriteDecimalArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayDecimal);
+                BinaryUtils.WriteDecimalArray(val, _stream);
             }
         }
         
@@ -581,8 +579,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayDecimal);
-                PU.WriteDecimalArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayDecimal);
+                BinaryUtils.WriteDecimalArray(val, _stream);
             }
         }
 
@@ -593,14 +591,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Date value.</param>
         public void WriteTimestamp(string fieldName, DateTime? val)
         {
-            WriteFieldId(fieldName, PU.TypeTimestamp);
+            WriteFieldId(fieldName, BinaryUtils.TypeTimestamp);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PortableUtils.TypeTimestamp);
-                PortableUtils.WriteTimestamp(val.Value, _stream);
+                _stream.WriteByte(BinaryUtils.TypeTimestamp);
+                BinaryUtils.WriteTimestamp(val.Value, _stream);
             }
         }
         
@@ -614,8 +612,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PortableUtils.TypeTimestamp);
-                PortableUtils.WriteTimestamp(val.Value, _stream);
+                _stream.WriteByte(BinaryUtils.TypeTimestamp);
+                BinaryUtils.WriteTimestamp(val.Value, _stream);
             }
         }
 
@@ -626,14 +624,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Date array.</param>
         public void WriteTimestampArray(string fieldName, DateTime?[] val)
         {
-            WriteFieldId(fieldName, PU.TypeTimestamp);
+            WriteFieldId(fieldName, BinaryUtils.TypeTimestamp);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PortableUtils.TypeArrayTimestamp);
-                PortableUtils.WriteTimestampArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayTimestamp);
+                BinaryUtils.WriteTimestampArray(val, _stream);
             }
         }
 
@@ -647,8 +645,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PortableUtils.TypeArrayTimestamp);
-                PortableUtils.WriteTimestampArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayTimestamp);
+                BinaryUtils.WriteTimestampArray(val, _stream);
             }
         }
 
@@ -659,14 +657,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">String value.</param>
         public void WriteString(string fieldName, string val)
         {
-            WriteFieldId(fieldName, PU.TypeString);
+            WriteFieldId(fieldName, BinaryUtils.TypeString);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PU.TypeString);
-                PU.WriteString(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeString);
+                BinaryUtils.WriteString(val, _stream);
             }
         }
 
@@ -680,8 +678,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PU.TypeString);
-                PU.WriteString(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeString);
+                BinaryUtils.WriteString(val, _stream);
             }
         }
 
@@ -692,14 +690,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">String array.</param>
         public void WriteStringArray(string fieldName, string[] val)
         {
-            WriteFieldId(fieldName, PU.TypeArrayString);
+            WriteFieldId(fieldName, BinaryUtils.TypeArrayString);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayString);
-                PU.WriteStringArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayString);
+                BinaryUtils.WriteStringArray(val, _stream);
             }
         }
 
@@ -713,8 +711,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayString);
-                PU.WriteStringArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayString);
+                BinaryUtils.WriteStringArray(val, _stream);
             }
         }
 
@@ -725,14 +723,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">GUID value.</param>
         public void WriteGuid(string fieldName, Guid? val)
         {
-            WriteFieldId(fieldName, PU.TypeGuid);
+            WriteFieldId(fieldName, BinaryUtils.TypeGuid);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PU.TypeGuid);
-                PU.WriteGuid(val.Value, _stream);
+                _stream.WriteByte(BinaryUtils.TypeGuid);
+                BinaryUtils.WriteGuid(val.Value, _stream);
             }
         }
 
@@ -746,8 +744,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PU.TypeGuid);
-                PU.WriteGuid(val.Value, _stream);
+                _stream.WriteByte(BinaryUtils.TypeGuid);
+                BinaryUtils.WriteGuid(val.Value, _stream);
             }
         }
 
@@ -758,14 +756,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">GUID array.</param>
         public void WriteGuidArray(string fieldName, Guid?[] val)
         {
-            WriteFieldId(fieldName, PU.TypeArrayGuid);
+            WriteFieldId(fieldName, BinaryUtils.TypeArrayGuid);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayGuid);
-                PU.WriteGuidArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayGuid);
+                BinaryUtils.WriteGuidArray(val, _stream);
             }
         }
 
@@ -779,8 +777,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayGuid);
-                PU.WriteGuidArray(val, _stream);
+                _stream.WriteByte(BinaryUtils.TypeArrayGuid);
+                BinaryUtils.WriteGuidArray(val, _stream);
             }
         }
 
@@ -792,10 +790,10 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Enum value.</param>
         public void WriteEnum<T>(string fieldName, T val)
         {
-            WriteFieldId(fieldName, PU.TypeEnum);
+            WriteFieldId(fieldName, BinaryUtils.TypeEnum);
 
-            _stream.WriteByte(PU.TypeEnum);
-            PortableUtils.WriteEnum(_stream, (Enum)(object)val);
+            _stream.WriteByte(BinaryUtils.TypeEnum);
+            BinaryUtils.WriteEnum(_stream, (Enum)(object)val);
         }
 
         /// <summary>
@@ -805,8 +803,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Enum value.</param>
         public void WriteEnum<T>(T val)
         {
-            _stream.WriteByte(PU.TypeEnum);
-            PortableUtils.WriteEnum(_stream, (Enum)(object)val);
+            _stream.WriteByte(BinaryUtils.TypeEnum);
+            BinaryUtils.WriteEnum(_stream, (Enum)(object)val);
         }
 
         /// <summary>
@@ -817,14 +815,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Enum array.</param>
         public void WriteEnumArray<T>(string fieldName, T[] val)
         {
-            WriteFieldId(fieldName, PU.TypeArrayEnum);
+            WriteFieldId(fieldName, BinaryUtils.TypeArrayEnum);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayEnum);
-                PortableUtils.WriteArray(val, this);
+                _stream.WriteByte(BinaryUtils.TypeArrayEnum);
+                BinaryUtils.WriteArray(val, this);
             }
         }
 
@@ -839,8 +837,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PU.TypeArrayEnum);
-                PortableUtils.WriteArray(val, this);
+                _stream.WriteByte(BinaryUtils.TypeArrayEnum);
+                BinaryUtils.WriteArray(val, this);
             }
         }
 
@@ -852,7 +850,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Object value.</param>
         public void WriteObject<T>(string fieldName, T val)
         {
-            WriteFieldId(fieldName, PU.TypeObject);
+            WriteFieldId(fieldName, BinaryUtils.TypeObject);
 
             if (val == null)
                 WriteNullField();
@@ -878,14 +876,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Object array.</param>
         public void WriteArray<T>(string fieldName, T[] val)
         {
-            WriteFieldId(fieldName, PU.TypeArray);
+            WriteFieldId(fieldName, BinaryUtils.TypeArray);
 
             if (val == null)
                 WriteNullField();
             else
             {
-                _stream.WriteByte(PU.TypeArray);
-                PortableUtils.WriteArray(val, this);
+                _stream.WriteByte(BinaryUtils.TypeArray);
+                BinaryUtils.WriteArray(val, this);
             }
         }
 
@@ -909,8 +907,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 WriteNullRawField();
             else
             {
-                _stream.WriteByte(PU.TypeArray);
-                PortableUtils.WriteArray(val, this);
+                _stream.WriteByte(BinaryUtils.TypeArray);
+                BinaryUtils.WriteArray(val, this);
             }
         }
 
@@ -921,7 +919,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Collection.</param>
         public void WriteCollection(string fieldName, ICollection val)
         {
-            WriteFieldId(fieldName, PU.TypeCollection);
+            WriteFieldId(fieldName, BinaryUtils.TypeCollection);
 
             if (val == null)
                 WriteNullField();
@@ -935,8 +933,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Collection.</param>
         public void WriteCollection(ICollection val)
         {
-            WriteByte(PU.TypeCollection);
-            PU.WriteCollection(val, this);
+            WriteByte(BinaryUtils.TypeCollection);
+            BinaryUtils.WriteCollection(val, this);
         }
 
         /// <summary>
@@ -946,7 +944,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Dictionary.</param>
         public void WriteDictionary(string fieldName, IDictionary val)
         {
-            WriteFieldId(fieldName, PU.TypeDictionary);
+            WriteFieldId(fieldName, BinaryUtils.TypeDictionary);
 
             if (val == null)
                 WriteNullField();
@@ -960,8 +958,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="val">Dictionary.</param>
         public void WriteDictionary(IDictionary val)
         {
-            WriteByte(PU.TypeDictionary);
-            PU.WriteDictionary(val, this);
+            WriteByte(BinaryUtils.TypeDictionary);
+            BinaryUtils.WriteDictionary(val, this);
         }
 
         /// <summary>
@@ -969,7 +967,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private void WriteNullField()
         {
-            _stream.WriteByte(PU.HdrNull);
+            _stream.WriteByte(BinaryUtils.HdrNull);
         }
 
         /// <summary>
@@ -977,7 +975,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private void WriteNullRawField()
         {
-            _stream.WriteByte(PU.HdrNull);
+            _stream.WriteByte(BinaryUtils.HdrNull);
         }
 
         /// <summary>
@@ -1028,7 +1026,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             // Handle special case for null.
             if (obj == null)
             {
-                _stream.WriteByte(PU.HdrNull);
+                _stream.WriteByte(BinaryUtils.HdrNull);
 
                 return;
             }
@@ -1152,70 +1150,70 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (type == typeof(int))
             {
-                _stream.WriteByte(PU.TypeInt);
+                _stream.WriteByte(BinaryUtils.TypeInt);
                 _stream.WriteInt((int)(object)val);
             }
             else if (type == typeof(long))
             {
-                _stream.WriteByte(PU.TypeLong);
+                _stream.WriteByte(BinaryUtils.TypeLong);
                 _stream.WriteLong((long)(object)val);
             }
             else if (type == typeof(bool))
             {
-                _stream.WriteByte(PU.TypeBool);
+                _stream.WriteByte(BinaryUtils.TypeBool);
                 _stream.WriteBool((bool)(object)val);
             }
             else if (type == typeof(byte))
             {
-                _stream.WriteByte(PU.TypeByte);
+                _stream.WriteByte(BinaryUtils.TypeByte);
                 _stream.WriteByte((byte)(object)val);
             }
             else if (type == typeof(short))
             {
-                _stream.WriteByte(PU.TypeShort);
+                _stream.WriteByte(BinaryUtils.TypeShort);
                 _stream.WriteShort((short)(object)val);
             }
             else if (type == typeof (char))
             {
-                _stream.WriteByte(PU.TypeChar);
+                _stream.WriteByte(BinaryUtils.TypeChar);
                 _stream.WriteChar((char)(object)val);
             }
             else if (type == typeof(float))
             {
-                _stream.WriteByte(PU.TypeFloat);
+                _stream.WriteByte(BinaryUtils.TypeFloat);
                 _stream.WriteFloat((float)(object)val);
             }
             else if (type == typeof(double))
             {
-                _stream.WriteByte(PU.TypeDouble);
+                _stream.WriteByte(BinaryUtils.TypeDouble);
                 _stream.WriteDouble((double)(object)val);
             }
             else if (type == typeof(sbyte))
             {
                 sbyte val0 = (sbyte)(object)val;
 
-                _stream.WriteByte(PU.TypeByte);
+                _stream.WriteByte(BinaryUtils.TypeByte);
                 _stream.WriteByte(*(byte*)&val0);
             }
             else if (type == typeof(ushort))
             {
                 ushort val0 = (ushort)(object)val;
 
-                _stream.WriteByte(PU.TypeShort);
+                _stream.WriteByte(BinaryUtils.TypeShort);
                 _stream.WriteShort(*(short*)&val0);
             }
             else if (type == typeof(uint))
             {
                 uint val0 = (uint)(object)val;
 
-                _stream.WriteByte(PU.TypeInt);
+                _stream.WriteByte(BinaryUtils.TypeInt);
                 _stream.WriteInt(*(int*)&val0);
             }
             else if (type == typeof(ulong))
             {
                 ulong val0 = (ulong)(object)val;
 
-                _stream.WriteByte(PU.TypeLong);
+                _stream.WriteByte(BinaryUtils.TypeLong);
                 _stream.WriteLong(*(long*)&val0);
             }
             else
@@ -1283,7 +1281,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 return false;
             }
 
-            _stream.WriteByte(PU.HdrHnd);
+            _stream.WriteByte(BinaryUtils.HdrHnd);
 
             // Handle is written as difference between position before header and handle position.
             _stream.WriteInt((int)(pos - hndPos));
@@ -1339,7 +1337,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Gets collected metadatas.
         /// </summary>
         /// <returns>Collected metadatas (if any).</returns>
-        internal IDictionary<int, IPortableMetadata> Metadata()
+        internal IDictionary<int, IBinaryType> Metadata()
         {
             return _metas;
         }
@@ -1392,20 +1390,20 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             if (_metas == null)
             {
-                PortableMetadataImpl meta =
-                    new PortableMetadataImpl(typeId, typeName, fields, affKeyFieldName);
+                BinaryType meta =
+                    new BinaryType(typeId, typeName, fields, affKeyFieldName);
 
-                _metas = new Dictionary<int, IPortableMetadata>(1);
+                _metas = new Dictionary<int, IBinaryType>(1);
 
                 _metas[typeId] = meta;
             }
             else
             {
-                IPortableMetadata meta;
+                IBinaryType meta;
 
                 if (_metas.TryGetValue(typeId, out meta))
                 {
-                    IDictionary<string, int> existingFields = ((PortableMetadataImpl)meta).FieldsMap();
+                    IDictionary<string, int> existingFields = ((BinaryType)meta).FieldsMap();
 
                     foreach (KeyValuePair<string, int> field in fields)
                     {
@@ -1414,7 +1412,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     }
                 }
                 else
-                    _metas[typeId] = new PortableMetadataImpl(typeId, typeName, fields, affKeyFieldName);
+                    _metas[typeId] = new BinaryType(typeId, typeName, fields, affKeyFieldName);
             }
         }
     }

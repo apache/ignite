@@ -245,8 +245,8 @@
     <Compile Include="Impl\Portable\IPortableWriteAware.cs" />
     <Compile Include="Impl\Portable\Metadata\IPortableMetadataHandler.cs" />
     <Compile Include="Impl\Portable\Metadata\PortableHashsetMetadataHandler.cs" />
-    <Compile Include="Impl\Portable\Metadata\PortableMetadataHolder.cs" />
-    <Compile Include="Impl\Portable\Metadata\PortableMetadataImpl.cs" />
+    <Compile Include="Impl\Portable\Metadata\BinaryTypeHolder.cs" />
+    <Compile Include="Impl\Portable\Metadata\BinaryType.cs" />
     <Compile Include="Impl\Portable\PortableBuilderField.cs" />
     <Compile Include="Impl\Portable\PortableBuilderImpl.cs" />
     <Compile Include="Impl\Portable\BinaryFullTypeDescriptor.cs" />
@@ -270,7 +270,7 @@
     <Compile Include="Impl\Portable\PortableSystemHandlers.cs" />
     <Compile Include="Impl\Portable\BinarySystemTypeSerializer.cs" />
     <Compile Include="Impl\Portable\PortableUserObject.cs" />
-    <Compile Include="Impl\Portable\PortableUtils.cs" />
+    <Compile Include="Impl\Portable\BinaryUtils.cs" />
     <Compile Include="Impl\Portable\BinaryWriterImpl.cs" />
     <Compile Include="Impl\Portable\SerializableObjectHolder.cs" />
     <Compile Include="Impl\Portable\Structure\PortableStructure.cs" />
@@ -308,7 +308,7 @@
     <Compile Include="Portable\IPortableBuilder.cs" />
     <Compile Include="Portable\IIdMapper.cs" />
     <Compile Include="Portable\IBinarizable.cs" />
-    <Compile Include="Portable\IPortableMetadata.cs" />
+    <Compile Include="Portable\IBinaryType.cs" />
     <Compile Include="Portable\INameMapper.cs" />
     <Compile Include="Portable\IPortableObject.cs" />
     <Compile Include="Portable\IPortableRawReader.cs" />
