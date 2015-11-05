@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Binary
     using System.Collections.Generic;
 
     /// <summary>
-    /// Portable type metadata.
+    /// Binary type metadata.
     /// </summary>
     public interface IBinaryType
     {

@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Binary.Structure;
 
     /// <summary>
-    /// Portable writer implementation.
+    /// Binary writer implementation.
     /// </summary>
     internal class BinaryWriter : IBinaryWriter, IBinaryRawWriter
     {
@@ -1229,7 +1229,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             if (_builder != null)
             {
-                // Special case for portable object during build.
+                // Special case for binary object during build.
                 BinaryObject portObj = obj as BinaryObject;
 
                 if (portObj != null)
@@ -1353,7 +1353,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 Type type = obj.GetType();
 
-                // We assume object as portable only in case it has descriptor.
+                // We assume object as binary only in case it has descriptor.
                 // Collections, Enums and non-primitive arrays do not have descriptors
                 // and this is fine here because we cannot know whether their members
                 // are portable.

@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
 
     /// <summary>
-    /// Portable builder field.
+    /// Binary builder field.
     /// </summary>
     internal class BinaryBuilderField
     {

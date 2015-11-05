@@ -421,7 +421,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /// <summary>
-        /// Reads events from a portable stream.
+        /// Reads events from a binary stream.
         /// </summary>
         /// <typeparam name="T">Event type.</typeparam>
         /// <param name="reader">Reader.</param>
@@ -432,7 +432,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /// <summary>
-        /// Reads events from a portable reader.
+        /// Reads events from a binary reader.
         /// </summary>
         /// <typeparam name="T">Event type.</typeparam>
         /// <param name="binaryReader">Reader.</param>

@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Binary
     public interface IBinaryObject
     {
         /// <summary>
-        /// Gets portable object type ID.
+        /// Gets binary object type ID.
         /// </summary>
         /// <value>
         /// Type ID.
@@ -50,10 +50,10 @@ namespace Apache.Ignite.Core.Binary
         TF GetField<TF>(string fieldName);
 
         /// <summary>
-        /// Gets fully deserialized instance of portable object.
+        /// Gets fully deserialized instance of binary object.
         /// </summary>
         /// <returns>
-        /// Fully deserialized instance of portable object.
+        /// Fully deserialized instance of binary object.
         /// </returns>
         T Deserialize<T>();
     }

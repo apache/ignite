@@ -615,7 +615,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /**
-         * <summary>Write portable object.</summary>
+         * <summary>Write binary object.</summary>
          */
         private static void WriteBinary(BinaryWriter ctx, object obj)
         {

@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Impl.Resource;
 
     /// <summary>
-    /// Portable wrapper for the <see cref="ICacheEntryProcessor{TK,TV,TA,TR}"/> and it's argument.
+    /// Binary wrapper for the <see cref="ICacheEntryProcessor{TK,TV,TA,TR}"/> and it's argument.
     /// Marshals and executes wrapped processor with a non-generic interface.
     /// </summary>
     internal class CacheEntryProcessorHolder : IBinaryWriteAware

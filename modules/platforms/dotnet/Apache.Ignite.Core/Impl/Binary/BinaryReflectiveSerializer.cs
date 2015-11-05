@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
-    /// Portable serializer which reflectively writes all fields except of ones with 
+    /// Binary serializer which reflectively writes all fields except of ones with 
     /// <see cref="System.NonSerializedAttribute"/>.
     /// <para />
     /// Note that Java platform stores dates as a difference between current time 
@@ -56,26 +56,26 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <exception cref="BinaryObjectException">Type is not registered in serializer:  + type.Name</exception>
         public void WriteBinary(object obj, IBinaryWriter writer)
         {
-            var portableMarshalAware = obj as IBinarizable;
+            var binarizable = obj as IBinarizable;
 
-            if (portableMarshalAware != null)
-                portableMarshalAware.WriteBinary(writer);
+            if (binarizable != null)
+                binarizable.WriteBinary(writer);
             else
                 GetDescriptor(obj).Write(obj, writer);
         }
 
         /// <summary>
-        /// Read portable object.
+        /// Read binary object.
         /// </summary>
         /// <param name="obj">Instantiated empty object.</param>
         /// <param name="reader">Portable reader.</param>
         /// <exception cref="BinaryObjectException">Type is not registered in serializer:  + type.Name</exception>
         public void ReadBinary(object obj, IBinaryReader reader)
         {
-            var portableMarshalAware = obj as IBinarizable;
+            var binarizable = obj as IBinarizable;
             
-            if (portableMarshalAware != null)
-                portableMarshalAware.ReadBinary(reader);
+            if (binarizable != null)
+                binarizable.ReadBinary(reader);
             else
                 GetDescriptor(obj).Read(obj, reader);
         }

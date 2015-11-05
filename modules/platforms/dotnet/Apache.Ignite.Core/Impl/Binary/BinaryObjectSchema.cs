@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
 
     /// <summary>
-    /// Holds and manages portable object schemas for a specific type.
+    /// Holds and manages binary object schemas for a specific type.
     /// </summary>
     internal class BinaryObjectSchema
     {

@@ -53,10 +53,10 @@ namespace Apache.Ignite.Core.Impl.Services
         /** */
         private readonly IClusterGroup _clusterGroup;
 
-        /** Invoker portable flag. */
+        /** Invoker binary flag. */
         private readonly bool _keepBinary;
 
-        /** Server portable flag. */
+        /** Server binary flag. */
         private readonly bool _srvKeepBinary;
 
         /** Async instance. */
@@ -68,8 +68,8 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="clusterGroup">Cluster group.</param>
-        /// <param name="keepBinary">Invoker portable flag.</param>
-        /// <param name="srvKeepBinary">Server portable flag.</param>
+        /// <param name="keepBinary">Invoker binary flag.</param>
+        /// <param name="srvKeepBinary">Server binary flag.</param>
         public Services(IUnmanagedTarget target, Marshaller marsh, IClusterGroup clusterGroup, 
             bool keepBinary, bool srvKeepBinary)
             : base(target, marsh)

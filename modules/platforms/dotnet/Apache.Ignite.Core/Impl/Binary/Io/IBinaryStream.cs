@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
     using System.Text;
 
     /// <summary>
-    /// Stream capable of working with portable objects.
+    /// Stream capable of working with binary objects.
     /// </summary>
     [CLSCompliant(false)]
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]

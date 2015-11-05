@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Marshaller. */
         private readonly Marshaller _marsh;
 
-        /** Raw data of this portable object. */
+        /** Raw data of this binary object. */
         private readonly byte[] _data;
 
         /** Offset in data array. */
@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Initializes a new instance of the <see cref="BinaryObject" /> class.
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="data">Raw data of this portable object.</param>
+        /// <param name="data">Raw data of this binary object.</param>
         /// <param name="offset">Offset in data array.</param>
         /// <param name="header">The header.</param>
         public BinaryObject(Marshaller marsh, byte[] data, int offset, BinaryObjectHeader header)
@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Raw data of this portable object.
+        /// Raw data of this binary object.
         /// </summary>
         public byte[] Data
         {
@@ -278,7 +278,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             if (meta == null)
-                sb = new StringBuilder("PortableObject [typeId=").Append(_header.TypeId).Append(", idHash=" + idHash);
+                sb = new StringBuilder("BinaryObject [typeId=").Append(_header.TypeId).Append(", idHash=" + idHash);
             else
             {
                 sb = new StringBuilder(meta.TypeName).Append(" [idHash=" + idHash);

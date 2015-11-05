@@ -44,30 +44,6 @@ namespace Apache.Ignite.Core
     /// Use <see cref="Ignition.Start()"/> method to start Ignite with default configuration.
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
-    /// <example>
-    /// You can also use <see cref="IgniteConfiguration"/> to override some default configuration.
-    /// Below is an example on how to start Ignite with custom configuration for portable types and
-    /// provide path to Spring XML configuration file:
-    /// <code>
-    /// IgniteConfiguration cfg = new IgniteConfiguration();
-    ///
-    /// // Create portable type configuration.
-    /// PortableConfiguration portableCfg = new PortableConfiguration();
-    ///
-    /// cfg.SpringConfigUrl = "examples\\config\\example-cache.xml";
-    ///
-    /// portableCfg.TypeConfigurations = new List&lt;PortableTypeConfiguration&gt; 
-    /// {
-    ///     new PortableTypeConfiguration(typeof(Address)),
-    ///     new PortableTypeConfiguration(typeof(Organization))
-    /// };
-    ///
-    /// cfg.PortableConfiguration = portableCfg;
-    ///
-    /// // Start Ignite node with Ignite configuration.
-    /// var ignite = Ignition.Start(cfg);
-    /// </code>
-    /// </example>
     /// </summary>
     public static class Ignition
     {

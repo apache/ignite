@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Binary
     using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
-    /// Portable type configuration.
+    /// Binary type configuration.
     /// </summary>
     public class BinaryConfiguration
     {
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Binary
         }
 
         /// <summary>
-        /// Portable types. Shorthand for creating PortableTypeConfiguration.
+        /// Binarizable types. Shorthand for creating PortableTypeConfiguration.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<string> Types

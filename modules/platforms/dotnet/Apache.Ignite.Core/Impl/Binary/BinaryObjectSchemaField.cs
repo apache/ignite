@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Runtime.InteropServices;
 
     /// <summary>
-    /// Portable schema field DTO (as it is stored in a stream).
+    /// Binary schema field DTO (as it is stored in a stream).
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 0)]
     internal struct BinaryObjectSchemaField
@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Offset. */
         public readonly int Offset;
 
-        /** Size, equals to sizeof(PortableObjectSchemaField) */
+        /** Size, equals to sizeof(BinaryObjectSchemaField) */
         public const int Size = 8;
 
         /// <summary>

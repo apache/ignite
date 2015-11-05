@@ -1286,7 +1286,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /**
-         * <summary>Write portable object.</summary>
+         * <summary>Write binary object.</summary>
          * <param name="stream">Stream.</param>
          * <param name="val">Value.</param>
          */
@@ -1709,7 +1709,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 cfg = new BinaryConfiguration();
 
-                // Read portable types in full form.
+                // Read binary types in full form.
                 if (reader.ReadBoolean())
                 {
                     int typesCnt = reader.ReadInt();
@@ -1730,7 +1730,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     }
                 }
 
-                // Read portable types in compact form.
+                // Read binary types in compact form.
                 if (reader.ReadBoolean())
                 {
                     int typesCnt = reader.ReadInt();

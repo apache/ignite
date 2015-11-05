@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
     using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
-    /// Portable wrapper for <see cref="IStreamReceiver{TK,TV}"/>.
+    /// Binary wrapper for <see cref="IStreamReceiver{TK,TV}"/>.
     /// </summary>
     internal class StreamReceiverHolder : IBinaryWriteAware
     {

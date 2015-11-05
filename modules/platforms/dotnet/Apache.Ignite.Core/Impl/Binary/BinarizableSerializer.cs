@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
-    /// Portable serializer which only supports <see cref="IBinarizable"/> types with a default ctor.
+    /// Binary serializer which only supports <see cref="IBinarizable"/> types with a default ctor.
     /// Does not use reflection.
     /// </summary>
     internal class BinarizableSerializer : IBinarySerializer

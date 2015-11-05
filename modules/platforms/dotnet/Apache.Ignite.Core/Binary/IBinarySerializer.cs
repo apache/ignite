@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Binary
 {
     /// <summary>
-    /// Portable serializer. 
+    /// Binary serializer. 
     /// </summary> 
     public interface IBinarySerializer
     {
@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Binary
         void WriteBinary(object obj, IBinaryWriter writer);
 
         /// <summary>
-        /// Read portable object.
+        /// Read binary object.
         /// </summary>
         /// <param name="obj">Instantiated empty object.</param>
         /// <param name="reader">Poratble reader.</param>

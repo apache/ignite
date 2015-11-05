@@ -629,7 +629,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <typeparam name="T">Future result type</typeparam>
         /// <param name="listenAction">The listen action.</param>
-        /// <param name="keepPortable">Keep portable flag, only applicable to object futures. False by default.</param>
+        /// <param name="keepPortable">Keep binary flag, only applicable to object futures. False by default.</param>
         /// <param name="convertFunc">The function to read future result from stream.</param>
         /// <returns>Created future.</returns>
         protected Future<T> GetFuture<T>(Action<long, int> listenAction, bool keepPortable = false,

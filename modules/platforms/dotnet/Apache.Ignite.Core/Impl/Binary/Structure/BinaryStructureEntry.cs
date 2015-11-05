@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
-    /// Portable type structure entry. Might be either a normal field, a reference to jump table, or an empty entry.
+    /// Binary type structure entry. Might be either a normal field, a reference to jump table, or an empty entry.
     /// </summary>
     internal struct BinaryStructureEntry
     {

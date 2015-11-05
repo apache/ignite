@@ -197,9 +197,9 @@ namespace Apache.Ignite.Core.Binary
         /// Writes a collection in interoperable form.
         /// 
         /// Use this method to communicate with other platforms 
-        /// or with nodes that need to read collection elements in portable form.
+        /// or with nodes that need to read collection elements in binary form.
         /// 
-        /// When there is no need for portables or interoperability, please use <see cref="WriteObject{T}" />,
+        /// When there is no need for binarization or interoperability, please use <see cref="WriteObject{T}" />,
         /// which will properly preserve generic collection type.
         /// </summary>
         /// <param name="val">Collection.</param>
@@ -209,9 +209,9 @@ namespace Apache.Ignite.Core.Binary
         /// Writes a dictionary in interoperable form.
         /// 
         /// Use this method to communicate with other platforms 
-        /// or with nodes that need to read dictionary elements in portable form.
+        /// or with nodes that need to read dictionary elements in binary form.
         /// 
-        /// When there is no need for portables or interoperability, please use <see cref="WriteObject{T}" />,
+        /// When there is no need for binarization or interoperability, please use <see cref="WriteObject{T}" />,
         /// which will properly preserve generic dictionary type.
         /// </summary>
         /// <param name="val">Dictionary.</param>

@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Binary
     public delegate IDictionary DictionaryFactory(int size);
 
     /// <summary>
-    /// Reader for portable objects. 
+    /// Reader for binary objects. 
     /// </summary>
     public interface IBinaryReader 
     {

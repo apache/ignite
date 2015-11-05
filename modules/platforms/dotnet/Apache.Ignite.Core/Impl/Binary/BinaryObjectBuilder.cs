@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Binary.Metadata;
 
     /// <summary>
-    /// Portable builder implementation.
+    /// Binary builder implementation.
     /// </summary>
     internal class BinaryObjectBuilder : IBinaryObjectBuilder
     {
@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** */
         private readonly BinaryObjectBuilder _parent;
 
-        /** Initial portable object. */
+        /** Initial binary object. */
         private readonly BinaryObject _obj;
 
         /** Type descriptor. */
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="igniteBinary">Portables.</param>
         /// <param name="parent">Parent builder.</param>
-        /// <param name="obj">Initial portable object.</param>
+        /// <param name="obj">Initial binary object.</param>
         /// <param name="desc">Type descriptor.</param>
         public BinaryObjectBuilder(IgniteBinary igniteBinary, BinaryObjectBuilder parent, 
             BinaryObject obj, IBinaryTypeDescriptor desc)
@@ -376,7 +376,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // Process metadata.
                 _igniteBinary.Marshaller.FinishMarshal(writer);
 
-                // Create portable object once metadata is processed.
+                // Create binary object once metadata is processed.
                 return new BinaryObject(_igniteBinary.Marshaller, outStream.InternalArray, 0, 
                     BinaryObjectHeader.Read(outStream, 0));
             }
@@ -390,7 +390,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Create child builder.
         /// </summary>
-        /// <param name="obj">Portable object.</param>
+        /// <param name="obj">binary object.</param>
         /// <returns>Child builder.</returns>
         public BinaryObjectBuilder Child(BinaryObject obj)
         {
@@ -488,7 +488,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Mutate portable object.
+        /// Mutate binary object.
         /// </summary>
         /// <param name="inStream">Input stream with initial object.</param>
         /// <param name="outStream">Output stream.</param>
@@ -755,18 +755,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Process portable object inverting handles if needed.
+        /// Process binary object inverting handles if needed.
         /// </summary>
         /// <param name="outStream">Output stream.</param>
         /// <param name="port">Portable.</param>
         internal void ProcessBinary(IBinaryStream outStream, BinaryObject port)
         {
-            // Special case: writing portable object with correct inversions.
+            // Special case: writing binary object with correct inversions.
             BinaryHeapStream inStream = new BinaryHeapStream(port.Data);
 
             inStream.Seek(port.Offset, SeekOrigin.Begin);
 
-            // Use fresh context to ensure correct portable inversion.
+            // Use fresh context to ensure correct binary inversion.
             Mutate0(new Context(), inStream, outStream, false, 0, EmptyVals);
         }
 
@@ -1010,13 +1010,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private class Context
         {
-            /** Map from object position in old portable to position in new portable. */
+            /** Map from object position in old binary to position in new portable. */
             private IDictionary<int, int> _oldToNew;
 
             /** Parent context. */
             private readonly Context _parent;
 
-            /** Portable writer. */
+            /** Binary writer. */
             private readonly BinaryWriter _writer;
 
             /** Children contexts. */

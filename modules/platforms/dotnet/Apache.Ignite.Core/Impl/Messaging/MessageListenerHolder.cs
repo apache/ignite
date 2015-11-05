@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
     using Apache.Ignite.Core.Messaging;
 
     /// <summary>
-    /// Non-generic portable message listener wrapper.
+    /// Non-generic binary message listener wrapper.
     /// </summary>
     internal class MessageListenerHolder : IBinaryWriteAware, IHandle
     {

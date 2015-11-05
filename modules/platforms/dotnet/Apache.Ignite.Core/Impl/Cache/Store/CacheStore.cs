@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// Initializes a new instance of the <see cref="CacheStore" /> class.
         /// </summary>
         /// <param name="store">Store.</param>
-        /// <param name="convertBinary">Whether to convert portable objects.</param>
+        /// <param name="convertBinary">Whether to convert binary objects.</param>
         /// <param name="registry">The handle registry.</param>
         private CacheStore(ICacheStore store, bool convertBinary, HandleRegistry registry)
         {

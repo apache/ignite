@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Binary.Structure
 {
     /// <summary>
-    /// Portable type structure update descriptor.
+    /// Binary type structure update descriptor.
     /// </summary>
     internal class BinaryStructureUpdate
     {

@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Serializer. */
         private readonly IBinarySerializer _serializer;
 
-        /** Whether to cache deserialized value in IPortableObject */
+        /** Whether to cache deserialized value in IBinaryObject */
         private readonly bool _keepDeserialized;
 
         /** Affinity field key name. */
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="nameMapper">Name converter.</param>
         /// <param name="idMapper">Mapper.</param>
         /// <param name="serializer">Serializer.</param>
-        /// <param name="keepDeserialized">Whether to cache deserialized value in IPortableObject</param>
+        /// <param name="keepDeserialized">Whether to cache deserialized value in IBinaryObject</param>
         /// <param name="affKeyFieldName">Affinity field key name.</param>
         public BinaryFullTypeDescriptor(
             Type type, 
@@ -130,7 +130,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Whether to cache deserialized value in IPortableObject
+        /// Whether to cache deserialized value in IBinaryObject
         /// </summary>
         public bool KeepDeserialized
         {

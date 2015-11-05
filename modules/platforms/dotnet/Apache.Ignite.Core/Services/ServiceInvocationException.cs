@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Services
         /// Initializes a new instance of the <see cref="ServiceInvocationException"/> class.
         /// </summary>
         /// <param name="message">The message.</param>
-        /// <param name="binaryCause">The portable cause.</param>
+        /// <param name="binaryCause">The binary cause.</param>
         public ServiceInvocationException(string message, IBinaryObject binaryCause)
             :base(message)
         {
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Services
         }
 
         /// <summary>
-        /// Gets the portable cause.
+        /// Gets the binary cause.
         /// </summary>
         public IBinaryObject BinaryCause
         {

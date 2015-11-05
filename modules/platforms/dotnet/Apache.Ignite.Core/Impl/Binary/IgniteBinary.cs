@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             IBinaryTypeDescriptor desc = _marsh.GetDescriptor(type);
 
             if (desc == null)
-                throw new IgniteException("Type is not portable (add it to PortableConfiguration): " + 
+                throw new IgniteException("Type is not binary (add it to PortableConfiguration): " + 
                     type.FullName);
 
             return Builder0(null, BinaryFromDescriptor(desc), desc);
@@ -158,10 +158,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Create empty portable object from descriptor.
+        /// Create empty binary object from descriptor.
         /// </summary>
         /// <param name="desc">Descriptor.</param>
-        /// <returns>Empty portable object.</returns>
+        /// <returns>Empty binary object.</returns>
         private BinaryObject BinaryFromDescriptor(IBinaryTypeDescriptor desc)
         {
             var len = BinaryObjectHeader.Size;
@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Internal builder creation routine.
         /// </summary>
         /// <param name="parent">Parent builder.</param>
-        /// <param name="obj">Portable object.</param>
+        /// <param name="obj">binary object.</param>
         /// <param name="desc">Type descriptor.</param>
         /// <returns>Builder.</returns>
         private BinaryObjectBuilder Builder0(BinaryObjectBuilder parent, BinaryObject obj, 

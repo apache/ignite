@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
     using System.Text;
 
     /// <summary>
-    /// Portable onheap stream.
+    /// Binary onheap stream.
     /// </summary>
     internal unsafe class BinaryHeapStream : BinaryStreamBase
     {

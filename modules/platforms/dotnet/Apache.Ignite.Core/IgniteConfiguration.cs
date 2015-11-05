@@ -72,10 +72,10 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Gets or sets the portable configuration.
+        /// Gets or sets the binary configuration.
         /// </summary>
         /// <value>
-        /// The portable configuration.
+        /// The binary configuration.
         /// </value>
         public BinaryConfiguration BinaryConfiguration { get; set; }
 

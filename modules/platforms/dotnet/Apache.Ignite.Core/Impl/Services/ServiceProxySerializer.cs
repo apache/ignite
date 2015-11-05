@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Impl.Services
             var portErr = err as IBinaryObject;
 
             throw portErr != null
-                ? new ServiceInvocationException("Proxy method invocation failed with a portable error. " +
+                ? new ServiceInvocationException("Proxy method invocation failed with a binary error. " +
                                                  "Examine PortableCause for details.", portErr)
                 : new ServiceInvocationException("Proxy method invocation failed with an exception. " +
                                                  "Examine InnerException for details.", (Exception) err);

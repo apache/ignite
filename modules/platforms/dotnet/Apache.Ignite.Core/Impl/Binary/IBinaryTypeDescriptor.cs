@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Whether to cache deserialized value in IPortableObject
+        /// Whether to cache deserialized value in IBinaryObject
         /// </summary>
         bool KeepDeserialized
         {

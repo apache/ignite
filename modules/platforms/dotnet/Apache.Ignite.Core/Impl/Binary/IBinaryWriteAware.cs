@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
-    /// Represents an object that can write itself to a portable writer.
+    /// Represents an object that can write itself to a binary writer.
     /// </summary>
     internal interface IBinaryWriteAware
     {

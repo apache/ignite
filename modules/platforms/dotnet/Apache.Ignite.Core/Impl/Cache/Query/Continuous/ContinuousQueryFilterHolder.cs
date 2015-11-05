@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
     using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
-    /// Continuous query remote filter holder. Wraps real filter into portable object,
+    /// Continuous query remote filter holder. Wraps real filter into binary object,
     /// so that it can be passed over wire to another node.
     /// </summary>
     public class ContinuousQueryFilterHolder : IBinaryWriteAware

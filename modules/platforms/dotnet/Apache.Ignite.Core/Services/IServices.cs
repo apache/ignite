@@ -247,8 +247,8 @@ namespace Apache.Ignite.Core.Services
         IServices WithKeepBinary();
 
         /// <summary>
-        /// Returns an instance with server-side portable mode enabled.
-        /// Service method arguments will be kept in portable form.
+        /// Returns an instance with server-side binary mode enabled.
+        /// Service method arguments will be kept in binary form.
         /// </summary>
         /// <returns>Instance with server-side binary mode enabled.</returns>
         IServices WithServerKeepBinary();

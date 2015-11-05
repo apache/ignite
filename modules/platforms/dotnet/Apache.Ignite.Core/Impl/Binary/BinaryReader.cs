@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
-    /// Portable reader implementation. 
+    /// Binary reader implementation. 
     /// </summary>
     internal class BinaryReader : IBinaryReader, IBinaryRawReader
     {
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Detach flag. */
         private bool _detach;
 
-        /** Portable read mode. */
+        /** Binary read mode. */
         private BinaryMode _mode;
 
         /** Current type structure tracker. */
@@ -548,7 +548,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Reads the portable object.
+        /// Reads the binary object.
         /// </summary>
         private T ReadBinaryObject<T>(bool doDetach)
         {
@@ -582,7 +582,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Reads the portable object in portable form.
+        /// Reads the binary object in binary form.
         /// </summary>
         private BinaryObject ReadAsBinary(int portableBytesPos, int dataLen, bool doDetach)
         {

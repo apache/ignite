@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Binary
     using System.Collections;
 
     /// <summary>
-    /// Writer for portable objects. 
+    /// Writer for binary objects. 
     /// </summary>
     public interface IBinaryWriter 
     {
@@ -225,9 +225,9 @@ namespace Apache.Ignite.Core.Binary
         /// Writes a named collection in interoperable form.
         /// 
         /// Use this method to communicate with other platforms 
-        /// or with nodes that need to read collection elements in portable form.
+        /// or with nodes that need to read collection elements in binary form.
         /// 
-        /// When there is no need for portables or interoperability, please use <see cref="WriteObject{T}" />,
+        /// When there is no need for binarization or interoperability, please use <see cref="WriteObject{T}" />,
         /// which will properly preserve generic collection type.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
@@ -238,9 +238,9 @@ namespace Apache.Ignite.Core.Binary
         /// Writes a named dictionary in interoperable form.
         /// 
         /// Use this method to communicate with other platforms 
-        /// or with nodes that need to read dictionary elements in portable form.
+        /// or with nodes that need to read dictionary elements in binary form.
         /// 
-        /// When there is no need for portables or interoperability, please use <see cref="WriteObject{T}" />,
+        /// When there is no need for binarization or interoperability, please use <see cref="WriteObject{T}" />,
         /// which will properly preserve generic dictionary type.
         /// </summary>
         /// <param name="fieldName">Field name.</param>

@@ -21,23 +21,23 @@ namespace Apache.Ignite.Core.Binary
     using System.Collections;
 
     /// <summary>
-    /// Portable object builder. Provides ability to build portable objects dynamically
+    /// binary object builder. Provides ability to build binary objects dynamically
     /// without having class definitions.
     /// <para />
-    /// Note that type ID is required in order to build portable object. Usually it is
+    /// Note that type ID is required in order to build binary object. Usually it is
     /// enough to provide a simple type name and Ignite will generate the type ID
     /// automatically.
     /// </summary>
     public interface IBinaryObjectBuilder
     {
         /// <summary>
-        /// Get object field value. If value is another portable object, then
+        /// Get object field value. If value is another binary object, then
         /// builder for this object will be returned. If value is a container
         /// for other objects (array, ICollection, IDictionary), then container
         /// will be returned with primitive types in deserialized form and
-        /// portable objects as builders. Any change in builder or collection
+        /// binary objects as builders. Any change in builder or collection
         /// returned through this method will be reflected in the resulting
-        /// portable object after build.
+        /// binary object after build.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Field value.</returns>
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Set explicit hash code. If builder creating object from scratch,
         /// then hash code initially set to 0. If builder is created from
-        /// exising portable object, then hash code of that object is used
+        /// exising binary object, then hash code of that object is used
         /// as initial value.
         /// </summary>
         /// <param name="hashCode">Hash code.</param>
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Build the object.
         /// </summary>
-        /// <returns>Resulting portable object.</returns>
+        /// <returns>Resulting binary object.</returns>
         IBinaryObject Build();
 
         /// <summary>

@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class Marshaller
     {
-        /** Portable configuration. */
+        /** Binary configuration. */
         private readonly BinaryConfiguration _cfg;
 
         /** Type to descriptor map. */
@@ -442,7 +442,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="typeId">Type ID.</param>
         /// <param name="typeName">Type name.</param>
         /// <param name="userType">User type flag.</param>
-        /// <param name="keepDeserialized">Whether to cache deserialized value in IPortableObject</param>
+        /// <param name="keepDeserialized">Whether to cache deserialized value in IBinaryObject</param>
         /// <param name="nameMapper">Name mapper.</param>
         /// <param name="idMapper">ID mapper.</param>
         /// <param name="serializer">Serializer.</param>

@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Cache.Query
         public int? Partition { get; set; }
 
         /** <inheritDoc /> */
-        internal override void Write(BinaryWriter writer, bool keepPortable)
+        internal override void Write(BinaryWriter writer, bool keepBinary)
         {
             writer.WriteBoolean(Local);
             writer.WriteInt(PageSize);
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Cache.Query
             else
             {
                 var holder = new CacheEntryFilterHolder(Filter, (key, val) => Filter.Invoke(
-                    new CacheEntry<TK, TV>((TK) key, (TV) val)), writer.Marshaller, keepPortable);
+                    new CacheEntry<TK, TV>((TK) key, (TV) val)), writer.Marshaller, keepBinary);
                 
                 writer.WriteObject(holder);
                 writer.WriteLong(holder.Handle);

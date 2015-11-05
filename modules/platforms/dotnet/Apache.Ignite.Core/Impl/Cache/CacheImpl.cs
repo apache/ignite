@@ -183,7 +183,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
                 if (result == null)
                     throw new InvalidOperationException(
-                        "Can't change type of portable cache. WithKeepPortable has been called on an instance of " +
+                        "Can't change type of binary cache. WithKeepPortable has been called on an instance of " +
                         "portable cache with incompatible generic arguments.");
 
                 return result;
@@ -1140,7 +1140,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /// <summary>
-        /// Reads the exception, either in portable wrapper form, or as a pair of strings.
+        /// Reads the exception, either in binary wrapper form, or as a pair of strings.
         /// </summary>
         /// <param name="inStream">The stream.</param>
         /// <returns>Exception.</returns>

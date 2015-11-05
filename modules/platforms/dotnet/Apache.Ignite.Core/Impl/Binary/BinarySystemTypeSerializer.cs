@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
-    /// Portable serializer for system types.
+    /// Binary serializer for system types.
     /// </summary>
     /// <typeparam name="T">Object type.</typeparam>
     internal class BinarySystemTypeSerializer<T> : IBinarySystemTypeSerializer where T : IBinaryWriteAware

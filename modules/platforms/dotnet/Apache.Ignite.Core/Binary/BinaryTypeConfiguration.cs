@@ -76,17 +76,16 @@ namespace Apache.Ignite.Core.Binary
 
         /// <summary>
         /// ID mapper for the given type. When it is necessary to resolve class (field) ID, then 
-        /// this property will be checked first. If not set, then PortableClassIdAttribute 
-        /// (PortableFieldIdAttribute) will be checked in class through reflection. If required
-        /// attribute is not set, then ID will be hash code of the class (field) simple name in lower case. 
+        /// this property will be checked first. 
+        /// Otherwise, ID will be hash code of the class (field) simple name in lower case. 
         /// </summary>
         public IIdMapper IdMapper { get; set; }
 
         /// <summary>
-        /// Serializer for the given type. If not provided and class implements IPortable
-        /// then its custom logic will be used. If not provided and class doesn't implement IPortable
+        /// Serializer for the given type. If not provided and class implements <see cref="IBinarizable" />
+        /// then its custom logic will be used. If not provided and class doesn't implement <see cref="IBinarizable" />
         /// then all fields of the class except of those with [NotSerialized] attribute will be serialized
-        ///with help of reflection.
+        /// with help of reflection.
         /// </summary>
         public IBinarySerializer Serializer { get; set; }
 
@@ -97,7 +96,7 @@ namespace Apache.Ignite.Core.Binary
 
         /// <summary>
         /// Keep deserialized flag. If set to non-null value, overrides default value set in 
-        /// PortableConfiguration.
+        /// <see cref="BinaryTypeConfiguration"/>.
         /// </summary>
         public bool? KeepDeserialized { get; set; }
 

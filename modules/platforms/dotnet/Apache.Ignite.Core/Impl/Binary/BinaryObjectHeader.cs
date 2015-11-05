@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
-    /// Portable object header structure.
+    /// binary object header structure.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 0)]
     internal struct BinaryObjectHeader : IEquatable<BinaryObjectHeader>

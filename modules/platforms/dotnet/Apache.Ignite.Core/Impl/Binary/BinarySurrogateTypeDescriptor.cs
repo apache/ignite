@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class BinarySurrogateTypeDescriptor : IBinaryTypeDescriptor
     {
-        /** Portable configuration. */
+        /** Binary configuration. */
         private readonly BinaryConfiguration _cfg;
 
         /** Type ID. */
@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="cfg">Portable configuration.</param>
+        /// <param name="cfg">Configuration.</param>
         /// <param name="id">Type ID.</param>
         public BinarySurrogateTypeDescriptor(BinaryConfiguration cfg, int id)
         {
@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Constrcutor.
         /// </summary>
-        /// <param name="cfg">Portable configuration.</param>
+        /// <param name="cfg">Configuration.</param>
         /// <param name="name">Type name.</param>
         public BinarySurrogateTypeDescriptor(BinaryConfiguration cfg, string name)
         {

@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /** Receiver handle. */
         private long _rcvHnd;
 
-        /** Receiver portable mode. */
+        /** Receiver binary mode. */
         private readonly bool _keepBinary;
 
         /// <summary>
@@ -513,7 +513,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
                 if (result == null)
                     throw new InvalidOperationException(
-                        "Can't change type of portable streamer. WithKeepPortable has been called on an instance of " +
+                        "Can't change type of binary streamer. WithKeepPortable has been called on an instance of " +
                         "portable streamer with incompatible generic arguments.");
 
                 return result;

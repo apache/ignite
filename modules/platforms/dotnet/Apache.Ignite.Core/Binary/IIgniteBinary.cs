@@ -21,16 +21,16 @@ namespace Apache.Ignite.Core.Binary
     using System.Collections.Generic;
 
     /// <summary>
-    /// Defines portable objects functionality. With portable objects you are able to:
+    /// Defines binary objects functionality. With binary objects you are able to:
     /// <list type="bullet">
     ///     <item>
     ///         <description>Seamlessly interoperate between Java, .NET, and C++.</description>
     ///     </item>
     ///     <item>
-    ///         <description>Make any object portable with zero code change to your existing code.</description>
+    ///         <description>Make any object binary with zero code change to your existing code.</description>
     ///     </item>
     ///     <item>
-    ///         <description>Nest portable objects within each other.</description>
+    ///         <description>Nest binary objects within each other.</description>
     ///     </item>
     ///     <item>
     ///         <description>Automatically handle <c>circular</c> or <c>null</c> references.</description>
@@ -48,14 +48,14 @@ namespace Apache.Ignite.Core.Binary
     ///         <description>Dynamically change structure of the classes without having to restart the cluster.</description>
     ///     </item>
     ///     <item>
-    ///         <description>Index into portable objects for querying purposes.</description>
+    ///         <description>Index into binary objects for querying purposes.</description>
     ///     </item>
     /// </list>
     /// </summary>
     public interface IIgniteBinary
     {
         /// <summary>
-        /// Converts provided object to portable form.
+        /// Converts provided object to binary form.
         /// <para />
         /// Note that object's type needs to be configured in <see cref="BinaryConfiguration"/>.
         /// </summary>
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Binary
         T ToBinary<T>(object obj);
 
         /// <summary>
-        /// Create builder for the given portable object type. Note that this
+        /// Create builder for the given binary object type. Note that this
         /// type must be specified in <see cref="BinaryConfiguration"/>.
         /// </summary>
         /// <param name="type"></param>
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Binary
         IBinaryObjectBuilder GetBuilder(Type type);
 
         /// <summary>
-        /// Create builder for the given portable object type name. Note that this
+        /// Create builder for the given binary object type name. Note that this
         /// type name must be specified in <see cref="BinaryConfiguration"/>.
         /// </summary>
         /// <param name="typeName">Type name.</param>
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Binary
         IBinaryObjectBuilder GetBuilder(string typeName);
 
         /// <summary>
-        /// Create builder over existing portable object.
+        /// Create builder over existing binary object.
         /// </summary>
         /// <param name="obj"></param>
         /// <returns>Builder.</returns>

@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class TypeResolver
     {
-        /** Regex to parse generic types from portable configuration. Allows nested generics in type arguments. */
+        /** Regex to parse generic types from binary configuration. Allows nested generics in type arguments. */
         private static readonly Regex GenericTypeRegex =
             new Regex(@"([^`,\[\]]*)(?:`[0-9]+)?(?:\[((?:(?<br>\[)|(?<-br>\])|[^\[\]]*)+)\])?", RegexOptions.Compiled);
 

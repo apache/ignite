@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
-    /// Non-generic portable filter wrapper.
+    /// Non-generic binary filter wrapper.
     /// </summary>
     internal class CacheEntryFilterHolder : IBinaryWriteAware
     {
