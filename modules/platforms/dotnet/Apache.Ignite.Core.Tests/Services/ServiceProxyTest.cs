@@ -204,8 +204,8 @@ namespace Apache.Ignite.Core.Tests.Services
 
             if (KeepPortable)
             {
-                Assert.AreEqual("Proxy method invocation failed with a portable error. " +
-                                "Examine PortableCause for details.", ex.Message);
+                Assert.AreEqual("Proxy method invocation failed with a binary error. " +
+                                "Examine BinaryCause for details.", ex.Message);
 
                 Assert.IsNotNull(ex.BinaryCause);
                 Assert.IsNull(ex.InnerException);
