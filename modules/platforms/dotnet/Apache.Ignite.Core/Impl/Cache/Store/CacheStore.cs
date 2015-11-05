@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var reader = BinaryUtils.Marshaller.StartUnmarshal(stream, PortableMode.KeepPortable);
+                var reader = BinaryUtils.Marshaller.StartUnmarshal(stream, BinaryMode.KeepBinary);
 
                 var className = reader.ReadString();
                 var convertPortable = reader.ReadBoolean();
@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         public int Invoke(IBinaryStream input, IUnmanagedTarget cb, Ignite grid)
         {
             IBinaryReader reader = grid.Marshaller.StartUnmarshal(input,
-                _convertPortable ? PortableMode.Deserialize : PortableMode.ForcePortable);
+                _convertPortable ? BinaryMode.Deserialize : BinaryMode.ForceBinary);
             
             IPortableRawReader rawReader = reader.GetRawReader();
 

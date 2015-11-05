@@ -610,9 +610,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    var reader = _ignite.Marshaller.StartUnmarshal(stream, PortableMode.ForcePortable);
+                    var reader = _ignite.Marshaller.StartUnmarshal(stream, BinaryMode.ForceBinary);
 
-                    var portableReceiver = reader.ReadObject<PortableUserObject>();
+                    var portableReceiver = reader.ReadObject<BinaryUserObject>();
 
                     var receiver = _handleRegistry.Get<StreamReceiverHolder>(rcvPtr) ??
                                    portableReceiver.Deserialize<StreamReceiverHolder>();

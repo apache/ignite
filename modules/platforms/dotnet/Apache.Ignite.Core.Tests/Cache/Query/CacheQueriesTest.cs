@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     {
                         new BinaryTypeConfiguration(typeof (QueryPerson)),
                         new BinaryTypeConfiguration(typeof (PortableScanQueryFilter<QueryPerson>)),
-                        new BinaryTypeConfiguration(typeof (PortableScanQueryFilter<PortableUserObject>))
+                        new BinaryTypeConfiguration(typeof (PortableScanQueryFilter<BinaryUserObject>))
                     }
                 },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
@@ -536,7 +536,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScanQueryPortable()
         {
-            CheckScanQuery<PortableUserObject>(MaxItemCnt, false, true);
+            CheckScanQuery<BinaryUserObject>(MaxItemCnt, false, true);
         }
 
         /// <summary>
@@ -554,7 +554,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScanQueryLocalPortable()
         {
-            CheckScanQuery<PortableUserObject>(MaxItemCnt, true, true);
+            CheckScanQuery<BinaryUserObject>(MaxItemCnt, true, true);
         }
 
         /// <summary>
@@ -574,7 +574,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Ignore("IGNITE-1012")]
         public void TestScanQueryPartitionsPortable([Values(true, false)]  bool loc)
         {
-            CheckScanQueryPartitions<PortableUserObject>(MaxItemCnt, loc, true);
+            CheckScanQueryPartitions<BinaryUserObject>(MaxItemCnt, loc, true);
         }
 
         /// <summary>
@@ -694,7 +694,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             if (keepPortable)
             {
-                var cache0 = cache.WithKeepPortable<int, IPortableObject>();
+                var cache0 = cache.WithKeepPortable<int, IBinaryObject>();
 
                 using (var cursor = cache0.Query(qry))
                 {

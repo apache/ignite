@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             string field2 = "field2";
 
             // 1. Ensure that builder works fine.
-            IPortableObject portObj1 = _grid.GetPortables().GetBuilder(typeName1).SetField(field1, 1).Build();
+            IBinaryObject portObj1 = _grid.GetPortables().GetBuilder(typeName1).SetField(field1, 1).Build();
 
             Assert.AreEqual(typeName1, portObj1.GetMetadata().TypeName);
             Assert.AreEqual(1, portObj1.GetMetadata().Fields.Count);
@@ -142,9 +142,9 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(1, portObj1.GetField<int>(field1));
 
             // 2. Ensure that object can be unmarshalled without deserialization.
-            byte[] data = ((PortableUserObject) portObj1).Data;
+            byte[] data = ((BinaryUserObject) portObj1).Data;
 
-            portObj1 = _grid.Marshaller.Unmarshal<IPortableObject>(data, PortableMode.ForcePortable);
+            portObj1 = _grid.Marshaller.Unmarshal<IBinaryObject>(data, BinaryMode.ForceBinary);
 
             Assert.AreEqual(typeName1, portObj1.GetMetadata().TypeName);
             Assert.AreEqual(1, portObj1.GetMetadata().Fields.Count);
@@ -154,7 +154,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(1, portObj1.GetField<int>(field1));
 
             // 3. Ensure that we can nest one anonymous object inside another
-            IPortableObject portObj2 =
+            IBinaryObject portObj2 =
                 _grid.GetPortables().GetBuilder(typeName2).SetField(field2, portObj1).Build();
 
             Assert.AreEqual(typeName2, portObj2.GetMetadata().TypeName);
@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(field2, portObj2.GetMetadata().Fields.First());
             Assert.AreEqual(PortableTypeNames.TypeNameObject, portObj2.GetMetadata().GetFieldTypeName(field2));
 
-            portObj1 = portObj2.GetField<IPortableObject>(field2);
+            portObj1 = portObj2.GetField<IBinaryObject>(field2);
 
             Assert.AreEqual(typeName1, portObj1.GetMetadata().TypeName);
             Assert.AreEqual(1, portObj1.GetMetadata().Fields.Count);
@@ -172,16 +172,16 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(1, portObj1.GetField<int>(field1));
 
             // 4. Ensure that we can unmarshal object with other nested object.
-            data = ((PortableUserObject) portObj2).Data;
+            data = ((BinaryUserObject) portObj2).Data;
 
-            portObj2 = _grid.Marshaller.Unmarshal<IPortableObject>(data, PortableMode.ForcePortable);
+            portObj2 = _grid.Marshaller.Unmarshal<IBinaryObject>(data, BinaryMode.ForceBinary);
 
             Assert.AreEqual(typeName2, portObj2.GetMetadata().TypeName);
             Assert.AreEqual(1, portObj2.GetMetadata().Fields.Count);
             Assert.AreEqual(field2, portObj2.GetMetadata().Fields.First());
             Assert.AreEqual(PortableTypeNames.TypeNameObject, portObj2.GetMetadata().GetFieldTypeName(field2));
 
-            portObj1 = portObj2.GetField<IPortableObject>(field2);
+            portObj1 = portObj2.GetField<IBinaryObject>(field2);
 
             Assert.AreEqual(typeName1, portObj1.GetMetadata().TypeName);
             Assert.AreEqual(1, portObj1.GetMetadata().Fields.Count);
@@ -238,7 +238,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(new[] { TestEnum.One }, api.ToPortable<TestEnum[]>(new[] { TestEnum.One }));
 
             // 4. Objects.
-            IPortableObject portObj = api.ToPortable<IPortableObject>(new ToPortable(1));
+            IBinaryObject portObj = api.ToPortable<IBinaryObject>(new ToPortable(1));
 
             Assert.AreEqual(typeof(ToPortable).Name, portObj.GetMetadata().TypeName);
             Assert.AreEqual(1, portObj.GetMetadata().Fields.Count);
@@ -248,7 +248,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(1, portObj.GetField<int>("val"));
             Assert.AreEqual(1, portObj.Deserialize<ToPortable>().Val);
 
-            portObj = api.ToPortable<IPortableObject>(new ToPortableNoMeta(1));
+            portObj = api.ToPortable<IBinaryObject>(new ToPortableNoMeta(1));
 
             Assert.AreEqual(1, portObj.GetMetadata().Fields.Count);
 
@@ -257,7 +257,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             // 5. Object array.
             var portObjArr = api.ToPortable<object[]>(new object[] {new ToPortable(1)})
-                .OfType<IPortableObject>().ToArray();
+                .OfType<IBinaryObject>().ToArray();
 
             Assert.AreEqual(1, portObjArr.Length);
             Assert.AreEqual(1, portObjArr[0].GetField<int>("Val"));
@@ -271,7 +271,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestRemove()
         {
             // Create empty object.
-            IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(Remove)).Build();
+            IBinaryObject portObj = _grid.GetPortables().GetBuilder(typeof(Remove)).Build();
 
             Assert.IsNull(portObj.GetField<object>("val"));
             Assert.IsNull(portObj.Deserialize<Remove>().Val);
@@ -352,7 +352,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             builderOuter.SetField<object>("inner", builderInner);
             builderInner.SetField<object>("outer", builderOuter);
 
-            IPortableObject outerPortObj = builderOuter.Build();
+            IBinaryObject outerPortObj = builderOuter.Build();
 
             IBinaryType meta = outerPortObj.GetMetadata();
 
@@ -361,7 +361,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual("inner", meta.Fields.First());
             Assert.AreEqual(PortableTypeNames.TypeNameObject, meta.GetFieldTypeName("inner"));
 
-            IPortableObject innerPortObj = outerPortObj.GetField<IPortableObject>("inner");
+            IBinaryObject innerPortObj = outerPortObj.GetField<IBinaryObject>("inner");
 
             meta = innerPortObj.GetMetadata();
 
@@ -414,7 +414,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestDecimals()
         {
-            IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(DecimalHolder))
+            IBinaryObject portObj = _grid.GetPortables().GetBuilder(typeof(DecimalHolder))
                 .SetField("val", decimal.One)
                 .SetField("valArr", new decimal?[] { decimal.MinusOne })
                 .Build();
@@ -450,7 +450,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             builderCol.SetCollectionField("col", new ArrayList { builderItem });
 
-            IPortableObject portCol = builderCol.Build();
+            IBinaryObject portCol = builderCol.Build();
 
             IBinaryType meta = portCol.GetMetadata();
 
@@ -463,7 +463,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(1, portColItems.Count);
 
-            var portItem = (IPortableObject) portColItems[0];
+            var portItem = (IBinaryObject) portColItems[0];
 
             meta = portItem.GetMetadata();
 
@@ -539,7 +539,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestEmptyDefined()
         {
-            IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(Empty)).Build();
+            IBinaryObject portObj = _grid.GetPortables().GetBuilder(typeof(Empty)).Build();
 
             Assert.IsNotNull(portObj);
             Assert.AreEqual(0, portObj.GetHashCode());
@@ -561,7 +561,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestEmptyNoMeta()
         {
-            IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(EmptyNoMeta)).Build();
+            IBinaryObject portObj = _grid.GetPortables().GetBuilder(typeof(EmptyNoMeta)).Build();
 
             Assert.IsNotNull(portObj);
             Assert.AreEqual(0, portObj.GetHashCode());
@@ -577,7 +577,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestEmptyUndefined()
         {
-            IPortableObject portObj = _grid.GetPortables().GetBuilder(TypeEmpty).Build();
+            IBinaryObject portObj = _grid.GetPortables().GetBuilder(TypeEmpty).Build();
 
             Assert.IsNotNull(portObj);
             Assert.AreEqual(0, portObj.GetHashCode());
@@ -595,9 +595,9 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestEmptyRebuild()
         {
-            var portObj = (PortableUserObject) _grid.GetPortables().GetBuilder(typeof(EmptyNoMeta)).Build();
+            var portObj = (BinaryUserObject) _grid.GetPortables().GetBuilder(typeof(EmptyNoMeta)).Build();
 
-            PortableUserObject newPortObj = (PortableUserObject) _grid.GetPortables().GetBuilder(portObj).Build();
+            BinaryUserObject newPortObj = (BinaryUserObject) _grid.GetPortables().GetBuilder(portObj).Build();
 
             Assert.AreEqual(portObj.Data, newPortObj.Data);
         }
@@ -608,7 +608,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestHashCodeChange()
         {
-            IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(EmptyNoMeta)).SetHashCode(100).Build();
+            IBinaryObject portObj = _grid.GetPortables().GetBuilder(typeof(EmptyNoMeta)).SetHashCode(100).Build();
 
             Assert.AreEqual(100, portObj.GetHashCode());
         }
@@ -619,7 +619,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFields()
         {
-            IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(Primitives))
+            IBinaryObject portObj = _grid.GetPortables().GetBuilder(typeof(Primitives))
                 .SetField<byte>("fByte", 1)
                 .SetField("fBool", true)
                 .SetField<short>("fShort", 2)
@@ -710,7 +710,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveArrayFields()
         {
-            IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(PrimitiveArrays))
+            IBinaryObject portObj = _grid.GetPortables().GetBuilder(typeof(PrimitiveArrays))
                 .SetField("fByte", new byte[] { 1 })
                 .SetField("fBool", new[] { true })
                 .SetField("fShort", new short[] { 2 })
@@ -805,7 +805,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Guid? nGuid = Guid.NewGuid();
 
-            IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(StringDateGuidEnum))
+            IBinaryObject portObj = _grid.GetPortables().GetBuilder(typeof(StringDateGuidEnum))
                 .SetField("fStr", "str")
                 .SetField("fNDate", nDate)
                 .SetGuidField("fNGuid", nGuid)
@@ -937,7 +937,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             // 1. Test simple array.
             object[] inArr = { new CompositeInner(1) };
 
-            IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(CompositeArray)).SetHashCode(100)
+            IBinaryObject portObj = _grid.GetPortables().GetBuilder(typeof(CompositeArray)).SetHashCode(100)
                 .SetField("inArr", inArr).Build();
 
             IBinaryType meta = portObj.GetMetadata();
@@ -948,7 +948,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(100, portObj.GetHashCode());
 
-            IPortableObject[] portInArr = portObj.GetField<object[]>("inArr").Cast<IPortableObject>().ToArray();
+            IBinaryObject[] portInArr = portObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
 
             Assert.AreEqual(1, portInArr.Length);
             Assert.AreEqual(1, portInArr[0].GetField<int>("val"));
@@ -965,7 +965,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(200, portObj.GetHashCode());
 
-            portInArr = portObj.GetField<object[]>("inArr").Cast<IPortableObject>().ToArray();
+            portInArr = portObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
 
             Assert.AreEqual(2, portInArr.Length);
             Assert.AreEqual(1, portInArr[0].GetField<int>("val"));
@@ -985,7 +985,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(300, portObj.GetHashCode());
 
-            portInArr = portObj.GetField<object[]>("inArr").Cast<IPortableObject>().ToArray();
+            portInArr = portObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
 
             Assert.AreEqual(2, portInArr.Length);
             Assert.AreEqual(1, portInArr[0].GetField<int>("val"));
@@ -1008,7 +1008,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(100, portObj.GetHashCode());
 
-            portInArr = portObj.GetField<object[]>("inArr").Cast<IPortableObject>().ToArray();
+            portInArr = portObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
 
             Assert.AreEqual(2, portInArr.Length);
             Assert.AreEqual(1, portInArr[0].GetField<int>("val"));
@@ -1028,7 +1028,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(200, portObj.GetHashCode());
 
-            portInArr = portObj.GetField<object[]>("inArr").Cast<IPortableObject>().ToArray();
+            portInArr = portObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
 
             Assert.AreEqual(2, portInArr.Length);
             Assert.AreEqual(2, portInArr[0].GetField<int>("val"));
@@ -1056,11 +1056,11 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(100, portObj.GetHashCode());
 
-            var portOutArr = portObj.GetField<object[]>("outArr").Cast<IPortableObject>().ToArray();
+            var portOutArr = portObj.GetField<object[]>("outArr").Cast<IBinaryObject>().ToArray();
 
             Assert.AreEqual(2, portOutArr.Length);
-            Assert.AreEqual(1, portOutArr[0].GetField<IPortableObject>("inner").GetField<int>("val"));
-            Assert.AreEqual(1, portOutArr[1].GetField<IPortableObject>("inner").GetField<int>("val"));
+            Assert.AreEqual(1, portOutArr[0].GetField<IBinaryObject>("inner").GetField<int>("val"));
+            Assert.AreEqual(1, portOutArr[1].GetField<IBinaryObject>("inner").GetField<int>("val"));
 
             arr = portObj.Deserialize<CompositeArray>();
 
@@ -1077,11 +1077,11 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(200, portObj.GetHashCode());
 
-            portInArr = portObj.GetField<object[]>("outArr").Cast<IPortableObject>().ToArray();
+            portInArr = portObj.GetField<object[]>("outArr").Cast<IBinaryObject>().ToArray();
 
             Assert.AreEqual(2, portInArr.Length);
-            Assert.AreEqual(2, portOutArr[0].GetField<IPortableObject>("inner").GetField<int>("val"));
-            Assert.AreEqual(1, portOutArr[1].GetField<IPortableObject>("inner").GetField<int>("val"));
+            Assert.AreEqual(2, portOutArr[0].GetField<IBinaryObject>("inner").GetField<int>("val"));
+            Assert.AreEqual(1, portOutArr[1].GetField<IBinaryObject>("inner").GetField<int>("val"));
 
             arr = portObj.Deserialize<CompositeArray>();
 
@@ -1103,7 +1103,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             col.Add(new CompositeInner(1));
             dict[3] = new CompositeInner(3);
 
-            IPortableObject portObj = _grid.GetPortables().GetBuilder(typeof(CompositeContainer)).SetHashCode(100)
+            IBinaryObject portObj = _grid.GetPortables().GetBuilder(typeof(CompositeContainer)).SetHashCode(100)
                 .SetCollectionField("col", col)
                 .SetDictionaryField("dict", dict).Build();
 
@@ -1118,11 +1118,11 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             // 2. Check in portable form.
             Assert.AreEqual(1, portObj.GetField<ICollection>("col").Count);
-            Assert.AreEqual(1, portObj.GetField<ICollection>("col").OfType<IPortableObject>().First()
+            Assert.AreEqual(1, portObj.GetField<ICollection>("col").OfType<IBinaryObject>().First()
                 .GetField<int>("val"));
 
             Assert.AreEqual(1, portObj.GetField<IDictionary>("dict").Count);
-            Assert.AreEqual(3, ((IPortableObject) portObj.GetField<IDictionary>("dict")[3]).GetField<int>("val"));
+            Assert.AreEqual(3, ((IBinaryObject) portObj.GetField<IDictionary>("dict")[3]).GetField<int>("val"));
 
             // 3. Check in deserialized form.
             CompositeContainer obj = portObj.Deserialize<CompositeContainer>();
@@ -1146,14 +1146,14 @@ namespace Apache.Ignite.Core.Tests.Portable
                 B = 2
             };
 
-            var portObj = _marsh.Unmarshal<IPortableObject>(_marsh.Marshal(raw), PortableMode.ForcePortable);
+            var portObj = _marsh.Unmarshal<IBinaryObject>(_marsh.Marshal(raw), BinaryMode.ForceBinary);
 
             raw = portObj.Deserialize<WithRaw>();
 
             Assert.AreEqual(1, raw.A);
             Assert.AreEqual(2, raw.B);
 
-            IPortableObject newPortObj = _grid.GetPortables().GetBuilder(portObj).SetField("a", 3).Build();
+            IBinaryObject newPortObj = _grid.GetPortables().GetBuilder(portObj).SetField("a", 3).Build();
 
             raw = newPortObj.Deserialize<WithRaw>();
 
@@ -1173,7 +1173,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             NestedInner inner1 = new NestedInner {Val = 1};
             builder.SetField("inner1", inner1);
 
-            IPortableObject outerPortObj = builder.Build();
+            IBinaryObject outerPortObj = builder.Build();
 
             IBinaryType meta = outerPortObj.GetMetadata();
 
@@ -1181,7 +1181,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(1, meta.Fields.Count);
             Assert.AreEqual(PortableTypeNames.TypeNameObject, meta.GetFieldTypeName("inner1"));
 
-            IPortableObject innerPortObj1 = outerPortObj.GetField<IPortableObject>("inner1");
+            IBinaryObject innerPortObj1 = outerPortObj.GetField<IBinaryObject>("inner1");
 
             IBinaryType innerMeta = innerPortObj1.GetMetadata();
 
@@ -1247,7 +1247,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             builder.SetField<object>("inner1", inner);
             builder.SetField<object>("inner2", inner);
 
-            PortableUserObject portOuter = (PortableUserObject) builder.Build();
+            BinaryUserObject portOuter = (BinaryUserObject) builder.Build();
 
             byte[] portOuterBytes = new byte[outerBytes.Length];
 
@@ -1258,7 +1258,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             // 2. Change the first inner object so that the handle must migrate.
             MigrationInner inner1 = new MigrationInner {Val = 2};
 
-            IPortableObject portOuterMigrated =
+            IBinaryObject portOuterMigrated =
                 _grid.GetPortables().GetBuilder(portOuter).SetField<object>("inner1", inner1).Build();
 
             MigrationOuter outerMigrated = portOuterMigrated.Deserialize<MigrationOuter>();
@@ -1267,7 +1267,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(1, outerMigrated.Inner2.Val);
 
             // 3. Change the first value using serialized form.
-            IPortableObject inner1Port =
+            IBinaryObject inner1Port =
                 _grid.GetPortables().GetBuilder(typeof(MigrationInner)).SetField("val", 2).Build();
 
             portOuterMigrated =
@@ -1293,18 +1293,18 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             byte[] rawOuter = _marsh.Marshal(outer);
 
-            IPortableObject portOuter = _marsh.Unmarshal<IPortableObject>(rawOuter, PortableMode.ForcePortable);
-            IPortableObject portInner = portOuter.GetField<IPortableObject>("inner");
+            IBinaryObject portOuter = _marsh.Unmarshal<IBinaryObject>(rawOuter, BinaryMode.ForceBinary);
+            IBinaryObject portInner = portOuter.GetField<IBinaryObject>("inner");
 
             // 1. Ensure that inner object can be deserialized after build.
-            IPortableObject portInnerNew = _grid.GetPortables().GetBuilder(portInner).Build();
+            IBinaryObject portInnerNew = _grid.GetPortables().GetBuilder(portInner).Build();
 
             InversionInner innerNew = portInnerNew.Deserialize<InversionInner>();
 
             Assert.AreSame(innerNew, innerNew.Outer.Inner);
 
             // 2. Ensure that portable object with external dependencies could be added to builder.
-            IPortableObject portOuterNew =
+            IBinaryObject portOuterNew =
                 _grid.GetPortables().GetBuilder(typeof(InversionOuter)).SetField<object>("inner", portInner).Build();
 
             InversionOuter outerNew = portOuterNew.Deserialize<InversionOuter>();
@@ -1323,8 +1323,8 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             builder.SetField<byte>("fByte", 1).SetField("fBool", true);
 
-            IPortableObject po1 = builder.Build();
-            IPortableObject po2 = builder.Build();
+            IBinaryObject po1 = builder.Build();
+            IBinaryObject po2 = builder.Build();
 
             Assert.AreEqual(1, po1.GetField<byte>("fByte"));
             Assert.AreEqual(true, po1.GetField<bool>("fBool"));
@@ -1334,7 +1334,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             builder.SetField<byte>("fByte", 2);
 
-            IPortableObject po3 = builder.Build();
+            IBinaryObject po3 = builder.Build();
 
             Assert.AreEqual(1, po1.GetField<byte>("fByte"));
             Assert.AreEqual(true, po1.GetField<bool>("fBool"));
@@ -1388,7 +1388,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             // Populate metadata
             var portables = _grid.GetPortables();
 
-            portables.ToPortable<IPortableObject>(new DecimalHolder());
+            portables.ToPortable<IBinaryObject>(new DecimalHolder());
 
             // All meta
             var allMetas = portables.GetMetadata();

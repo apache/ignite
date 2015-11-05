@@ -86,14 +86,14 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             ICacheAffinity aff = g.GetAffinity(null);  
 
-            IPortableObject affKey = g.GetPortables().ToPortable<IPortableObject>(new AffinityTestKey(0, 1));
+            IBinaryObject affKey = g.GetPortables().ToPortable<IBinaryObject>(new AffinityTestKey(0, 1));
 
             IClusterNode node = aff.MapKeyToNode(affKey);
 
             for (int i = 0; i < 10; i++)
             {
-                IPortableObject otherAffKey =
-                    g.GetPortables().ToPortable<IPortableObject>(new AffinityTestKey(i, 1));
+                IBinaryObject otherAffKey =
+                    g.GetPortables().ToPortable<IBinaryObject>(new AffinityTestKey(i, 1));
 
                 Assert.AreEqual(node.Id, aff.MapKeyToNode(otherAffKey).Id);
             }

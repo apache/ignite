@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritDoc /> */
         public T ToPortable<T>(object obj)
         {
-            if (obj is IPortableObject)
+            if (obj is IBinaryObject)
                 return (T)obj;
 
             IBinaryStream stream = new BinaryHeapStream(1024);
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             // Deserialize.
             stream.Seek(0, SeekOrigin.Begin);
 
-            return _marsh.Unmarshal<T>(stream, PortableMode.ForcePortable);
+            return _marsh.Unmarshal<T>(stream, BinaryMode.ForceBinary);
         }
 
         /** <inheritDoc /> */
@@ -94,11 +94,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public IBinaryObjectBuilder GetBuilder(IPortableObject obj)
+        public IBinaryObjectBuilder GetBuilder(IBinaryObject obj)
         {
             IgniteArgumentCheck.NotNull(obj, "obj");
 
-            PortableUserObject obj0 = obj as PortableUserObject;
+            BinaryUserObject obj0 = obj as BinaryUserObject;
 
             if (obj0 == null)
                 throw new ArgumentException("Unsupported object type: " + obj.GetType());
@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="desc">Descriptor.</param>
         /// <returns>Empty portable object.</returns>
-        private PortableUserObject PortableFromDescriptor(IBinaryTypeDescriptor desc)
+        private BinaryUserObject PortableFromDescriptor(IBinaryTypeDescriptor desc)
         {
             var len = PortableObjectHeader.Size;
 
@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             PortableObjectHeader.Write(hdr, stream, 0);
 
-            return new PortableUserObject(_marsh, stream.InternalArray, 0, hdr);
+            return new BinaryUserObject(_marsh, stream.InternalArray, 0, hdr);
         }
 
         /// <summary>
@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="obj">Portable object.</param>
         /// <param name="desc">Type descriptor.</param>
         /// <returns>Builder.</returns>
-        private BinaryObjectBuilder Builder0(BinaryObjectBuilder parent, PortableUserObject obj, 
+        private BinaryObjectBuilder Builder0(BinaryObjectBuilder parent, BinaryUserObject obj, 
             IBinaryTypeDescriptor desc)
         {
             return new BinaryObjectBuilder(this, parent, obj, desc);

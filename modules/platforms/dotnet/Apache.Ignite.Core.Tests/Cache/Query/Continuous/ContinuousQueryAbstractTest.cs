@@ -594,10 +594,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestKeepPortable()
         {
-            var cache = cache1.WithKeepPortable<int, IPortableObject>();
+            var cache = cache1.WithKeepPortable<int, IBinaryObject>();
 
-            ContinuousQuery<int, IPortableObject> qry = new ContinuousQuery<int, IPortableObject>(
-                    new Listener<IPortableObject>(), new KeepPortableFilter());
+            ContinuousQuery<int, IBinaryObject> qry = new ContinuousQuery<int, IBinaryObject>(
+                    new Listener<IBinaryObject>(), new KeepPortableFilter());
 
             using (cache.QueryContinuous(qry))
             {
@@ -610,14 +610,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 Assert.IsTrue(FILTER_EVTS.TryTake(out filterEvt, 500));
                 Assert.AreEqual(PrimaryKey(cache1), filterEvt.entry.Key);
                 Assert.AreEqual(null, filterEvt.entry.OldValue);
-                Assert.AreEqual(Entry(1), (filterEvt.entry.Value as IPortableObject)
+                Assert.AreEqual(Entry(1), (filterEvt.entry.Value as IBinaryObject)
                     .Deserialize<PortableEntry>());
 
                 Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
                 Assert.AreEqual(1, cbEvt.entries.Count);
                 Assert.AreEqual(PrimaryKey(cache1), cbEvt.entries.First().Key);
                 Assert.AreEqual(null, cbEvt.entries.First().OldValue);
-                Assert.AreEqual(Entry(1), (cbEvt.entries.First().Value as IPortableObject)
+                Assert.AreEqual(Entry(1), (cbEvt.entries.First().Value as IBinaryObject)
                     .Deserialize<PortableEntry>());
 
                 // 2. Remote put.
@@ -626,7 +626,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 Assert.IsTrue(FILTER_EVTS.TryTake(out filterEvt, 500));
                 Assert.AreEqual(PrimaryKey(cache2), filterEvt.entry.Key);
                 Assert.AreEqual(null, filterEvt.entry.OldValue);
-                Assert.AreEqual(Entry(2), (filterEvt.entry.Value as IPortableObject)
+                Assert.AreEqual(Entry(2), (filterEvt.entry.Value as IBinaryObject)
                     .Deserialize<PortableEntry>());
 
                 Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
@@ -634,7 +634,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 Assert.AreEqual(PrimaryKey(cache2), cbEvt.entries.First().Key);
                 Assert.AreEqual(null, cbEvt.entries.First().OldValue);
                 Assert.AreEqual(Entry(2),
-                    (cbEvt.entries.First().Value as IPortableObject).Deserialize<PortableEntry>());
+                    (cbEvt.entries.First().Value as IBinaryObject).Deserialize<PortableEntry>());
             }
         }
 
@@ -718,13 +718,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestNestedCallFromCallback()
         {
-            var cache = cache1.WithKeepPortable<int, IPortableObject>();
+            var cache = cache1.WithKeepPortable<int, IBinaryObject>();
 
             int key = PrimaryKey(cache1);
 
             NestedCallListener cb = new NestedCallListener();
 
-            using (cache.QueryContinuous(new ContinuousQuery<int, IPortableObject>(cb)))
+            using (cache.QueryContinuous(new ContinuousQuery<int, IBinaryObject>(cb)))
             {
                 cache1.GetAndPut(key, Entry(key));
 
@@ -1074,7 +1074,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Filter for "keep-portable" scenario.
         /// </summary>
-        public class KeepPortableFilter : AbstractFilter<IPortableObject>
+        public class KeepPortableFilter : AbstractFilter<IBinaryObject>
         {
             // No-op.
         }
@@ -1103,16 +1103,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Listener with nested Ignite API call.
         /// </summary>
-        public class NestedCallListener : ICacheEntryEventListener<int, IPortableObject>
+        public class NestedCallListener : ICacheEntryEventListener<int, IBinaryObject>
         {
             /** Event. */
             public readonly CountdownEvent countDown = new CountdownEvent(1);
 
-            public void OnEvent(IEnumerable<ICacheEntryEvent<int, IPortableObject>> evts)
+            public void OnEvent(IEnumerable<ICacheEntryEvent<int, IBinaryObject>> evts)
             {
-                foreach (ICacheEntryEvent<int, IPortableObject> evt in evts)
+                foreach (ICacheEntryEvent<int, IBinaryObject> evt in evts)
                 {
-                    IPortableObject val = evt.Value;
+                    IBinaryObject val = evt.Value;
 
                     IBinaryType meta = val.GetMetadata();
 

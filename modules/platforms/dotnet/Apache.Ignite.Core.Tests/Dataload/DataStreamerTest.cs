@@ -441,14 +441,14 @@ namespace Apache.Ignite.Core.Tests.Dataload
             var cache = _grid.GetCache<int, PortableEntry>(CacheName);
 
             using (var ldr0 = _grid.GetDataStreamer<int, int>(CacheName))
-            using (var ldr = ldr0.WithKeepPortable<int, IPortableObject>())
+            using (var ldr = ldr0.WithKeepPortable<int, IBinaryObject>())
             {
                 ldr.Receiver = new StreamReceiverKeepPortable();
 
                 ldr.AllowOverwrite = true;
 
                 for (var i = 0; i < 100; i++)
-                    ldr.AddData(i, _grid.GetPortables().ToPortable<IPortableObject>(new PortableEntry {Val = i}));
+                    ldr.AddData(i, _grid.GetPortables().ToPortable<IBinaryObject>(new PortableEntry {Val = i}));
 
                 ldr.Flush();
 
@@ -512,15 +512,15 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// Test portable receiver.
         /// </summary>
         [Serializable]
-        private class StreamReceiverKeepPortable : IStreamReceiver<int, IPortableObject>
+        private class StreamReceiverKeepPortable : IStreamReceiver<int, IBinaryObject>
         {
             /** <inheritdoc /> */
-            public void Receive(ICache<int, IPortableObject> cache, ICollection<ICacheEntry<int, IPortableObject>> entries)
+            public void Receive(ICache<int, IBinaryObject> cache, ICollection<ICacheEntry<int, IBinaryObject>> entries)
             {
                 var portables = cache.Ignite.GetPortables();
 
                 cache.PutAll(entries.ToDictionary(x => x.Key, x =>
-                    portables.ToPortable<IPortableObject>(new PortableEntry
+                    portables.ToPortable<IBinaryObject>(new PortableEntry
                     {
                         Val = x.Value.Deserialize<PortableEntry>().Val + 1
                     })));

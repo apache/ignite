@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         /// <param name="obj"></param>
         /// <returns>Builder.</returns>
-        IBinaryObjectBuilder GetBuilder(IPortableObject obj);
+        IBinaryObjectBuilder GetBuilder(IBinaryObject obj);
 
         /// <summary>
         /// Gets type id for the given type name.

@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Impl.Services
             Debug.Assert(stream != null);
             Debug.Assert(marsh != null);
 
-            var mode = keepPortable ? PortableMode.ForcePortable : PortableMode.Deserialize;
+            var mode = keepPortable ? BinaryMode.ForceBinary : BinaryMode.Deserialize;
 
             var reader = marsh.StartUnmarshal(stream, mode);
 
@@ -128,7 +128,7 @@ namespace Apache.Ignite.Core.Impl.Services
             if (err == null)
                 return res;
 
-            var portErr = err as IPortableObject;
+            var portErr = err as IBinaryObject;
 
             throw portErr != null
                 ? new ServiceInvocationException("Proxy method invocation failed with a portable error. " +

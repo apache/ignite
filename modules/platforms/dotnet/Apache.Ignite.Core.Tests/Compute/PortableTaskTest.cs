@@ -61,13 +61,13 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(400, resObj.Val);
         }
 
-        private static IPortableObject ToPortable(IIgnite grid, object obj)
+        private static IBinaryObject ToPortable(IIgnite grid, object obj)
         {
             var cache = grid.GetCache<object, object>(Cache1Name).WithKeepPortable<object, object>();
 
             cache.Put(1, obj);
 
-            return (IPortableObject) cache.Get(1);
+            return (IBinaryObject) cache.Get(1);
         }
 
         /** <inheritDoc /> */
@@ -263,7 +263,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         class PortableWrapper
         {
-            public IPortableObject Item { get; set; }
+            public IBinaryObject Item { get; set; }
         }
     }
 }

@@ -15,26 +15,46 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary
+namespace Apache.Ignite.Core.Binary
 {
+    using System.Diagnostics.CodeAnalysis;
+
     /// <summary>
-    /// Portable mode.
+    /// Wrapper for serialized objects.
     /// </summary>
-    internal enum PortableMode
+    public interface IBinaryObject
     {
         /// <summary>
-        /// Deserialize top-level portable objects, but leave nested portable objects in portable form.
+        /// Gets portable object type ID.
         /// </summary>
-        Deserialize,
+        /// <value>
+        /// Type ID.
+        /// </value>
+        int TypeId { get; }
 
         /// <summary>
-        /// Keep portable objects in portable form.
+        /// Gets object metadata.
         /// </summary>
-        KeepPortable,
+        /// <returns>Metadata.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
+            Justification = "Expensive operation.")]
+        IBinaryType GetMetadata();
 
         /// <summary>
-        /// Always return IPortableObject.
+        /// Gets field value.
         /// </summary>
-        ForcePortable
+        /// <param name="fieldName">Field name.</param>
+        /// <returns>
+        /// Field value.
+        /// </returns>
+        TF GetField<TF>(string fieldName);
+
+        /// <summary>
+        /// Gets fully deserialized instance of portable object.
+        /// </summary>
+        /// <returns>
+        /// Fully deserialized instance of portable object.
+        /// </returns>
+        T Deserialize<T>();
     }
 }

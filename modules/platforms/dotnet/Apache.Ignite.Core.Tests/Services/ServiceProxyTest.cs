@@ -207,7 +207,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 Assert.AreEqual("Proxy method invocation failed with a portable error. " +
                                 "Examine PortableCause for details.", ex.Message);
 
-                Assert.IsNotNull(ex.PortableCause);
+                Assert.IsNotNull(ex.BinaryCause);
                 Assert.IsNull(ex.InnerException);
             }
             else
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 Assert.AreEqual("Proxy method invocation failed with an exception. " +
                                 "Examine InnerException for details.", ex.Message);
 
-                Assert.IsNull(ex.PortableCause);
+                Assert.IsNull(ex.BinaryCause);
                 Assert.IsNotNull(ex.InnerException);
             }
 
@@ -357,13 +357,13 @@ namespace Apache.Ignite.Core.Tests.Services
             void CustomExceptionPortableMethod(bool throwOnWrite, bool throwOnRead);
 
             /** */
-            TestPortableClass PortableArgMethod(int arg1, IPortableObject arg2);
+            TestPortableClass PortableArgMethod(int arg1, IBinaryObject arg2);
 
             /** */
-            IPortableObject PortableResultMethod(int arg1, TestPortableClass arg2);
+            IBinaryObject PortableResultMethod(int arg1, TestPortableClass arg2);
 
             /** */
-            IPortableObject PortableArgAndResultMethod(int arg1, IPortableObject arg2);
+            IBinaryObject PortableArgAndResultMethod(int arg1, IBinaryObject arg2);
 
             /** */
             int AmbiguousMethod(int arg);
@@ -417,13 +417,13 @@ namespace Apache.Ignite.Core.Tests.Services
             void CustomExceptionPortableMethod(bool throwOnWrite, bool throwOnRead);
 
             /** */
-            TestPortableClass PortableArgMethod(int arg1, IPortableObject arg2);
+            TestPortableClass PortableArgMethod(int arg1, IBinaryObject arg2);
 
             /** */
-            IPortableObject PortableResultMethod(int arg1, TestPortableClass arg2);
+            IBinaryObject PortableResultMethod(int arg1, TestPortableClass arg2);
 
             /** */
-            IPortableObject PortableArgAndResultMethod(int arg1, IPortableObject arg2);
+            IBinaryObject PortableArgAndResultMethod(int arg1, IBinaryObject arg2);
 
             /** */
             void MissingMethod();
@@ -526,21 +526,21 @@ namespace Apache.Ignite.Core.Tests.Services
             }
 
             /** <inheritdoc /> */
-            public TestPortableClass PortableArgMethod(int arg1, IPortableObject arg2)
+            public TestPortableClass PortableArgMethod(int arg1, IBinaryObject arg2)
             {
                 return arg2.Deserialize<TestPortableClass>();
             }
 
             /** <inheritdoc /> */
-            public IPortableObject PortableResultMethod(int arg1, TestPortableClass arg2)
+            public IBinaryObject PortableResultMethod(int arg1, TestPortableClass arg2)
             {
-                return _igniteBinary.ToPortable<IPortableObject>(arg2);
+                return _igniteBinary.ToPortable<IBinaryObject>(arg2);
             }
 
             /** <inheritdoc /> */
-            public IPortableObject PortableArgAndResultMethod(int arg1, IPortableObject arg2)
+            public IBinaryObject PortableArgAndResultMethod(int arg1, IBinaryObject arg2)
             {
-                return _igniteBinary.ToPortable<IPortableObject>(arg2.Deserialize<TestPortableClass>());
+                return _igniteBinary.ToPortable<IBinaryObject>(arg2.Deserialize<TestPortableClass>());
             }
 
             /** <inheritdoc /> */
@@ -703,7 +703,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var prx = GetProxy();
 
             var obj = new TestPortableClass { Prop = "PropValue" };
-            var portObj = IgniteBinary.ToPortable<IPortableObject>(obj);
+            var portObj = IgniteBinary.ToPortable<IBinaryObject>(obj);
 
             var result = prx.PortableArgMethod(1, portObj);
 
@@ -731,7 +731,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var prx = GetProxy();
             
             var obj = new TestPortableClass { Prop = "PropValue" };
-            var portObj = IgniteBinary.ToPortable<IPortableObject>(obj);
+            var portObj = IgniteBinary.ToPortable<IBinaryObject>(obj);
 
             var result = prx.PortableArgAndResultMethod(1, portObj);
 

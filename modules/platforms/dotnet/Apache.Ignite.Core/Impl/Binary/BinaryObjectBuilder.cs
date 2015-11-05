@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly BinaryObjectBuilder _parent;
 
         /** Initial portable object. */
-        private readonly PortableUserObject _obj;
+        private readonly BinaryUserObject _obj;
 
         /** Type descriptor. */
         private readonly IBinaryTypeDescriptor _desc;
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="obj">Initial portable object.</param>
         /// <param name="desc">Type descriptor.</param>
         public BinaryObjectBuilder(IgniteBinary igniteBinary, BinaryObjectBuilder parent, 
-            PortableUserObject obj, IBinaryTypeDescriptor desc)
+            BinaryUserObject obj, IBinaryTypeDescriptor desc)
         {
             Debug.Assert(igniteBinary != null);
             Debug.Assert(obj != null);
@@ -350,7 +350,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public IPortableObject Build()
+        public IBinaryObject Build()
         {
             BinaryHeapStream inStream = new BinaryHeapStream(_obj.Data);
 
@@ -377,7 +377,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 _igniteBinary.Marshaller.FinishMarshal(writer);
 
                 // Create portable object once metadata is processed.
-                return new PortableUserObject(_igniteBinary.Marshaller, outStream.InternalArray, 0, 
+                return new BinaryUserObject(_igniteBinary.Marshaller, outStream.InternalArray, 0, 
                     PortableObjectHeader.Read(outStream, 0));
             }
             finally
@@ -392,7 +392,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="obj">Portable object.</param>
         /// <returns>Child builder.</returns>
-        public BinaryObjectBuilder Child(PortableUserObject obj)
+        public BinaryObjectBuilder Child(BinaryUserObject obj)
         {
             var desc = _igniteBinary.Marshaller.GetDescriptor(true, obj.TypeId);
 
@@ -759,7 +759,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="outStream">Output stream.</param>
         /// <param name="port">Portable.</param>
-        internal void ProcessPortable(IBinaryStream outStream, PortableUserObject port)
+        internal void ProcessPortable(IBinaryStream outStream, BinaryUserObject port)
         {
             // Special case: writing portable object with correct inversions.
             BinaryHeapStream inStream = new BinaryHeapStream(port.Data);

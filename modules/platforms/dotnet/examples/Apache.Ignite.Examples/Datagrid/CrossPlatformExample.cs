@@ -121,8 +121,8 @@ namespace Apache.Ignite.Examples.Datagrid
         /// <param name="ignite">Ignite instance.</param>
         private static void GetFromJava(IIgnite ignite)
         {
-            var cache = ignite.GetOrCreateCache<int, IPortableObject>(CacheName)
-                .WithKeepPortable<int, IPortableObject>();
+            var cache = ignite.GetOrCreateCache<int, IBinaryObject>(CacheName)
+                .WithKeepPortable<int, IBinaryObject>();
 
             var orgPortable = cache.GetAsync(KeyJava).Result;
 
@@ -146,8 +146,8 @@ namespace Apache.Ignite.Examples.Datagrid
         /// <param name="ignite">Ignite instance.</param>
         private static void GetFromCpp(IIgnite ignite)
         {
-            var cache = ignite.GetOrCreateCache<int, IPortableObject>(CacheName)
-                .WithKeepPortable<int, IPortableObject>();
+            var cache = ignite.GetOrCreateCache<int, IBinaryObject>(CacheName)
+                .WithKeepPortable<int, IBinaryObject>();
 
             var orgPortable = cache.GetAsync(KeyCpp).Result;
 
@@ -173,8 +173,8 @@ namespace Apache.Ignite.Examples.Datagrid
         private static void GetDotNetPortableInstance(IIgnite ignite)
         {
             // Apply "KeepPortable" flag on data projection.
-            var cache = ignite.GetOrCreateCache<int, IPortableObject>(CacheName)
-                .WithKeepPortable<int, IPortableObject>();
+            var cache = ignite.GetOrCreateCache<int, IBinaryObject>(CacheName)
+                .WithKeepPortable<int, IBinaryObject>();
 
             var org = cache.Get(KeyDotnet);
 

@@ -210,7 +210,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return WriteDate;
             if (type == typeof(Guid))
                 return WriteGuid;
-            if (type == typeof (PortableUserObject))
+            if (type == typeof (BinaryUserObject))
                 return WritePortable;
             if (type == typeof (ArrayList))
                 return WriteArrayList;
@@ -621,7 +621,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryUtils.TypePortable);
 
-            BinaryUtils.WritePortable(ctx.Stream, (PortableUserObject)obj);
+            BinaryUtils.WritePortable(ctx.Stream, (BinaryUserObject)obj);
         }
         
         /// <summary>

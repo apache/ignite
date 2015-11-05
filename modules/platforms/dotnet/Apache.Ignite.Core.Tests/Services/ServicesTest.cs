@@ -374,10 +374,10 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var obj = new PortableObject {Val = 11};
 
-            var res = (IPortableObject) prx.Method(obj);
+            var res = (IBinaryObject) prx.Method(obj);
             Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
 
-            res = (IPortableObject) prx.Method(Grid1.GetPortables().ToPortable<IPortableObject>(obj));
+            res = (IBinaryObject) prx.Method(Grid1.GetPortables().ToPortable<IBinaryObject>(obj));
             Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
         }
         
@@ -401,7 +401,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var res = (PortableObject) prx.Method(obj);
             Assert.AreEqual(11, res.Val);
 
-            res = (PortableObject)prx.Method(Grid1.GetPortables().ToPortable<IPortableObject>(obj));
+            res = (PortableObject)prx.Method(Grid1.GetPortables().ToPortable<IBinaryObject>(obj));
             Assert.AreEqual(11, res.Val);
         }
 
@@ -422,10 +422,10 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var obj = new PortableObject { Val = 11 };
 
-            var res = (IPortableObject)prx.Method(obj);
+            var res = (IBinaryObject)prx.Method(obj);
             Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
 
-            res = (IPortableObject)prx.Method(Grid1.GetPortables().ToPortable<IPortableObject>(obj));
+            res = (IBinaryObject)prx.Method(Grid1.GetPortables().ToPortable<IBinaryObject>(obj));
             Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
         }
 
@@ -734,7 +734,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
                 if (context.AffinityKey != null && !(context.AffinityKey is int))
                 {
-                    var portableObject = context.AffinityKey as IPortableObject;
+                    var portableObject = context.AffinityKey as IBinaryObject;
                     
                     var key = portableObject != null
                         ? portableObject.Deserialize<PortableObject>()

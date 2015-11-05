@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Services
         private const string KeyPortableCause = "PortableCause";
 
         /** Cause. */
-        private readonly IPortableObject _portableCause;
+        private readonly IBinaryObject _binaryCause;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceInvocationException"/> class.
@@ -64,11 +64,11 @@ namespace Apache.Ignite.Core.Services
         /// Initializes a new instance of the <see cref="ServiceInvocationException"/> class.
         /// </summary>
         /// <param name="message">The message.</param>
-        /// <param name="portableCause">The portable cause.</param>
-        public ServiceInvocationException(string message, IPortableObject portableCause)
+        /// <param name="binaryCause">The portable cause.</param>
+        public ServiceInvocationException(string message, IBinaryObject binaryCause)
             :base(message)
         {
-            _portableCause = portableCause;
+            _binaryCause = binaryCause;
         }
 
         /// <summary>
@@ -79,21 +79,21 @@ namespace Apache.Ignite.Core.Services
         protected ServiceInvocationException(SerializationInfo info, StreamingContext ctx)
             : base(info, ctx)
         {
-            _portableCause = (IPortableObject) info.GetValue(KeyPortableCause, typeof (IPortableObject));
+            _binaryCause = (IBinaryObject) info.GetValue(KeyPortableCause, typeof (IBinaryObject));
         }
 
         /// <summary>
         /// Gets the portable cause.
         /// </summary>
-        public IPortableObject PortableCause
+        public IBinaryObject BinaryCause
         {
-            get { return _portableCause; }
+            get { return _binaryCause; }
         }
 
         /** <inheritdoc /> */
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue(KeyPortableCause, _portableCause);
+            info.AddValue(KeyPortableCause, _binaryCause);
 
             base.GetObjectData(info, context);
         }

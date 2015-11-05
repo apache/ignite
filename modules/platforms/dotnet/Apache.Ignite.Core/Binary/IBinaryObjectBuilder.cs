@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Binary
 
         /// <summary>
         /// Set object field value. Value can be of any type including other
-        /// <see cref="IPortableObject"/> and other builders.
+        /// <see cref="IBinaryObject"/> and other builders.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Field value.</param>
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Binary
         /// Build the object.
         /// </summary>
         /// <returns>Resulting portable object.</returns>
-        IPortableObject Build();
+        IBinaryObject Build();
 
         /// <summary>
         /// Sets the array field.

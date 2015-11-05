@@ -1230,7 +1230,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (_builder != null)
             {
                 // Special case for portable object during build.
-                PortableUserObject portObj = obj as PortableUserObject;
+                BinaryUserObject portObj = obj as BinaryUserObject;
 
                 if (portObj != null)
                 {

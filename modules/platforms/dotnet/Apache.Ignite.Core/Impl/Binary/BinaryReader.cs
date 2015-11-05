@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private bool _detach;
 
         /** Portable read mode. */
-        private PortableMode _mode;
+        private BinaryMode _mode;
 
         /** Current type structure tracker. */
         private PortableStructureTracker _curStruct;
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             (Marshaller marsh,
             IDictionary<long, IBinaryTypeDescriptor> descs, 
             IBinaryStream stream, 
-            PortableMode mode,
+            BinaryMode mode,
             BinaryObjectBuilder builder)
         {
             _marsh = marsh;
@@ -556,7 +556,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var portableBytesPos = Stream.Position;
 
-            if (_mode != PortableMode.Deserialize)
+            if (_mode != BinaryMode.Deserialize)
                 return TypeCaster<T>.Cast(ReadAsPortable(portableBytesPos, len, doDetach));
 
             Stream.Seek(len, SeekOrigin.Current);
@@ -567,7 +567,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             Stream.Seek(portableBytesPos + offset, SeekOrigin.Begin);
 
-            _mode = PortableMode.KeepPortable;
+            _mode = BinaryMode.KeepBinary;
 
             try
             {
@@ -575,7 +575,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
             finally
             {
-                _mode = PortableMode.Deserialize;
+                _mode = BinaryMode.Deserialize;
 
                 Stream.Seek(retPos, SeekOrigin.Begin);
             }
@@ -584,7 +584,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reads the portable object in portable form.
         /// </summary>
-        private PortableUserObject ReadAsPortable(int portableBytesPos, int dataLen, bool doDetach)
+        private BinaryUserObject ReadAsPortable(int portableBytesPos, int dataLen, bool doDetach)
         {
             try
             {
@@ -597,11 +597,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var hdr = PortableObjectHeader.Read(Stream, pos);
 
                 if (!doDetach)
-                    return new PortableUserObject(_marsh, Stream.GetArray(), pos, hdr);
+                    return new BinaryUserObject(_marsh, Stream.GetArray(), pos, hdr);
 
                 Stream.Seek(pos, SeekOrigin.Begin);
 
-                return new PortableUserObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
+                return new BinaryUserObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
             }
             finally
             {
@@ -628,18 +628,18 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (_hnds != null && _hnds.TryGetValue(pos, out hndObj))
                     return (T) hndObj;
 
-                if (hdr.IsUserType && _mode == PortableMode.ForcePortable)
+                if (hdr.IsUserType && _mode == BinaryMode.ForceBinary)
                 {
-                    PortableUserObject portObj;
+                    BinaryUserObject portObj;
 
                     if (_detach)
                     {
                         Stream.Seek(pos, SeekOrigin.Begin);
 
-                        portObj = new PortableUserObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
+                        portObj = new BinaryUserObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
                     }
                     else
-                        portObj = new PortableUserObject(_marsh, Stream.GetArray(), pos, hdr);
+                        portObj = new BinaryUserObject(_marsh, Stream.GetArray(), pos, hdr);
 
                     T obj = _builder == null ? TypeCaster<T>.Cast(portObj) : TypeCaster<T>.Cast(_builder.Child(portObj));
 

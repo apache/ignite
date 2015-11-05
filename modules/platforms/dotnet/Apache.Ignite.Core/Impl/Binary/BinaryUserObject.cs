@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// User portable object.
     /// </summary>
-    internal class PortableUserObject : IPortableObject
+    internal class BinaryUserObject : IBinaryObject
     {
         /** Cache empty dictionary. */
         private static readonly IDictionary<int, int> EmptyFields = new Dictionary<int, int>();
@@ -53,13 +53,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         private object _deserialized;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PortableUserObject" /> class.
+        /// Initializes a new instance of the <see cref="BinaryUserObject" /> class.
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="data">Raw data of this portable object.</param>
         /// <param name="offset">Offset in data array.</param>
         /// <param name="header">The header.</param>
-        public PortableUserObject(Marshaller marsh, byte[] data, int offset, PortableObjectHeader header)
+        public BinaryUserObject(Marshaller marsh, byte[] data, int offset, PortableObjectHeader header)
         {
             _marsh = marsh;
 
@@ -95,13 +95,13 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             stream.Seek(pos + _offset, SeekOrigin.Begin);
 
-            return _marsh.Unmarshal<T>(stream, PortableMode.ForcePortable, builder);
+            return _marsh.Unmarshal<T>(stream, BinaryMode.ForceBinary, builder);
         }
 
         /** <inheritdoc /> */
         public T Deserialize<T>()
         {
-            return Deserialize<T>(PortableMode.Deserialize);
+            return Deserialize<T>(BinaryMode.Deserialize);
         }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>
         /// Deserialized object.
         /// </returns>
-        private T Deserialize<T>(PortableMode mode)
+        private T Deserialize<T>(BinaryMode mode)
         {
             if (_deserialized == null)
             {
@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (this == obj)
                 return true;
 
-            PortableUserObject that = obj as PortableUserObject;
+            BinaryUserObject that = obj as BinaryUserObject;
 
             if (that != null)
             {
@@ -327,7 +327,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (col == null)
             {
-                PortableUserObject obj0 = obj as PortableUserObject;
+                BinaryUserObject obj0 = obj as BinaryUserObject;
 
                 sb.Append(obj0 == null ? obj : obj0.ToString(handled));
             }

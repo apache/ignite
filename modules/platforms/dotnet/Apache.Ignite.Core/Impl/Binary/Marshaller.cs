@@ -181,7 +181,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>
         /// Object.
         /// </returns>
-        public T Unmarshal<T>(byte[] data, PortableMode mode = PortableMode.Deserialize)
+        public T Unmarshal<T>(byte[] data, BinaryMode mode = BinaryMode.Deserialize)
         {
             return Unmarshal<T>(new BinaryHeapStream(data), mode);
         }
@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public T Unmarshal<T>(IBinaryStream stream, bool keepPortable)
         {
-            return Unmarshal<T>(stream, keepPortable ? PortableMode.KeepPortable : PortableMode.Deserialize, null);
+            return Unmarshal<T>(stream, keepPortable ? BinaryMode.KeepBinary : BinaryMode.Deserialize, null);
         }
 
         /// <summary>
@@ -207,7 +207,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>
         /// Object.
         /// </returns>
-        public T Unmarshal<T>(IBinaryStream stream, PortableMode mode = PortableMode.Deserialize)
+        public T Unmarshal<T>(IBinaryStream stream, BinaryMode mode = BinaryMode.Deserialize)
         {
             return Unmarshal<T>(stream, mode, null);
         }
@@ -221,7 +221,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>
         /// Object.
         /// </returns>
-        public T Unmarshal<T>(IBinaryStream stream, PortableMode mode, BinaryObjectBuilder builder)
+        public T Unmarshal<T>(IBinaryStream stream, BinaryMode mode, BinaryObjectBuilder builder)
         {
             return new BinaryReader(this, _idToDesc, stream, mode, builder).Deserialize<T>();
         }
@@ -237,7 +237,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public BinaryReader StartUnmarshal(IBinaryStream stream, bool keepPortable)
         {
             return new BinaryReader(this, _idToDesc, stream,
-                keepPortable ? PortableMode.KeepPortable : PortableMode.Deserialize, null);
+                keepPortable ? BinaryMode.KeepBinary : BinaryMode.Deserialize, null);
         }
 
         /// <summary>
@@ -246,7 +246,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="stream">Stream.</param>
         /// <param name="mode">The mode.</param>
         /// <returns>Reader.</returns>
-        public BinaryReader StartUnmarshal(IBinaryStream stream, PortableMode mode = PortableMode.Deserialize)
+        public BinaryReader StartUnmarshal(IBinaryStream stream, BinaryMode mode = BinaryMode.Deserialize)
         {
             return new BinaryReader(this, _idToDesc, stream, mode, null);
         }

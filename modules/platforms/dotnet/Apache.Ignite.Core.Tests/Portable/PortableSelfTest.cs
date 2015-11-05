@@ -631,7 +631,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(obj.Field1, newObj.Field1);
             Assert.AreEqual(obj.Field2, newObj.Field2);
 
-            IPortableObject portNewObj = marsh.Unmarshal<IPortableObject>(data, PortableMode.ForcePortable);
+            IBinaryObject portNewObj = marsh.Unmarshal<IBinaryObject>(data, BinaryMode.ForceBinary);
 
             Assert.AreEqual(obj.Field1, portNewObj.GetField<int>("field1"));
             Assert.AreEqual(obj.Field2, portNewObj.GetField<int>("Field2"));
@@ -748,7 +748,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 ValArr = new decimal?[] {decimal.One, decimal.MinusOne}
             };
 
-            IPortableObject portObj = marsh.Unmarshal<IPortableObject>(marsh.Marshal(obj1), PortableMode.ForcePortable);
+            IBinaryObject portObj = marsh.Unmarshal<IBinaryObject>(marsh.Marshal(obj1), BinaryMode.ForceBinary);
 
             Assert.AreEqual(obj1.Val, portObj.GetField<decimal>("val"));
             Assert.AreEqual(obj1.ValArr, portObj.GetField<decimal?[]>("valArr"));
@@ -764,7 +764,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             obj2.RawVal = decimal.MaxValue;
             obj2.RawValArr = new decimal?[] { decimal.MinusOne, decimal.One} ;
 
-            portObj = marsh.Unmarshal<IPortableObject>(marsh.Marshal(obj2), PortableMode.ForcePortable);
+            portObj = marsh.Unmarshal<IBinaryObject>(marsh.Marshal(obj2), BinaryMode.ForceBinary);
 
             Assert.AreEqual(obj2.Val, portObj.GetField<decimal>("val"));
             Assert.AreEqual(obj2.ValArr, portObj.GetField<decimal?[]>("valArr"));
@@ -828,7 +828,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             byte[] bytes = marsh.Marshal(obj);
 
-            IPortableObject portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            IBinaryObject portObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
             Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
 
@@ -858,7 +858,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             byte[] bytes = marsh.Marshal(obj);
 
-            IPortableObject portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            IBinaryObject portObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
             Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
 
@@ -915,7 +915,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             byte[] bytes = marsh.Marshal(obj);
 
-            IPortableObject portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            IBinaryObject portObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
             Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
 
@@ -998,7 +998,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             byte[] bytes = marsh.Marshal(outer);
 
-            IPortableObject outerObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            IBinaryObject outerObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
             HandleOuter newOuter = outerObj.Deserialize<HandleOuter>();
             HandleInner newInner = newOuter.Inner;
@@ -1006,7 +1006,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             CheckHandlesConsistency(outer, inner, newOuter, newInner);
 
             // Get inner object by field.
-            IPortableObject innerObj = outerObj.GetField<IPortableObject>("inner");
+            IBinaryObject innerObj = outerObj.GetField<IBinaryObject>("inner");
 
             newInner = innerObj.Deserialize<HandleInner>();
             newOuter = newInner.Outer;
@@ -1014,7 +1014,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             CheckHandlesConsistency(outer, inner, newOuter, newInner);
 
             // Get outer object from inner object by handle.
-            outerObj = innerObj.GetField<IPortableObject>("outer");
+            outerObj = innerObj.GetField<IBinaryObject>("outer");
 
             newOuter = outerObj.Deserialize<HandleOuter>();
             newInner = newOuter.Inner;
@@ -1059,22 +1059,22 @@ namespace Apache.Ignite.Core.Tests.Portable
             inner.RawOuter = outer;
 
             var bytes = asPortable
-                ? marsh.Marshal(new IgniteBinary(marsh).ToPortable<IPortableObject>(outer))
+                ? marsh.Marshal(new IgniteBinary(marsh).ToPortable<IBinaryObject>(outer))
                 : marsh.Marshal(outer);
 
-            IPortableObject outerObj;
+            IBinaryObject outerObj;
 
             if (detached)
             {
                 var reader = new BinaryReader(marsh, new Dictionary<long, IBinaryTypeDescriptor>(),
-                    new BinaryHeapStream(bytes), PortableMode.ForcePortable, null);
+                    new BinaryHeapStream(bytes), BinaryMode.ForceBinary, null);
 
                 reader.DetachNext();
 
-                outerObj = reader.Deserialize<IPortableObject>();
+                outerObj = reader.Deserialize<IBinaryObject>();
             }
             else
-                outerObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+                outerObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
             HandleOuter newOuter = outerObj.Deserialize<HandleOuter>();
 
@@ -1184,7 +1184,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             byte[] bytes = marsh.Marshal(obj1);
 
-            IPortableObject portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            IBinaryObject portObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
             Assert.IsNotNull(portObj.Deserialize<SpecialArray>());
 
@@ -1210,7 +1210,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             bytes = marsh.Marshal(obj2);
 
-            portObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            portObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
             Assert.AreEqual(guidArr, portObj.GetField<Guid[]>("a"));
             Assert.AreEqual(nGuidArr, portObj.GetField<Guid?[]>("b"));
@@ -1271,7 +1271,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             byte[] data = marsh.Marshal(new PropertyType());
 
-            IPortableObject portNewObj = marsh.Unmarshal<IPortableObject>(data, PortableMode.ForcePortable);
+            IBinaryObject portNewObj = marsh.Unmarshal<IBinaryObject>(data, BinaryMode.ForceBinary);
 
             PropertyType deserialized1 = portNewObj.Deserialize<PropertyType>();
             PropertyType deserialized2 = portNewObj.Deserialize<PropertyType>();
@@ -1310,7 +1310,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             byte[] bytes = marsh.Marshal(outObj);
 
-            IPortableObject portOutObj = marsh.Unmarshal<IPortableObject>(bytes, PortableMode.ForcePortable);
+            IBinaryObject portOutObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
             Assert.AreEqual(outObj.GetHashCode(), portOutObj.GetHashCode());
 

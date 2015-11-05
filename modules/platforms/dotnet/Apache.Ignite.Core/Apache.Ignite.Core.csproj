@@ -253,7 +253,7 @@
     <Compile Include="Impl\Binary\PortableHandleDictionary.cs" />
     <Compile Include="Impl\Binary\BinaryMarshalAwareSerializer.cs" />
     <Compile Include="Impl\Binary\Marshaller.cs" />
-    <Compile Include="Impl\Binary\PortableMode.cs" />
+    <Compile Include="Impl\Binary\BinaryMode.cs" />
     <Compile Include="Impl\Binary\PortableObjectHandle.cs" />
     <Compile Include="Impl\Binary\PortableObjectHeader.cs" />
     <Compile Include="Impl\Binary\PortableObjectSchema.cs" />
@@ -269,7 +269,7 @@
     <Compile Include="Impl\Binary\BinarySurrogateTypeDescriptor.cs" />
     <Compile Include="Impl\Binary\PortableSystemHandlers.cs" />
     <Compile Include="Impl\Binary\BinarySystemTypeSerializer.cs" />
-    <Compile Include="Impl\Binary\PortableUserObject.cs" />
+    <Compile Include="Impl\Binary\BinaryUserObject.cs" />
     <Compile Include="Impl\Binary\BinaryUtils.cs" />
     <Compile Include="Impl\Binary\BinaryWriter.cs" />
     <Compile Include="Impl\Binary\SerializableObjectHolder.cs" />
@@ -310,7 +310,7 @@
     <Compile Include="Binary\IBinarizable.cs" />
     <Compile Include="Binary\IBinaryType.cs" />
     <Compile Include="Binary\INameMapper.cs" />
-    <Compile Include="Binary\IPortableObject.cs" />
+    <Compile Include="Binary\IBinaryObject.cs" />
     <Compile Include="Binary\IPortableRawReader.cs" />
     <Compile Include="Binary\IPortableRawWriter.cs" />
     <Compile Include="Binary\IBinaryReader.cs" />
