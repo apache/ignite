@@ -573,27 +573,35 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (tx.onePhaseCommit() && tx.commitOnPrepare()) {
             assert last;
 
+            Throwable prepErr = this.err.get();
+
             // Must create prepare response before transaction is committed to grab correct return value.
-            final GridNearTxPrepareResponse res = createPrepareResponse();
+            final GridNearTxPrepareResponse res = createPrepareResponse(prepErr);
 
             onComplete(res);
 
             if (tx.commitOnPrepare()) {
                 if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
-                    IgniteInternalFuture<IgniteInternalTx> fut = this.err.get() == null ?
-                        tx.commitAsync() : tx.rollbackAsync();
+                    IgniteInternalFuture<IgniteInternalTx> fut = null;
 
-                    fut.listen(new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
-                        @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
-                            try {
-                                if (replied.compareAndSet(false, true))
-                                    sendPrepareResponse(res);
+                    if (prepErr == null)
+                        fut = tx.commitAsync();
+                    else if (!cctx.kernalContext().isStopping())
+                        fut = tx.rollbackAsync();
+
+                    if (fut != null) {
+                        fut.listen(new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
+                            @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
+                                try {
+                                    if (replied.compareAndSet(false, true))
+                                        sendPrepareResponse(res);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    U.error(log, "Failed to send prepare response for transaction: " + tx, e);
+                                }
                             }
-                            catch (IgniteCheckedException e) {
-                                U.error(log, "Failed to send prepare response for transaction: " + tx, e);
-                            }
-                        }
-                    });
+                        });
+                    }
                 }
             }
             else {
@@ -610,7 +618,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         }
         else {
             if (replied.compareAndSet(false, true)) {
-                GridNearTxPrepareResponse res = createPrepareResponse();
+                GridNearTxPrepareResponse res = createPrepareResponse(this.err.get());
 
                 try {
                     sendPrepareResponse(res);
@@ -659,12 +667,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     }
 
     /**
+     * @param prepErr Error.
      * @return Prepare response.
      */
-    private GridNearTxPrepareResponse createPrepareResponse() {
-        // Send reply back to originating near node.
-        Throwable prepErr = err.get();
-
+    private GridNearTxPrepareResponse createPrepareResponse(@Nullable Throwable prepErr) {
         assert F.isEmpty(tx.invalidPartitions());
 
         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
@@ -981,7 +987,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 if (err0 != null) {
                     err.compareAndSet(null, err0);
 
-                    final GridNearTxPrepareResponse res = createPrepareResponse();
+                    final GridNearTxPrepareResponse res = createPrepareResponse(err.get());
 
                     tx.rollbackAsync().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                         @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {

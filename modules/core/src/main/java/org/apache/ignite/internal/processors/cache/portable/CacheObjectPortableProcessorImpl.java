@@ -40,6 +40,8 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgnitePortables;
+import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -75,6 +77,7 @@ import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -375,6 +378,12 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
                 }
                 catch (IgniteCheckedException e) {
                     if (!ctx.discovery().alive(oldestSrvNode) || !ctx.discovery().pingNode(oldestSrvNode.id()))
+                        continue;
+                    else
+                        throw e;
+                }
+                catch (CacheException e) {
+                    if (X.hasCause(e, ClusterTopologyCheckedException.class, ClusterTopologyException.class))
                         continue;
                     else
                         throw e;
