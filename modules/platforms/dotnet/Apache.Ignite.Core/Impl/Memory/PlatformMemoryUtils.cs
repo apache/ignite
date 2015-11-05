@@ -143,12 +143,12 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="cap">Minimum capacity.</param>
         /// <returns>New memory pointer.</returns>
-        public static long AllocateUnpooled(int cap)
+        public static PlatformMemoryHeader* AllocateUnpooled(int cap)
         {
-            long memPtr = Marshal.AllocHGlobal(MemHdrLen).ToInt64();
+            var memPtr = (PlatformMemoryHeader*) Marshal.AllocHGlobal(MemHdrLen);
             long dataPtr = Marshal.AllocHGlobal(cap).ToInt64();
 
-            *((PlatformMemoryHeader*) memPtr) = new PlatformMemoryHeader(dataPtr, cap, 0, FlagExt);
+            *memPtr = new PlatformMemoryHeader(dataPtr, cap, 0, FlagExt);
 
             return memPtr;
         }
@@ -160,24 +160,20 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <param name="memPtr">Memory pointer.</param>
         /// <param name="cap">Minimum capacity.</param>
         /// <returns></returns>
-        public static void ReallocateUnpooled(long memPtr, int cap)
+        public static void ReallocateUnpooled(PlatformMemoryHeader* memPtr, int cap)
         {
-            var hdr = (PlatformMemoryHeader*) memPtr;
+            memPtr->Pointer = Marshal.ReAllocHGlobal((IntPtr)memPtr->Pointer, (IntPtr)cap).ToInt64();
 
-            hdr->Pointer = Marshal.ReAllocHGlobal((IntPtr) hdr->Pointer, (IntPtr) cap).ToInt64();
-
-            hdr->Capacity = cap;
+            memPtr->Capacity = cap;
         }
 
         /// <summary>
         /// Release unpooled memory chunk.
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
-        public static void ReleaseUnpooled(long memPtr) 
+        public static void ReleaseUnpooled(PlatformMemoryHeader* memPtr) 
         {
-            var hdr = (PlatformMemoryHeader*)memPtr;
-
-            Marshal.FreeHGlobal((IntPtr) hdr->Pointer);
+            Marshal.FreeHGlobal((IntPtr) memPtr->Pointer);
             Marshal.FreeHGlobal((IntPtr) memPtr);
         }
 

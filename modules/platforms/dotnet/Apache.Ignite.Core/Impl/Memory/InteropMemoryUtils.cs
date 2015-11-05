@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// <summary>
     /// Utility methods for interop memory management.
     /// </summary>
-    internal static class InteropMemoryUtils
+    internal unsafe static class InteropMemoryUtils
     {
         /// <summary>
         /// Re-allocate external memory chunk.
@@ -30,9 +30,9 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <param name="memPtr">Memory pointer.</param>
         /// <param name="cap">CalculateCapacity.</param>
         /// <returns>New memory pointer.</returns>
-        public static void ReallocateExternal(long memPtr, int cap)
+        public static void ReallocateExternal(PlatformMemoryHeader* memPtr, int cap)
         {
-            UnmanagedUtils.Reallocate(memPtr, cap);
+            UnmanagedUtils.Reallocate((long) memPtr, cap);
         }
     }
 }

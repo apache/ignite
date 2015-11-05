@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// Non-resizeable raw memory chunk without metadata header.
     /// </summary>
     [CLSCompliant(false)]
-    public class PlatformRawMemory : IPlatformMemory
+    public unsafe class PlatformRawMemory : IPlatformMemory
     {
         /** */
         private readonly long _memPtr;
@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Heap pointer.</param>
         /// <param name="size">Size.</param>
-        public unsafe PlatformRawMemory(void* memPtr, int size)
+        public  PlatformRawMemory(void* memPtr, int size)
         {
             _memPtr = (long) memPtr;
             _size = size;
@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritdoc /> */
-        public long Pointer
+        public PlatformMemoryHeader* Pointer
         {
             get { throw new NotSupportedException(); }
         }

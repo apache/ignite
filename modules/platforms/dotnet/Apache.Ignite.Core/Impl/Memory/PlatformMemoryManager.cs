@@ -68,12 +68,16 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Cross-platform memory pointer.</param>
         /// <returns>Memory.</returns>
-        public IPlatformMemory Get(long memPtr)
+        public unsafe IPlatformMemory Get(long memPtr)
         {
-            int flags = PlatformMemoryUtils.GetFlags(memPtr);
+            var hdr = (PlatformMemoryHeader*) memPtr;
+            int flags = hdr->Flags;
 
-            return PlatformMemoryUtils.IsExternal(flags) ? GetExternalMemory(memPtr)
-                : PlatformMemoryUtils.IsPooled(flags) ? Pool().Get(memPtr) : new PlatformUnpooledMemory(memPtr);
+            return PlatformMemoryUtils.IsExternal(flags)
+                ? GetExternalMemory(hdr)
+                : PlatformMemoryUtils.IsPooled(flags)
+                    ? Pool().Get(hdr)
+                    : new PlatformUnpooledMemory(hdr);
         }
 
         /// <summary>
@@ -99,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Cross-platform memory pointer.</param>
         /// <returns>Memory.</returns>
-        protected virtual IPlatformMemory GetExternalMemory(long memPtr)
+        protected virtual unsafe IPlatformMemory GetExternalMemory(PlatformMemoryHeader* memPtr)
         {
             return new InteropExternalMemory(memPtr);
         }

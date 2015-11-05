@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// Platform memory chunk.
     /// </summary>
     [CLSCompliant(false)]
-    public interface IPlatformMemory
+    public unsafe interface IPlatformMemory
     {
         /// <summary>
         /// Gets stream for read/write operations on the given memory chunk.
@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <summary>
         /// Cross-platform pointer.
         /// </summary>
-        long Pointer { get; }
+        PlatformMemoryHeader* Pointer { get; }
 
         /// <summary>
         /// Data pointer.

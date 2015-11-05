@@ -30,21 +30,21 @@ namespace Apache.Ignite.Core.Tests.Memory
         /// Test pooled memory.
         /// </summary>
         [Test]
-        public void TestPooled()
+        public unsafe void TestPooled()
         {
             PlatformMemoryManager mgr = new PlatformMemoryManager(256);
 
             var mem1 = mgr.Allocate();
             Assert.IsTrue(mem1 is PlatformPooledMemory);
             Assert.IsTrue(mem1.Capacity >= 256);
-            Assert.IsTrue(mem1.Pointer > 0);
+            Assert.IsTrue(mem1.Pointer > (void*) 0);
             Assert.IsTrue(mem1.Data > 0);
             Assert.AreEqual(0, mem1.Length);
 
             mem1.Reallocate(512);
 
             Assert.IsTrue(mem1.Capacity >= 512);
-            Assert.IsTrue(mem1.Pointer > 0);
+            Assert.IsTrue(mem1.Pointer > (void*) 0);
             Assert.IsTrue(mem1.Data > 0);
             Assert.AreEqual(0, mem1.Length);
 
@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Memory
 
             Assert.AreSame(mem1, mgr.Allocate());
             Assert.IsTrue(mem1.Capacity >= 512);
-            Assert.IsTrue(mem1.Pointer > 0);
+            Assert.IsTrue(mem1.Pointer > (void*) 0);
             Assert.IsTrue(mem1.Data > 0);
             Assert.AreEqual(128, mem1.Length);
 
@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Tests.Memory
         /// Test unpooled memory.
         /// </summary>
         [Test]
-        public void TestUnpooled()
+        public unsafe void TestUnpooled()
         {
             PlatformMemoryManager mgr = new PlatformMemoryManager(256);
 
@@ -106,13 +106,13 @@ namespace Apache.Ignite.Core.Tests.Memory
             IPlatformMemory mem1 = mgr.Allocate();
             Assert.IsTrue(mem1 is PlatformUnpooledMemory);
             Assert.IsTrue(mem1.Capacity >= 256);
-            Assert.IsTrue(mem1.Pointer > 0);
+            Assert.IsTrue(mem1.Pointer > (void*) 0);
             Assert.IsTrue(mem1.Data > 0);
             Assert.AreEqual(0, mem1.Length);
 
             mem1.Reallocate(512);
             Assert.IsTrue(mem1.Capacity >= 512);
-            Assert.IsTrue(mem1.Pointer > 0);
+            Assert.IsTrue(mem1.Pointer > (void*) 0);
             Assert.IsTrue(mem1.Data > 0);
             Assert.AreEqual(0, mem1.Length);
 
@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Tests.Memory
             IPlatformMemory mem2 = mgr.Allocate();
             Assert.AreNotSame(mem1, mem2);
             Assert.IsTrue(mem2.Capacity >= 256);
-            Assert.IsTrue(mem2.Pointer > 0);
+            Assert.IsTrue(mem2.Pointer > (void*) 0);
             Assert.IsTrue(mem2.Data > 0);
             Assert.AreEqual(0, mem2.Length);
 

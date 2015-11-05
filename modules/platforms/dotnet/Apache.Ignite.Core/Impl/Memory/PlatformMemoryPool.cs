@@ -51,7 +51,9 @@ namespace Apache.Ignite.Core.Impl.Memory
             var memPtr = PlatformMemoryUtils.AllocatePooled(_hdr, cap);
 
             // memPtr == 0 means that we failed to acquire thread-local memory chunk, so fallback to unpooled memory.
-            return memPtr != (void*) 0 ? Get((long) memPtr) : new PlatformUnpooledMemory(PlatformMemoryUtils.AllocateUnpooled(cap));
+            return memPtr != (void*) 0
+                ? Get(memPtr)
+                : new PlatformUnpooledMemory(PlatformMemoryUtils.AllocateUnpooled(cap));
         }
 
         /// <summary>
@@ -59,18 +61,18 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <param name="cap">Minimum capacity.</param>
-        public static void Reallocate(long memPtr, int cap)
+        public static void Reallocate(PlatformMemoryHeader* memPtr, int cap)
         {
-            PlatformMemoryUtils.ReallocatePooled((PlatformMemoryHeader*) memPtr, cap);
+            PlatformMemoryUtils.ReallocatePooled(memPtr, cap);
         }
 
         /// <summary>
         /// Release pooled memory chunk.
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
-        public static void Release(long memPtr)
+        public static void Release(PlatformMemoryHeader* memPtr)
         {
-            PlatformMemoryUtils.ReleasePooled((PlatformMemoryHeader*) memPtr);
+            PlatformMemoryUtils.ReleasePooled(memPtr);
         }
 
         /// <summary>
@@ -78,11 +80,11 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <returns>Memory chunk.</returns>
-        public PlatformMemory Get(long memPtr) 
+        public PlatformMemory Get(PlatformMemoryHeader* memPtr) 
         {
             for (var i = 0; i < _mem.Length; i++)
             {
-                if (memPtr == (long) (_hdr + i))
+                if (memPtr == _hdr + i)
                 {
                     _mem[i] = _mem[i] ?? new PlatformPooledMemory(memPtr);
 
@@ -98,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         protected override bool ReleaseHandle()
         {
-            PlatformMemoryUtils.ReleasePool((PlatformMemoryHeader*) handle);
+            PlatformMemoryUtils.ReleasePool(_hdr);
 
             handle = new IntPtr(-1);
 

@@ -20,13 +20,13 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// <summary>
     /// Interop external memory chunk.
     /// </summary>
-    internal class InteropExternalMemory : PlatformMemory
+    internal unsafe class InteropExternalMemory : PlatformMemory
     {
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
-        public InteropExternalMemory(long memPtr) : base(memPtr)
+        public InteropExternalMemory(PlatformMemoryHeader* memPtr) : base(memPtr)
         {
             // No-op.
         }

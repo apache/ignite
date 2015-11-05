@@ -20,13 +20,13 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// <summary>
     /// Platform unpooled memory chunk.
     /// </summary>
-    internal class PlatformUnpooledMemory : PlatformMemory
+    internal unsafe class PlatformUnpooledMemory : PlatformMemory
     {
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
-        public PlatformUnpooledMemory(long memPtr) : base(memPtr)
+        public PlatformUnpooledMemory(PlatformMemoryHeader* memPtr) : base(memPtr)
         {
             // No-op.
         }
@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         public override void Reallocate(int cap)
         {
             // Try doubling capacity to avoid excessive allocations.
-            int doubledCap = ((PlatformMemoryUtils.GetCapacity(Pointer) + 16) << 1) - 16;
+            int doubledCap = Pointer->Capacity * 2;
 
             if (doubledCap > cap)
                 cap = doubledCap;
