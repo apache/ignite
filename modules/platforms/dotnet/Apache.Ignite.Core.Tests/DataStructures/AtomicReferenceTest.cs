@@ -114,6 +114,8 @@ namespace Apache.Ignite.Core.Tests.DataStructures
 
             Assert.AreEqual(15, atomics[0].CompareExchange(42, 15));
             atomics.ForEach(x => Assert.AreEqual(42, x.Get()));
+
+            TestOperations(1, 2);
         }
 
         /// <summary>
@@ -156,6 +158,17 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             old = atomic.CompareExchange(x, y);
             Assert.AreEqual(x, old);
             Assert.AreEqual(x, atomic.Get());
+
+            // Check nulls
+            var nul = default(T);
+
+            old = atomic.CompareExchange(nul, x);
+            Assert.AreEqual(x, old);
+            Assert.AreEqual(nul, atomic.Get());
+
+            old = atomic.CompareExchange(y, nul);
+            Assert.AreEqual(nul, old);
+            Assert.AreEqual(y, atomic.Get());
         }
 
         /// <summary>
