@@ -20,9 +20,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache.Event;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
     /// Utility methods for continuous queries.

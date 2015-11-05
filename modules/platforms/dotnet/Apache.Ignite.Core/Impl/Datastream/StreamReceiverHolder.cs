@@ -20,14 +20,14 @@ namespace Apache.Ignite.Core.Impl.Datastream
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Datastream;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Portable wrapper for <see cref="IStreamReceiver{TK,TV}"/>.

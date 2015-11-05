@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Binary
 {
     using System.Collections.Generic;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Reader extensions.

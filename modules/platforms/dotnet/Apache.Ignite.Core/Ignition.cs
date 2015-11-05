@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-using Apache.Ignite.Core.Portable;
-
 namespace Apache.Ignite.Core 
 {
     using System;
@@ -27,13 +25,14 @@ namespace Apache.Ignite.Core
     using System.Reflection;
     using System.Runtime;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Memory;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;

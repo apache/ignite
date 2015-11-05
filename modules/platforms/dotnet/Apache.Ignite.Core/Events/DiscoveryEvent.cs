@@ -20,9 +20,9 @@ namespace Apache.Ignite.Core.Events
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Grid discovery event.

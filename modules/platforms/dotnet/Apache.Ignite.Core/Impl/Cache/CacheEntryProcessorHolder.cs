@@ -21,11 +21,11 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Resource;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Portable wrapper for the <see cref="ICacheEntryProcessor{TK,TV,TA,TR}"/> and it's argument.

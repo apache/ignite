@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Portable.IO;
-    using Apache.Ignite.Core.Impl.Portable.Metadata;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Binary.Metadata;
 
     /// <summary>
     /// Portable builder implementation.

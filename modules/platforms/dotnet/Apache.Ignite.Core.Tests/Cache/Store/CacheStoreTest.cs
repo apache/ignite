@@ -20,9 +20,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Portable;
     using NUnit.Framework;
 
     /// <summary>

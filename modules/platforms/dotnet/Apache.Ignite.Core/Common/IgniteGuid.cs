@@ -19,7 +19,7 @@ namespace Apache.Ignite.Core.Common
 {
     using System;
     using System.Globalization;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Ignite guid with additional local ID.

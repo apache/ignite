@@ -20,10 +20,10 @@ namespace Apache.Ignite.Core.Events
     using System;
     using System.Diagnostics;
     using System.Globalization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Base event implementation.

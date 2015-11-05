@@ -23,8 +23,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Datastream;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 

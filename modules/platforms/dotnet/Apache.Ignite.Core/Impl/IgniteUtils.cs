@@ -25,13 +25,13 @@ namespace Apache.Ignite.Core.Impl
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Unmanaged;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Native utility methods.

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
@@ -27,7 +28,6 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Messaging;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
 

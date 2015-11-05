@@ -23,9 +23,9 @@ namespace Apache.Ignite.Core.Tests.Portable
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
     /// <summary>

@@ -26,6 +26,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Cache.Store;
@@ -36,8 +38,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Messaging;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Lifecycle;

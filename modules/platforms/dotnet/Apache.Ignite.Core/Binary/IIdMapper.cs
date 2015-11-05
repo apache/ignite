@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Portable
+namespace Apache.Ignite.Core.Binary
 {
     /// <summary>
     /// Maps class name and class field names to integer identifiers.

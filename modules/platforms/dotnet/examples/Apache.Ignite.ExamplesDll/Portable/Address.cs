@@ -16,7 +16,7 @@
  */
 
 using System;
-using Apache.Ignite.Core.Portable;
+using Apache.Ignite.Core.Binary;
 
 namespace Apache.Ignite.ExamplesDll.Portable
 {

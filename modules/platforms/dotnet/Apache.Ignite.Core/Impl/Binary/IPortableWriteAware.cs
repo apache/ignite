@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Binary
 {
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Represents an object that can write itself to a portable writer.

@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Events
 {
     using System;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Event reader.

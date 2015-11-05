@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.IO;
-    using Apache.Ignite.Core.Impl.Portable.IO;
-    using Apache.Ignite.Core.Impl.Portable.Metadata;
-    using Apache.Ignite.Core.Impl.Portable.Structure;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Binary.Metadata;
+    using Apache.Ignite.Core.Impl.Binary.Structure;
 
     /// <summary>
     /// Portable writer implementation.

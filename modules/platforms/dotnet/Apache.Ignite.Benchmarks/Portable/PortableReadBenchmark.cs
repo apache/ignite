@@ -21,9 +21,9 @@ namespace Apache.Ignite.Benchmarks.Portable
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Benchmarks.Model;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Memory;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Portable read benchmark.

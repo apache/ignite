@@ -19,8 +19,8 @@ namespace Apache.Ignite.Core.Services
 {
     using System;
     using System.Runtime.Serialization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Indicates an error during Grid Services invocation.

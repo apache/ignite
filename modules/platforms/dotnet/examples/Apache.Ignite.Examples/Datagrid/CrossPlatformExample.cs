@@ -18,7 +18,7 @@
 using System;
 using System.Collections.Generic;
 using Apache.Ignite.Core;
-using Apache.Ignite.Core.Portable;
+using Apache.Ignite.Core.Binary;
 using Apache.Ignite.ExamplesDll.Portable;
 
 namespace Apache.Ignite.Examples.Datagrid

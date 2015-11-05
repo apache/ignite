@@ -15,14 +15,12 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Portable.IO
+namespace Apache.Ignite.Core.Impl.Binary.IO
 {
     using System;
     using System.Diagnostics;
     using System.IO;
     using System.Text;
-    using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Memory;
 
     /// <summary>
     /// Portable onheap stream.

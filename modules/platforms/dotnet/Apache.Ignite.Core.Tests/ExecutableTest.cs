@@ -22,9 +22,9 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.CodeDom.Compiler;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Tests.Process;
     using Microsoft.CSharp;

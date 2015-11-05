@@ -19,8 +19,8 @@ namespace Apache.Ignite.Core.Impl.Cluster
 {
     using System;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Cluster metrics implementation.

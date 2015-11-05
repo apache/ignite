@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Portable
+namespace Apache.Ignite.Core.Binary
 {
     using System;
     using System.Collections.Generic;

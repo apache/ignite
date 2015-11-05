@@ -17,7 +17,7 @@
 
 namespace Apache.Ignite.Benchmarks.Model
 {
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Address.

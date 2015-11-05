@@ -19,7 +19,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
     using System.Diagnostics;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>

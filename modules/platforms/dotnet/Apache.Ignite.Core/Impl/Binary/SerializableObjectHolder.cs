@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Binary
 {
     using System.Diagnostics;
     using System.Runtime.Serialization.Formatters.Binary;
-    using Apache.Ignite.Core.Impl.Portable.IO;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
     /// Wraps Serializable item in a portable.

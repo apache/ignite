@@ -23,12 +23,12 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Events;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 

@@ -19,9 +19,9 @@ namespace Apache.Ignite.Core.Events
 {
     using System;
     using System.Globalization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Ignite job event.

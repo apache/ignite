@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Threading;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
     /// Shared schema holder.

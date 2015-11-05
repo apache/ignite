@@ -19,13 +19,13 @@ namespace Apache.Ignite.Core.Impl.Messaging
 {
     using System;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Messaging;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Non-generic portable message listener wrapper.

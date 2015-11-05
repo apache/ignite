@@ -19,7 +19,7 @@ namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
     using System.Diagnostics;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Services;
 
     /// <summary>

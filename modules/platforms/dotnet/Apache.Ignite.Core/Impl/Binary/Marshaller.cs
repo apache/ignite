@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.Messaging;
-    using Apache.Ignite.Core.Impl.Portable.IO;
-    using Apache.Ignite.Core.Impl.Portable.Metadata;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Marshaller implementation.

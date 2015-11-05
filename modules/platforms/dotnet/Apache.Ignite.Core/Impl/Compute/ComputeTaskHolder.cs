@@ -26,11 +26,11 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Memory;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Resource;
 
     /// <summary>

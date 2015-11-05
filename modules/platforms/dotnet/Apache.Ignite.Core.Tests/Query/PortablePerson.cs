@@ -17,7 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Query
 {
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Test person.

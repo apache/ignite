@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Portable.Structure
+namespace Apache.Ignite.Core.Impl.Binary.Structure
 {
     /// <summary>
     /// Portable type structure update descriptor.

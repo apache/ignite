@@ -20,8 +20,8 @@ namespace Apache.Ignite.Core.Impl.Events
     using System;
     using System.Diagnostics;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
     /// Event filter/listener holder for RemoteListen.

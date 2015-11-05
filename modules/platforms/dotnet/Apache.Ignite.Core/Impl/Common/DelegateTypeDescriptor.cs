@@ -25,10 +25,10 @@ namespace Apache.Ignite.Core.Impl.Common
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Datastream;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
 

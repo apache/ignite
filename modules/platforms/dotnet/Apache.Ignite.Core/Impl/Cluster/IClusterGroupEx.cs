@@ -17,8 +17,8 @@
 
 namespace Apache.Ignite.Core.Impl.Cluster
 {
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Extended internal Ignite interface.

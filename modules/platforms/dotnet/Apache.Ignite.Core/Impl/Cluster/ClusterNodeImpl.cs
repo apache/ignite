@@ -20,11 +20,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Collections;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Cluster node implementation.

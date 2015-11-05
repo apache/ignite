@@ -23,13 +23,13 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
-    using Apache.Ignite.Core.Impl.Portable.Metadata;
     using Apache.Ignite.Core.Impl.Unmanaged;
-    using Apache.Ignite.Core.Portable;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>

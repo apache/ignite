@@ -24,8 +24,8 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Reflection;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Services;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;

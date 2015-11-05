@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
     /// Grid future implementation.

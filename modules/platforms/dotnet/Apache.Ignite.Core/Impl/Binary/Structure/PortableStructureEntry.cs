@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Portable.Structure
+namespace Apache.Ignite.Core.Impl.Binary.Structure
 {
     using System.Diagnostics;
-
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Portable type structure entry. Might be either a normal field, a reference to jump table, or an empty entry.

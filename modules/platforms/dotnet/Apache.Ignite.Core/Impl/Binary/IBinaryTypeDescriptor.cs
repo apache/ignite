@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections.Generic;
-
-    using Apache.Ignite.Core.Impl.Portable.Structure;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary.Structure;
 
     /// <summary>
     /// Type descriptor.

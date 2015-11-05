@@ -18,11 +18,11 @@
 namespace Apache.Ignite.Core.Datastream
 {
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Datastream;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Convenience adapter to transform update existing values in streaming cache 

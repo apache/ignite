@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Benchmarks.Model
 {
     using System;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Model class with all kinds of fields to test serialization.

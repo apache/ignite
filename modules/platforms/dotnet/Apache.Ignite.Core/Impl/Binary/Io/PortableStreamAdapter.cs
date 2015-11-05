@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Portable.IO
+namespace Apache.Ignite.Core.Impl.Binary.IO
 {
     using System;
     using System.IO;

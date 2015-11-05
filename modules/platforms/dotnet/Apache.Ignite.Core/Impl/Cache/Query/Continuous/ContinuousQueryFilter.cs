@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 {
     using Apache.Ignite.Core.Cache.Event;
-    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Resource;
     using CQU = ContinuousQueryUtils;
 

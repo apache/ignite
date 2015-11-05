@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections;
     using System.Diagnostics;
     using System.Linq.Expressions;
     using System.Reflection;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Write action delegate.

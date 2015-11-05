@@ -21,8 +21,8 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Collections;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>

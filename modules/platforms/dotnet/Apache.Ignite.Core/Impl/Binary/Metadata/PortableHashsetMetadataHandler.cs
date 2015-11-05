@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Portable.Metadata
+namespace Apache.Ignite.Core.Impl.Binary.Metadata
 {
     using System.Collections.Generic;
 

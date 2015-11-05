@@ -20,11 +20,11 @@ namespace Apache.Ignite.Core.Impl.Compute
     using System;
     using System.Diagnostics;
     using System.Reflection;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Resource;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Resource;
 
     /// <summary>

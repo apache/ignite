@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Events
 {
     using System.Globalization;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Grid checkpoint event.

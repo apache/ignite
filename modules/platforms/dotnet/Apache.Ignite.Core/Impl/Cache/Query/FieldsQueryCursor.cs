@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Cache.Query
 {
     using System.Collections;
-    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>

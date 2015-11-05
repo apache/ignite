@@ -22,8 +22,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache.Query;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 

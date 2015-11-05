@@ -23,20 +23,20 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Events;
     using Apache.Ignite.Core.Impl.Messaging;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.Metadata;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Services;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 

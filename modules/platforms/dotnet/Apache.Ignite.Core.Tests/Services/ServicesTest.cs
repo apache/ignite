@@ -21,9 +21,9 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;

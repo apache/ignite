@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Portable.Metadata
+namespace Apache.Ignite.Core.Impl.Binary.Metadata
 {
     using System;
     using System.Collections.Generic;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Metadata for particular type.

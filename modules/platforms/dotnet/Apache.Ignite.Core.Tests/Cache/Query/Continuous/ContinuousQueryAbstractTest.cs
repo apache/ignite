@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query;
@@ -31,7 +32,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
     using CQU = Apache.Ignite.Core.Impl.Cache.Query.Continuous.ContinuousQueryUtils;

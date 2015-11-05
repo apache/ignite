@@ -20,16 +20,16 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Messaging;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
 

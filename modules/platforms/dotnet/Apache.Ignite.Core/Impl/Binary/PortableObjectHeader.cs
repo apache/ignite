@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Portable
+namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Runtime.InteropServices;
-    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
     /// Portable object header structure.

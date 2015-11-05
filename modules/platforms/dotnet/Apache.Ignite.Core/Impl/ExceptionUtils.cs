@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
-    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>

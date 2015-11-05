@@ -26,10 +26,10 @@ namespace Apache.Ignite.Core.Tests.Portable
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using NUnit.Framework;
 
     /// <summary>

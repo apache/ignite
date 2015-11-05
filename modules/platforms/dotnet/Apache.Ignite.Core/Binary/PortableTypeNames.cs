@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Portable
+namespace Apache.Ignite.Core.Binary
 {
     /// <summary>
     /// Portable type name constants.

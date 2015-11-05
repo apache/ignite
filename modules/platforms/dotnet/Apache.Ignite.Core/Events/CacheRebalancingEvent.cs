@@ -18,8 +18,8 @@
 namespace Apache.Ignite.Core.Events
 {
     using System.Globalization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// In-memory database (cache) rebalancing event. Rebalance event happens every time there is a change

@@ -18,8 +18,8 @@
 namespace Apache.Ignite.Core.Cache.Query
 {
     using System;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
-    using Apache.Ignite.Core.Impl.Portable;
 
     /// <summary>
     /// Text query.

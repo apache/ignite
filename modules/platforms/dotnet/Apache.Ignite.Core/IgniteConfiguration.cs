@@ -19,8 +19,8 @@ namespace Apache.Ignite.Core
 {
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Lifecycle;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Grid configuration.

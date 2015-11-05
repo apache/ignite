@@ -24,13 +24,13 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Tests.Query;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;

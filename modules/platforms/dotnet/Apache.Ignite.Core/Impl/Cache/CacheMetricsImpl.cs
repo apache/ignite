@@ -17,8 +17,8 @@
 
 namespace Apache.Ignite.Core.Impl.Cache
 {
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Cache metrics used to obtain statistics on cache.

@@ -17,8 +17,8 @@
 
 namespace Apache.Ignite.Core.Cache.Query
 {
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
-    using Apache.Ignite.Core.Impl.Portable;
 
     /// <summary>
     /// Scan query over cache entries. Will accept all the entries if no predicate was set.

@@ -19,7 +19,7 @@ namespace Apache.Ignite.Core.Impl.DataStructures
 {
     using System.Diagnostics;
     using Apache.Ignite.Core.DataStructures;
-    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Unmanaged;
 
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;

@@ -17,7 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl
 {
-    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
     /// Interop callback.
