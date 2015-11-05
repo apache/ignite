@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="clusterGroup">Cluster group.</param>
-        public Events(IUnmanagedTarget target, PortableMarshaller marsh, IClusterGroup clusterGroup) 
+        public Events(IUnmanagedTarget target, Marshaller marsh, IClusterGroup clusterGroup) 
             : base(target, marsh)
         {
             Debug.Assert(clusterGroup != null);

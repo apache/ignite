@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="clusterGroup">Cluster group.</param>
         /// <param name="keepPortable">Invoker portable flag.</param>
         /// <param name="srvKeepPortable">Server portable flag.</param>
-        public Services(IUnmanagedTarget target, PortableMarshaller marsh, IClusterGroup clusterGroup, 
+        public Services(IUnmanagedTarget target, Marshaller marsh, IClusterGroup clusterGroup, 
             bool keepPortable, bool srvKeepPortable)
             : base(target, marsh)
         {

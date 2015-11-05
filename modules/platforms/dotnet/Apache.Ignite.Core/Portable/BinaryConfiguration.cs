@@ -23,12 +23,12 @@ namespace Apache.Ignite.Core.Portable
     /// <summary>
     /// Portable type configuration.
     /// </summary>
-    public class PortableConfiguration
+    public class BinaryConfiguration
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        public PortableConfiguration()
+        public BinaryConfiguration()
         {
             DefaultKeepDeserialized = true;
         }
@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Portable
         /// Copying constructor.
         /// </summary>
         /// <param name="cfg">Configuration to copy.</param>
-        public PortableConfiguration(PortableConfiguration cfg)
+        public BinaryConfiguration(BinaryConfiguration cfg)
         {
             DefaultIdMapper = cfg.DefaultIdMapper;
             DefaultNameMapper = cfg.DefaultNameMapper;

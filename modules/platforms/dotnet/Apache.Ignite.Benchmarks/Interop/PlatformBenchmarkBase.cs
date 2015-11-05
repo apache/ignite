@@ -58,7 +58,7 @@ namespace Apache.Ignite.Benchmarks.Interop
 
             var cfg = new IgniteConfiguration
             {
-                PortableConfiguration = GetPortableConfiguration(),
+                BinaryConfiguration = GetPortableConfiguration(),
                 JvmOptions = new List<string>
                 {
                     "-Xms2g",
@@ -78,9 +78,9 @@ namespace Apache.Ignite.Benchmarks.Interop
         /// Get portable configuration.
         /// </summary>
         /// <returns>Portable configuration.</returns>
-        private static PortableConfiguration GetPortableConfiguration()
+        private static BinaryConfiguration GetPortableConfiguration()
         {
-            return new PortableConfiguration
+            return new BinaryConfiguration
             {
                 TypeConfigurations = new List<BinaryTypeConfiguration>
                 {

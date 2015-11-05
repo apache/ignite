@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="marsh">Marshaller.</param>
         /// <param name="cacheName">Cache name.</param>
         /// <param name="keepPortable">Portable flag.</param>
-        public DataStreamerImpl(IUnmanagedTarget target, PortableMarshaller marsh, string cacheName, bool keepPortable)
+        public DataStreamerImpl(IUnmanagedTarget target, Marshaller marsh, string cacheName, bool keepPortable)
             : base(target, marsh)
         {
             _cacheName = cacheName;

@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="marsh">Marshaller.</param>
         /// <param name="prj">Projection.</param>
         /// <param name="keepPortable">"keepPortable" flag.</param>
-        public ComputeImpl(IUnmanagedTarget target, PortableMarshaller marsh, ClusterGroupImpl prj, bool keepPortable)
+        public ComputeImpl(IUnmanagedTarget target, Marshaller marsh, ClusterGroupImpl prj, bool keepPortable)
             : base(target, marsh)
         {
             _prj = prj;

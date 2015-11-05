@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="flagKeepPortable">Keep portable flag.</param>
         /// <param name="flagAsync">Async mode flag.</param>
         /// <param name="flagNoRetries">No-retries mode flag.</param>
-        public CacheImpl(Ignite grid, IUnmanagedTarget target, PortableMarshaller marsh,
+        public CacheImpl(Ignite grid, IUnmanagedTarget target, Marshaller marsh,
             bool flagSkipStore, bool flagKeepPortable, bool flagAsync, bool flagNoRetries) : base(target, marsh)
         {
             _ignite = grid;

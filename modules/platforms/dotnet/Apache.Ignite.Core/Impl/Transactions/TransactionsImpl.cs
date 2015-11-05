@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="localNodeId">Local node id.</param>
-        public TransactionsImpl(IUnmanagedTarget target, PortableMarshaller marsh,
+        public TransactionsImpl(IUnmanagedTarget target, Marshaller marsh,
             Guid localNodeId) : base(target, marsh)
         {
             _localNodeId = localNodeId;

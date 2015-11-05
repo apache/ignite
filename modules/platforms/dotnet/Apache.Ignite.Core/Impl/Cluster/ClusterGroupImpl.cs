@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <param name="ignite">Grid.</param>
         /// <param name="pred">Predicate.</param>
         [SuppressMessage("Microsoft.Performance", "CA1805:DoNotInitializeUnnecessarily")]
-        public ClusterGroupImpl(IUnmanagedTarget proc, IUnmanagedTarget target, PortableMarshaller marsh,
+        public ClusterGroupImpl(IUnmanagedTarget proc, IUnmanagedTarget target, Marshaller marsh,
             Ignite ignite, Func<IClusterNode, bool> pred)
             : base(target, marsh)
         {

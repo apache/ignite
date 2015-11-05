@@ -125,11 +125,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             cfg.JvmOptions = TestUtils.TestJavaOptions();
             cfg.SpringConfigUrl = "config\\native-client-test-cache-store.xml";
 
-            PortableConfiguration portCfg = new PortableConfiguration();
+            BinaryConfiguration portCfg = new BinaryConfiguration();
 
             portCfg.Types = new List<string> { typeof(Key).FullName, typeof(Value).FullName };
 
-            cfg.PortableConfiguration = portCfg;
+            cfg.BinaryConfiguration = portCfg;
 
             Ignition.Start(cfg);
         }

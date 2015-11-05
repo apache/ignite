@@ -255,7 +255,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         /** Default poratble marshaller. */
-        private static readonly PortableMarshaller Marsh = new PortableMarshaller(null);
+        private static readonly Marshaller Marsh = new Marshaller(null);
 
         /** Method: ReadArray. */
         public static readonly MethodInfo MtdhReadArray =
@@ -271,7 +271,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Default marshaller.
         /// </summary>
-        public static PortableMarshaller Marshaller
+        public static Marshaller Marshaller
         {
             get { return Marsh; }
         }
@@ -1692,7 +1692,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="reader">Reader.</param>
         /// <param name="assemblies">Assemblies.</param>
         /// <param name="cfg">Portable configuration.</param>
-        public static void ReadConfiguration(BinaryReaderImpl reader, out ICollection<string> assemblies, out PortableConfiguration cfg)
+        public static void ReadConfiguration(BinaryReaderImpl reader, out ICollection<string> assemblies, out BinaryConfiguration cfg)
         {
             if (reader.ReadBoolean())
             {
@@ -1708,7 +1708,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             if (reader.ReadBoolean())
             {
-                cfg = new PortableConfiguration();
+                cfg = new BinaryConfiguration();
 
                 // Read portable types in full form.
                 if (reader.ReadBoolean())

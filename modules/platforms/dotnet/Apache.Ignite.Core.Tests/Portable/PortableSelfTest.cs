@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Portable
     [TestFixture]
     public class PortableSelfTest { 
         /** */
-        private PortableMarshaller _marsh;
+        private Marshaller _marsh;
 
         /// <summary>
         /// 
@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [TestFixtureSetUp]
         public void BeforeTest()
         {
-            _marsh = new PortableMarshaller(null);
+            _marsh = new Marshaller(null);
         }
         
         /**
@@ -509,9 +509,9 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             typeCfgs.Add(new BinaryTypeConfiguration(typeof(DateTimeType)));
 
-            PortableConfiguration cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
+            BinaryConfiguration cfg = new BinaryConfiguration {TypeConfigurations = typeCfgs};
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             DateTime now = DateTime.Now;
 
@@ -567,7 +567,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestGenericCollectionsType()
         {
-            var marsh = new PortableMarshaller(new PortableConfiguration
+            var marsh = new Marshaller(new BinaryConfiguration
             {
                 TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
@@ -614,9 +614,9 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             typeCfgs.Add(new BinaryTypeConfiguration(typeof(PropertyType)));
 
-            PortableConfiguration cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
+            BinaryConfiguration cfg = new BinaryConfiguration {TypeConfigurations = typeCfgs};
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             PropertyType obj = new PropertyType
             {
@@ -648,9 +648,9 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldType)));
 
-            PortableConfiguration cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
+            BinaryConfiguration cfg = new BinaryConfiguration {TypeConfigurations = typeCfgs};
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             PrimitiveFieldType obj = new PrimitiveFieldType();
 
@@ -668,11 +668,11 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldPortableType)));
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
 
             cfg.TypeConfigurations = typeCfgs;
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             PrimitiveFieldPortableType obj = new PrimitiveFieldPortableType();
 
@@ -690,11 +690,11 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldRawPortableType)));
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
 
             cfg.TypeConfigurations = typeCfgs;
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             PrimitiveFieldRawPortableType obj = new PrimitiveFieldRawPortableType();
 
@@ -715,9 +715,9 @@ namespace Apache.Ignite.Core.Tests.Portable
                 }
             };
 
-            PortableConfiguration cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
+            BinaryConfiguration cfg = new BinaryConfiguration {TypeConfigurations = typeCfgs};
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             PrimitiveFieldType obj = new PrimitiveFieldType();
 
@@ -730,7 +730,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestDecimalFields()
         {
-            PortableConfiguration cfg = new PortableConfiguration
+            BinaryConfiguration cfg = new BinaryConfiguration
             {
                 TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
@@ -739,7 +739,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 }
             };
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             // 1. Test reflective stuff.
             DecimalReflective obj1 = new DecimalReflective
@@ -791,18 +791,18 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             typeCfgs.Add(typeCfg);
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
 
             cfg.TypeConfigurations = typeCfgs;
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             PrimitiveFieldType obj = new PrimitiveFieldType();
 
             CheckPrimitiveFields(marsh, obj);
         }
 
-        private void CheckPrimitiveFields(PortableMarshaller marsh, PrimitiveFieldType obj)
+        private void CheckPrimitiveFields(Marshaller marsh, PrimitiveFieldType obj)
         {
             obj.PBool = true;
             obj.PByte = 2;
@@ -824,7 +824,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             CheckPrimitiveFieldsSerialization(marsh, obj);
         }
 
-        private void CheckPrimitiveFieldsSerialization(PortableMarshaller marsh, PrimitiveFieldType obj)
+        private void CheckPrimitiveFieldsSerialization(Marshaller marsh, PrimitiveFieldType obj)
         {
             byte[] bytes = marsh.Marshal(obj);
 
@@ -843,8 +843,8 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestEnumsReflective()
         {
-            PortableMarshaller marsh =
-                new PortableMarshaller(new PortableConfiguration
+            Marshaller marsh =
+                new Marshaller(new BinaryConfiguration
                 {
                     TypeConfigurations =
                         new List<BinaryTypeConfiguration> {new BinaryTypeConfiguration(typeof (EnumType))}
@@ -874,7 +874,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestCollectionsReflective()
         {
-            var marsh = new PortableMarshaller(new PortableConfiguration
+            var marsh = new Marshaller(new BinaryConfiguration
             {
                 TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
@@ -949,11 +949,11 @@ namespace Apache.Ignite.Core.Tests.Portable
             typeCfgs.Add(new BinaryTypeConfiguration(typeof(OuterObjectType)));
             typeCfgs.Add(new BinaryTypeConfiguration(typeof(InnerObjectType)));
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
 
             cfg.TypeConfigurations = typeCfgs;
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             CheckObject(marsh, new OuterObjectType(), new InnerObjectType());
         }
@@ -970,11 +970,11 @@ namespace Apache.Ignite.Core.Tests.Portable
             typeCfgs.Add(new BinaryTypeConfiguration(typeof(HandleInner)));
             typeCfgs.Add(new BinaryTypeConfiguration(typeof(HandleOuter)));
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
 
             cfg.TypeConfigurations = typeCfgs;
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             HandleOuter outer = new HandleOuter();
 
@@ -1028,7 +1028,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestHandlesExclusive([Values(true, false)] bool detached, [Values(true, false)] bool asPortable)
         {
-            var marsh = new PortableMarshaller(new PortableConfiguration
+            var marsh = new Marshaller(new BinaryConfiguration
             {
                 TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
@@ -1059,7 +1059,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             inner.RawOuter = outer;
 
             var bytes = asPortable
-                ? marsh.Marshal(new PortablesImpl(marsh).ToPortable<IPortableObject>(outer))
+                ? marsh.Marshal(new IgniteBinary(marsh).ToPortable<IPortableObject>(outer))
                 : marsh.Marshal(outer);
 
             IPortableObject outerObj;
@@ -1100,7 +1100,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestKeepSerializedDefault()
         {
-            CheckKeepSerialized(new PortableConfiguration(), true);
+            CheckKeepSerialized(new BinaryConfiguration(), true);
         }
 
         ///
@@ -1109,7 +1109,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestKeepSerializedDefaultFalse()
         {
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
 
             cfg.DefaultKeepDeserialized = false;
 
@@ -1126,7 +1126,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             typeCfg.KeepDeserialized = false;
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
 
             cfg.TypeConfigurations = new List<BinaryTypeConfiguration> { typeCfg };
 
@@ -1142,7 +1142,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(typeof(PropertyType));
             typeCfg.KeepDeserialized = true;
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
             cfg.DefaultKeepDeserialized = false;
 
             cfg.TypeConfigurations = new List<BinaryTypeConfiguration> { typeCfg };
@@ -1162,11 +1162,11 @@ namespace Apache.Ignite.Core.Tests.Portable
             typeCfgs.Add(new BinaryTypeConfiguration(typeof(SpecialArray)));
             typeCfgs.Add(new BinaryTypeConfiguration(typeof(SpecialArrayMarshalAware)));
 
-            PortableConfiguration cfg = new PortableConfiguration();
+            BinaryConfiguration cfg = new BinaryConfiguration();
 
             cfg.TypeConfigurations = typeCfgs;
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             Guid[] guidArr = { Guid.NewGuid() };
             Guid?[] nGuidArr = { Guid.NewGuid() };
@@ -1232,7 +1232,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestCompactSchema()
         {
-            var marsh = new PortableMarshaller(new PortableConfiguration
+            var marsh = new Marshaller(new BinaryConfiguration
             {
                 TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
@@ -1257,7 +1257,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        private static void CheckKeepSerialized(PortableConfiguration cfg, bool expKeep)
+        private static void CheckKeepSerialized(BinaryConfiguration cfg, bool expKeep)
         {
             if (cfg.TypeConfigurations == null)
             {
@@ -1267,7 +1267,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 };
             }
 
-            PortableMarshaller marsh = new PortableMarshaller(cfg);
+            Marshaller marsh = new Marshaller(cfg);
 
             byte[] data = marsh.Marshal(new PropertyType());
 
@@ -1301,7 +1301,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(inner.RawAfter, newInner.RawAfter);            
         }
 
-        private static void CheckObject(PortableMarshaller marsh, OuterObjectType outObj, InnerObjectType inObj)
+        private static void CheckObject(Marshaller marsh, OuterObjectType outObj, InnerObjectType inObj)
         {
             inObj.PInt1 = 1;
             inObj.PInt2 = 2;

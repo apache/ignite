@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             IgniteConfigurationEx cfg = new IgniteConfigurationEx
             {
-                PortableConfiguration = new PortableConfiguration
+                BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = new[]
                     {

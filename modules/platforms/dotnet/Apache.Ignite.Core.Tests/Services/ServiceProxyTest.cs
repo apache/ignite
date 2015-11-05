@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Services
         private TestIgniteService _svc;
 
         /** */
-        private readonly PortableMarshaller _marsh = new PortableMarshaller(new PortableConfiguration
+        private readonly Marshaller _marsh = new Marshaller(new BinaryConfiguration
         {
             TypeConfigurations = new[]
             {
@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.Services
         });
 
         /** */
-        protected readonly IPortables Portables;
+        protected readonly IIgniteBinary IgniteBinary;
 
         /** */
         private readonly PlatformMemoryManager _memory = new PlatformMemoryManager(1024);
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         public ServiceProxyTest()
         {
-            Portables = new PortablesImpl(_marsh);
+            IgniteBinary = new IgniteBinary(_marsh);
         }
 
         /// <summary>
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         protected T GetProxy<T>()
         {
-            _svc = new TestIgniteService(Portables);
+            _svc = new TestIgniteService(IgniteBinary);
 
             var prx = new ServiceProxy<T>(InvokeProxyMethod).GetTransparentProxy();
 
@@ -439,15 +439,15 @@ namespace Apache.Ignite.Core.Tests.Services
         private class TestIgniteService : ITestIgniteService, ITestIgniteServiceAmbiguity
         {
             /** */
-            private readonly IPortables _portables;
+            private readonly IIgniteBinary _igniteBinary;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="TestIgniteService"/> class.
             /// </summary>
-            /// <param name="portables">The portables.</param>
-            public TestIgniteService(IPortables portables)
+            /// <param name="igniteBinary">The portables.</param>
+            public TestIgniteService(IIgniteBinary igniteBinary)
             {
-                _portables = portables;
+                _igniteBinary = igniteBinary;
             }
 
             /** <inheritdoc /> */
@@ -534,13 +534,13 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public IPortableObject PortableResultMethod(int arg1, TestPortableClass arg2)
             {
-                return _portables.ToPortable<IPortableObject>(arg2);
+                return _igniteBinary.ToPortable<IPortableObject>(arg2);
             }
 
             /** <inheritdoc /> */
             public IPortableObject PortableArgAndResultMethod(int arg1, IPortableObject arg2)
             {
-                return _portables.ToPortable<IPortableObject>(arg2.Deserialize<TestPortableClass>());
+                return _igniteBinary.ToPortable<IPortableObject>(arg2.Deserialize<TestPortableClass>());
             }
 
             /** <inheritdoc /> */
@@ -703,7 +703,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var prx = GetProxy();
 
             var obj = new TestPortableClass { Prop = "PropValue" };
-            var portObj = Portables.ToPortable<IPortableObject>(obj);
+            var portObj = IgniteBinary.ToPortable<IPortableObject>(obj);
 
             var result = prx.PortableArgMethod(1, portObj);
 
@@ -731,7 +731,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var prx = GetProxy();
             
             var obj = new TestPortableClass { Prop = "PropValue" };
-            var portObj = Portables.ToPortable<IPortableObject>(obj);
+            var portObj = IgniteBinary.ToPortable<IPortableObject>(obj);
 
             var result = prx.PortableArgAndResultMethod(1, portObj);
 

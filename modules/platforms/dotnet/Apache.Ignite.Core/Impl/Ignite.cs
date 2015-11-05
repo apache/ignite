@@ -60,13 +60,13 @@ namespace Apache.Ignite.Core.Impl
         private readonly IUnmanagedTarget _proc;
 
         /** Marshaller. */
-        private readonly PortableMarshaller _marsh;
+        private readonly Marshaller _marsh;
 
         /** Initial projection. */
         private readonly ClusterGroupImpl _prj;
 
         /** Portables. */
-        private readonly PortablesImpl _portables;
+        private readonly IgniteBinary _igniteBinary;
 
         /** Cached proxy. */
         private readonly IgniteProxy _proxy;
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="marsh">Marshaller.</param>
         /// <param name="lifecycleBeans">Lifecycle beans.</param>
         /// <param name="cbs">Callbacks.</param>
-        public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, PortableMarshaller marsh,
+        public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, Marshaller marsh,
             IList<LifecycleBeanHolder> lifecycleBeans, UnmanagedCallbacks cbs)
         {
             Debug.Assert(cfg != null);
@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Impl
 
             _prj = new ClusterGroupImpl(proc, UU.ProcessorProjection(proc), marsh, this, null);
 
-            _portables = new PortablesImpl(marsh);
+            _igniteBinary = new IgniteBinary(marsh);
 
             _proxy = new IgniteProxy(this);
 
@@ -394,9 +394,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IPortables GetPortables()
+        public IIgniteBinary GetPortables()
         {
-            return _portables;
+            return _igniteBinary;
         }
 
         /** <inheritdoc /> */
@@ -455,7 +455,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Marshaller.
         /// </summary>
-        internal PortableMarshaller Marshaller
+        internal Marshaller Marshaller
         {
             get { return _marsh; }
         }

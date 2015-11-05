@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private static readonly IDictionary<int, int> EmptyFields = new Dictionary<int, int>();
 
         /** Marshaller. */
-        private readonly PortableMarshaller _marsh;
+        private readonly Marshaller _marsh;
 
         /** Raw data of this portable object. */
         private readonly byte[] _data;
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="data">Raw data of this portable object.</param>
         /// <param name="offset">Offset in data array.</param>
         /// <param name="header">The header.</param>
-        public PortableUserObject(PortableMarshaller marsh, byte[] data, int offset, PortableObjectHeader header)
+        public PortableUserObject(Marshaller marsh, byte[] data, int offset, PortableObjectHeader header)
         {
             _marsh = marsh;
 

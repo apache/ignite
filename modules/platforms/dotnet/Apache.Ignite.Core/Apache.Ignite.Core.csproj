@@ -252,7 +252,7 @@
     <Compile Include="Impl\Portable\BinaryFullTypeDescriptor.cs" />
     <Compile Include="Impl\Portable\PortableHandleDictionary.cs" />
     <Compile Include="Impl\Portable\BinaryMarshalAwareSerializer.cs" />
-    <Compile Include="Impl\Portable\PortableMarshaller.cs" />
+    <Compile Include="Impl\Portable\Marshaller.cs" />
     <Compile Include="Impl\Portable\PortableMode.cs" />
     <Compile Include="Impl\Portable\PortableObjectHandle.cs" />
     <Compile Include="Impl\Portable\PortableObjectHeader.cs" />
@@ -264,7 +264,7 @@
     <Compile Include="Impl\Portable\BinaryReaderImpl.cs" />
     <Compile Include="Impl\Portable\PortableReflectiveRoutines.cs" />
     <Compile Include="Impl\Portable\BinaryReflectiveSerializer.cs" />
-    <Compile Include="Impl\Portable\PortablesImpl.cs" />
+    <Compile Include="Impl\Portable\IgniteBinary.cs" />
     <Compile Include="Impl\Portable\Structure\PortableStructureTracker.cs" />
     <Compile Include="Impl\Portable\BinarySurrogateTypeDescriptor.cs" />
     <Compile Include="Impl\Portable\PortableSystemHandlers.cs" />
@@ -314,10 +314,10 @@
     <Compile Include="Portable\IPortableRawReader.cs" />
     <Compile Include="Portable\IPortableRawWriter.cs" />
     <Compile Include="Portable\IBinaryReader.cs" />
-    <Compile Include="Portable\IPortables.cs" />
+    <Compile Include="Portable\IIgniteBinary.cs" />
     <Compile Include="Portable\IBinarySerializer.cs" />
     <Compile Include="Portable\IBinaryWriter.cs" />
-    <Compile Include="Portable\PortableConfiguration.cs" />
+    <Compile Include="Portable\BinaryConfiguration.cs" />
     <Compile Include="Portable\BinaryObjectException.cs" />
     <Compile Include="Portable\BinaryTypeConfiguration.cs" />
     <Compile Include="Portable\PortableTypeNames.cs" />

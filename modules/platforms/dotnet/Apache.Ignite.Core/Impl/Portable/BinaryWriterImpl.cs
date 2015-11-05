@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     internal class BinaryWriterImpl : IBinaryWriter, IPortableRawWriter
     {
         /** Marshaller. */
-        private readonly PortableMarshaller _marsh;
+        private readonly Marshaller _marsh;
 
         /** Stream. */
         private readonly IPortableStream _stream;
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Gets the marshaller.
         /// </summary>
-        internal PortableMarshaller Marshaller
+        internal Marshaller Marshaller
         {
             get { return _marsh; }
         }
@@ -1011,7 +1011,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="stream">Stream.</param>
-        internal BinaryWriterImpl(PortableMarshaller marsh, IPortableStream stream)
+        internal BinaryWriterImpl(Marshaller marsh, IPortableStream stream)
         {
             _marsh = marsh;
             _stream = stream;

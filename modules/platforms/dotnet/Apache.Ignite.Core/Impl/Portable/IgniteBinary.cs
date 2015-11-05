@@ -26,18 +26,18 @@ namespace Apache.Ignite.Core.Impl.Portable
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
-    /// Portables implementation.
+    /// Binary implementation.
     /// </summary>
-    internal class PortablesImpl : IPortables
+    internal class IgniteBinary : IIgniteBinary
     {
         /** Owning grid. */
-        private readonly PortableMarshaller _marsh;
+        private readonly Marshaller _marsh;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
-        internal PortablesImpl(PortableMarshaller marsh)
+        internal IgniteBinary(Marshaller marsh)
         {
             _marsh = marsh;
         }
@@ -149,7 +149,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Marshaller.
         /// </summary>
-        internal PortableMarshaller Marshaller
+        internal Marshaller Marshaller
         {
             get
             {

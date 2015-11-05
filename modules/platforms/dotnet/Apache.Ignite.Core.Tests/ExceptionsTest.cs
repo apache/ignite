@@ -291,7 +291,7 @@ namespace Apache.Ignite.Core.Tests
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 GridName = gridName,
-                PortableConfiguration = new PortableConfiguration
+                BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = new[]
                     {

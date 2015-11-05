@@ -65,14 +65,14 @@ namespace Apache.Ignite.Core.Impl
         private readonly IUnmanagedTarget _target;
 
         /** Marshaller. */
-        private readonly PortableMarshaller _marsh;
+        private readonly Marshaller _marsh;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
-        protected PlatformTarget(IUnmanagedTarget target, PortableMarshaller marsh)
+        protected PlatformTarget(IUnmanagedTarget target, Marshaller marsh)
         {
             Debug.Assert(target != null);
             Debug.Assert(marsh != null);
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Marshaller.
         /// </summary>
-        internal PortableMarshaller Marshaller
+        internal Marshaller Marshaller
         {
             get { return _marsh; }
         }
@@ -683,7 +683,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
-        protected PlatformDisposableTarget(IUnmanagedTarget target, PortableMarshaller marsh) : base(target, marsh)
+        protected PlatformDisposableTarget(IUnmanagedTarget target, Marshaller marsh) : base(target, marsh)
         {
             // No-op.
         }

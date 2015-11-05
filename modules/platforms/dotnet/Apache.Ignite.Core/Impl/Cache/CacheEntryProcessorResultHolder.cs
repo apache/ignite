@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <param name="marsh">Marshaller.</param>
-        public void Write(IPortableStream stream, PortableMarshaller marsh)
+        public void Write(IPortableStream stream, Marshaller marsh)
         {
             var writer = marsh.StartMarshal(stream);
 

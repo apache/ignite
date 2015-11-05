@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepPortable">Keep portable flag.</param>
-        public CacheEnumerator(IUnmanagedTarget target, PortableMarshaller marsh, bool keepPortable) : 
+        public CacheEnumerator(IUnmanagedTarget target, Marshaller marsh, bool keepPortable) : 
             base(target, marsh)
         {
             _keepPortable = keepPortable;

@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepPortable">Keep portable flag.</param>
-        protected AbstractQueryCursor(IUnmanagedTarget target, PortableMarshaller marsh, bool keepPortable) : 
+        protected AbstractQueryCursor(IUnmanagedTarget target, Marshaller marsh, bool keepPortable) : 
             base(target, marsh)
         {
             _keepPortable = keepPortable;

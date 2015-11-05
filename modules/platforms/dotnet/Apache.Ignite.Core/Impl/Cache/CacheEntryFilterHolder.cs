@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private readonly bool _keepPortable;
 
         /** Grid. */
-        private readonly PortableMarshaller _marsh;
+        private readonly Marshaller _marsh;
         
         /** Handle. */
         private readonly long _handle;
@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="invoker">The invoker func that takes key and value and invokes wrapped ICacheEntryFilter.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepPortable">Keep portable flag.</param>
-        public CacheEntryFilterHolder(object pred, Func<object, object, bool> invoker, PortableMarshaller marsh, 
+        public CacheEntryFilterHolder(object pred, Func<object, object, bool> invoker, Marshaller marsh, 
             bool keepPortable)
         {
             Debug.Assert(pred != null);

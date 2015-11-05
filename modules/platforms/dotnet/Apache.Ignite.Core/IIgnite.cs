@@ -111,11 +111,11 @@ namespace Apache.Ignite.Core
         IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName);
 
         /// <summary>
-        /// Gets an instance of <see cref="IPortables"/> interface.
+        /// Gets an instance of <see cref="IIgniteBinary"/> interface.
         /// </summary>
-        /// <returns>Instance of <see cref="IPortables"/> interface</returns>
+        /// <returns>Instance of <see cref="IIgniteBinary"/> interface</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
-        IPortables GetPortables();
+        IIgniteBinary GetPortables();
 
         /// <summary>
         /// Gets affinity service to provide information about data partitioning and distribution.

@@ -31,7 +31,7 @@ namespace Apache.Ignite.Benchmarks.Portable
     internal class PortableWriteBenchmark : BenchmarkBase
     {
         /** Marshaller. */
-        private readonly PortableMarshaller _marsh;
+        private readonly Marshaller _marsh;
 
         /** Memory manager. */
         private readonly PlatformMemoryManager _memMgr = new PlatformMemoryManager(1024);
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Benchmarks.Portable
         /// </summary>
         public PortableWriteBenchmark()
         {
-            _marsh = new PortableMarshaller(new PortableConfiguration
+            _marsh = new Marshaller(new BinaryConfiguration
             {
                 TypeConfigurations = new List<BinaryTypeConfiguration>
                 {

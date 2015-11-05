@@ -32,12 +32,12 @@ namespace Apache.Ignite.Core.Impl.Portable
     using Apache.Ignite.Core.Portable;
 
     /// <summary>
-    /// Portable marshaller implementation.
+    /// Marshaller implementation.
     /// </summary>
-    internal class PortableMarshaller
+    internal class Marshaller
     {
         /** Portable configuration. */
-        private readonly PortableConfiguration _cfg;
+        private readonly BinaryConfiguration _cfg;
 
         /** Type to descriptor map. */
         private readonly IDictionary<Type, IBinaryTypeDescriptor> _typeToDesc =
@@ -59,11 +59,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Constructor.
         /// </summary>
         /// <param name="cfg">Configurtaion.</param>
-        public PortableMarshaller(PortableConfiguration cfg)
+        public Marshaller(BinaryConfiguration cfg)
         {
             // Validation.
             if (cfg == null)
-                cfg = new PortableConfiguration();
+                cfg = new BinaryConfiguration();
 
             if (cfg.TypeConfigurations == null)
                 cfg.TypeConfigurations = new List<BinaryTypeConfiguration>();
@@ -380,7 +380,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="typeCfg">Type configuration.</param>
         /// <param name="typeResolver">The type resolver.</param>
         /// <param name="dfltSerializer">The default serializer.</param>
-        private void AddUserType(PortableConfiguration cfg, BinaryTypeConfiguration typeCfg, 
+        private void AddUserType(BinaryConfiguration cfg, BinaryTypeConfiguration typeCfg, 
             TypeResolver typeResolver, IBinarySerializer dfltSerializer)
         {
             // Get converter/mapper/serializer.

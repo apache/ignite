@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaler.</param>
         /// <param name="keepPortable">Keep poratble flag.</param>
-        public FieldsQueryCursor(IUnmanagedTarget target, PortableMarshaller marsh, bool keepPortable)
+        public FieldsQueryCursor(IUnmanagedTarget target, Marshaller marsh, bool keepPortable)
             : base(target, marsh, keepPortable)
         {
             // No-op.

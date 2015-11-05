@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepPortable">Keep portable flag.</param>
         /// <param name="ignite">Grid.</param>
-        public CacheAffinityImpl(IUnmanagedTarget target, PortableMarshaller marsh, bool keepPortable, 
+        public CacheAffinityImpl(IUnmanagedTarget target, Marshaller marsh, bool keepPortable, 
             Ignite ignite) : base(target, marsh)
         {
             _keepPortable = keepPortable;

@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="marsh">Marshaller.</param>
         /// <param name="mthdName">Method name.</param>
         /// <param name="mthdArgs">Method arguments.</param>
-        public static void ReadProxyMethod(IPortableStream stream, PortableMarshaller marsh, 
+        public static void ReadProxyMethod(IPortableStream stream, Marshaller marsh, 
             out string mthdName, out object[] mthdArgs)
         {
             var reader = marsh.StartUnmarshal(stream);
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="marsh">Marshaller.</param>
         /// <param name="methodResult">Method result.</param>
         /// <param name="invocationError">Method invocation error.</param>
-        public static void WriteInvocationResult(IPortableStream stream, PortableMarshaller marsh, object methodResult,
+        public static void WriteInvocationResult(IPortableStream stream, Marshaller marsh, object methodResult,
             Exception invocationError)
         {
             Debug.Assert(stream != null);
@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <returns>
         /// Method invocation result, or exception in case of error.
         /// </returns>
-        public static object ReadInvocationResult(IPortableStream stream, PortableMarshaller marsh, bool keepPortable)
+        public static object ReadInvocationResult(IPortableStream stream, Marshaller marsh, bool keepPortable)
         {
             Debug.Assert(stream != null);
             Debug.Assert(marsh != null);

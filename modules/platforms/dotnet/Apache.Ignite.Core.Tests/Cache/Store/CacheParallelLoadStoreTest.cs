@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = "config\\native-client-test-cache-parallel-store.xml",
-                PortableConfiguration = new PortableConfiguration
+                BinaryConfiguration = new BinaryConfiguration
                 {
                     Types = new[] {typeof (CacheTestParallelLoadStore.Record).FullName}
                 }

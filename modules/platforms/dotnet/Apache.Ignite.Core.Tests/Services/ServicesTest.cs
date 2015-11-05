@@ -566,7 +566,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 SpringConfigUrl = springConfigUrl,
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                PortableConfiguration = new PortableConfiguration
+                BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = new List<BinaryTypeConfiguration>
                     {

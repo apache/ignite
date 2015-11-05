@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="keepPortable">Keep portable flag.</param>
         /// <returns>Event.</returns>
         public static ICacheEntryEvent<TK, TV> ReadEvent<TK, TV>(IPortableStream stream, 
-            PortableMarshaller marsh, bool keepPortable)
+            Marshaller marsh, bool keepPortable)
         {
             var reader = marsh.StartUnmarshal(stream, keepPortable);
 
@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <returns>Events.</returns>
         [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         public static ICacheEntryEvent<TK, TV>[] ReadEvents<TK, TV>(IPortableStream stream,
-            PortableMarshaller marsh, bool keepPortable)
+            Marshaller marsh, bool keepPortable)
         {
             var reader = marsh.StartUnmarshal(stream, keepPortable);
 

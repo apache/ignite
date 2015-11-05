@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="prj">Cluster group.</param>
-        public Messaging(IUnmanagedTarget target, PortableMarshaller marsh, IClusterGroup prj)
+        public Messaging(IUnmanagedTarget target, Marshaller marsh, IClusterGroup prj)
             : base(target, marsh)
         {
             Debug.Assert(prj != null);

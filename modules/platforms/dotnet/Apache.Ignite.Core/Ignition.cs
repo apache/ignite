@@ -278,17 +278,17 @@ namespace Apache.Ignite.Core
             LoadAssemblies(cfg.Assemblies);
 
             ICollection<string> cfgAssembllies;
-            PortableConfiguration portableCfg;
+            BinaryConfiguration binaryCfg;
 
-            BinaryUtils.ReadConfiguration(reader, out cfgAssembllies, out portableCfg);
+            BinaryUtils.ReadConfiguration(reader, out cfgAssembllies, out binaryCfg);
 
             LoadAssemblies(cfgAssembllies);
 
             // 2. Create marshaller only after assemblies are loaded.
-            if (cfg.PortableConfiguration == null)
-                cfg.PortableConfiguration = portableCfg;
+            if (cfg.BinaryConfiguration == null)
+                cfg.BinaryConfiguration = binaryCfg;
 
-            _startup.Marshaller = new PortableMarshaller(cfg.PortableConfiguration);
+            _startup.Marshaller = new Marshaller(cfg.BinaryConfiguration);
         }
 
         /// <summary>
@@ -635,7 +635,7 @@ namespace Apache.Ignite.Core
             /// <summary>
             /// Marshaller.
             /// </summary>
-            internal PortableMarshaller Marshaller { get; set; }
+            internal Marshaller Marshaller { get; set; }
 
             /// <summary>
             /// Start error.

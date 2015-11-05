@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Common
     internal class FutureConverter<T> : IFutureConverter<T>
     {
         /** Marshaller. */
-        private readonly PortableMarshaller _marsh;
+        private readonly Marshaller _marsh;
 
         /** Keep portable flag. */
         private readonly bool _keepPortable;
@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepPortable">Keep portable.</param>
         /// <param name="func">Converting function.</param>
-        public FutureConverter(PortableMarshaller marsh, bool keepPortable,
+        public FutureConverter(Marshaller marsh, bool keepPortable,
             Func<BinaryReaderImpl, T> func = null)
         {
             _marsh = marsh;

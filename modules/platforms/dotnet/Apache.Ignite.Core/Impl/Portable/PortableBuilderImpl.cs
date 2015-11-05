@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             new Dictionary<int, PortableBuilderField>();
         
         /** Portables. */
-        private readonly PortablesImpl _portables;
+        private readonly IgniteBinary _igniteBinary;
 
         /** */
         private readonly PortableBuilderImpl _parent;
@@ -79,18 +79,18 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="portables">Portables.</param>
+        /// <param name="igniteBinary">Portables.</param>
         /// <param name="parent">Parent builder.</param>
         /// <param name="obj">Initial portable object.</param>
         /// <param name="desc">Type descriptor.</param>
-        public PortableBuilderImpl(PortablesImpl portables, PortableBuilderImpl parent, 
+        public PortableBuilderImpl(IgniteBinary igniteBinary, PortableBuilderImpl parent, 
             PortableUserObject obj, IBinaryTypeDescriptor desc)
         {
-            Debug.Assert(portables != null);
+            Debug.Assert(igniteBinary != null);
             Debug.Assert(obj != null);
             Debug.Assert(desc != null);
 
-            _portables = portables;
+            _igniteBinary = igniteBinary;
             _parent = parent ?? this;
             _obj = obj;
             _desc = desc;
@@ -361,7 +361,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             PortableHeapStream outStream = new PortableHeapStream(estimatedCapacity);
 
-            BinaryWriterImpl writer = _portables.Marshaller.StartMarshal(outStream);
+            BinaryWriterImpl writer = _igniteBinary.Marshaller.StartMarshal(outStream);
 
             writer.SetBuilder(this);
 
@@ -374,10 +374,10 @@ namespace Apache.Ignite.Core.Impl.Portable
                 writer.Write(this);
                 
                 // Process metadata.
-                _portables.Marshaller.FinishMarshal(writer);
+                _igniteBinary.Marshaller.FinishMarshal(writer);
 
                 // Create portable object once metadata is processed.
-                return new PortableUserObject(_portables.Marshaller, outStream.InternalArray, 0, 
+                return new PortableUserObject(_igniteBinary.Marshaller, outStream.InternalArray, 0, 
                     PortableObjectHeader.Read(outStream, 0));
             }
             finally
@@ -394,9 +394,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Child builder.</returns>
         public PortableBuilderImpl Child(PortableUserObject obj)
         {
-            var desc = _portables.Marshaller.GetDescriptor(true, obj.TypeId);
+            var desc = _igniteBinary.Marshaller.GetDescriptor(true, obj.TypeId);
 
-            return new PortableBuilderImpl(_portables, null, obj, desc);
+            return new PortableBuilderImpl(_igniteBinary, null, obj, desc);
         }
         
         /// <summary>
@@ -510,7 +510,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             try
             {
                 // Prepare fields.
-                IPortableMetadataHandler metaHnd = _portables.Marshaller.GetMetadataHandler(desc);
+                IPortableMetadataHandler metaHnd = _igniteBinary.Marshaller.GetMetadataHandler(desc);
 
                 IDictionary<int, PortableBuilderField> vals0;
 

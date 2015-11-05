@@ -62,8 +62,8 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Starts the grid with provided config.
         /// </summary>
-        /// <param name="portableConfiguration">The portable configuration.</param>
-        private void StartGrid(PortableConfiguration portableConfiguration)
+        /// <param name="binaryConfiguration">The portable configuration.</param>
+        private void StartGrid(BinaryConfiguration binaryConfiguration)
         {
             Ignition.StopAll(true);
 
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Tests
                 SpringConfigUrl = "config\\cache-portables.xml",
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                PortableConfiguration = portableConfiguration
+                BinaryConfiguration = binaryConfiguration
             });
 
             _cache = grid.GetCache<int, TestGenericPortableBase>(null);
@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestCodeConfiguration()
         {
-            StartGrid(new PortableConfiguration
+            StartGrid(new BinaryConfiguration
             {
                 TypeConfigurations = TestTypes.Select(x => new BinaryTypeConfiguration(x)).ToList()
             });

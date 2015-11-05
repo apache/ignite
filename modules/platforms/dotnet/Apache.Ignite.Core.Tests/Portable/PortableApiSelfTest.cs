@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         private Ignite _grid;
 
         /** Marshaller. */
-        private PortableMarshaller _marsh;
+        private Marshaller _marsh;
 
         /// <summary>
         /// Set up routine.
@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             var cfg = new IgniteConfiguration
             {
-                PortableConfiguration = new PortableConfiguration
+                BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = new List<BinaryTypeConfiguration>
                     {
@@ -200,7 +200,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             DateTime date = DateTime.Now.ToUniversalTime();
             Guid guid = Guid.NewGuid();
 
-            IPortables api = _grid.GetPortables();
+            IIgniteBinary api = _grid.GetPortables();
 
             // 1. Primitives.
             Assert.AreEqual(1, api.ToPortable<byte>((byte)1));

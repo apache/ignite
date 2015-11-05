@@ -287,7 +287,7 @@ namespace Apache.Ignite.Core.Tests
             var cfg = new IgniteConfiguration();
 
 
-            var portCfg = new PortableConfiguration();
+            var portCfg = new BinaryConfiguration();
 
             ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
@@ -296,7 +296,7 @@ namespace Apache.Ignite.Core.Tests
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
-            cfg.PortableConfiguration = portCfg;
+            cfg.BinaryConfiguration = portCfg;
 
             cfg.JvmClasspath = TestUtils.CreateTestClasspath();
 

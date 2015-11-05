@@ -52,12 +52,12 @@ namespace Apache.Ignite.Core.Portable
     ///     </item>
     /// </list>
     /// </summary>
-    public interface IPortables
+    public interface IIgniteBinary
     {
         /// <summary>
         /// Converts provided object to portable form.
         /// <para />
-        /// Note that object's type needs to be configured in <see cref="PortableConfiguration"/>.
+        /// Note that object's type needs to be configured in <see cref="BinaryConfiguration"/>.
         /// </summary>
         /// <param name="obj">Object to convert.</param>
         /// <returns>Converted object.</returns>
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Portable
 
         /// <summary>
         /// Create builder for the given portable object type. Note that this
-        /// type must be specified in <see cref="PortableConfiguration"/>.
+        /// type must be specified in <see cref="BinaryConfiguration"/>.
         /// </summary>
         /// <param name="type"></param>
         /// <returns>Builder.</returns>
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Portable
 
         /// <summary>
         /// Create builder for the given portable object type name. Note that this
-        /// type name must be specified in <see cref="PortableConfiguration"/>.
+        /// type name must be specified in <see cref="BinaryConfiguration"/>.
         /// </summary>
         /// <param name="typeName">Type name.</param>
         /// <returns>Builder.</returns>

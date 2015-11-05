@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             IgniteConfigurationEx cfg = new IgniteConfigurationEx();
 
-            PortableConfiguration portCfg = new PortableConfiguration();
+            BinaryConfiguration portCfg = new BinaryConfiguration();
 
             ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             portCfg.TypeConfigurations = portTypeCfgs;
 
             cfg.GridName = name;
-            cfg.PortableConfiguration = portCfg;
+            cfg.BinaryConfiguration = portCfg;
             cfg.JvmClasspath = TestUtils.CreateTestClasspath();
             cfg.JvmOptions = TestUtils.TestJavaOptions();
             cfg.SpringConfigUrl = springCfg;

@@ -58,12 +58,12 @@ namespace Apache.Ignite.Core.Tests.Portable
                 // 2. Create new marshaller.
                 BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(typeof(BranchedType));
 
-                PortableConfiguration cfg = new PortableConfiguration
+                BinaryConfiguration cfg = new BinaryConfiguration
                 {
                     TypeConfigurations = new List<BinaryTypeConfiguration> { typeCfg }
                 };
 
-                PortableMarshaller marsh = new PortableMarshaller(cfg);
+                Marshaller marsh = new Marshaller(cfg);
 
                 // 3. Marshal all data and ensure deserialized object is fine.
                 foreach (BranchedType obj in objs)

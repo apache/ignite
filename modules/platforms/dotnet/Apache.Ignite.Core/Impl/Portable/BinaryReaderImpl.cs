@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     internal class BinaryReaderImpl : IBinaryReader, IPortableRawReader
     {
         /** Marshaller. */
-        private readonly PortableMarshaller _marsh;
+        private readonly Marshaller _marsh;
 
         /** Type descriptors. */
         private readonly IDictionary<long, IBinaryTypeDescriptor> _descs;
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="mode">The mode.</param>
         /// <param name="builder">Builder.</param>
         public BinaryReaderImpl
-            (PortableMarshaller marsh,
+            (Marshaller marsh,
             IDictionary<long, IBinaryTypeDescriptor> descs, 
             IPortableStream stream, 
             PortableMode mode,
@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Gets the marshaller.
         /// </summary>
-        public PortableMarshaller Marshaller
+        public Marshaller Marshaller
         {
             get { return _marsh; }
         }

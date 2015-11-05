@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         IContinuousQueryHandle<ICacheEntry<TK, TV>>
     {
         /** Marshaller. */
-        private readonly PortableMarshaller _marsh;
+        private readonly Marshaller _marsh;
 
         /** Keep portable flag. */
         private readonly bool _keepPortable;
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="qry">Query.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepPortable">Keep portable flag.</param>
-        public ContinuousQueryHandleImpl(ContinuousQuery<TK, TV> qry, PortableMarshaller marsh, bool keepPortable)
+        public ContinuousQueryHandleImpl(ContinuousQuery<TK, TV> qry, Marshaller marsh, bool keepPortable)
         {
             _marsh = marsh;
             _keepPortable = keepPortable;
