@@ -250,6 +250,8 @@ consoleModule.controller('sqlController',
                 $scope.notebook = undefined;
             })
             .finally(function () {
+                $scope.loaded = true;
+
                 $loading.finish('loadingNotebookScreen');
             });
     };

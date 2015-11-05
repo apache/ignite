@@ -58,11 +58,11 @@ block container
     .row
         .col-sm-12
             .docs-content(ng-controller='sqlController' dw-loading='loadingNotebookScreen' dw-loading-options='{text: "Loading notebook screen...", className: "page-loading-overlay"}')
-                div(ng-if='!notebook' style='text-align: center')
+                div(ng-if='loaded && !notebook' style='text-align: center')
                     h2 Failed to load notebook
                     label.col-sm-12 Notebook not accessible any more. Go back to configuration or open to another notebook.
                     button.h3.btn.btn-primary(ng-click='goToConfiguration()') Back to configuration
-                div(ng-if='notebook')
+                div(ng-if='loaded && notebook')
                     .block-callout-parent
                         table
                             tbody

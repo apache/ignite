@@ -563,8 +563,8 @@ button.form-control {
     .empty-caches {
         text-align: center;
         color: $ignite-placeholder-color;
-        height: 100px;
-        line-height: 100px;
+        height: 55px;
+        line-height: 55px;
     }
 
     .sql-empty-result {
@@ -1709,6 +1709,8 @@ treecontrol.tree-classic {
     .affix {
         border-bottom: 1px solid $gray-lighter;
     }
+
+    min-height: 100px;
 }
 
 .ag-bootstrap {
