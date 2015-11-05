@@ -29,7 +29,7 @@
         <property name="platformConfiguration">
             <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
                 <property name="portableConfiguration">
-                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration">
+                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration">
                         <property name="types">
                             <list>
                                 <value>Apache.Ignite.Examples.Dll.Portable.Account</value>

@@ -29,10 +29,10 @@
         <property name="platformConfiguration">
             <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
                 <property name="portableConfiguration">
-                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration">
+                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration">
                         <property name="typesConfiguration">
                             <list>
-                                <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableTypeConfiguration">
+                                <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration">
                                     <property name="typeName"
                                               value="Apache.Ignite.Core.Tests.Cache.CacheAffinityTest+AffinityTestKey"/>
                                     <property name="affinityKeyFieldName" value="_affKey"/>
