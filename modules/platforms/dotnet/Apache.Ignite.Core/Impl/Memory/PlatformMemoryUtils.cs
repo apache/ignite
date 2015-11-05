@@ -23,29 +23,6 @@ namespace Apache.Ignite.Core.Impl.Memory
     using System.Reflection;
     using System.Runtime.InteropServices;
 
-    [StructLayout(LayoutKind.Sequential, Pack = 0)]
-    public struct PlatformMemoryHeader
-    {
-        public long Pointer;
-        public int Capacity;
-        public int Length;
-        public int Flags;
-
-        public PlatformMemoryHeader(long pointer, int capacity, int length, int flags)
-        {
-            Pointer = pointer;
-            Capacity = capacity;
-            Length = length;
-            Flags = flags;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential, Pack = 0)]
-    public struct PlatformMemoryPoolHeader
-    {
-        
-    }
-
     /// <summary>
     /// Utility methods for platform memory management.
     /// </summary>
@@ -54,23 +31,14 @@ namespace Apache.Ignite.Core.Impl.Memory
     {
         #region CONSTANTS
 
-        /** Header length. */
-        private const int PoolHdrLen = 64;
+        /** Memory chunk header length. */
+        private const int MemHdrLen = 20;
 
         /** Pooled items count. */
         internal const int PoolSize = 3;
 
-        /** Pool header offset: first memory chunk. */
-        internal const int PoolHdrOffMem1 = 0;
-
-        /** Pool header offset: second memory chunk. */
-        internal const int PoolHdrOffMem2 = 20;
-
-        /** Pool header offset: third memory chunk. */
-        internal const int PoolHdrOffMem3 = 40;
-
-        /** Memory chunk header length. */
-        private const int MemHdrLen = 20;
+        /** Header length. */
+        private const int PoolHdrLen = MemHdrLen * PoolSize;
 
         /** Offset: capacity. */
         private const int MemHdrOffCap = 8;

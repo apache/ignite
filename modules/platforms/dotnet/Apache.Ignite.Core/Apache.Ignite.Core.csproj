@@ -212,6 +212,7 @@
     <Compile Include="Impl\Ignite.cs" />
     <Compile Include="Impl\IgniteManager.cs" />
     <Compile Include="Impl\IgniteProxy.cs" />
+    <Compile Include="Impl\Memory\PlatformMemoryHeader.cs" />
     <Compile Include="Impl\PlatformTarget.cs" />
     <Compile Include="Impl\IgniteUtils.cs" />
     <Compile Include="Impl\Handle\Handle.cs" />
