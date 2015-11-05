@@ -54,10 +54,10 @@ namespace Apache.Ignite.Core.Impl.Services
         private readonly IClusterGroup _clusterGroup;
 
         /** Invoker portable flag. */
-        private readonly bool _keepPortable;
+        private readonly bool _keepBinary;
 
         /** Server portable flag. */
-        private readonly bool _srvKeepPortable;
+        private readonly bool _srvKeepBinary;
 
         /** Async instance. */
         private readonly Lazy<Services> _asyncInstance;
@@ -68,17 +68,17 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="clusterGroup">Cluster group.</param>
-        /// <param name="keepPortable">Invoker portable flag.</param>
-        /// <param name="srvKeepPortable">Server portable flag.</param>
+        /// <param name="keepBinary">Invoker portable flag.</param>
+        /// <param name="srvKeepBinary">Server portable flag.</param>
         public Services(IUnmanagedTarget target, Marshaller marsh, IClusterGroup clusterGroup, 
-            bool keepPortable, bool srvKeepPortable)
+            bool keepBinary, bool srvKeepBinary)
             : base(target, marsh)
         {
             Debug.Assert(clusterGroup  != null);
 
             _clusterGroup = clusterGroup;
-            _keepPortable = keepPortable;
-            _srvKeepPortable = srvKeepPortable;
+            _keepBinary = keepBinary;
+            _srvKeepBinary = srvKeepBinary;
 
             _asyncInstance = new Lazy<Services>(() => new Services(this));
         }
@@ -90,26 +90,26 @@ namespace Apache.Ignite.Core.Impl.Services
         private Services(Services services) : base(UU.ServicesWithAsync(services.Target), services.Marshaller)
         {
             _clusterGroup = services.ClusterGroup;
-            _keepPortable = services._keepPortable;
-            _srvKeepPortable = services._srvKeepPortable;
+            _keepBinary = services._keepBinary;
+            _srvKeepBinary = services._srvKeepBinary;
         }
 
         /** <inheritDoc /> */
         public IServices WithKeepBinary()
         {
-            if (_keepPortable)
+            if (_keepBinary)
                 return this;
 
-            return new Services(Target, Marshaller, _clusterGroup, true, _srvKeepPortable);
+            return new Services(Target, Marshaller, _clusterGroup, true, _srvKeepBinary);
         }
 
         /** <inheritDoc /> */
         public IServices WithServerKeepBinary()
         {
-            if (_srvKeepPortable)
+            if (_srvKeepBinary)
                 return this;
 
-            return new Services(UU.ServicesWithServerKeepPortable(Target), Marshaller, _clusterGroup, _keepPortable, true);
+            return new Services(UU.ServicesWithServerKeepPortable(Target), Marshaller, _clusterGroup, _keepBinary, true);
         }
 
         /** <inheritDoc /> */
@@ -273,7 +273,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             return DoInOp(OpDescriptors, stream =>
             {
-                var reader = Marshaller.StartUnmarshal(stream, _keepPortable);
+                var reader = Marshaller.StartUnmarshal(stream, _keepBinary);
 
                 var size = reader.ReadInt();
 
@@ -366,7 +366,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             return DoOutInOp(OpInvokeMethod,
                 writer => ServiceProxySerializer.WriteProxyMethod(writer, method, args),
-                stream => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepPortable), proxy.Target);
+                stream => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary), proxy.Target);
         }
     }
 }

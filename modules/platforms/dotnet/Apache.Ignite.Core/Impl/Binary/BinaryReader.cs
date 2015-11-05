@@ -485,17 +485,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public IDictionary ReadDictionary()
         {
-            return ReadDictionary((PortableDictionaryFactory)null);
+            return ReadDictionary((DictionaryFactory)null);
         }
 
         /** <inheritdoc /> */
-        public IDictionary ReadDictionary(string fieldName, PortableDictionaryFactory factory)
+        public IDictionary ReadDictionary(string fieldName, DictionaryFactory factory)
         {
             return ReadField(fieldName, r => BinaryUtils.ReadDictionary(r, factory), BinaryUtils.TypeDictionary);
         }
 
         /** <inheritdoc /> */
-        public IDictionary ReadDictionary(PortableDictionaryFactory factory)
+        public IDictionary ReadDictionary(DictionaryFactory factory)
         {
             return Read(r => BinaryUtils.ReadDictionary(r, factory), BinaryUtils.TypeDictionary);
         }

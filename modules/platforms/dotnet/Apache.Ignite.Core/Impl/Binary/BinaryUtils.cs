@@ -1227,7 +1227,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <returns>Dictionary.</returns>
          */
         public static IDictionary ReadDictionary(BinaryReader ctx,
-            PortableDictionaryFactory factory)
+            DictionaryFactory factory)
         {
             IBinaryStream stream = ctx.Stream;
 

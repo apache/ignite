@@ -218,6 +218,6 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         /// <param name="factory">Factory.</param>
         /// <returns>Dictionary.</returns>
-        IDictionary ReadDictionary(PortableDictionaryFactory factory);
+        IDictionary ReadDictionary(DictionaryFactory factory);
     }
 }

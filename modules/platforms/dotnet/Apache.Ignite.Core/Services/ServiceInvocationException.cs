@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Services
     public class ServiceInvocationException : IgniteException
     {
         /** Serializer key. */
-        private const string KeyPortableCause = "PortableCause";
+        private const string KeyBinaryCause = "BinaryCause";
 
         /** Cause. */
         private readonly IBinaryObject _binaryCause;
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Services
         protected ServiceInvocationException(SerializationInfo info, StreamingContext ctx)
             : base(info, ctx)
         {
-            _binaryCause = (IBinaryObject) info.GetValue(KeyPortableCause, typeof (IBinaryObject));
+            _binaryCause = (IBinaryObject) info.GetValue(KeyBinaryCause, typeof (IBinaryObject));
         }
 
         /// <summary>
@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Services
         /** <inheritdoc /> */
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue(KeyPortableCause, _binaryCause);
+            info.AddValue(KeyBinaryCause, _binaryCause);
 
             base.GetObjectData(info, context);
         }

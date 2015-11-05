@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Binary
     /// </summary>
     /// <param name="size">Dictionary size.</param>
     /// <returns>Dictionary.</returns>
-    public delegate IDictionary PortableDictionaryFactory(int size);
+    public delegate IDictionary DictionaryFactory(int size);
 
     /// <summary>
     /// Reader for portable objects. 
@@ -268,7 +268,7 @@ namespace Apache.Ignite.Core.Binary
         /// <param name="fieldName">Field name.</param>
         /// <param name="factory">Factory.</param>
         /// <returns>Dictionary.</returns>
-        IDictionary ReadDictionary(string fieldName, PortableDictionaryFactory factory);
+        IDictionary ReadDictionary(string fieldName, DictionaryFactory factory);
 
         /// <summary>
         /// Get raw reader. 
