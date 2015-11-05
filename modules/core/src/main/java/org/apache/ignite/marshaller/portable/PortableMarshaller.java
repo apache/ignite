@@ -90,9 +90,6 @@ public class PortableMarshaller extends AbstractMarshaller {
     /** Whether to convert string to bytes using UTF-8 encoding. */
     private boolean convertString = true;
 
-    /** Meta data enabled flag. */
-    private boolean metaDataEnabled = true;
-
     /** Keep deserialized flag. */
     private boolean keepDeserialized = true;
 
@@ -197,25 +194,6 @@ public class PortableMarshaller extends AbstractMarshaller {
     }
 
     /**
-     * If {@code true}, meta data will be collected or all types. If you need to override this behaviour for
-     * some specific type, use {@link org.apache.ignite.binary.BinaryTypeConfiguration#setMetaDataEnabled(Boolean)} method.
-     * <p>
-     * Default value if {@code true}.
-     *
-     * @return Whether meta data is collected.
-     */
-    public boolean isMetaDataEnabled() {
-        return metaDataEnabled;
-    }
-
-    /**
-     * @param metaDataEnabled Whether meta data is collected.
-     */
-    public void setMetaDataEnabled(boolean metaDataEnabled) {
-        this.metaDataEnabled = metaDataEnabled;
-    }
-
-    /**
      * If {@code true}, {@link org.apache.ignite.binary.BinaryObject} will cache deserialized instance after
      * {@link org.apache.ignite.binary.BinaryObject#deserialize()} is called. All consequent calls of this
      * method on the same instance of {@link org.apache.ignite.binary.BinaryObject} will return that cached
@@ -252,6 +230,7 @@ public class PortableMarshaller extends AbstractMarshaller {
      * <p/>
      * @param ctx Portable context.
      */
+    @SuppressWarnings("UnusedDeclaration")
     private void setPortableContext(PortableContext ctx) {
         ctx.configure(this);
 

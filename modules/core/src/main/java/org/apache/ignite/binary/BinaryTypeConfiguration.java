@@ -40,10 +40,6 @@ public class BinaryTypeConfiguration {
     /** Serializer. */
     private BinarySerializer serializer;
 
-    /** Meta data enabled flag. */
-    // TODO ignite-1282.
-    private Boolean metaDataEnabled;
-
     /** Keep deserialized flag. */
     private Boolean keepDeserialized;
 
@@ -112,23 +108,6 @@ public class BinaryTypeConfiguration {
      */
     public void setSerializer(BinarySerializer serializer) {
         this.serializer = serializer;
-    }
-
-    /**
-     * Defines whether meta data is collected for this type. If provided, this value will override
-     * {@link PortableMarshaller#isMetaDataEnabled()} property.
-     *
-     * @return Whether meta data is collected.
-     */
-    public Boolean isMetaDataEnabled() {
-        return metaDataEnabled;
-    }
-
-    /**
-     * @param metaDataEnabled Whether meta data is collected.
-     */
-    public void setMetaDataEnabled(Boolean metaDataEnabled) {
-        this.metaDataEnabled = metaDataEnabled;
     }
 
     /**

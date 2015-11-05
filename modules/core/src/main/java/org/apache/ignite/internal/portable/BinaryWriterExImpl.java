@@ -272,8 +272,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         }
 
         typeId = desc.typeId();
-
-        metaEnabled = ctx.isMetaDataEnabled(typeId);
+        metaEnabled = desc.userType();
 
         desc.write(obj, this);
     }

@@ -290,12 +290,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             }
 
             if (assignedVals != null && (remainsFlds == null || !remainsFlds.isEmpty())) {
-                boolean metadataEnabled = ctx.isMetaDataEnabled(typeId);
-
-                BinaryType metadata = null;
-
-                if (metadataEnabled)
-                    metadata = ctx.metaData(typeId);
+                BinaryType metadata = ctx.metaData(typeId);
 
                 Map<String, String> newFldsMetadata = null;
 
@@ -316,40 +311,38 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                     serializer.writeValue(writer, val);
 
-                    if (metadataEnabled) {
-                        String oldFldTypeName = metadata == null ? null : metadata.fieldTypeName(name);
+                    String oldFldTypeName = metadata == null ? null : metadata.fieldTypeName(name);
 
-                        String newFldTypeName;
+                    String newFldTypeName;
 
-                        if (val instanceof PortableValueWithType)
-                            newFldTypeName = ((PortableValueWithType) val).typeName();
-                        else {
-                            byte type = PortableUtils.typeByClass(val.getClass());
+                    if (val instanceof PortableValueWithType)
+                        newFldTypeName = ((PortableValueWithType) val).typeName();
+                    else {
+                        byte type = PortableUtils.typeByClass(val.getClass());
 
-                            newFldTypeName = CacheObjectBinaryProcessorImpl.fieldTypeName(type);
-                        }
+                        newFldTypeName = CacheObjectBinaryProcessorImpl.fieldTypeName(type);
+                    }
 
-                        if (oldFldTypeName == null) {
-                            // It's a new field, we have to add it to metadata.
+                    if (oldFldTypeName == null) {
+                        // It's a new field, we have to add it to metadata.
 
-                            if (newFldsMetadata == null)
-                                newFldsMetadata = new HashMap<>();
+                        if (newFldsMetadata == null)
+                            newFldsMetadata = new HashMap<>();
 
-                            newFldsMetadata.put(name, newFldTypeName);
-                        }
-                        else {
-                            String objTypeName =
-                                CacheObjectBinaryProcessorImpl.FIELD_TYPE_NAMES[GridPortableMarshaller.OBJ];
+                        newFldsMetadata.put(name, newFldTypeName);
+                    }
+                    else {
+                        String objTypeName =
+                            CacheObjectBinaryProcessorImpl.FIELD_TYPE_NAMES[GridPortableMarshaller.OBJ];
 
-                            if (!objTypeName.equals(oldFldTypeName) && !oldFldTypeName.equals(newFldTypeName)) {
-                                throw new BinaryObjectException(
-                                    "Wrong value has been set [" +
-                                        "typeName=" + (typeName == null ? metadata.typeName() : typeName) +
-                                        ", fieldName=" + name +
-                                        ", fieldType=" + oldFldTypeName +
-                                        ", assignedValueType=" + newFldTypeName + ']'
-                                );
-                            }
+                        if (!objTypeName.equals(oldFldTypeName) && !oldFldTypeName.equals(newFldTypeName)) {
+                            throw new BinaryObjectException(
+                                "Wrong value has been set [" +
+                                    "typeName=" + (typeName == null ? metadata.typeName() : typeName) +
+                                    ", fieldName=" + name +
+                                    ", fieldType=" + oldFldTypeName +
+                                    ", assignedValueType=" + newFldTypeName + ']'
+                            );
                         }
                     }
                 }
