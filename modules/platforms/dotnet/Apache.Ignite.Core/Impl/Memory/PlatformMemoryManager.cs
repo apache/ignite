@@ -71,11 +71,10 @@ namespace Apache.Ignite.Core.Impl.Memory
         public unsafe IPlatformMemory Get(long memPtr)
         {
             var hdr = (PlatformMemoryHeader*) memPtr;
-            int flags = hdr->Flags;
 
-            return PlatformMemoryUtils.IsExternal(flags)
+            return hdr->IsExternal
                 ? GetExternalMemory(hdr)
-                : PlatformMemoryUtils.IsPooled(flags)
+                : hdr->IsPooled
                     ? Pool().Get(hdr)
                     : new PlatformUnpooledMemory(hdr);
         }

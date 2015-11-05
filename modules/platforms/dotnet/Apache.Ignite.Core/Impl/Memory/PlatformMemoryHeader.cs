@@ -25,6 +25,15 @@ namespace Apache.Ignite.Core.Impl.Memory
     [StructLayout(LayoutKind.Sequential, Pack = 0)]
     public struct PlatformMemoryHeader
     {
+        /** Flag: external. */
+        public const int FlagExt = 0x1;
+
+        /** Flag: pooled. */
+        public const int FlagPooled = 0x2;
+
+        /** Flag: whether this pooled memory chunk is acquired. */
+        public const int FlagAcquired = 0x4;
+
         /// <summary>
         /// The pointer to the memory chunk.
         /// </summary>
@@ -44,6 +53,33 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// The flags.
         /// </summary>
         public int Flags;
+
+        /// <summary>
+        /// Check whether flags denote that this memory chunk is external.
+        /// </summary>
+        /// <value><c>True</c> if owned by Java.</value>
+        public bool IsExternal
+        {
+            get { return (Flags & FlagExt) != FlagExt; }
+        }
+
+        /// <summary>
+        /// Check whether flags denote pooled memory chunk.
+        /// </summary>
+        /// <value><c>True</c> if pooled.</value>
+        public bool IsPooled
+        {
+            get { return (Flags & FlagPooled) != 0; }
+        }
+
+        /// <summary>
+        /// Check whether flags denote pooled and acquired memory chunk.
+        /// </summary>
+        /// <value><c>True</c> if acquired.</value>
+        public bool IsAcquired
+        {
+            get { return (Flags & FlagAcquired) != 0; }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PlatformMemoryHeader"/> struct.
