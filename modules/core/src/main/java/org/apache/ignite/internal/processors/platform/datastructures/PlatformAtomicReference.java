@@ -143,6 +143,7 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
      * @return Predicate.
      */
     private IgnitePredicate<Object> wrapperPredicate(final Object val) {
+        // TODO: call .Net for comparison check
         return new IgnitePredicate<Object>() {
             @Override public boolean apply(Object e) {
                 return (val == null && e == null) || (val != null && val.equals(e));
