@@ -18,8 +18,8 @@
         "keyPassphrase": "password"
     },
     "smtp": {
-            "service": "gmail",
-            "username": "no-reply@gridgain.com",
-            "password": "2!e50j1V17SO6wv"
+        "service": "",
+        "username": "",
+        "password": ""
     }
 }
