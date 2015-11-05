@@ -299,14 +299,15 @@ namespace Apache.Ignite.Core.Impl.Memory
             {
                 // First allocation of the chunk.
                 hdr->Pointer = Marshal.AllocHGlobal(cap).ToInt64();
+                hdr->Capacity = cap;
             }
             else if (cap > hdr->Capacity)
             {
                 // Ensure that we have enough capacity.
                 hdr->Pointer = Marshal.ReAllocHGlobal((IntPtr) hdr->Pointer, (IntPtr) cap).ToInt64();
+                hdr->Capacity = cap;
             }
 
-            hdr->Capacity = cap;
             hdr->Flags = FlagExt | FlagPooled | FlagAcquired;
         }
 
