@@ -1059,7 +1059,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             inner.RawOuter = outer;
 
             var bytes = asPortable
-                ? marsh.Marshal(new IgniteBinary(marsh).ToPortable<IBinaryObject>(outer))
+                ? marsh.Marshal(new IgniteBinary(marsh).ToBinary<IBinaryObject>(outer))
                 : marsh.Marshal(outer);
 
             IBinaryObject outerObj;

@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         private const byte OpSesEnd = 7;
         
         /** */
-        private readonly bool _convertPortable;
+        private readonly bool _convertBinary;
 
         /** Store. */
         private readonly ICacheStore _store;
@@ -73,14 +73,14 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// Initializes a new instance of the <see cref="CacheStore" /> class.
         /// </summary>
         /// <param name="store">Store.</param>
-        /// <param name="convertPortable">Whether to convert portable objects.</param>
+        /// <param name="convertBinary">Whether to convert portable objects.</param>
         /// <param name="registry">The handle registry.</param>
-        private CacheStore(ICacheStore store, bool convertPortable, HandleRegistry registry)
+        private CacheStore(ICacheStore store, bool convertBinary, HandleRegistry registry)
         {
             Debug.Assert(store != null);
 
             _store = store;
-            _convertPortable = convertPortable;
+            _convertBinary = convertBinary;
 
             _sesProxy = new CacheStoreSessionProxy();
 
@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         public int Invoke(IBinaryStream input, IUnmanagedTarget cb, Ignite grid)
         {
             IBinaryReader reader = grid.Marshaller.StartUnmarshal(input,
-                _convertPortable ? BinaryMode.Deserialize : BinaryMode.ForceBinary);
+                _convertBinary ? BinaryMode.Deserialize : BinaryMode.ForceBinary);
             
             IBinaryRawReader rawReader = reader.GetRawReader();
 

@@ -377,7 +377,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var res = (IBinaryObject) prx.Method(obj);
             Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
 
-            res = (IBinaryObject) prx.Method(Grid1.GetPortables().ToPortable<IBinaryObject>(obj));
+            res = (IBinaryObject) prx.Method(Grid1.GetBinary().ToBinary<IBinaryObject>(obj));
             Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
         }
         
@@ -401,7 +401,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var res = (PortableObject) prx.Method(obj);
             Assert.AreEqual(11, res.Val);
 
-            res = (PortableObject)prx.Method(Grid1.GetPortables().ToPortable<IBinaryObject>(obj));
+            res = (PortableObject)prx.Method(Grid1.GetBinary().ToBinary<IBinaryObject>(obj));
             Assert.AreEqual(11, res.Val);
         }
 
@@ -425,7 +425,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var res = (IBinaryObject)prx.Method(obj);
             Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
 
-            res = (IBinaryObject)prx.Method(Grid1.GetPortables().ToPortable<IBinaryObject>(obj));
+            res = (IBinaryObject)prx.Method(Grid1.GetBinary().ToBinary<IBinaryObject>(obj));
             Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
         }
 

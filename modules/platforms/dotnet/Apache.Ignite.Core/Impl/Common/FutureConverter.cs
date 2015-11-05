@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private readonly Marshaller _marsh;
 
         /** Keep binary flag. */
-        private readonly bool _keepPortable;
+        private readonly bool _keepBinary;
 
         /** Converting function. */
         private readonly Func<BinaryReader, T> _func;
@@ -39,13 +39,13 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Constructor.
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Keep portable.</param>
+        /// <param name="keepBinary">Keep portable.</param>
         /// <param name="func">Converting function.</param>
-        public FutureConverter(Marshaller marsh, bool keepPortable,
+        public FutureConverter(Marshaller marsh, bool keepBinary,
             Func<BinaryReader, T> func = null)
         {
             _marsh = marsh;
-            _keepPortable = keepPortable;
+            _keepBinary = keepBinary;
             _func = func ?? (reader => reader == null ? default(T) : reader.ReadObject<T>());
         }
 
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         public T Convert(IBinaryStream stream)
         {
-            var reader = stream == null ? null : _marsh.StartUnmarshal(stream, _keepPortable);
+            var reader = stream == null ? null : _marsh.StartUnmarshal(stream, _keepBinary);
 
             return _func(reader);
         }

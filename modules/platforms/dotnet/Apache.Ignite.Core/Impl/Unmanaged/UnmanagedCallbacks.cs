@@ -547,7 +547,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     // 2. Create real filter from it's holder.
                     var filter = (IContinuousQueryFilter) DelegateTypeDescriptor.GetContinuousQueryFilterCtor(
-                        filterHolder.Filter.GetType())(filterHolder.Filter, filterHolder.KeepPortable);
+                        filterHolder.Filter.GetType())(filterHolder.Filter, filterHolder.KeepBinary);
 
                     // 3. Inject grid.
                     filter.Inject(_ignite);

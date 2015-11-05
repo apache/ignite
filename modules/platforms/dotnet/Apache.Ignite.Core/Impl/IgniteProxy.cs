@@ -275,9 +275,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IIgniteBinary GetPortables()
+        public IIgniteBinary GetBinary()
         {
-            return _ignite.GetPortables();
+            return _ignite.GetBinary();
         }
 
         /** <inheritdoc /> */

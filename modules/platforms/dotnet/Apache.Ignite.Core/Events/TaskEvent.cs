@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Events
         {
             _taskName = r.ReadString();
             _taskClassName = r.ReadString();
-            _taskSessionId = IgniteGuid.ReadPortable(r);
+            _taskSessionId = IgniteGuid.Read(r);
             _internal = r.ReadBoolean();
             _subjectId = r.ReadGuid();
         }

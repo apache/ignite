@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         private readonly ICacheEntryEventFilter<TK, TV> _filter;
 
         /** Keep binary flag. */
-        private readonly bool _keepPortable;
+        private readonly bool _keepBinary;
 
         /** Ignite hosting the filter. */
         private volatile Ignite _ignite;
@@ -73,17 +73,17 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// Constructor.
         /// </summary>
         /// <param name="filter">Actual filter.</param>
-        /// <param name="keepPortable">Keep binary flag.</param>
-        public ContinuousQueryFilter(ICacheEntryEventFilter<TK, TV> filter, bool keepPortable)
+        /// <param name="keepBinary">Keep binary flag.</param>
+        public ContinuousQueryFilter(ICacheEntryEventFilter<TK, TV> filter, bool keepBinary)
         {
             _filter = filter;
-            _keepPortable = keepPortable;
+            _keepBinary = keepBinary;
         }
 
         /** <inheritDoc /> */
         public bool Evaluate(IBinaryStream stream)
         {
-            ICacheEntryEvent<TK, TV> evt = CQU.ReadEvent<TK, TV>(stream, _ignite.Marshaller, _keepPortable);
+            ICacheEntryEvent<TK, TV> evt = CQU.ReadEvent<TK, TV>(stream, _ignite.Marshaller, _keepBinary);
 
             return _filter.Evaluate(evt);
         }

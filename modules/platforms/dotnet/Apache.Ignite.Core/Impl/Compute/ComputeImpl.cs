@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         private readonly ClusterGroupImpl _prj;
 
         /** Whether objects must be kept portable. */
-        private readonly ThreadLocal<bool> _keepPortable = new ThreadLocal<bool>(() => false);
+        private readonly ThreadLocal<bool> _keepBinary = new ThreadLocal<bool>(() => false);
 
         /// <summary>
         /// Constructor.
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             _prj = prj;
 
-            _keepPortable.Value = keepPortable;
+            _keepBinary.Value = keepPortable;
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         public void WithKeepBinary()
         {
-            _keepPortable.Value = true;
+            _keepBinary.Value = true;
         }
 
         /// <summary>
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             }
             finally
             {
-                _keepPortable.Value = false;
+                _keepBinary.Value = false;
             }
         }
 
@@ -165,14 +165,14 @@ namespace Apache.Ignite.Core.Impl.Compute
                     WriteTask(writer, taskName, taskArg, nodes);
                 }, input =>
                 {
-                    fut = GetFuture<TReduceRes>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp), _keepPortable.Value);
+                    fut = GetFuture<TReduceRes>((futId, futTyp) => UU.TargetListenFuture(Target, futId, futTyp), _keepBinary.Value);
                 });
 
                 return fut;
             }
             finally
             {
-                _keepPortable.Value = false;
+                _keepBinary.Value = false;
             }
         }
 
@@ -470,7 +470,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         protected override T Unmarshal<T>(IBinaryStream stream)
         {
-            bool keep = _keepPortable.Value;
+            bool keep = _keepBinary.Value;
 
             return Marshaller.Unmarshal<T>(stream, keep);
         }
@@ -599,7 +599,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             ICollection<IClusterNode> nodes)
         {
             writer.WriteString(taskName);
-            writer.WriteBoolean(_keepPortable.Value);
+            writer.WriteBoolean(_keepBinary.Value);
             writer.Write(taskArg);
 
             WriteNodeIds(writer, nodes);

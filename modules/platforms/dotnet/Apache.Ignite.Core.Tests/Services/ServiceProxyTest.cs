@@ -534,13 +534,13 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public IBinaryObject PortableResultMethod(int arg1, TestPortableClass arg2)
             {
-                return _igniteBinary.ToPortable<IBinaryObject>(arg2);
+                return _igniteBinary.ToBinary<IBinaryObject>(arg2);
             }
 
             /** <inheritdoc /> */
             public IBinaryObject PortableArgAndResultMethod(int arg1, IBinaryObject arg2)
             {
-                return _igniteBinary.ToPortable<IBinaryObject>(arg2.Deserialize<TestPortableClass>());
+                return _igniteBinary.ToBinary<IBinaryObject>(arg2.Deserialize<TestPortableClass>());
             }
 
             /** <inheritdoc /> */
@@ -703,7 +703,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var prx = GetProxy();
 
             var obj = new TestPortableClass { Prop = "PropValue" };
-            var portObj = IgniteBinary.ToPortable<IBinaryObject>(obj);
+            var portObj = IgniteBinary.ToBinary<IBinaryObject>(obj);
 
             var result = prx.PortableArgMethod(1, portObj);
 
@@ -731,7 +731,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var prx = GetProxy();
             
             var obj = new TestPortableClass { Prop = "PropValue" };
-            var portObj = IgniteBinary.ToPortable<IBinaryObject>(obj);
+            var portObj = IgniteBinary.ToBinary<IBinaryObject>(obj);
 
             var result = prx.PortableArgAndResultMethod(1, portObj);
 

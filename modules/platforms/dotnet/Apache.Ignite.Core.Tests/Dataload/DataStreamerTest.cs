@@ -448,7 +448,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.AllowOverwrite = true;
 
                 for (var i = 0; i < 100; i++)
-                    ldr.AddData(i, _grid.GetPortables().ToPortable<IBinaryObject>(new PortableEntry {Val = i}));
+                    ldr.AddData(i, _grid.GetBinary().ToBinary<IBinaryObject>(new PortableEntry {Val = i}));
 
                 ldr.Flush();
 
@@ -517,10 +517,10 @@ namespace Apache.Ignite.Core.Tests.Dataload
             /** <inheritdoc /> */
             public void Receive(ICache<int, IBinaryObject> cache, ICollection<ICacheEntry<int, IBinaryObject>> entries)
             {
-                var portables = cache.Ignite.GetPortables();
+                var portables = cache.Ignite.GetBinary();
 
                 cache.PutAll(entries.ToDictionary(x => x.Key, x =>
-                    portables.ToPortable<IBinaryObject>(new PortableEntry
+                    portables.ToBinary<IBinaryObject>(new PortableEntry
                     {
                         Val = x.Value.Deserialize<PortableEntry>().Val + 1
                     })));

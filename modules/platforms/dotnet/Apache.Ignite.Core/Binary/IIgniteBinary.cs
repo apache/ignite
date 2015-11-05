@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         /// <param name="obj">Object to convert.</param>
         /// <returns>Converted object.</returns>
-        T ToPortable<T>(object obj);
+        T ToBinary<T>(object obj);
 
         /// <summary>
         /// Create builder for the given portable object type. Note that this

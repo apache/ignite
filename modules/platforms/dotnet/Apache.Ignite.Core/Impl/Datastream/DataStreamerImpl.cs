@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         private long _rcvHnd;
 
         /** Receiver portable mode. */
-        private readonly bool _keepPortable;
+        private readonly bool _keepBinary;
 
         /// <summary>
         /// Constructor.
@@ -112,12 +112,12 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="cacheName">Cache name.</param>
-        /// <param name="keepPortable">Portable flag.</param>
-        public DataStreamerImpl(IUnmanagedTarget target, Marshaller marsh, string cacheName, bool keepPortable)
+        /// <param name="keepBinary">Portable flag.</param>
+        public DataStreamerImpl(IUnmanagedTarget target, Marshaller marsh, string cacheName, bool keepBinary)
             : base(target, marsh)
         {
             _cacheName = cacheName;
-            _keepPortable = keepPortable;
+            _keepBinary = keepBinary;
 
             // Create empty batch.
             _batch = new DataStreamerBatch<TK, TV>();
@@ -507,7 +507,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /** <inheritDoc /> */
         public IDataStreamer<TK1, TV1> WithKeepBinary<TK1, TV1>()
         {
-            if (_keepPortable)
+            if (_keepBinary)
             {
                 var result = this as IDataStreamer<TK1, TV1>;
 

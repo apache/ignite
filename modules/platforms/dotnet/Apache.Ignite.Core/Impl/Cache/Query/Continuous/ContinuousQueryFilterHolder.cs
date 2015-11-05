@@ -30,17 +30,17 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         private readonly object _filter;
 
         /** Keep binary flag. */
-        private readonly bool _keepPortable;
+        private readonly bool _keepBinary;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="filter">Filter.</param>
-        /// <param name="keepPortable">Keep binary flag.</param>
-        public ContinuousQueryFilterHolder(object filter, bool keepPortable)
+        /// <param name="keepBinary">Keep binary flag.</param>
+        public ContinuousQueryFilterHolder(object filter, bool keepBinary)
         {
             _filter = filter;
-            _keepPortable = keepPortable;
+            _keepBinary = keepBinary;
         }
 
         /// <summary>
@@ -54,9 +54,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <summary>
         /// Keep binary flag.
         /// </summary>
-        internal bool KeepPortable
+        internal bool KeepBinary
         {
-            get { return _keepPortable; }
+            get { return _keepBinary; }
         }
 
         /// <summary>
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
             var rawWriter = (BinaryWriter) writer.GetRawWriter();
 
             rawWriter.WriteObject(_filter);
-            rawWriter.WriteBoolean(_keepPortable);
+            rawWriter.WriteBoolean(_keepBinary);
         }
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
             var rawReader = (BinaryReader) reader.GetRawReader();
 
             _filter = rawReader.ReadObject<object>();
-            _keepPortable = rawReader.ReadBoolean();
+            _keepBinary = rawReader.ReadBoolean();
         }
     }
 }

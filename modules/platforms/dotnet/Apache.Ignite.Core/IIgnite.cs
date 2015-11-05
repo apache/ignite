@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <returns>Instance of <see cref="IIgniteBinary"/> interface</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
-        IIgniteBinary GetPortables();
+        IIgniteBinary GetBinary();
 
         /// <summary>
         /// Gets affinity service to provide information about data partitioning and distribution.

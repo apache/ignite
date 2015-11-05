@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestPartialUpdateExceptionPortable()
         {
             // User type
-            TestPartialUpdateException(false, (x, g) => g.GetPortables().ToPortable<IBinaryObject>(new PortableEntry(x)));
+            TestPartialUpdateException(false, (x, g) => g.GetBinary().ToBinary<IBinaryObject>(new PortableEntry(x)));
         }
 
         /// <summary>
@@ -205,7 +205,7 @@ namespace Apache.Ignite.Core.Tests
         [Category(TestUtils.CategoryIntensive)]
         public void TestPartialUpdateExceptionAsyncPortable()
         {
-            TestPartialUpdateException(true, (x, g) => g.GetPortables().ToPortable<IBinaryObject>(new PortableEntry(x)));
+            TestPartialUpdateException(true, (x, g) => g.GetBinary().ToBinary<IBinaryObject>(new PortableEntry(x)));
         }
 
         /// <summary>

@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Events
             _isNear = r.ReadBoolean();
             _eventNode = ReadNode(r);
             _key = r.ReadObject<object>();
-            _xid = IgniteGuid.ReadPortable(r);
+            _xid = IgniteGuid.Read(r);
             _lockId = r.ReadObject<object>();
             _newValue = r.ReadObject<object>();
             _oldValue = r.ReadObject<object>();

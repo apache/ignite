@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public T ToPortable<T>(object obj)
+        public T ToBinary<T>(object obj)
         {
             if (obj is IBinaryObject)
                 return (T)obj;
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 throw new IgniteException("Type is not portable (add it to PortableConfiguration): " + 
                     type.FullName);
 
-            return Builder0(null, PortableFromDescriptor(desc), desc);
+            return Builder0(null, BinaryFromDescriptor(desc), desc);
         }
 
         /** <inheritDoc /> */
@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             IBinaryTypeDescriptor desc = _marsh.GetDescriptor(typeName);
             
-            return Builder0(null, PortableFromDescriptor(desc), desc);
+            return Builder0(null, BinaryFromDescriptor(desc), desc);
         }
 
         /** <inheritDoc /> */
@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="desc">Descriptor.</param>
         /// <returns>Empty portable object.</returns>
-        private BinaryObject PortableFromDescriptor(IBinaryTypeDescriptor desc)
+        private BinaryObject BinaryFromDescriptor(IBinaryTypeDescriptor desc)
         {
             var len = BinaryObjectHeader.Size;
 
