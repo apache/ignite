@@ -84,7 +84,7 @@ public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark {
 
     /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
-        ignite().log().info("Average number of entries per query: " + (resCnt.longValue() / cnt.longValue()));
+        ignite().log().info("Average number of entries per query: " + ((double)resCnt.longValue() / cnt.longValue()));
 
         super.tearDown();
     }
