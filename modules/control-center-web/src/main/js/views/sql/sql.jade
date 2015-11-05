@@ -42,7 +42,7 @@ mixin result-toolbar
         +btn-toolbar-data('fa-area-chart', 'area', 'Show area chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values')
 
 mixin chart-settings(mdl)
-    .row(ng-show='paragraph.chart')
+    .row(ng-show='paragraph.chart && paragraph.chartColumns.length > 0')
         .col-xs-4.chart-settings-link
             i.fa.fa-chevron-circle-down
             a(ng-click='$event.stopPropagation()' bs-popover data-template-url='chart-settings' data-placement='bottom' data-auto-close='1' data-trigger='click') Chart settings
@@ -180,9 +180,11 @@ block container
                                     div(ng-show='paragraph.chart() && paragraph.nonEmpty()')
                                         div(ng-show='paragraph.queryExecute()')
                                             +chart-settings
-                                            div(ng-hide='paragraph.chartColumnsConfigured()')
+                                            div(ng-show='paragraph.chartColumns.length > 0 && !paragraph.chartColumnsConfigured()')
                                                 .sql-empty-result Cannot display chart. Please configure axis using&nbsp
                                                     b Chart settings
+                                            div(ng-show='paragraph.chartColumns.length == 0')
+                                                .sql-empty-result Cannot display chart. Result set must contain Java build-in type columns. Please change query and execute it again.
                                             div(ng-show='paragraph.chartColumnsConfigured()')
                                                 div(ng-show='paragraph.timeLineSupported() || !paragraph.chartTimeLineEnabled()')
                                                     div(ng-repeat='chart in paragraph.charts')
