@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /** Position before head. */
         private const int BatchPosBeforeHead = -1;
 
-        /** Keep portable flag. */
+        /** Keep binary flag. */
         private readonly bool _keepBinary;
 
         /** Wherther "GetAll" was called. */

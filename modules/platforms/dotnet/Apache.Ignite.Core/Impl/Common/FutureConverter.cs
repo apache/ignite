@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /** Marshaller. */
         private readonly Marshaller _marsh;
 
-        /** Keep portable flag. */
+        /** Keep binary flag. */
         private readonly bool _keepPortable;
 
         /** Converting function. */

@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         /// <param name="stream">Stream to read data from.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepPortable">Keep binary flag.</param>
         /// <returns>Event.</returns>
         public static ICacheEntryEvent<TK, TV> ReadEvent<TK, TV>(IBinaryStream stream, 
             Marshaller marsh, bool keepPortable)
@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepPortable">Keep binary flag.</param>
         /// <returns>Events.</returns>
         [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         public static ICacheEntryEvent<TK, TV>[] ReadEvents<TK, TV>(IBinaryStream stream,

@@ -1343,12 +1343,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Check whether the given object is portable, i.e. it can be 
-        /// serialized with portable marshaller.
+        /// Check whether the given object is binarizeble, i.e. it can be serialized with binary marshaller.
         /// </summary>
         /// <param name="obj">Object.</param>
-        /// <returns>True if portable.</returns>
-        internal bool IsPortable(object obj)
+        /// <returns>True if binarizable.</returns>
+        internal bool IsBinarizable(object obj)
         {
             if (obj != null)
             {

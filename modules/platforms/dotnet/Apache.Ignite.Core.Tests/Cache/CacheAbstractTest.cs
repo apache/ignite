@@ -342,7 +342,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [TearDown]
         public virtual void AfterTest() {
             for (int i = 0; i < GridCount(); i++) 
-                Cache(i).WithKeepPortable<object, object>().RemoveAll();
+                Cache(i).WithKeepBinary<object, object>().RemoveAll();
 
             for (int i = 0; i < GridCount(); i++)
             {
@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestCircularReference()
         {
-            var cache = Cache().WithKeepPortable<int, object>();
+            var cache = Cache().WithKeepBinary<int, object>();
 
             TestReferenceObject obj1 = new TestReferenceObject();
 
@@ -1767,8 +1767,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         //[Category(TestUtils.CATEGORY_INTENSIVE)]
         public void TestAsyncMultithreadedKeepPortable()
         {
-            var cache = Cache().WithKeepPortable<CacheTestKey, PortablePerson>();
-            var portCache = Cache().WithKeepPortable<CacheTestKey, IBinaryObject>();
+            var cache = Cache().WithKeepBinary<CacheTestKey, PortablePerson>();
+            var portCache = Cache().WithKeepBinary<CacheTestKey, IBinaryObject>();
 
             const int threads = 10;
             const int objPerThread = 1000;
@@ -2801,7 +2801,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.Put(1, obj);
 
-            var portableResult = cache.WithKeepPortable<int, IBinaryObject>().Get(1);
+            var portableResult = cache.WithKeepBinary<int, IBinaryObject>().Get(1);
 
             var resultObj = portableResult.Deserialize<TestSerializableObject>();
 
@@ -3002,7 +3002,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreSame(cacheSkipStore1, cacheSkipStore2);
 
             // Ensure other flags are preserved.
-            Assert.IsTrue(((CacheImpl<int, int>) cache.WithKeepPortable<int, int>().WithSkipStore()).IsKeepPortable);
+            Assert.IsTrue(((CacheImpl<int, int>) cache.WithKeepBinary<int, int>().WithSkipStore()).IsKeepBinary);
         }
 
         [Test]
@@ -3092,9 +3092,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache0 = async ? Cache().WrapAsync() : Cache();
 
-            var cache = cache0.WithKeepPortable<int, PortablePerson>();
+            var cache = cache0.WithKeepBinary<int, PortablePerson>();
 
-            var portCache = cache0.WithKeepPortable<int, IBinaryObject>();
+            var portCache = cache0.WithKeepBinary<int, IBinaryObject>();
 
             int cnt = 10;
 

@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /** Marshaller. */
         private readonly Marshaller _marsh;
 
-        /** Keep portable flag. */
+        /** Keep binary flag. */
         private readonly bool _keepPortable;
 
         /** Real listener. */
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         /// <param name="qry">Query.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepPortable">Keep binary flag.</param>
         public ContinuousQueryHandleImpl(ContinuousQuery<TK, TV> qry, Marshaller marsh, bool keepPortable)
         {
             _marsh = marsh;

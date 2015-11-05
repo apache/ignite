@@ -124,7 +124,7 @@ namespace Apache.Ignite.Examples.Datagrid
             cache.Put(1, org);
 
             // Create projection that will get values as portable objects.
-            var portableCache = cache.WithKeepPortable<int, IBinaryObject>();
+            var portableCache = cache.WithKeepBinary<int, IBinaryObject>();
 
             // Get recently created organization as a portable object.
             var portableOrg = portableCache.Get(1);
@@ -203,7 +203,7 @@ namespace Apache.Ignite.Examples.Datagrid
             cache.PutAll(map);
 
             // Create projection that will get values as portable objects.
-            var portableCache = cache.WithKeepPortable<int, IBinaryObject>();
+            var portableCache = cache.WithKeepBinary<int, IBinaryObject>();
 
             // Get recently created organizations as portable objects.
             IDictionary<int, IBinaryObject> portableMap =

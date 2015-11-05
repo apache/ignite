@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
-        public IServices WithKeepPortable()
+        public IServices WithKeepBinary()
         {
             if (_keepPortable)
                 return this;
@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
-        public IServices WithServerKeepPortable()
+        public IServices WithServerKeepBinary()
         {
             if (_srvKeepPortable)
                 return this;

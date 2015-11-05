@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl
         {
             var writer0 = (BinaryWriter) writer.GetRawWriter();
 
-            if (writer0.IsPortable(_err))
+            if (writer0.IsBinarizable(_err))
             {
                 writer0.WriteBoolean(true);
                 writer0.WriteObject(_err);

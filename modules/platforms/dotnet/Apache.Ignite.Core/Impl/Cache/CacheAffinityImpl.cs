@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private const int OpPrimaryPartitions = 14;
 
         /** */
-        private readonly bool _keepPortable;
+        private readonly bool _keepBinary;
         
         /** Grid. */
         private readonly Ignite _ignite;
@@ -86,12 +86,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="ignite">Grid.</param>
-        public CacheAffinityImpl(IUnmanagedTarget target, Marshaller marsh, bool keepPortable, 
+        public CacheAffinityImpl(IUnmanagedTarget target, Marshaller marsh, bool keepBinary, 
             Ignite ignite) : base(target, marsh)
         {
-            _keepPortable = keepPortable;
+            _keepBinary = keepBinary;
 
             Debug.Assert(ignite != null);
             
@@ -224,7 +224,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         protected override T Unmarshal<T>(IBinaryStream stream)
         {
-            return Marshaller.Unmarshal<T>(stream, _keepPortable);
+            return Marshaller.Unmarshal<T>(stream, _keepBinary);
         }
 
 
@@ -251,7 +251,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         private IList<IClusterNode> ReadNodes(IBinaryStream reader)
         {
-            return IgniteUtils.ReadNodes(Marshaller.StartUnmarshal(reader, _keepPortable));
+            return IgniteUtils.ReadNodes(Marshaller.StartUnmarshal(reader, _keepBinary));
         }
 
         /// <summary>
@@ -260,7 +260,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private Dictionary<TK, TV> ReadDictionary<TK, TV>(IBinaryStream reader, Func<BinaryReader, TK> readKey,
             Func<BinaryReader, TV> readVal)
         {
-            var r = Marshaller.StartUnmarshal(reader, _keepPortable);
+            var r = Marshaller.StartUnmarshal(reader, _keepBinary);
 
             var cnt = r.ReadInt();
 

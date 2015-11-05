@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// Writes this instance to a stream created with a specified delegate.
         /// </summary>
         /// <param name="writer">Writer.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepPortable">Keep binary flag.</param>
         internal abstract void Write(BinaryWriter writer, bool keepPortable);
 
         /// <summary>

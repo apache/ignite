@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         private static IBinaryObject ToPortable(IIgnite grid, object obj)
         {
-            var cache = grid.GetCache<object, object>(Cache1Name).WithKeepPortable<object, object>();
+            var cache = grid.GetCache<object, object>(Cache1Name).WithKeepBinary<object, object>();
 
             cache.Put(1, obj);
 

@@ -212,7 +212,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Assert.AreEqual(3, cache.GetSize());
 
-            var meta = cache.WithKeepPortable<Key, IBinaryObject>().Get(new Key(0)).GetMetadata();
+            var meta = cache.WithKeepBinary<Key, IBinaryObject>().Get(new Key(0)).GetMetadata();
 
             Assert.NotNull(meta);
 

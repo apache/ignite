@@ -29,14 +29,14 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /** Filter object. */
         private readonly object _filter;
 
-        /** Keep portable flag. */
+        /** Keep binary flag. */
         private readonly bool _keepPortable;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="filter">Filter.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepPortable">Keep binary flag.</param>
         public ContinuousQueryFilterHolder(object filter, bool keepPortable)
         {
             _filter = filter;
@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Keep portable flag.
+        /// Keep binary flag.
         /// </summary>
         internal bool KeepPortable
         {

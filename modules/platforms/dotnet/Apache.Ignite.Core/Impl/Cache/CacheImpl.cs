@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private readonly bool _flagSkipStore;
 
         /** Flag: keep portable. */
-        private readonly bool _flagKeepPortable;
+        private readonly bool _flagKeepBinary;
 
         /** Flag: async mode.*/
         private readonly bool _flagAsync;
@@ -76,15 +76,15 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="flagSkipStore">Skip store flag.</param>
-        /// <param name="flagKeepPortable">Keep portable flag.</param>
+        /// <param name="flagKeepBinary">Keep binary flag.</param>
         /// <param name="flagAsync">Async mode flag.</param>
         /// <param name="flagNoRetries">No-retries mode flag.</param>
         public CacheImpl(Ignite grid, IUnmanagedTarget target, Marshaller marsh,
-            bool flagSkipStore, bool flagKeepPortable, bool flagAsync, bool flagNoRetries) : base(target, marsh)
+            bool flagSkipStore, bool flagKeepBinary, bool flagAsync, bool flagNoRetries) : base(target, marsh)
         {
             _ignite = grid;
             _flagSkipStore = flagSkipStore;
-            _flagKeepPortable = flagKeepPortable;
+            _flagKeepBinary = flagKeepBinary;
             _flagAsync = flagAsync;
             _flagNoRetries = flagNoRetries;
 
@@ -99,7 +99,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             _ignite = cache._ignite;
             _flagSkipStore = cache._flagSkipStore;
-            _flagKeepPortable = cache._flagKeepPortable;
+            _flagKeepBinary = cache._flagKeepBinary;
             _flagAsync = true;
             _flagNoRetries = cache._flagNoRetries;
         }
@@ -142,7 +142,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             Debug.Assert(_flagAsync);
 
             return GetFuture((futId, futTypeId) => UU.TargetListenFutureForOperation(Target, futId, futTypeId, 
-                (int) lastAsyncOp), _flagKeepPortable, converter).Task;
+                (int) lastAsyncOp), _flagKeepBinary, converter).Task;
         }
 
         /** <inheritDoc /> */
@@ -166,7 +166,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(_ignite, UU.CacheWithSkipStore(Target), Marshaller, 
-                true, _flagKeepPortable, _flagAsync, true);
+                true, _flagKeepBinary, _flagAsync, true);
         }
 
         /// <summary>
@@ -175,9 +175,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         internal bool IsSkipStore { get { return _flagSkipStore; } }
 
         /** <inheritDoc /> */
-        public ICache<TK1, TV1> WithKeepPortable<TK1, TV1>()
+        public ICache<TK1, TV1> WithKeepBinary<TK1, TV1>()
         {
-            if (_flagKeepPortable)
+            if (_flagKeepBinary)
             {
                 var result = this as ICache<TK1, TV1>;
 
@@ -204,7 +204,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             IUnmanagedTarget cache0 = UU.CacheWithExpiryPolicy(Target, create, update, access);
 
-            return new CacheImpl<TK, TV>(_ignite, cache0, Marshaller, _flagSkipStore, _flagKeepPortable, _flagAsync, _flagNoRetries);
+            return new CacheImpl<TK, TV>(_ignite, cache0, Marshaller, _flagSkipStore, _flagKeepBinary, _flagAsync, _flagNoRetries);
         }
 
         /// <summary>
@@ -228,9 +228,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public bool IsKeepPortable
+        public bool IsKeepBinary
         {
-            get { return _flagKeepPortable; }
+            get { return _flagKeepBinary; }
         }
 
         /** <inheritDoc /> */
@@ -271,7 +271,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 if (p != null)
                 {
                     var p0 = new CacheEntryFilterHolder(p, (k, v) => p.Invoke(new CacheEntry<TK, TV>((TK)k, (TV)v)),
-                        Marshaller, IsKeepPortable);
+                        Marshaller, IsKeepBinary);
                     writer.WriteObject(p0);
                     writer.WriteLong(p0.Handle);
                 }
@@ -430,7 +430,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 writer => WriteEnumerable(writer, keys),
                 input =>
                 {
-                    var reader = Marshaller.StartUnmarshal(input, _flagKeepPortable);
+                    var reader = Marshaller.StartUnmarshal(input, _flagKeepBinary);
 
                     return ReadGetAllDictionary(reader);
                 });
@@ -902,7 +902,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(_ignite, UU.CacheWithNoRetries(Target), Marshaller,
-                _flagSkipStore, _flagKeepPortable, _flagAsync, true);
+                _flagSkipStore, _flagKeepBinary, _flagAsync, true);
         }
 
         /// <summary>
@@ -940,7 +940,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 cursor = UU.CacheOutOpQueryCursor(Target, (int) CacheOp.QrySqlFields, stream.SynchronizeOutput());
             }
         
-            return new FieldsQueryCursor(cursor, Marshaller, _flagKeepPortable);
+            return new FieldsQueryCursor(cursor, Marshaller, _flagKeepBinary);
         }
 
         /** <inheritDoc /> */
@@ -954,14 +954,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 var writer = Marshaller.StartMarshal(stream);
 
-                qry.Write(writer, IsKeepPortable);
+                qry.Write(writer, IsKeepBinary);
 
                 FinishMarshal(writer);
 
                 cursor = UU.CacheOutOpQueryCursor(Target, (int)qry.OpId, stream.SynchronizeOutput()); 
             }
 
-            return new QueryCursor<TK, TV>(cursor, Marshaller, _flagKeepPortable);
+            return new QueryCursor<TK, TV>(cursor, Marshaller, _flagKeepBinary);
         }
                 
         /// <summary>
@@ -1007,7 +1007,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             qry.Validate();
 
-            var hnd = new ContinuousQueryHandleImpl<TK, TV>(qry, Marshaller, _flagKeepPortable);
+            var hnd = new ContinuousQueryHandleImpl<TK, TV>(qry, Marshaller, _flagKeepBinary);
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
@@ -1019,7 +1019,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                     {
                         writer.WriteInt((int) initialQry.OpId);
 
-                        initialQry.Write(writer, IsKeepPortable);
+                        initialQry.Write(writer, IsKeepBinary);
                     }
                     else
                         writer.WriteInt(-1); // no initial query
@@ -1065,9 +1065,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         internal CacheEnumerator<TK, TV> CreateEnumerator(bool loc, int peekModes)
         {
             if (loc)
-                return new CacheEnumerator<TK, TV>(UU.CacheLocalIterator(Target, peekModes), Marshaller, _flagKeepPortable);
+                return new CacheEnumerator<TK, TV>(UU.CacheLocalIterator(Target, peekModes), Marshaller, _flagKeepBinary);
 
-            return new CacheEnumerator<TK, TV>(UU.CacheIterator(Target), Marshaller, _flagKeepPortable);
+            return new CacheEnumerator<TK, TV>(UU.CacheIterator(Target), Marshaller, _flagKeepBinary);
         }
 
         #endregion
@@ -1075,7 +1075,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         protected override T Unmarshal<T>(IBinaryStream stream)
         {
-            return Marshaller.Unmarshal<T>(stream, _flagKeepPortable);
+            return Marshaller.Unmarshal<T>(stream, _flagKeepBinary);
         }
 
         /// <summary>

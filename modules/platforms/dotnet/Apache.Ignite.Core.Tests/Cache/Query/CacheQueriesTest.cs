@@ -386,7 +386,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         /// <param name="cnt">Amount of cache entries to create.</param>
         /// <param name="loc">Local query flag.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepPortable">Keep binary flag.</param>
         private void CheckSqlQuery(int cnt, bool loc, bool keepPortable)
         {
             var cache = Cache();
@@ -506,7 +506,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         /// <param name="cnt">Amount of cache entries to create.</param>
         /// <param name="loc">Local query flag.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepPortable">Keep binary flag.</param>
         private void CheckTextQuery(int cnt, bool loc, bool keepPortable)
         {
             var cache = Cache();
@@ -605,7 +605,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         /// <param name="cnt">Amount of cache entries to create.</param>
         /// <param name="loc">Local query flag.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepPortable">Keep binary flag.</param>
         private void CheckScanQuery<TV>(int cnt, bool loc, bool keepPortable)
         {
             var cache = Cache();
@@ -638,7 +638,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         /// <param name="cnt">Amount of cache entries to create.</param>
         /// <param name="loc">Local query flag.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepPortable">Keep binary flag.</param>
         private void CheckScanQueryPartitions<TV>(int cnt, bool loc, bool keepPortable)
         {
             StopGrids();
@@ -688,13 +688,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <param name="cache">Cache.</param>
         /// <param name="qry">Query.</param>
         /// <param name="exp">Expected keys.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepPortable">Keep binary flag.</param>
         private static void ValidateQueryResults(ICache<int, QueryPerson> cache, QueryBase qry, HashSet<int> exp,
             bool keepPortable)
         {
             if (keepPortable)
             {
-                var cache0 = cache.WithKeepPortable<int, IBinaryObject>();
+                var cache0 = cache.WithKeepBinary<int, IBinaryObject>();
 
                 using (var cursor = cache0.Query(qry))
                 {

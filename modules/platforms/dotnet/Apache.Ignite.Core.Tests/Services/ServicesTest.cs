@@ -178,7 +178,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestDeployKeyAffinitySingletonPortable()
         {
-            var services = Services.WithKeepPortable();
+            var services = Services.WithKeepBinary();
 
             var svc = new TestIgniteServicePortable();
 
@@ -366,11 +366,11 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = new TestIgniteServicePortable();
 
             // Deploy to grid2
-            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithKeepPortable()
+            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithKeepBinary()
                 .DeployNodeSingleton(SvcName, svc);
 
             // Get proxy
-            var prx = Services.WithKeepPortable().GetServiceProxy<ITestIgniteService>(SvcName);
+            var prx = Services.WithKeepBinary().GetServiceProxy<ITestIgniteService>(SvcName);
 
             var obj = new PortableObject {Val = 11};
 
@@ -390,11 +390,11 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = new TestIgniteServicePortable();
 
             // Deploy to grid2
-            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithServerKeepPortable()
+            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithServerKeepBinary()
                 .DeployNodeSingleton(SvcName, svc);
 
             // Get proxy
-            var prx = Services.WithServerKeepPortable().GetServiceProxy<ITestIgniteService>(SvcName);
+            var prx = Services.WithServerKeepBinary().GetServiceProxy<ITestIgniteService>(SvcName);
 
             var obj = new PortableObject { Val = 11 };
 
@@ -414,11 +414,11 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = new TestIgniteServicePortable();
 
             // Deploy to grid2
-            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithKeepPortable().WithServerKeepPortable()
+            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithKeepBinary().WithServerKeepBinary()
                 .DeployNodeSingleton(SvcName, svc);
 
             // Get proxy
-            var prx = Services.WithKeepPortable().WithServerKeepPortable().GetServiceProxy<ITestIgniteService>(SvcName);
+            var prx = Services.WithKeepBinary().WithServerKeepBinary().GetServiceProxy<ITestIgniteService>(SvcName);
 
             var obj = new PortableObject { Val = 11 };
 

@@ -594,7 +594,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestKeepPortable()
         {
-            var cache = cache1.WithKeepPortable<int, IBinaryObject>();
+            var cache = cache1.WithKeepBinary<int, IBinaryObject>();
 
             ContinuousQuery<int, IBinaryObject> qry = new ContinuousQuery<int, IBinaryObject>(
                     new Listener<IBinaryObject>(), new KeepPortableFilter());
@@ -718,7 +718,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestNestedCallFromCallback()
         {
-            var cache = cache1.WithKeepPortable<int, IBinaryObject>();
+            var cache = cache1.WithKeepBinary<int, IBinaryObject>();
 
             int key = PrimaryKey(cache1);
 

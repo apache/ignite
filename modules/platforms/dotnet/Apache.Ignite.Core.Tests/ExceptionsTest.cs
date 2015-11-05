@@ -218,7 +218,7 @@ namespace Apache.Ignite.Core.Tests
                 var cache = grid.GetCache<TK, int>("partitioned_atomic").WithNoRetries();
 
                 if (typeof (TK) == typeof (IBinaryObject))
-                    cache = cache.WithKeepPortable<TK, int>();
+                    cache = cache.WithKeepBinary<TK, int>();
 
                 // Do cache puts in parallel
                 var putTask = Task.Factory.StartNew(() =>

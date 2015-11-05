@@ -122,7 +122,7 @@ namespace Apache.Ignite.Examples.Datagrid
         private static void GetFromJava(IIgnite ignite)
         {
             var cache = ignite.GetOrCreateCache<int, IBinaryObject>(CacheName)
-                .WithKeepPortable<int, IBinaryObject>();
+                .WithKeepBinary<int, IBinaryObject>();
 
             var orgPortable = cache.GetAsync(KeyJava).Result;
 
@@ -147,7 +147,7 @@ namespace Apache.Ignite.Examples.Datagrid
         private static void GetFromCpp(IIgnite ignite)
         {
             var cache = ignite.GetOrCreateCache<int, IBinaryObject>(CacheName)
-                .WithKeepPortable<int, IBinaryObject>();
+                .WithKeepBinary<int, IBinaryObject>();
 
             var orgPortable = cache.GetAsync(KeyCpp).Result;
 
@@ -174,7 +174,7 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             // Apply "KeepPortable" flag on data projection.
             var cache = ignite.GetOrCreateCache<int, IBinaryObject>(CacheName)
-                .WithKeepPortable<int, IBinaryObject>();
+                .WithKeepBinary<int, IBinaryObject>();
 
             var org = cache.Get(KeyDotnet);
 

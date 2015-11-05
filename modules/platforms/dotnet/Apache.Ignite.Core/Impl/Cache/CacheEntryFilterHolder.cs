@@ -36,8 +36,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Invoker function that takes key and value and invokes wrapped ICacheEntryFilter */
         private readonly Func<object, object, bool> _invoker;
         
-        /** Keep portable flag. */
-        private readonly bool _keepPortable;
+        /** Keep binary flag. */
+        private readonly bool _keepBinary;
 
         /** Grid. */
         private readonly Marshaller _marsh;
@@ -51,9 +51,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="pred">The <see cref="ICacheEntryFilter{TK,TV}" /> to wrap.</param>
         /// <param name="invoker">The invoker func that takes key and value and invokes wrapped ICacheEntryFilter.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         public CacheEntryFilterHolder(object pred, Func<object, object, bool> invoker, Marshaller marsh, 
-            bool keepPortable)
+            bool keepBinary)
         {
             Debug.Assert(pred != null);
             Debug.Assert(invoker != null);
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             _pred = pred;
             _invoker = invoker;
             _marsh = marsh;
-            _keepPortable = keepPortable;
+            _keepBinary = keepBinary;
 
             _handle = marsh.Ignite.HandleRegistry.Allocate(this);
         }
@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Invocation result.</returns>
         public int Invoke(IBinaryStream input)
         {
-            var rawReader = _marsh.StartUnmarshal(input, _keepPortable).GetRawReader();
+            var rawReader = _marsh.StartUnmarshal(input, _keepBinary).GetRawReader();
 
             return _invoker(rawReader.ReadObject<object>(), rawReader.ReadObject<object>()) ? 1 : 0;
         }
@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             writer0.WithDetach(w => w.WriteObject(_pred));
             
-            writer0.WriteBoolean(_keepPortable);
+            writer0.WriteBoolean(_keepBinary);
         }
 
         /// <summary>
@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             _pred = reader0.ReadObject<object>();
 
-            _keepPortable = reader0.ReadBoolean();
+            _keepBinary = reader0.ReadBoolean();
 
             _marsh = reader0.Marshaller;
 
