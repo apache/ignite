@@ -31,7 +31,7 @@
 
         <property name="platformConfiguration">
             <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
-                <property name="portableConfiguration">
+                <property name="binaryConfiguration">
                     <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration">
                         <property name="types">
                             <list>
