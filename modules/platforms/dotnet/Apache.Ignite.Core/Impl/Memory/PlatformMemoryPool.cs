@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Memory
 {
     using System;
+    using System.Diagnostics;
     using Microsoft.Win32.SafeHandles;
 
     /// <summary>
@@ -26,16 +27,10 @@ namespace Apache.Ignite.Core.Impl.Memory
     [CLSCompliant(false)]
     public unsafe class PlatformMemoryPool : SafeHandleMinusOneIsInvalid
     {
-        private PlatformMemoryHeader* _hdr;
+        private readonly PlatformMemoryHeader* _hdr;
 
-        /** First pooled memory chunk. */
-        private PlatformPooledMemory _mem1;
-
-        /** Second pooled memory chunk. */
-        private PlatformPooledMemory _mem2;
-
-        /** Third pooled memory chunk. */
-        private PlatformPooledMemory _mem3;
+        /** Pooled memory chunks. */
+        private PlatformPooledMemory[] _mem = new PlatformPooledMemory[PlatformMemoryUtils.PoolSize];
 
         /// <summary>
         /// Constructor.
@@ -85,16 +80,15 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <returns>Memory chunk.</returns>
         public PlatformMemory Get(long memPtr) 
         {
-            // TODO
-            long delta = memPtr - (long) _hdr;
+            for (var i = 0; i < _mem.Length; i++)
+            {
+                if (memPtr == (long) (_hdr + i))
+                    return _mem[i];
+            }
 
-            if (delta == PlatformMemoryUtils.PoolHdrOffMem1) 
-                return _mem1 ?? (_mem1 = new PlatformPooledMemory(memPtr));
+            Debug.Fail("Failed to find pooled memory chunk by a pointer.");
             
-            if (delta == PlatformMemoryUtils.PoolHdrOffMem2) 
-                return _mem2 ?? (_mem2 = new PlatformPooledMemory(memPtr));
-
-            return _mem3 ?? (_mem3 = new PlatformPooledMemory(memPtr));
+            return null;
         }
 
         /** <inheritdoc /> */
