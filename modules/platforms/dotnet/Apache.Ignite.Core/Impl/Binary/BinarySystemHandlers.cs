@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static readonly object WriteHandlersMux = new object();
 
         /** Read handlers. */
-        private static readonly IPortableSystemReader[] ReadHandlers = new IPortableSystemReader[255];
+        private static readonly IBinarySystemReader[] ReadHandlers = new IBinarySystemReader[255];
 
         /** Type ids. */
         private static readonly Dictionary<Type, byte> TypeIds = new Dictionary<Type, byte>
@@ -95,79 +95,79 @@ namespace Apache.Ignite.Core.Impl.Binary
         static BinarySystemHandlers()
         {
             // 1. Primitives.
-            ReadHandlers[BinaryUtils.TypeBool] = new PortableSystemReader<bool>(s => s.ReadBool());
-            ReadHandlers[BinaryUtils.TypeByte] = new PortableSystemReader<byte>(s => s.ReadByte());
-            ReadHandlers[BinaryUtils.TypeShort] = new PortableSystemReader<short>(s => s.ReadShort());
-            ReadHandlers[BinaryUtils.TypeChar] = new PortableSystemReader<char>(s => s.ReadChar());
-            ReadHandlers[BinaryUtils.TypeInt] = new PortableSystemReader<int>(s => s.ReadInt());
-            ReadHandlers[BinaryUtils.TypeLong] = new PortableSystemReader<long>(s => s.ReadLong());
-            ReadHandlers[BinaryUtils.TypeFloat] = new PortableSystemReader<float>(s => s.ReadFloat());
-            ReadHandlers[BinaryUtils.TypeDouble] = new PortableSystemReader<double>(s => s.ReadDouble());
-            ReadHandlers[BinaryUtils.TypeDecimal] = new PortableSystemReader<decimal?>(BinaryUtils.ReadDecimal);
+            ReadHandlers[BinaryUtils.TypeBool] = new BinarySystemReader<bool>(s => s.ReadBool());
+            ReadHandlers[BinaryUtils.TypeByte] = new BinarySystemReader<byte>(s => s.ReadByte());
+            ReadHandlers[BinaryUtils.TypeShort] = new BinarySystemReader<short>(s => s.ReadShort());
+            ReadHandlers[BinaryUtils.TypeChar] = new BinarySystemReader<char>(s => s.ReadChar());
+            ReadHandlers[BinaryUtils.TypeInt] = new BinarySystemReader<int>(s => s.ReadInt());
+            ReadHandlers[BinaryUtils.TypeLong] = new BinarySystemReader<long>(s => s.ReadLong());
+            ReadHandlers[BinaryUtils.TypeFloat] = new BinarySystemReader<float>(s => s.ReadFloat());
+            ReadHandlers[BinaryUtils.TypeDouble] = new BinarySystemReader<double>(s => s.ReadDouble());
+            ReadHandlers[BinaryUtils.TypeDecimal] = new BinarySystemReader<decimal?>(BinaryUtils.ReadDecimal);
 
             // 2. Date.
-            ReadHandlers[BinaryUtils.TypeTimestamp] = new PortableSystemReader<DateTime?>(BinaryUtils.ReadTimestamp);
+            ReadHandlers[BinaryUtils.TypeTimestamp] = new BinarySystemReader<DateTime?>(BinaryUtils.ReadTimestamp);
 
             // 3. String.
-            ReadHandlers[BinaryUtils.TypeString] = new PortableSystemReader<string>(BinaryUtils.ReadString);
+            ReadHandlers[BinaryUtils.TypeString] = new BinarySystemReader<string>(BinaryUtils.ReadString);
 
             // 4. Guid.
-            ReadHandlers[BinaryUtils.TypeGuid] = new PortableSystemReader<Guid?>(BinaryUtils.ReadGuid);
+            ReadHandlers[BinaryUtils.TypeGuid] = new BinarySystemReader<Guid?>(BinaryUtils.ReadGuid);
 
             // 5. Primitive arrays.
-            ReadHandlers[BinaryUtils.TypeArrayBool] = new PortableSystemReader<bool[]>(BinaryUtils.ReadBooleanArray);
+            ReadHandlers[BinaryUtils.TypeArrayBool] = new BinarySystemReader<bool[]>(BinaryUtils.ReadBooleanArray);
 
             ReadHandlers[BinaryUtils.TypeArrayByte] =
-                new PortableSystemDualReader<byte[], sbyte[]>(BinaryUtils.ReadByteArray, BinaryUtils.ReadSbyteArray);
+                new BinarySystemDualReader<byte[], sbyte[]>(BinaryUtils.ReadByteArray, BinaryUtils.ReadSbyteArray);
             
             ReadHandlers[BinaryUtils.TypeArrayShort] =
-                new PortableSystemDualReader<short[], ushort[]>(BinaryUtils.ReadShortArray,
+                new BinarySystemDualReader<short[], ushort[]>(BinaryUtils.ReadShortArray,
                     BinaryUtils.ReadUshortArray);
 
             ReadHandlers[BinaryUtils.TypeArrayChar] = 
-                new PortableSystemReader<char[]>(BinaryUtils.ReadCharArray);
+                new BinarySystemReader<char[]>(BinaryUtils.ReadCharArray);
 
             ReadHandlers[BinaryUtils.TypeArrayInt] =
-                new PortableSystemDualReader<int[], uint[]>(BinaryUtils.ReadIntArray, BinaryUtils.ReadUintArray);
+                new BinarySystemDualReader<int[], uint[]>(BinaryUtils.ReadIntArray, BinaryUtils.ReadUintArray);
             
             ReadHandlers[BinaryUtils.TypeArrayLong] =
-                new PortableSystemDualReader<long[], ulong[]>(BinaryUtils.ReadLongArray, 
+                new BinarySystemDualReader<long[], ulong[]>(BinaryUtils.ReadLongArray, 
                     BinaryUtils.ReadUlongArray);
 
             ReadHandlers[BinaryUtils.TypeArrayFloat] =
-                new PortableSystemReader<float[]>(BinaryUtils.ReadFloatArray);
+                new BinarySystemReader<float[]>(BinaryUtils.ReadFloatArray);
 
             ReadHandlers[BinaryUtils.TypeArrayDouble] =
-                new PortableSystemReader<double[]>(BinaryUtils.ReadDoubleArray);
+                new BinarySystemReader<double[]>(BinaryUtils.ReadDoubleArray);
 
             ReadHandlers[BinaryUtils.TypeArrayDecimal] =
-                new PortableSystemReader<decimal?[]>(BinaryUtils.ReadDecimalArray);
+                new BinarySystemReader<decimal?[]>(BinaryUtils.ReadDecimalArray);
 
             // 6. Date array.
             ReadHandlers[BinaryUtils.TypeArrayTimestamp] =
-                new PortableSystemReader<DateTime?[]>(BinaryUtils.ReadTimestampArray);
+                new BinarySystemReader<DateTime?[]>(BinaryUtils.ReadTimestampArray);
 
             // 7. String array.
-            ReadHandlers[BinaryUtils.TypeArrayString] = new PortableSystemTypedArrayReader<string>();
+            ReadHandlers[BinaryUtils.TypeArrayString] = new BinarySystemTypedArrayReader<string>();
 
             // 8. Guid array.
-            ReadHandlers[BinaryUtils.TypeArrayGuid] = new PortableSystemTypedArrayReader<Guid?>();
+            ReadHandlers[BinaryUtils.TypeArrayGuid] = new BinarySystemTypedArrayReader<Guid?>();
 
             // 9. Array.
-            ReadHandlers[BinaryUtils.TypeArray] = new PortableSystemReader(ReadArray);
+            ReadHandlers[BinaryUtils.TypeArray] = new BinarySystemReader(ReadArray);
 
             // 11. Arbitrary collection.
-            ReadHandlers[BinaryUtils.TypeCollection] = new PortableSystemReader(ReadCollection);
+            ReadHandlers[BinaryUtils.TypeCollection] = new BinarySystemReader(ReadCollection);
 
             // 13. Arbitrary dictionary.
-            ReadHandlers[BinaryUtils.TypeDictionary] = new PortableSystemReader(ReadDictionary);
+            ReadHandlers[BinaryUtils.TypeDictionary] = new BinarySystemReader(ReadDictionary);
 
             // 15. Map entry.
-            ReadHandlers[BinaryUtils.TypeMapEntry] = new PortableSystemReader(ReadMapEntry);
+            ReadHandlers[BinaryUtils.TypeMapEntry] = new BinarySystemReader(ReadMapEntry);
             
             // 16. Enum.
-            ReadHandlers[BinaryUtils.TypeEnum] = new PortableSystemReader<int>(BinaryUtils.ReadEnum<int>);
-            ReadHandlers[BinaryUtils.TypeArrayEnum] = new PortableSystemReader(ReadEnumArray);
+            ReadHandlers[BinaryUtils.TypeEnum] = new BinarySystemReader<int>(BinaryUtils.ReadEnum<int>);
+            ReadHandlers[BinaryUtils.TypeArrayEnum] = new BinarySystemReader(ReadEnumArray);
         }
 
         /// <summary>
@@ -703,7 +703,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// System type reader.
         /// </summary>
-        private interface IPortableSystemReader
+        private interface IBinarySystemReader
         {
             /// <summary>
             /// Reads a value of specified type from reader.
@@ -725,16 +725,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Default reader with boxing.
         /// </summary>
-        private class PortableSystemReader : IPortableSystemReader
+        private class BinarySystemReader : IBinarySystemReader
         {
             /** */
             private readonly PortableSystemReadDelegate _readDelegate;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="PortableSystemReader"/> class.
+            /// Initializes a new instance of the <see cref="BinarySystemReader"/> class.
             /// </summary>
             /// <param name="readDelegate">The read delegate.</param>
-            public PortableSystemReader(PortableSystemReadDelegate readDelegate)
+            public BinarySystemReader(PortableSystemReadDelegate readDelegate)
             {
                 Debug.Assert(readDelegate != null);
 
@@ -751,16 +751,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reader without boxing.
         /// </summary>
-        private class PortableSystemReader<T> : IPortableSystemReader
+        private class BinarySystemReader<T> : IBinarySystemReader
         {
             /** */
             private readonly Func<IBinaryStream, T> _readDelegate;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="PortableSystemReader{T}"/> class.
+            /// Initializes a new instance of the <see cref="BinarySystemReader{T}"/> class.
             /// </summary>
             /// <param name="readDelegate">The read delegate.</param>
-            public PortableSystemReader(Func<IBinaryStream, T> readDelegate)
+            public BinarySystemReader(Func<IBinaryStream, T> readDelegate)
             {
                 Debug.Assert(readDelegate != null);
 
@@ -777,7 +777,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reader without boxing.
         /// </summary>
-        private class PortableSystemTypedArrayReader<T> : IPortableSystemReader
+        private class BinarySystemTypedArrayReader<T> : IBinarySystemReader
         {
             public TResult Read<TResult>(BinaryReader ctx)
             {
@@ -788,7 +788,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reader with selection based on requested type.
         /// </summary>
-        private class PortableSystemDualReader<T1, T2> : IPortableSystemReader, IPortableSystemReader<T2>
+        private class BinarySystemDualReader<T1, T2> : IBinarySystemReader, IPortableSystemReader<T2>
         {
             /** */
             private readonly Func<IBinaryStream, T1> _readDelegate1;
@@ -797,11 +797,11 @@ namespace Apache.Ignite.Core.Impl.Binary
             private readonly Func<IBinaryStream, T2> _readDelegate2;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="PortableSystemDualReader{T1, T2}"/> class.
+            /// Initializes a new instance of the <see cref="BinarySystemDualReader{T1,T2}"/> class.
             /// </summary>
             /// <param name="readDelegate1">The read delegate1.</param>
             /// <param name="readDelegate2">The read delegate2.</param>
-            public PortableSystemDualReader(Func<IBinaryStream, T1> readDelegate1, Func<IBinaryStream, T2> readDelegate2)
+            public BinarySystemDualReader(Func<IBinaryStream, T1> readDelegate1, Func<IBinaryStream, T2> readDelegate2)
             {
                 Debug.Assert(readDelegate1 != null);
                 Debug.Assert(readDelegate2 != null);

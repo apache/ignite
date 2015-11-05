@@ -239,7 +239,7 @@
     <Compile Include="Impl\Binary\IO\IBinaryStream.cs" />
     <Compile Include="Impl\Binary\IO\BinaryStreamBase.cs" />
     <Compile Include="Impl\Binary\IO\BinaryHeapStream.cs" />
-    <Compile Include="Impl\Binary\IO\PortableStreamAdapter.cs" />
+    <Compile Include="Impl\Binary\IO\BinaryStreamAdapter.cs" />
     <Compile Include="Impl\Binary\IBinarySystemTypeSerializer.cs" />
     <Compile Include="Impl\Binary\IBinaryTypeDescriptor.cs" />
     <Compile Include="Impl\Binary\IBinaryWriteAware.cs" />

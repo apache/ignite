@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Impl
 
                 BinaryFormatter bf = new BinaryFormatter();
 
-                bf.Serialize(new PortableStreamAdapter(writer0.Stream), _err);
+                bf.Serialize(new BinaryStreamAdapter(writer0.Stream), _err);
             }
         }
 

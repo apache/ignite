@@ -21,9 +21,9 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
     using System.IO;
 
     /// <summary>
-    /// Adapter providing .Net streaming functionality over the portable stream.
+    /// Adapter providing .Net streaming functionality over the binary stream.
     /// </summary>
-    internal class PortableStreamAdapter : Stream
+    internal class BinaryStreamAdapter : Stream
     {
         /// <summary>
         /// 
@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         /// Constructor.
         /// </summary>
         /// <param name="stream">Stream.</param>
-        public PortableStreamAdapter(IBinaryStream stream)
+        public BinaryStreamAdapter(IBinaryStream stream)
         {
             _stream = stream;
         }
