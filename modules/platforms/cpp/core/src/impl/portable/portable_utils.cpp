@@ -205,9 +205,7 @@ namespace ignite
             {
                 stream->WriteBool(false);
                 stream->WriteInt32(len);
-
-                for (int i = 0; i < len; i++)
-                    stream->WriteUInt16(*(val + i));
+                stream->WriteInt8Array(reinterpret_cast<const int8_t*>(val), len);
             }
         }
     }
