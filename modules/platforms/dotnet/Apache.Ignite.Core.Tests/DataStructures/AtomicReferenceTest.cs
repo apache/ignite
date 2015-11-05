@@ -114,8 +114,18 @@ namespace Apache.Ignite.Core.Tests.DataStructures
 
             Assert.AreEqual(15, atomics[0].CompareExchange(42, 15));
             atomics.ForEach(x => Assert.AreEqual(42, x.Get()));
+        }
 
+        /// <summary>
+        /// Tests primitives in the atomic.
+        /// </summary>
+        [Test]
+        public void TestPrimitives()
+        {
             TestOperations(1, 2);
+            TestOperations("1", "2");
+            TestOperations(Guid.NewGuid(), Guid.NewGuid());
+            TestOperations(DateTime.Now, DateTime.Now.AddDays(-1));
         }
 
         /// <summary>
@@ -144,6 +154,8 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <param name="y">The y.</param>
         private void TestOperations<T>(T x, T y)
         {
+            Grid.GetAtomicReference(AtomicRefName, 0, true).Close();
+
             var atomic = Grid.GetAtomicReference(AtomicRefName, x, true);
 
             Assert.AreEqual(x, atomic.Get());
