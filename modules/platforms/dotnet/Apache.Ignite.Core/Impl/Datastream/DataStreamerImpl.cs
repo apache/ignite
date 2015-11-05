@@ -505,7 +505,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
-        public IDataStreamer<TK1, TV1> WithKeepPortable<TK1, TV1>()
+        public IDataStreamer<TK1, TV1> WithKeepBinary<TK1, TV1>()
         {
             if (_keepPortable)
             {

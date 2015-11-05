@@ -441,7 +441,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
             var cache = _grid.GetCache<int, PortableEntry>(CacheName);
 
             using (var ldr0 = _grid.GetDataStreamer<int, int>(CacheName))
-            using (var ldr = ldr0.WithKeepPortable<int, IBinaryObject>())
+            using (var ldr = ldr0.WithKeepBinary<int, IBinaryObject>())
             {
                 ldr.Receiver = new StreamReceiverKeepPortable();
 

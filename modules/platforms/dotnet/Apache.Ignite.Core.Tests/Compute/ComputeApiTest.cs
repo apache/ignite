@@ -817,7 +817,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             ICompute compute = _grid1.GetCompute();
 
-            compute.WithKeepPortable();
+            compute.WithKeepBinary();
 
             IBinaryObject res = compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypePortableJava);
 
@@ -890,7 +890,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             ICompute compute = _grid1.GetCompute();
 
-            compute.WithKeepPortable();
+            compute.WithKeepBinary();
 
             PlatformComputeNetPortable arg = new PlatformComputeNetPortable();
 

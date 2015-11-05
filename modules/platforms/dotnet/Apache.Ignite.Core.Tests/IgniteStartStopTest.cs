@@ -341,7 +341,7 @@ namespace Apache.Ignite.Core.Tests
             var comp = ignite.GetCompute();
 
             // ReSharper disable once RedundantAssignment
-            comp = comp.WithKeepPortable();
+            comp = comp.WithKeepBinary();
 
             var prj = ignite.GetCluster().ForOldest();
 
