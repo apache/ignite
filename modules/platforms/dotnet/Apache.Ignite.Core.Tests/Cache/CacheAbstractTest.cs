@@ -2865,7 +2865,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             AssertThrowsCacheEntryProcessorException(
                 () => cache.Invoke(key, new T {ThrowErrPortable = true}, arg));
             AssertThrowsCacheEntryProcessorException(
-                () => cache.Invoke(key, new T { ThrowErrNonSerializable = true }, arg), "PortableException");
+                () => cache.Invoke(key, new T { ThrowErrNonSerializable = true }, arg), "BinaryObjectException");
         }
 
         private static void AssertThrowsCacheEntryProcessorException(Action action, string containsText = null)
@@ -2958,8 +2958,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             TestInvokeAllException(cache, entries, new T { ThrowErr = true, ThrowOnKey = errKey }, arg, errKey);
             TestInvokeAllException(cache, entries, new T { ThrowErrPortable = true, ThrowOnKey = errKey }, 
                 arg, errKey);
-            TestInvokeAllException(cache, entries, new T { ThrowErrNonSerializable = true, ThrowOnKey = errKey }, 
-                arg, errKey, "PortableException");
+            TestInvokeAllException(cache, entries, new T { ThrowErrNonSerializable = true, ThrowOnKey = errKey },
+                arg, errKey, "BinaryObjectException");
 
         }
 
