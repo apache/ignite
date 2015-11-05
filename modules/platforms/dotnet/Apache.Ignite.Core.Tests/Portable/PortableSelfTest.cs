@@ -504,10 +504,10 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestDateObject()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs =
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs =
+                new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(DateTimeType)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(DateTimeType)));
 
             PortableConfiguration cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
@@ -569,10 +569,10 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             var marsh = new PortableMarshaller(new PortableConfiguration
             {
-                TypeConfigurations = new List<PortableTypeConfiguration>
+                TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
-                    new PortableTypeConfiguration(typeof (PrimitiveFieldType)),
-                    new PortableTypeConfiguration(typeof (GenericCollectionsType<PrimitiveFieldType, SerializableObject>))
+                    new BinaryTypeConfiguration(typeof (PrimitiveFieldType)),
+                    new BinaryTypeConfiguration(typeof (GenericCollectionsType<PrimitiveFieldType, SerializableObject>))
                 }
             });
 
@@ -609,10 +609,10 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestProperty()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs = 
+                new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(PropertyType)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(PropertyType)));
 
             PortableConfiguration cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
@@ -643,10 +643,10 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFieldsReflective()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs = 
+                new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(PrimitiveFieldType)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldType)));
 
             PortableConfiguration cfg = new PortableConfiguration {TypeConfigurations = typeCfgs};
 
@@ -663,10 +663,10 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFieldsPortable()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs = 
+                new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(PrimitiveFieldPortableType)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldPortableType)));
 
             PortableConfiguration cfg = new PortableConfiguration();
 
@@ -685,10 +685,10 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFieldsRawPortable()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs = 
+                new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(PrimitiveFieldRawPortableType)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldRawPortableType)));
 
             PortableConfiguration cfg = new PortableConfiguration();
 
@@ -707,9 +707,9 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFieldsSerializer()
         {
-            var typeCfgs = new List<PortableTypeConfiguration>
+            var typeCfgs = new List<BinaryTypeConfiguration>
             {
-                new PortableTypeConfiguration(typeof (PrimitiveFieldType))
+                new BinaryTypeConfiguration(typeof (PrimitiveFieldType))
                 {
                     Serializer = new PrimitiveFieldsSerializer()
                 }
@@ -732,10 +732,10 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             PortableConfiguration cfg = new PortableConfiguration
             {
-                TypeConfigurations = new List<PortableTypeConfiguration>
+                TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
-                    new PortableTypeConfiguration(typeof (DecimalReflective)),
-                    new PortableTypeConfiguration(typeof (DecimalMarshalAware))
+                    new BinaryTypeConfiguration(typeof (DecimalReflective)),
+                    new BinaryTypeConfiguration(typeof (DecimalMarshalAware))
                 }
             };
 
@@ -781,11 +781,11 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestPrimitiveFieldsRawSerializer()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs = 
+                new List<BinaryTypeConfiguration>();
 
-            PortableTypeConfiguration typeCfg =
-                new PortableTypeConfiguration(typeof(PrimitiveFieldType));
+            BinaryTypeConfiguration typeCfg =
+                new BinaryTypeConfiguration(typeof(PrimitiveFieldType));
 
             typeCfg.Serializer = new PrimitiveFieldsRawSerializer();
 
@@ -847,7 +847,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 new PortableMarshaller(new PortableConfiguration
                 {
                     TypeConfigurations =
-                        new List<PortableTypeConfiguration> {new PortableTypeConfiguration(typeof (EnumType))}
+                        new List<BinaryTypeConfiguration> {new BinaryTypeConfiguration(typeof (EnumType))}
                 });
 
             EnumType obj = new EnumType
@@ -876,10 +876,10 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             var marsh = new PortableMarshaller(new PortableConfiguration
             {
-                TypeConfigurations = new List<PortableTypeConfiguration>
+                TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
-                    new PortableTypeConfiguration(typeof (CollectionsType)),
-                    new PortableTypeConfiguration(typeof (InnerObjectType))
+                    new BinaryTypeConfiguration(typeof (CollectionsType)),
+                    new BinaryTypeConfiguration(typeof (InnerObjectType))
                 }
             });
             
@@ -943,11 +943,11 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestObjectReflective()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs = 
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs = 
+                new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(OuterObjectType)));
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(InnerObjectType)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(OuterObjectType)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(InnerObjectType)));
 
             PortableConfiguration cfg = new PortableConfiguration();
 
@@ -964,11 +964,11 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestHandles()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs =
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs =
+                new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(HandleInner)));
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(HandleOuter)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(HandleInner)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(HandleOuter)));
 
             PortableConfiguration cfg = new PortableConfiguration();
 
@@ -1030,10 +1030,10 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             var marsh = new PortableMarshaller(new PortableConfiguration
             {
-                TypeConfigurations = new List<PortableTypeConfiguration>
+                TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
-                    new PortableTypeConfiguration(typeof (HandleInner)),
-                    new PortableTypeConfiguration(typeof (HandleOuterExclusive))
+                    new BinaryTypeConfiguration(typeof (HandleInner)),
+                    new BinaryTypeConfiguration(typeof (HandleOuterExclusive))
                 }
             });
 
@@ -1066,7 +1066,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             if (detached)
             {
-                var reader = new PortableReaderImpl(marsh, new Dictionary<long, IPortableTypeDescriptor>(),
+                var reader = new BinaryReaderImpl(marsh, new Dictionary<long, IPortableTypeDescriptor>(),
                     new PortableHeapStream(bytes), PortableMode.ForcePortable, null);
 
                 reader.DetachNext();
@@ -1122,13 +1122,13 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestKeepSerializedTypeCfgFalse()
         {
-            PortableTypeConfiguration typeCfg = new PortableTypeConfiguration(typeof(PropertyType));
+            BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(typeof(PropertyType));
 
             typeCfg.KeepDeserialized = false;
 
             PortableConfiguration cfg = new PortableConfiguration();
 
-            cfg.TypeConfigurations = new List<PortableTypeConfiguration> { typeCfg };
+            cfg.TypeConfigurations = new List<BinaryTypeConfiguration> { typeCfg };
 
             CheckKeepSerialized(cfg, false);
         }
@@ -1139,13 +1139,13 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestKeepSerializedTypeCfgTrue()
         {
-            PortableTypeConfiguration typeCfg = new PortableTypeConfiguration(typeof(PropertyType));
+            BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(typeof(PropertyType));
             typeCfg.KeepDeserialized = true;
 
             PortableConfiguration cfg = new PortableConfiguration();
             cfg.DefaultKeepDeserialized = false;
 
-            cfg.TypeConfigurations = new List<PortableTypeConfiguration> { typeCfg };
+            cfg.TypeConfigurations = new List<BinaryTypeConfiguration> { typeCfg };
 
             CheckKeepSerialized(cfg, true);
         }
@@ -1156,11 +1156,11 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestSpecialArrays()
         {
-            ICollection<PortableTypeConfiguration> typeCfgs =
-                new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> typeCfgs =
+                new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(SpecialArray)));
-            typeCfgs.Add(new PortableTypeConfiguration(typeof(SpecialArrayMarshalAware)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(SpecialArray)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(SpecialArrayMarshalAware)));
 
             PortableConfiguration cfg = new PortableConfiguration();
 
@@ -1234,10 +1234,10 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             var marsh = new PortableMarshaller(new PortableConfiguration
             {
-                TypeConfigurations = new List<PortableTypeConfiguration>
+                TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
-                    new PortableTypeConfiguration(typeof (SpecialArray)),
-                    new PortableTypeConfiguration(typeof (SpecialArrayMarshalAware))
+                    new BinaryTypeConfiguration(typeof (SpecialArray)),
+                    new BinaryTypeConfiguration(typeof (SpecialArrayMarshalAware))
                 }
             });
 
@@ -1261,9 +1261,9 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             if (cfg.TypeConfigurations == null)
             {
-                cfg.TypeConfigurations = new List<PortableTypeConfiguration>
+                cfg.TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
-                    new PortableTypeConfiguration(typeof(PropertyType))
+                    new BinaryTypeConfiguration(typeof(PropertyType))
                 };
             }
 
@@ -1418,7 +1418,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public class GenericCollectionsType<TKey, TValue> : IPortableMarshalAware
+        public class GenericCollectionsType<TKey, TValue> : IBinarizable
         {
             public ICollection<TKey> Keys { get; set; }
 
@@ -1428,7 +1428,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             public ICollection<object> Objects { get; set; }
 
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteObject("Keys", Keys);
                 writer.WriteObject("Values", Values);
@@ -1436,7 +1436,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteObject("Objects", Objects);
             }
 
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 Keys = (ICollection<TKey>) reader.ReadObject<object>("Keys");
                 Values = (ICollection<TValue>) reader.ReadObject<object>("Values");
@@ -1529,9 +1529,9 @@ namespace Apache.Ignite.Core.Tests.Portable
             public DateTime?[] NDateArr;
         }
 
-        public class SpecialArrayMarshalAware : SpecialArray, IPortableMarshalAware
+        public class SpecialArrayMarshalAware : SpecialArray, IBinarizable
         {
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteObject("a", GuidArr);
                 writer.WriteObject("b", NGuidArr);
@@ -1539,7 +1539,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteObject("d", NDateArr);
             }
 
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 GuidArr = reader.ReadObject<Guid[]>("a");
                 NGuidArr = reader.ReadObject<Guid?[]>("b");
@@ -1627,9 +1627,9 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public class PrimitiveFieldPortableType : PrimitiveFieldType, IPortableMarshalAware
+        public class PrimitiveFieldPortableType : PrimitiveFieldType, IBinarizable
         {
-            public unsafe void WritePortable(IPortableWriter writer)
+            public unsafe void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteBoolean("bool", PBool);
                 writer.WriteByte("byte", PByte);
@@ -1657,7 +1657,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteObject("iguid", IgniteGuid);
             }
 
-            public unsafe void ReadPortable(IPortableReader reader)
+            public unsafe void ReadBinary(IBinaryReader reader)
             {
                 PBool = reader.ReadBoolean("bool");
                 PByte = reader.ReadByte("byte");
@@ -1687,9 +1687,9 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public class PrimitiveFieldRawPortableType : PrimitiveFieldType, IPortableMarshalAware
+        public class PrimitiveFieldRawPortableType : PrimitiveFieldType, IBinarizable
         {
-            public unsafe void WritePortable(IPortableWriter writer)
+            public unsafe void WriteBinary(IBinaryWriter writer)
             {
                 IPortableRawWriter rawWriter = writer.GetRawWriter();
 
@@ -1719,7 +1719,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 rawWriter.WriteObject(IgniteGuid);
             }
 
-            public unsafe void ReadPortable(IPortableReader reader)
+            public unsafe void ReadBinary(IBinaryReader reader)
             {
                 IPortableRawReader rawReader = reader.GetRawReader();
 
@@ -1751,9 +1751,9 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public class PrimitiveFieldsSerializer : IPortableSerializer
+        public class PrimitiveFieldsSerializer : IBinarySerializer
         {
-            public unsafe void WritePortable(object obj, IPortableWriter writer)
+            public unsafe void WritePortable(object obj, IBinaryWriter writer)
             {
                 PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
@@ -1783,7 +1783,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteObject("iguid", obj0.IgniteGuid);
             }
 
-            public unsafe void ReadPortable(object obj, IPortableReader reader)
+            public unsafe void ReadPortable(object obj, IBinaryReader reader)
             {
                 PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
@@ -1815,9 +1815,9 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public class PrimitiveFieldsRawSerializer : IPortableSerializer
+        public class PrimitiveFieldsRawSerializer : IBinarySerializer
         {
-            public unsafe void WritePortable(object obj, IPortableWriter writer)
+            public unsafe void WritePortable(object obj, IBinaryWriter writer)
             {
                 PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
@@ -1849,7 +1849,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 rawWriter.WriteObject(obj0.IgniteGuid);
             }
 
-            public unsafe void ReadPortable(object obj, IPortableReader reader)
+            public unsafe void ReadPortable(object obj, IBinaryReader reader)
             {
                 PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
@@ -1882,7 +1882,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public class HandleOuter : IPortableMarshalAware
+        public class HandleOuter : IBinarizable
         {
             public string Before;
             public HandleInner Inner;
@@ -1893,7 +1893,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             public string RawAfter;
 
             /** <inheritdoc /> */
-            virtual public void WritePortable(IPortableWriter writer)
+            virtual public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteString("before", Before);
                 writer.WriteObject("inner", Inner);
@@ -1907,7 +1907,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
 
             /** <inheritdoc /> */
-            virtual public void ReadPortable(IPortableReader reader)
+            virtual public void ReadBinary(IBinaryReader reader)
             {
                 Before = reader.ReadString("before");
                 Inner = reader.ReadObject<HandleInner>("inner");
@@ -1921,7 +1921,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public class HandleInner : IPortableMarshalAware
+        public class HandleInner : IBinarizable
         {
             public string Before;
             public HandleOuter Outer;
@@ -1932,7 +1932,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             public string RawAfter;
 
             /** <inheritdoc /> */
-            virtual public void WritePortable(IPortableWriter writer)
+            virtual public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteString("before", Before);
                 writer.WriteObject("outer", Outer);
@@ -1946,7 +1946,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
 
             /** <inheritdoc /> */
-            virtual public void ReadPortable(IPortableReader reader)
+            virtual public void ReadBinary(IBinaryReader reader)
             {
                 Before = reader.ReadString("before");
                 Outer = reader.ReadObject<HandleOuter>("outer");
@@ -1964,9 +1964,9 @@ namespace Apache.Ignite.Core.Tests.Portable
         public class HandleOuterExclusive : HandleOuter
         {
             /** <inheritdoc /> */
-            override public void WritePortable(IPortableWriter writer)
+            override public void WriteBinary(IBinaryWriter writer)
             {
-                PortableWriterImpl writer0 = (PortableWriterImpl)writer;
+                BinaryWriterImpl writer0 = (BinaryWriterImpl)writer;
 
                 writer.WriteString("before", Before);
 
@@ -1984,9 +1984,9 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
 
             /** <inheritdoc /> */
-            override public void ReadPortable(IPortableReader reader)
+            override public void ReadBinary(IBinaryReader reader)
             {
-                var reader0 = (PortableReaderImpl) reader;
+                var reader0 = (BinaryReaderImpl) reader;
 
                 Before = reader0.ReadString("before");
 
@@ -1995,7 +1995,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 After = reader0.ReadString("after");
 
-                var rawReader = (PortableReaderImpl) reader.GetRawReader();
+                var rawReader = (BinaryReaderImpl) reader.GetRawReader();
 
                 RawBefore = rawReader.ReadString();
 
@@ -2031,7 +2031,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             public decimal?[] ValArr;
         }
 
-        public class DecimalMarshalAware : DecimalReflective, IPortableMarshalAware
+        public class DecimalMarshalAware : DecimalReflective, IBinarizable
         {
             /** */
             public decimal? RawVal;
@@ -2040,7 +2040,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             public decimal?[] RawValArr;
 
             /** <inheritDoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteDecimal("val", Val);
                 writer.WriteDecimalArray("valArr", ValArr);
@@ -2052,7 +2052,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
 
             /** <inheritDoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 Val = reader.ReadDecimal("val");
                 ValArr = reader.ReadDecimalArray("valArr");
@@ -2067,7 +2067,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         /// <summary>
         /// Date time type.
         /// </summary>
-        public class DateTimeType : IPortableMarshalAware
+        public class DateTimeType : IBinarizable
         {
             public DateTime Utc;
 
@@ -2101,7 +2101,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
 
             /** <inheritDoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteTimestamp("utc", Utc);
                 writer.WriteTimestamp("utcNull", UtcNull);
@@ -2115,7 +2115,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
 
             /** <inheritDoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 Utc = reader.ReadTimestamp("utc").Value;
                 UtcNull = reader.ReadTimestamp("utc").Value;

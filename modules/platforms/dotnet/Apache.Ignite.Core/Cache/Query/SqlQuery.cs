@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Cache.Query
         public object[] Arguments { get; set; }
 
         /** <inheritDoc /> */
-        internal override void Write(PortableWriterImpl writer, bool keepPortable)
+        internal override void Write(BinaryWriterImpl writer, bool keepPortable)
         {
             if (string.IsNullOrEmpty(Sql))
                 throw new ArgumentException("Sql cannot be null or empty");

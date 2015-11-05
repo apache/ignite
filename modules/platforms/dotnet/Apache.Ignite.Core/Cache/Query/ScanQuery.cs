@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Cache.Query
         public int? Partition { get; set; }
 
         /** <inheritDoc /> */
-        internal override void Write(PortableWriterImpl writer, bool keepPortable)
+        internal override void Write(BinaryWriterImpl writer, bool keepPortable)
         {
             writer.WriteBoolean(Local);
             writer.WriteInt(PageSize);

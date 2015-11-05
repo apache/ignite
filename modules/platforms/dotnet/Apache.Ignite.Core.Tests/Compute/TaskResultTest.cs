@@ -156,12 +156,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /** <inheritDoc /> */
-        override protected void PortableTypeConfigurations(ICollection<PortableTypeConfiguration> portTypeCfgs)
+        override protected void PortableTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
         {
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableResult)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(TestPortableJob)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableOutFunc)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableFunc)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableResult)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(TestPortableJob)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableOutFunc)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableFunc)));
         }
 
         [Test]

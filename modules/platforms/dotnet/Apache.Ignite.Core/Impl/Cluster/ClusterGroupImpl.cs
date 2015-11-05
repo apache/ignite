@@ -495,7 +495,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
                 writer.WriteLong(oldTopVer);
             }, input =>
             {
-                PortableReaderImpl reader = Marshaller.StartUnmarshal(input);
+                BinaryReaderImpl reader = Marshaller.StartUnmarshal(input);
 
                 if (reader.ReadBoolean())
                 {
@@ -523,7 +523,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <param name="type">Operation type.</param>
         /// <param name="action">Action.</param>
         /// <returns>Native projection.</returns>
-        private IUnmanagedTarget DoProjetionOutOp(int type, Action<PortableWriterImpl> action)
+        private IUnmanagedTarget DoProjetionOutOp(int type, Action<BinaryWriterImpl> action)
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {

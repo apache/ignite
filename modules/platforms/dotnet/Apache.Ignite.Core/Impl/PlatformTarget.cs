@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="writer">Portable writer.</param>
         /// <param name="vals">Values.</param>
         /// <returns>The same writer for chaining.</returns>
-        protected static PortableWriterImpl WriteCollection<T>(PortableWriterImpl writer, ICollection<T> vals)
+        protected static BinaryWriterImpl WriteCollection<T>(BinaryWriterImpl writer, ICollection<T> vals)
         {
             return WriteCollection<T, T>(writer, vals, null);
         }
@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="writer">Portable writer.</param>
         /// <param name="vals">Values.</param>
         /// <returns>The same writer for chaining.</returns>
-        protected static PortableWriterImpl WriteNullableCollection<T>(PortableWriterImpl writer, ICollection<T> vals)
+        protected static BinaryWriterImpl WriteNullableCollection<T>(BinaryWriterImpl writer, ICollection<T> vals)
         {
             return WriteNullable(writer, vals, WriteCollection);
         }
@@ -128,7 +128,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="vals">Values.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The same writer for chaining.</returns>
-        protected static PortableWriterImpl WriteCollection<T1, T2>(PortableWriterImpl writer,
+        protected static BinaryWriterImpl WriteCollection<T1, T2>(BinaryWriterImpl writer,
             ICollection<T1> vals, Func<T1, T2> selector)
         {
             writer.WriteInt(vals.Count);
@@ -153,7 +153,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="writer">Portable writer.</param>
         /// <param name="vals">Values.</param>
         /// <returns>The same writer for chaining.</returns>
-        protected static PortableWriterImpl WriteEnumerable<T>(PortableWriterImpl writer, IEnumerable<T> vals)
+        protected static BinaryWriterImpl WriteEnumerable<T>(BinaryWriterImpl writer, IEnumerable<T> vals)
         {
             return WriteEnumerable<T, T>(writer, vals, null);
         }
@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="vals">Values.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The same writer for chaining.</returns>
-        protected static PortableWriterImpl WriteEnumerable<T1, T2>(PortableWriterImpl writer,
+        protected static BinaryWriterImpl WriteEnumerable<T1, T2>(BinaryWriterImpl writer,
             IEnumerable<T1> vals, Func<T1, T2> selector)
         {
             var col = vals as ICollection<T1>;
@@ -211,7 +211,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="writer">Portable writer.</param>
         /// <param name="vals">Values.</param>
         /// <returns>The same writer.</returns>
-        protected static PortableWriterImpl WriteDictionary<T1, T2>(PortableWriterImpl writer, 
+        protected static BinaryWriterImpl WriteDictionary<T1, T2>(BinaryWriterImpl writer, 
             IDictionary<T1, T2> vals)
         {
             writer.WriteInt(vals.Count);
@@ -232,8 +232,8 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="item">Item.</param>
         /// <param name="writeItem">Write action to perform on item when it is not null.</param>
         /// <returns>The same writer for chaining.</returns>
-        protected static PortableWriterImpl WriteNullable<T>(PortableWriterImpl writer, T item,
-            Func<PortableWriterImpl, T, PortableWriterImpl> writeItem)
+        protected static BinaryWriterImpl WriteNullable<T>(BinaryWriterImpl writer, T item,
+            Func<BinaryWriterImpl, T, BinaryWriterImpl> writeItem)
         {
             if (item == null)
             {
@@ -273,7 +273,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">Operation type.</param>
         /// <param name="action">Action to be performed on the stream.</param>
         /// <returns></returns>
-        protected long DoOutOp(int type, Action<PortableWriterImpl> action)
+        protected long DoOutOp(int type, Action<BinaryWriterImpl> action)
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
@@ -401,13 +401,13 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">Operation type.</param>
         /// <param name="outAction">Out action.</param>
         /// <param name="inAction">In action.</param>
-        protected void DoOutInOp(int type, Action<PortableWriterImpl> outAction, Action<IPortableStream> inAction)
+        protected void DoOutInOp(int type, Action<BinaryWriterImpl> outAction, Action<IPortableStream> inAction)
         {
             using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
             {
                 using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    PortableWriterImpl writer = _marsh.StartMarshal(outStream);
+                    BinaryWriterImpl writer = _marsh.StartMarshal(outStream);
 
                     outAction(writer);
 
@@ -429,13 +429,13 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="outAction">Out action.</param>
         /// <param name="inAction">In action.</param>
         /// <returns>Result.</returns>
-        protected TR DoOutInOp<TR>(int type, Action<PortableWriterImpl> outAction, Func<IPortableStream, TR> inAction)
+        protected TR DoOutInOp<TR>(int type, Action<BinaryWriterImpl> outAction, Func<IPortableStream, TR> inAction)
         {
             using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
             {
                 using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    PortableWriterImpl writer = _marsh.StartMarshal(outStream);
+                    BinaryWriterImpl writer = _marsh.StartMarshal(outStream);
 
                     outAction(writer);
 
@@ -458,13 +458,13 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="inAction">In action.</param>
         /// <param name="arg">Argument.</param>
         /// <returns>Result.</returns>
-        protected unsafe TR DoOutInOp<TR>(int type, Action<PortableWriterImpl> outAction, Func<IPortableStream, TR> inAction, void* arg)
+        protected unsafe TR DoOutInOp<TR>(int type, Action<BinaryWriterImpl> outAction, Func<IPortableStream, TR> inAction, void* arg)
         {
             using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
             {
                 using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    PortableWriterImpl writer = _marsh.StartMarshal(outStream);
+                    BinaryWriterImpl writer = _marsh.StartMarshal(outStream);
 
                     outAction(writer);
 
@@ -485,13 +485,13 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">Operation type.</param>
         /// <param name="outAction">Out action.</param>
         /// <returns>Result.</returns>
-        protected TR DoOutInOp<TR>(int type, Action<PortableWriterImpl> outAction)
+        protected TR DoOutInOp<TR>(int type, Action<BinaryWriterImpl> outAction)
         {
             using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
             {
                 using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    PortableWriterImpl writer = _marsh.StartMarshal(outStream);
+                    BinaryWriterImpl writer = _marsh.StartMarshal(outStream);
 
                     outAction(writer);
 
@@ -518,7 +518,7 @@ namespace Apache.Ignite.Core.Impl
             {
                 using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    PortableWriterImpl writer = _marsh.StartMarshal(outStream);
+                    BinaryWriterImpl writer = _marsh.StartMarshal(outStream);
 
                     writer.WriteObject(val);
 
@@ -546,7 +546,7 @@ namespace Apache.Ignite.Core.Impl
             {
                 using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    PortableWriterImpl writer = _marsh.StartMarshal(outStream);
+                    BinaryWriterImpl writer = _marsh.StartMarshal(outStream);
 
                     writer.WriteObject(val1);
                     writer.WriteObject(val2);
@@ -570,7 +570,7 @@ namespace Apache.Ignite.Core.Impl
         /// Finish marshaling.
         /// </summary>
         /// <param name="writer">Portable writer.</param>
-        internal void FinishMarshal(PortableWriterImpl writer)
+        internal void FinishMarshal(BinaryWriterImpl writer)
         {
             _marsh.FinishMarshal(writer);
         }
@@ -583,7 +583,7 @@ namespace Apache.Ignite.Core.Impl
         {
             DoOutOp(OpMeta, stream =>
             {
-                PortableWriterImpl metaWriter = _marsh.StartMarshal(stream);
+                BinaryWriterImpl metaWriter = _marsh.StartMarshal(stream);
 
                 metaWriter.WriteInt(metas.Count);
 
@@ -631,7 +631,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="convertFunc">The function to read future result from stream.</param>
         /// <returns>Created future.</returns>
         protected Future<T> GetFuture<T>(Action<long, int> listenAction, bool keepPortable = false,
-            Func<PortableReaderImpl, T> convertFunc = null)
+            Func<BinaryReaderImpl, T> convertFunc = null)
         {
             var futType = FutureType.Object;
 

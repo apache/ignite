@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Name converter.
         /// </summary>
-        IPortableNameMapper NameMapper
+        INameMapper NameMapper
         {
             get;
         }
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Mapper.
         /// </summary>
-        IPortableIdMapper IdMapper
+        IIdMapper IdMapper
         {
             get;
         }
@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Serializer.
         /// </summary>
-        IPortableSerializer Serializer
+        IBinarySerializer Serializer
         {
             get;
         }

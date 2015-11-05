@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         {
             if (_type != type)
             {
-                throw new PortableException("Field type mismatch detected [fieldName=" + _name +
+                throw new BinaryObjectException("Field type mismatch detected [fieldName=" + _name +
                     ", expectedType=" + _type + ", actualType=" + type + ']');
             }
         }

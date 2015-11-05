@@ -82,13 +82,13 @@ namespace Apache.Ignite.Benchmarks.Interop
         {
             return new PortableConfiguration
             {
-                TypeConfigurations = new List<PortableTypeConfiguration>
+                TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
-                    new PortableTypeConfiguration(typeof (Address)),
-                    new PortableTypeConfiguration(typeof (Company)),
-                    new PortableTypeConfiguration(typeof (Employee)),
-                    new PortableTypeConfiguration(typeof (MyClosure)),
-                    new PortableTypeConfiguration(typeof (MyJob))
+                    new BinaryTypeConfiguration(typeof (Address)),
+                    new BinaryTypeConfiguration(typeof (Company)),
+                    new BinaryTypeConfiguration(typeof (Employee)),
+                    new BinaryTypeConfiguration(typeof (MyClosure)),
+                    new BinaryTypeConfiguration(typeof (MyJob))
                 }
             };
         }

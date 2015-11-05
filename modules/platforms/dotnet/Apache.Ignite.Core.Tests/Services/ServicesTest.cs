@@ -568,11 +568,11 @@ namespace Apache.Ignite.Core.Tests.Services
                 JvmOptions = TestUtils.TestJavaOptions(),
                 PortableConfiguration = new PortableConfiguration
                 {
-                    TypeConfigurations = new List<PortableTypeConfiguration>
+                    TypeConfigurations = new List<BinaryTypeConfiguration>
                     {
-                        new PortableTypeConfiguration(typeof(TestIgniteServicePortable)),
-                        new PortableTypeConfiguration(typeof(TestIgniteServicePortableErr)),
-                        new PortableTypeConfiguration(typeof(PortableObject))
+                        new BinaryTypeConfiguration(typeof(TestIgniteServicePortable)),
+                        new BinaryTypeConfiguration(typeof(TestIgniteServicePortableErr)),
+                        new BinaryTypeConfiguration(typeof(PortableObject))
                     }
                 }
             };
@@ -753,16 +753,16 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test portable service.
         /// </summary>
-        private class TestIgniteServicePortable : TestIgniteServiceSerializable, IPortableMarshalAware
+        private class TestIgniteServicePortable : TestIgniteServiceSerializable, IBinarizable
         {
             /** <inheritdoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteInt("TestProp", TestProperty);
             }
 
             /** <inheritdoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 TestProperty = reader.ReadInt("TestProp");
             }
@@ -771,13 +771,13 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test portable service with exceptions in marshalling.
         /// </summary>
-        private class TestIgniteServicePortableErr : TestIgniteServiceSerializable, IPortableMarshalAware
+        private class TestIgniteServicePortableErr : TestIgniteServiceSerializable, IBinarizable
         {
             /** */
             public bool ThrowOnWrite { get; set; }
 
             /** <inheritdoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteInt("TestProp", TestProperty);
                 
@@ -786,7 +786,7 @@ namespace Apache.Ignite.Core.Tests.Services
             }
 
             /** <inheritdoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 TestProperty = reader.ReadInt("TestProp");
                 

@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// </summary>
     /// <param name="writer">Write context.</param>
     /// <param name="obj">Object to write.</param>
-    internal delegate void PortableSystemWriteDelegate(PortableWriterImpl writer, object obj);
+    internal delegate void PortableSystemWriteDelegate(BinaryWriterImpl writer, object obj);
 
     /**
      * <summary>Collection of predefined handlers for various system types.</summary>
@@ -329,7 +329,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Reads an object of predefined type.
         /// </summary>
-        public static T ReadSystemType<T>(byte typeId, PortableReaderImpl ctx)
+        public static T ReadSystemType<T>(byte typeId, BinaryReaderImpl ctx)
         {
             var handler = ReadHandlers[typeId];
 
@@ -343,7 +343,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteDecimal(PortableWriterImpl ctx, object obj)
+        private static void WriteDecimal(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeDecimal);
 
@@ -355,7 +355,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteDate(PortableWriterImpl ctx, object obj)
+        private static void WriteDate(BinaryWriterImpl ctx, object obj)
         {
             ctx.Write(new DateTimeHolder((DateTime) obj));
         }
@@ -365,7 +365,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Object.</param>
-        private static void WriteString(PortableWriterImpl ctx, object obj)
+        private static void WriteString(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeString);
 
@@ -377,7 +377,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteGuid(PortableWriterImpl ctx, object obj)
+        private static void WriteGuid(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeGuid);
 
@@ -389,7 +389,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteBoolArray(PortableWriterImpl ctx, object obj)
+        private static void WriteBoolArray(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayBool);
 
@@ -401,7 +401,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteByteArray(PortableWriterImpl ctx, object obj)
+        private static void WriteByteArray(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayByte);
 
@@ -413,7 +413,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteSbyteArray(PortableWriterImpl ctx, object obj)
+        private static void WriteSbyteArray(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayByte);
 
@@ -425,7 +425,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteShortArray(PortableWriterImpl ctx, object obj)
+        private static void WriteShortArray(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayShort);
 
@@ -437,7 +437,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteUshortArray(PortableWriterImpl ctx, object obj)
+        private static void WriteUshortArray(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayShort);
 
@@ -449,7 +449,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteCharArray(PortableWriterImpl ctx, object obj)
+        private static void WriteCharArray(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayChar);
 
@@ -461,7 +461,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteIntArray(PortableWriterImpl ctx, object obj)
+        private static void WriteIntArray(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayInt);
 
@@ -473,7 +473,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteUintArray(PortableWriterImpl ctx, object obj)
+        private static void WriteUintArray(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayInt);
 
@@ -485,7 +485,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteLongArray(PortableWriterImpl ctx, object obj)
+        private static void WriteLongArray(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayLong);
 
@@ -497,7 +497,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteUlongArray(PortableWriterImpl ctx, object obj)
+        private static void WriteUlongArray(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayLong);
 
@@ -509,7 +509,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteFloatArray(PortableWriterImpl ctx, object obj)
+        private static void WriteFloatArray(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayFloat);
 
@@ -521,7 +521,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteDoubleArray(PortableWriterImpl ctx, object obj)
+        private static void WriteDoubleArray(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayDouble);
 
@@ -533,7 +533,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteDecimalArray(PortableWriterImpl ctx, object obj)
+        private static void WriteDecimalArray(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayDecimal);
 
@@ -545,7 +545,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteStringArray(PortableWriterImpl ctx, object obj)
+        private static void WriteStringArray(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayString);
 
@@ -557,7 +557,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteGuidArray(PortableWriterImpl ctx, object obj)
+        private static void WriteGuidArray(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayGuid);
 
@@ -567,7 +567,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /**
          * <summary>Write enum array.</summary>
          */
-        private static void WriteEnumArray(PortableWriterImpl ctx, object obj)
+        private static void WriteEnumArray(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArrayEnum);
 
@@ -577,7 +577,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /**
          * <summary>Write array.</summary>
          */
-        private static void WriteArray(PortableWriterImpl ctx, object obj)
+        private static void WriteArray(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeArray);
 
@@ -587,7 +587,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /**
          * <summary>Write ArrayList.</summary>
          */
-        private static void WriteArrayList(PortableWriterImpl ctx, object obj)
+        private static void WriteArrayList(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeCollection);
 
@@ -597,7 +597,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /**
          * <summary>Write Hashtable.</summary>
          */
-        private static void WriteHashtable(PortableWriterImpl ctx, object obj)
+        private static void WriteHashtable(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeDictionary);
 
@@ -607,7 +607,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /**
          * <summary>Write map entry.</summary>
          */
-        private static void WriteMapEntry(PortableWriterImpl ctx, object obj)
+        private static void WriteMapEntry(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeMapEntry);
 
@@ -617,7 +617,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /**
          * <summary>Write portable object.</summary>
          */
-        private static void WritePortable(PortableWriterImpl ctx, object obj)
+        private static void WritePortable(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypePortable);
 
@@ -627,7 +627,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Write enum.
         /// </summary>
-        private static void WriteEnum(PortableWriterImpl ctx, object obj)
+        private static void WriteEnum(BinaryWriterImpl ctx, object obj)
         {
             ctx.Stream.WriteByte(PortableUtils.TypeEnum);
 
@@ -639,7 +639,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="writer">The writer.</param>
         /// <param name="o">The object.</param>
-        private static void WriteSerializable(PortableWriterImpl writer, object o)
+        private static void WriteSerializable(BinaryWriterImpl writer, object o)
         {
             writer.Write(new SerializableObjectHolder(o));
         }
@@ -647,7 +647,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /**
          * <summary>Read enum array.</summary>
          */
-        private static object ReadEnumArray(PortableReaderImpl ctx, Type type)
+        private static object ReadEnumArray(BinaryReaderImpl ctx, Type type)
         {
             return PortableUtils.ReadTypedArray(ctx, true, type.GetElementType());
         }
@@ -655,7 +655,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /**
          * <summary>Read array.</summary>
          */
-        private static object ReadArray(PortableReaderImpl ctx, Type type)
+        private static object ReadArray(BinaryReaderImpl ctx, Type type)
         {
             var elemType = type.IsArray ? type.GetElementType() : typeof(object);
 
@@ -665,7 +665,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /**
          * <summary>Read collection.</summary>
          */
-        private static object ReadCollection(PortableReaderImpl ctx, Type type)
+        private static object ReadCollection(BinaryReaderImpl ctx, Type type)
         {
             return PortableUtils.ReadCollection(ctx, null, null);
         }
@@ -673,7 +673,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /**
          * <summary>Read dictionary.</summary>
          */
-        private static object ReadDictionary(PortableReaderImpl ctx, Type type)
+        private static object ReadDictionary(BinaryReaderImpl ctx, Type type)
         {
             return PortableUtils.ReadDictionary(ctx, null);
         }
@@ -681,7 +681,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /**
          * <summary>Read map entry.</summary>
          */
-        private static object ReadMapEntry(PortableReaderImpl ctx, Type type)
+        private static object ReadMapEntry(BinaryReaderImpl ctx, Type type)
         {
             return PortableUtils.ReadMapEntry(ctx);
         }
@@ -698,7 +698,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="ctx">Read context.</param>
          * <param name="type">Type.</param>
          */
-        private delegate object PortableSystemReadDelegate(PortableReaderImpl ctx, Type type);
+        private delegate object PortableSystemReadDelegate(BinaryReaderImpl ctx, Type type);
 
         /// <summary>
         /// System type reader.
@@ -708,7 +708,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// <summary>
             /// Reads a value of specified type from reader.
             /// </summary>
-            T Read<T>(PortableReaderImpl ctx);
+            T Read<T>(BinaryReaderImpl ctx);
         }
 
         /// <summary>
@@ -719,7 +719,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// <summary>
             /// Reads a value of specified type from reader.
             /// </summary>
-            T Read(PortableReaderImpl ctx);
+            T Read(BinaryReaderImpl ctx);
         }
 
         /// <summary>
@@ -742,7 +742,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             /** <inheritdoc /> */
-            public T Read<T>(PortableReaderImpl ctx)
+            public T Read<T>(BinaryReaderImpl ctx)
             {
                 return (T)_readDelegate(ctx, typeof(T));
             }
@@ -768,7 +768,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             /** <inheritdoc /> */
-            public TResult Read<TResult>(PortableReaderImpl ctx)
+            public TResult Read<TResult>(BinaryReaderImpl ctx)
             {
                 return TypeCaster<TResult>.Cast(_readDelegate(ctx.Stream));
             }
@@ -779,7 +779,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private class PortableSystemTypedArrayReader<T> : IPortableSystemReader
         {
-            public TResult Read<TResult>(PortableReaderImpl ctx)
+            public TResult Read<TResult>(BinaryReaderImpl ctx)
             {
                 return TypeCaster<TResult>.Cast(PortableUtils.ReadArray<T>(ctx, false));
             }
@@ -811,13 +811,13 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             /** <inheritdoc /> */
-            T2 IPortableSystemReader<T2>.Read(PortableReaderImpl ctx)
+            T2 IPortableSystemReader<T2>.Read(BinaryReaderImpl ctx)
             {
                 return _readDelegate2(ctx.Stream);
             }
 
             /** <inheritdoc /> */
-            public T Read<T>(PortableReaderImpl ctx)
+            public T Read<T>(BinaryReaderImpl ctx)
             {
                 // Can't use "as" because of variance. 
                 // For example, IPortableSystemReader<byte[]> can be cast to IPortableSystemReader<sbyte[]>, which

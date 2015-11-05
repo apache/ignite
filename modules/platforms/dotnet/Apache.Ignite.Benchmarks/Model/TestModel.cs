@@ -23,7 +23,7 @@ namespace Apache.Ignite.Benchmarks.Model
     /// <summary>
     /// Model class with all kinds of fields to test serialization.
     /// </summary>
-    internal class TestModel : IPortableMarshalAware
+    internal class TestModel : IBinarizable
     {
         public byte Byte { get; set; }
         public byte[] ByteArray { get; set; }
@@ -51,7 +51,7 @@ namespace Apache.Ignite.Benchmarks.Model
         public Guid?[] GuidArray { get; set; }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             writer.WriteByte("Byte", Byte);
             writer.WriteByteArray("ByteArray", ByteArray);
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Benchmarks.Model
         }
 
         /** <inheritDoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             Byte = reader.ReadByte("Byte");
             ByteArray = reader.ReadByteArray("ByteArray");

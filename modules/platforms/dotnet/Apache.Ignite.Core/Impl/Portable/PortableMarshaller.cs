@@ -66,33 +66,33 @@ namespace Apache.Ignite.Core.Impl.Portable
                 cfg = new PortableConfiguration();
 
             if (cfg.TypeConfigurations == null)
-                cfg.TypeConfigurations = new List<PortableTypeConfiguration>();
+                cfg.TypeConfigurations = new List<BinaryTypeConfiguration>();
 
-            foreach (PortableTypeConfiguration typeCfg in cfg.TypeConfigurations)
+            foreach (BinaryTypeConfiguration typeCfg in cfg.TypeConfigurations)
             {
                 if (string.IsNullOrEmpty(typeCfg.TypeName))
-                    throw new PortableException("Type name cannot be null or empty: " + typeCfg);
+                    throw new BinaryObjectException("Type name cannot be null or empty: " + typeCfg);
             }
 
             // Define system types. They use internal reflective stuff, so configuration doesn't affect them.
             AddSystemTypes();
 
             // 2. Define user types.
-            var dfltSerializer = cfg.DefaultSerializer == null ? new PortableReflectiveSerializer() : null;
+            var dfltSerializer = cfg.DefaultSerializer == null ? new BinaryReflectiveSerializer() : null;
 
             var typeResolver = new TypeResolver();
 
-            ICollection<PortableTypeConfiguration> typeCfgs = cfg.TypeConfigurations;
+            ICollection<BinaryTypeConfiguration> typeCfgs = cfg.TypeConfigurations;
 
             if (typeCfgs != null)
-                foreach (PortableTypeConfiguration typeCfg in typeCfgs)
+                foreach (BinaryTypeConfiguration typeCfg in typeCfgs)
                     AddUserType(cfg, typeCfg, typeResolver, dfltSerializer);
 
             ICollection<string> types = cfg.Types;
 
             if (types != null)
                 foreach (string type in types)
-                    AddUserType(cfg, new PortableTypeConfiguration(type), typeResolver, dfltSerializer);
+                    AddUserType(cfg, new BinaryTypeConfiguration(type), typeResolver, dfltSerializer);
 
             if (cfg.DefaultSerializer == null)
                 cfg.DefaultSerializer = dfltSerializer;
@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Collection of metadatas (if any).</returns>
         private void Marshal<T>(T val, IPortableStream stream)
         {
-            PortableWriterImpl writer = StartMarshal(stream);
+            BinaryWriterImpl writer = StartMarshal(stream);
 
             writer.Write(val);
 
@@ -139,9 +139,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <returns>Writer.</returns>
-        public PortableWriterImpl StartMarshal(IPortableStream stream)
+        public BinaryWriterImpl StartMarshal(IPortableStream stream)
         {
-            return new PortableWriterImpl(this, stream);
+            return new BinaryWriterImpl(this, stream);
         }
 
         /// <summary>
@@ -149,9 +149,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <returns>Dictionary with metadata.</returns>
-        public void FinishMarshal(IPortableWriter writer)
+        public void FinishMarshal(IBinaryWriter writer)
         {
-            var meta = ((PortableWriterImpl) writer).Metadata();
+            var meta = ((BinaryWriterImpl) writer).Metadata();
 
             var ignite = Ignite;
 
@@ -223,7 +223,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </returns>
         public T Unmarshal<T>(IPortableStream stream, PortableMode mode, PortableBuilderImpl builder)
         {
-            return new PortableReaderImpl(this, _idToDesc, stream, mode, builder).Deserialize<T>();
+            return new BinaryReaderImpl(this, _idToDesc, stream, mode, builder).Deserialize<T>();
         }
 
         /// <summary>
@@ -234,9 +234,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>
         /// Reader.
         /// </returns>
-        public PortableReaderImpl StartUnmarshal(IPortableStream stream, bool keepPortable)
+        public BinaryReaderImpl StartUnmarshal(IPortableStream stream, bool keepPortable)
         {
-            return new PortableReaderImpl(this, _idToDesc, stream,
+            return new BinaryReaderImpl(this, _idToDesc, stream,
                 keepPortable ? PortableMode.KeepPortable : PortableMode.Deserialize, null);
         }
 
@@ -246,9 +246,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="stream">Stream.</param>
         /// <param name="mode">The mode.</param>
         /// <returns>Reader.</returns>
-        public PortableReaderImpl StartUnmarshal(IPortableStream stream, PortableMode mode = PortableMode.Deserialize)
+        public BinaryReaderImpl StartUnmarshal(IPortableStream stream, PortableMode mode = PortableMode.Deserialize)
         {
-            return new PortableReaderImpl(this, _idToDesc, stream, mode, null);
+            return new BinaryReaderImpl(this, _idToDesc, stream, mode, null);
         }
         
         /// <summary>
@@ -380,13 +380,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="typeCfg">Type configuration.</param>
         /// <param name="typeResolver">The type resolver.</param>
         /// <param name="dfltSerializer">The default serializer.</param>
-        private void AddUserType(PortableConfiguration cfg, PortableTypeConfiguration typeCfg, 
-            TypeResolver typeResolver, IPortableSerializer dfltSerializer)
+        private void AddUserType(PortableConfiguration cfg, BinaryTypeConfiguration typeCfg, 
+            TypeResolver typeResolver, IBinarySerializer dfltSerializer)
         {
             // Get converter/mapper/serializer.
-            IPortableNameMapper nameMapper = typeCfg.NameMapper ?? cfg.DefaultNameMapper;
+            INameMapper nameMapper = typeCfg.NameMapper ?? cfg.DefaultNameMapper;
 
-            IPortableIdMapper idMapper = typeCfg.IdMapper ?? cfg.DefaultIdMapper;
+            IIdMapper idMapper = typeCfg.IdMapper ?? cfg.DefaultIdMapper;
 
             bool keepDeserialized = typeCfg.KeepDeserialized ?? cfg.DefaultKeepDeserialized;
 
@@ -403,7 +403,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 var serializer = typeCfg.Serializer ?? cfg.DefaultSerializer
                                  ?? GetPortableMarshalAwareSerializer(type) ?? dfltSerializer;
 
-                var refSerializer = serializer as PortableReflectiveSerializer;
+                var refSerializer = serializer as BinaryReflectiveSerializer;
 
                 if (refSerializer != null)
                     refSerializer.Register(type, typeId, nameMapper, idMapper);
@@ -424,14 +424,14 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Gets the <see cref="PortableMarshalAwareSerializer"/> for a type if it is compatible.
+        /// Gets the <see cref="BinaryMarshalAwareSerializer"/> for a type if it is compatible.
         /// </summary>
         /// <param name="type">The type.</param>
-        /// <returns>Resulting <see cref="PortableMarshalAwareSerializer"/>, or null.</returns>
-        private static IPortableSerializer GetPortableMarshalAwareSerializer(Type type)
+        /// <returns>Resulting <see cref="BinaryMarshalAwareSerializer"/>, or null.</returns>
+        private static IBinarySerializer GetPortableMarshalAwareSerializer(Type type)
         {
-            return type.GetInterfaces().Contains(typeof (IPortableMarshalAware)) 
-                ? PortableMarshalAwareSerializer.Instance 
+            return type.GetInterfaces().Contains(typeof (IBinarizable)) 
+                ? BinaryMarshalAwareSerializer.Instance 
                 : null;
         }
         
@@ -448,8 +448,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="serializer">Serializer.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
         private void AddType(Type type, int typeId, string typeName, bool userType, 
-            bool keepDeserialized, IPortableNameMapper nameMapper, IPortableIdMapper idMapper,
-            IPortableSerializer serializer, string affKeyFieldName)
+            bool keepDeserialized, INameMapper nameMapper, IIdMapper idMapper,
+            IBinarySerializer serializer, string affKeyFieldName)
         {
             long typeKey = PortableUtils.TypeKey(userType, typeId);
 
@@ -458,12 +458,12 @@ namespace Apache.Ignite.Core.Impl.Portable
                 string type1 = _idToDesc[typeKey].Type != null ? _idToDesc[typeKey].Type.AssemblyQualifiedName : null;
                 string type2 = type != null ? type.AssemblyQualifiedName : null;
 
-                throw new PortableException("Conflicting type IDs [type1=" + type1 + ", type2=" + type2 +
+                throw new BinaryObjectException("Conflicting type IDs [type1=" + type1 + ", type2=" + type2 +
                     ", typeId=" + typeId + ']');
             }
 
             if (userType && _typeNameToDesc.ContainsKey(typeName))
-                throw new PortableException("Conflicting type name: " + typeName);
+                throw new BinaryObjectException("Conflicting type name: " + typeName);
 
             IPortableTypeDescriptor descriptor =
                 new PortableFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, serializer,
@@ -481,11 +481,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Adds a predefined system type.
         /// </summary>
-        private void AddSystemType<T>(byte typeId, Func<PortableReaderImpl, T> ctor) where T : IPortableWriteAware
+        private void AddSystemType<T>(byte typeId, Func<BinaryReaderImpl, T> ctor) where T : IPortableWriteAware
         {
             var type = typeof(T);
 
-            var serializer = new PortableSystemTypeSerializer<T>(ctor);
+            var serializer = new BinarySystemTypeSerializer<T>(ctor);
 
             AddType(type, typeId, GetTypeName(type), false, false, null, null, serializer, null);
         }

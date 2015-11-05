@@ -208,7 +208,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             }
 
             // 3. Write map result to the output stream.
-            PortableWriterImpl writer = prj.Marshaller.StartMarshal(outStream);
+            BinaryWriterImpl writer = prj.Marshaller.StartMarshal(outStream);
 
             try
             {
@@ -288,7 +288,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         public int JobResultRemote(ComputeJobHolder job, PlatformMemoryStream stream)
         {
             // 1. Unmarshal result.
-            PortableReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream);
+            BinaryReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream);
 
             var nodeId = reader.ReadGuid();
             Debug.Assert(nodeId.HasValue);
@@ -358,7 +358,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             Justification = "User object deserialization can throw any exception")]
         public void CompleteWithError(long taskHandle, PlatformMemoryStream stream)
         {
-            PortableReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream);
+            BinaryReaderImpl reader = _compute.Marshaller.StartUnmarshal(stream);
 
             Exception err;
 

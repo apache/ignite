@@ -54,33 +54,33 @@ namespace Apache.Ignite.Core.Tests.Portable
             {
                 PortableConfiguration = new PortableConfiguration
                 {
-                    TypeConfigurations = new List<PortableTypeConfiguration>
+                    TypeConfigurations = new List<BinaryTypeConfiguration>
                     {
-                        new PortableTypeConfiguration(typeof (Empty)),
-                        new PortableTypeConfiguration(typeof (Primitives)),
-                        new PortableTypeConfiguration(typeof (PrimitiveArrays)),
-                        new PortableTypeConfiguration(typeof (StringDateGuidEnum)),
-                        new PortableTypeConfiguration(typeof (WithRaw)),
-                        new PortableTypeConfiguration(typeof (MetaOverwrite)),
-                        new PortableTypeConfiguration(typeof (NestedOuter)),
-                        new PortableTypeConfiguration(typeof (NestedInner)),
-                        new PortableTypeConfiguration(typeof (MigrationOuter)),
-                        new PortableTypeConfiguration(typeof (MigrationInner)),
-                        new PortableTypeConfiguration(typeof (InversionOuter)),
-                        new PortableTypeConfiguration(typeof (InversionInner)),
-                        new PortableTypeConfiguration(typeof (CompositeOuter)),
-                        new PortableTypeConfiguration(typeof (CompositeInner)),
-                        new PortableTypeConfiguration(typeof (CompositeArray)),
-                        new PortableTypeConfiguration(typeof (CompositeContainer)),
-                        new PortableTypeConfiguration(typeof (ToPortable)),
-                        new PortableTypeConfiguration(typeof (Remove)),
-                        new PortableTypeConfiguration(typeof (RemoveInner)),
-                        new PortableTypeConfiguration(typeof (BuilderInBuilderOuter)),
-                        new PortableTypeConfiguration(typeof (BuilderInBuilderInner)),
-                        new PortableTypeConfiguration(typeof (BuilderCollection)),
-                        new PortableTypeConfiguration(typeof (BuilderCollectionItem)),
-                        new PortableTypeConfiguration(typeof (DecimalHolder)),
-                        new PortableTypeConfiguration(TypeEmpty),
+                        new BinaryTypeConfiguration(typeof (Empty)),
+                        new BinaryTypeConfiguration(typeof (Primitives)),
+                        new BinaryTypeConfiguration(typeof (PrimitiveArrays)),
+                        new BinaryTypeConfiguration(typeof (StringDateGuidEnum)),
+                        new BinaryTypeConfiguration(typeof (WithRaw)),
+                        new BinaryTypeConfiguration(typeof (MetaOverwrite)),
+                        new BinaryTypeConfiguration(typeof (NestedOuter)),
+                        new BinaryTypeConfiguration(typeof (NestedInner)),
+                        new BinaryTypeConfiguration(typeof (MigrationOuter)),
+                        new BinaryTypeConfiguration(typeof (MigrationInner)),
+                        new BinaryTypeConfiguration(typeof (InversionOuter)),
+                        new BinaryTypeConfiguration(typeof (InversionInner)),
+                        new BinaryTypeConfiguration(typeof (CompositeOuter)),
+                        new BinaryTypeConfiguration(typeof (CompositeInner)),
+                        new BinaryTypeConfiguration(typeof (CompositeArray)),
+                        new BinaryTypeConfiguration(typeof (CompositeContainer)),
+                        new BinaryTypeConfiguration(typeof (ToPortable)),
+                        new BinaryTypeConfiguration(typeof (Remove)),
+                        new BinaryTypeConfiguration(typeof (RemoveInner)),
+                        new BinaryTypeConfiguration(typeof (BuilderInBuilderOuter)),
+                        new BinaryTypeConfiguration(typeof (BuilderInBuilderInner)),
+                        new BinaryTypeConfiguration(typeof (BuilderCollection)),
+                        new BinaryTypeConfiguration(typeof (BuilderCollectionItem)),
+                        new BinaryTypeConfiguration(typeof (DecimalHolder)),
+                        new BinaryTypeConfiguration(TypeEmpty),
                         TypeConfigurationNoMeta(typeof (EmptyNoMeta)),
                         TypeConfigurationNoMeta(typeof (ToPortableNoMeta))
                     },
@@ -1418,9 +1418,9 @@ namespace Apache.Ignite.Core.Tests.Portable
         /// </summary>
         /// <param name="typ">Type.</param>
         /// <returns>Configuration.</returns>
-        private static PortableTypeConfiguration TypeConfigurationNoMeta(Type typ)
+        private static BinaryTypeConfiguration TypeConfigurationNoMeta(Type typ)
         {
-            return new PortableTypeConfiguration(typ);
+            return new BinaryTypeConfiguration(typ);
         }
     }
 
@@ -1497,20 +1497,20 @@ namespace Apache.Ignite.Core.Tests.Portable
     /// <summary>
     /// Portable with raw data.
     /// </summary>
-    public class WithRaw : IPortableMarshalAware
+    public class WithRaw : IBinarizable
     {
         public int A;
         public int B;
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             writer.WriteInt("a", A);
             writer.GetRawWriter().WriteInt(B);
         }
 
         /** <inheritDoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             A = reader.ReadInt("a");
             B = reader.GetRawReader().ReadInt();
@@ -1754,7 +1754,7 @@ namespace Apache.Ignite.Core.Tests.Portable
     /// <summary>
     /// Test id mapper.
     /// </summary>
-    public class IdMapper : IPortableIdMapper
+    public class IdMapper : IIdMapper
     {
         /** */
         public const string TestTypeName = "IdMapperTestType";

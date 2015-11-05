@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// Initializes a new instance of the <see cref="StreamReceiverHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public StreamReceiverHolder(PortableReaderImpl reader)
+        public StreamReceiverHolder(BinaryReaderImpl reader)
         {
             var rcvType = reader.ReadByte();
 
@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WritePortable(IBinaryWriter writer)
         {
             var w = writer.GetRawWriter();
 

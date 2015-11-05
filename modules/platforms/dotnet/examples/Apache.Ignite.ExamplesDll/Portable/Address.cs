@@ -24,7 +24,7 @@ namespace Apache.Ignite.ExamplesDll.Portable
     /// Address.
     /// </summary>
     [Serializable]
-    public class Address : IPortableMarshalAware
+    public class Address : IBinarizable
     {
         /// <summary>
         /// Constructor.
@@ -51,7 +51,7 @@ namespace Apache.Ignite.ExamplesDll.Portable
         /// Writes this object to the given writer.
         /// </summary>
         /// <param name="writer">Writer.</param>
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             writer.WriteString("street", Street);
             writer.WriteInt("zip", Zip);
@@ -61,7 +61,7 @@ namespace Apache.Ignite.ExamplesDll.Portable
         /// Reads this object from the given reader.
         /// </summary>
         /// <param name="reader">Reader.</param>
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             Street = reader.ReadString("street");
             Zip = reader.ReadInt("zip");

@@ -309,7 +309,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
                     // This is an old field.
                     if (expType != update.FieldType)
                     {
-                        throw new PortableException("Field type mismatch detected [fieldName=" + update.FieldName +
+                        throw new BinaryObjectException("Field type mismatch detected [fieldName=" + update.FieldName +
                             ", expectedType=" + expType + ", actualType=" + update.FieldType + ']');
                     }
                 }

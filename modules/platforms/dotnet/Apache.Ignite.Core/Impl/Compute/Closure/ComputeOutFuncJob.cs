@@ -58,16 +58,16 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WritePortable(IBinaryWriter writer)
         {
-            var writer0 = (PortableWriterImpl) writer.GetRawWriter();
+            var writer0 = (BinaryWriterImpl) writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(_clo));
         }
 
-        public ComputeOutFuncJob(IPortableReader reader)
+        public ComputeOutFuncJob(IBinaryReader reader)
         {
-            var reader0 = (PortableReaderImpl) reader.GetRawReader();
+            var reader0 = (BinaryReaderImpl) reader.GetRawReader();
 
             _clo = reader0.ReadObject<IComputeOutFunc>();
         }

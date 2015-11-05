@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>
         /// Task for previous asynchronous operation.
         /// </returns>
-        private Task<TResult> GetTask<TResult>(CacheOp lastAsyncOp, Func<PortableReaderImpl, TResult> converter = null)
+        private Task<TResult> GetTask<TResult>(CacheOp lastAsyncOp, Func<BinaryReaderImpl, TResult> converter = null)
         {
             Debug.Assert(_flagAsync);
 
@@ -969,7 +969,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <param name="args">Arguments.</param>
-        private static void WriteQueryArgs(PortableWriterImpl writer, object[] args)
+        private static void WriteQueryArgs(BinaryWriterImpl writer, object[] args)
         {
             if (args == null)
                 writer.WriteInt(0);
@@ -1163,7 +1163,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Dictionary.</returns>
-        private static IDictionary<TK, TV> ReadGetAllDictionary(PortableReaderImpl reader)
+        private static IDictionary<TK, TV> ReadGetAllDictionary(BinaryReaderImpl reader)
         {
             IPortableStream stream = reader.Stream;
 
@@ -1189,7 +1189,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Gets the cache result.
         /// </summary>
-        private static CacheResult<TV> GetCacheResult(PortableReaderImpl reader)
+        private static CacheResult<TV> GetCacheResult(BinaryReaderImpl reader)
         {
             var res = reader == null
                 ? new CacheResult<TV>()
@@ -1227,7 +1227,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="type">Operation type.</param>
         /// <param name="outAction">Out action.</param>
         /// <returns>Result.</returns>
-        private CacheResult<TR> DoOutInOpNullable<TR>(int type, Action<PortableWriterImpl> outAction)
+        private CacheResult<TR> DoOutInOpNullable<TR>(int type, Action<BinaryWriterImpl> outAction)
         {
             var res = DoOutInOp<object>(type, outAction);
 

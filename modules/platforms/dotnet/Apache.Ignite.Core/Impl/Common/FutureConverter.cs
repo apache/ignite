@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private readonly bool _keepPortable;
 
         /** Converting function. */
-        private readonly Func<PortableReaderImpl, T> _func;
+        private readonly Func<BinaryReaderImpl, T> _func;
 
         /// <summary>
         /// Constructor.
@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="keepPortable">Keep portable.</param>
         /// <param name="func">Converting function.</param>
         public FutureConverter(PortableMarshaller marsh, bool keepPortable,
-            Func<PortableReaderImpl, T> func = null)
+            Func<BinaryReaderImpl, T> func = null)
         {
             _marsh = marsh;
             _keepPortable = keepPortable;

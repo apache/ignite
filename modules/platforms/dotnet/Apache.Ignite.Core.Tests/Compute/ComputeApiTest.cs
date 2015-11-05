@@ -824,7 +824,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(1, res.GetField<int>("field"));
 
             // This call must fail because "keepPortable" flag is reset.
-            Assert.Catch(typeof(PortableException), () =>
+            Assert.Catch(typeof(BinaryObjectException), () =>
             {
                 compute.ExecuteJavaTask<IPortableObject>(EchoTask, EchoTypePortableJava);
             });
@@ -1097,11 +1097,11 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             PortableConfiguration portCfg = new PortableConfiguration();
 
-            ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PlatformComputePortable)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PlatformComputeNetPortable)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(JavaPortableCls));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PlatformComputePortable)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PlatformComputeNetPortable)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(JavaPortableCls));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 

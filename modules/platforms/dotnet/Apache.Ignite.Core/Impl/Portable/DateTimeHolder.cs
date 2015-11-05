@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Constructor.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public DateTimeHolder(IPortableReader reader)
+        public DateTimeHolder(IBinaryReader reader)
         {
             Debug.Assert(reader != null);
 
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WritePortable(IBinaryWriter writer)
         {
             Debug.Assert(writer != null);
 

@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Metadata
                 case PortableUtils.TypeDictionary:
                     return PortableTypeNames.TypeNameMap;
                 default:
-                    throw new PortableException("Invalid type ID: " + typeId);
+                    throw new BinaryObjectException("Invalid type ID: " + typeId);
             }
         }
 

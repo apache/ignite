@@ -470,13 +470,13 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 PortableConfiguration = new PortableConfiguration
                 {
-                    TypeConfigurations = new List<PortableTypeConfiguration>
+                    TypeConfigurations = new List<BinaryTypeConfiguration>
                     {
-                        new PortableTypeConfiguration(typeof (CacheTestKey)),
-                        new PortableTypeConfiguration(typeof (TestReferenceObject)),
-                        new PortableTypeConfiguration(typeof (StreamReceiverPortable)),
-                        new PortableTypeConfiguration(typeof (EntryProcessorPortable)),
-                        new PortableTypeConfiguration(typeof (PortableEntry))
+                        new BinaryTypeConfiguration(typeof (CacheTestKey)),
+                        new BinaryTypeConfiguration(typeof (TestReferenceObject)),
+                        new BinaryTypeConfiguration(typeof (StreamReceiverPortable)),
+                        new BinaryTypeConfiguration(typeof (EntryProcessorPortable)),
+                        new BinaryTypeConfiguration(typeof (PortableEntry))
                     }
                 },
                 JvmOptions = TestUtils.TestJavaOptions().Concat(new[]
@@ -558,7 +558,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Test entry processor.
         /// </summary>
-        private class EntryProcessorPortable : ICacheEntryProcessor<int, int, int, int>, IPortableMarshalAware
+        private class EntryProcessorPortable : ICacheEntryProcessor<int, int, int, int>, IBinarizable
         {
             /** <inheritdoc /> */
             public int Process(IMutableCacheEntry<int, int> entry, int arg)
@@ -569,13 +569,13 @@ namespace Apache.Ignite.Core.Tests.Dataload
             }
 
             /** <inheritdoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 // No-op.
             }
 
             /** <inheritdoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 // No-op.
             }

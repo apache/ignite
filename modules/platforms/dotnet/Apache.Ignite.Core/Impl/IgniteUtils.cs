@@ -393,7 +393,7 @@ namespace Apache.Ignite.Core.Impl
 
             var res = new List<IClusterNode>(cnt);
 
-            var ignite = ((PortableReaderImpl)reader).Marshaller.Ignite;
+            var ignite = ((BinaryReaderImpl)reader).Marshaller.Ignite;
 
             if (pred == null)
             {

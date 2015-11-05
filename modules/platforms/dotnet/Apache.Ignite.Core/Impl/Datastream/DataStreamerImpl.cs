@@ -642,7 +642,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// Start write.
         /// </summary>
         /// <returns>Writer.</returns>
-        internal void Update(Action<PortableWriterImpl> action)
+        internal void Update(Action<BinaryWriterImpl> action)
         {
             _rwLock.EnterReadLock();
 

@@ -506,7 +506,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         private Future<TReduceRes> ExecuteClosures0<TArg, TJobRes, TReduceRes>(
             IComputeTask<TArg, TJobRes, TReduceRes> task, IComputeJob job = null,
             IEnumerable<IComputeJob> jobs = null, int opId = OpUnicast, int jobsCount = 0,
-            Action<PortableWriterImpl> writeAction = null)
+            Action<BinaryWriterImpl> writeAction = null)
         {
             Debug.Assert(job != null || jobs != null);
 
@@ -576,7 +576,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="job">The job.</param>
         /// <param name="writer">The writer.</param>
         /// <returns>Handle to the job holder</returns>
-        private long WriteJob(IComputeJob job, PortableWriterImpl writer)
+        private long WriteJob(IComputeJob job, BinaryWriterImpl writer)
         {
             var jobHolder = new ComputeJobHolder((Ignite) _prj.Ignite, job);
 
@@ -595,7 +595,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="taskName">Task name.</param>
         /// <param name="taskArg">Task arg.</param>
         /// <param name="nodes">Nodes.</param>
-        private void WriteTask(PortableWriterImpl writer, string taskName, object taskArg,
+        private void WriteTask(BinaryWriterImpl writer, string taskName, object taskArg,
             ICollection<IClusterNode> nodes)
         {
             writer.WriteString(taskName);
@@ -610,7 +610,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <param name="nodes">Nodes.</param>
-        private static void WriteNodeIds(PortableWriterImpl writer, ICollection<IClusterNode> nodes)
+        private static void WriteNodeIds(BinaryWriterImpl writer, ICollection<IClusterNode> nodes)
         {
             if (nodes == null)
                 writer.WriteBoolean(false);
@@ -630,7 +630,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="writer">The writer.</param>
         /// <param name="cacheName">Name of the cache to use for affinity co-location.</param>
         /// <param name="affinityKey">Affinity key.</param>
-        private static void WriteAffinity(PortableWriterImpl writer, string cacheName, object affinityKey)
+        private static void WriteAffinity(BinaryWriterImpl writer, string cacheName, object affinityKey)
         {
             writer.WriteString(cacheName);
 

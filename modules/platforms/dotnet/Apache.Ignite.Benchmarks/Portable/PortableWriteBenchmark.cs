@@ -75,9 +75,9 @@ namespace Apache.Ignite.Benchmarks.Portable
         {
             _marsh = new PortableMarshaller(new PortableConfiguration
             {
-                TypeConfigurations = new List<PortableTypeConfiguration>
+                TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
-                    new PortableTypeConfiguration(typeof (Address))
+                    new BinaryTypeConfiguration(typeof (Address))
                     //new PortableTypeConfiguration(typeof (TestModel))
                 }
             });

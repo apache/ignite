@@ -63,9 +63,9 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WritePortable(IBinaryWriter writer)
         {
-            PortableWriterImpl writer0 = (PortableWriterImpl) writer.GetRawWriter();
+            BinaryWriterImpl writer0 = (BinaryWriterImpl) writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(_clo));
             writer0.WithDetach(w => w.WriteObject(_arg));
@@ -75,9 +75,9 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// Initializes a new instance of the <see cref="ComputeFuncJob"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ComputeFuncJob(IPortableReader reader)
+        public ComputeFuncJob(IBinaryReader reader)
         {
-            var reader0 = (PortableReaderImpl) reader.GetRawReader();
+            var reader0 = (BinaryReaderImpl) reader.GetRawReader();
 
             _clo = reader0.ReadObject<IComputeFunc>();
             _arg = reader0.ReadObject<object>();

@@ -253,7 +253,7 @@ namespace Apache.Ignite.Core
         {
             try
             {
-                PortableReaderImpl reader = PU.Marshaller.StartUnmarshal(inStream);
+                BinaryReaderImpl reader = PU.Marshaller.StartUnmarshal(inStream);
 
                 PrepareConfiguration(reader);
 
@@ -271,7 +271,7 @@ namespace Apache.Ignite.Core
         /// Preapare configuration.
         /// </summary>
         /// <param name="reader">Reader.</param>
-        private static void PrepareConfiguration(PortableReaderImpl reader)
+        private static void PrepareConfiguration(BinaryReaderImpl reader)
         {
             // 1. Load assemblies.
             IgniteConfiguration cfg = _startup.Configuration;
@@ -298,7 +298,7 @@ namespace Apache.Ignite.Core
         /// <param name="reader">Reader.</param>
         /// <param name="outStream">Output stream.</param>
         /// <param name="handleRegistry">Handle registry.</param>
-        private static void PrepareLifecycleBeans(PortableReaderImpl reader, PlatformMemoryStream outStream, 
+        private static void PrepareLifecycleBeans(BinaryReaderImpl reader, PlatformMemoryStream outStream, 
             HandleRegistry handleRegistry)
         {
             IList<LifecycleBeanHolder> beans = new List<LifecycleBeanHolder>();
@@ -335,7 +335,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Lifecycle bean.</returns>
-        private static ILifecycleBean CreateLifecycleBean(PortableReaderImpl reader)
+        private static ILifecycleBean CreateLifecycleBean(BinaryReaderImpl reader)
         {
             // 1. Instantiate.
             var bean = IgniteUtils.CreateInstance<ILifecycleBean>(reader.ReadString());
@@ -358,7 +358,7 @@ namespace Apache.Ignite.Core
             try
             {
                 // 1. Read data and leave critical state ASAP.
-                PortableReaderImpl reader = PU.Marshaller.StartUnmarshal(stream);
+                BinaryReaderImpl reader = PU.Marshaller.StartUnmarshal(stream);
                 
                 // ReSharper disable once PossibleInvalidOperationException
                 var name = reader.ReadString();

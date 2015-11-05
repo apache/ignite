@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="clsName">Exception class name.</param>
         /// <param name="msg">Exception message.</param>
         /// <param name="reader">Error data reader.</param>
-        public static Exception GetException(string clsName, string msg, PortableReaderImpl reader = null)
+        public static Exception GetException(string clsName, string msg, BinaryReaderImpl reader = null)
         {
             ExceptionFactoryDelegate ctor;
 
@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Reader.</param>
         /// <returns></returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private static Exception ProcessCachePartialUpdateException(string msg, PortableReaderImpl reader)
+        private static Exception ProcessCachePartialUpdateException(string msg, BinaryReaderImpl reader)
         {
             if (reader == null)
                 return new CachePartialUpdateException(msg, new IgniteException("Failed keys are not available."));
@@ -144,7 +144,7 @@ namespace Apache.Ignite.Core.Impl
             {
                 bool keepPortable = reader.ReadBoolean();
 
-                PortableReaderImpl keysReader = reader.Marshaller.StartUnmarshal(reader.Stream, keepPortable);
+                BinaryReaderImpl keysReader = reader.Marshaller.StartUnmarshal(reader.Stream, keepPortable);
 
                 try
                 {
@@ -188,7 +188,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>List.</returns>
-        private static List<object> ReadNullableList(PortableReaderImpl reader)
+        private static List<object> ReadNullableList(BinaryReaderImpl reader)
         {
             if (!reader.ReadBoolean()) 
                 return null;

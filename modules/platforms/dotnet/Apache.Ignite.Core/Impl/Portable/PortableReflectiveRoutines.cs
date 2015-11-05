@@ -31,14 +31,14 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// </summary>
     /// <param name="obj">Target object.</param>
     /// <param name="writer">Writer.</param>
-    internal delegate void PortableReflectiveWriteAction(object obj, IPortableWriter writer);
+    internal delegate void PortableReflectiveWriteAction(object obj, IBinaryWriter writer);
 
     /// <summary>
     /// Read action delegate.
     /// </summary>
     /// <param name="obj">Target object.</param>
     /// <param name="reader">Reader.</param>
-    internal delegate void PortableReflectiveReadAction(object obj, IPortableReader reader);
+    internal delegate void PortableReflectiveReadAction(object obj, IBinaryReader reader);
 
     /// <summary>
     /// Routines for reflective reads and writes.
@@ -47,31 +47,31 @@ namespace Apache.Ignite.Core.Impl.Portable
     {
         /** Method: read enum. */
         private static readonly MethodInfo MthdReadEnum =
-            typeof(IPortableReader).GetMethod("ReadEnum", new[] { typeof(string) });
+            typeof(IBinaryReader).GetMethod("ReadEnum", new[] { typeof(string) });
 
         /** Method: read enum array. */
         private static readonly MethodInfo MthdReadEnumArray =
-            typeof(IPortableReader).GetMethod("ReadEnumArray", new[] { typeof(string) });
+            typeof(IBinaryReader).GetMethod("ReadEnumArray", new[] { typeof(string) });
 
         /** Method: read array. */
         private static readonly MethodInfo MthdReadObjArray =
-            typeof(IPortableReader).GetMethod("ReadArray", new[] { typeof(string) });
+            typeof(IBinaryReader).GetMethod("ReadArray", new[] { typeof(string) });
 
         /** Method: read object. */
         private static readonly MethodInfo MthdReadObj=
-            typeof(IPortableReader).GetMethod("ReadObject", new[] { typeof(string) });
+            typeof(IBinaryReader).GetMethod("ReadObject", new[] { typeof(string) });
 
         /** Method: write enum array. */
         private static readonly MethodInfo MthdWriteEnumArray =
-            typeof(IPortableWriter).GetMethod("WriteEnumArray");
+            typeof(IBinaryWriter).GetMethod("WriteEnumArray");
 
         /** Method: write array. */
         private static readonly MethodInfo MthdWriteObjArray =
-            typeof(IPortableWriter).GetMethod("WriteArray");
+            typeof(IBinaryWriter).GetMethod("WriteArray");
 
         /** Method: read object. */
         private static readonly MethodInfo MthdWriteObj =
-            typeof(IPortableWriter).GetMethod("WriteObject");
+            typeof(IBinaryWriter).GetMethod("WriteObject");
 
         /// <summary>
         /// Lookup read/write actions for the given type.
@@ -329,7 +329,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Gets the reader with a specified write action.
         /// </summary>
         private static PortableReflectiveWriteAction GetWriter<T>(FieldInfo field,
-            Expression<Action<string, IPortableWriter, T>> write,
+            Expression<Action<string, IBinaryWriter, T>> write,
             bool convertFieldValToObject = false)
         {
             Debug.Assert(field != null);
@@ -344,7 +344,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 fldExpr = Expression.Convert(fldExpr, typeof (object));
 
             // Call IPortableWriter method
-            var writerParam = Expression.Parameter(typeof(IPortableWriter));
+            var writerParam = Expression.Parameter(typeof(IBinaryWriter));
             var fldNameParam = Expression.Constant(PortableUtils.CleanFieldName(field.Name));
             var writeExpr = Expression.Invoke(write, fldNameParam, writerParam, fldExpr);
 
@@ -370,7 +370,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             var fldExpr = Expression.Field(targetParamConverted, field);
 
             // Call IPortableWriter method
-            var writerParam = Expression.Parameter(typeof(IPortableWriter));
+            var writerParam = Expression.Parameter(typeof(IBinaryWriter));
             var fldNameParam = Expression.Constant(PortableUtils.CleanFieldName(field.Name));
             var writeMethod = method.MakeGenericMethod(genericArgs);
             var writeExpr = Expression.Call(writerParam, writeMethod, fldNameParam, fldExpr);
@@ -383,13 +383,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Gets the reader with a specified read action.
         /// </summary>
         private static PortableReflectiveReadAction GetReader<T>(FieldInfo field, 
-            Expression<Func<string, IPortableReader, T>> read)
+            Expression<Func<string, IBinaryReader, T>> read)
         {
             Debug.Assert(field != null);
             Debug.Assert(field.DeclaringType != null);   // non-static
 
             // Call IPortableReader method
-            var readerParam = Expression.Parameter(typeof(IPortableReader));
+            var readerParam = Expression.Parameter(typeof(IBinaryReader));
             var fldNameParam = Expression.Constant(PortableUtils.CleanFieldName(field.Name));
             Expression readExpr = Expression.Invoke(read, fldNameParam, readerParam);
 
@@ -419,7 +419,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 genericArgs = new[] {field.FieldType};
 
             // Call IPortableReader method
-            var readerParam = Expression.Parameter(typeof (IPortableReader));
+            var readerParam = Expression.Parameter(typeof (IBinaryReader));
             var fldNameParam = Expression.Constant(PortableUtils.CleanFieldName(field.Name));
             var readMethod = method.MakeGenericMethod(genericArgs);
             Expression readExpr = Expression.Call(readerParam, readMethod, fldNameParam);

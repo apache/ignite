@@ -289,10 +289,10 @@ namespace Apache.Ignite.Core.Tests
 
             var portCfg = new PortableConfiguration();
 
-            ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof (RemoteConfiguration)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof (RemoteConfigurationClosure)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof (RemoteConfiguration)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof (RemoteConfigurationClosure)));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 

@@ -241,7 +241,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Reads a node from stream.
         /// </summary>
-        private IClusterNode ReadNode(PortableReaderImpl r)
+        private IClusterNode ReadNode(BinaryReaderImpl r)
         {
             return GetNode(r.ReadGuid());
         }
@@ -257,8 +257,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Reads a dictionary from stream.
         /// </summary>
-        private Dictionary<TK, TV> ReadDictionary<TK, TV>(IPortableStream reader, Func<PortableReaderImpl, TK> readKey,
-            Func<PortableReaderImpl, TV> readVal)
+        private Dictionary<TK, TV> ReadDictionary<TK, TV>(IPortableStream reader, Func<BinaryReaderImpl, TK> readKey,
+            Func<BinaryReaderImpl, TV> readVal)
         {
             var r = Marshaller.StartUnmarshal(reader, _keepPortable);
 

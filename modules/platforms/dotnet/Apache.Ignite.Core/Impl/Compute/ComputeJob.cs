@@ -52,9 +52,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Initializes a new instance of the <see cref="ComputeJobWrapper"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ComputeJobWrapper(IPortableReader reader)
+        public ComputeJobWrapper(IBinaryReader reader)
         {
-            var reader0 = (PortableReaderImpl)reader.GetRawReader();
+            var reader0 = (BinaryReaderImpl)reader.GetRawReader();
 
             _job = reader0.ReadObject<object>();
 
@@ -100,9 +100,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WritePortable(IBinaryWriter writer)
         {
-            var writer0 = (PortableWriterImpl)writer.GetRawWriter();
+            var writer0 = (BinaryWriterImpl)writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(Job));
         }

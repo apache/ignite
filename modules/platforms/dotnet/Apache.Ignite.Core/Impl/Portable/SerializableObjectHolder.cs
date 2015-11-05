@@ -48,11 +48,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WritePortable(IBinaryWriter writer)
         {
             Debug.Assert(writer != null);
 
-            var writer0 = (PortableWriterImpl)writer.GetRawWriter();
+            var writer0 = (BinaryWriterImpl)writer.GetRawWriter();
 
             writer0.WithDetach(w => new BinaryFormatter().Serialize(new PortableStreamAdapter(w.Stream), Item));
         }
@@ -61,11 +61,11 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// Initializes a new instance of the <see cref="SerializableObjectHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public SerializableObjectHolder(IPortableReader reader)
+        public SerializableObjectHolder(IBinaryReader reader)
         {
             Debug.Assert(reader != null);
 
-            var reader0 = (PortableReaderImpl) reader.GetRawReader();
+            var reader0 = (BinaryReaderImpl) reader.GetRawReader();
 
             _item = new BinaryFormatter().Deserialize(new PortableStreamAdapter(reader0.Stream), null);
         }

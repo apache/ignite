@@ -22,7 +22,7 @@ namespace Apache.Ignite.Benchmarks.Model
     /// <summary>
     /// Address.
     /// </summary>
-    internal class Address : IPortableMarshalAware
+    internal class Address : IBinarizable
     {
         /// <summary>
         /// City.
@@ -60,7 +60,7 @@ namespace Apache.Ignite.Benchmarks.Model
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             writer.WriteInt("streetNum", StreetNumber);
             writer.WriteInt("flatNum", FlatNumber);
@@ -69,7 +69,7 @@ namespace Apache.Ignite.Benchmarks.Model
         }
 
         /** <inheritDoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             StreetNumber = reader.ReadInt("streetNum");
             FlatNumber = reader.ReadInt("flatNum");

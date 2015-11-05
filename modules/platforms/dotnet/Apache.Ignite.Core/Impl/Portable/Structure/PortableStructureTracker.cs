@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         /// Updates the type structure and metadata for the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        public void UpdateWriterStructure(PortableWriterImpl writer)
+        public void UpdateWriterStructure(BinaryWriterImpl writer)
         {
             if (_curStructUpdates != null)
             {

@@ -102,19 +102,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public IPortableNameMapper NameMapper
+        public INameMapper NameMapper
         {
             get { return _cfg.DefaultNameMapper; }
         }
 
         /** <inheritDoc /> */
-        public IPortableIdMapper IdMapper
+        public IIdMapper IdMapper
         {
             get { return _cfg.DefaultIdMapper; }
         }
 
         /** <inheritDoc /> */
-        public IPortableSerializer Serializer
+        public IBinarySerializer Serializer
         {
             get { return _cfg.DefaultSerializer; }
         }

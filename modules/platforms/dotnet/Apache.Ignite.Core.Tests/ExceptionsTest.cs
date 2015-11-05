@@ -295,7 +295,7 @@ namespace Apache.Ignite.Core.Tests
                 {
                     TypeConfigurations = new[]
                     {
-                        new PortableTypeConfiguration(typeof (PortableEntry))
+                        new BinaryTypeConfiguration(typeof (PortableEntry))
                     }
                 }
             });

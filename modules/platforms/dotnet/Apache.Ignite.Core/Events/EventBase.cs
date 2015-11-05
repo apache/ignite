@@ -161,7 +161,7 @@ namespace Apache.Ignite.Core.Events
         /// <returns>Node or null.</returns>
         protected static IClusterNode ReadNode(IPortableRawReader reader)
         {
-            return ((PortableReaderImpl)reader).Marshaller.Ignite.GetNode(reader.ReadGuid());
+            return ((BinaryReaderImpl)reader).Marshaller.Ignite.GetNode(reader.ReadGuid());
         }
     }
 }

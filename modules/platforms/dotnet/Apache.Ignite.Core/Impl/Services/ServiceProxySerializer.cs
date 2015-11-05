@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="writer">Writer.</param>
         /// <param name="method">Method.</param>
         /// <param name="arguments">Arguments.</param>
-        public static void WriteProxyMethod(PortableWriterImpl writer, MethodBase method, object[] arguments)
+        public static void WriteProxyMethod(BinaryWriterImpl writer, MethodBase method, object[] arguments)
         {
             Debug.Assert(writer != null);
             Debug.Assert(method != null);

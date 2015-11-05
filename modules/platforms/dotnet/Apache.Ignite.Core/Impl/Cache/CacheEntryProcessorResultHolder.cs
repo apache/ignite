@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="writer">Writer.</param>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
             Justification = "Any kind of exception can be thrown during user type marshalling.")]
-        private void Marshal(PortableWriterImpl writer)
+        private void Marshal(BinaryWriterImpl writer)
         {
             var pos = writer.Stream.Position;
 

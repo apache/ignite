@@ -84,10 +84,10 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             PortableConfiguration portCfg = new PortableConfiguration();
 
-            ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(DynamicTestKey)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(DynamicTestValue)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(DynamicTestKey)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(DynamicTestValue)));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 

@@ -88,9 +88,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WritePortable(IBinaryWriter writer)
         {
-            var writer0 = (PortableWriterImpl)writer.GetRawWriter();
+            var writer0 = (BinaryWriterImpl)writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(_pred));
             
@@ -101,9 +101,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// Initializes a new instance of the <see cref="CacheEntryFilterHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public CacheEntryFilterHolder(IPortableReader reader)
+        public CacheEntryFilterHolder(IBinaryReader reader)
         {
-            var reader0 = (PortableReaderImpl)reader.GetRawReader();
+            var reader0 = (BinaryReaderImpl)reader.GetRawReader();
 
             _pred = reader0.ReadObject<object>();
 

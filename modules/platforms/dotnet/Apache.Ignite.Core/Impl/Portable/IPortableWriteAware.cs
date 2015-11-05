@@ -29,6 +29,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary> 
         /// <param name="writer">Writer.</param>
         /// <exception cref="System.IO.IOException">If write failed.</exception>
-        void WritePortable(IPortableWriter writer);
+        void WritePortable(IBinaryWriter writer);
     }
 }

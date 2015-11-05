@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             IPortableStream stream = new PortableHeapStream(1024);
 
             // Serialize.
-            PortableWriterImpl writer = _marsh.StartMarshal(stream);
+            BinaryWriterImpl writer = _marsh.StartMarshal(stream);
 
             try
             {

@@ -42,8 +42,8 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             TypeConfigurations = new[]
             {
-                new PortableTypeConfiguration(typeof (TestPortableClass)),
-                new PortableTypeConfiguration(typeof (CustomExceptionPortable))
+                new BinaryTypeConfiguration(typeof (TestPortableClass)),
+                new BinaryTypeConfiguration(typeof (CustomExceptionPortable))
             }
         });
 
@@ -595,7 +595,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Custom non-serializable exception.
         /// </summary>
-        private class CustomExceptionPortable : Exception, IPortableMarshalAware
+        private class CustomExceptionPortable : Exception, IBinarizable
         {
             /** */
             public bool ThrowOnWrite { get; set; }
@@ -604,7 +604,7 @@ namespace Apache.Ignite.Core.Tests.Services
             public bool ThrowOnRead { get; set; }
 
             /** <inheritdoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteBoolean("ThrowOnRead", ThrowOnRead);
 
@@ -613,7 +613,7 @@ namespace Apache.Ignite.Core.Tests.Services
             }
 
             /** <inheritdoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 ThrowOnRead = reader.ReadBoolean("ThrowOnRead");
 
@@ -625,7 +625,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Portable object for method argument/result.
         /// </summary>
-        protected class TestPortableClass : IPortableMarshalAware
+        protected class TestPortableClass : IBinarizable
         {
             /** */
             public string Prop { get; set; }
@@ -637,7 +637,7 @@ namespace Apache.Ignite.Core.Tests.Services
             public bool ThrowOnRead { get; set; }
 
             /** <inheritdoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteString("Prop", Prop);
                 writer.WriteBoolean("ThrowOnRead", ThrowOnRead);
@@ -647,7 +647,7 @@ namespace Apache.Ignite.Core.Tests.Services
             }
 
             /** <inheritdoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 Prop = reader.ReadString("Prop");
                 ThrowOnRead = reader.ReadBoolean("ThrowOnRead");

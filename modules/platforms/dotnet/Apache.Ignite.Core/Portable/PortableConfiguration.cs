@@ -48,10 +48,10 @@ namespace Apache.Ignite.Core.Portable
 
             if (cfg.TypeConfigurations != null)
             {
-                TypeConfigurations = new List<PortableTypeConfiguration>(cfg.TypeConfigurations.Count);
+                TypeConfigurations = new List<BinaryTypeConfiguration>(cfg.TypeConfigurations.Count);
 
-                foreach (PortableTypeConfiguration typeCfg in cfg.TypeConfigurations) 
-                    TypeConfigurations.Add(new PortableTypeConfiguration(typeCfg));
+                foreach (BinaryTypeConfiguration typeCfg in cfg.TypeConfigurations) 
+                    TypeConfigurations.Add(new BinaryTypeConfiguration(typeCfg));
             }
         }
 
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Portable
         /// Type configurations.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<PortableTypeConfiguration> TypeConfigurations
+        public ICollection<BinaryTypeConfiguration> TypeConfigurations
         {
             get;
             set;
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Portable
         /// <summary>
         /// Default name mapper.
         /// </summary>
-        public IPortableNameMapper DefaultNameMapper
+        public INameMapper DefaultNameMapper
         {
             get;
             set;
@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Portable
         /// <summary>
         /// Default ID mapper.
         /// </summary>
-        public IPortableIdMapper DefaultIdMapper
+        public IIdMapper DefaultIdMapper
         {
             get;
             set;
@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Portable
         /// <summary>
         /// Default serializer.
         /// </summary>
-        public IPortableSerializer DefaultSerializer
+        public IBinarySerializer DefaultSerializer
         {
             get;
             set;

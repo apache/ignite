@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Tests
                 PortableConfiguration = new PortableConfiguration
                 {
                     TypeConfigurations =
-                        new List<PortableTypeConfiguration> { new PortableTypeConfiguration(typeof(Portable)) }
+                        new List<BinaryTypeConfiguration> { new BinaryTypeConfiguration(typeof(Portable)) }
                 }
             });
 
@@ -125,20 +125,20 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Portable test class.
         /// </summary>
-        private class Portable : IPortableMarshalAware
+        private class Portable : IBinarizable
         {
             public int A;
             public string B;
 
             /** <inheritDoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteInt("a", A);
                 writer.GetRawWriter().WriteString(B);
             }
 
             /** <inheritDoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 A = reader.ReadInt("a");
                 B = reader.GetRawReader().ReadString();

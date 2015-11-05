@@ -150,9 +150,9 @@ namespace Apache.Ignite.Core.Impl.Messaging
         }
 
         /** <inheritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WritePortable(IBinaryWriter writer)
         {
-            var writer0 = (PortableWriterImpl)writer.GetRawWriter();
+            var writer0 = (BinaryWriterImpl)writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(Filter));
         }
@@ -161,9 +161,9 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// Initializes a new instance of the <see cref="MessageListenerHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public MessageListenerHolder(IPortableReader reader)
+        public MessageListenerHolder(IBinaryReader reader)
         {
-            var reader0 = (PortableReaderImpl)reader.GetRawReader();
+            var reader0 = (BinaryReaderImpl)reader.GetRawReader();
 
             _filter = reader0.ReadObject<object>();
 

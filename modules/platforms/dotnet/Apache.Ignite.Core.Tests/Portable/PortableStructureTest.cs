@@ -56,11 +56,11 @@ namespace Apache.Ignite.Core.Tests.Portable
                 objs = IgniteUtils.Shuffle(objs);
 
                 // 2. Create new marshaller.
-                PortableTypeConfiguration typeCfg = new PortableTypeConfiguration(typeof(BranchedType));
+                BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(typeof(BranchedType));
 
                 PortableConfiguration cfg = new PortableConfiguration
                 {
-                    TypeConfigurations = new List<PortableTypeConfiguration> { typeCfg }
+                    TypeConfigurations = new List<BinaryTypeConfiguration> { typeCfg }
                 };
 
                 PortableMarshaller marsh = new PortableMarshaller(cfg);
@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Tests.Portable
     }
 
     [SuppressMessage("ReSharper", "InconsistentNaming")]
-    public class BranchedType : IPortableMarshalAware
+    public class BranchedType : IBinarizable
     {
         public int mode;
         public int f2;
@@ -147,7 +147,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             writer.WriteInt("mode", mode);
 
@@ -194,7 +194,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             mode = reader.ReadInt("mode");
 

@@ -199,7 +199,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Entry.</returns>
-        protected abstract T Read(PortableReaderImpl reader);
+        protected abstract T Read(BinaryReaderImpl reader);
 
         /** <inheritdoc /> */
         protected override T1 Unmarshal<T1>(IPortableStream stream)

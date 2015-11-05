@@ -435,11 +435,11 @@ namespace Apache.Ignite.Core.Impl.Events
         /// Reads events from a portable reader.
         /// </summary>
         /// <typeparam name="T">Event type.</typeparam>
-        /// <param name="portableReader">Reader.</param>
+        /// <param name="binaryReader">Reader.</param>
         /// <returns>Resulting list or null.</returns>
-        private static ICollection<T> ReadEvents<T>(PortableReaderImpl portableReader) where T : IEvent
+        private static ICollection<T> ReadEvents<T>(BinaryReaderImpl binaryReader) where T : IEvent
         {
-            var count = portableReader.GetRawReader().ReadInt();
+            var count = binaryReader.GetRawReader().ReadInt();
 
             if (count == -1)
                 return null;
@@ -447,7 +447,7 @@ namespace Apache.Ignite.Core.Impl.Events
             var result = new List<T>(count);
 
             for (var i = 0; i < count; i++)
-                result.Add(EventReader.Read<T>(portableReader));
+                result.Add(EventReader.Read<T>(binaryReader));
 
             return result;
         }

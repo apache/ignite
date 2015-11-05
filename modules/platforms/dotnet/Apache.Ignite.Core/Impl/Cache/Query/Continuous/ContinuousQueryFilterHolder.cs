@@ -63,9 +63,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// Writes this object to the given writer.
         /// </summary>
         /// <param name="writer">Writer.</param>
-        public void WritePortable(IPortableWriter writer)
+        public void WritePortable(IBinaryWriter writer)
         {
-            var rawWriter = (PortableWriterImpl) writer.GetRawWriter();
+            var rawWriter = (BinaryWriterImpl) writer.GetRawWriter();
 
             rawWriter.WriteObject(_filter);
             rawWriter.WriteBoolean(_keepPortable);
@@ -75,9 +75,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// Initializes a new instance of the <see cref="ContinuousQueryFilterHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ContinuousQueryFilterHolder(IPortableReader reader)
+        public ContinuousQueryFilterHolder(IBinaryReader reader)
         {
-            var rawReader = (PortableReaderImpl) reader.GetRawReader();
+            var rawReader = (BinaryReaderImpl) reader.GetRawReader();
 
             _filter = rawReader.ReadObject<object>();
             _keepPortable = rawReader.ReadBoolean();

@@ -75,9 +75,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WritePortable(IBinaryWriter writer)
         {
-            var writer0 = (PortableWriterImpl)writer.GetRawWriter();
+            var writer0 = (BinaryWriterImpl)writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(_func));
         }
@@ -86,9 +86,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Initializes a new instance of the <see cref="ComputeOutFuncWrapper"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ComputeOutFuncWrapper(IPortableReader reader)
+        public ComputeOutFuncWrapper(IBinaryReader reader)
         {
-            var reader0 = (PortableReaderImpl)reader.GetRawReader();
+            var reader0 = (BinaryReaderImpl)reader.GetRawReader();
 
             _func = reader0.ReadObject<object>();
 

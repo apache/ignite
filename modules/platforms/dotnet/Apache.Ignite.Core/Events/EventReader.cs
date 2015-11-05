@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="reader">Reader.</param>
         /// <returns>Deserialized event.</returns>
         /// <exception cref="System.InvalidCastException">Incompatible event type.</exception>
-        public static T Read<T>(IPortableReader reader) where T : IEvent
+        public static T Read<T>(IBinaryReader reader) where T : IEvent
         {
             var r = reader.GetRawReader();
 

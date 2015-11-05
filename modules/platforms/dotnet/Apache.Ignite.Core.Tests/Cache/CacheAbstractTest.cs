@@ -206,10 +206,10 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// Portable add processor.
     /// </summary>
-    public class PortableAddArgCacheEntryProcessor : AddArgCacheEntryProcessor, IPortableMarshalAware
+    public class PortableAddArgCacheEntryProcessor : AddArgCacheEntryProcessor, IBinarizable
     {
         /** <inheritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             var w = writer.GetRawWriter();
 
@@ -222,7 +222,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritdoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             var r = reader.GetRawReader();
 
@@ -246,7 +246,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// Portable exception.
     /// </summary>
-    public class PortableTestException : Exception, IPortableMarshalAware
+    public class PortableTestException : Exception, IBinarizable
     {
         /// <summary>
         /// Gets or sets exception info.
@@ -260,13 +260,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             writer.GetRawWriter().WriteString(Info);
         }
 
         /** <inheritdoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             Info = reader.GetRawReader().ReadString();
         }
@@ -296,13 +296,13 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             PortableConfiguration portCfg = new PortableConfiguration();
 
-            ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortablePerson)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(CacheTestKey)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(TestReferenceObject)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableAddArgCacheEntryProcessor)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableTestException)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortablePerson)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(CacheTestKey)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(TestReferenceObject)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableAddArgCacheEntryProcessor)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableTestException)));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
@@ -2830,7 +2830,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 TestInvoke<NonSerializableCacheEntryProcessor>(async);
                 Assert.Fail();
             }
-            catch (PortableException)
+            catch (BinaryObjectException)
             {
                 // Expected
             }
@@ -2911,7 +2911,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     TestInvokeAll<NonSerializableCacheEntryProcessor>(async, i);
                     Assert.Fail();
                 }
-                catch (PortableException)
+                catch (BinaryObjectException)
                 {
                     // Expected
                 }

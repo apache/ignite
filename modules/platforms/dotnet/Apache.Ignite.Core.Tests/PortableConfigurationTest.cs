@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Tests
         {
             StartGrid(new PortableConfiguration
             {
-                TypeConfigurations = TestTypes.Select(x => new PortableTypeConfiguration(x)).ToList()
+                TypeConfigurations = TestTypes.Select(x => new BinaryTypeConfiguration(x)).ToList()
             });
 
             CheckPortableTypes(TestTypes);

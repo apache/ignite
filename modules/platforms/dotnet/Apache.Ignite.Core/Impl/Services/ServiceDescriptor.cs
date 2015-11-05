@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="name">Name.</param>
         /// <param name="reader">Reader.</param>
         /// <param name="services">Services.</param>
-        public ServiceDescriptor(string name, PortableReaderImpl reader, IServices services)
+        public ServiceDescriptor(string name, BinaryReaderImpl reader, IServices services)
         {
             Debug.Assert(reader != null);
             Debug.Assert(services != null);

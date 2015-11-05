@@ -61,9 +61,9 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WritePortable(IBinaryWriter writer)
         {
-            var writer0 = (PortableWriterImpl)writer.GetRawWriter();
+            var writer0 = (BinaryWriterImpl)writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(_action));
         }
@@ -72,9 +72,9 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// Initializes a new instance of the <see cref="ComputeActionJob"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ComputeActionJob(IPortableReader reader)
+        public ComputeActionJob(IBinaryReader reader)
         {
-            var reader0 = (PortableReaderImpl)reader.GetRawReader();
+            var reader0 = (BinaryReaderImpl)reader.GetRawReader();
 
             _action = reader0.ReadObject<IComputeAction>();
         }

@@ -47,11 +47,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Default ctor for marshalling.
         /// </summary>
         /// <param name="reader"></param>
-        public ComputeJobHolder(IPortableReader reader)
+        public ComputeJobHolder(IBinaryReader reader)
         {
             Debug.Assert(reader != null);
 
-            var reader0 = (PortableReaderImpl) reader.GetRawReader();
+            var reader0 = (BinaryReaderImpl) reader.GetRawReader();
 
             _ignite = reader0.Marshaller.Ignite;
 
@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             // 2. Try writing result to the stream.
             ClusterGroupImpl prj = _ignite.ClusterGroup;
 
-            PortableWriterImpl writer = prj.Marshaller.StartMarshal(stream);
+            BinaryWriterImpl writer = prj.Marshaller.StartMarshal(stream);
 
             try
             {
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             ClusterGroupImpl prj = _ignite.ClusterGroup;
 
-            PortableWriterImpl writer = prj.Marshaller.StartMarshal(stream);
+            BinaryWriterImpl writer = prj.Marshaller.StartMarshal(stream);
 
             try
             {
@@ -216,9 +216,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WritePortable(IBinaryWriter writer)
         {
-            PortableWriterImpl writer0 = (PortableWriterImpl) writer.GetRawWriter();
+            BinaryWriterImpl writer0 = (BinaryWriterImpl) writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(_job));
         }

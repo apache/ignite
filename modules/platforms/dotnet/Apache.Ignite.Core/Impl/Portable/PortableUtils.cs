@@ -265,8 +265,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         private static readonly Encoding Utf8 = Encoding.UTF8;
 
         /** Cached generic array read funcs. */
-        private static readonly CopyOnWriteConcurrentDictionary<Type, Func<PortableReaderImpl, bool, object>>
-            ArrayReaders = new CopyOnWriteConcurrentDictionary<Type, Func<PortableReaderImpl, bool, object>>();
+        private static readonly CopyOnWriteConcurrentDictionary<Type, Func<BinaryReaderImpl, bool, object>>
+            ArrayReaders = new CopyOnWriteConcurrentDictionary<Type, Func<BinaryReaderImpl, bool, object>>();
 
         /// <summary>
         /// Default marshaller.
@@ -859,14 +859,14 @@ namespace Apache.Ignite.Core.Impl.Portable
             byte[] mag = ReadByteArray(stream);
 
             if (scale < 0 || scale > 28)
-                throw new PortableException("Decimal value scale overflow (must be between 0 and 28): " + scale);
+                throw new BinaryObjectException("Decimal value scale overflow (must be between 0 and 28): " + scale);
 
             if (mag.Length > 13)
-                throw new PortableException("Decimal magnitude overflow (must be less than 96 bits): " + 
+                throw new BinaryObjectException("Decimal magnitude overflow (must be less than 96 bits): " + 
                     mag.Length * 8);
 
             if (mag.Length == 13 && mag[0] != 0)
-                throw new PortableException("Decimal magnitude overflow (must be less than 96 bits): " +
+                throw new BinaryObjectException("Decimal magnitude overflow (must be less than 96 bits): " +
                         mag.Length * 8);
 
             int hi = 0;
@@ -1011,7 +1011,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="val">Array.</param>
         /// <param name="ctx">Write context.</param>
-        public static void WriteArray(Array val, PortableWriterImpl ctx)
+        public static void WriteArray(Array val, BinaryWriterImpl ctx)
         {
             IPortableStream stream = ctx.Stream;
 
@@ -1030,15 +1030,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="typed">Typed flag.</param>
         /// <param name="elementType">Type of the element.</param>
         /// <returns>Array.</returns>
-        public static object ReadTypedArray(PortableReaderImpl ctx, bool typed, Type elementType)
+        public static object ReadTypedArray(BinaryReaderImpl ctx, bool typed, Type elementType)
         {
-            Func<PortableReaderImpl, bool, object> result;
+            Func<BinaryReaderImpl, bool, object> result;
 
             if (!ArrayReaders.TryGetValue(elementType, out result))
                 result = ArrayReaders.GetOrAdd(elementType, t =>
-                    DelegateConverter.CompileFunc<Func<PortableReaderImpl, bool, object>>(null,
+                    DelegateConverter.CompileFunc<Func<BinaryReaderImpl, bool, object>>(null,
                         MtdhReadArray.MakeGenericMethod(t),
-                        new[] {typeof (PortableReaderImpl), typeof (bool)}, new[] {false, false, true}));
+                        new[] {typeof (BinaryReaderImpl), typeof (bool)}, new[] {false, false, true}));
 
             return result(ctx, typed);
         }
@@ -1049,7 +1049,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="ctx">Read context.</param>
         /// <param name="typed">Typed flag.</param>
         /// <returns>Array.</returns>
-        public static T[] ReadArray<T>(PortableReaderImpl ctx, bool typed)
+        public static T[] ReadArray<T>(BinaryReaderImpl ctx, bool typed)
         {
             var stream = ctx.Stream;
 
@@ -1088,7 +1088,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="val">Value.</param>
          * <param name="ctx">Write context.</param>
          */
-        public static void WriteCollection(ICollection val, PortableWriterImpl ctx)
+        public static void WriteCollection(ICollection val, BinaryWriterImpl ctx)
         {
             var valType = val.GetType();
             
@@ -1121,7 +1121,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="ctx">Write context.</param>
          * <param name="colType">Collection type.</param>
          */
-        public static void WriteCollection(ICollection val, PortableWriterImpl ctx, byte colType)
+        public static void WriteCollection(ICollection val, BinaryWriterImpl ctx, byte colType)
         {
             ctx.Stream.WriteInt(val.Count);
 
@@ -1138,7 +1138,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="adder">Adder delegate.</param>
          * <returns>Collection.</returns>
          */
-        public static ICollection ReadCollection(PortableReaderImpl ctx,
+        public static ICollection ReadCollection(BinaryReaderImpl ctx,
             PortableCollectionFactory factory, PortableCollectionAdder adder)
         {
             IPortableStream stream = ctx.Stream;
@@ -1177,7 +1177,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="val">Value.</param>
          * <param name="ctx">Write context.</param>
          */
-        public static void WriteDictionary(IDictionary val, PortableWriterImpl ctx)
+        public static void WriteDictionary(IDictionary val, BinaryWriterImpl ctx)
         {
             var valType = val.GetType();
 
@@ -1208,7 +1208,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="ctx">Write context.</param>
          * <param name="dictType">Dictionary type.</param>
          */
-        public static void WriteDictionary(IDictionary val, PortableWriterImpl ctx, byte dictType)
+        public static void WriteDictionary(IDictionary val, BinaryWriterImpl ctx, byte dictType)
         {
             ctx.Stream.WriteInt(val.Count);
 
@@ -1227,7 +1227,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="factory">Factory delegate.</param>
          * <returns>Dictionary.</returns>
          */
-        public static IDictionary ReadDictionary(PortableReaderImpl ctx,
+        public static IDictionary ReadDictionary(BinaryReaderImpl ctx,
             PortableDictionaryFactory factory)
         {
             IPortableStream stream = ctx.Stream;
@@ -1267,7 +1267,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="ctx">Write context.</param>
          * <param name="val">Value.</param>
          */
-        public static void WriteMapEntry(PortableWriterImpl ctx, DictionaryEntry val)
+        public static void WriteMapEntry(BinaryWriterImpl ctx, DictionaryEntry val)
         {
             ctx.Write(val.Key);
             ctx.Write(val.Value);
@@ -1278,7 +1278,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="ctx">Context.</param>
          * <returns>Map entry.</returns>
          */
-        public static DictionaryEntry ReadMapEntry(PortableReaderImpl ctx)
+        public static DictionaryEntry ReadMapEntry(BinaryReaderImpl ctx)
         {
             object key = ctx.Deserialize<object>();
             object val = ctx.Deserialize<object>();
@@ -1311,7 +1311,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 stream.WriteInt((int) (object) val);
             }
             else
-                throw new PortableException("Only Int32 underlying type is supported for enums: " +
+                throw new BinaryObjectException("Only Int32 underlying type is supported for enums: " +
                     val.GetType().Name);
         }
 
@@ -1329,7 +1329,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 return TypeCaster<T>.Cast(stream.ReadInt());
             }
 
-            throw new PortableException("Only Int32 underlying type is supported for enums: " +
+            throw new BinaryObjectException("Only Int32 underlying type is supported for enums: " +
                                         typeof (T).Name);
         }
 
@@ -1432,7 +1432,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="converter">Converter.</param>
          * <returns>Converted name.</returns>
          */
-        public static string ConvertTypeName(string typeName, IPortableNameMapper converter)
+        public static string ConvertTypeName(string typeName, INameMapper converter)
         {
             var typeName0 = typeName;
 
@@ -1443,12 +1443,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             catch (Exception e)
             {
-                throw new PortableException("Failed to convert type name due to converter exception " +
+                throw new BinaryObjectException("Failed to convert type name due to converter exception " +
                     "[typeName=" + typeName + ", converter=" + converter + ']', e);
             }
 
             if (typeName == null)
-                throw new PortableException("Name converter returned null name for type [typeName=" +
+                throw new BinaryObjectException("Name converter returned null name for type [typeName=" +
                     typeName0 + ", converter=" + converter + "]");
 
             return typeName;
@@ -1460,7 +1460,7 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="converter">Converter.</param>
          * <returns>Converted name.</returns>
          */
-        public static string ConvertFieldName(string fieldName, IPortableNameMapper converter)
+        public static string ConvertFieldName(string fieldName, INameMapper converter)
         {
             var fieldName0 = fieldName;
 
@@ -1471,12 +1471,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
             catch (Exception e)
             {
-                throw new PortableException("Failed to convert field name due to converter exception " +
+                throw new BinaryObjectException("Failed to convert field name due to converter exception " +
                     "[fieldName=" + fieldName + ", converter=" + converter + ']', e);
             }
 
             if (fieldName == null)
-                throw new PortableException("Name converter returned null name for field [fieldName=" +
+                throw new BinaryObjectException("Name converter returned null name for field [fieldName=" +
                     fieldName0 + ", converter=" + converter + "]");
 
             return fieldName;
@@ -1500,8 +1500,8 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="nameMapper">Name mapper.</param>
          * <param name="idMapper">ID mapper.</param>
          */
-        public static int TypeId(string typeName, IPortableNameMapper nameMapper,
-            IPortableIdMapper idMapper)
+        public static int TypeId(string typeName, INameMapper nameMapper,
+            IIdMapper idMapper)
         {
             Debug.Assert(typeName != null);
 
@@ -1517,7 +1517,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 }
                 catch (Exception e)
                 {
-                    throw new PortableException("Failed to resolve type ID due to ID mapper exception " +
+                    throw new BinaryObjectException("Failed to resolve type ID due to ID mapper exception " +
                         "[typeName=" + typeName + ", idMapper=" + idMapper + ']', e);
                 }
             }
@@ -1535,8 +1535,8 @@ namespace Apache.Ignite.Core.Impl.Portable
          * <param name="nameMapper">Name mapper.</param>
          * <param name="idMapper">ID mapper.</param>
          */
-        public static int FieldId(int typeId, string fieldName, IPortableNameMapper nameMapper,
-            IPortableIdMapper idMapper)
+        public static int FieldId(int typeId, string fieldName, INameMapper nameMapper,
+            IIdMapper idMapper)
         {
             Debug.Assert(typeId != 0);
             Debug.Assert(fieldName != null);
@@ -1553,7 +1553,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 }
                 catch (Exception e)
                 {
-                    throw new PortableException("Failed to resolve field ID due to ID mapper exception " +
+                    throw new BinaryObjectException("Failed to resolve field ID due to ID mapper exception " +
                         "[typeId=" + typeId + ", fieldName=" + fieldName + ", idMapper=" + idMapper + ']', e);
                 }
             }
@@ -1562,7 +1562,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 id = GetStringHashCode(fieldName);
 
             if (id == 0)
-                throw new PortableException("Field ID is zero (please provide ID mapper or change field name) " + 
+                throw new BinaryObjectException("Field ID is zero (please provide ID mapper or change field name) " + 
                     "[typeId=" + typeId + ", fieldName=" + fieldName + ", idMapper=" + idMapper + ']');
 
             return id;
@@ -1600,7 +1600,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="success">Success flag.</param>
         /// <param name="res">Result.</param>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        public static void WriteInvocationResult(PortableWriterImpl writer, bool success, object res)
+        public static void WriteInvocationResult(BinaryWriterImpl writer, bool success, object res)
         {
             var pos = writer.Stream.Position;
 
@@ -1643,7 +1643,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="reader">Reader.</param>
         /// <param name="err">Error.</param>
         /// <returns>Result.</returns>
-        public static object ReadInvocationResult(PortableReaderImpl reader, out object err)
+        public static object ReadInvocationResult(BinaryReaderImpl reader, out object err)
         {
             err = null;
 
@@ -1664,7 +1664,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         public static void ValidateProtocolVersion(byte version)
         {
             if (version != ProtoVer)
-                throw new PortableException("Unsupported protocol version: " + version);
+                throw new BinaryObjectException("Unsupported protocol version: " + version);
         }
 
         /**
@@ -1692,7 +1692,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="reader">Reader.</param>
         /// <param name="assemblies">Assemblies.</param>
         /// <param name="cfg">Portable configuration.</param>
-        public static void ReadConfiguration(PortableReaderImpl reader, out ICollection<string> assemblies, out PortableConfiguration cfg)
+        public static void ReadConfiguration(BinaryReaderImpl reader, out ICollection<string> assemblies, out PortableConfiguration cfg)
         {
             if (reader.ReadBoolean())
             {
@@ -1715,16 +1715,16 @@ namespace Apache.Ignite.Core.Impl.Portable
                 {
                     int typesCnt = reader.ReadInt();
 
-                    cfg.TypeConfigurations = new List<PortableTypeConfiguration>();
+                    cfg.TypeConfigurations = new List<BinaryTypeConfiguration>();
 
                     for (int i = 0; i < typesCnt; i++)
                     {
-                        cfg.TypeConfigurations.Add(new PortableTypeConfiguration
+                        cfg.TypeConfigurations.Add(new BinaryTypeConfiguration
                         {
                             TypeName = reader.ReadString(),
-                            NameMapper = CreateInstance<IPortableNameMapper>(reader),
-                            IdMapper = CreateInstance<IPortableIdMapper>(reader),
-                            Serializer = CreateInstance<IPortableSerializer>(reader),
+                            NameMapper = CreateInstance<INameMapper>(reader),
+                            IdMapper = CreateInstance<IIdMapper>(reader),
+                            Serializer = CreateInstance<IBinarySerializer>(reader),
                             AffinityKeyFieldName = reader.ReadString(),
                             KeepDeserialized = reader.ReadObject<bool?>()
                         });
@@ -1743,9 +1743,9 @@ namespace Apache.Ignite.Core.Impl.Portable
                 }
 
                 // Read the rest.
-                cfg.DefaultNameMapper = CreateInstance<IPortableNameMapper>(reader);
-                cfg.DefaultIdMapper = CreateInstance<IPortableIdMapper>(reader);
-                cfg.DefaultSerializer = CreateInstance<IPortableSerializer>(reader);
+                cfg.DefaultNameMapper = CreateInstance<INameMapper>(reader);
+                cfg.DefaultIdMapper = CreateInstance<IIdMapper>(reader);
+                cfg.DefaultSerializer = CreateInstance<IBinarySerializer>(reader);
                 cfg.DefaultKeepDeserialized = reader.ReadBoolean();
             }
             else
@@ -1755,7 +1755,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Creates and instance from the type name in reader.
         /// </summary>
-        private static T CreateInstance<T>(PortableReaderImpl reader)
+        private static T CreateInstance<T>(BinaryReaderImpl reader)
         {
             var typeName = reader.ReadString();
 

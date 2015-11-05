@@ -41,13 +41,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         private readonly bool _userType;
 
         /** Name converter. */
-        private readonly IPortableNameMapper _nameMapper;
+        private readonly INameMapper _nameMapper;
 
         /** Mapper. */
-        private readonly IPortableIdMapper _idMapper;
+        private readonly IIdMapper _idMapper;
 
         /** Serializer. */
-        private readonly IPortableSerializer _serializer;
+        private readonly IBinarySerializer _serializer;
 
         /** Whether to cache deserialized value in IPortableObject */
         private readonly bool _keepDeserialized;
@@ -81,9 +81,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             int typeId, 
             string typeName, 
             bool userType, 
-            IPortableNameMapper nameMapper, 
-            IPortableIdMapper idMapper, 
-            IPortableSerializer serializer, 
+            INameMapper nameMapper, 
+            IIdMapper idMapper, 
+            IBinarySerializer serializer, 
             bool keepDeserialized, 
             string affKeyFieldName)
         {
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Name converter.
         /// </summary>
-        public IPortableNameMapper NameMapper
+        public INameMapper NameMapper
         {
             get { return _nameMapper; }
         }
@@ -149,7 +149,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Mapper.
         /// </summary>
-        public IPortableIdMapper IdMapper
+        public IIdMapper IdMapper
         {
             get { return _idMapper; }
         }
@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Serializer.
         /// </summary>
-        public IPortableSerializer Serializer
+        public IBinarySerializer Serializer
         {
             get { return _serializer; }
         }

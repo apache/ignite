@@ -101,9 +101,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WritePortable(IBinaryWriter writer)
         {
-            var writer0 = (PortableWriterImpl) writer.GetRawWriter();
+            var writer0 = (BinaryWriterImpl) writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(_proc));
             writer0.WithDetach(w => w.WriteObject(_arg));
@@ -113,9 +113,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// Initializes a new instance of the <see cref="CacheEntryProcessorHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public CacheEntryProcessorHolder(IPortableReader reader)
+        public CacheEntryProcessorHolder(IBinaryReader reader)
         {
-            var reader0 = (PortableReaderImpl) reader.GetRawReader();
+            var reader0 = (BinaryReaderImpl) reader.GetRawReader();
 
             _proc = reader0.ReadObject<object>();
             _arg = reader0.ReadObject<object>();

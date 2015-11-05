@@ -142,7 +142,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// <exception cref="IgniteException">Invalid operation type:  + opType</exception>
         public int Invoke(IPortableStream input, IUnmanagedTarget cb, Ignite grid)
         {
-            IPortableReader reader = grid.Marshaller.StartUnmarshal(input,
+            IBinaryReader reader = grid.Marshaller.StartUnmarshal(input,
                 _convertPortable ? PortableMode.Deserialize : PortableMode.ForcePortable);
             
             IPortableRawReader rawReader = reader.GetRawReader();
@@ -235,7 +235,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
-                PortableWriterImpl writer = grid.Marshaller.StartMarshal(stream);
+                BinaryWriterImpl writer = grid.Marshaller.StartMarshal(stream);
 
                 try
                 {

@@ -62,9 +62,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 {
                     TypeConfigurations = new[]
                     {
-                        new PortableTypeConfiguration(typeof (QueryPerson)),
-                        new PortableTypeConfiguration(typeof (PortableScanQueryFilter<QueryPerson>)),
-                        new PortableTypeConfiguration(typeof (PortableScanQueryFilter<PortableUserObject>))
+                        new BinaryTypeConfiguration(typeof (QueryPerson)),
+                        new BinaryTypeConfiguration(typeof (PortableScanQueryFilter<QueryPerson>)),
+                        new BinaryTypeConfiguration(typeof (PortableScanQueryFilter<PortableUserObject>))
                     }
                 },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
@@ -899,10 +899,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// <summary>
     /// Portable query filter.
     /// </summary>
-    public class PortableScanQueryFilter<TV> : ScanQueryFilter<TV>, IPortableMarshalAware
+    public class PortableScanQueryFilter<TV> : ScanQueryFilter<TV>, IBinarizable
     {
         /** <inheritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             var w = writer.GetRawWriter();
 
@@ -910,7 +910,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /** <inheritdoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             var r = reader.GetRawReader();
 

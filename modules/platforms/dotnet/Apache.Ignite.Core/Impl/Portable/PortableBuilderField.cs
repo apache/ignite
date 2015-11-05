@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private readonly object _value;
         
         /** Write action. */
-        private readonly Action<PortableWriterImpl, object> _writeAction;
+        private readonly Action<BinaryWriterImpl, object> _writeAction;
         
         /** Type id. */
         private readonly byte _typeId;
@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="value">Value.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="writeAction">Optional write action.</param>
-        public PortableBuilderField(Type type, object value, byte typeId, Action<PortableWriterImpl, object> writeAction = null)
+        public PortableBuilderField(Type type, object value, byte typeId, Action<BinaryWriterImpl, object> writeAction = null)
         {
             _type = type;
             _value = value;
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Gets the write action.
         /// </summary>
-        public Action<PortableWriterImpl, object> WriteAction
+        public Action<BinaryWriterImpl, object> WriteAction
         {
             get { return _writeAction; }
         }

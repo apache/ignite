@@ -614,9 +614,9 @@ namespace Apache.Ignite.Core.Tests
                 JvmOptions = TestUtils.TestJavaOptions(),
                 PortableConfiguration = new PortableConfiguration
                 {
-                    TypeConfigurations = new List<PortableTypeConfiguration>
+                    TypeConfigurations = new List<BinaryTypeConfiguration>
                     {
-                        new PortableTypeConfiguration(typeof (RemoteEventPortableFilter))
+                        new BinaryTypeConfiguration(typeof (RemoteEventPortableFilter))
                     }
                 }
             };
@@ -884,7 +884,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Portable remote event filter.
     /// </summary>
-    public class RemoteEventPortableFilter : IEventFilter<IEvent>, IPortableMarshalAware
+    public class RemoteEventPortableFilter : IEventFilter<IEvent>, IBinarizable
     {
         /** */
         private int _type;
@@ -905,13 +905,13 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /** <inheritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             writer.GetRawWriter().WriteInt(_type);
         }
 
         /** <inheritdoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             _type = reader.GetRawReader().ReadInt();
         }

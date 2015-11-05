@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Tests.Query
     /// <summary>
     /// Test person.
     /// </summary>
-    internal class PortablePerson : IPortableMarshalAware
+    internal class PortablePerson : IBinarizable
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="PortablePerson"/> class.
@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Tests.Query
         public int Age { get; set; }
 
         /** <ineritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             writer.WriteString("name", Name);
             writer.WriteString("address", Address);
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Tests.Query
         }
 
         /** <ineritdoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             Name = reader.ReadString("name");
             Address = reader.ReadString("address");

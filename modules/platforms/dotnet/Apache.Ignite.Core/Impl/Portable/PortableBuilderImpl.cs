@@ -61,19 +61,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         private Context _ctx;
 
         /** Write array action. */
-        private static readonly Action<PortableWriterImpl, object> WriteArrayAction = 
+        private static readonly Action<BinaryWriterImpl, object> WriteArrayAction = 
             (w, o) => w.WriteArrayInternal((Array) o);
 
         /** Write collection action. */
-        private static readonly Action<PortableWriterImpl, object> WriteCollectionAction = 
+        private static readonly Action<BinaryWriterImpl, object> WriteCollectionAction = 
             (w, o) => w.WriteCollection((ICollection) o);
 
         /** Write timestamp action. */
-        private static readonly Action<PortableWriterImpl, object> WriteTimestampAction = 
+        private static readonly Action<BinaryWriterImpl, object> WriteTimestampAction = 
             (w, o) => w.WriteTimestamp((DateTime?) o);
 
         /** Write timestamp array action. */
-        private static readonly Action<PortableWriterImpl, object> WriteTimestampArrayAction = 
+        private static readonly Action<BinaryWriterImpl, object> WriteTimestampArrayAction = 
             (w, o) => w.WriteTimestampArray((DateTime?[])o);
 
         /// <summary>
@@ -361,7 +361,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             PortableHeapStream outStream = new PortableHeapStream(estimatedCapacity);
 
-            PortableWriterImpl writer = _portables.Marshaller.StartMarshal(outStream);
+            BinaryWriterImpl writer = _portables.Marshaller.StartMarshal(outStream);
 
             writer.SetBuilder(this);
 
@@ -448,7 +448,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="header">The header.</param>
         /// <returns>Write action.</returns>
-        private static Action<PortableWriterImpl, object> GetWriteAction(byte header)
+        private static Action<BinaryWriterImpl, object> GetWriteAction(byte header)
         {
             // We need special actions for all cases where SetField(X) produces different result from SetSpecialField(X)
             // Arrays, Collections, Dates
@@ -1017,7 +1017,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             private readonly Context _parent;
 
             /** Portable writer. */
-            private readonly PortableWriterImpl _writer;
+            private readonly BinaryWriterImpl _writer;
 
             /** Children contexts. */
             private ICollection<Context> _children;
@@ -1037,7 +1037,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// Constructor for parent context.
             /// </summary>
             /// <param name="writer">Writer</param>
-            public Context(PortableWriterImpl writer)
+            public Context(BinaryWriterImpl writer)
             {
                 _writer = writer;
             }
@@ -1092,7 +1092,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             /// <summary>
             /// Writer.
             /// </summary>
-            public PortableWriterImpl Writer
+            public BinaryWriterImpl Writer
             {
                 get { return _writer; }
             }

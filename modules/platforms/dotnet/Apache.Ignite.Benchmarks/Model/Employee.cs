@@ -22,7 +22,7 @@ namespace Apache.Ignite.Benchmarks.Model
     /// <summary>
     /// Employee.
     /// </summary>
-    internal class Employee : IPortableMarshalAware
+    internal class Employee : IBinarizable
     {
         /// <summary>
         /// ID.
@@ -104,7 +104,7 @@ namespace Apache.Ignite.Benchmarks.Model
         }
 
         /** <inheritDoc /> */
-        void IPortableMarshalAware.WritePortable(IPortableWriter writer)
+        void IBinarizable.WriteBinary(IBinaryWriter writer)
         {
             writer.WriteInt("id", Id);
             writer.WriteInt("companyId", CompanyId);
@@ -119,7 +119,7 @@ namespace Apache.Ignite.Benchmarks.Model
         }
 
         /** <inheritDoc /> */
-        void IPortableMarshalAware.ReadPortable(IPortableReader reader)
+        void IBinarizable.ReadBinary(IBinaryReader reader)
         {
             Id = reader.ReadInt("id");
             CompanyId = reader.ReadInt("companyId");

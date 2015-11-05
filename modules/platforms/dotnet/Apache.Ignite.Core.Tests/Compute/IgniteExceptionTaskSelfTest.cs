@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Mode = ErrorMode.MapJobNotMarshalable;
 
-            var e = ExecuteWithError() as PortableException;
+            var e = ExecuteWithError() as BinaryObjectException;
 
             Assert.IsNotNull(e);
         }

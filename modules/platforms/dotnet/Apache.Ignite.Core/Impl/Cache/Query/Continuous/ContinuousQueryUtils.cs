@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Event.</returns>
-        private static ICacheEntryEvent<TK, TV> ReadEvent0<TK, TV>(PortableReaderImpl reader)
+        private static ICacheEntryEvent<TK, TV> ReadEvent0<TK, TV>(BinaryReaderImpl reader)
         {
             reader.DetachNext();
             TK key = reader.ReadObject<TK>();

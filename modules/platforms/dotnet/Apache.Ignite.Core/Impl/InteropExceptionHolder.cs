@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Holder of exception which must be serialized to Java and then backwards to the native platform.
     /// </summary>
-    internal class InteropExceptionHolder : IPortableMarshalAware
+    internal class InteropExceptionHolder : IBinarizable
     {
         /** Initial exception. */
         private Exception _err;
@@ -57,9 +57,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
-            var writer0 = (PortableWriterImpl) writer.GetRawWriter();
+            var writer0 = (BinaryWriterImpl) writer.GetRawWriter();
 
             if (writer0.IsPortable(_err))
             {
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritDoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             throw new NotImplementedException();
         }

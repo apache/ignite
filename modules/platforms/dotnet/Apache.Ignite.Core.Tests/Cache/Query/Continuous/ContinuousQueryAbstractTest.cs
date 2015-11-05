@@ -99,11 +99,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             PortableConfiguration portCfg = new PortableConfiguration();
 
-            ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableEntry)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableFilter)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(KeepPortableFilter)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableEntry)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableFilter)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(KeepPortableFilter)));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
@@ -491,7 +491,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             }
             else
             {
-                Assert.Throws<PortableException>(() =>
+                Assert.Throws<BinaryObjectException>(() =>
                 {
                     using (cache1.QueryContinuous(qry))
                     {
@@ -1021,17 +1021,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Portable filter.
         /// </summary>
-        public class PortableFilter : AbstractFilter<PortableEntry>, IPortableMarshalAware
+        public class PortableFilter : AbstractFilter<PortableEntry>, IBinarizable
         {
             /** <inheritDoc /> */
-            public void WritePortable(IPortableWriter writer)
+            public void WriteBinary(IBinaryWriter writer)
             {
                 if (marshErr)
                     throw new Exception("Filter marshalling error.");
             }
 
             /** <inheritDoc /> */
-            public void ReadPortable(IPortableReader reader)
+            public void ReadBinary(IBinaryReader reader)
             {
                 if (unmarshErr)
                     throw new Exception("Filter unmarshalling error.");
