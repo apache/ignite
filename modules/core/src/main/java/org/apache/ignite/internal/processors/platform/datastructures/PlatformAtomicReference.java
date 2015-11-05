@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.platform.*;
 import org.apache.ignite.internal.processors.platform.memory.*;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
-import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  * Platform atomic reference wrapper.
