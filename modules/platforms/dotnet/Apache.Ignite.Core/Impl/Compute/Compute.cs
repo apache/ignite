@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public ICompute WithKeepBinary()
         {
-            _compute.WithKeepPortable();
+            _compute.WithKeepBinary();
 
             return this;
         }

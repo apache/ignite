@@ -111,11 +111,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /// <summary>
-        /// Sets keep-portable flag for the next executed Java task on this projection in the current
+        /// Sets keep-binary flag for the next executed Java task on this projection in the current
         /// thread so that task argument passed to Java and returned task results will not be
         /// deserialized.
         /// </summary>
-        public void WithKeepPortable()
+        public void WithKeepBinary()
         {
             _keepPortable.Value = true;
         }
