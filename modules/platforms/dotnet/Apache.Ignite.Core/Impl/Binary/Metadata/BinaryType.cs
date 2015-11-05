@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
                     return BinaryTypeNames.TypeNameTimestamp;
                 case BinaryUtils.TypeEnum:
                     return BinaryTypeNames.TypeNameEnum;
-                case BinaryUtils.TypePortable:
+                case BinaryUtils.TypeBinary:
                 case BinaryUtils.TypeObject:
                     return BinaryTypeNames.TypeNameObject;
                 case BinaryUtils.TypeArrayBool:

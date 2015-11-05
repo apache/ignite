@@ -1753,7 +1753,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
         public class PrimitiveFieldsSerializer : IBinarySerializer
         {
-            public unsafe void WritePortable(object obj, IBinaryWriter writer)
+            public unsafe void WriteBinary(object obj, IBinaryWriter writer)
             {
                 PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
@@ -1783,7 +1783,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteObject("iguid", obj0.IgniteGuid);
             }
 
-            public unsafe void ReadPortable(object obj, IBinaryReader reader)
+            public unsafe void ReadBinary(object obj, IBinaryReader reader)
             {
                 PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
@@ -1817,7 +1817,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
         public class PrimitiveFieldsRawSerializer : IBinarySerializer
         {
-            public unsafe void WritePortable(object obj, IBinaryWriter writer)
+            public unsafe void WriteBinary(object obj, IBinaryWriter writer)
             {
                 PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
@@ -1849,7 +1849,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 rawWriter.WriteObject(obj0.IgniteGuid);
             }
 
-            public unsafe void ReadPortable(object obj, IBinaryReader reader)
+            public unsafe void ReadBinary(object obj, IBinaryReader reader)
             {
                 PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 

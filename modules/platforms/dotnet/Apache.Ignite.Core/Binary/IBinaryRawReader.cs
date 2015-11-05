@@ -205,7 +205,7 @@ namespace Apache.Ignite.Core.Binary
         /// <param name="factory">Factory.</param>
         /// <param name="adder">Adder.</param>
         /// <returns>Collection.</returns>
-        ICollection ReadCollection(PortableCollectionFactory factory, PortableCollectionAdder adder);
+        ICollection ReadCollection(CollectionFactory factory, CollectionAdder adder);
 
         /// <summary>
         /// Read dictionary. 

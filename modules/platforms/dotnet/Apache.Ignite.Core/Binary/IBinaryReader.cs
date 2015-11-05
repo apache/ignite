@@ -25,14 +25,14 @@ namespace Apache.Ignite.Core.Binary
     /// </summary>
     /// <param name="size">Collection size.</param>
     /// <returns>Collection.</returns>
-    public delegate ICollection PortableCollectionFactory(int size);
+    public delegate ICollection CollectionFactory(int size);
 
     /// <summary>
     /// Delegate for adding element to collection.
     /// </summary>
     /// <param name="col">Collection.</param>
     /// <param name="elem">Element to add.</param>
-    public delegate void PortableCollectionAdder(ICollection col, object elem);
+    public delegate void CollectionAdder(ICollection col, object elem);
 
     /// <summary>
     /// Delegate for dictionary creation.
@@ -253,7 +253,7 @@ namespace Apache.Ignite.Core.Binary
         /// <param name="factory">Factory.</param>
         /// <param name="adder">Adder.</param>
         /// <returns>Collection.</returns>
-        ICollection ReadCollection(string fieldName, PortableCollectionFactory factory, PortableCollectionAdder adder);
+        ICollection ReadCollection(string fieldName, CollectionFactory factory, CollectionAdder adder);
 
         /// <summary>
         /// Read named dictionary.

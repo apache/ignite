@@ -142,7 +142,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(1, portObj1.GetField<int>(field1));
 
             // 2. Ensure that object can be unmarshalled without deserialization.
-            byte[] data = ((Binarybject) portObj1).Data;
+            byte[] data = ((BinaryObject) portObj1).Data;
 
             portObj1 = _grid.Marshaller.Unmarshal<IBinaryObject>(data, BinaryMode.ForceBinary);
 
@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(1, portObj1.GetField<int>(field1));
 
             // 4. Ensure that we can unmarshal object with other nested object.
-            data = ((Binarybject) portObj2).Data;
+            data = ((BinaryObject) portObj2).Data;
 
             portObj2 = _grid.Marshaller.Unmarshal<IBinaryObject>(data, BinaryMode.ForceBinary);
 
@@ -595,9 +595,9 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestEmptyRebuild()
         {
-            var portObj = (Binarybject) _grid.GetPortables().GetBuilder(typeof(EmptyNoMeta)).Build();
+            var portObj = (BinaryObject) _grid.GetPortables().GetBuilder(typeof(EmptyNoMeta)).Build();
 
-            Binarybject newPortObj = (Binarybject) _grid.GetPortables().GetBuilder(portObj).Build();
+            BinaryObject newPortObj = (BinaryObject) _grid.GetPortables().GetBuilder(portObj).Build();
 
             Assert.AreEqual(portObj.Data, newPortObj.Data);
         }
@@ -1247,7 +1247,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             builder.SetField<object>("inner1", inner);
             builder.SetField<object>("inner2", inner);
 
-            Binarybject portOuter = (Binarybject) builder.Build();
+            BinaryObject portOuter = (BinaryObject) builder.Build();
 
             byte[] portOuterBytes = new byte[outerBytes.Length];
 

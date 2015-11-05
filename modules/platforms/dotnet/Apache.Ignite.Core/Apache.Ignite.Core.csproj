@@ -243,8 +243,8 @@
     <Compile Include="Impl\Binary\IBinarySystemTypeSerializer.cs" />
     <Compile Include="Impl\Binary\IBinaryTypeDescriptor.cs" />
     <Compile Include="Impl\Binary\IBinaryWriteAware.cs" />
-    <Compile Include="Impl\Binary\Metadata\IPortableMetadataHandler.cs" />
-    <Compile Include="Impl\Binary\Metadata\PortableHashsetMetadataHandler.cs" />
+    <Compile Include="Impl\Binary\Metadata\IBinaryTypeHandler.cs" />
+    <Compile Include="Impl\Binary\Metadata\BinaryTypeHashsetHandler.cs" />
     <Compile Include="Impl\Binary\Metadata\BinaryTypeHolder.cs" />
     <Compile Include="Impl\Binary\Metadata\BinaryType.cs" />
     <Compile Include="Impl\Binary\BinaryBuilderField.cs" />
@@ -265,11 +265,11 @@
     <Compile Include="Impl\Binary\BinaryReflectiveActions.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Impl\Binary\IgniteBinary.cs" />
-    <Compile Include="Impl\Binary\Structure\PortableStructureTracker.cs" />
+    <Compile Include="Impl\Binary\Structure\BinaryStructureTracker.cs" />
     <Compile Include="Impl\Binary\BinarySurrogateTypeDescriptor.cs" />
     <Compile Include="Impl\Binary\BinarySystemHandlers.cs" />
     <Compile Include="Impl\Binary\BinarySystemTypeSerializer.cs" />
-    <Compile Include="Impl\Binary\Binarybject.cs" />
+    <Compile Include="Impl\Binary\BinaryObject.cs" />
     <Compile Include="Impl\Binary\BinaryUtils.cs" />
     <Compile Include="Impl\Binary\BinaryWriter.cs" />
     <Compile Include="Impl\Binary\SerializableObjectHolder.cs" />

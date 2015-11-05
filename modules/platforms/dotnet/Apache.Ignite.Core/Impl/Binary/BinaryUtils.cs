@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Common;
 
     /**
-     * <summary>Utilities for portable serialization.</summary>
+     * <summary>Utilities for binary serialization.</summary>
      */
     internal static class BinaryUtils
     {
@@ -135,8 +135,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Type: map entry. */
         public const byte TypeMapEntry = 26;
 
-        /** Type: portable object. */
-        public const byte TypePortable = 27;
+        /** Type: binary object. */
+        public const byte TypeBinary = 27;
 
         /** Type: enum. */
         public const byte TypeEnum = 28;
@@ -1138,7 +1138,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <returns>Collection.</returns>
          */
         public static ICollection ReadCollection(BinaryReader ctx,
-            PortableCollectionFactory factory, PortableCollectionAdder adder)
+            CollectionFactory factory, CollectionAdder adder)
         {
             IBinaryStream stream = ctx.Stream;
 
@@ -1290,7 +1290,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <param name="val">Value.</param>
          */
-        public static void WritePortable(IBinaryStream stream, Binarybject val)
+        public static void WriteBinary(IBinaryStream stream, BinaryObject val)
         {
             WriteByteArray(val.Data, stream);
 
@@ -1418,7 +1418,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 case TypeCollection:
                 case TypeDictionary:
                 case TypeMapEntry:
-                case TypePortable:
+                case TypeBinary:
                     return true;
                 default:
                     return false;
@@ -1690,7 +1690,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <param name="assemblies">Assemblies.</param>
-        /// <param name="cfg">Portable configuration.</param>
+        /// <param name="cfg">Configuration.</param>
         public static void ReadConfiguration(BinaryReader reader, out ICollection<string> assemblies, out BinaryConfiguration cfg)
         {
             if (reader.ReadBoolean())

@@ -27,13 +27,13 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         /// <param name="obj">Object.</param>
         /// <param name="writer">Poratble writer.</param>
-        void WritePortable(object obj, IBinaryWriter writer);
+        void WriteBinary(object obj, IBinaryWriter writer);
 
         /// <summary>
         /// Read portable object.
         /// </summary>
         /// <param name="obj">Instantiated empty object.</param>
         /// <param name="reader">Poratble reader.</param>
-        void ReadPortable(object obj, IBinaryReader reader);
+        void ReadBinary(object obj, IBinaryReader reader);
     }
 }

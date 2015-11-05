@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
     /// <summary>
     /// Metadata handler which uses hash set to determine whether field was already written or not.
     /// </summary>
-    internal class PortableHashsetMetadataHandler : IPortableMetadataHandler
+    internal class BinaryTypeHashsetHandler : IBinaryTypeHandler
     {
         /** Empty fields collection. */
         private static readonly IDictionary<string, int> EmptyFields = new Dictionary<string, int>();
@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// </summary>
         /// <param name="ids">IDs.</param>
         /// <param name="newType">True is metadata for type is not saved.</param>
-        public PortableHashsetMetadataHandler(ICollection<int> ids, bool newType)
+        public BinaryTypeHashsetHandler(ICollection<int> ids, bool newType)
         {
             _ids = ids;
             _newType = newType;

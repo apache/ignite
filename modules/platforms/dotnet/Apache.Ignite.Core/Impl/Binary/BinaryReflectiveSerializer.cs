@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="obj">Object.</param>
         /// <param name="writer">Portable writer.</param>
         /// <exception cref="BinaryObjectException">Type is not registered in serializer:  + type.Name</exception>
-        public void WritePortable(object obj, IBinaryWriter writer)
+        public void WriteBinary(object obj, IBinaryWriter writer)
         {
             var portableMarshalAware = obj as IBinarizable;
 
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="obj">Instantiated empty object.</param>
         /// <param name="reader">Portable reader.</param>
         /// <exception cref="BinaryObjectException">Type is not registered in serializer:  + type.Name</exception>
-        public void ReadPortable(object obj, IBinaryReader reader)
+        public void ReadBinary(object obj, IBinaryReader reader)
         {
             var portableMarshalAware = obj as IBinarizable;
             

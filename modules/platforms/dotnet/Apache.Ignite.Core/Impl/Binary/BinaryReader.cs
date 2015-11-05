@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private BinaryMode _mode;
 
         /** Current type structure tracker. */
-        private PortableStructureTracker _curStruct;
+        private BinaryStructureTracker _curStruct;
 
         /** Current schema. */
         private int[] _curSchema;
@@ -463,15 +463,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public ICollection ReadCollection(string fieldName, PortableCollectionFactory factory,
-            PortableCollectionAdder adder)
+        public ICollection ReadCollection(string fieldName, CollectionFactory factory,
+            CollectionAdder adder)
         {
             return ReadField(fieldName, r => BinaryUtils.ReadCollection(r, factory, adder), BinaryUtils.TypeCollection);
         }
 
         /** <inheritdoc /> */
-        public ICollection ReadCollection(PortableCollectionFactory factory,
-            PortableCollectionAdder adder)
+        public ICollection ReadCollection(CollectionFactory factory,
+            CollectionAdder adder)
         {
             return Read(r => BinaryUtils.ReadCollection(r, factory, adder), BinaryUtils.TypeCollection);
         }
@@ -537,8 +537,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 case BinaryUtils.HdrFull:
                     return ReadFullObject<T>(pos);
 
-                case BinaryUtils.TypePortable:
-                    return ReadPortableObject<T>(doDetach);
+                case BinaryUtils.TypeBinary:
+                    return ReadBinaryObject<T>(doDetach);
             }
 
             if (BinaryUtils.IsPredefinedType(hdr))
@@ -550,14 +550,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reads the portable object.
         /// </summary>
-        private T ReadPortableObject<T>(bool doDetach)
+        private T ReadBinaryObject<T>(bool doDetach)
         {
             var len = Stream.ReadInt();
 
             var portableBytesPos = Stream.Position;
 
             if (_mode != BinaryMode.Deserialize)
-                return TypeCaster<T>.Cast(ReadAsPortable(portableBytesPos, len, doDetach));
+                return TypeCaster<T>.Cast(ReadAsBinary(portableBytesPos, len, doDetach));
 
             Stream.Seek(len, SeekOrigin.Current);
 
@@ -584,7 +584,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reads the portable object in portable form.
         /// </summary>
-        private Binarybject ReadAsPortable(int portableBytesPos, int dataLen, bool doDetach)
+        private BinaryObject ReadAsBinary(int portableBytesPos, int dataLen, bool doDetach)
         {
             try
             {
@@ -597,11 +597,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var hdr = BinaryObjectHeader.Read(Stream, pos);
 
                 if (!doDetach)
-                    return new Binarybject(_marsh, Stream.GetArray(), pos, hdr);
+                    return new BinaryObject(_marsh, Stream.GetArray(), pos, hdr);
 
                 Stream.Seek(pos, SeekOrigin.Begin);
 
-                return new Binarybject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
+                return new BinaryObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
             }
             finally
             {
@@ -630,16 +630,16 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (hdr.IsUserType && _mode == BinaryMode.ForceBinary)
                 {
-                    Binarybject portObj;
+                    BinaryObject portObj;
 
                     if (_detach)
                     {
                         Stream.Seek(pos, SeekOrigin.Begin);
 
-                        portObj = new Binarybject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
+                        portObj = new BinaryObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
                     }
                     else
-                        portObj = new Binarybject(_marsh, Stream.GetArray(), pos, hdr);
+                        portObj = new BinaryObject(_marsh, Stream.GetArray(), pos, hdr);
 
                     T obj = _builder == null ? TypeCaster<T>.Cast(portObj) : TypeCaster<T>.Cast(_builder.Child(portObj));
 
@@ -681,7 +681,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                         desc.Schema.Add(hdr.SchemaId, _curSchema);
                     }
 
-                    _curStruct = new PortableStructureTracker(desc, desc.ReaderTypeStructure);
+                    _curStruct = new BinaryStructureTracker(desc, desc.ReaderTypeStructure);
                     _curRaw = false;
 
                     // Read object.
@@ -708,7 +708,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                                                         desc.Type.AssemblyQualifiedName, e);
                         }
 
-                        desc.Serializer.ReadPortable(obj, this);
+                        desc.Serializer.ReadBinary(obj, this);
                     }
 
                     _curStruct.UpdateReaderStructure();

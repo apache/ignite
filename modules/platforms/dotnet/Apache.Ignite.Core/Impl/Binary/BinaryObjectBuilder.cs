@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly BinaryObjectBuilder _parent;
 
         /** Initial portable object. */
-        private readonly Binarybject _obj;
+        private readonly BinaryObject _obj;
 
         /** Type descriptor. */
         private readonly IBinaryTypeDescriptor _desc;
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="obj">Initial portable object.</param>
         /// <param name="desc">Type descriptor.</param>
         public BinaryObjectBuilder(IgniteBinary igniteBinary, BinaryObjectBuilder parent, 
-            Binarybject obj, IBinaryTypeDescriptor desc)
+            BinaryObject obj, IBinaryTypeDescriptor desc)
         {
             Debug.Assert(igniteBinary != null);
             Debug.Assert(obj != null);
@@ -377,7 +377,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 _igniteBinary.Marshaller.FinishMarshal(writer);
 
                 // Create portable object once metadata is processed.
-                return new Binarybject(_igniteBinary.Marshaller, outStream.InternalArray, 0, 
+                return new BinaryObject(_igniteBinary.Marshaller, outStream.InternalArray, 0, 
                     BinaryObjectHeader.Read(outStream, 0));
             }
             finally
@@ -392,7 +392,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="obj">Portable object.</param>
         /// <returns>Child builder.</returns>
-        public BinaryObjectBuilder Child(Binarybject obj)
+        public BinaryObjectBuilder Child(BinaryObject obj)
         {
             var desc = _igniteBinary.Marshaller.GetDescriptor(true, obj.TypeId);
 
@@ -510,7 +510,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             try
             {
                 // Prepare fields.
-                IPortableMetadataHandler metaHnd = _igniteBinary.Marshaller.GetMetadataHandler(desc);
+                IBinaryTypeHandler metaHnd = _igniteBinary.Marshaller.GetMetadataHandler(desc);
 
                 IDictionary<int, BinaryBuilderField> vals0;
 
@@ -759,7 +759,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="outStream">Output stream.</param>
         /// <param name="port">Portable.</param>
-        internal void ProcessPortable(IBinaryStream outStream, Binarybject port)
+        internal void ProcessBinary(IBinaryStream outStream, BinaryObject port)
         {
             // Special case: writing portable object with correct inversions.
             BinaryHeapStream inStream = new BinaryHeapStream(port.Data);
@@ -958,7 +958,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     break;
 
-                case BinaryUtils.TypePortable:
+                case BinaryUtils.TypeBinary:
                     TransferArray(inStream, outStream, 1); // Data array.
                     TransferBytes(inStream, outStream, 4); // Offset in array.
 

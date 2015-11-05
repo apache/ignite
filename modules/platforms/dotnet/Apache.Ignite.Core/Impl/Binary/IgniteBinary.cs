@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             IgniteArgumentCheck.NotNull(obj, "obj");
 
-            Binarybject obj0 = obj as Binarybject;
+            BinaryObject obj0 = obj as BinaryObject;
 
             if (obj0 == null)
                 throw new ArgumentException("Unsupported object type: " + obj.GetType());
@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="desc">Descriptor.</param>
         /// <returns>Empty portable object.</returns>
-        private Binarybject PortableFromDescriptor(IBinaryTypeDescriptor desc)
+        private BinaryObject PortableFromDescriptor(IBinaryTypeDescriptor desc)
         {
             var len = BinaryObjectHeader.Size;
 
@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             BinaryObjectHeader.Write(hdr, stream, 0);
 
-            return new Binarybject(_marsh, stream.InternalArray, 0, hdr);
+            return new BinaryObject(_marsh, stream.InternalArray, 0, hdr);
         }
 
         /// <summary>
@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="obj">Portable object.</param>
         /// <param name="desc">Type descriptor.</param>
         /// <returns>Builder.</returns>
-        private BinaryObjectBuilder Builder0(BinaryObjectBuilder parent, Binarybject obj, 
+        private BinaryObjectBuilder Builder0(BinaryObjectBuilder parent, BinaryObject obj, 
             IBinaryTypeDescriptor desc)
         {
             return new BinaryObjectBuilder(this, parent, obj, desc);

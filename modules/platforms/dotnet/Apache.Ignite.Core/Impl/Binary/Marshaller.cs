@@ -274,7 +274,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="desc">Type descriptor.</param>
         /// <returns>Metadata handler.</returns>
-        public IPortableMetadataHandler GetMetadataHandler(IBinaryTypeDescriptor desc)
+        public IBinaryTypeHandler GetMetadataHandler(IBinaryTypeDescriptor desc)
         {
             BinaryTypeHolder holder;
 
@@ -302,7 +302,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 bool newType = ids.Count == 0 && !holder.Saved();
 
-                return new PortableHashsetMetadataHandler(ids, newType);
+                return new BinaryTypeHashsetHandler(ids, newType);
             }
 
             return null;

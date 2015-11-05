@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Binary object.
     /// </summary>
-    internal class Binarybject : IBinaryObject
+    internal class BinaryObject : IBinaryObject
     {
         /** Cache empty dictionary. */
         private static readonly IDictionary<int, int> EmptyFields = new Dictionary<int, int>();
@@ -53,13 +53,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         private object _deserialized;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Binarybject" /> class.
+        /// Initializes a new instance of the <see cref="BinaryObject" /> class.
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="data">Raw data of this portable object.</param>
         /// <param name="offset">Offset in data array.</param>
         /// <param name="header">The header.</param>
-        public Binarybject(Marshaller marsh, byte[] data, int offset, BinaryObjectHeader header)
+        public BinaryObject(Marshaller marsh, byte[] data, int offset, BinaryObjectHeader header)
         {
             _marsh = marsh;
 
@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (this == obj)
                 return true;
 
-            Binarybject that = obj as Binarybject;
+            BinaryObject that = obj as BinaryObject;
 
             if (that != null)
             {
@@ -327,7 +327,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (col == null)
             {
-                Binarybject obj0 = obj as Binarybject;
+                BinaryObject obj0 = obj as BinaryObject;
 
                 sb.Append(obj0 == null ? obj : obj0.ToString(handled));
             }

@@ -365,7 +365,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             try
             {
                 err = reader.ReadBoolean()
-                    ? reader.ReadObject<Binarybject>().Deserialize<Exception>()
+                    ? reader.ReadObject<BinaryObject>().Deserialize<Exception>()
                     : ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
             }
             catch (Exception e)

@@ -210,8 +210,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return WriteDate;
             if (type == typeof(Guid))
                 return WriteGuid;
-            if (type == typeof (Binarybject))
-                return WritePortable;
+            if (type == typeof (BinaryObject))
+                return WriteBinary;
             if (type == typeof (ArrayList))
                 return WriteArrayList;
             if (type == typeof(Hashtable))
@@ -617,11 +617,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /**
          * <summary>Write portable object.</summary>
          */
-        private static void WritePortable(BinaryWriter ctx, object obj)
+        private static void WriteBinary(BinaryWriter ctx, object obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypePortable);
+            ctx.Stream.WriteByte(BinaryUtils.TypeBinary);
 
-            BinaryUtils.WritePortable(ctx.Stream, (Binarybject)obj);
+            BinaryUtils.WriteBinary(ctx.Stream, (BinaryObject)obj);
         }
         
         /// <summary>
@@ -698,7 +698,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="ctx">Read context.</param>
          * <param name="type">Type.</param>
          */
-        private delegate object PortableSystemReadDelegate(BinaryReader ctx, Type type);
+        private delegate object BinarySystemReadDelegate(BinaryReader ctx, Type type);
 
         /// <summary>
         /// System type reader.
@@ -714,7 +714,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// System type generic reader.
         /// </summary>
-        private interface IPortableSystemReader<out T>
+        private interface IBinarySystemReader<out T>
         {
             /// <summary>
             /// Reads a value of specified type from reader.
@@ -728,13 +728,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         private class BinarySystemReader : IBinarySystemReader
         {
             /** */
-            private readonly PortableSystemReadDelegate _readDelegate;
+            private readonly BinarySystemReadDelegate _readDelegate;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="BinarySystemReader"/> class.
             /// </summary>
             /// <param name="readDelegate">The read delegate.</param>
-            public BinarySystemReader(PortableSystemReadDelegate readDelegate)
+            public BinarySystemReader(BinarySystemReadDelegate readDelegate)
             {
                 Debug.Assert(readDelegate != null);
 
@@ -788,7 +788,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reader with selection based on requested type.
         /// </summary>
-        private class BinarySystemDualReader<T1, T2> : IBinarySystemReader, IPortableSystemReader<T2>
+        private class BinarySystemDualReader<T1, T2> : IBinarySystemReader, IBinarySystemReader<T2>
         {
             /** */
             private readonly Func<IBinaryStream, T1> _readDelegate1;
@@ -811,7 +811,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             /** <inheritdoc /> */
-            T2 IPortableSystemReader<T2>.Read(BinaryReader ctx)
+            T2 IBinarySystemReader<T2>.Read(BinaryReader ctx)
             {
                 return _readDelegate2(ctx.Stream);
             }
@@ -823,7 +823,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // For example, IPortableSystemReader<byte[]> can be cast to IPortableSystemReader<sbyte[]>, which
                 // will cause incorrect behavior.
                 if (typeof (T) == typeof (T2))  
-                    return ((IPortableSystemReader<T>) this).Read(ctx);
+                    return ((IBinarySystemReader<T>) this).Read(ctx);
 
                 return TypeCaster<T>.Cast(_readDelegate1(ctx.Stream));
             }

@@ -31,13 +31,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static readonly BinaryMarshalAwareSerializer Instance = new BinaryMarshalAwareSerializer();
 
         /** <inheritdoc /> */
-        public void WritePortable(object obj, IBinaryWriter writer)
+        public void WriteBinary(object obj, IBinaryWriter writer)
         {
             ((IBinarizable)obj).WriteBinary(writer);
         }
 
         /** <inheritdoc /> */
-        public void ReadPortable(object obj, IBinaryReader reader)
+        public void ReadBinary(object obj, IBinaryReader reader)
         {
             ((IBinarizable)obj).ReadBinary(reader);
         }

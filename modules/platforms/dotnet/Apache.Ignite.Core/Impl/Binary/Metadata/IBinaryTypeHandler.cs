@@ -20,9 +20,9 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
     using System.Collections.Generic;
 
     /// <summary>
-    /// Portable metadata handler.
+    /// Binary type metadata handler.
     /// </summary>
-    public interface IPortableMetadataHandler
+    public interface IBinaryTypeHandler
     {
         /// <summary>
         /// Callback invoked when named field is written.

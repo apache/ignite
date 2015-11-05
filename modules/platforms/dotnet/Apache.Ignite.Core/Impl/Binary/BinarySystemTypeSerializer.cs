@@ -42,13 +42,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public void WritePortable(object obj, IBinaryWriter writer)
+        public void WriteBinary(object obj, IBinaryWriter writer)
         {
             ((T) obj).WriteBinary(writer);
         }
 
         /** <inheritdoc /> */
-        public void ReadPortable(object obj, IBinaryReader reader)
+        public void ReadBinary(object obj, IBinaryReader reader)
         {
             throw new NotSupportedException("System serializer does not support ReadPortable.");
         }

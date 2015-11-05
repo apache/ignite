@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
     /// <summary>
     /// Encapsulates logic for tracking field access and updating type descriptor structure.
     /// </summary>
-    internal struct PortableStructureTracker
+    internal struct BinaryStructureTracker
     {
         /** Current type structure. */
         private readonly IBinaryTypeDescriptor _desc;
@@ -40,11 +40,11 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         private List<BinaryStructureUpdate> _curStructUpdates;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PortableStructureTracker" /> class.
+        /// Initializes a new instance of the <see cref="BinaryStructureTracker" /> class.
         /// </summary>
         /// <param name="desc">The desc.</param>
         /// <param name="portStruct">The structure to work with.</param>
-        public PortableStructureTracker(IBinaryTypeDescriptor desc, BinaryStructure portStruct)
+        public BinaryStructureTracker(IBinaryTypeDescriptor desc, BinaryStructure portStruct)
         {
             _desc = desc;
             _portStruct = portStruct;

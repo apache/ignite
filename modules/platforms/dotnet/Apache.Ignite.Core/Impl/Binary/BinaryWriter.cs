@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private bool _detaching;
 
         /** Current type structure tracker, */
-        private PortableStructureTracker _curStruct;
+        private BinaryStructureTracker _curStruct;
 
         /** Schema holder. */
         private readonly BinaryObjectSchemaHolder _schema = BinaryObjectSchemaHolder.Current;
@@ -1078,13 +1078,13 @@ namespace Apache.Ignite.Core.Impl.Binary
                 _curRawPos = 0;
                 _curPos = pos;
 
-                _curStruct = new PortableStructureTracker(desc, desc.WriterTypeStructure);
+                _curStruct = new BinaryStructureTracker(desc, desc.WriterTypeStructure);
                 var schemaIdx = _schema.PushSchema();
 
                 try
                 {
                     // Write object fields.
-                    desc.Serializer.WritePortable(obj, this);
+                    desc.Serializer.WriteBinary(obj, this);
 
                     // Write schema
                     var schemaOffset = _stream.Position - pos;
@@ -1230,12 +1230,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (_builder != null)
             {
                 // Special case for portable object during build.
-                Binarybject portObj = obj as Binarybject;
+                BinaryObject portObj = obj as BinaryObject;
 
                 if (portObj != null)
                 {
                     if (!WriteHandle(_stream.Position, portObj))
-                        _builder.ProcessPortable(_stream, portObj);
+                        _builder.ProcessBinary(_stream, portObj);
 
                     return true;
                 }
