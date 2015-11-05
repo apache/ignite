@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Events
         /// Initializes a new instance of the <see cref="EventBase"/> class.
         /// </summary>
         /// <param name="r">The reader to read data from.</param>
-        protected EventBase(IPortableRawReader r)
+        protected EventBase(IBinaryRawReader r)
         {
             var id = IgniteGuid.ReadPortable(r);
             Debug.Assert(id.HasValue);
@@ -159,7 +159,7 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Node or null.</returns>
-        protected static IClusterNode ReadNode(IPortableRawReader reader)
+        protected static IClusterNode ReadNode(IBinaryRawReader reader)
         {
             return ((BinaryReader)reader).Marshaller.Ignite.GetNode(reader.ReadGuid());
         }

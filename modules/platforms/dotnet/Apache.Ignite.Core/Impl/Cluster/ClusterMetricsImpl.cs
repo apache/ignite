@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// Initializes a new instance of the <see cref="ClusterMetricsImpl"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ClusterMetricsImpl(IPortableRawReader reader)
+        public ClusterMetricsImpl(IBinaryRawReader reader)
         {
             LastUpdateTimeRaw = reader.ReadLong();
 

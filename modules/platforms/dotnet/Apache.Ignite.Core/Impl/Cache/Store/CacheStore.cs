@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
             IBinaryReader reader = grid.Marshaller.StartUnmarshal(input,
                 _convertPortable ? BinaryMode.Deserialize : BinaryMode.ForceBinary);
             
-            IPortableRawReader rawReader = reader.GetRawReader();
+            IBinaryRawReader rawReader = reader.GetRawReader();
 
             int opType = rawReader.ReadByte();
 

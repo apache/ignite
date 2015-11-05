@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
     /// Continuous query remote filter holder. Wraps real filter into portable object,
     /// so that it can be passed over wire to another node.
     /// </summary>
-    public class ContinuousQueryFilterHolder : IPortableWriteAware
+    public class ContinuousQueryFilterHolder : IBinaryWriteAware
     {
         /** Filter object. */
         private readonly object _filter;
@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// Writes this object to the given writer.
         /// </summary>
         /// <param name="writer">Writer.</param>
-        public void WritePortable(IBinaryWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             var rawWriter = (BinaryWriter) writer.GetRawWriter();
 

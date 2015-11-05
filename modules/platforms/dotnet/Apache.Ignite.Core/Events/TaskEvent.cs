@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Events
         /// Constructor.
         /// </summary>
         /// <param name="r">The reader to read data from.</param>
-        internal TaskEvent(IPortableRawReader r) : base(r)
+        internal TaskEvent(IBinaryRawReader r) : base(r)
         {
             _taskName = r.ReadString();
             _taskClassName = r.ReadString();

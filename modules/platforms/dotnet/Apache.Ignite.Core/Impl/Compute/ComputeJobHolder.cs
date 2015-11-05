@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     /// <summary>
     /// Holder for user-provided compute job.
     /// </summary>
-    internal class ComputeJobHolder : IPortableWriteAware
+    internal class ComputeJobHolder : IBinaryWriteAware
     {
         /** Actual job. */
         private readonly IComputeJob _job;
@@ -216,7 +216,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IBinaryWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             BinaryWriter writer0 = (BinaryWriter) writer.GetRawWriter();
 

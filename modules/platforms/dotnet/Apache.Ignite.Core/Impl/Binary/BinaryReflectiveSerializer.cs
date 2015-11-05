@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// To overcome this discrepancy Ignite always converts .Net date to UTC form 
     /// before serializing and allows user to decide whether to deserialize them 
     /// in UTC or local form using <c>ReadTimestamp(..., true/false)</c> methods in 
-    /// <see cref="IBinaryReader"/> and <see cref="IPortableRawReader"/>.
+    /// <see cref="IBinaryReader"/> and <see cref="IBinaryRawReader"/>.
     /// This serializer always read dates in UTC form. It means that if you have
     /// local date in any field/property, it will be implicitly converted to UTC
     /// form after the first serialization-deserialization cycle. 
@@ -162,10 +162,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         private class Descriptor
         {
             /** Write actions to be performed. */
-            private readonly List<PortableReflectiveWriteAction> _wActions;
+            private readonly List<BinaryReflectiveWriteAction> _wActions;
 
             /** Read actions to be performed. */
-            private readonly List<PortableReflectiveReadAction> _rActions;
+            private readonly List<BinaryReflectiveReadAction> _rActions;
 
             /// <summary>
             /// Constructor.
@@ -173,15 +173,15 @@ namespace Apache.Ignite.Core.Impl.Binary
             /// <param name="fields">Fields.</param>
             public Descriptor(List<FieldInfo> fields)
             {
-                _wActions = new List<PortableReflectiveWriteAction>(fields.Count);
-                _rActions = new List<PortableReflectiveReadAction>(fields.Count);
+                _wActions = new List<BinaryReflectiveWriteAction>(fields.Count);
+                _rActions = new List<BinaryReflectiveReadAction>(fields.Count);
 
                 foreach (FieldInfo field in fields)
                 {
-                    PortableReflectiveWriteAction writeAction;
-                    PortableReflectiveReadAction readAction;
+                    BinaryReflectiveWriteAction writeAction;
+                    BinaryReflectiveReadAction readAction;
 
-                    PortableReflectiveActions.TypeActions(field, out writeAction, out readAction);
+                    BinaryReflectiveActions.TypeActions(field, out writeAction, out readAction);
 
                     _wActions.Add(writeAction);
                     _rActions.Add(readAction);

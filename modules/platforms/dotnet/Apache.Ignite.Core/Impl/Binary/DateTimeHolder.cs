@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Wraps Serializable item in a portable.
     /// </summary>
-    internal class DateTimeHolder : IPortableWriteAware
+    internal class DateTimeHolder : IBinaryWriteAware
     {
         /** */
         private readonly DateTime _item;
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IBinaryWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             Debug.Assert(writer != null);
 

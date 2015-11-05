@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /** Empty metadata. */
         [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly BinaryType EmptyMeta =
-            new BinaryType(BinaryUtils.TypeObject, PortableTypeNames.TypeNameObject, null, null);
+            new BinaryType(BinaryUtils.TypeObject, BinaryTypeNames.TypeNameObject, null, null);
 
         /** Empty dictionary. */
         private static readonly IDictionary<string, int> EmptyDict = new Dictionary<string, int>();
@@ -50,66 +50,66 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
             switch (typeId)
             {
                 case BinaryUtils.TypeBool:
-                    return PortableTypeNames.TypeNameBool;
+                    return BinaryTypeNames.TypeNameBool;
                 case BinaryUtils.TypeByte:
-                    return PortableTypeNames.TypeNameByte;
+                    return BinaryTypeNames.TypeNameByte;
                 case BinaryUtils.TypeShort:
-                    return PortableTypeNames.TypeNameShort;
+                    return BinaryTypeNames.TypeNameShort;
                 case BinaryUtils.TypeChar:
-                    return PortableTypeNames.TypeNameChar;
+                    return BinaryTypeNames.TypeNameChar;
                 case BinaryUtils.TypeInt:
-                    return PortableTypeNames.TypeNameInt;
+                    return BinaryTypeNames.TypeNameInt;
                 case BinaryUtils.TypeLong:
-                    return PortableTypeNames.TypeNameLong;
+                    return BinaryTypeNames.TypeNameLong;
                 case BinaryUtils.TypeFloat:
-                    return PortableTypeNames.TypeNameFloat;
+                    return BinaryTypeNames.TypeNameFloat;
                 case BinaryUtils.TypeDouble:
-                    return PortableTypeNames.TypeNameDouble;
+                    return BinaryTypeNames.TypeNameDouble;
                 case BinaryUtils.TypeDecimal:
-                    return PortableTypeNames.TypeNameDecimal;
+                    return BinaryTypeNames.TypeNameDecimal;
                 case BinaryUtils.TypeString:
-                    return PortableTypeNames.TypeNameString;
+                    return BinaryTypeNames.TypeNameString;
                 case BinaryUtils.TypeGuid:
-                    return PortableTypeNames.TypeNameGuid;
+                    return BinaryTypeNames.TypeNameGuid;
                 case BinaryUtils.TypeTimestamp:
-                    return PortableTypeNames.TypeNameTimestamp;
+                    return BinaryTypeNames.TypeNameTimestamp;
                 case BinaryUtils.TypeEnum:
-                    return PortableTypeNames.TypeNameEnum;
+                    return BinaryTypeNames.TypeNameEnum;
                 case BinaryUtils.TypePortable:
                 case BinaryUtils.TypeObject:
-                    return PortableTypeNames.TypeNameObject;
+                    return BinaryTypeNames.TypeNameObject;
                 case BinaryUtils.TypeArrayBool:
-                    return PortableTypeNames.TypeNameArrayBool;
+                    return BinaryTypeNames.TypeNameArrayBool;
                 case BinaryUtils.TypeArrayByte:
-                    return PortableTypeNames.TypeNameArrayByte;
+                    return BinaryTypeNames.TypeNameArrayByte;
                 case BinaryUtils.TypeArrayShort:
-                    return PortableTypeNames.TypeNameArrayShort;
+                    return BinaryTypeNames.TypeNameArrayShort;
                 case BinaryUtils.TypeArrayChar:
-                    return PortableTypeNames.TypeNameArrayChar;
+                    return BinaryTypeNames.TypeNameArrayChar;
                 case BinaryUtils.TypeArrayInt:
-                    return PortableTypeNames.TypeNameArrayInt;
+                    return BinaryTypeNames.TypeNameArrayInt;
                 case BinaryUtils.TypeArrayLong:
-                    return PortableTypeNames.TypeNameArrayLong;
+                    return BinaryTypeNames.TypeNameArrayLong;
                 case BinaryUtils.TypeArrayFloat:
-                    return PortableTypeNames.TypeNameArrayFloat;
+                    return BinaryTypeNames.TypeNameArrayFloat;
                 case BinaryUtils.TypeArrayDouble:
-                    return PortableTypeNames.TypeNameArrayDouble;
+                    return BinaryTypeNames.TypeNameArrayDouble;
                 case BinaryUtils.TypeArrayDecimal:
-                    return PortableTypeNames.TypeNameArrayDecimal;
+                    return BinaryTypeNames.TypeNameArrayDecimal;
                 case BinaryUtils.TypeArrayString:
-                    return PortableTypeNames.TypeNameArrayString;
+                    return BinaryTypeNames.TypeNameArrayString;
                 case BinaryUtils.TypeArrayGuid:
-                    return PortableTypeNames.TypeNameArrayGuid;
+                    return BinaryTypeNames.TypeNameArrayGuid;
                 case BinaryUtils.TypeArrayTimestamp:
-                    return PortableTypeNames.TypeNameArrayTimestamp;
+                    return BinaryTypeNames.TypeNameArrayTimestamp;
                 case BinaryUtils.TypeArrayEnum:
-                    return PortableTypeNames.TypeNameArrayEnum;
+                    return BinaryTypeNames.TypeNameArrayEnum;
                 case BinaryUtils.TypeArray:
-                    return PortableTypeNames.TypeNameArrayObject;
+                    return BinaryTypeNames.TypeNameArrayObject;
                 case BinaryUtils.TypeCollection:
-                    return PortableTypeNames.TypeNameCollection;
+                    return BinaryTypeNames.TypeNameCollection;
                 case BinaryUtils.TypeDictionary:
-                    return PortableTypeNames.TypeNameMap;
+                    return BinaryTypeNames.TypeNameMap;
                 default:
                     throw new BinaryObjectException("Invalid type ID: " + typeId);
             }
@@ -119,7 +119,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// Initializes a new instance of the <see cref="BinaryType" /> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public BinaryType(IPortableRawReader reader)
+        public BinaryType(IBinaryRawReader reader)
         {
             TypeId = reader.ReadInt();
             TypeName = reader.ReadString();

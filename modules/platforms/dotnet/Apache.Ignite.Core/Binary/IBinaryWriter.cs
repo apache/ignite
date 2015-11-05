@@ -251,6 +251,6 @@ namespace Apache.Ignite.Core.Binary
         /// Get raw writer. 
         /// </summary>
         /// <returns>Raw writer.</returns>
-        IPortableRawWriter GetRawWriter();
+        IBinaryRawWriter GetRawWriter();
     }
 }

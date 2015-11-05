@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly BinaryObjectBuilder _parent;
 
         /** Initial portable object. */
-        private readonly BinaryUserObject _obj;
+        private readonly Binarybject _obj;
 
         /** Type descriptor. */
         private readonly IBinaryTypeDescriptor _desc;
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="obj">Initial portable object.</param>
         /// <param name="desc">Type descriptor.</param>
         public BinaryObjectBuilder(IgniteBinary igniteBinary, BinaryObjectBuilder parent, 
-            BinaryUserObject obj, IBinaryTypeDescriptor desc)
+            Binarybject obj, IBinaryTypeDescriptor desc)
         {
             Debug.Assert(igniteBinary != null);
             Debug.Assert(obj != null);
@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public IBinaryObjectBuilder SetField<T>(string fieldName, T val)
         {
             return SetField0(fieldName,
-                new BinaryBuilderField(typeof (T), val, PortableSystemHandlers.GetTypeId(typeof (T))));
+                new BinaryBuilderField(typeof (T), val, BinarySystemHandlers.GetTypeId(typeof (T))));
         }
 
         /** <inheritDoc /> */
@@ -357,7 +357,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             inStream.Seek(_obj.Offset, SeekOrigin.Begin);
 
             // Assume that resulting length will be no less than header + [fields_cnt] * 12;
-            int estimatedCapacity = PortableObjectHeader.Size + (_vals == null ? 0 : _vals.Count*12);
+            int estimatedCapacity = BinaryObjectHeader.Size + (_vals == null ? 0 : _vals.Count*12);
 
             BinaryHeapStream outStream = new BinaryHeapStream(estimatedCapacity);
 
@@ -377,8 +377,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 _igniteBinary.Marshaller.FinishMarshal(writer);
 
                 // Create portable object once metadata is processed.
-                return new BinaryUserObject(_igniteBinary.Marshaller, outStream.InternalArray, 0, 
-                    PortableObjectHeader.Read(outStream, 0));
+                return new Binarybject(_igniteBinary.Marshaller, outStream.InternalArray, 0, 
+                    BinaryObjectHeader.Read(outStream, 0));
             }
             finally
             {
@@ -392,7 +392,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="obj">Portable object.</param>
         /// <returns>Child builder.</returns>
-        public BinaryObjectBuilder Child(BinaryUserObject obj)
+        public BinaryObjectBuilder Child(Binarybject obj)
         {
             var desc = _igniteBinary.Marshaller.GetDescriptor(true, obj.TypeId);
 
@@ -605,7 +605,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
             else if (inHdr == BinaryUtils.HdrFull)
             {
-                var inHeader = PortableObjectHeader.Read(inStream, inStartPos);
+                var inHeader = BinaryObjectHeader.Read(inStream, inStartPos);
                 
                 BinaryUtils.ValidateProtocolVersion(inHeader.Version);
 
@@ -625,13 +625,13 @@ namespace Apache.Ignite.Core.Impl.Binary
                         // New object, write in full form.
                         var inSchema = inHeader.ReadSchema(inStream, inStartPos);
 
-                        var outSchema = PortableObjectSchemaHolder.Current;
+                        var outSchema = BinaryObjectSchemaHolder.Current;
                         var schemaIdx = outSchema.PushSchema();
 
                         try
                         {
                             // Skip header as it is not known at this point.
-                            outStream.Seek(PortableObjectHeader.Size, SeekOrigin.Current);
+                            outStream.Seek(BinaryObjectHeader.Size, SeekOrigin.Current);
 
                             if (inSchema != null)
                             {
@@ -707,10 +707,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                             var outHash = changeHash ? hash : inHeader.HashCode;
 
-                            var outHeader = new PortableObjectHeader(inHeader.IsUserType, inHeader.TypeId, outHash,
+                            var outHeader = new BinaryObjectHeader(inHeader.IsUserType, inHeader.TypeId, outHash,
                                 outLen, outSchemaId, outSchemaOff, !hasSchema, flags);
 
-                            PortableObjectHeader.Write(outHeader, outStream, outStartPos);
+                            BinaryObjectHeader.Write(outHeader, outStream, outStartPos);
 
                             outStream.Seek(outStartPos + outLen, SeekOrigin.Begin);  // seek to the end of the object
                         }
@@ -759,7 +759,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="outStream">Output stream.</param>
         /// <param name="port">Portable.</param>
-        internal void ProcessPortable(IBinaryStream outStream, BinaryUserObject port)
+        internal void ProcessPortable(IBinaryStream outStream, Binarybject port)
         {
             // Special case: writing portable object with correct inversions.
             BinaryHeapStream inStream = new BinaryHeapStream(port.Data);

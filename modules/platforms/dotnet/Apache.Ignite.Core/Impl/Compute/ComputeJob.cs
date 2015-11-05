@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     /// <summary>
     /// Wraps generic func into a non-generic for internal usage.
     /// </summary>
-    internal class ComputeJobWrapper : IComputeJob, IPortableWriteAware
+    internal class ComputeJobWrapper : IComputeJob, IBinaryWriteAware
     {
         /** */
         private readonly Func<object, object> _execute;
@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IBinaryWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             var writer0 = (BinaryWriter)writer.GetRawWriter();
 

@@ -31,19 +31,19 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     /// <param name="obj">Target object.</param>
     /// <param name="writer">Writer.</param>
-    internal delegate void PortableReflectiveWriteAction(object obj, IBinaryWriter writer);
+    internal delegate void BinaryReflectiveWriteAction(object obj, IBinaryWriter writer);
 
     /// <summary>
     /// Read action delegate.
     /// </summary>
     /// <param name="obj">Target object.</param>
     /// <param name="reader">Reader.</param>
-    internal delegate void PortableReflectiveReadAction(object obj, IBinaryReader reader);
+    internal delegate void BinaryReflectiveReadAction(object obj, IBinaryReader reader);
 
     /// <summary>
     /// Routines for reflective reads and writes.
     /// </summary>
-    internal static class PortableReflectiveActions
+    internal static class BinaryReflectiveActions
     {
         /** Method: read enum. */
         private static readonly MethodInfo MthdReadEnum =
@@ -79,8 +79,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="field">The field.</param>
         /// <param name="writeAction">Write action.</param>
         /// <param name="readAction">Read action.</param>
-        public static void TypeActions(FieldInfo field, out PortableReflectiveWriteAction writeAction, 
-            out PortableReflectiveReadAction readAction)
+        public static void TypeActions(FieldInfo field, out BinaryReflectiveWriteAction writeAction, 
+            out BinaryReflectiveReadAction readAction)
         {
             var type = field.FieldType;
 
@@ -99,8 +99,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="writeAction">Write action.</param>
         /// <param name="readAction">Read action.</param>
         /// <exception cref="IgniteException">Unsupported primitive type:  + type.Name</exception>
-        private static void HandlePrimitive(FieldInfo field, out PortableReflectiveWriteAction writeAction,
-            out PortableReflectiveReadAction readAction)
+        private static void HandlePrimitive(FieldInfo field, out BinaryReflectiveWriteAction writeAction,
+            out BinaryReflectiveReadAction readAction)
         {
             var type = field.FieldType;
 
@@ -174,8 +174,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="field">The field.</param>
         /// <param name="writeAction">Write action.</param>
         /// <param name="readAction">Read action.</param>
-        private static void HandleArray(FieldInfo field, out PortableReflectiveWriteAction writeAction,
-            out PortableReflectiveReadAction readAction)
+        private static void HandleArray(FieldInfo field, out BinaryReflectiveWriteAction writeAction,
+            out BinaryReflectiveReadAction readAction)
         {
             Type elemType = field.FieldType.GetElementType();
 
@@ -272,8 +272,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="field">The field.</param>
         /// <param name="writeAction">Write action.</param>
         /// <param name="readAction">Read action.</param>
-        private static void HandleOther(FieldInfo field, out PortableReflectiveWriteAction writeAction,
-            out PortableReflectiveReadAction readAction)
+        private static void HandleOther(FieldInfo field, out BinaryReflectiveWriteAction writeAction,
+            out BinaryReflectiveReadAction readAction)
         {
             var type = field.FieldType;
 
@@ -328,7 +328,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the reader with a specified write action.
         /// </summary>
-        private static PortableReflectiveWriteAction GetWriter<T>(FieldInfo field,
+        private static BinaryReflectiveWriteAction GetWriter<T>(FieldInfo field,
             Expression<Action<string, IBinaryWriter, T>> write,
             bool convertFieldValToObject = false)
         {
@@ -349,13 +349,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             var writeExpr = Expression.Invoke(write, fldNameParam, writerParam, fldExpr);
 
             // Compile and return
-            return Expression.Lambda<PortableReflectiveWriteAction>(writeExpr, targetParam, writerParam).Compile();
+            return Expression.Lambda<BinaryReflectiveWriteAction>(writeExpr, targetParam, writerParam).Compile();
         }
 
         /// <summary>
         /// Gets the writer with a specified generic method.
         /// </summary>
-        private static PortableReflectiveWriteAction GetWriter(FieldInfo field, MethodInfo method, 
+        private static BinaryReflectiveWriteAction GetWriter(FieldInfo field, MethodInfo method, 
             params Type[] genericArgs)
         {
             Debug.Assert(field != null);
@@ -376,13 +376,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             var writeExpr = Expression.Call(writerParam, writeMethod, fldNameParam, fldExpr);
 
             // Compile and return
-            return Expression.Lambda<PortableReflectiveWriteAction>(writeExpr, targetParam, writerParam).Compile();
+            return Expression.Lambda<BinaryReflectiveWriteAction>(writeExpr, targetParam, writerParam).Compile();
         }
 
         /// <summary>
         /// Gets the reader with a specified read action.
         /// </summary>
-        private static PortableReflectiveReadAction GetReader<T>(FieldInfo field, 
+        private static BinaryReflectiveReadAction GetReader<T>(FieldInfo field, 
             Expression<Func<string, IBinaryReader, T>> read)
         {
             Debug.Assert(field != null);
@@ -403,13 +403,13 @@ namespace Apache.Ignite.Core.Impl.Binary
                 readExpr);
 
             // Compile and return
-            return Expression.Lambda<PortableReflectiveReadAction>(assignExpr, targetParam, readerParam).Compile();
+            return Expression.Lambda<BinaryReflectiveReadAction>(assignExpr, targetParam, readerParam).Compile();
         }
 
         /// <summary>
         /// Gets the reader with a specified generic method.
         /// </summary>
-        private static PortableReflectiveReadAction GetReader(FieldInfo field, MethodInfo method, 
+        private static BinaryReflectiveReadAction GetReader(FieldInfo field, MethodInfo method, 
             params Type[] genericArgs)
         {
             Debug.Assert(field != null);
@@ -434,7 +434,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 readExpr);
 
             // Compile and return
-            return Expression.Lambda<PortableReflectiveReadAction>(assignExpr, targetParam, readerParam).Compile();
+            return Expression.Lambda<BinaryReflectiveReadAction>(assignExpr, targetParam, readerParam).Compile();
         }
     }
 }

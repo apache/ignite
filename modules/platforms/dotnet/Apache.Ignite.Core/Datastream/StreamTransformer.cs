@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Datastream
     /// <typeparam name="TArg">The type of the processor argument.</typeparam>
     /// <typeparam name="TRes">The type of the processor result.</typeparam>
     public sealed class StreamTransformer<TK, TV, TArg, TRes> : IStreamReceiver<TK, TV>, 
-        IPortableWriteAware
+        IBinaryWriteAware
     {
         /** Entry processor. */
         private readonly ICacheEntryProcessor<TK, TV, TArg, TRes> _proc;
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Datastream
         }
 
         /** <inheritdoc /> */
-        void IPortableWriteAware.WritePortable(IBinaryWriter writer)
+        void IBinaryWriteAware.WriteBinary(IBinaryWriter writer)
         {
             var w = (BinaryWriter)writer;
 

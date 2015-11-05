@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// Initializes a new instance of the <see cref="ClusterNodeImpl"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ClusterNodeImpl(IPortableRawReader reader)
+        public ClusterNodeImpl(IBinaryRawReader reader)
         {
             var id = reader.ReadGuid();
 

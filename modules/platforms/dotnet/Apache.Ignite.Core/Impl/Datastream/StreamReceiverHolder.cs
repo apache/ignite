@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
     /// <summary>
     /// Portable wrapper for <see cref="IStreamReceiver{TK,TV}"/>.
     /// </summary>
-    internal class StreamReceiverHolder : IPortableWriteAware
+    internal class StreamReceiverHolder : IBinaryWriteAware
     {
         /** */
         private const byte RcvNormal = 0;
@@ -87,14 +87,14 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritdoc /> */
-        public void WritePortable(IBinaryWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             var w = writer.GetRawWriter();
 
-            var writeAware = _rcv as IPortableWriteAware;
+            var writeAware = _rcv as IBinaryWriteAware;
 
             if (writeAware != null)
-                writeAware.WritePortable(writer);
+                writeAware.WriteBinary(writer);
             else
             {
                 w.WriteByte(RcvNormal);

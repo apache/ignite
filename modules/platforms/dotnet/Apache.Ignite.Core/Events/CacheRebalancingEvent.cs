@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Events
         /// Constructor.
         /// </summary>
         /// <param name="r">The reader to read data from.</param>
-        internal CacheRebalancingEvent(IPortableRawReader r) : base(r)
+        internal CacheRebalancingEvent(IBinaryRawReader r) : base(r)
         {
             _cacheName = r.ReadString();
             _partition = r.ReadInt();

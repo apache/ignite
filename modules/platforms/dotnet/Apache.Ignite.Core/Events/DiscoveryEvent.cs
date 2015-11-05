@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Events
         /// Constructor.
         /// </summary>
         /// <param name="r">The reader to read data from.</param>
-        internal DiscoveryEvent(IPortableRawReader r) : base(r)
+        internal DiscoveryEvent(IBinaryRawReader r) : base(r)
         {
             _eventNode = ReadNode(r);
             _topologyVersion = r.ReadLong();

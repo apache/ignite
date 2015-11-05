@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
     /// <summary>
     /// System job which wraps over <c>Func</c>.
     /// </summary>
-    internal class ComputeOutFuncJob : IComputeJob, IComputeResourceInjector, IPortableWriteAware
+    internal class ComputeOutFuncJob : IComputeJob, IComputeResourceInjector, IBinaryWriteAware
     {
         /** Closure. */
         private readonly IComputeOutFunc _clo;
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IBinaryWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             var writer0 = (BinaryWriter) writer.GetRawWriter();
 

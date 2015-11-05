@@ -481,7 +481,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Adds a predefined system type.
         /// </summary>
-        private void AddSystemType<T>(byte typeId, Func<BinaryReader, T> ctor) where T : IPortableWriteAware
+        private void AddSystemType<T>(byte typeId, Func<BinaryReader, T> ctor) where T : IBinaryWriteAware
         {
             var type = typeof(T);
 

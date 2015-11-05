@@ -339,7 +339,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
             {
                 return DoInOp(OpMetrics, stream =>
                 {
-                    IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
+                    IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                     return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
                 });
@@ -349,7 +349,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
                 WriteEnumerable(writer, GetNodes().Select(node => node.Id));
             }, stream =>
             {
-                IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                 return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
             });
@@ -405,7 +405,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
                     writer.WriteLong(lastUpdateTime);
                 }, stream =>
                 {
-                    IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
+                    IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                     return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
                 }

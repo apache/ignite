@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// Portable wrapper for the <see cref="ICacheEntryProcessor{TK,TV,TA,TR}"/> and it's argument.
     /// Marshals and executes wrapped processor with a non-generic interface.
     /// </summary>
-    internal class CacheEntryProcessorHolder : IPortableWriteAware
+    internal class CacheEntryProcessorHolder : IBinaryWriteAware
     {
         // generic processor
         private readonly object _proc;
@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IBinaryWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             var writer0 = (BinaryWriter) writer.GetRawWriter();
 

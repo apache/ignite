@@ -128,6 +128,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the schema.
         /// </summary>
-        PortableObjectSchema Schema { get; }
+        BinaryObjectSchema Schema { get; }
     }
 }

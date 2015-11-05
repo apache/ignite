@@ -21,9 +21,9 @@ namespace Apache.Ignite.Core.Binary
     using System.Collections;
 
     /// <summary>
-    /// Raw writer for portable objects. 
+    /// Raw writer for binary objects. 
     /// </summary>
-    public interface IPortableRawWriter
+    public interface IBinaryRawWriter
     {
         /// <summary>
         /// Write byte value.

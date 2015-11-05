@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Reader extensions.
     /// </summary>
-    internal static class PortableReaderExtensions
+    internal static class BinaryReaderExtensions
     {
         /// <summary>
         /// Reads untyped collection as a generic list.
@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <typeparam name="T">Type of list element.</typeparam>
         /// <param name="reader">The reader.</param>
         /// <returns>Resulting generic list.</returns>
-        public static List<T> ReadCollectionAsList<T>(this IPortableRawReader reader)
+        public static List<T> ReadCollectionAsList<T>(this IBinaryRawReader reader)
         {
             return ((List<T>) reader.ReadCollection(size => new List<T>(size),
                 (col, elem) => ((List<T>) col).Add((T) elem)));
@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <typeparam name="TValue">The type of the value.</typeparam>
         /// <param name="reader">The reader.</param>
         /// <returns>Resulting dictionary.</returns>
-        public static Dictionary<TKey, TValue> ReadDictionaryAsGeneric<TKey, TValue>(this IPortableRawReader reader)
+        public static Dictionary<TKey, TValue> ReadDictionaryAsGeneric<TKey, TValue>(this IBinaryRawReader reader)
         {
             return (Dictionary<TKey, TValue>) reader.ReadDictionary(size => new Dictionary<TKey, TValue>(size));
         }

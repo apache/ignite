@@ -30,16 +30,16 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     /// <param name="writer">Write context.</param>
     /// <param name="obj">Object to write.</param>
-    internal delegate void PortableSystemWriteDelegate(BinaryWriter writer, object obj);
+    internal delegate void BinarySystemWriteDelegate(BinaryWriter writer, object obj);
 
     /**
      * <summary>Collection of predefined handlers for various system types.</summary>
      */
-    internal static class PortableSystemHandlers
+    internal static class BinarySystemHandlers
     {
         /** Write handlers. */
-        private static volatile Dictionary<Type, PortableSystemWriteDelegate> _writeHandlers =
-            new Dictionary<Type, PortableSystemWriteDelegate>();
+        private static volatile Dictionary<Type, BinarySystemWriteDelegate> _writeHandlers =
+            new Dictionary<Type, BinarySystemWriteDelegate>();
 
         /** Mutex for write handlers update. */
         private static readonly object WriteHandlersMux = new object();
@@ -88,11 +88,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         };
         
         /// <summary>
-        /// Initializes the <see cref="PortableSystemHandlers"/> class.
+        /// Initializes the <see cref="BinarySystemHandlers"/> class.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline", 
             Justification = "Readability.")]
-        static PortableSystemHandlers()
+        static BinarySystemHandlers()
         {
             // 1. Primitives.
             ReadHandlers[BinaryUtils.TypeBool] = new PortableSystemReader<bool>(s => s.ReadBool());
@@ -175,9 +175,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static PortableSystemWriteDelegate GetWriteHandler(Type type)
+        public static BinarySystemWriteDelegate GetWriteHandler(Type type)
         {
-            PortableSystemWriteDelegate res;
+            BinarySystemWriteDelegate res;
 
             var writeHandlers0 = _writeHandlers;
 
@@ -199,7 +199,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Write handler or NULL.</returns>
-        private static PortableSystemWriteDelegate FindWriteHandler(Type type)
+        private static BinarySystemWriteDelegate FindWriteHandler(Type type)
         {
             // 1. Well-known types.
             if (type == typeof(string))
@@ -210,7 +210,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return WriteDate;
             if (type == typeof(Guid))
                 return WriteGuid;
-            if (type == typeof (BinaryUserObject))
+            if (type == typeof (Binarybject))
                 return WritePortable;
             if (type == typeof (ArrayList))
                 return WriteArrayList;
@@ -301,14 +301,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="type"></param>
         /// <param name="handler"></param>
-        private static void AddWriteHandler(Type type, PortableSystemWriteDelegate handler)
+        private static void AddWriteHandler(Type type, BinarySystemWriteDelegate handler)
         {
             lock (WriteHandlersMux)
             {
                 if (_writeHandlers == null)
                 {
-                    Dictionary<Type, PortableSystemWriteDelegate> writeHandlers0 = 
-                        new Dictionary<Type, PortableSystemWriteDelegate>();
+                    Dictionary<Type, BinarySystemWriteDelegate> writeHandlers0 = 
+                        new Dictionary<Type, BinarySystemWriteDelegate>();
 
                     writeHandlers0[type] = handler;
 
@@ -316,8 +316,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
                 else if (!_writeHandlers.ContainsKey(type))
                 {
-                    Dictionary<Type, PortableSystemWriteDelegate> writeHandlers0 =
-                        new Dictionary<Type, PortableSystemWriteDelegate>(_writeHandlers);
+                    Dictionary<Type, BinarySystemWriteDelegate> writeHandlers0 =
+                        new Dictionary<Type, BinarySystemWriteDelegate>(_writeHandlers);
 
                     writeHandlers0[type] = handler;
 
@@ -621,7 +621,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryUtils.TypePortable);
 
-            BinaryUtils.WritePortable(ctx.Stream, (BinaryUserObject)obj);
+            BinaryUtils.WritePortable(ctx.Stream, (Binarybject)obj);
         }
         
         /// <summary>

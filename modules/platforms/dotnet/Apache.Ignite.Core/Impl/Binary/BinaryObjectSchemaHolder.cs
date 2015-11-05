@@ -25,14 +25,14 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Shared schema holder.
     /// </summary>
-    internal class PortableObjectSchemaHolder
+    internal class BinaryObjectSchemaHolder
     {
         /** Current schema. */
-        private static readonly ThreadLocal<PortableObjectSchemaHolder> CurrentHolder =
-            new ThreadLocal<PortableObjectSchemaHolder>(() => new PortableObjectSchemaHolder());
+        private static readonly ThreadLocal<BinaryObjectSchemaHolder> CurrentHolder =
+            new ThreadLocal<BinaryObjectSchemaHolder>(() => new BinaryObjectSchemaHolder());
 
         /** Fields. */
-        private PortableObjectSchemaField[] _fields = new PortableObjectSchemaField[32];
+        private BinaryObjectSchemaField[] _fields = new BinaryObjectSchemaField[32];
 
         /** Current field index. */
         private int _idx;
@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the schema holder for the current thread.
         /// </summary>
-        public static PortableObjectSchemaHolder Current
+        public static BinaryObjectSchemaHolder Current
         {
             get { return CurrentHolder.Value; }
         }
@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (_idx == _fields.Length)
                 Array.Resize(ref _fields, _fields.Length * 2);
 
-            _fields[_idx] = new PortableObjectSchemaField(id, offset);
+            _fields[_idx] = new BinaryObjectSchemaField(id, offset);
 
             _idx++;
         }
@@ -82,8 +82,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="stream">The stream.</param>
         /// <param name="schemaOffset">The schema offset.</param>
         /// <param name="schemaId">The schema identifier.</param>
-        /// <param name="flags">Flags according to offset sizes: <see cref="PortableObjectHeader.FlagByteOffsets" />,
-        /// <see cref="PortableObjectHeader.FlagShortOffsets" />, or 0.</param>
+        /// <param name="flags">Flags according to offset sizes: <see cref="BinaryObjectHeader.FlagByteOffsets" />,
+        /// <see cref="BinaryObjectHeader.FlagShortOffsets" />, or 0.</param>
         /// <returns>
         /// True if current schema was non empty; false otherwise.
         /// </returns>
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (count == 0) 
                 return false;
 
-            flags = PortableObjectHeader.WriteSchema(_fields, stream, schemaOffset, count);
+            flags = BinaryObjectHeader.WriteSchema(_fields, stream, schemaOffset, count);
 
             for (var i = schemaOffset; i < _idx; i++)
                 schemaId = Fnv1Hash.Update(schemaId, _fields[i].Id);

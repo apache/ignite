@@ -1290,7 +1290,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <param name="val">Value.</param>
          */
-        public static void WritePortable(IBinaryStream stream, BinaryUserObject val)
+        public static void WritePortable(IBinaryStream stream, Binarybject val)
         {
             WriteByteArray(val.Data, stream);
 

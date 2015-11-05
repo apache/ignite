@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Holds and manages portable object schemas for a specific type.
     /// </summary>
-    internal class PortableObjectSchema
+    internal class BinaryObjectSchema
     {
         /** First schema id. */
         private volatile int _schemaId1;

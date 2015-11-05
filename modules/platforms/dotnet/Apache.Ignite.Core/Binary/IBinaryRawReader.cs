@@ -21,9 +21,9 @@ namespace Apache.Ignite.Core.Binary
     using System.Collections;
 
     /// <summary>
-    /// Raw reader for portable objects. 
+    /// Raw reader for binary objects. 
     /// </summary>
-    public interface IPortableRawReader
+    public interface IBinaryRawReader
     {
         /// <summary>
         /// Read byte value. 

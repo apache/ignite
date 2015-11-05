@@ -385,7 +385,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Reader.</param>
         /// <param name="pred">The predicate.</param>
         /// <returns> Nodes list or null. </returns>
-        public static List<IClusterNode> ReadNodes(IPortableRawReader reader, Func<ClusterNodeImpl, bool> pred = null)
+        public static List<IClusterNode> ReadNodes(IBinaryRawReader reader, Func<ClusterNodeImpl, bool> pred = null)
         {
             var cnt = reader.ReadInt();
 

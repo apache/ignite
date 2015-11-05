@@ -18,9 +18,9 @@
 namespace Apache.Ignite.Core.Binary
 {
     /// <summary>
-    /// Portable type name constants.
+    /// Binary type name constants.
     /// </summary>
-    public static class PortableTypeNames
+    public static class BinaryTypeNames
     {
         /** Type name: boolean. */
         public const string TypeNameBool = "boolean";

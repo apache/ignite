@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Portable reader implementation. 
     /// </summary>
-    internal class BinaryReader : IBinaryReader, IPortableRawReader
+    internal class BinaryReader : IBinaryReader, IBinaryRawReader
     {
         /** Marshaller. */
         private readonly Marshaller _marsh;
@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private Dictionary<int, int> _curSchemaMap;
 
         /** Current header. */
-        private PortableObjectHeader _curHdr;
+        private BinaryObjectHeader _curHdr;
 
         /// <summary>
         /// Constructor.
@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public IPortableRawReader GetRawReader()
+        public IBinaryRawReader GetRawReader()
         {
             MarkRaw();
 
@@ -542,7 +542,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             if (BinaryUtils.IsPredefinedType(hdr))
-                return PortableSystemHandlers.ReadSystemType<T>(hdr, this);
+                return BinarySystemHandlers.ReadSystemType<T>(hdr, this);
 
             throw new BinaryObjectException("Invalid header on deserialization [pos=" + pos + ", hdr=" + hdr + ']');
         }
@@ -584,7 +584,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reads the portable object in portable form.
         /// </summary>
-        private BinaryUserObject ReadAsPortable(int portableBytesPos, int dataLen, bool doDetach)
+        private Binarybject ReadAsPortable(int portableBytesPos, int dataLen, bool doDetach)
         {
             try
             {
@@ -594,14 +594,14 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 var pos = portableBytesPos + offs;
 
-                var hdr = PortableObjectHeader.Read(Stream, pos);
+                var hdr = BinaryObjectHeader.Read(Stream, pos);
 
                 if (!doDetach)
-                    return new BinaryUserObject(_marsh, Stream.GetArray(), pos, hdr);
+                    return new Binarybject(_marsh, Stream.GetArray(), pos, hdr);
 
                 Stream.Seek(pos, SeekOrigin.Begin);
 
-                return new BinaryUserObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
+                return new Binarybject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
             }
             finally
             {
@@ -615,7 +615,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         [SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals", MessageId = "hashCode")]
         private T ReadFullObject<T>(int pos)
         {
-            var hdr = PortableObjectHeader.Read(Stream, pos);
+            var hdr = BinaryObjectHeader.Read(Stream, pos);
 
             // Validate protocol version.
             BinaryUtils.ValidateProtocolVersion(hdr.Version);
@@ -630,16 +630,16 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (hdr.IsUserType && _mode == BinaryMode.ForceBinary)
                 {
-                    BinaryUserObject portObj;
+                    Binarybject portObj;
 
                     if (_detach)
                     {
                         Stream.Seek(pos, SeekOrigin.Begin);
 
-                        portObj = new BinaryUserObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
+                        portObj = new Binarybject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
                     }
                     else
-                        portObj = new BinaryUserObject(_marsh, Stream.GetArray(), pos, hdr);
+                        portObj = new Binarybject(_marsh, Stream.GetArray(), pos, hdr);
 
                     T obj = _builder == null ? TypeCaster<T>.Cast(portObj) : TypeCaster<T>.Cast(_builder.Child(portObj));
 
@@ -685,7 +685,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     _curRaw = false;
 
                     // Read object.
-                    Stream.Seek(pos + PortableObjectHeader.Size, SeekOrigin.Begin);
+                    Stream.Seek(pos + BinaryObjectHeader.Size, SeekOrigin.Begin);
 
                     object obj;
 

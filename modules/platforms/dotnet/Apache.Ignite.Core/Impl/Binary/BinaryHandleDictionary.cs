@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Object handle dictionary.
     /// </summary>
-    internal class PortableHandleDictionary<TK, TV>
+    internal class BinaryHandleDictionary<TK, TV>
     {
         /** Initial array sizes. */
         private const int InitialSize = 7;
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Value.</param>
         [SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors"),
          SuppressMessage("ReSharper", "DoNotCallOverridableMethodsInConstructor")]
-        public PortableHandleDictionary(TK key, TV val)
+        public BinaryHandleDictionary(TK key, TV val)
         {
             Debug.Assert(!Equals(key, EmptyKey));
 
@@ -144,7 +144,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Merge data from another dictionary without overwrite.
         /// </summary>
         /// <param name="that">Other dictionary.</param>
-        public void Merge(PortableHandleDictionary<TK, TV> that)
+        public void Merge(BinaryHandleDictionary<TK, TV> that)
         {
             if (that == null)
                 return;

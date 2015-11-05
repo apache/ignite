@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl
     /// Grid proxy with fake serialization.
     /// </summary>
     [Serializable]
-    internal class IgniteProxy : IIgnite, IClusterGroupEx, IPortableWriteAware, ICluster
+    internal class IgniteProxy : IIgnite, IClusterGroupEx, IBinaryWriteAware, ICluster
     {
         /** */
         [NonSerialized]
@@ -318,7 +318,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public void WritePortable(IBinaryWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             // No-op.
         }

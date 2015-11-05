@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
     /// <summary>
     /// Non-generic portable message listener wrapper.
     /// </summary>
-    internal class MessageListenerHolder : IPortableWriteAware, IHandle
+    internal class MessageListenerHolder : IBinaryWriteAware, IHandle
     {
         /** Invoker function that takes key and value and invokes wrapped IMessageListener */
         private readonly Func<Guid, object, bool> _invoker;
@@ -150,7 +150,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         }
 
         /** <inheritdoc /> */
-        public void WritePortable(IBinaryWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             var writer0 = (BinaryWriter)writer.GetRawWriter();
 

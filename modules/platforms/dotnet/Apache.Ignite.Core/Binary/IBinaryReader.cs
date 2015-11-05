@@ -274,6 +274,6 @@ namespace Apache.Ignite.Core.Binary
         /// Get raw reader. 
         /// </summary>
         /// <returns>Raw reader.</returns>
-        IPortableRawReader GetRawReader();
+        IBinaryRawReader GetRawReader();
     }
 }

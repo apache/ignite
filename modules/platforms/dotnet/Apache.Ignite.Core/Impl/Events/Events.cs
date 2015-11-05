@@ -575,7 +575,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// </summary>
         /// <param name="types">Types.</param>
         /// <param name="writer">Writer.</param>
-        private static void WriteEventTypes(int[] types, IPortableRawWriter writer)
+        private static void WriteEventTypes(int[] types, IBinaryRawWriter writer)
         {
             if (types != null && types.Length == 0)
                 types = null;  // empty array means no type filtering

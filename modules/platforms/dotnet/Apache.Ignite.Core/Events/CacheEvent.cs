@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Events
         /// Constructor.
         /// </summary>
         /// <param name="r">The reader to read data from.</param>
-        internal CacheEvent(IPortableRawReader r) : base(r)
+        internal CacheEvent(IBinaryRawReader r) : base(r)
         {
             _cacheName = r.ReadString();
             _partition = r.ReadInt();

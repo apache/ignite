@@ -1691,7 +1691,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         {
             public unsafe void WriteBinary(IBinaryWriter writer)
             {
-                IPortableRawWriter rawWriter = writer.GetRawWriter();
+                IBinaryRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteBoolean(PBool);
                 rawWriter.WriteByte(PByte);
@@ -1721,7 +1721,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             public unsafe void ReadBinary(IBinaryReader reader)
             {
-                IPortableRawReader rawReader = reader.GetRawReader();
+                IBinaryRawReader rawReader = reader.GetRawReader();
 
                 PBool = rawReader.ReadBoolean();
                 PByte = rawReader.ReadByte();
@@ -1821,7 +1821,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             {
                 PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
-                IPortableRawWriter rawWriter = writer.GetRawWriter();
+                IBinaryRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteBoolean(obj0.PBool);
                 rawWriter.WriteByte(obj0.PByte);
@@ -1853,7 +1853,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             {
                 PrimitiveFieldType obj0 = (PrimitiveFieldType)obj;
 
-                IPortableRawReader rawReader = reader.GetRawReader();
+                IBinaryRawReader rawReader = reader.GetRawReader();
 
                 obj0.PBool = rawReader.ReadBoolean();
                 obj0.PByte = rawReader.ReadByte();
@@ -1899,7 +1899,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteObject("inner", Inner);
                 writer.WriteString("after", After);
 
-                IPortableRawWriter rawWriter = writer.GetRawWriter();
+                IBinaryRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteString(RawBefore);
                 rawWriter.WriteObject(RawInner);
@@ -1913,7 +1913,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 Inner = reader.ReadObject<HandleInner>("inner");
                 After = reader.ReadString("after");
 
-                IPortableRawReader rawReader = reader.GetRawReader();
+                IBinaryRawReader rawReader = reader.GetRawReader();
 
                 RawBefore = rawReader.ReadString();
                 RawInner = rawReader.ReadObject<HandleInner>();
@@ -1938,7 +1938,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteObject("outer", Outer);
                 writer.WriteString("after", After);
 
-                IPortableRawWriter rawWriter = writer.GetRawWriter();
+                IBinaryRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteString(RawBefore);
                 rawWriter.WriteObject(RawOuter);
@@ -1952,7 +1952,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 Outer = reader.ReadObject<HandleOuter>("outer");
                 After = reader.ReadString("after");
 
-                IPortableRawReader rawReader = reader.GetRawReader();
+                IBinaryRawReader rawReader = reader.GetRawReader();
 
                 RawBefore = rawReader.ReadString();
                 RawOuter = rawReader.ReadObject<HandleOuter>();
@@ -1974,7 +1974,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 
                 writer.WriteString("after", After);
 
-                IPortableRawWriter rawWriter = writer.GetRawWriter();
+                IBinaryRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteString(RawBefore);
 
@@ -2045,7 +2045,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteDecimal("val", Val);
                 writer.WriteDecimalArray("valArr", ValArr);
 
-                IPortableRawWriter rawWriter = writer.GetRawWriter();
+                IBinaryRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteDecimal(RawVal);
                 rawWriter.WriteDecimalArray(RawValArr);
@@ -2057,7 +2057,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 Val = reader.ReadDecimal("val");
                 ValArr = reader.ReadDecimalArray("valArr");
 
-                IPortableRawReader rawReader = reader.GetRawReader();
+                IBinaryRawReader rawReader = reader.GetRawReader();
 
                 RawVal = rawReader.ReadDecimal();
                 RawValArr = rawReader.ReadDecimalArray();
@@ -2107,7 +2107,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 writer.WriteTimestamp("utcNull", UtcNull);
                 writer.WriteTimestampArray("utcArr", UtcArr);
 
-                IPortableRawWriter rawWriter = writer.GetRawWriter();
+                IBinaryRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteTimestamp(UtcRaw);
                 rawWriter.WriteTimestamp(UtcNullRaw);
@@ -2121,7 +2121,7 @@ namespace Apache.Ignite.Core.Tests.Portable
                 UtcNull = reader.ReadTimestamp("utc").Value;
                 UtcArr = reader.ReadTimestampArray("utcArr");
 
-                IPortableRawReader rawReader = reader.GetRawReader();
+                IBinaryRawReader rawReader = reader.GetRawReader();
 
                 UtcRaw = rawReader.ReadTimestamp().Value;
                 UtcNullRaw = rawReader.ReadTimestamp().Value;

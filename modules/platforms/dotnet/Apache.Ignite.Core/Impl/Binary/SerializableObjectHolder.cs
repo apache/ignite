@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Wraps Serializable item in a portable.
     /// </summary>
-    internal class SerializableObjectHolder : IPortableWriteAware
+    internal class SerializableObjectHolder : IBinaryWriteAware
     {
         /** */
         private readonly object _item;
@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IBinaryWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             Debug.Assert(writer != null);
 

@@ -499,7 +499,7 @@ namespace Apache.Ignite.Core.Impl
         {
             var stream = IgniteManager.Memory.Get(memPtr).GetStream();
 
-            IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
+            IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
             var node = new ClusterNodeImpl(reader);
 

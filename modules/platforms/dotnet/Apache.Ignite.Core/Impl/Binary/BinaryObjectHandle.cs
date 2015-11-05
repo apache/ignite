@@ -20,16 +20,16 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Object handle. Wraps a single value.
     /// </summary>
-    internal class PortableObjectHandle
+    internal class BinaryObjectHandle
     {
         /** Value. */
         private readonly object _val;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PortableObjectHandle"/> class.
+        /// Initializes a new instance of the <see cref="BinaryObjectHandle"/> class.
         /// </summary>
         /// <param name="val">The value.</param>
-        public PortableObjectHandle(object val)
+        public BinaryObjectHandle(object val)
         {
             _val = val;
         }
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public override bool Equals(object obj)
         {
-            var that = obj as PortableObjectHandle;
+            var that = obj as BinaryObjectHandle;
 
             return that != null && _val == that._val;
         }

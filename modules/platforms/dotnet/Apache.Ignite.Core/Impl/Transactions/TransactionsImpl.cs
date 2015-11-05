@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         {
             return DoInOp(OpMetrics, stream =>
             {
-                IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                 return new TransactionMetricsImpl(reader);
             });

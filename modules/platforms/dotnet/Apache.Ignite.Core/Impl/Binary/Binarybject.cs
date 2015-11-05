@@ -27,9 +27,9 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
-    /// User portable object.
+    /// Binary object.
     /// </summary>
-    internal class BinaryUserObject : IBinaryObject
+    internal class Binarybject : IBinaryObject
     {
         /** Cache empty dictionary. */
         private static readonly IDictionary<int, int> EmptyFields = new Dictionary<int, int>();
@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly int _offset;
 
         /** Header. */
-        private readonly PortableObjectHeader _header;
+        private readonly BinaryObjectHeader _header;
 
         /** Fields. */
         private volatile IDictionary<int, int> _fields;
@@ -53,13 +53,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         private object _deserialized;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BinaryUserObject" /> class.
+        /// Initializes a new instance of the <see cref="Binarybject" /> class.
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="data">Raw data of this portable object.</param>
         /// <param name="offset">Offset in data array.</param>
         /// <param name="header">The header.</param>
-        public BinaryUserObject(Marshaller marsh, byte[] data, int offset, PortableObjectHeader header)
+        public Binarybject(Marshaller marsh, byte[] data, int offset, BinaryObjectHeader header)
         {
             _marsh = marsh;
 
@@ -175,7 +175,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var stream = new BinaryHeapStream(_data);
 
-            var hdr = PortableObjectHeader.Read(stream, _offset);
+            var hdr = BinaryObjectHeader.Read(stream, _offset);
 
             _fields = hdr.ReadSchemaAsDictionary(stream, _offset) ?? EmptyFields;
         }
@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (this == obj)
                 return true;
 
-            BinaryUserObject that = obj as BinaryUserObject;
+            Binarybject that = obj as Binarybject;
 
             if (that != null)
             {
@@ -327,7 +327,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (col == null)
             {
-                BinaryUserObject obj0 = obj as BinaryUserObject;
+                Binarybject obj0 = obj as Binarybject;
 
                 sb.Append(obj0 == null ? obj : obj0.ToString(handled));
             }

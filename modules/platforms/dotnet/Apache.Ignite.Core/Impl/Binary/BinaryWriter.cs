@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Portable writer implementation.
     /// </summary>
-    internal class BinaryWriter : IBinaryWriter, IPortableRawWriter
+    internal class BinaryWriter : IBinaryWriter, IBinaryRawWriter
     {
         /** Marshaller. */
         private readonly Marshaller _marsh;
@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private BinaryObjectBuilder _builder;
 
         /** Handles. */
-        private PortableHandleDictionary<object, long> _hnds;
+        private BinaryHandleDictionary<object, long> _hnds;
 
         /** Metadatas collected during this write session. */
         private IDictionary<int, IBinaryType> _metas;
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private PortableStructureTracker _curStruct;
 
         /** Schema holder. */
-        private readonly PortableObjectSchemaHolder _schema = PortableObjectSchemaHolder.Current;
+        private readonly BinaryObjectSchemaHolder _schema = BinaryObjectSchemaHolder.Current;
 
         /// <summary>
         /// Gets the marshaller.
@@ -984,7 +984,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>
         /// Raw writer.
         /// </returns>
-        public IPortableRawWriter GetRawWriter()
+        public IBinaryRawWriter GetRawWriter()
         {
             if (_curRawPos == 0)
                 _curRawPos = _stream.Position;
@@ -1060,7 +1060,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return;
 
                 // Skip header length as not everything is known now
-                _stream.Seek(PortableObjectHeader.Size, SeekOrigin.Current);
+                _stream.Seek(BinaryObjectHeader.Size, SeekOrigin.Current);
 
                 // Preserve old frame.
                 int oldTypeId = _curTypeId;
@@ -1094,7 +1094,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, out flags);
 
                     if (!hasSchema)
-                        schemaOffset = PortableObjectHeader.Size;
+                        schemaOffset = BinaryObjectHeader.Size;
 
                     // Calculate and write header.
                     if (hasSchema && _curRawPos > 0)
@@ -1102,10 +1102,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     var len = _stream.Position - pos;
 
-                    var header = new PortableObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len,
+                    var header = new BinaryObjectHeader(desc.UserType, desc.TypeId, obj.GetHashCode(), len,
                         schemaId, schemaOffset, !hasSchema, flags);
 
-                    PortableObjectHeader.Write(header, _stream, pos);
+                    BinaryObjectHeader.Write(header, _stream, pos);
 
                     Stream.Seek(pos + len, SeekOrigin.Begin); // Seek to the end
                 }
@@ -1129,7 +1129,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 // Are we dealing with a well-known type?
-                var handler = PortableSystemHandlers.GetWriteHandler(type);
+                var handler = BinarySystemHandlers.GetWriteHandler(type);
 
                 if (handler == null)  // We did our best, object cannot be marshalled.
                     throw new BinaryObjectException("Unsupported object type [type=" + type + ", object=" + obj + ']');
@@ -1230,7 +1230,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (_builder != null)
             {
                 // Special case for portable object during build.
-                BinaryUserObject portObj = obj as BinaryUserObject;
+                Binarybject portObj = obj as Binarybject;
 
                 if (portObj != null)
                 {
@@ -1266,7 +1266,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (_hnds == null)
             {
                 // Cache absolute handle position.
-                _hnds = new PortableHandleDictionary<object, long>(obj, pos);
+                _hnds = new BinaryHandleDictionary<object, long>(obj, pos);
 
                 return false;
             }
@@ -1301,7 +1301,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 _detaching = true;
 
-                PortableHandleDictionary<object, long> oldHnds = _hnds;
+                BinaryHandleDictionary<object, long> oldHnds = _hnds;
                 _hnds = null;
 
                 try
@@ -1358,7 +1358,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // Collections, Enums and non-primitive arrays do not have descriptors
                 // and this is fine here because we cannot know whether their members
                 // are portable.
-                return _marsh.GetDescriptor(type) != null || PortableSystemHandlers.GetWriteHandler(type) != null;
+                return _marsh.GetDescriptor(type) != null || BinarySystemHandlers.GetWriteHandler(type) != null;
             }
 
             return true;

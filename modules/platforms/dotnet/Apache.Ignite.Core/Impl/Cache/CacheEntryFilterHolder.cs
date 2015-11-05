@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// <summary>
     /// Non-generic portable filter wrapper.
     /// </summary>
-    internal class CacheEntryFilterHolder : IPortableWriteAware
+    internal class CacheEntryFilterHolder : IBinaryWriteAware
     {
         /** Wrapped ICacheEntryFilter */
         private readonly object _pred;
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritdoc /> */
-        public void WritePortable(IBinaryWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             var writer0 = (BinaryWriter)writer.GetRawWriter();
 

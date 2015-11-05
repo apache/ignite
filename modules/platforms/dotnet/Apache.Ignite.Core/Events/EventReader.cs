@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="reader">Reader.</param>
         /// <returns>Created and deserialized instance.</returns>
         /// <exception cref="System.InvalidOperationException">Invalid event class id:  + clsId</exception>
-        private static IEvent CreateInstance(int clsId, IPortableRawReader reader)
+        private static IEvent CreateInstance(int clsId, IBinaryRawReader reader)
         {
             switch (clsId)
             {

@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private volatile PortableStructure _readerTypeStructure = PortableStructure.CreateEmpty();
         
         /** Type schema. */
-        private readonly PortableObjectSchema _schema = new PortableObjectSchema();
+        private readonly BinaryObjectSchema _schema = new BinaryObjectSchema();
 
         /// <summary>
         /// Constructor.
@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public PortableObjectSchema Schema
+        public BinaryObjectSchema Schema
         {
             get { return _schema; }
         }

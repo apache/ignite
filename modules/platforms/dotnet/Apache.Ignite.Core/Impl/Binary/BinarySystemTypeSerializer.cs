@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// Portable serializer for system types.
     /// </summary>
     /// <typeparam name="T">Object type.</typeparam>
-    internal class BinarySystemTypeSerializer<T> : IBinarySystemTypeSerializer where T : IPortableWriteAware
+    internal class BinarySystemTypeSerializer<T> : IBinarySystemTypeSerializer where T : IBinaryWriteAware
     {
         /** Ctor delegate. */
         private readonly Func<BinaryReader, T> _ctor;
@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public void WritePortable(object obj, IBinaryWriter writer)
         {
-            ((T) obj).WritePortable(writer);
+            ((T) obj).WriteBinary(writer);
         }
 
         /** <inheritdoc /> */

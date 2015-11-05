@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// Initializes a new instance of the <see cref="CacheMetricsImpl"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public CacheMetricsImpl(IPortableRawReader reader)
+        public CacheMetricsImpl(IBinaryRawReader reader)
         {
             CacheGets = reader.ReadLong();
             CachePuts = reader.ReadLong();

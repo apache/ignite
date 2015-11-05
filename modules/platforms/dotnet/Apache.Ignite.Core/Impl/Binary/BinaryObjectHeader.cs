@@ -28,9 +28,9 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// Portable object header structure.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 0)]
-    internal struct PortableObjectHeader : IEquatable<PortableObjectHeader>
+    internal struct BinaryObjectHeader : IEquatable<BinaryObjectHeader>
     {
-        /** Size, equals to sizeof(PortableObjectHeader). */
+        /** Size, equals to sizeof(BinaryObjectHeader). */
         public const int Size = 24;
 
         /** User type flag. */
@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public readonly int SchemaOffset;   // Schema offset, or raw offset when RawOnly flag is set.
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PortableObjectHeader" /> struct.
+        /// Initializes a new instance of the <see cref="BinaryObjectHeader" /> struct.
         /// </summary>
         /// <param name="userType">User type flag.</param>
         /// <param name="typeId">Type ID.</param>
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="schemaOffset">Schema offset.</param>
         /// <param name="rawOnly">Raw flag.</param>
         /// <param name="flags">The flags.</param>
-        public PortableObjectHeader(bool userType, int typeId, int hashCode, int length, int schemaId, int schemaOffset, 
+        public BinaryObjectHeader(bool userType, int typeId, int hashCode, int length, int schemaId, int schemaOffset, 
             bool rawOnly, short flags)
         {
             Header = BinaryUtils.HdrFull;
@@ -91,10 +91,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PortableObjectHeader"/> struct from specified stream.
+        /// Initializes a new instance of the <see cref="BinaryObjectHeader"/> struct from specified stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
-        private PortableObjectHeader(IBinaryStream stream)
+        private BinaryObjectHeader(IBinaryStream stream)
         {
             Header = stream.ReadByte();
             Version = stream.ReadByte();
@@ -255,7 +255,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="stream">The stream.</param>
         /// <param name="position">The position.</param>
         /// <returns>Schema.</returns>
-        public PortableObjectSchemaField[] ReadSchema(IBinaryStream stream, int position)
+        public BinaryObjectSchemaField[] ReadSchema(IBinaryStream stream, int position)
         {
             Debug.Assert(stream != null);
 
@@ -266,24 +266,24 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             stream.Seek(position + SchemaOffset, SeekOrigin.Begin);
 
-            var schema = new PortableObjectSchemaField[schemaSize];
+            var schema = new BinaryObjectSchemaField[schemaSize];
 
             var offsetSize = SchemaFieldOffsetSize;
 
             if (offsetSize == 1)
             {
                 for (var i = 0; i < schemaSize; i++)
-                    schema[i] = new PortableObjectSchemaField(stream.ReadInt(), stream.ReadByte());
+                    schema[i] = new BinaryObjectSchemaField(stream.ReadInt(), stream.ReadByte());
             }
             else if (offsetSize == 2)
             {
                 for (var i = 0; i < schemaSize; i++)
-                    schema[i] = new PortableObjectSchemaField(stream.ReadInt(), stream.ReadShort());
+                    schema[i] = new BinaryObjectSchemaField(stream.ReadInt(), stream.ReadShort());
             }
             else
             {
                 for (var i = 0; i < schemaSize; i++)
-                    schema[i] = new PortableObjectSchemaField(stream.ReadInt(), stream.ReadInt());
+                    schema[i] = new BinaryObjectSchemaField(stream.ReadInt(), stream.ReadInt());
             }
 
             return schema;
@@ -297,10 +297,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="offset">Offset in the array.</param>
         /// <param name="count">Field count to write.</param>
         /// <returns>
-        /// Flags according to offset sizes: <see cref="PortableObjectHeader.FlagByteOffsets" />,
-        /// <see cref="PortableObjectHeader.FlagShortOffsets" />, or 0.
+        /// Flags according to offset sizes: <see cref="BinaryObjectHeader.FlagByteOffsets" />,
+        /// <see cref="BinaryObjectHeader.FlagShortOffsets" />, or 0.
         /// </returns>
-        public static unsafe short WriteSchema(PortableObjectSchemaField[] fields, IBinaryStream stream, int offset,
+        public static unsafe short WriteSchema(BinaryObjectSchemaField[] fields, IBinaryStream stream, int offset,
             int count)
         {
             Debug.Assert(fields != null);
@@ -343,9 +343,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (BitConverter.IsLittleEndian)
                 {
-                    fixed (PortableObjectSchemaField* ptr = &fields[offset])
+                    fixed (BinaryObjectSchemaField* ptr = &fields[offset])
                     {
-                        stream.Write((byte*)ptr, count / PortableObjectSchemaField.Size);
+                        stream.Write((byte*)ptr, count / BinaryObjectSchemaField.Size);
                     }
                 }
                 else
@@ -370,7 +370,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="header">The header.</param>
         /// <param name="stream">The stream.</param>
         /// <param name="position">The position.</param>
-        public static unsafe void Write(PortableObjectHeader header, IBinaryStream stream, int position)
+        public static unsafe void Write(BinaryObjectHeader header, IBinaryStream stream, int position)
         {
             Debug.Assert(stream != null);
             Debug.Assert(position >= 0);
@@ -389,7 +389,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="stream">The stream.</param>
         /// <param name="position">The position.</param>
         /// <returns>Instance of the header.</returns>
-        public static unsafe PortableObjectHeader Read(IBinaryStream stream, int position)
+        public static unsafe BinaryObjectHeader Read(IBinaryStream stream, int position)
         {
             Debug.Assert(stream != null);
             Debug.Assert(position >= 0);
@@ -398,7 +398,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (BitConverter.IsLittleEndian)
             {
-                var hdr = new PortableObjectHeader();
+                var hdr = new BinaryObjectHeader();
 
                 stream.Read((byte*) &hdr, Size);
 
@@ -413,11 +413,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return hdr;
             }
 
-            return new PortableObjectHeader(stream);
+            return new BinaryObjectHeader(stream);
         }
 
         /** <inheritdoc> */
-        public bool Equals(PortableObjectHeader other)
+        public bool Equals(BinaryObjectHeader other)
         {
             return Header == other.Header &&
                    Version == other.Version &&
@@ -434,7 +434,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             if (ReferenceEquals(null, obj)) return false;
             
-            return obj is PortableObjectHeader && Equals((PortableObjectHeader) obj);
+            return obj is BinaryObjectHeader && Equals((BinaryObjectHeader) obj);
         }
 
         /** <inheritdoc> */
@@ -455,13 +455,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc> */
-        public static bool operator ==(PortableObjectHeader left, PortableObjectHeader right)
+        public static bool operator ==(BinaryObjectHeader left, BinaryObjectHeader right)
         {
             return left.Equals(right);
         }
 
         /** <inheritdoc> */
-        public static bool operator !=(PortableObjectHeader left, PortableObjectHeader right)
+        public static bool operator !=(BinaryObjectHeader left, BinaryObjectHeader right)
         {
             return !left.Equals(right);
         }

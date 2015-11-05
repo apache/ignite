@@ -883,7 +883,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             return DoInOp((int)CacheOp.Metrics, stream =>
             {
-                IPortableRawReader reader = Marshaller.StartUnmarshal(stream, false);
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                 return new CacheMetricsImpl(reader);
             });

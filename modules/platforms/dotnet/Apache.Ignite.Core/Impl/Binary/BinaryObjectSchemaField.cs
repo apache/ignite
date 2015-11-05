@@ -17,18 +17,32 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
-    using Apache.Ignite.Core.Binary;
+    using System.Runtime.InteropServices;
 
     /// <summary>
-    /// Represents an object that can write itself to a portable writer.
+    /// Portable schema field DTO (as it is stored in a stream).
     /// </summary>
-    internal interface IPortableWriteAware
+    [StructLayout(LayoutKind.Sequential, Pack = 0)]
+    internal struct BinaryObjectSchemaField
     {
+        /* Field ID */
+        public readonly int Id;
+
+        /** Offset. */
+        public readonly int Offset;
+
+        /** Size, equals to sizeof(PortableObjectSchemaField) */
+        public const int Size = 8;
+
         /// <summary>
-        /// Writes this object to the given writer.
-        /// </summary> 
-        /// <param name="writer">Writer.</param>
-        /// <exception cref="System.IO.IOException">If write failed.</exception>
-        void WritePortable(IBinaryWriter writer);
+        /// Initializes a new instance of the <see cref="BinaryObjectSchemaField"/> struct.
+        /// </summary>
+        /// <param name="id">The id.</param>
+        /// <param name="offset">The offset.</param>
+        public BinaryObjectSchemaField(int id, int offset)
+        {
+            Id = id;
+            Offset = offset;
+        }
     }
 }
