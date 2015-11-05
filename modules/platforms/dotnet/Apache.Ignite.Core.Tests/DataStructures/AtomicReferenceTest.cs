@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
 {
     using System;
     using System.Linq;
+    using Apache.Ignite.Core.Portable;
     using NUnit.Framework;
 
     /// <summary>
@@ -142,6 +143,19 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             old = atomic.CompareExchange(x, y);
             Assert.AreEqual(x, old);
             Assert.AreEqual(x, atomic.Get());
+        }
+
+        /** <inheritdoc /> */
+        protected override IgniteConfiguration GetConfiguration(string springConfigUrl)
+        {
+            var cfg = base.GetConfiguration(springConfigUrl);
+
+            cfg.PortableConfiguration = new PortableConfiguration
+            {
+                TypeConfigurations = new[] {new PortableTypeConfiguration(typeof (PortableObj))}
+            };
+
+            return cfg;
         }
 
         /// <summary>
