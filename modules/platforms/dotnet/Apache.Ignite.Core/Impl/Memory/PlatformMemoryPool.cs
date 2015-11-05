@@ -24,8 +24,10 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// Platform memory pool.
     /// </summary>
     [CLSCompliant(false)]
-    public class PlatformMemoryPool : SafeHandleMinusOneIsInvalid
+    public unsafe class PlatformMemoryPool : SafeHandleMinusOneIsInvalid
     {
+        private PlatformMemoryHeader* _hdr;
+
         /** First pooled memory chunk. */
         private PlatformPooledMemory _mem1;
 
@@ -40,7 +42,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         public PlatformMemoryPool() : base(true)
         {
-            handle = (IntPtr)PlatformMemoryUtils.AllocatePool();
+            _hdr = PlatformMemoryUtils.AllocatePool();
+            handle = (IntPtr) _hdr;
         }
 
         /// <summary>
@@ -50,10 +53,10 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <returns>Memory chunk</returns>
         public PlatformMemory Allocate(int cap)
         {
-            var memPtr = PlatformMemoryUtils.AllocatePooled(handle.ToInt64(), cap);
+            var memPtr = PlatformMemoryUtils.AllocatePooled(_hdr, cap);
 
             // memPtr == 0 means that we failed to acquire thread-local memory chunk, so fallback to unpooled memory.
-            return memPtr != 0 ? Get(memPtr) : new PlatformUnpooledMemory(PlatformMemoryUtils.AllocateUnpooled(cap));
+            return memPtr != (void*) 0 ? Get((long) memPtr) : new PlatformUnpooledMemory(PlatformMemoryUtils.AllocateUnpooled(cap));
         }
 
         /// <summary>
@@ -63,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <param name="cap">Minimum capacity.</param>
         public static void Reallocate(long memPtr, int cap)
         {
-            PlatformMemoryUtils.ReallocatePooled(memPtr, cap);
+            PlatformMemoryUtils.ReallocatePooled((PlatformMemoryHeader*) memPtr, cap);
         }
 
         /// <summary>
@@ -72,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <param name="memPtr">Memory pointer.</param>
         public static void Release(long memPtr)
         {
-            PlatformMemoryUtils.ReleasePooled(memPtr);
+            PlatformMemoryUtils.ReleasePooled((PlatformMemoryHeader*) memPtr);
         }
 
         /// <summary>
@@ -82,7 +85,8 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <returns>Memory chunk.</returns>
         public PlatformMemory Get(long memPtr) 
         {
-            long delta = memPtr - handle.ToInt64();
+            // TODO
+            long delta = memPtr - (long) _hdr;
 
             if (delta == PlatformMemoryUtils.PoolHdrOffMem1) 
                 return _mem1 ?? (_mem1 = new PlatformPooledMemory(memPtr));
@@ -96,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /** <inheritdoc /> */
         protected override bool ReleaseHandle()
         {
-            PlatformMemoryUtils.ReleasePool(handle.ToInt64());
+            PlatformMemoryUtils.ReleasePool((PlatformMemoryHeader*) handle);
 
             handle = new IntPtr(-1);
 

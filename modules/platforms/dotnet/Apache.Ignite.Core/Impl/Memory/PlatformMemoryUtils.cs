@@ -18,9 +18,33 @@
 namespace Apache.Ignite.Core.Impl.Memory
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
     using System.Runtime.InteropServices;
+
+    [StructLayout(LayoutKind.Sequential, Pack = 0)]
+    public struct PlatformMemoryHeader
+    {
+        public long Pointer;
+        public int Capacity;
+        public int Length;
+        public int Flags;
+
+        public PlatformMemoryHeader(long pointer, int capacity, int length, int flags)
+        {
+            Pointer = pointer;
+            Capacity = capacity;
+            Length = length;
+            Flags = flags;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 0)]
+    public struct PlatformMemoryPoolHeader
+    {
+        
+    }
 
     /// <summary>
     /// Utility methods for platform memory management.
@@ -32,6 +56,9 @@ namespace Apache.Ignite.Core.Impl.Memory
 
         /** Header length. */
         private const int PoolHdrLen = 64;
+
+        /** Pooled items count. */
+        internal const int PoolSize = 3;
 
         /** Pool header offset: first memory chunk. */
         internal const int PoolHdrOffMem1 = 0;
@@ -88,16 +115,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /// <summary>
-        /// Sets capacity for the given memory chunk.
-        /// </summary>
-        /// <param name="memPtr">Memory pointer.</param>
-        /// <param name="cap">CalculateCapacity.</param>
-        public static void SetCapacity(long memPtr, int cap) 
-        {
-            *((int*)(memPtr + MemHdrOffCap)) = cap;
-        }
-
-        /// <summary>
         /// Gets length for the given memory chunk.
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
@@ -128,26 +145,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /// <summary>
-        /// Sets flags for the given memory chunk.
-        /// </summary>
-        /// <param name="memPtr">Memory pointer.</param>
-        /// <param name="flags">Flags.</param>
-        public static void SetFlags(long memPtr, int flags) 
-        {
-            *((int*)(memPtr + MemHdrOffFlags)) = flags;
-        }
-
-        /// <summary>
-        /// Check whether this memory chunk is external.
-        /// </summary>
-        /// <param name="memPtr">Memory pointer.</param>
-        /// <returns><c>True</c> if owned by Java.</returns>
-        public static bool IsExternal(long memPtr) 
-        {
-            return IsExternal(GetFlags(memPtr));
-        }
-
-        /// <summary>
         /// Check whether flags denote that this memory chunk is external.
         /// </summary>
         /// <param name="flags">Flags.</param>
@@ -158,16 +155,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /// <summary>
-        /// Check whether this memory chunk is pooled.
-        /// </summary>
-        /// <param name="memPtr">Memory pointer.</param>
-        /// <returns><c>True</c> if pooled.</returns>
-        public static bool IsPooled(long memPtr) 
-        {
-            return IsPooled(GetFlags(memPtr));
-        }
-
-        /// <summary>
         /// Check whether flags denote pooled memory chunk.
         /// </summary>
         /// <param name="flags">Flags.</param>
@@ -175,16 +162,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         public static bool IsPooled(int flags) 
         {
             return (flags & FlagPooled) != 0;
-        }
-
-        /// <summary>
-        /// Check whether this memory chunk is pooled and acquired.
-        /// </summary>
-        /// <param name="memPtr">Memory pointer.</param>
-        /// <returns><c>True</c> if acquired.</returns>
-        public static bool IsAcquired(long memPtr)
-        {
-            return IsAcquired(GetFlags(memPtr));
         }
 
         /// <summary>
@@ -256,19 +233,13 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// Allocate pool memory.
         /// </summary>
         /// <returns>Pool pointer.</returns>
-        public static long AllocatePool()
+        public static PlatformMemoryHeader* AllocatePool()
         {
             // 1. Allocate memory.
-            long poolPtr = Marshal.AllocHGlobal((IntPtr)PoolHdrLen).ToInt64();
+            var poolPtr = (PlatformMemoryHeader*) Marshal.AllocHGlobal((IntPtr) PoolHdrLen).ToInt64();
 
-            // 2. Clear memory.
-            for (int i = 0; i < PoolHdrLen; i += 8)
-                *((long*)(poolPtr + i)) = 0;
-
-            // 3. Set flags for memory chunks.
-            SetFlags(poolPtr + PoolHdrOffMem1, FlagExt | FlagPooled);
-            SetFlags(poolPtr + PoolHdrOffMem2, FlagExt | FlagPooled);
-            SetFlags(poolPtr + PoolHdrOffMem3, FlagExt | FlagPooled);
+            for (var i = 0; i < PoolSize; i++)
+                *(poolPtr + i) = new PlatformMemoryHeader(0, 0, 0, FlagExt | FlagPooled);
 
             return poolPtr;
         }
@@ -277,26 +248,18 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// Release pool memory.
         /// </summary>
         /// <param name="poolPtr">Pool pointer.</param>
-        public static void ReleasePool(long poolPtr)
+        public static void ReleasePool(PlatformMemoryHeader* poolPtr)
         {
-            // Clean predefined memory chunks.
-            long mem = *((long*)(poolPtr + PoolHdrOffMem1));
+            for (var i = 0; i < PoolSize; i++)
+            {
+                var mem = (poolPtr + i)->Pointer;
 
-            if (mem != 0)
-                Marshal.FreeHGlobal((IntPtr)mem);
-
-            mem = *((long*)(poolPtr + PoolHdrOffMem2));
-
-            if (mem != 0)
-                Marshal.FreeHGlobal((IntPtr)mem);
-
-            mem = *((long*)(poolPtr + PoolHdrOffMem3));
-
-            if (mem != 0)
-                Marshal.FreeHGlobal((IntPtr)mem);
+                if (mem != 0)
+                    Marshal.FreeHGlobal((IntPtr) mem);
+            }
 
             // Clean pool chunk.
-            Marshal.FreeHGlobal((IntPtr)poolPtr);
+            Marshal.FreeHGlobal((IntPtr) poolPtr);
         }
 
         /// <summary>
@@ -305,89 +268,71 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <param name="poolPtr">Pool pointer.</param>
         /// <param name="cap">CalculateCapacity.</param>
         /// <returns>Memory pointer or <c>0</c> in case there are no free memory chunks in the pool.</returns>
-        public static long AllocatePooled(long poolPtr, int cap)
+        public static PlatformMemoryHeader* AllocatePooled(PlatformMemoryHeader* poolPtr, int cap)
         {
-            long memPtr = poolPtr + PoolHdrOffMem1;
+            Debug.Assert(poolPtr != (void*)0);
 
-            if (IsAcquired(memPtr))
+            for (var i = 0; i < PoolSize; i++)
             {
-                memPtr = poolPtr + PoolHdrOffMem2;
+                var hdr = poolPtr + i;
 
-                if (IsAcquired(memPtr))
+                if (!IsAcquired(hdr->Flags))
                 {
-                    memPtr = poolPtr + PoolHdrOffMem3;
-
-                    if (IsAcquired(memPtr))
-                        memPtr = 0;
-                    else
-                        AllocatePooled0(memPtr, cap);
+                    AllocatePooled0(hdr, cap);
+                    return hdr;
                 }
-                else
-                    AllocatePooled0(memPtr, cap);
             }
-            else
-                AllocatePooled0(memPtr, cap);
 
-            return memPtr;
+            return (PlatformMemoryHeader*) 0;
         }
 
         /// <summary>
         /// Internal pooled memory chunk allocation routine.
         /// </summary>
-        /// <param name="memPtr">Memory pointer.</param>
-        /// <param name="cap">CalculateCapacity.</param>
-        private static void AllocatePooled0(long memPtr, int cap) 
+        /// <param name="hdr">Memory header.</param>
+        /// <param name="cap">Capacity.</param>
+        private static void AllocatePooled0(PlatformMemoryHeader* hdr, int cap) 
         {
-            long data = *((long*)memPtr);
+            Debug.Assert(hdr != (void*)0);
 
-            if (data == 0) {
+            if (hdr->Pointer == 0)
+            {
                 // First allocation of the chunk.
-                data = Marshal.AllocHGlobal(cap).ToInt64();
-
-                *((long*)memPtr) = data;
-                *((int*)(memPtr + MemHdrOffCap)) = cap;
+                hdr->Pointer = Marshal.AllocHGlobal(cap).ToInt64();
             }
-            else {
+            else if (cap > hdr->Capacity)
+            {
                 // Ensure that we have enough capacity.
-                int curCap = GetCapacity(memPtr);
-
-                if (cap > curCap) {
-                    data = Marshal.ReAllocHGlobal((IntPtr)data, (IntPtr)cap).ToInt64();
-
-                    *((long*)memPtr) = data;
-                    *((int*)(memPtr + MemHdrOffCap)) = cap;
-                }
+                hdr->Pointer = Marshal.ReAllocHGlobal((IntPtr) hdr->Pointer, (IntPtr) cap).ToInt64();
             }
 
-            SetFlags(memPtr, FlagExt | FlagPooled | FlagAcquired);
+            hdr->Capacity = cap;
+            hdr->Flags = FlagExt | FlagPooled | FlagAcquired;
         }
 
         /// <summary>
         /// Reallocate pooled memory chunk.
         /// </summary>
-        /// <param name="memPtr">Memory pointer.</param>
+        /// <param name="hdr">Memory header.</param>
         /// <param name="cap">Minimum capacity.</param>
-        public static void ReallocatePooled(long memPtr, int cap) 
+        public static void ReallocatePooled(PlatformMemoryHeader* hdr, int cap) 
         {
-            long data = *((long*)memPtr);
+            Debug.Assert(hdr != (void*) 0);
 
-            int curCap = GetCapacity(memPtr);
-
-            if (cap > curCap) {
-                data = Marshal.ReAllocHGlobal((IntPtr)data, (IntPtr)cap).ToInt64();
-
-                *((long*)memPtr) = data;
-                *((int*)(memPtr + MemHdrOffCap)) = cap;
+            if (cap > hdr->Capacity)
+            {
+                hdr->Pointer = Marshal.ReAllocHGlobal((IntPtr) hdr->Pointer, (IntPtr) cap).ToInt64();
+                hdr->Capacity = cap;
             }
         }
 
         /// <summary>
         /// Release pooled memory chunk.
         /// </summary>
-        /// <param name="memPtr">Memory pointer.</param>
-        public static void ReleasePooled(long memPtr) 
+        /// <param name="hdr">Memory header.</param>
+        public static void ReleasePooled(PlatformMemoryHeader* hdr)
         {
-            SetFlags(memPtr, GetFlags(memPtr) ^ FlagAcquired);
+            hdr->Flags ^= FlagAcquired;
         }
 
         #endregion
