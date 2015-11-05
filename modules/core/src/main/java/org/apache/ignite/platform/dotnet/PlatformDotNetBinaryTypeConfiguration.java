@@ -21,9 +21,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Mirror of .Net class GridDotNetPortableTypeConfiguration.cs
+ * Mirror of .Net class GridDotNetBinaryTypeConfiguration.cs
  */
-public class PlatformDotNetPortableTypeConfiguration {
+public class PlatformDotNetBinaryTypeConfiguration {
     /** Type name. */
     private String typeName;
 
@@ -39,13 +39,13 @@ public class PlatformDotNetPortableTypeConfiguration {
     /** Affinity key field name. */
     private String affinityKeyFieldName;
 
-    /** Whether to cache deserialized value in IGridPortableObject. */
+    /** Whether to cache deserialized value. */
     private Boolean keepDeserialized;
 
     /**
      * Default constructor.
      */
-    public PlatformDotNetPortableTypeConfiguration() {
+    public PlatformDotNetBinaryTypeConfiguration() {
         // No-op.
     }
 
@@ -53,7 +53,7 @@ public class PlatformDotNetPortableTypeConfiguration {
      * Copy constructor.
      * @param cfg configuration to copy.
      */
-    public PlatformDotNetPortableTypeConfiguration(PlatformDotNetPortableTypeConfiguration cfg) {
+    public PlatformDotNetBinaryTypeConfiguration(PlatformDotNetBinaryTypeConfiguration cfg) {
         typeName = cfg.getTypeName();
         nameMapper = cfg.getNameMapper();
         idMapper = cfg.getIdMapper();
@@ -135,7 +135,7 @@ public class PlatformDotNetPortableTypeConfiguration {
     /**
      * Gets keep deserialized flag.
      *
-     * @return Flag indicates whether to cache deserialized value in IGridPortableObject.
+     * @return Flag indicates whether to cache deserialized value.
      * @deprecated Use {@link #getKeepDeserialized()} instead.
      */
     @Deprecated
@@ -146,7 +146,7 @@ public class PlatformDotNetPortableTypeConfiguration {
     /**
      * Gets keep deserialized flag. See {@link #setKeepDeserialized(Boolean)} for more information.
      *
-     * @return Flag indicates whether to cache deserialized value in IGridPortableObject.
+     * @return Flag indicates whether to cache deserialized value.
      */
     @Nullable public Boolean getKeepDeserialized() {
         return keepDeserialized;
@@ -156,7 +156,7 @@ public class PlatformDotNetPortableTypeConfiguration {
      * Sets keep deserialized flag.
      * <p />
      * When set to {@code null} default value taken from
-     * {@link PlatformDotNetPortableConfiguration#isDefaultKeepDeserialized()} will be used.
+     * {@link PlatformDotNetBinaryConfiguration#isDefaultKeepDeserialized()} will be used.
      *
      * @param keepDeserialized Keep deserialized flag.
      */
@@ -166,6 +166,6 @@ public class PlatformDotNetPortableTypeConfiguration {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PlatformDotNetPortableTypeConfiguration.class, this);
+        return S.toString(PlatformDotNetBinaryTypeConfiguration.class, this);
     }
 }

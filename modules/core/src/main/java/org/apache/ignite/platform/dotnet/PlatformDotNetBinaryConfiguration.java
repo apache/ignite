@@ -23,11 +23,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 /**
- * Mirror of .Net class PortableConfiguration.cs
+ * Mirror of .Net class BinaryConfiguration.cs
  */
-public class PlatformDotNetPortableConfiguration {
+public class PlatformDotNetBinaryConfiguration {
     /** Type cfgs. */
-    private Collection<PlatformDotNetPortableTypeConfiguration> typesCfg;
+    private Collection<PlatformDotNetBinaryTypeConfiguration> typesCfg;
 
     /** Types. */
     private Collection<String> types;
@@ -50,7 +50,7 @@ public class PlatformDotNetPortableConfiguration {
     /**
      * Default constructor.
      */
-    public PlatformDotNetPortableConfiguration() {
+    public PlatformDotNetBinaryConfiguration() {
         // No-op.
     }
 
@@ -58,12 +58,12 @@ public class PlatformDotNetPortableConfiguration {
      * Copy constructor.
      * @param cfg configuration to copy.
      */
-    public PlatformDotNetPortableConfiguration(PlatformDotNetPortableConfiguration cfg) {
+    public PlatformDotNetBinaryConfiguration(PlatformDotNetBinaryConfiguration cfg) {
         if (cfg.getTypesConfiguration() != null) {
             typesCfg = new ArrayList<>();
 
-            for (PlatformDotNetPortableTypeConfiguration typeCfg : cfg.getTypesConfiguration())
-                typesCfg.add(new PlatformDotNetPortableTypeConfiguration(typeCfg));
+            for (PlatformDotNetBinaryTypeConfiguration typeCfg : cfg.getTypesConfiguration())
+                typesCfg.add(new PlatformDotNetBinaryTypeConfiguration(typeCfg));
         }
 
         if (cfg.getTypes() != null)
@@ -79,14 +79,14 @@ public class PlatformDotNetPortableConfiguration {
     /**
      * @return Type cfgs.
      */
-    public Collection<PlatformDotNetPortableTypeConfiguration> getTypesConfiguration() {
+    public Collection<PlatformDotNetBinaryTypeConfiguration> getTypesConfiguration() {
         return typesCfg;
     }
 
     /**
      * @param typesCfg New type cfgs.
      */
-    public void setTypesConfiguration(Collection<PlatformDotNetPortableTypeConfiguration> typesCfg) {
+    public void setTypesConfiguration(Collection<PlatformDotNetBinaryTypeConfiguration> typesCfg) {
         this.typesCfg = typesCfg;
     }
 
@@ -160,7 +160,7 @@ public class PlatformDotNetPortableConfiguration {
      * cluster.
      * <p />
      * Can be overridden for particular type using
-     * {@link PlatformDotNetPortableTypeConfiguration#setMetadataEnabled(Boolean)}.
+     * {@link PlatformDotNetBinaryTypeConfiguration#setMetadataEnabled(Boolean)}.
      *
      * @param dfltMetadataEnabled Default metadata enabled flag.
      */
@@ -181,7 +181,7 @@ public class PlatformDotNetPortableConfiguration {
      * Sets default keep deserialized flag.
      * <p />
      * Can be overridden for particular type using
-     * {@link PlatformDotNetPortableTypeConfiguration#setKeepDeserialized(Boolean)}.
+     * {@link PlatformDotNetBinaryTypeConfiguration#setKeepDeserialized(Boolean)}.
      *
      * @param keepDeserialized Keep deserialized flag.
      */
@@ -191,6 +191,6 @@ public class PlatformDotNetPortableConfiguration {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PlatformDotNetPortableConfiguration.class, this);
+        return S.toString(PlatformDotNetBinaryConfiguration.class, this);
     }
 }
