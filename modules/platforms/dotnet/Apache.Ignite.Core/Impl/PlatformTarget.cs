@@ -629,10 +629,10 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <typeparam name="T">Future result type</typeparam>
         /// <param name="listenAction">The listen action.</param>
-        /// <param name="keepPortable">Keep binary flag, only applicable to object futures. False by default.</param>
+        /// <param name="keepBinary">Keep binary flag, only applicable to object futures. False by default.</param>
         /// <param name="convertFunc">The function to read future result from stream.</param>
         /// <returns>Created future.</returns>
-        protected Future<T> GetFuture<T>(Action<long, int> listenAction, bool keepPortable = false,
+        protected Future<T> GetFuture<T>(Action<long, int> listenAction, bool keepBinary = false,
             Func<BinaryReader, T> convertFunc = null)
         {
             var futType = FutureType.Object;
@@ -644,7 +644,7 @@ namespace Apache.Ignite.Core.Impl
 
             var fut = convertFunc == null && futType != FutureType.Object
                 ? new Future<T>()
-                : new Future<T>(new FutureConverter<T>(_marsh, keepPortable, convertFunc));
+                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, convertFunc));
 
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 

@@ -758,7 +758,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Process binary object inverting handles if needed.
         /// </summary>
         /// <param name="outStream">Output stream.</param>
-        /// <param name="port">Portable.</param>
+        /// <param name="port">Binary object.</param>
         internal void ProcessBinary(IBinaryStream outStream, BinaryObject port)
         {
             // Special case: writing binary object with correct inversions.

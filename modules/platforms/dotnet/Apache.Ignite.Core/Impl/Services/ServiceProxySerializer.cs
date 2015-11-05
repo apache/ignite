@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             var reader = marsh.StartUnmarshal(stream);
 
-            var srvKeepPortable = reader.ReadBoolean();
+            var srvKeepBinary = reader.ReadBoolean();
 
             mthdName = reader.ReadString();
 
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Services
             {
                 mthdArgs = new object[reader.ReadInt()];
 
-                if (srvKeepPortable)
+                if (srvKeepBinary)
                     reader = marsh.StartUnmarshal(stream, true);
 
                 for (var i = 0; i < mthdArgs.Length; i++)
@@ -108,16 +108,16 @@ namespace Apache.Ignite.Core.Impl.Services
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Portable flag.</param>
+        /// <param name="keepBinary">Binary flag.</param>
         /// <returns>
         /// Method invocation result, or exception in case of error.
         /// </returns>
-        public static object ReadInvocationResult(IBinaryStream stream, Marshaller marsh, bool keepPortable)
+        public static object ReadInvocationResult(IBinaryStream stream, Marshaller marsh, bool keepBinary)
         {
             Debug.Assert(stream != null);
             Debug.Assert(marsh != null);
 
-            var mode = keepPortable ? BinaryMode.ForceBinary : BinaryMode.Deserialize;
+            var mode = keepBinary ? BinaryMode.ForceBinary : BinaryMode.Deserialize;
 
             var reader = marsh.StartUnmarshal(stream, mode);
 
@@ -128,11 +128,11 @@ namespace Apache.Ignite.Core.Impl.Services
             if (err == null)
                 return res;
 
-            var portErr = err as IBinaryObject;
+            var binErr = err as IBinaryObject;
 
-            throw portErr != null
+            throw binErr != null
                 ? new ServiceInvocationException("Proxy method invocation failed with a binary error. " +
-                                                 "Examine PortableCause for details.", portErr)
+                                                 "Examine BinaryCause for details.", binErr)
                 : new ServiceInvocationException("Proxy method invocation failed with an exception. " +
                                                  "Examine InnerException for details.", (Exception) err);
         }

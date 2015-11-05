@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Unmarshal object.
         /// </summary>
         /// <param name="stream">Stream over underlying byte array with correct position.</param>
-        /// <param name="keepBinary">Whether to keep portables as portables.</param>
+        /// <param name="keepBinary">Whether to keep binary objects in binary form.</param>
         /// <returns>
         /// Object.
         /// </returns>
