@@ -203,11 +203,9 @@ namespace ignite
 
             void PortableUtils::WriteString(interop::InteropOutputStream* stream, const char* val, const int32_t len)
             {
-                stream->WriteBool(false);
+                stream->WriteBool(true);
                 stream->WriteInt32(len);
-
-                for (int i = 0; i < len; i++)
-                    stream->WriteUInt16(*(val + i));
+                stream->WriteInt8Array(reinterpret_cast<const int8_t*>(val), len);
             }
         }
     }
