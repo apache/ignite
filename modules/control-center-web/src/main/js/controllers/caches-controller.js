@@ -96,11 +96,12 @@ consoleModule.controller('cachesController', [
             ];
 
             $scope.cacheStoreJdbcDialects = [
+                {value: 'Generic', label: 'Generic JDBC'},
                 {value: 'Oracle', label: 'Oracle'},
                 {value: 'DB2', label: 'IBM DB2'},
                 {value: 'SQLServer', label: 'Microsoft SQL Server'},
                 {value: 'MySQL', label: 'MySQL'},
-                {value: 'PostgreSQL', label: 'Postgre SQL'},
+                {value: 'PostgreSQL', label: 'PostgreSQL'},
                 {value: 'H2', label: 'H2 database'}
             ];
 

@@ -902,6 +902,9 @@ $generatorJava.cacheStore = function (cache, cacheVarName, res) {
                 if (dataSourceFound)
                     res.line('storeFactoryCfg.setDataSource(dataSource);');
 
+                res.line('storeFactoryCfg.setDialect(new ' +
+                    res.importClass($generatorCommon.jdbcDialectClassName(storeFactory.dialect)) + '());');
+
                 res.needEmptyLine = true;
 
                 if (cache.metadatas && cache.metadatas.length > 0) {

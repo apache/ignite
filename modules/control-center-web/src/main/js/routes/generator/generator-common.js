@@ -228,6 +228,7 @@ $generatorCommon.MARSHALLERS = {
 
 // Pairs of supported databases and their JDBC dialects.
 $generatorCommon.JDBC_DIALECTS = {
+    Generic: 'org.apache.ignite.cache.store.jdbc.dialect.BasicJdbcDialect',
     Oracle: 'org.apache.ignite.cache.store.jdbc.dialect.OracleDialect',
     DB2: 'org.apache.ignite.cache.store.jdbc.dialect.DB2Dialect',
     SQLServer: 'org.apache.ignite.cache.store.jdbc.dialect.SQLServerDialect',
@@ -267,6 +268,7 @@ $generatorCommon.igfsMetaCache = function(igfs) {
 
 // Pairs of supported databases and their data sources.
 $generatorCommon.DATA_SOURCES = {
+    Generic: 'com.mchange.v2.c3p0.jboss.C3P0PooledDataSource',
     Oracle: 'oracle.jdbc.pool.OracleDataSource',
     DB2: 'com.ibm.db2.jcc.DB2DataSource',
     SQLServer: 'com.microsoft.sqlserver.jdbc.SQLServerDataSource',

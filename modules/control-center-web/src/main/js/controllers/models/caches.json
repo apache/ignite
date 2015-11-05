@@ -467,6 +467,7 @@
                     "  <li>IBM DB2</li>",
                     "  <li>Microsoft SQL Server</li>",
                     "  <li>MySQL</li>",
+                    "  <li>PostgreSQL</li>",
                     "  <li>H2 database</li>",
                     "</ul>"
                   ]
