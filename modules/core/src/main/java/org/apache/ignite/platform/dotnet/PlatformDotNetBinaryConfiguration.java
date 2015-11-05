@@ -41,9 +41,6 @@ public class PlatformDotNetBinaryConfiguration {
     /** Default serializer. */
     private String dfltSerializer;
 
-    /** Default metadata enabled. */
-    private boolean dfltMetadataEnabled = true;
-
     /** Whether to cache deserialized value in IGridPortableObject */
     private boolean dfltKeepDeserialized = true;
 
@@ -72,7 +69,6 @@ public class PlatformDotNetBinaryConfiguration {
         dfltNameMapper = cfg.getDefaultNameMapper();
         dfltIdMapper = cfg.getDefaultIdMapper();
         dfltSerializer = cfg.getDefaultSerializer();
-        dfltMetadataEnabled = cfg.isDefaultMetadataEnabled();
         dfltKeepDeserialized = cfg.isDefaultKeepDeserialized();
     }
 
@@ -144,28 +140,6 @@ public class PlatformDotNetBinaryConfiguration {
      */
     public void setDefaultSerializer(String dfltSerializer) {
         this.dfltSerializer = dfltSerializer;
-    }
-
-    /**
-     * Gets default metadata enabled flag. See {@link #setDefaultMetadataEnabled(boolean)} for more information.
-     *
-     * @return Default metadata enabled flag.
-     */
-    public boolean isDefaultMetadataEnabled() {
-        return dfltMetadataEnabled;
-    }
-
-    /**
-     * Sets default metadata enabled flag. When set to {@code true} all portable types will save it's metadata to
-     * cluster.
-     * <p />
-     * Can be overridden for particular type using
-     * {@link PlatformDotNetBinaryTypeConfiguration#setMetadataEnabled(Boolean)}.
-     *
-     * @param dfltMetadataEnabled Default metadata enabled flag.
-     */
-    public void setDefaultMetadataEnabled(boolean dfltMetadataEnabled) {
-        this.dfltMetadataEnabled = dfltMetadataEnabled;
     }
 
     /**

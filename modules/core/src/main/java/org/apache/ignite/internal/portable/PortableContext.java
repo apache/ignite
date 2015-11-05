@@ -134,9 +134,6 @@ public class PortableContext implements Externalizable {
     private final Map<String, BinaryTypeIdMapper> typeMappers = new ConcurrentHashMap8<>(0);
 
     /** */
-    private Map<Integer, Boolean> metaEnabled = new HashMap<>(0);
-
-    /** */
     private PortableMetaDataHandler metaHnd;
 
     /** */
@@ -153,9 +150,6 @@ public class PortableContext implements Externalizable {
 
     /** */
     private boolean convertStrings;
-
-    /** */
-    private boolean metaDataEnabled;
 
     /** */
     private boolean keepDeserialized;
@@ -260,7 +254,6 @@ public class PortableContext implements Externalizable {
             return;
 
         convertStrings = marsh.isConvertStringToBytes();
-        metaDataEnabled = marsh.isMetaDataEnabled();
         keepDeserialized = marsh.isKeepDeserialized();
 
         marshCtx = marsh.getContext();
@@ -272,7 +265,6 @@ public class PortableContext implements Externalizable {
         configure(
             marsh.getIdMapper(),
             marsh.getSerializer(),
-            marsh.isMetaDataEnabled(),
             marsh.isKeepDeserialized(),
             marsh.getClassNames(),
             marsh.getTypeConfigurations()
@@ -282,7 +274,6 @@ public class PortableContext implements Externalizable {
     /**
      * @param globalIdMapper ID mapper.
      * @param globalSerializer Serializer.
-     * @param globalMetaDataEnabled Metadata enabled flag.
      * @param globalKeepDeserialized Keep deserialized flag.
      * @param clsNames Class names.
      * @param typeCfgs Type configurations.
@@ -291,7 +282,6 @@ public class PortableContext implements Externalizable {
     private void configure(
         BinaryTypeIdMapper globalIdMapper,
         BinarySerializer globalSerializer,
-        boolean globalMetaDataEnabled,
         boolean globalKeepDeserialized,
         Collection<String> clsNames,
         Collection<BinaryTypeConfiguration> typeCfgs
@@ -306,12 +296,10 @@ public class PortableContext implements Externalizable {
                     String pkgName = clsName.substring(0, clsName.length() - 2);
 
                     for (String clsName0 : classesInPackage(pkgName))
-                        descs.add(clsName0, idMapper, null, null, globalMetaDataEnabled,
-                            globalKeepDeserialized, true);
+                        descs.add(clsName0, idMapper, null, null, globalKeepDeserialized, true);
                 }
                 else // Regular single class
-                    descs.add(clsName, idMapper, null, null, globalMetaDataEnabled,
-                        globalKeepDeserialized, true);
+                    descs.add(clsName, idMapper, null, null, globalKeepDeserialized, true);
             }
         }
 
@@ -341,8 +329,6 @@ public class PortableContext implements Externalizable {
                 if (typeCfg.getSerializer() != null)
                     serializer = typeCfg.getSerializer();
 
-                boolean metaDataEnabled = typeCfg.isMetaDataEnabled() != null ? typeCfg.isMetaDataEnabled() :
-                    globalMetaDataEnabled;
                 boolean keepDeserialized = typeCfg.isKeepDeserialized() != null ? typeCfg.isKeepDeserialized() :
                     globalKeepDeserialized;
 
@@ -351,17 +337,17 @@ public class PortableContext implements Externalizable {
 
                     for (String clsName0 : classesInPackage(pkgName))
                         descs.add(clsName0, idMapper, serializer, affFields.get(clsName0),
-                            metaDataEnabled, keepDeserialized, true);
+                            keepDeserialized, true);
                 }
                 else
                     descs.add(clsName, idMapper, serializer, affFields.get(clsName),
-                        metaDataEnabled, keepDeserialized, false);
+                        keepDeserialized, false);
             }
         }
 
         for (TypeDescriptor desc : descs.descriptors()) {
             registerUserType(desc.clsName, desc.idMapper, desc.serializer, desc.affKeyFieldName,
-                desc.metadataEnabled, desc.keepDeserialized);
+                desc.keepDeserialized);
         }
     }
 
@@ -445,7 +431,7 @@ public class PortableContext implements Externalizable {
         PortableClassDescriptor desc = descByCls.get(cls);
 
         if (desc == null || !desc.registered())
-            desc = registerClassDescriptor(cls, true);
+            desc = registerClassDescriptor(cls);
 
         return desc;
     }
@@ -500,7 +486,7 @@ public class PortableContext implements Externalizable {
         }
 
         if (desc == null) {
-            desc = registerClassDescriptor(cls, false);
+            desc = registerClassDescriptor(cls);
 
             assert desc.typeId() == typeId;
         }
@@ -514,7 +500,7 @@ public class PortableContext implements Externalizable {
      * @param cls Class.
      * @return Class descriptor.
      */
-    private PortableClassDescriptor registerClassDescriptor(Class<?> cls, boolean registerMetadata) {
+    private PortableClassDescriptor registerClassDescriptor(Class<?> cls) {
         PortableClassDescriptor desc;
 
         String clsName = cls.getName();
@@ -527,7 +513,7 @@ public class PortableContext implements Externalizable {
                 clsName,
                 BASIC_CLS_ID_MAPPER,
                 null,
-                metaDataEnabled,
+                false,
                 keepDeserialized,
                 true, /* registered */
                 false /* predefined */
@@ -539,7 +525,7 @@ public class PortableContext implements Externalizable {
                 desc = old;
         }
         else
-            desc = registerUserClassDescriptor(cls, registerMetadata);
+            desc = registerUserClassDescriptor(cls);
 
         return desc;
     }
@@ -550,7 +536,7 @@ public class PortableContext implements Externalizable {
      * @param cls Class.
      * @return Class descriptor.
      */
-    private PortableClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean registerMetadata) {
+    private PortableClassDescriptor registerUserClassDescriptor(Class<?> cls) {
         boolean registered;
 
         String typeName = typeName(cls.getName());
@@ -573,7 +559,7 @@ public class PortableContext implements Externalizable {
             typeName,
             idMapper,
             null,
-            metaDataEnabled,
+            true,
             keepDeserialized,
             registered,
             false /* predefined */
@@ -738,7 +724,6 @@ public class PortableContext implements Externalizable {
      * @param idMapper ID mapper.
      * @param serializer Serializer.
      * @param affKeyFieldName Affinity key field name.
-     * @param metaDataEnabled Metadata enabled flag.
      * @param keepDeserialized Keep deserialized flag.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
@@ -747,7 +732,6 @@ public class PortableContext implements Externalizable {
         BinaryTypeIdMapper idMapper,
         @Nullable BinarySerializer serializer,
         @Nullable String affKeyFieldName,
-        boolean metaDataEnabled,
         boolean keepDeserialized)
         throws BinaryObjectException {
         assert idMapper != null;
@@ -774,8 +758,6 @@ public class PortableContext implements Externalizable {
 
         typeMappers.put(typeName, idMapper);
 
-        metaEnabled.put(id, metaDataEnabled);
-
         Map<String, String> fieldsMeta = null;
 
         if (cls != null) {
@@ -787,7 +769,7 @@ public class PortableContext implements Externalizable {
                 typeName,
                 idMapper,
                 serializer,
-                metaDataEnabled,
+                true,
                 keepDeserialized,
                 true, /* registered */
                 false /* predefined */
@@ -811,16 +793,6 @@ public class PortableContext implements Externalizable {
      */
     @Nullable public BinaryType metaData(int typeId) throws BinaryObjectException {
         return metaHnd != null ? metaHnd.metadata(typeId) : null;
-    }
-
-    /**
-     * @param typeId Type ID.
-     * @return Whether meta data is enabled.
-     */
-    public boolean isMetaDataEnabled(int typeId) {
-        Boolean enabled = metaEnabled.get(typeId);
-
-        return enabled != null ? enabled : metaDataEnabled;
     }
 
     /**
@@ -1058,7 +1030,6 @@ public class PortableContext implements Externalizable {
          * @param idMapper ID mapper.
          * @param serializer Serializer.
          * @param affKeyFieldName Affinity key field name.
-         * @param metadataEnabled Metadata enabled flag.
          * @param keepDeserialized Keep deserialized flag.
          * @param canOverride Whether this descriptor can be override.
          * @throws org.apache.ignite.binary.BinaryObjectException If failed.
@@ -1067,7 +1038,6 @@ public class PortableContext implements Externalizable {
             BinaryTypeIdMapper idMapper,
             BinarySerializer serializer,
             String affKeyFieldName,
-            boolean metadataEnabled,
             boolean keepDeserialized,
             boolean canOverride)
             throws BinaryObjectException {
@@ -1075,7 +1045,6 @@ public class PortableContext implements Externalizable {
                 idMapper,
                 serializer,
                 affKeyFieldName,
-                metadataEnabled,
                 keepDeserialized,
                 canOverride);
 
@@ -1113,9 +1082,6 @@ public class PortableContext implements Externalizable {
         /** Affinity key field name. */
         private String affKeyFieldName;
 
-        /** Metadata enabled flag. */
-        private boolean metadataEnabled;
-
         /** Keep deserialized flag. */
         private boolean keepDeserialized;
 
@@ -1129,18 +1095,15 @@ public class PortableContext implements Externalizable {
          * @param idMapper ID mapper.
          * @param serializer Serializer.
          * @param affKeyFieldName Affinity key field name.
-         * @param metadataEnabled Metadata enabled flag.
          * @param keepDeserialized Keep deserialized flag.
          * @param canOverride Whether this descriptor can be override.
          */
         private TypeDescriptor(String clsName, BinaryTypeIdMapper idMapper, BinarySerializer serializer,
-            String affKeyFieldName, boolean metadataEnabled, boolean keepDeserialized,
-            boolean canOverride) {
+            String affKeyFieldName, boolean keepDeserialized, boolean canOverride) {
             this.clsName = clsName;
             this.idMapper = idMapper;
             this.serializer = serializer;
             this.affKeyFieldName = affKeyFieldName;
-            this.metadataEnabled = metadataEnabled;
             this.keepDeserialized = keepDeserialized;
             this.canOverride = canOverride;
         }
@@ -1158,7 +1121,6 @@ public class PortableContext implements Externalizable {
                 idMapper = other.idMapper;
                 serializer = other.serializer;
                 affKeyFieldName = other.affKeyFieldName;
-                metadataEnabled = other.metadataEnabled;
                 keepDeserialized = other.keepDeserialized;
                 canOverride = other.canOverride;
             }

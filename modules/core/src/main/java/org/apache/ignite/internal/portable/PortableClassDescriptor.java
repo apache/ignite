@@ -274,6 +274,13 @@ public class PortableClassDescriptor {
     }
 
     /**
+     * @return User type flag.
+     */
+    public boolean userType() {
+        return userType;
+    }
+
+    /**
      * @return Fields meta data.
      */
     Map<String, String> fieldsMeta() {
