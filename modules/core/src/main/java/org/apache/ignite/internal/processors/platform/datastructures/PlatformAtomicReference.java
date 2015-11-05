@@ -22,6 +22,7 @@ import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.platform.*;
 import org.apache.ignite.internal.processors.platform.memory.*;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  * Platform atomic reference wrapper.
@@ -127,11 +128,25 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
             Object val = reader.readObjectDetached();
             Object cmp = reader.readObjectDetached();
 
-            Object res = atomicRef.compareAndSetAndGet(cmp, val);
+            Object res = atomicRef.compareAndSetAndGet(cmp, val, wrapperPredicate(cmp));
 
             writer.writeObject(res);
         }
         else
             super.processInStreamOutStream(type, reader, writer);
+    }
+
+    /**
+     * Method make wrapper predicate for existing value.
+     *
+     * @param val Value.
+     * @return Predicate.
+     */
+    private IgnitePredicate<Object> wrapperPredicate(final Object val) {
+        return new IgnitePredicate<Object>() {
+            @Override public boolean apply(Object e) {
+                return (val == null && e == null) || (val != null && val.equals(e));
+            }
+        };
     }
 }
