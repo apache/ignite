@@ -36,19 +36,22 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>Updated hashcode.</returns>
         public static int Update(int current, int next)
         {
-            current = current ^ (next & 0xFF);
-            current = current * Prime;
+            unchecked
+            {
+                current ^= next & 0xFF;
+                current *= Prime;
 
-            current = current ^ ((next >> 8) & 0xFF);
-            current = current * Prime;
+                current ^= (next >> 8) & 0xFF;
+                current *= Prime;
 
-            current = current ^ ((next >> 16) & 0xFF);
-            current = current * Prime;
+                current ^= (next >> 16) & 0xFF;
+                current *= Prime;
 
-            current = current ^ ((next >> 24) & 0xFF);
-            current = current * Prime;
+                current ^= (next >> 24) & 0xFF;
+                current *= Prime;
 
-            return current;
+                return current;
+            }
         }
     }
 }

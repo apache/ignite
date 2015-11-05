@@ -29,6 +29,9 @@ import java.util.Map;
  * - When there are more fields, we store them inside a hash map.
  */
 public class PortableSchema {
+    /** Order returned if field is not found. */
+    public static final int ORDER_NOT_FOUND = -1;
+
     /** Inline flag. */
     private final boolean inline;
 
@@ -179,12 +182,12 @@ public class PortableSchema {
             if (id == id7)
                 return 7;
 
-            return 0;
+            return ORDER_NOT_FOUND;
         }
         else {
-            Integer off = map.get(id);
+            Integer order = map.get(id);
 
-            return off != null ? off : 0;
+            return order != null ? order : ORDER_NOT_FOUND;
         }
     }
 }

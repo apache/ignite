@@ -2633,7 +2633,7 @@ public class PortableReaderExImpl implements PortableReader, PortableRawReaderEx
 
             int order = schema.order(id);
 
-            if (order != 0) {
+            if (order != PortableSchema.ORDER_NOT_FOUND) {
                 int offsetPos = footerStart + order * (4 + offsetSize) + 4;
 
                 int pos = start + PortableUtils.fieldOffsetRelative(in, offsetPos, offsetSize);

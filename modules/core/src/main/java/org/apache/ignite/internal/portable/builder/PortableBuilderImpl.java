@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.portable.builder;
 
+import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableObjectImpl;
 import org.apache.ignite.internal.portable.PortableObjectOffheapImpl;
@@ -245,27 +246,28 @@ public class PortableBuilderImpl implements PortableBuilder {
                     int fieldId = reader.readIntPositioned(footerPos);
                     int fieldLen = fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldOffsetSize).get2();
 
+                    int postPos = reader.position() + fieldLen; // Position where reader will be placed afterwards.
+
                     footerPos += 4 + fieldOffsetSize;
 
                     if (assignedFldsById.containsKey(fieldId)) {
                         Object assignedVal = assignedFldsById.remove(fieldId);
-
-                        reader.skip(fieldLen);
 
                         if (assignedVal != REMOVED_FIELD_MARKER) {
                             writer.writeFieldId(fieldId);
 
                             serializer.writeValue(writer, assignedVal);
                         }
-                    } else {
+                    }
+                    else {
                         int type = fieldLen != 0 ? reader.readByte(0) : 0;
 
                         if (fieldLen != 0 && !PortableUtils.isPlainArrayType(type) && PortableUtils.isPlainType(type)) {
                             writer.writeFieldId(fieldId);
-                            writer.write(reader.array(), reader.position(), fieldLen);
 
-                            reader.skip(fieldLen);
-                        } else {
+                            writer.write(reader.array(), reader.position(), fieldLen);
+                        }
+                        else {
                             writer.writeFieldId(fieldId);
 
                             Object val;
@@ -273,20 +275,18 @@ public class PortableBuilderImpl implements PortableBuilder {
                             if (fieldLen == 0)
                                 val = null;
                             else if (readCache == null) {
-                                int savedPos = reader.position();
-
                                 val = reader.parseValue();
 
-                                assert reader.position() == savedPos + fieldLen;
-                            } else {
-                                val = readCache.get(fieldId);
-
-                                reader.skip(fieldLen);
+                                assert reader.position() == postPos;
                             }
+                            else
+                                val = readCache.get(fieldId);
 
                             serializer.writeValue(writer, val);
                         }
                     }
+
+                    reader.position(postPos);
                 }
             }
 
@@ -337,15 +337,18 @@ public class PortableBuilderImpl implements PortableBuilder {
                                 newFldsMetadata = new HashMap<>();
 
                             newFldsMetadata.put(name, newFldTypeName);
-                        } else {
-                            if (!"Object".equals(oldFldTypeName) && !oldFldTypeName.equals(newFldTypeName)) {
+                        }
+                        else {
+                            String objTypeName =
+                                CacheObjectPortableProcessorImpl.FIELD_TYPE_NAMES[GridPortableMarshaller.OBJ];
+
+                            if (!objTypeName.equals(oldFldTypeName) && !oldFldTypeName.equals(newFldTypeName)) {
                                 throw new PortableException(
                                     "Wrong value has been set [" +
                                         "typeName=" + (typeName == null ? metadata.typeName() : typeName) +
                                         ", fieldName=" + name +
                                         ", fieldType=" + oldFldTypeName +
-                                        ", assignedValueType=" + newFldTypeName +
-                                        ", assignedValue=" + (((PortableValueWithType) val).value()) + ']'
+                                        ", assignedValueType=" + newFldTypeName + ']'
                                 );
                             }
                         }

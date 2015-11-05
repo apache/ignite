@@ -21,11 +21,15 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.portable.PortableException;
+import org.apache.ignite.portable.PortableMarshalAware;
+import org.apache.ignite.portable.PortableReader;
+import org.apache.ignite.portable.PortableWriter;
 
 /**
  * Entity class for benchmark.
  */
-public class SampleValue implements Externalizable {
+public class SampleValue implements Externalizable, PortableMarshalAware {
     /** */
     private int id;
 
@@ -63,6 +67,16 @@ public class SampleValue implements Externalizable {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(id);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePortable(PortableWriter writer) throws PortableException {
+        writer.writeInt("id", id);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readPortable(PortableReader reader) throws PortableException {
+        id = reader.readInt("id");
     }
 
     /** {@inheritDoc} */
