@@ -20,10 +20,11 @@ package org.apache.ignite.stream.twitter;
 import com.twitter.hbc.core.Client;
 import com.twitter.hbc.core.HttpHosts;
 import com.twitter.hbc.core.endpoint.StreamingEndpoint;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import twitter4j.Status;
 import twitter4j.TwitterException;
 import twitter4j.TwitterObjectFactory;
@@ -41,7 +42,7 @@ public class TwitterStreamerImpl extends TwitterStreamer<Long, String> {
     public TwitterStreamerImpl(OAuthSettings oAuthSettings) {
         super(oAuthSettings);
 
-        setTransformer(new TweetTransformerImpl());
+        setSingleTupleExtractor(new TwitterStreamSingleTupleExtractorImpl());
     }
 
     /**
@@ -52,20 +53,20 @@ public class TwitterStreamerImpl extends TwitterStreamer<Long, String> {
     }
 
     /** {@inheritDoc} */
-    @Override protected Client buildClient(BlockingQueue<String> tweetQueue, HttpHosts hosts, StreamingEndpoint endpoint) {
+    @Override protected Client buildClient(BlockingQueue<String> tweetQueue, HttpHosts hosts,
+        StreamingEndpoint endpoint) {
         return super.buildClient(tweetQueue, this.hosts, endpoint);
     }
 
     /**
-     * Long, String Tweet Transformer
+     * Long, String Tweet Single Tuple Extractor.
      */
-    private class TweetTransformerImpl implements TweetTransformer<Long, String> {
-        /** {@inheritDoc} */
-        @Override public Map<Long, String> apply(String tweet) {
+    class TwitterStreamSingleTupleExtractorImpl implements StreamSingleTupleExtractor<String, Long, String> {
+        @Override public Map.Entry<Long, String> extract(String tweet) {
             try {
                 Status status = TwitterObjectFactory.createStatus(tweet);
 
-                return Collections.singletonMap(status.getId(), status.getText());
+                return new IgniteBiTuple<>(status.getId(), status.getText());
             }
             catch (TwitterException e) {
                 U.error(log, e);
@@ -74,4 +75,5 @@ public class TwitterStreamerImpl extends TwitterStreamer<Long, String> {
             }
         }
     }
+
 }

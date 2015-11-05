@@ -70,6 +70,11 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
     public final WireMockServer mockServer = new WireMockServer(); //Starts server on 8080 port.
 
     /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10_000;
+    }
+
+    /** {@inheritDoc} */
     @Override public void beforeTest() throws Exception {
         grid().getOrCreateCache(defaultCacheConfiguration());
 
@@ -130,7 +135,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
         CountDownLatch latch = listener.getLatch();
 
         //Enough tweets was handled in 10 seconds.
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        latch.await();
 
         unsubscribeToPutEvents(listener);
 

@@ -54,9 +54,6 @@ import org.apache.ignite.stream.StreamAdapter;
  * This streamer uses https://dev.twitter.com/streaming API and supports Public API, User Streams,
  * Site Streams and Firehose.
  * <p>
- * You can also provide a {@link TweetTransformer} to convert the incoming message into cache entries to override
- * default transformer.
- * <p>
  * This Streamer features:
  * <ul>
  *     <li>Supports OAuth1 authentication scheme.
@@ -68,16 +65,8 @@ public abstract class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> 
     /** Logger. */
     protected IgniteLogger log;
 
-    /**
-     * Threads count used to transform tweets.
-     */
+    /** Threads count used to transform tweets. */
     private int threadsCount = 1;
-
-    /**
-     * The message transformer that converts an incoming Tweet into cache entries. If not provided default transformer
-     * will be used.
-     */
-    private TweetTransformer<K, V> transformer;
 
     /** Twitter Streaming API params. See https://dev.twitter.com/streaming/overview/request-parameters */
     private Map<String, String> apiParams;
@@ -137,21 +126,18 @@ public abstract class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> 
 
                 @Override
                 public Boolean call() {
-                    while (!client.isDone() && running.get() == 1) {
+                    while (true) {
                         try {
                             String tweet = tweetQueue.take();
 
-                            Map<K, V> value = transformer.apply(tweet);
-
-                            if (value != null)
-                                getStreamer().addData(value);
+                            addMessage(tweet);
                         }
                         catch (InterruptedException e) {
                             log.error("Tweets transformation was interrupted", e);
+
+                            return true;
                         }
                     }
-
-                    return true;
                 }
             };
 
@@ -177,10 +163,11 @@ public abstract class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> 
      * Validates config at start.
      */
     protected void validateConfig() {
-        A.notNull(getStreamer(), "streamer");
-        A.notNull(getIgnite(), "ignite");
+        A.notNull(getStreamer(), "Streamer");
+        A.notNull(getIgnite(), "Ignite");
         A.notNull(endpointUrl, "Twitter Streaming API endpoint");
-        A.notNull(transformer, "Transformer");
+
+        A.ensure(getSingleTupleExtractor() != null || getMultipleTupleExtractor() != null, "Twitter extractor");
 
         String followParam = apiParams.get(SITE_USER_ID_KEY);
 
@@ -268,15 +255,6 @@ public abstract class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> 
             .processor(new StringDelimitedProcessor(tweetQueue));
 
         return builder.build();
-    }
-
-    /**
-     * Sets Transformer.
-     *
-     * @param transformer Transformer.
-     */
-    public void setTransformer(TweetTransformer<K, V> transformer) {
-        this.transformer = transformer;
     }
 
     /**
