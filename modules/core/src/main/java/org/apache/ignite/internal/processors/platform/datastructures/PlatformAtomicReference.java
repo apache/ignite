@@ -22,6 +22,7 @@ import org.apache.ignite.internal.portable.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.platform.*;
 import org.apache.ignite.internal.processors.platform.memory.*;
+import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.lang.IgnitePredicate;
 
 /**
@@ -126,9 +127,13 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
                                                       PortableRawWriterEx writer) throws IgniteCheckedException {
         if (type == OP_COMPARE_AND_SET_AND_GET){
             Object val = reader.readObjectDetached();
-            Object cmp = reader.readObjectDetached();
+            final Object cmp = reader.readObjectDetached();
 
-            Object res = atomicRef.compareAndSetAndGet(cmp, val, wrapperPredicate(cmp));
+            Object res = atomicRef.compareAndSetAndGet(cmp, val, new IgnitePredicateX<Object>() {
+                @Override public boolean applyx(Object e) throws IgniteCheckedException {
+                    return compareObjects(cmp, e);
+                }
+            });
 
             writer.writeObject(res);
         }
@@ -137,17 +142,24 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
     }
 
     /**
-     * Method make wrapper predicate for existing value.
+     * Compares two native objects for equality.
      *
-     * @param val Value.
-     * @return Predicate.
+     * @param x First object.
+     * @param y Second object.
+     * @return True if objects are equal, false otherwise.
+     * @throws IgniteCheckedException
      */
-    private IgnitePredicate<Object> wrapperPredicate(final Object val) {
-        // TODO: call .Net for comparison check
-        return new IgnitePredicate<Object>() {
-            @Override public boolean apply(Object e) {
-                return (val == null && e == null) || (val != null && val.equals(e));
-            }
-        };
+    private boolean compareObjects(Object x, Object y) throws IgniteCheckedException {
+        if (x == null && y == null)
+            return true;
+
+        if (x == null || y == null)
+            return false;
+
+        if (x.equals(y))
+            return true;  // primitives and some portables can be compared without a platform call
+
+        // TODO: write to a stream
+        return platformCtx.gateway().compareObjects(0) == 0;
     }
 }
