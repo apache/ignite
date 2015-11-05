@@ -108,14 +108,14 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="grid">The grid.</param>
         /// <param name="cache">Cache.</param>
         /// <param name="stream">Stream.</param>
-        /// <param name="keepPortable">Portable flag.</param>
-        public void Receive(Ignite grid, IUnmanagedTarget cache, IBinaryStream stream, bool keepPortable)
+        /// <param name="keepBinary">Binary flag.</param>
+        public void Receive(Ignite grid, IUnmanagedTarget cache, IBinaryStream stream, bool keepBinary)
         {
             Debug.Assert(grid != null);
             Debug.Assert(cache != null);
             Debug.Assert(stream != null);
 
-            _invoke(_rcv, grid, cache, stream, keepPortable);
+            _invoke(_rcv, grid, cache, stream, keepBinary);
         }
 
         /// <summary>
@@ -125,11 +125,11 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="grid">Grid.</param>
         /// <param name="cache">Cache.</param>
         /// <param name="stream">Stream.</param>
-        /// <param name="keepPortable">Portable flag.</param>
+        /// <param name="keepBinary">Binary flag.</param>
         public static void InvokeReceiver<TK, TV>(IStreamReceiver<TK, TV> receiver, Ignite grid, IUnmanagedTarget cache,
-            IBinaryStream stream, bool keepPortable)
+            IBinaryStream stream, bool keepBinary)
         {
-            var reader = grid.Marshaller.StartUnmarshal(stream, keepPortable);
+            var reader = grid.Marshaller.StartUnmarshal(stream, keepBinary);
 
             var size = reader.ReadInt();
 
@@ -138,7 +138,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             for (var i = 0; i < size; i++)
                 entries.Add(new CacheEntry<TK, TV>(reader.ReadObject<TK>(), reader.ReadObject<TV>()));
 
-            receiver.Receive(grid.Cache<TK, TV>(cache, keepPortable), entries);
+            receiver.Receive(grid.Cache<TK, TV>(cache, keepBinary), entries);
         }
     }
 }

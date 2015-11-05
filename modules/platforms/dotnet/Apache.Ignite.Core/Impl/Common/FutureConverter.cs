@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Constructor.
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepBinary">Keep portable.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="func">Converting function.</param>
         public FutureConverter(Marshaller marsh, bool keepBinary,
             Func<BinaryReader, T> func = null)

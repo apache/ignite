@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="igniteBinary">Portables.</param>
+        /// <param name="igniteBinary">Binary.</param>
         /// <param name="parent">Parent builder.</param>
         /// <param name="obj">Initial binary object.</param>
         /// <param name="desc">Type descriptor.</param>
@@ -492,7 +492,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="inStream">Input stream with initial object.</param>
         /// <param name="outStream">Output stream.</param>
-        /// <param name="desc">Portable type descriptor.</param>
+        /// <param name="desc">Type descriptor.</param>
         /// <param name="hashCode">Hash code.</param>
         /// <param name="vals">Values.</param>
         private void Mutate(
@@ -1010,7 +1010,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private class Context
         {
-            /** Map from object position in old binary to position in new portable. */
+            /** Map from object position in old binary to position in new binary. */
             private IDictionary<int, int> _oldToNew;
 
             /** Parent context. */

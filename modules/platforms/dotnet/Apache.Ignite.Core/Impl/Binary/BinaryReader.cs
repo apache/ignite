@@ -554,10 +554,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var len = Stream.ReadInt();
 
-            var portableBytesPos = Stream.Position;
+            var binaryBytesPos = Stream.Position;
 
             if (_mode != BinaryMode.Deserialize)
-                return TypeCaster<T>.Cast(ReadAsBinary(portableBytesPos, len, doDetach));
+                return TypeCaster<T>.Cast(ReadAsBinary(binaryBytesPos, len, doDetach));
 
             Stream.Seek(len, SeekOrigin.Current);
 
@@ -565,7 +565,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var retPos = Stream.Position;
 
-            Stream.Seek(portableBytesPos + offset, SeekOrigin.Begin);
+            Stream.Seek(binaryBytesPos + offset, SeekOrigin.Begin);
 
             _mode = BinaryMode.KeepBinary;
 
@@ -584,15 +584,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reads the binary object in binary form.
         /// </summary>
-        private BinaryObject ReadAsBinary(int portableBytesPos, int dataLen, bool doDetach)
+        private BinaryObject ReadAsBinary(int binaryBytesPos, int dataLen, bool doDetach)
         {
             try
             {
-                Stream.Seek(dataLen + portableBytesPos, SeekOrigin.Begin);
+                Stream.Seek(dataLen + binaryBytesPos, SeekOrigin.Begin);
 
                 var offs = Stream.ReadInt(); // offset inside data
 
-                var pos = portableBytesPos + offs;
+                var pos = binaryBytesPos + offs;
 
                 var hdr = BinaryObjectHeader.Read(Stream, pos);
 
@@ -605,7 +605,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
             finally
             {
-                Stream.Seek(portableBytesPos + dataLen + 4, SeekOrigin.Begin);
+                Stream.Seek(binaryBytesPos + dataLen + 4, SeekOrigin.Begin);
             }
         }
 

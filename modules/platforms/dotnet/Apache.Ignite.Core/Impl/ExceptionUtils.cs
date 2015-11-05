@@ -142,9 +142,9 @@ namespace Apache.Ignite.Core.Impl
 
             if (reader.ReadBoolean())
             {
-                bool keepPortable = reader.ReadBoolean();
+                bool keepBinary = reader.ReadBoolean();
 
-                BinaryReader keysReader = reader.Marshaller.StartUnmarshal(reader.Stream, keepPortable);
+                BinaryReader keysReader = reader.Marshaller.StartUnmarshal(reader.Stream, keepBinary);
 
                 try
                 {

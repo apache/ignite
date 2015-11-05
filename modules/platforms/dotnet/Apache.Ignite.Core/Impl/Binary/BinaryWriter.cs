@@ -1353,10 +1353,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 Type type = obj.GetType();
 
-                // We assume object as binary only in case it has descriptor.
+                // We assume object as binarizable only in case it has descriptor.
                 // Collections, Enums and non-primitive arrays do not have descriptors
-                // and this is fine here because we cannot know whether their members
-                // are portable.
+                // and this is fine here because we cannot know whether their members are binarizable.
                 return _marsh.GetDescriptor(type) != null || BinarySystemHandlers.GetWriteHandler(type) != null;
             }
 

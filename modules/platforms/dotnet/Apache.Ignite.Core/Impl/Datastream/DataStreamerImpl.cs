@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="cacheName">Cache name.</param>
-        /// <param name="keepBinary">Portable flag.</param>
+        /// <param name="keepBinary">Binary flag.</param>
         public DataStreamerImpl(IUnmanagedTarget target, Marshaller marsh, string cacheName, bool keepBinary)
             : base(target, marsh)
         {
@@ -361,9 +361,9 @@ namespace Apache.Ignite.Core.Impl.Datastream
                         return;
 
                     var rcvHolder = new StreamReceiverHolder(value,
-                        (rec, grid, cache, stream, keepPortable) =>
+                        (rec, grid, cache, stream, keepBinary) =>
                             StreamReceiverHolder.InvokeReceiver((IStreamReceiver<TK, TV>) rec, grid, cache, stream,
-                                keepPortable));
+                                keepBinary));
 
                     var rcvHnd0 = handleRegistry.Allocate(rcvHolder);
 
@@ -513,8 +513,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
                 if (result == null)
                     throw new InvalidOperationException(
-                        "Can't change type of binary streamer. WithKeepPortable has been called on an instance of " +
-                        "portable streamer with incompatible generic arguments.");
+                        "Can't change type of binary streamer. WithKeepBinary has been called on an instance of " +
+                        "binary streamer with incompatible generic arguments.");
 
                 return result;
             }

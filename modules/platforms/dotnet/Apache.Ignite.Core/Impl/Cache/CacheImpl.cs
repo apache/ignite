@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Flag: skip store. */
         private readonly bool _flagSkipStore;
 
-        /** Flag: keep portable. */
+        /** Flag: keep binary. */
         private readonly bool _flagKeepBinary;
 
         /** Flag: async mode.*/
@@ -183,8 +183,8 @@ namespace Apache.Ignite.Core.Impl.Cache
 
                 if (result == null)
                     throw new InvalidOperationException(
-                        "Can't change type of binary cache. WithKeepPortable has been called on an instance of " +
-                        "portable cache with incompatible generic arguments.");
+                        "Can't change type of binary cache. WithKeepBinary has been called on an instance of " +
+                        "binary cache with incompatible generic arguments.");
 
                 return result;
             }
@@ -1095,7 +1095,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /// <summary>
-        /// Unwraps an exception from PortableResultHolder, if any. Otherwise does the cast.
+        /// Unwraps an exception.
         /// </summary>
         /// <typeparam name="T">Result type.</typeparam>
         /// <param name="obj">Object.</param>

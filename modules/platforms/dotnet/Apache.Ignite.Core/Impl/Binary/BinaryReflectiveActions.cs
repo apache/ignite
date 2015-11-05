@@ -343,7 +343,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (convertFieldValToObject)
                 fldExpr = Expression.Convert(fldExpr, typeof (object));
 
-            // Call IPortableWriter method
+            // Call Writer method
             var writerParam = Expression.Parameter(typeof(IBinaryWriter));
             var fldNameParam = Expression.Constant(BinaryUtils.CleanFieldName(field.Name));
             var writeExpr = Expression.Invoke(write, fldNameParam, writerParam, fldExpr);
@@ -369,7 +369,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
             var fldExpr = Expression.Field(targetParamConverted, field);
 
-            // Call IPortableWriter method
+            // Call Writer method
             var writerParam = Expression.Parameter(typeof(IBinaryWriter));
             var fldNameParam = Expression.Constant(BinaryUtils.CleanFieldName(field.Name));
             var writeMethod = method.MakeGenericMethod(genericArgs);
@@ -388,7 +388,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             Debug.Assert(field != null);
             Debug.Assert(field.DeclaringType != null);   // non-static
 
-            // Call IPortableReader method
+            // Call Reader method
             var readerParam = Expression.Parameter(typeof(IBinaryReader));
             var fldNameParam = Expression.Constant(BinaryUtils.CleanFieldName(field.Name));
             Expression readExpr = Expression.Invoke(read, fldNameParam, readerParam);
@@ -418,7 +418,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (genericArgs.Length == 0)
                 genericArgs = new[] {field.FieldType};
 
-            // Call IPortableReader method
+            // Call Reader method
             var readerParam = Expression.Parameter(typeof (IBinaryReader));
             var fldNameParam = Expression.Constant(BinaryUtils.CleanFieldName(field.Name));
             var readMethod = method.MakeGenericMethod(genericArgs);

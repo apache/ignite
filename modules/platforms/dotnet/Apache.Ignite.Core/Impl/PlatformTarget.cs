@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Write collection.
         /// </summary>
-        /// <param name="writer">Portable writer.</param>
+        /// <param name="writer">Writer.</param>
         /// <param name="vals">Values.</param>
         /// <returns>The same writer for chaining.</returns>
         protected static BinaryWriter WriteCollection<T>(BinaryWriter writer, ICollection<T> vals)
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Write nullable collection.
         /// </summary>
-        /// <param name="writer">Portable writer.</param>
+        /// <param name="writer">Writer.</param>
         /// <param name="vals">Values.</param>
         /// <returns>The same writer for chaining.</returns>
         protected static BinaryWriter WriteNullableCollection<T>(BinaryWriter writer, ICollection<T> vals)
@@ -126,7 +126,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Write collection.
         /// </summary>
-        /// <param name="writer">Portable writer.</param>
+        /// <param name="writer">Writer.</param>
         /// <param name="vals">Values.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The same writer for chaining.</returns>
@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Write enumerable.
         /// </summary>
-        /// <param name="writer">Portable writer.</param>
+        /// <param name="writer">Writer.</param>
         /// <param name="vals">Values.</param>
         /// <returns>The same writer for chaining.</returns>
         protected static BinaryWriter WriteEnumerable<T>(BinaryWriter writer, IEnumerable<T> vals)
@@ -163,7 +163,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Write enumerable.
         /// </summary>
-        /// <param name="writer">Portable writer.</param>
+        /// <param name="writer">Writer.</param>
         /// <param name="vals">Values.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>The same writer for chaining.</returns>
@@ -210,7 +210,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Write dictionary.
         /// </summary>
-        /// <param name="writer">Portable writer.</param>
+        /// <param name="writer">Writer.</param>
         /// <param name="vals">Values.</param>
         /// <returns>The same writer.</returns>
         protected static BinaryWriter WriteDictionary<T1, T2>(BinaryWriter writer, 
@@ -230,7 +230,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Write a nullable item.
         /// </summary>
-        /// <param name="writer">Portable writer.</param>
+        /// <param name="writer">Writer.</param>
         /// <param name="item">Item.</param>
         /// <param name="writeItem">Write action to perform on item when it is not null.</param>
         /// <returns>The same writer for chaining.</returns>
@@ -571,7 +571,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Finish marshaling.
         /// </summary>
-        /// <param name="writer">Portable writer.</param>
+        /// <param name="writer">Writer.</param>
         internal void FinishMarshal(BinaryWriter writer)
         {
             _marsh.FinishMarshal(writer);

@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
-    /// Wraps Serializable item in a portable.
+    /// Wraps DateTime item in a binarizable.
     /// </summary>
     internal class DateTimeHolder : IBinaryWriteAware
     {

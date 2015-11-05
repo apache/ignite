@@ -104,14 +104,14 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                 var reader = BinaryUtils.Marshaller.StartUnmarshal(stream, BinaryMode.KeepBinary);
 
                 var className = reader.ReadString();
-                var convertPortable = reader.ReadBoolean();
+                var convertBinary = reader.ReadBoolean();
                 var propertyMap = reader.ReadDictionaryAsGeneric<string, object>();
 
                 var store = IgniteUtils.CreateInstance<ICacheStore>(className);
 
                 IgniteUtils.SetProperties(store, propertyMap);
 
-                return new CacheStore(store, convertPortable, registry);
+                return new CacheStore(store, convertBinary, registry);
             }
         }
 

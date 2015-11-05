@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Binary
             {
                 TypeConfigurations = new List<BinaryTypeConfiguration>(cfg.TypeConfigurations.Count);
 
-                foreach (BinaryTypeConfiguration typeCfg in cfg.TypeConfigurations) 
+                foreach (BinaryTypeConfiguration typeCfg in cfg.TypeConfigurations)
                     TypeConfigurations.Add(new BinaryTypeConfiguration(typeCfg));
             }
         }
@@ -59,56 +59,32 @@ namespace Apache.Ignite.Core.Binary
         /// Type configurations.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<BinaryTypeConfiguration> TypeConfigurations
-        {
-            get;
-            set;
-        }
+        public ICollection<BinaryTypeConfiguration> TypeConfigurations { get; set; }
 
         /// <summary>
-        /// Binarizable types. Shorthand for creating PortableTypeConfiguration.
+        /// Binarizable types. Shorthand for creating <see cref="BinaryTypeConfiguration"/>.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<string> Types
-        {
-            get;
-            set;
-        }
+        public ICollection<string> Types { get; set; }
 
         /// <summary>
         /// Default name mapper.
         /// </summary>
-        public INameMapper DefaultNameMapper
-        {
-            get;
-            set;
-        }
+        public INameMapper DefaultNameMapper { get; set; }
 
         /// <summary>
         /// Default ID mapper.
         /// </summary>
-        public IIdMapper DefaultIdMapper
-        {
-            get;
-            set;
-        }
+        public IIdMapper DefaultIdMapper { get; set; }
 
         /// <summary>
         /// Default serializer.
         /// </summary>
-        public IBinarySerializer DefaultSerializer
-        {
-            get;
-            set;
-        }
+        public IBinarySerializer DefaultSerializer { get; set; }
 
         /// <summary>
         /// Default keep deserialized flag.
         /// </summary>
-        public bool DefaultKeepDeserialized
-        {
-            get;
-            set;
-        }
+        public bool DefaultKeepDeserialized { get; set; }
     }
 }

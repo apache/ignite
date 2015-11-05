@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** Underlying projection. */
         private readonly ClusterGroupImpl _prj;
 
-        /** Whether objects must be kept portable. */
+        /** Whether objects must be kept in binary form. */
         private readonly ThreadLocal<bool> _keepBinary = new ThreadLocal<bool>(() => false);
 
         /// <summary>
@@ -69,13 +69,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="prj">Projection.</param>
-        /// <param name="keepPortable">"keepPortable" flag.</param>
-        public ComputeImpl(IUnmanagedTarget target, Marshaller marsh, ClusterGroupImpl prj, bool keepPortable)
+        /// <param name="keepBinary">Binary flag.</param>
+        public ComputeImpl(IUnmanagedTarget target, Marshaller marsh, ClusterGroupImpl prj, bool keepBinary)
             : base(target, marsh)
         {
             _prj = prj;
 
-            _keepBinary.Value = keepPortable;
+            _keepBinary.Value = keepBinary;
         }
 
         /// <summary>

@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Binary
 {
     /// <summary>
-    /// Object handle dictionary for PortableReader.
+    /// Object handle dictionary for <see cref="BinaryReader"/>.
     /// </summary>
     internal class BinaryReaderHandleDictionary : BinaryHandleDictionary<int, object>
     {

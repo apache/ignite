@@ -164,13 +164,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="data">Data array.</param>
-        /// <param name="keepPortable">Whether to keep portables as portables.</param>
+        /// <param name="keepBinary">Whether to keep binarizable as binary.</param>
         /// <returns>
         /// Object.
         /// </returns>
-        public T Unmarshal<T>(byte[] data, bool keepPortable)
+        public T Unmarshal<T>(byte[] data, bool keepBinary)
         {
-            return Unmarshal<T>(new BinaryHeapStream(data), keepPortable);
+            return Unmarshal<T>(new BinaryHeapStream(data), keepBinary);
         }
 
         /// <summary>
@@ -190,13 +190,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Unmarshal object.
         /// </summary>
         /// <param name="stream">Stream over underlying byte array with correct position.</param>
-        /// <param name="keepPortable">Whether to keep portables as portables.</param>
+        /// <param name="keepBinary">Whether to keep portables as portables.</param>
         /// <returns>
         /// Object.
         /// </returns>
-        public T Unmarshal<T>(IBinaryStream stream, bool keepPortable)
+        public T Unmarshal<T>(IBinaryStream stream, bool keepBinary)
         {
-            return Unmarshal<T>(stream, keepPortable ? BinaryMode.KeepBinary : BinaryMode.Deserialize, null);
+            return Unmarshal<T>(stream, keepBinary ? BinaryMode.KeepBinary : BinaryMode.Deserialize, null);
         }
 
         /// <summary>
@@ -230,14 +230,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Start unmarshal session.
         /// </summary>
         /// <param name="stream">Stream.</param>
-        /// <param name="keepPortable">Whether to keep portables as portables.</param>
+        /// <param name="keepBinary">Whether to keep binarizable as binary.</param>
         /// <returns>
         /// Reader.
         /// </returns>
-        public BinaryReader StartUnmarshal(IBinaryStream stream, bool keepPortable)
+        public BinaryReader StartUnmarshal(IBinaryStream stream, bool keepBinary)
         {
             return new BinaryReader(this, _idToDesc, stream,
-                keepPortable ? BinaryMode.KeepBinary : BinaryMode.Deserialize, null);
+                keepBinary ? BinaryMode.KeepBinary : BinaryMode.Deserialize, null);
         }
 
         /// <summary>

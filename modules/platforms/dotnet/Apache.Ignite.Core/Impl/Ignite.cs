@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl
         /** Initial projection. */
         private readonly ClusterGroupImpl _prj;
 
-        /** Portables. */
+        /** Binary. */
         private readonly IgniteBinary _igniteBinary;
 
         /** Cached proxy. */
@@ -347,13 +347,13 @@ namespace Apache.Ignite.Core.Impl
         /// Gets cache from specified native cache object.
         /// </summary>
         /// <param name="nativeCache">Native cache.</param>
-        /// <param name="keepPortable">Portable flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>
         /// New instance of cache wrapping specified native cache.
         /// </returns>
-        public ICache<TK, TV> Cache<TK, TV>(IUnmanagedTarget nativeCache, bool keepPortable = false)
+        public ICache<TK, TV> Cache<TK, TV>(IUnmanagedTarget nativeCache, bool keepBinary = false)
         {
-            return new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepPortable, false, false);
+            return new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepBinary, false, false);
         }
 
         /** <inheritdoc /> */

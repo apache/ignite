@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             IBinaryTypeDescriptor desc = _marsh.GetDescriptor(type);
 
             if (desc == null)
-                throw new IgniteException("Type is not binary (add it to PortableConfiguration): " + 
+                throw new IgniteException("Type is not binary (add it to BinaryConfiguration): " + 
                     type.FullName);
 
             return Builder0(null, BinaryFromDescriptor(desc), desc);

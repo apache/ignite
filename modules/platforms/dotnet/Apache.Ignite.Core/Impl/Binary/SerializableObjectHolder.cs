@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
-    /// Wraps Serializable item in a portable.
+    /// Wraps Serializable item in a binarizable.
     /// </summary>
     internal class SerializableObjectHolder : IBinaryWriteAware
     {

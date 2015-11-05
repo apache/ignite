@@ -820,7 +820,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             public T Read<T>(BinaryReader ctx)
             {
                 // Can't use "as" because of variance. 
-                // For example, IPortableSystemReader<byte[]> can be cast to IPortableSystemReader<sbyte[]>, which
+                // For example, IBinarySystemReader<byte[]> can be cast to IBinarySystemReader<sbyte[]>, which
                 // will cause incorrect behavior.
                 if (typeof (T) == typeof (T2))  
                     return ((IBinarySystemReader<T>) this).Read(ctx);

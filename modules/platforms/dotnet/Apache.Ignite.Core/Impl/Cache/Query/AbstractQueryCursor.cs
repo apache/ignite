@@ -220,7 +220,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <summary>
         /// Converter for GET_ALL operation.
         /// </summary>
-        /// <param name="stream">Portable stream.</param>
+        /// <param name="stream">Stream.</param>
         /// <returns>Result.</returns>
         private IList<T> ConvertGetAll(IBinaryStream stream)
         {
@@ -239,7 +239,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// <summary>
         /// Converter for GET_BATCH operation.
         /// </summary>
-        /// <param name="stream">Portable stream.</param>
+        /// <param name="stream">Stream.</param>
         /// <returns>Result.</returns>
         private T[] ConvertGetBatch(IBinaryStream stream)
         {

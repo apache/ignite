@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Write portalbe object.
         /// </summary>
         /// <param name="obj">Object.</param>
-        /// <param name="writer">Portable writer.</param>
+        /// <param name="writer">Writer.</param>
         /// <exception cref="BinaryObjectException">Type is not registered in serializer:  + type.Name</exception>
         public void WriteBinary(object obj, IBinaryWriter writer)
         {
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Read binary object.
         /// </summary>
         /// <param name="obj">Instantiated empty object.</param>
-        /// <param name="reader">Portable reader.</param>
+        /// <param name="reader">Reader.</param>
         /// <exception cref="BinaryObjectException">Type is not registered in serializer:  + type.Name</exception>
         public void ReadBinary(object obj, IBinaryReader reader)
         {
@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             /// Write object.
             /// </summary>
             /// <param name="obj">Object.</param>
-            /// <param name="writer">Portable writer.</param>
+            /// <param name="writer">Writer.</param>
             public void Write(object obj, IBinaryWriter writer)
             {
                 int cnt = _wActions.Count;
@@ -205,7 +205,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             /// Read object.
             /// </summary>
             /// <param name="obj">Object.</param>
-            /// <param name="reader">Portable reader.</param>
+            /// <param name="reader">Reader.</param>
             public void Read(object obj, IBinaryReader reader)
             {
                 int cnt = _rActions.Count;
