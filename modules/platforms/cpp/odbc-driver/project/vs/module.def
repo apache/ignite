@@ -1,6 +1,5 @@
 
 LIBRARY   odbc-driver
-DESCRIPTION "Apache Ignite OBDC Driver"
 EXPORTS
 	SQLAllocConnect
 	SQLAllocEnv

@@ -10,6 +10,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "core-test", "..\..\core-test\project\vs\core-test.vcxproj", "{133A22DB-FD60-44B9-B5E3-6CBB3EA5ABF0}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "odbc-driver", "..\..\odbc-driver\project\vs\odbc-driver.vcxproj", "{12F77E12-38FE-42D3-B1DA-7E5979362961}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4F7E4917-4612-4B96-9838-025711ADE391} = {4F7E4917-4612-4B96-9838-025711ADE391}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

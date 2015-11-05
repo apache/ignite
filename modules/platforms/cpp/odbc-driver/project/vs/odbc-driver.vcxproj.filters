@@ -17,10 +17,39 @@
     <ClCompile Include="..\..\src\odbc.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\os\win\socket_client.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\connection.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\environment.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\configuration.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
       <Filter>Misc</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\os\win\socket_client.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\connection.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\environment.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\configuration.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utility.h">
+      <Filter>Code</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

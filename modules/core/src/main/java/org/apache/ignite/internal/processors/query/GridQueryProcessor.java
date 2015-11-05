@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.query.odbc.GridTcpOdbcServer;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -107,6 +108,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** */
     private final GridQueryIndexing idx;
 
+    /** */
+    private GridTcpOdbcServer odbc;
+
     /**
      * @param ctx Kernal context.
      */
@@ -120,6 +124,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             idx = INDEXING.inClassPath() ? U.<GridQueryIndexing>newInstance(INDEXING.className()) : null;
+
+        odbc = new GridTcpOdbcServer(ctx);
     }
 
     /** {@inheritDoc} */
@@ -133,6 +139,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             idx.start(ctx, busyLock);
         }
+
+        odbc.start();
     }
 
     /**
@@ -269,6 +277,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (idx != null)
             idx.stop();
+
+        odbc.stop();
     }
 
     /** {@inheritDoc} */

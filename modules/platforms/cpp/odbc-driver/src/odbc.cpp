@@ -16,25 +16,24 @@
  */
 
 #ifdef _WIN32
-#   define _CRT_SECURE_NO_WARNINGS 
+#   define _WINSOCKAPI_
 #   include <windows.h>
-#   define IGNITE_EXPORT __declspec(dllexport)
-#   define IGNITE_IMPORT __declspec(dllimport)
-#   define IGNITE_CALL __stdcall
-#else
-#   define IGNITE_EXPORT
-#   define IGNITE_IMPORT
-#   define IGNITE_CALL
 #endif //_WIN32
 
-
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <algorithm>
 
 #include <sqlext.h>
 #include <odbcinst.h>
 
-#include <cstdio>
+#include "utility.h"
+#include "configuration.h"
+#include "environment.h"
+#include "connection.h"
+
+#undef min
 
 FILE* log_file = NULL;
 
@@ -46,43 +45,197 @@ void logInit(const char* path)
     }
 }
 
-#define LOG_MSG(fmt, ...) \
-    logInit("D:\\odbc.log"); \
-    fprintf(log_file, "%s: " fmt, __FUNCTION__);
 
-
-///// SQLDriverConnect /////
-
-RETCODE SQL_API SQLDriverConnect(
-    HDBC        hDBC, HWND        hWnd,
-    UCHAR*      szConnStrIn, SWORD       cbConnStrIn,
-    UCHAR*      szConnStrOut, SWORD       cbConnStrOut,
-    SWORD*      pcbConnStrOut, UWORD       uwMode)
+SQLRETURN SQL_API SQLAllocHandle(SQLSMALLINT type, SQLHANDLE parent, SQLHANDLE* result)
 {
-    LOG_MSG("SQLDriverConnect called\n");
-
-    if (cbConnStrIn == SQL_NTS && szConnStrIn)
-        cbConnStrIn = strlen((char*)szConnStrIn);
-
-    if (szConnStrOut && cbConnStrOut > 0)
+    LOG_MSG("SQLAllocHandle called\n");
+    switch (type)
     {
-        strncpy((char*)szConnStrOut, (char*)szConnStrIn,
-                (cbConnStrIn == SQL_NTS) ? cbConnStrOut - 1 :
-                min(cbConnStrOut, cbConnStrIn));
+        case SQL_HANDLE_ENV:
+            return SQLAllocEnv(result);
 
-        szConnStrOut[cbConnStrOut - 1] = '\0';
+        case SQL_HANDLE_DBC:
+            return SQLAllocConnect(parent, result);
+
+        case SQL_HANDLE_STMT:
+            return SQLAllocStmt(parent, result);
+
+        case SQL_HANDLE_DESC:
+        default:
+            break;
     }
 
-    if (pcbConnStrOut)
-        *pcbConnStrOut = cbConnStrIn;
+    *result = 0;
+    return SQL_ERROR;
+}
+
+SQLRETURN SQL_API SQLAllocEnv(SQLHENV *env)
+{
+    using ignite::odbc::Environment;
+
+    LOG_MSG("SQLAllocEnv called\n");
+
+    *env = reinterpret_cast<SQLHENV>(new Environment());
 
     return SQL_SUCCESS;
 }
 
-///// SQLExecDirect /////
+SQLRETURN SQL_API SQLAllocConnect(SQLHENV env, SQLHDBC *conn)
+{
+    using ignite::odbc::Environment;
+    using ignite::odbc::Connection;
 
-RETCODE SQL_API SQLExecDirect(
-    HSTMT		hStmt,
+    LOG_MSG("SQLAllocConnect called\n");
+
+    *conn = SQL_NULL_HDBC;
+
+    Environment *environment = reinterpret_cast<Environment*>(env);
+
+    if (!environment)
+        return SQL_INVALID_HANDLE;
+    
+    Connection *connection = environment->CreateConnection();
+
+    if (!connection)
+        return SQL_ERROR;
+
+    *conn = reinterpret_cast<SQLHDBC>(connection);
+
+    return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLAllocStmt(SQLHDBC conn, SQLHSTMT *stmt)
+{
+    LOG_MSG("SQLAllocStmt called\n");
+    return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLFreeHandle(SQLSMALLINT type, SQLHANDLE handle)
+{
+    LOG_MSG("SQLFreeHandle called\n");
+
+    switch (type)
+    {
+        case SQL_HANDLE_ENV:
+            return SQLFreeEnv(handle);
+
+        case SQL_HANDLE_DBC:
+            return SQLFreeConnect(handle);
+
+        case SQL_HANDLE_STMT:
+            return SQLFreeStmt(handle, SQL_DROP);
+
+        case SQL_HANDLE_DESC:
+        default:
+            break;
+    }
+
+    return SQL_ERROR;
+}
+
+SQLRETURN SQL_API SQLFreeEnv(SQLHENV env)
+{
+    using ignite::odbc::Environment;
+
+    LOG_MSG("SQLFreeEnv called\n");
+
+    Environment *environment = reinterpret_cast<Environment*>(env);
+
+    if (!environment)
+        return SQL_INVALID_HANDLE;
+
+    delete environment;
+
+    return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLFreeConnect(SQLHDBC conn)
+{
+    using ignite::odbc::Connection;
+
+    Connection *connection = reinterpret_cast<Connection*>(conn);
+
+    if (!connection)
+        return SQL_INVALID_HANDLE;
+
+    delete connection;
+
+    LOG_MSG("SQLFreeConnect called\n");
+    return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLFreeStmt(SQLHSTMT stmt, SQLUSMALLINT option)
+{
+    LOG_MSG("SQLFreeStmt called\n");
+    return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLDriverConnect(
+    SQLHDBC         ConnectionHandle,
+    SQLHWND         WindowHandle,
+    SQLCHAR*        InConnectionString,
+    SQLSMALLINT     StringLength1,
+    SQLCHAR*        OutConnectionString,
+    SQLSMALLINT     BufferLength,
+    SQLSMALLINT*    StringLength2Ptr,
+    SQLUSMALLINT    DriverCompletion)
+{
+    using ignite::odbc::Connection;
+
+    UNREFERENCED_PARAMETER(WindowHandle);
+
+    LOG_MSG("SQLDriverConnect called\n");
+
+    Connection *connection = reinterpret_cast<Connection*>(ConnectionHandle);
+
+    if (!connection)
+        return SQL_INVALID_HANDLE;
+
+    if (StringLength1 == SQL_NTS && InConnectionString)
+        StringLength1 = static_cast<SQLSMALLINT>(strlen((char*)InConnectionString));
+
+    ignite::odbc::Configuration config;
+
+    config.FillFromConnectString(reinterpret_cast<const char*>(InConnectionString), StringLength1);
+
+    bool connected = connection->Establish(config.GetServetHost(), config.GetServetPort());
+
+    if (!connected)
+        return SQL_ERROR;
+
+    if (OutConnectionString && BufferLength > 0)
+    {
+        std::string out_connection_str = config.ToConnectString();
+
+        strncpy((char*)OutConnectionString, out_connection_str.c_str(), BufferLength - 1);
+
+        OutConnectionString[BufferLength - 1] = '\0';
+
+        if (StringLength2Ptr)
+            *StringLength2Ptr = std::min(BufferLength - 1, static_cast<int>(out_connection_str.size()));
+    }
+
+    return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLDisconnect(SQLHDBC conn)
+{
+    using ignite::odbc::Connection;
+
+    LOG_MSG("SQLDisconnect called\n");
+
+    Connection *connection = reinterpret_cast<Connection*>(conn);
+
+    if (!connection)
+        return SQL_INVALID_HANDLE;
+
+    bool success = connection->Release();
+
+    return success ? SQL_SUCCESS : SQL_ERROR;
+}
+
+SQLRETURN SQL_API SQLExecDirect(
+    SQLHSTMT		hStmt,
     UCHAR*		sStmtText,
     SDWORD		iStmtLen)
 {
@@ -90,45 +243,9 @@ RETCODE SQL_API SQLExecDirect(
     return SQL_SUCCESS;
 }
 
-///// SQLAllocHandle /////
-
-RETCODE SQL_API SQLAllocHandle(
-    SQLSMALLINT	HandleType,
-    SQLHANDLE		HandleParent,
-    SQLHANDLE*		NewHandlePointer)
-{
-    LOG_MSG("SQLAllocHandle called\n");
-    return SQL_SUCCESS;
-}
-///// SQLAllocConnect /////
-
-RETCODE SQL_API SQLAllocConnect(HENV arg0,
-    HDBC * arg1)
-{
-    LOG_MSG("SQLAllocConnect called\n");
-    return(SQL_SUCCESS);
-}
-
-///// SQLAllocEnv /////
-
-RETCODE SQL_API SQLAllocEnv(HENV * arg0)
-{
-    LOG_MSG("SQLAllocEnv called\n");
-    return(SQL_SUCCESS);
-}
-
-///// SQLAllocStmt /////
-
-RETCODE SQL_API SQLAllocStmt(HDBC arg0,
-    HSTMT * arg1)
-{
-    LOG_MSG("SQLAllocStmt called\n");
-    return(SQL_SUCCESS);
-}
-
 ///// SQLBindCol /////
 
-RETCODE SQL_API SQLBindCol(HSTMT arg0,
+SQLRETURN SQL_API SQLBindCol(SQLHSTMT arg0,
     UWORD arg1,
     SWORD arg2,
     PTR arg3,
@@ -136,20 +253,20 @@ RETCODE SQL_API SQLBindCol(HSTMT arg0,
     UNALIGNED SDWORD * arg5)
 {
     LOG_MSG("SQLBindCol called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLCancel /////
 
-RETCODE SQL_API SQLCancel(HSTMT arg0)
+SQLRETURN SQL_API SQLCancel(SQLHSTMT arg0)
 {
     LOG_MSG("SQLCancel called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLColAttributes /////
 
-RETCODE SQL_API SQLColAttributes(HSTMT arg0,
+SQLRETURN SQL_API SQLColAttributes(SQLHSTMT arg0,
     UWORD arg1,
     UWORD arg2,
     PTR arg3,
@@ -158,12 +275,12 @@ RETCODE SQL_API SQLColAttributes(HSTMT arg0,
     UNALIGNED SDWORD * arg6)
 {
     LOG_MSG("SQLColAttributes called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLConnect /////
 
-RETCODE SQL_API SQLConnect(HDBC arg0,
+SQLRETURN SQL_API SQLConnect(SQLHDBC arg0,
     UCHAR * arg1,
     SWORD arg2,
     UCHAR * arg3,
@@ -172,12 +289,12 @@ RETCODE SQL_API SQLConnect(HDBC arg0,
     SWORD arg6)
 {
     LOG_MSG("SQLConnect called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLDescribeCol /////
 
-RETCODE SQL_API SQLDescribeCol(HSTMT arg0,
+SQLRETURN SQL_API SQLDescribeCol(SQLHSTMT arg0,
     UWORD arg1,
     UCHAR * arg2,
     SWORD arg3,
@@ -188,22 +305,14 @@ RETCODE SQL_API SQLDescribeCol(HSTMT arg0,
     UNALIGNED SWORD * arg8)
 {
     LOG_MSG("SQLDescribeCol called\n");
-    return(SQL_SUCCESS);
-}
-
-///// SQLDisconnect /////
-
-RETCODE SQL_API SQLDisconnect(HDBC arg0)
-{
-    LOG_MSG("SQLDisconnect called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLError /////
 
-RETCODE SQL_API SQLError(HENV arg0,
-    HDBC arg1,
-    HSTMT arg2,
+SQLRETURN SQL_API SQLError(HENV arg0,
+    SQLHDBC arg1,
+    SQLHSTMT arg2,
     UCHAR * arg3,
     UNALIGNED SDWORD * arg4,
     UCHAR * arg5,
@@ -217,97 +326,72 @@ RETCODE SQL_API SQLError(HENV arg0,
 
 ///// SQLExecute /////
 
-RETCODE SQL_API SQLExecute(HSTMT arg0)
+SQLRETURN SQL_API SQLExecute(SQLHSTMT arg0)
 {
     LOG_MSG("SQLExecute called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLFetch /////
 
-RETCODE SQL_API SQLFetch(HSTMT arg0)
+SQLRETURN SQL_API SQLFetch(SQLHSTMT arg0)
 {
     LOG_MSG("SQLFetch called\n");
-    return(SQL_SUCCESS);
-}
-
-///// SQLFreeConnect /////
-
-RETCODE SQL_API SQLFreeConnect(HDBC arg0)
-{
-    LOG_MSG("SQLFreeConnect called\n");
-    return(SQL_SUCCESS);
-}
-
-///// SQLFreeEnv /////
-
-RETCODE SQL_API SQLFreeEnv(HENV arg0)
-{
-    LOG_MSG("SQLFreeEnv called\n");
-    return(SQL_SUCCESS);
-}
-
-///// SQLFreeStmt /////
-
-RETCODE SQL_API SQLFreeStmt(HSTMT arg0,
-    UWORD arg1)
-{
-    LOG_MSG("SQLFreeStmt called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLGetCursorName /////
 
-RETCODE SQL_API SQLGetCursorName(HSTMT arg0,
+SQLRETURN SQL_API SQLGetCursorName(SQLHSTMT arg0,
     UCHAR * arg1,
     SWORD arg2,
     UNALIGNED SWORD * arg3)
 {
     LOG_MSG("SQLGetCursorName called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLNumResultCols /////
 
-RETCODE SQL_API SQLNumResultCols(HSTMT arg0,
+SQLRETURN SQL_API SQLNumResultCols(SQLHSTMT arg0,
     UNALIGNED SWORD * arg1)
 {
     LOG_MSG("SQLNumResultCols called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLPrepare /////
 
-RETCODE SQL_API SQLPrepare(HSTMT arg0,
+SQLRETURN SQL_API SQLPrepare(SQLHSTMT arg0,
     UCHAR * arg1,
     SDWORD arg2)
 {
     LOG_MSG("SQLPrepare called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLRowCount /////
 
-RETCODE SQL_API SQLRowCount(HSTMT arg0,
+SQLRETURN SQL_API SQLRowCount(SQLHSTMT arg0,
     UNALIGNED SDWORD * arg1)
 {
     LOG_MSG("SQLRowCount called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLSetCursorName /////
 
-RETCODE SQL_API SQLSetCursorName(HSTMT arg0,
+SQLRETURN SQL_API SQLSetCursorName(SQLHSTMT arg0,
     UCHAR * arg1,
     SWORD arg2)
 {
     LOG_MSG("SQLSetCursorName called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLSetParam /////
 
-RETCODE SQL_API SQLSetParam(HSTMT arg0,
+SQLRETURN SQL_API SQLSetParam(SQLHSTMT arg0,
     UWORD arg1,
     SWORD arg2,
     SWORD arg3,
@@ -317,22 +401,22 @@ RETCODE SQL_API SQLSetParam(HSTMT arg0,
     UNALIGNED SDWORD * arg7)
 {
     LOG_MSG("SQLSetParam called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLTransact /////
 
-RETCODE SQL_API SQLTransact(HENV arg0,
-    HDBC arg1,
+SQLRETURN SQL_API SQLTransact(HENV arg0,
+    SQLHDBC arg1,
     UWORD arg2)
 {
     LOG_MSG("SQLTransact called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLColumns /////
 
-RETCODE SQL_API SQLColumns(HSTMT arg0,
+SQLRETURN SQL_API SQLColumns(SQLHSTMT arg0,
     UCHAR * arg1,
     SWORD arg2,
     UCHAR * arg3,
@@ -343,22 +427,22 @@ RETCODE SQL_API SQLColumns(HSTMT arg0,
     SWORD arg8)
 {
     LOG_MSG("SQLColumns called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLGetConnectOption /////
 
-RETCODE SQL_API SQLGetConnectOption(HDBC arg0,
+SQLRETURN SQL_API SQLGetConnectOption(SQLHDBC arg0,
     UWORD arg1,
     PTR arg2)
 {
     LOG_MSG("SQLGetConnectOption called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLGetData /////
 
-RETCODE SQL_API SQLGetData(HSTMT arg0,
+SQLRETURN SQL_API SQLGetData(SQLHSTMT arg0,
     UWORD arg1,
     SWORD arg2,
     PTR arg3,
@@ -366,92 +450,92 @@ RETCODE SQL_API SQLGetData(HSTMT arg0,
     UNALIGNED SDWORD * arg5)
 {
     LOG_MSG("SQLGetData called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLGetFunctions /////
 
-RETCODE SQL_API SQLGetFunctions(HDBC arg0,
+SQLRETURN SQL_API SQLGetFunctions(SQLHDBC arg0,
     UWORD arg1,
     UWORD  * arg2)
 {
     LOG_MSG("SQLGetFunctions called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLGetInfo /////
 
-RETCODE SQL_API SQLGetInfo(HDBC arg0,
+SQLRETURN SQL_API SQLGetInfo(SQLHDBC arg0,
     UWORD arg1,
     PTR arg2,
     SWORD arg3,
     UNALIGNED SWORD * arg4)
 {
     LOG_MSG("SQLGetInfo called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLGetStmtOption /////
 
-RETCODE SQL_API SQLGetStmtOption(HSTMT arg0,
+SQLRETURN SQL_API SQLGetStmtOption(SQLHSTMT arg0,
     UWORD arg1,
     PTR arg2)
 {
     LOG_MSG("SQLGetStmtOption called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLGetTypeInfo /////
 
-RETCODE SQL_API SQLGetTypeInfo(HSTMT arg0,
+SQLRETURN SQL_API SQLGetTypeInfo(SQLHSTMT arg0,
     SWORD arg1)
 {
     LOG_MSG("SQLGetTypeInfo called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLParamData /////
 
-RETCODE SQL_API SQLParamData(HSTMT arg0,
+SQLRETURN SQL_API SQLParamData(SQLHSTMT arg0,
     PTR * arg1)
 {
     LOG_MSG("SQLParamData called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLPutData /////
 
-RETCODE SQL_API SQLPutData(HSTMT arg0,
+SQLRETURN SQL_API SQLPutData(SQLHSTMT arg0,
     PTR arg1,
     SDWORD arg2)
 {
     LOG_MSG("SQLPutData called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLSetConnectOption /////
 
-RETCODE SQL_API SQLSetConnectOption(HDBC arg0,
+SQLRETURN SQL_API SQLSetConnectOption(SQLHDBC arg0,
     UWORD arg1,
     UDWORD arg2)
 {
     LOG_MSG("SQLSetConnectOption called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLSetStmtOption /////
 
-RETCODE SQL_API SQLSetStmtOption(HSTMT arg0,
+SQLRETURN SQL_API SQLSetStmtOption(SQLHSTMT arg0,
     UWORD arg1,
     UDWORD arg2)
 {
     LOG_MSG("SQLSetStmtOption called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLSpecialColumns /////
 
-RETCODE SQL_API SQLSpecialColumns(HSTMT arg0,
+SQLRETURN SQL_API SQLSpecialColumns(SQLHSTMT arg0,
     UWORD arg1,
     UCHAR * arg2,
     SWORD arg3,
@@ -463,12 +547,12 @@ RETCODE SQL_API SQLSpecialColumns(HSTMT arg0,
     UWORD arg9)
 {
     LOG_MSG("SQLSpecialColumns called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLStatistics /////
 
-RETCODE SQL_API SQLStatistics(HSTMT arg0,
+SQLRETURN SQL_API SQLStatistics(SQLHSTMT arg0,
     UCHAR * arg1,
     SWORD arg2,
     UCHAR * arg3,
@@ -479,12 +563,12 @@ RETCODE SQL_API SQLStatistics(HSTMT arg0,
     UWORD arg8)
 {
     LOG_MSG("SQLStatistics called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLTables /////
 
-RETCODE SQL_API SQLTables(HSTMT arg0,
+SQLRETURN SQL_API SQLTables(SQLHSTMT arg0,
     UCHAR * arg1,
     SWORD arg2,
     UCHAR * arg3,
@@ -495,12 +579,12 @@ RETCODE SQL_API SQLTables(HSTMT arg0,
     SWORD arg8)
 {
     LOG_MSG("SQLTables called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLBrowseConnect /////
 
-RETCODE SQL_API SQLBrowseConnect(HDBC arg0,
+SQLRETURN SQL_API SQLBrowseConnect(SQLHDBC arg0,
     UCHAR * arg1,
     SWORD arg2,
     UCHAR * arg3,
@@ -508,12 +592,12 @@ RETCODE SQL_API SQLBrowseConnect(HDBC arg0,
     UNALIGNED SWORD * arg5)
 {
     LOG_MSG("SQLBrowseConnect called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLColumnPrivileges /////
 
-RETCODE SQL_API SQLColumnPrivileges(HSTMT arg0,
+SQLRETURN SQL_API SQLColumnPrivileges(SQLHSTMT arg0,
     UCHAR * arg1,
     SWORD arg2,
     UCHAR * arg3,
@@ -524,12 +608,12 @@ RETCODE SQL_API SQLColumnPrivileges(HSTMT arg0,
     SWORD arg8)
 {
     LOG_MSG("SQLColumnPrivileges called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLDataSources /////
 
-RETCODE SQL_API SQLDataSources(HENV arg0,
+SQLRETURN SQL_API SQLDataSources(HENV arg0,
     UWORD arg1,
     UCHAR * arg2,
     SWORD arg3,
@@ -539,12 +623,12 @@ RETCODE SQL_API SQLDataSources(HENV arg0,
     SWORD * arg7)
 {
     LOG_MSG("SQLDataSources called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLDescribeParam /////
 
-RETCODE SQL_API SQLDescribeParam(HSTMT arg0,
+SQLRETURN SQL_API SQLDescribeParam(SQLHSTMT arg0,
     UWORD arg1,
     UNALIGNED SWORD * arg2,
     UNALIGNED UDWORD * arg3,
@@ -552,24 +636,24 @@ RETCODE SQL_API SQLDescribeParam(HSTMT arg0,
     UNALIGNED SWORD * arg5)
 {
     LOG_MSG("SQLDescribeParam called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLExtendedFetch /////
 
-RETCODE SQL_API SQLExtendedFetch(HSTMT arg0,
+SQLRETURN SQL_API SQLExtendedFetch(SQLHSTMT arg0,
     UWORD arg1,
     SDWORD arg2,
     UNALIGNED UDWORD * arg3,
     UNALIGNED UWORD * arg4)
 {
     LOG_MSG("SQLExtendedFetch called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLForeignKeys /////
 
-RETCODE SQL_API SQLForeignKeys(HSTMT arg0,
+SQLRETURN SQL_API SQLForeignKeys(SQLHSTMT arg0,
     UCHAR * arg1,
     SWORD arg2,
     UCHAR * arg3,
@@ -584,20 +668,20 @@ RETCODE SQL_API SQLForeignKeys(HSTMT arg0,
     SWORD arg12)
 {
     LOG_MSG("SQLForeignKeys called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLMoreResults /////
 
-RETCODE SQL_API SQLMoreResults(HSTMT arg0)
+SQLRETURN SQL_API SQLMoreResults(SQLHSTMT arg0)
 {
     LOG_MSG("SQLMoreResults called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLNativeSql /////
 
-RETCODE SQL_API SQLNativeSql(HDBC arg0,
+SQLRETURN SQL_API SQLNativeSql(SQLHDBC arg0,
     UCHAR * arg1,
     SDWORD arg2,
     UCHAR * arg3,
@@ -605,31 +689,31 @@ RETCODE SQL_API SQLNativeSql(HDBC arg0,
     UNALIGNED SDWORD * arg5)
 {
     LOG_MSG("SQLNativeSql called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLNumParams /////
 
-RETCODE SQL_API SQLNumParams(HSTMT arg0,
+SQLRETURN SQL_API SQLNumParams(SQLHSTMT arg0,
     UNALIGNED SWORD * arg1)
 {
     LOG_MSG("SQLNumParams called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLParamOptions /////
 
-RETCODE SQL_API SQLParamOptions(HSTMT arg0,
+SQLRETURN SQL_API SQLParamOptions(SQLHSTMT arg0,
     UDWORD arg1,
     UNALIGNED UDWORD * arg2)
 {
     LOG_MSG("SQLParamOptions called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLPrimaryKeys /////
 
-RETCODE SQL_API SQLPrimaryKeys(HSTMT arg0,
+SQLRETURN SQL_API SQLPrimaryKeys(SQLHSTMT arg0,
     UCHAR * arg1,
     SWORD arg2,
     UCHAR * arg3,
@@ -638,12 +722,12 @@ RETCODE SQL_API SQLPrimaryKeys(HSTMT arg0,
     SWORD arg6)
 {
     LOG_MSG("SQLPrimaryKeys called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLProcedureColumns /////
 
-RETCODE SQL_API SQLProcedureColumns(HSTMT arg0,
+SQLRETURN SQL_API SQLProcedureColumns(SQLHSTMT arg0,
     UCHAR * arg1,
     SWORD arg2,
     UCHAR * arg3,
@@ -654,12 +738,12 @@ RETCODE SQL_API SQLProcedureColumns(HSTMT arg0,
     SWORD arg8)
 {
     LOG_MSG("SQLProcedureColumns called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLProcedures /////
 
-RETCODE SQL_API SQLProcedures(HSTMT arg0,
+SQLRETURN SQL_API SQLProcedures(SQLHSTMT arg0,
     UCHAR * arg1,
     SWORD arg2,
     UCHAR * arg3,
@@ -668,34 +752,34 @@ RETCODE SQL_API SQLProcedures(HSTMT arg0,
     SWORD arg6)
 {
     LOG_MSG("SQLProcedures called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLSetPos /////
 
-RETCODE SQL_API SQLSetPos(HSTMT arg0,
+SQLRETURN SQL_API SQLSetPos(SQLHSTMT arg0,
     UWORD arg1,
     UWORD arg2,
     UWORD arg3)
 {
     LOG_MSG("SQLSetPos called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLSetScrollOptions /////
 
-RETCODE SQL_API SQLSetScrollOptions(HSTMT arg0,
+SQLRETURN SQL_API SQLSetScrollOptions(SQLHSTMT arg0,
     UWORD arg1,
     SDWORD arg2,
     UWORD arg3)
 {
     LOG_MSG("SQLSetScrollOptions called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLTablePrivileges /////
 
-RETCODE SQL_API SQLTablePrivileges(HSTMT arg0,
+SQLRETURN SQL_API SQLTablePrivileges(SQLHSTMT arg0,
     UCHAR * arg1,
     SWORD arg2,
     UCHAR * arg3,
@@ -704,12 +788,12 @@ RETCODE SQL_API SQLTablePrivileges(HSTMT arg0,
     SWORD arg6)
 {
     LOG_MSG("SQLTablePrivileges called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLDrivers /////
 
-RETCODE SQL_API SQLDrivers(HENV arg0,
+SQLRETURN SQL_API SQLDrivers(HENV arg0,
     UWORD arg1,
     UCHAR * arg2,
     SWORD arg3,
@@ -719,12 +803,12 @@ RETCODE SQL_API SQLDrivers(HENV arg0,
     SWORD * arg7)
 {
     LOG_MSG("SQLDrivers called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLBindParameter /////
 
-RETCODE SQL_API SQLBindParameter(HSTMT arg0,
+SQLRETURN SQL_API SQLBindParameter(SQLHSTMT arg0,
     UWORD arg1,
     SWORD arg2,
     SWORD arg3,
@@ -736,12 +820,12 @@ RETCODE SQL_API SQLBindParameter(HSTMT arg0,
     UNALIGNED SDWORD * arg9)
 {
     LOG_MSG("SQLBindParameter called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLBindParam /////
 
-RETCODE SQL_API SQLBindParam(SQLHSTMT arg0,
+SQLRETURN SQL_API SQLBindParam(SQLHSTMT arg0,
     SQLUSMALLINT arg1,
     SQLSMALLINT arg2,
     SQLSMALLINT arg3,
@@ -751,20 +835,20 @@ RETCODE SQL_API SQLBindParam(SQLHSTMT arg0,
     SQLINTEGER * arg7)
 {
     LOG_MSG("SQLBindParam called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLCloseCursor /////
 
-RETCODE SQL_API SQLCloseCursor(SQLHSTMT arg0)
+SQLRETURN SQL_API SQLCloseCursor(SQLHSTMT arg0)
 {
     LOG_MSG("SQLCloseCursor called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLColAttribute /////
 
-RETCODE SQL_API SQLColAttribute(SQLHSTMT arg0,
+SQLRETURN SQL_API SQLColAttribute(SQLHSTMT arg0,
     SQLUSMALLINT arg1,
     SQLUSMALLINT arg2,
     SQLPOINTER arg3,
@@ -773,62 +857,53 @@ RETCODE SQL_API SQLColAttribute(SQLHSTMT arg0,
     SQLPOINTER arg6)
 {
     LOG_MSG("SQLColAttribute called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLCopyDesc /////
 
-RETCODE SQL_API SQLCopyDesc(SQLHDESC arg0,
+SQLRETURN SQL_API SQLCopyDesc(SQLHDESC arg0,
     SQLHDESC arg1)
 {
     LOG_MSG("SQLCopyDesc called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLEndTran /////
 
-RETCODE SQL_API SQLEndTran(SQLSMALLINT arg0,
+SQLRETURN SQL_API SQLEndTran(SQLSMALLINT arg0,
     SQLHANDLE arg1,
     SQLSMALLINT arg2)
 {
     LOG_MSG("SQLEndTran called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLFetchScroll /////
 
-RETCODE SQL_API SQLFetchScroll(SQLHSTMT arg0,
+SQLRETURN SQL_API SQLFetchScroll(SQLHSTMT arg0,
     SQLSMALLINT arg1,
     SQLINTEGER arg2)
 {
     LOG_MSG("SQLFetchScroll called\n");
-    return(SQL_SUCCESS);
-}
-
-///// SQLFreeHandle /////
-
-RETCODE SQL_API SQLFreeHandle(SQLSMALLINT arg0,
-    SQLHANDLE arg1)
-{
-    LOG_MSG("SQLFreeHandle called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLGetConnectAttr /////
 
-RETCODE SQL_API SQLGetConnectAttr(SQLHDBC arg0,
+SQLRETURN SQL_API SQLGetConnectAttr(SQLHDBC arg0,
     SQLINTEGER arg1,
     SQLPOINTER arg2,
     SQLINTEGER arg3,
     UNALIGNED SQLINTEGER * arg4)
 {
     LOG_MSG("SQLGetConnectAttr called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLGetDescField /////
 
-RETCODE SQL_API SQLGetDescField(SQLHDESC arg0,
+SQLRETURN SQL_API SQLGetDescField(SQLHDESC arg0,
     SQLSMALLINT arg1,
     SQLSMALLINT arg2,
     SQLPOINTER arg3,
@@ -836,12 +911,12 @@ RETCODE SQL_API SQLGetDescField(SQLHDESC arg0,
     UNALIGNED SQLINTEGER * arg5)
 {
     LOG_MSG("SQLGetDescField called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLGetDescRec /////
 
-RETCODE SQL_API SQLGetDescRec(SQLHDESC arg0,
+SQLRETURN SQL_API SQLGetDescRec(SQLHDESC arg0,
     SQLSMALLINT arg1,
     SQLCHAR * arg2,
     SQLSMALLINT arg3,
@@ -854,12 +929,12 @@ RETCODE SQL_API SQLGetDescRec(SQLHDESC arg0,
     UNALIGNED SQLSMALLINT * arg10)
 {
     LOG_MSG("SQLGetDescRec called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLGetDiagField /////
 
-RETCODE SQL_API SQLGetDiagField(SQLSMALLINT arg0,
+SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT arg0,
     SQLHANDLE arg1,
     SQLSMALLINT arg2,
     SQLSMALLINT arg3,
@@ -873,7 +948,7 @@ RETCODE SQL_API SQLGetDiagField(SQLSMALLINT arg0,
 
 ///// SQLGetDiagRec /////
 
-RETCODE SQL_API SQLGetDiagRec(SQLSMALLINT arg0,
+SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT arg0,
     SQLHANDLE arg1,
     SQLSMALLINT arg2,
     SQLCHAR * arg3,
@@ -888,54 +963,54 @@ RETCODE SQL_API SQLGetDiagRec(SQLSMALLINT arg0,
 
 ///// SQLGetEnvAttr /////
 
-RETCODE SQL_API SQLGetEnvAttr(SQLHENV arg0,
+SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV arg0,
     SQLINTEGER arg1,
     SQLPOINTER arg2,
     SQLINTEGER arg3,
     UNALIGNED SQLINTEGER * arg4)
 {
     LOG_MSG("SQLGetEnvAttr called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLGetStmtAttr /////
 
-RETCODE SQL_API SQLGetStmtAttr(SQLHSTMT arg0,
+SQLRETURN SQL_API SQLGetStmtAttr(SQLHSTMT arg0,
     SQLINTEGER arg1,
     SQLPOINTER arg2,
     SQLINTEGER arg3,
     UNALIGNED SQLINTEGER * arg4)
 {
     LOG_MSG("SQLGetStmtAttr called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLSetConnectAttr /////
 
-RETCODE SQL_API SQLSetConnectAttr(SQLHDBC arg0,
+SQLRETURN SQL_API SQLSetConnectAttr(SQLHDBC arg0,
     SQLINTEGER arg1,
     SQLPOINTER arg2,
     SQLINTEGER arg3)
 {
     LOG_MSG("SQLSetConnectAttr called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLSetDescField /////
 
-RETCODE SQL_API SQLSetDescField(SQLHDESC arg0,
+SQLRETURN SQL_API SQLSetDescField(SQLHDESC arg0,
     SQLSMALLINT arg1,
     SQLSMALLINT arg2,
     SQLPOINTER arg3,
     SQLINTEGER arg4)
 {
     LOG_MSG("SQLSetDescField called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLSetDescRec /////
 
-RETCODE SQL_API SQLSetDescRec(SQLHDESC arg0,
+SQLRETURN SQL_API SQLSetDescRec(SQLHDESC arg0,
     SQLSMALLINT arg1,
     SQLSMALLINT arg2,
     SQLSMALLINT arg3,
@@ -947,37 +1022,37 @@ RETCODE SQL_API SQLSetDescRec(SQLHDESC arg0,
     UNALIGNED SQLINTEGER * arg9)
 {
     LOG_MSG("SQLSetDescRec called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLSetEnvAttr /////
 
-RETCODE SQL_API SQLSetEnvAttr(SQLHENV arg0,
+SQLRETURN SQL_API SQLSetEnvAttr(SQLHENV arg0,
     SQLINTEGER arg1,
     SQLPOINTER arg2,
     SQLINTEGER arg3)
 {
     LOG_MSG("SQLSetEnvAttr called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 ///// SQLSetStmtAttr /////
 
-RETCODE SQL_API SQLSetStmtAttr(SQLHSTMT arg0,
+SQLRETURN SQL_API SQLSetStmtAttr(SQLHSTMT arg0,
     SQLINTEGER arg1,
     SQLPOINTER arg2,
     SQLINTEGER arg3)
 {
     LOG_MSG("SQLSetStmtAttr called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
 
 
 ///// SQLBulkOperations /////
 
-RETCODE SQL_API SQLBulkOperations(SQLHSTMT arg0,
+SQLRETURN SQL_API SQLBulkOperations(SQLHSTMT arg0,
     SQLSMALLINT arg1)
 {
     LOG_MSG("SQLBulkOperations called\n");
-    return(SQL_SUCCESS);
+    return SQL_SUCCESS;
 }
