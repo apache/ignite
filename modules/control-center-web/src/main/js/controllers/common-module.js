@@ -1993,9 +1993,7 @@ consoleModule.controller('agent-download', [
          * Close dialog and go by specified link.
          */
         $scope.goBack = function () {
-            if ($window.location == _agentDownloadModal.backLink)
-                $window.location.reload();
-            else
+            if (_agentDownloadModal.backLink)
                 $window.location = _agentDownloadModal.backLink;
 
             _stopInterval();
@@ -2094,8 +2092,6 @@ consoleModule.controller('agent-download', [
 
             // Stop refresh after first success.
             _agentDownloadModal.awaitFirstSuccess = true;
-
-            _agentDownloadModal.backLink = '/configuration/metadata';
 
             $scope.agentDownloadBackTo = 'Metadata';
 

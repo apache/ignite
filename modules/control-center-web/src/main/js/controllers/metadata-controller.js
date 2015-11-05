@@ -331,6 +331,10 @@ consoleModule.controller('metadataController', [
 
                         if ($scope.loadMeta.schemas.length == 0)
                             $scope.loadMetadataNext();
+                        else
+                            _.forEach($scope.loadMeta.schemas, function (sch) {
+                                sch.use = true;
+                            });
                     })
                     .error(function (errMsg) {
                         $common.showError(errMsg);
@@ -364,7 +368,7 @@ consoleModule.controller('metadataController', [
                             tbl.use = $common.isDefined(_.find(tbl.cols, function (col) {
                                 return col.key;
                             }));
-                        })
+                        });
                     })
                     .error(function (errMsg) {
                         $common.showError(errMsg);
@@ -613,12 +617,14 @@ consoleModule.controller('metadataController', [
             }
 
             $scope.loadMetadataNext = function () {
-                if ($scope.loadMeta.action == 'connect')
-                    _loadSchemas();
-                else if ($scope.loadMeta.action == 'schemas')
-                    _loadMetadata();
-                else if ($scope.loadMeta.action == 'tables' && $scope.nextAvailable())
-                    _saveMetadata();
+                if ($scope.nextAvailable()) {
+                    if ($scope.loadMeta.action == 'connect')
+                        _loadSchemas();
+                    else if ($scope.loadMeta.action == 'schemas')
+                        _loadMetadata();
+                    else if ($scope.loadMeta.action == 'tables' && $scope.nextAvailable())
+                        _saveMetadata();
+                }
             };
 
             $scope.nextTooltipText = function () {
@@ -629,7 +635,11 @@ consoleModule.controller('metadataController', [
             };
 
             $scope.nextAvailable = function () {
-                return $scope.loadMeta.action != 'tables' || $('#metadataTableData').find(':checked').length > 0;
+                switch ($scope.loadMeta.action) {
+                    case 'tables': return $('#metadataTableData').find(':checked').length > 0;
+                    case 'schemas': return $common.isEmptyArray($scope.loadMeta.schemas) || $('#metadataSchemaData').find(':checked').length > 0;
+                    default: return true;
+                }
             };
 
             $scope.loadMetadataPrev = function () {
