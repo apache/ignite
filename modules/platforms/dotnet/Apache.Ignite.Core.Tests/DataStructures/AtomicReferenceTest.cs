@@ -47,6 +47,19 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             Grid.GetAtomicReference(AtomicRefName, 0, true).Close();
         }
 
+        /** <inheritdoc /> */
+        protected override IgniteConfiguration GetConfiguration(string springConfigUrl)
+        {
+            var cfg = base.GetConfiguration(springConfigUrl);
+
+            cfg.PortableConfiguration = new PortableConfiguration
+            {
+                TypeConfigurations = new[] { new PortableTypeConfiguration(typeof(PortableObj)) }
+            };
+
+            return cfg;
+        }
+
         /// <summary>
         /// Tests lifecycle of the AtomicReference.
         /// </summary>
@@ -143,19 +156,6 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             old = atomic.CompareExchange(x, y);
             Assert.AreEqual(x, old);
             Assert.AreEqual(x, atomic.Get());
-        }
-
-        /** <inheritdoc /> */
-        protected override IgniteConfiguration GetConfiguration(string springConfigUrl)
-        {
-            var cfg = base.GetConfiguration(springConfigUrl);
-
-            cfg.PortableConfiguration = new PortableConfiguration
-            {
-                TypeConfigurations = new[] {new PortableTypeConfiguration(typeof (PortableObj))}
-            };
-
-            return cfg;
         }
 
         /// <summary>
