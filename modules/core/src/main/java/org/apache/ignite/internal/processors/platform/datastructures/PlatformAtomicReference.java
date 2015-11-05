@@ -159,7 +159,17 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
         if (x.equals(y))
             return true;  // primitives and some portables can be compared without a platform call
 
-        // TODO: write to a stream
-        return platformCtx.gateway().compareObjects(0) == 0;
+        try (PlatformMemory outMem = platformCtx.memory().allocate()) {
+            PlatformOutputStream out = outMem.output();
+
+            PortableRawWriterEx writer = platformCtx.writer(out);
+
+            writer.writeObject(x);
+            writer.writeObject(y);
+
+            out.synchronize();
+
+            return platformCtx.gateway().compareObjects(outMem.pointer()) == 0;
+        }
     }
 }
