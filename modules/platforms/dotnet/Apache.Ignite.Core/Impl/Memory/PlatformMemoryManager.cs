@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <returns>Memory.</returns>
         public IPlatformMemory Allocate(int cap)
         {
-            return Pool().Allocate(cap);
+            return GetPool().Allocate(cap);
         }
 
         /// <summary>
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Memory
             return hdr->IsExternal
                 ? GetExternalMemory(hdr)
                 : hdr->IsPooled
-                    ? Pool().Get(hdr)
+                    ? GetPool().Get(hdr)
                     : new PlatformUnpooledMemory(hdr);
         }
 
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// Gets or creates thread-local memory pool.
         /// </summary>
         /// <returns>Memory pool.</returns>
-        public PlatformMemoryPool Pool()
+        public PlatformMemoryPool GetPool()
         {
             PlatformMemoryPool pool = _threadLocPool.Value;
 
