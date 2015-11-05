@@ -48,10 +48,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (obj is IPortableObject)
                 return (T)obj;
 
-            IPortableStream stream = new PortableHeapStream(1024);
+            IBinaryStream stream = new BinaryHeapStream(1024);
 
             // Serialize.
-            BinaryWriterImpl writer = _marsh.StartMarshal(stream);
+            BinaryWriter writer = _marsh.StartMarshal(stream);
 
             try
             {
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder GetBuilder(Type type)
+        public IBinaryObjectBuilder GetBuilder(Type type)
         {
             IgniteArgumentCheck.NotNull(type, "type");
 
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder GetBuilder(string typeName)
+        public IBinaryObjectBuilder GetBuilder(string typeName)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder GetBuilder(IPortableObject obj)
+        public IBinaryObjectBuilder GetBuilder(IPortableObject obj)
         {
             IgniteArgumentCheck.NotNull(obj, "obj");
 
@@ -168,7 +168,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var hdr = new PortableObjectHeader(desc.UserType, desc.TypeId, 0, len, 0, len, true, 0);
 
-            var stream = new PortableHeapStream(len);
+            var stream = new BinaryHeapStream(len);
 
             PortableObjectHeader.Write(hdr, stream, 0);
 
@@ -182,10 +182,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="obj">Portable object.</param>
         /// <param name="desc">Type descriptor.</param>
         /// <returns>Builder.</returns>
-        private PortableBuilderImpl Builder0(PortableBuilderImpl parent, PortableUserObject obj, 
+        private BinaryObjectBuilder Builder0(BinaryObjectBuilder parent, PortableUserObject obj, 
             IBinaryTypeDescriptor desc)
         {
-            return new PortableBuilderImpl(this, parent, obj, desc);
+            return new BinaryObjectBuilder(this, parent, obj, desc);
         }
     }
 }

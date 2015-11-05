@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>
         /// True if current schema was non empty; false otherwise.
         /// </returns>
-        public bool WriteSchema(IPortableStream stream, int schemaOffset, out int schemaId, out short flags)
+        public bool WriteSchema(IBinaryStream stream, int schemaOffset, out int schemaId, out short flags)
         {
             schemaId = Fnv1Hash.Basis;
             flags = 0;

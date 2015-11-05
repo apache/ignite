@@ -358,7 +358,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <param name="inOutStream">Stream.</param>
         /// <param name="grid">Grid.</param>
         /// <returns>CacheEntryProcessor result.</returns>
-        private CacheEntryProcessorResultHolder ReadAndRunCacheEntryProcessor(IPortableStream inOutStream,
+        private CacheEntryProcessorResultHolder ReadAndRunCacheEntryProcessor(IBinaryStream inOutStream,
             Ignite grid)
         {
             var marsh = grid.Marshaller;

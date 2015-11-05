@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepPortable">Keep portable flag.</param>
         /// <returns>Event.</returns>
-        public static ICacheEntryEvent<TK, TV> ReadEvent<TK, TV>(IPortableStream stream, 
+        public static ICacheEntryEvent<TK, TV> ReadEvent<TK, TV>(IBinaryStream stream, 
             Marshaller marsh, bool keepPortable)
         {
             var reader = marsh.StartUnmarshal(stream, keepPortable);
@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="keepPortable">Keep portable flag.</param>
         /// <returns>Events.</returns>
         [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
-        public static ICacheEntryEvent<TK, TV>[] ReadEvents<TK, TV>(IPortableStream stream,
+        public static ICacheEntryEvent<TK, TV>[] ReadEvents<TK, TV>(IBinaryStream stream,
             Marshaller marsh, bool keepPortable)
         {
             var reader = marsh.StartUnmarshal(stream, keepPortable);
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Event.</returns>
-        private static ICacheEntryEvent<TK, TV> ReadEvent0<TK, TV>(BinaryReaderImpl reader)
+        private static ICacheEntryEvent<TK, TV> ReadEvent0<TK, TV>(BinaryReader reader)
         {
             reader.DetachNext();
             TK key = reader.ReadObject<TK>();

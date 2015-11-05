@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         }
 
         /** <inheritdoc /> */
-        protected override IList Read(BinaryReaderImpl reader)
+        protected override IList Read(BinaryReader reader)
         {
             int cnt = reader.ReadInt();
 

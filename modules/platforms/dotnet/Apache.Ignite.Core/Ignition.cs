@@ -35,6 +35,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
@@ -251,7 +252,7 @@ namespace Apache.Ignite.Core
         {
             try
             {
-                BinaryReaderImpl reader = BinaryUtils.Marshaller.StartUnmarshal(inStream);
+                BinaryReader reader = BinaryUtils.Marshaller.StartUnmarshal(inStream);
 
                 PrepareConfiguration(reader);
 
@@ -269,7 +270,7 @@ namespace Apache.Ignite.Core
         /// Preapare configuration.
         /// </summary>
         /// <param name="reader">Reader.</param>
-        private static void PrepareConfiguration(BinaryReaderImpl reader)
+        private static void PrepareConfiguration(BinaryReader reader)
         {
             // 1. Load assemblies.
             IgniteConfiguration cfg = _startup.Configuration;
@@ -296,7 +297,7 @@ namespace Apache.Ignite.Core
         /// <param name="reader">Reader.</param>
         /// <param name="outStream">Output stream.</param>
         /// <param name="handleRegistry">Handle registry.</param>
-        private static void PrepareLifecycleBeans(BinaryReaderImpl reader, PlatformMemoryStream outStream, 
+        private static void PrepareLifecycleBeans(BinaryReader reader, PlatformMemoryStream outStream, 
             HandleRegistry handleRegistry)
         {
             IList<LifecycleBeanHolder> beans = new List<LifecycleBeanHolder>();
@@ -333,7 +334,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Lifecycle bean.</returns>
-        private static ILifecycleBean CreateLifecycleBean(BinaryReaderImpl reader)
+        private static ILifecycleBean CreateLifecycleBean(BinaryReader reader)
         {
             // 1. Instantiate.
             var bean = IgniteUtils.CreateInstance<ILifecycleBean>(reader.ReadString());
@@ -351,12 +352,12 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="interopProc">Interop processor.</param>
         /// <param name="stream">Stream.</param>
-        internal static void OnStart(IUnmanagedTarget interopProc, IPortableStream stream)
+        internal static void OnStart(IUnmanagedTarget interopProc, IBinaryStream stream)
         {
             try
             {
                 // 1. Read data and leave critical state ASAP.
-                BinaryReaderImpl reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
+                BinaryReader reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
                 
                 // ReSharper disable once PossibleInvalidOperationException
                 var name = reader.ReadString();

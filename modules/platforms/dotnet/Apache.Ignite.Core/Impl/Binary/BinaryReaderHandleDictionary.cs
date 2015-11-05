@@ -20,14 +20,14 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Object handle dictionary for PortableReader.
     /// </summary>
-    internal class PortableReaderHandleDictionary : PortableHandleDictionary<int, object>
+    internal class BinaryReaderHandleDictionary : PortableHandleDictionary<int, object>
     {
         /// <summary>
         /// Constructor with initial key-value pair.
         /// </summary>
         /// <param name="key">Key.</param>
         /// <param name="val">Value.</param>
-        public PortableReaderHandleDictionary(int key, object val)
+        public BinaryReaderHandleDictionary(int key, object val)
             : base(key, val)
         {
             // No-op.

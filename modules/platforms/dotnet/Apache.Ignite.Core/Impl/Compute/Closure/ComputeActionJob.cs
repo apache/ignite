@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /** <inheritDoc /> */
         public void WritePortable(IBinaryWriter writer)
         {
-            var writer0 = (BinaryWriterImpl)writer.GetRawWriter();
+            var writer0 = (BinaryWriter)writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(_action));
         }
@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// <param name="reader">The reader.</param>
         public ComputeActionJob(IBinaryReader reader)
         {
-            var reader0 = (BinaryReaderImpl)reader.GetRawReader();
+            var reader0 = (BinaryReader)reader.GetRawReader();
 
             _action = reader0.ReadObject<IComputeAction>();
         }

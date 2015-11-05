@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <returns>Result.</returns>
-        void Apply(IPortableStream stream);
+        void Apply(IBinaryStream stream);
     }
 
     /// <summary>
@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="writer">Writer.</param>
         /// <param name="cb">Callback invoked when all necessary data is written to stream.</param>
         /// <param name="qry">Query.</param>
-        public void Start(Ignite grid, BinaryWriterImpl writer, Func<IUnmanagedTarget> cb, 
+        public void Start(Ignite grid, BinaryWriter writer, Func<IUnmanagedTarget> cb, 
             ContinuousQuery<TK, TV> qry)
         {
             // 1. Inject resources.
@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         }
 
         /** <inheritdoc /> */
-        public void Apply(IPortableStream stream)
+        public void Apply(IBinaryStream stream)
         {
             ICacheEntryEvent<TK, TV>[] evts = CQU.ReadEvents<TK, TV>(stream, _marsh, _keepPortable);
 
@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         }
 
         /** <inheritdoc /> */
-        public bool Evaluate(IPortableStream stream)
+        public bool Evaluate(IBinaryStream stream)
         {
             Debug.Assert(_filter != null, "Evaluate should not be called if filter is not set.");
 

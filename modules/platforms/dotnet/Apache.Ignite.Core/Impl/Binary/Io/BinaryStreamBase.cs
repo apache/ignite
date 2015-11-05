@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
     /// <summary>
     /// Base class for managed and unmanaged data streams.
     /// </summary>
-    internal unsafe abstract class PortableAbstractStream : IPortableStream
+    internal unsafe abstract class BinaryStreamBase : IBinaryStream
     {
         /** Byte: zero. */
         private const byte ByteZero = 0;

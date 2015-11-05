@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             Debug.Assert(reader != null);
 
-            var reader0 = (BinaryReaderImpl) reader.GetRawReader();
+            var reader0 = (BinaryReader) reader.GetRawReader();
 
             _ignite = reader0.Marshaller.Ignite;
 
@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             // 2. Try writing result to the stream.
             ClusterGroupImpl prj = _ignite.ClusterGroup;
 
-            BinaryWriterImpl writer = prj.Marshaller.StartMarshal(stream);
+            BinaryWriter writer = prj.Marshaller.StartMarshal(stream);
 
             try
             {
@@ -137,11 +137,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <returns>True if successfull.</returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
             Justification = "User job can throw any exception")]
-        internal bool Serialize(IPortableStream stream)
+        internal bool Serialize(IBinaryStream stream)
         {
             ClusterGroupImpl prj = _ignite.ClusterGroup;
 
-            BinaryWriterImpl writer = prj.Marshaller.StartMarshal(stream);
+            BinaryWriter writer = prj.Marshaller.StartMarshal(stream);
 
             try
             {
@@ -218,7 +218,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public void WritePortable(IBinaryWriter writer)
         {
-            BinaryWriterImpl writer0 = (BinaryWriterImpl) writer.GetRawWriter();
+            BinaryWriter writer0 = (BinaryWriter) writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(_job));
         }
@@ -229,7 +229,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="grid">Grid.</param>
         /// <param name="stream">Stream.</param>
         /// <returns></returns>
-        internal static ComputeJobHolder CreateJob(Ignite grid, IPortableStream stream)
+        internal static ComputeJobHolder CreateJob(Ignite grid, IBinaryStream stream)
         {
             try
             {

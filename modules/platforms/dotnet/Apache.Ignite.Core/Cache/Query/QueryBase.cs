@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <param name="keepPortable">Keep portable flag.</param>
-        internal abstract void Write(BinaryWriterImpl writer, bool keepPortable);
+        internal abstract void Write(BinaryWriter writer, bool keepPortable);
 
         /// <summary>
         /// Gets the interop opcode.
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <param name="args">Arguments.</param>
-        internal static void WriteQueryArgs(BinaryWriterImpl writer, object[] args)
+        internal static void WriteQueryArgs(BinaryWriter writer, object[] args)
         {
             if (args == null)
                 writer.WriteInt(0);

@@ -426,7 +426,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <typeparam name="T">Event type.</typeparam>
         /// <param name="reader">Reader.</param>
         /// <returns>Resulting list or null.</returns>
-        private ICollection<T> ReadEvents<T>(IPortableStream reader) where T : IEvent
+        private ICollection<T> ReadEvents<T>(IBinaryStream reader) where T : IEvent
         {
             return ReadEvents<T>(Marshaller.StartUnmarshal(reader));
         }
@@ -437,7 +437,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <typeparam name="T">Event type.</typeparam>
         /// <param name="binaryReader">Reader.</param>
         /// <returns>Resulting list or null.</returns>
-        private static ICollection<T> ReadEvents<T>(BinaryReaderImpl binaryReader) where T : IEvent
+        private static ICollection<T> ReadEvents<T>(BinaryReader binaryReader) where T : IEvent
         {
             var count = binaryReader.GetRawReader().ReadInt();
 
@@ -549,7 +549,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="stream">The stream.</param>
         /// <param name="listener">The listener.</param>
         /// <returns>Filter invocation result.</returns>
-        private bool InvokeLocalFilter<T>(IPortableStream stream, IEventFilter<T> listener) where T : IEvent
+        private bool InvokeLocalFilter<T>(IBinaryStream stream, IEventFilter<T> listener) where T : IEvent
         {
             var evt = EventReader.Read<T>(Marshaller.StartUnmarshal(stream));
 
@@ -563,7 +563,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <param name="stream">The stream.</param>
         /// <param name="listener">The listener.</param>
         /// <returns>Filter invocation result.</returns>
-        private bool InvokeLocalListener<T>(IPortableStream stream, IEventListener<T> listener) where T : IEvent
+        private bool InvokeLocalListener<T>(IBinaryStream stream, IEventListener<T> listener) where T : IEvent
         {
             var evt = EventReader.Read<T>(Marshaller.StartUnmarshal(stream));
 
@@ -587,7 +587,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// Writes the event types.
         /// </summary>
         /// <param name="reader">Reader.</param>
-        private int[] ReadEventTypes(IPortableStream reader)
+        private int[] ReadEventTypes(IBinaryStream reader)
         {
             return Marshaller.StartUnmarshal(reader).ReadIntArray();
         }
@@ -609,10 +609,10 @@ namespace Apache.Ignite.Core.Impl.Events
         private class LocalEventFilter : IInteropCallback
         {
             /** */
-            public Func<IPortableStream, bool> InvokeFunc;
+            public Func<IBinaryStream, bool> InvokeFunc;
 
             /** <inheritdoc /> */
-            public int Invoke(IPortableStream stream)
+            public int Invoke(IBinaryStream stream)
             {
                 return InvokeFunc(stream) ? 1 : 0;
             }
@@ -621,13 +621,13 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <summary>
         /// Local user filter wrapper with handle.
         /// </summary>
-        private class LocalHandledEventFilter : Handle<Func<IPortableStream, bool>>, IInteropCallback
+        private class LocalHandledEventFilter : Handle<Func<IBinaryStream, bool>>, IInteropCallback
         {
             /** */
             public long Handle;
 
             /** <inheritdoc /> */
-            public int Invoke(IPortableStream stream)
+            public int Invoke(IBinaryStream stream)
             {
                 return Target(stream) ? 1 : 0;
             }
@@ -638,7 +638,7 @@ namespace Apache.Ignite.Core.Impl.Events
             /// <param name="invokeFunc">The invoke function.</param>
             /// <param name="releaseAction">The release action.</param>
             public LocalHandledEventFilter(
-                Func<IPortableStream, bool> invokeFunc, Action<Func<IPortableStream, bool>> releaseAction) 
+                Func<IBinaryStream, bool> invokeFunc, Action<Func<IBinaryStream, bool>> releaseAction) 
                 : base(invokeFunc, releaseAction)
             {
                 // No-op.

@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Initializes a new instance of the <see cref="PortableObjectHeader"/> struct from specified stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
-        private PortableObjectHeader(IPortableStream stream)
+        private PortableObjectHeader(IBinaryStream stream)
         {
             Header = stream.ReadByte();
             Version = stream.ReadByte();
@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Writes this instance to the specified stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
-        private void Write(IPortableStream stream)
+        private void Write(IBinaryStream stream)
         {
             stream.WriteByte(Header);
             stream.WriteByte(Version);
@@ -197,7 +197,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="stream">The stream.</param>
         /// <param name="position">The position.</param>
         /// <returns>Raw offset.</returns>
-        public int GetRawOffset(IPortableStream stream, int position)
+        public int GetRawOffset(IBinaryStream stream, int position)
         {
             Debug.Assert(stream != null);
 
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="stream">The stream.</param>
         /// <param name="position">The position.</param>
         /// <returns>Schema.</returns>
-        public Dictionary<int, int> ReadSchemaAsDictionary(IPortableStream stream, int position)
+        public Dictionary<int, int> ReadSchemaAsDictionary(IBinaryStream stream, int position)
         {
             Debug.Assert(stream != null);
 
@@ -255,7 +255,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="stream">The stream.</param>
         /// <param name="position">The position.</param>
         /// <returns>Schema.</returns>
-        public PortableObjectSchemaField[] ReadSchema(IPortableStream stream, int position)
+        public PortableObjectSchemaField[] ReadSchema(IBinaryStream stream, int position)
         {
             Debug.Assert(stream != null);
 
@@ -300,7 +300,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Flags according to offset sizes: <see cref="PortableObjectHeader.FlagByteOffsets" />,
         /// <see cref="PortableObjectHeader.FlagShortOffsets" />, or 0.
         /// </returns>
-        public static unsafe short WriteSchema(PortableObjectSchemaField[] fields, IPortableStream stream, int offset,
+        public static unsafe short WriteSchema(PortableObjectSchemaField[] fields, IBinaryStream stream, int offset,
             int count)
         {
             Debug.Assert(fields != null);
@@ -370,7 +370,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="header">The header.</param>
         /// <param name="stream">The stream.</param>
         /// <param name="position">The position.</param>
-        public static unsafe void Write(PortableObjectHeader header, IPortableStream stream, int position)
+        public static unsafe void Write(PortableObjectHeader header, IBinaryStream stream, int position)
         {
             Debug.Assert(stream != null);
             Debug.Assert(position >= 0);
@@ -389,7 +389,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="stream">The stream.</param>
         /// <param name="position">The position.</param>
         /// <returns>Instance of the header.</returns>
-        public static unsafe PortableObjectHeader Read(IPortableStream stream, int position)
+        public static unsafe PortableObjectHeader Read(IBinaryStream stream, int position)
         {
             Debug.Assert(stream != null);
             Debug.Assert(position >= 0);

@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Portable reader implementation. 
     /// </summary>
-    internal class BinaryReaderImpl : IBinaryReader, IPortableRawReader
+    internal class BinaryReader : IBinaryReader, IPortableRawReader
     {
         /** Marshaller. */
         private readonly Marshaller _marsh;
@@ -40,10 +40,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly IDictionary<long, IBinaryTypeDescriptor> _descs;
 
         /** Parent builder. */
-        private readonly PortableBuilderImpl _builder;
+        private readonly BinaryObjectBuilder _builder;
 
         /** Handles. */
-        private PortableReaderHandleDictionary _hnds;
+        private BinaryReaderHandleDictionary _hnds;
 
         /** Current position. */
         private int _curPos;
@@ -77,12 +77,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="stream">Input stream.</param>
         /// <param name="mode">The mode.</param>
         /// <param name="builder">Builder.</param>
-        public BinaryReaderImpl
+        public BinaryReader
             (Marshaller marsh,
             IDictionary<long, IBinaryTypeDescriptor> descs, 
-            IPortableStream stream, 
+            IBinaryStream stream, 
             PortableMode mode,
-            PortableBuilderImpl builder)
+            BinaryObjectBuilder builder)
         {
             _marsh = marsh;
             _descs = descs;
@@ -809,7 +809,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private void AddHandle(int pos, object obj)
         {
             if (_hnds == null)
-                _hnds = new PortableReaderHandleDictionary(pos, obj);
+                _hnds = new BinaryReaderHandleDictionary(pos, obj);
             else
                 _hnds.Add(pos, obj);
         }
@@ -817,7 +817,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Underlying stream.
         /// </summary>
-        public IPortableStream Stream
+        public IBinaryStream Stream
         {
             get;
             private set;
@@ -900,7 +900,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Seeks specified field and invokes provided func.
         /// </summary>
-        private T ReadField<T>(string fieldName, Func<IPortableStream, T> readFunc, byte expHdr)
+        private T ReadField<T>(string fieldName, Func<IBinaryStream, T> readFunc, byte expHdr)
         {
             return SeekField(fieldName, expHdr) ? readFunc(Stream) : default(T);
         }
@@ -908,7 +908,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Seeks specified field and invokes provided func.
         /// </summary>
-        private T ReadField<T>(string fieldName, Func<BinaryReaderImpl, T> readFunc, byte expHdr)
+        private T ReadField<T>(string fieldName, Func<BinaryReader, T> readFunc, byte expHdr)
         {
             return SeekField(fieldName, expHdr) ? readFunc(this) : default(T);
         }
@@ -924,7 +924,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reads header and invokes specified func if the header is not null.
         /// </summary>
-        private T Read<T>(Func<BinaryReaderImpl, T> readFunc, byte expHdr)
+        private T Read<T>(Func<BinaryReader, T> readFunc, byte expHdr)
         {
             return IsNotNullHeader(expHdr) ? readFunc(this) : default(T);
         }
@@ -932,7 +932,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reads header and invokes specified func if the header is not null.
         /// </summary>
-        private T Read<T>(Func<IPortableStream, T> readFunc, byte expHdr)
+        private T Read<T>(Func<IBinaryStream, T> readFunc, byte expHdr)
         {
             return IsNotNullHeader(expHdr) ? readFunc(Stream) : default(T);
         }

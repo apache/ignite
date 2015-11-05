@@ -30,17 +30,17 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Portable builder implementation.
     /// </summary>
-    internal class PortableBuilderImpl : IPortableBuilder
+    internal class BinaryObjectBuilder : IBinaryObjectBuilder
     {
         /** Cached dictionary with no values. */
-        private static readonly IDictionary<int, PortableBuilderField> EmptyVals =
-            new Dictionary<int, PortableBuilderField>();
+        private static readonly IDictionary<int, BinaryBuilderField> EmptyVals =
+            new Dictionary<int, BinaryBuilderField>();
         
-        /** Portables. */
+        /** Binary. */
         private readonly IgniteBinary _igniteBinary;
 
         /** */
-        private readonly PortableBuilderImpl _parent;
+        private readonly BinaryObjectBuilder _parent;
 
         /** Initial portable object. */
         private readonly PortableUserObject _obj;
@@ -49,10 +49,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly IBinaryTypeDescriptor _desc;
 
         /** Values. */
-        private IDictionary<string, PortableBuilderField> _vals;
+        private IDictionary<string, BinaryBuilderField> _vals;
 
         /** Contextual fields. */
-        private IDictionary<int, PortableBuilderField> _cache;
+        private IDictionary<int, BinaryBuilderField> _cache;
 
         /** Hash code. */
         private int _hashCode;
@@ -61,19 +61,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         private Context _ctx;
 
         /** Write array action. */
-        private static readonly Action<BinaryWriterImpl, object> WriteArrayAction = 
+        private static readonly Action<BinaryWriter, object> WriteArrayAction = 
             (w, o) => w.WriteArrayInternal((Array) o);
 
         /** Write collection action. */
-        private static readonly Action<BinaryWriterImpl, object> WriteCollectionAction = 
+        private static readonly Action<BinaryWriter, object> WriteCollectionAction = 
             (w, o) => w.WriteCollection((ICollection) o);
 
         /** Write timestamp action. */
-        private static readonly Action<BinaryWriterImpl, object> WriteTimestampAction = 
+        private static readonly Action<BinaryWriter, object> WriteTimestampAction = 
             (w, o) => w.WriteTimestamp((DateTime?) o);
 
         /** Write timestamp array action. */
-        private static readonly Action<BinaryWriterImpl, object> WriteTimestampArrayAction = 
+        private static readonly Action<BinaryWriter, object> WriteTimestampArrayAction = 
             (w, o) => w.WriteTimestampArray((DateTime?[])o);
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="parent">Parent builder.</param>
         /// <param name="obj">Initial portable object.</param>
         /// <param name="desc">Type descriptor.</param>
-        public PortableBuilderImpl(IgniteBinary igniteBinary, PortableBuilderImpl parent, 
+        public BinaryObjectBuilder(IgniteBinary igniteBinary, BinaryObjectBuilder parent, 
             PortableUserObject obj, IBinaryTypeDescriptor desc)
         {
             Debug.Assert(igniteBinary != null);
@@ -99,7 +99,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder SetHashCode(int hashCode)
+        public IBinaryObjectBuilder SetHashCode(int hashCode)
         {
             _hashCode = hashCode;
 
@@ -109,10 +109,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritDoc /> */
         public T GetField<T>(string name)
         {
-            PortableBuilderField field;
+            BinaryBuilderField field;
 
             if (_vals != null && _vals.TryGetValue(name, out field))
-                return field != PortableBuilderField.RmvMarker ? (T) field.Value : default(T);
+                return field != BinaryBuilderField.RmvMarker ? (T) field.Value : default(T);
 
             int pos;
 
@@ -134,234 +134,234 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder SetField<T>(string fieldName, T val)
+        public IBinaryObjectBuilder SetField<T>(string fieldName, T val)
         {
             return SetField0(fieldName,
-                new PortableBuilderField(typeof (T), val, PortableSystemHandlers.GetTypeId(typeof (T))));
+                new BinaryBuilderField(typeof (T), val, PortableSystemHandlers.GetTypeId(typeof (T))));
         }
 
         /** <inheritDoc /> */
-        public IPortableBuilder SetArrayField<T>(string fieldName, T[] val)
+        public IBinaryObjectBuilder SetArrayField<T>(string fieldName, T[] val)
         {
             return SetField0(fieldName,
-                new PortableBuilderField(typeof (T[]), val, BinaryUtils.TypeArray, WriteArrayAction));
+                new BinaryBuilderField(typeof (T[]), val, BinaryUtils.TypeArray, WriteArrayAction));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetBooleanField(string fieldName, bool val)
+        public IBinaryObjectBuilder SetBooleanField(string fieldName, bool val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (bool), val, BinaryUtils.TypeBool, 
+            return SetField0(fieldName, new BinaryBuilderField(typeof (bool), val, BinaryUtils.TypeBool, 
                 (w, o) => w.WriteBoolean((bool) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetBooleanArrayField(string fieldName, bool[] val)
+        public IBinaryObjectBuilder SetBooleanArrayField(string fieldName, bool[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (bool[]), val, BinaryUtils.TypeArrayBool,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (bool[]), val, BinaryUtils.TypeArrayBool,
                 (w, o) => w.WriteBooleanArray((bool[]) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetByteField(string fieldName, byte val)
+        public IBinaryObjectBuilder SetByteField(string fieldName, byte val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (byte), val, BinaryUtils.TypeByte,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (byte), val, BinaryUtils.TypeByte,
                 (w, o) => w.WriteByte((byte) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetByteArrayField(string fieldName, byte[] val)
+        public IBinaryObjectBuilder SetByteArrayField(string fieldName, byte[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (byte[]), val, BinaryUtils.TypeArrayByte,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (byte[]), val, BinaryUtils.TypeArrayByte,
                 (w, o) => w.WriteByteArray((byte[]) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetCharField(string fieldName, char val)
+        public IBinaryObjectBuilder SetCharField(string fieldName, char val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (char), val, BinaryUtils.TypeChar,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (char), val, BinaryUtils.TypeChar,
                 (w, o) => w.WriteChar((char) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetCharArrayField(string fieldName, char[] val)
+        public IBinaryObjectBuilder SetCharArrayField(string fieldName, char[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (char[]), val, BinaryUtils.TypeArrayChar,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (char[]), val, BinaryUtils.TypeArrayChar,
                 (w, o) => w.WriteCharArray((char[]) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetCollectionField(string fieldName, ICollection val)
+        public IBinaryObjectBuilder SetCollectionField(string fieldName, ICollection val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (ICollection), val, BinaryUtils.TypeCollection,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (ICollection), val, BinaryUtils.TypeCollection,
                 WriteCollectionAction));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetDecimalField(string fieldName, decimal? val)
+        public IBinaryObjectBuilder SetDecimalField(string fieldName, decimal? val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (decimal?), val, BinaryUtils.TypeDecimal,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (decimal?), val, BinaryUtils.TypeDecimal,
                 (w, o) => w.WriteDecimal((decimal?) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetDecimalArrayField(string fieldName, decimal?[] val)
+        public IBinaryObjectBuilder SetDecimalArrayField(string fieldName, decimal?[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (decimal?[]), val, BinaryUtils.TypeArrayDecimal,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (decimal?[]), val, BinaryUtils.TypeArrayDecimal,
                 (w, o) => w.WriteDecimalArray((decimal?[]) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetDictionaryField(string fieldName, IDictionary val)
+        public IBinaryObjectBuilder SetDictionaryField(string fieldName, IDictionary val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (IDictionary), val, BinaryUtils.TypeDictionary,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (IDictionary), val, BinaryUtils.TypeDictionary,
                 (w, o) => w.WriteDictionary((IDictionary) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetDoubleField(string fieldName, double val)
+        public IBinaryObjectBuilder SetDoubleField(string fieldName, double val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (double), val, BinaryUtils.TypeDouble,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (double), val, BinaryUtils.TypeDouble,
                 (w, o) => w.WriteDouble((double) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetDoubleArrayField(string fieldName, double[] val)
+        public IBinaryObjectBuilder SetDoubleArrayField(string fieldName, double[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (double[]), val, BinaryUtils.TypeArrayDouble,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (double[]), val, BinaryUtils.TypeArrayDouble,
                 (w, o) => w.WriteDoubleArray((double[]) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetEnumField<T>(string fieldName, T val)
+        public IBinaryObjectBuilder SetEnumField<T>(string fieldName, T val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (T), val, BinaryUtils.TypeEnum,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (T), val, BinaryUtils.TypeEnum,
                 (w, o) => w.WriteEnum((T) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetEnumArrayField<T>(string fieldName, T[] val)
+        public IBinaryObjectBuilder SetEnumArrayField<T>(string fieldName, T[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (T[]), val, BinaryUtils.TypeArrayEnum,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (T[]), val, BinaryUtils.TypeArrayEnum,
                 (w, o) => w.WriteEnumArray((T[]) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetFloatField(string fieldName, float val)
+        public IBinaryObjectBuilder SetFloatField(string fieldName, float val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (float), val, BinaryUtils.TypeFloat,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (float), val, BinaryUtils.TypeFloat,
                 (w, o) => w.WriteFloat((float) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetFloatArrayField(string fieldName, float[] val)
+        public IBinaryObjectBuilder SetFloatArrayField(string fieldName, float[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (float[]), val, BinaryUtils.TypeArrayFloat,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (float[]), val, BinaryUtils.TypeArrayFloat,
                 (w, o) => w.WriteFloatArray((float[]) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetGuidField(string fieldName, Guid? val)
+        public IBinaryObjectBuilder SetGuidField(string fieldName, Guid? val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (Guid?), val, BinaryUtils.TypeGuid,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (Guid?), val, BinaryUtils.TypeGuid,
                 (w, o) => w.WriteGuid((Guid?) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetGuidArrayField(string fieldName, Guid?[] val)
+        public IBinaryObjectBuilder SetGuidArrayField(string fieldName, Guid?[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (Guid?[]), val, BinaryUtils.TypeArrayGuid,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (Guid?[]), val, BinaryUtils.TypeArrayGuid,
                 (w, o) => w.WriteGuidArray((Guid?[]) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetIntField(string fieldName, int val)
+        public IBinaryObjectBuilder SetIntField(string fieldName, int val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (int), val, BinaryUtils.TypeInt,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (int), val, BinaryUtils.TypeInt,
                 (w, o) => w.WriteInt((int) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetIntArrayField(string fieldName, int[] val)
+        public IBinaryObjectBuilder SetIntArrayField(string fieldName, int[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (int[]), val, BinaryUtils.TypeArrayInt,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (int[]), val, BinaryUtils.TypeArrayInt,
                 (w, o) => w.WriteIntArray((int[]) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetLongField(string fieldName, long val)
+        public IBinaryObjectBuilder SetLongField(string fieldName, long val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (long), val, BinaryUtils.TypeLong,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (long), val, BinaryUtils.TypeLong,
                 (w, o) => w.WriteLong((long) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetLongArrayField(string fieldName, long[] val)
+        public IBinaryObjectBuilder SetLongArrayField(string fieldName, long[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (long[]), val, BinaryUtils.TypeArrayLong,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (long[]), val, BinaryUtils.TypeArrayLong,
                 (w, o) => w.WriteLongArray((long[]) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetShortField(string fieldName, short val)
+        public IBinaryObjectBuilder SetShortField(string fieldName, short val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (short), val, BinaryUtils.TypeShort,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (short), val, BinaryUtils.TypeShort,
                 (w, o) => w.WriteShort((short) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetShortArrayField(string fieldName, short[] val)
+        public IBinaryObjectBuilder SetShortArrayField(string fieldName, short[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (short[]), val, BinaryUtils.TypeArrayShort,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (short[]), val, BinaryUtils.TypeArrayShort,
                 (w, o) => w.WriteShortArray((short[]) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetStringField(string fieldName, string val)
+        public IBinaryObjectBuilder SetStringField(string fieldName, string val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (string), val, BinaryUtils.TypeString,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (string), val, BinaryUtils.TypeString,
                 (w, o) => w.WriteString((string) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetStringArrayField(string fieldName, string[] val)
+        public IBinaryObjectBuilder SetStringArrayField(string fieldName, string[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (string[]), val, BinaryUtils.TypeArrayString,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (string[]), val, BinaryUtils.TypeArrayString,
                 (w, o) => w.WriteStringArray((string[]) o)));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetTimestampField(string fieldName, DateTime? val)
+        public IBinaryObjectBuilder SetTimestampField(string fieldName, DateTime? val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (DateTime?), val, BinaryUtils.TypeTimestamp,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (DateTime?), val, BinaryUtils.TypeTimestamp,
                 WriteTimestampAction));
         }
  
         /** <inheritDoc /> */
-        public IPortableBuilder SetTimestampArrayField(string fieldName, DateTime?[] val)
+        public IBinaryObjectBuilder SetTimestampArrayField(string fieldName, DateTime?[] val)
         {
-            return SetField0(fieldName, new PortableBuilderField(typeof (DateTime?[]), val, BinaryUtils.TypeArrayTimestamp,
+            return SetField0(fieldName, new BinaryBuilderField(typeof (DateTime?[]), val, BinaryUtils.TypeArrayTimestamp,
                 WriteTimestampArrayAction));
         } 
 
         /** <inheritDoc /> */
-        public IPortableBuilder RemoveField(string name)
+        public IBinaryObjectBuilder RemoveField(string name)
         {
-            return SetField0(name, PortableBuilderField.RmvMarker);
+            return SetField0(name, BinaryBuilderField.RmvMarker);
         }
 
         /** <inheritDoc /> */
         public IPortableObject Build()
         {
-            PortableHeapStream inStream = new PortableHeapStream(_obj.Data);
+            BinaryHeapStream inStream = new BinaryHeapStream(_obj.Data);
 
             inStream.Seek(_obj.Offset, SeekOrigin.Begin);
 
             // Assume that resulting length will be no less than header + [fields_cnt] * 12;
             int estimatedCapacity = PortableObjectHeader.Size + (_vals == null ? 0 : _vals.Count*12);
 
-            PortableHeapStream outStream = new PortableHeapStream(estimatedCapacity);
+            BinaryHeapStream outStream = new BinaryHeapStream(estimatedCapacity);
 
-            BinaryWriterImpl writer = _igniteBinary.Marshaller.StartMarshal(outStream);
+            BinaryWriter writer = _igniteBinary.Marshaller.StartMarshal(outStream);
 
             writer.SetBuilder(this);
 
@@ -392,11 +392,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="obj">Portable object.</param>
         /// <returns>Child builder.</returns>
-        public PortableBuilderImpl Child(PortableUserObject obj)
+        public BinaryObjectBuilder Child(PortableUserObject obj)
         {
             var desc = _igniteBinary.Marshaller.GetDescriptor(true, obj.TypeId);
 
-            return new PortableBuilderImpl(_igniteBinary, null, obj, desc);
+            return new BinaryObjectBuilder(_igniteBinary, null, obj, desc);
         }
         
         /// <summary>
@@ -409,7 +409,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             if (_parent._cache != null)
             {
-                PortableBuilderField res;
+                BinaryBuilderField res;
 
                 if (_parent._cache.TryGetValue(pos, out res))
                 {
@@ -429,14 +429,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="pos">Position.</param>
         /// <param name="val">Value.</param>
-        public PortableBuilderField CacheField<T>(int pos, T val)
+        public BinaryBuilderField CacheField<T>(int pos, T val)
         {
             if (_parent._cache == null)
-                _parent._cache = new Dictionary<int, PortableBuilderField>(2);
+                _parent._cache = new Dictionary<int, BinaryBuilderField>(2);
 
             var hdr = _obj.Data[pos];
 
-            var field = new PortableBuilderField(typeof(T), val, hdr, GetWriteAction(hdr));
+            var field = new BinaryBuilderField(typeof(T), val, hdr, GetWriteAction(hdr));
             
             _parent._cache[pos] = field;
 
@@ -448,7 +448,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="header">The header.</param>
         /// <returns>Write action.</returns>
-        private static Action<BinaryWriterImpl, object> GetWriteAction(byte header)
+        private static Action<BinaryWriter, object> GetWriteAction(byte header)
         {
             // We need special actions for all cases where SetField(X) produces different result from SetSpecialField(X)
             // Arrays, Collections, Dates
@@ -477,10 +477,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="fieldName">Name.</param>
         /// <param name="val">Value.</param>
         /// <returns>This builder.</returns>
-        private IPortableBuilder SetField0(string fieldName, PortableBuilderField val)
+        private IBinaryObjectBuilder SetField0(string fieldName, BinaryBuilderField val)
         {
             if (_vals == null)
-                _vals = new Dictionary<string, PortableBuilderField>();
+                _vals = new Dictionary<string, BinaryBuilderField>();
 
             _vals[fieldName] = val;
 
@@ -496,14 +496,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="hashCode">Hash code.</param>
         /// <param name="vals">Values.</param>
         private void Mutate(
-            PortableHeapStream inStream,
-            PortableHeapStream outStream,
+            BinaryHeapStream inStream,
+            BinaryHeapStream outStream,
             IBinaryTypeDescriptor desc,
             int hashCode, 
-            IDictionary<string, PortableBuilderField> vals)
+            IDictionary<string, BinaryBuilderField> vals)
         {
             // Set correct builder to writer frame.
-            PortableBuilderImpl oldBuilder = _parent._ctx.Writer.SetBuilder(_parent);
+            BinaryObjectBuilder oldBuilder = _parent._ctx.Writer.SetBuilder(_parent);
 
             int streamPos = inStream.Position;
             
@@ -512,15 +512,15 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // Prepare fields.
                 IPortableMetadataHandler metaHnd = _igniteBinary.Marshaller.GetMetadataHandler(desc);
 
-                IDictionary<int, PortableBuilderField> vals0;
+                IDictionary<int, BinaryBuilderField> vals0;
 
                 if (vals == null || vals.Count == 0)
                     vals0 = EmptyVals;
                 else
                 {
-                    vals0 = new Dictionary<int, PortableBuilderField>(vals.Count);
+                    vals0 = new Dictionary<int, BinaryBuilderField>(vals.Count);
 
-                    foreach (KeyValuePair<string, PortableBuilderField> valEntry in vals)
+                    foreach (KeyValuePair<string, BinaryBuilderField> valEntry in vals)
                     {
                         int fieldId = BinaryUtils.FieldId(desc.TypeId, valEntry.Key, desc.NameMapper, desc.IdMapper);
 
@@ -568,8 +568,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="hash">New hash.</param>
         /// <param name="vals">Values to be replaced.</param>
         /// <returns>Mutated object.</returns>
-        private void Mutate0(Context ctx, PortableHeapStream inStream, IPortableStream outStream,
-            bool changeHash, int hash, IDictionary<int, PortableBuilderField> vals)
+        private void Mutate0(Context ctx, BinaryHeapStream inStream, IBinaryStream outStream,
+            bool changeHash, int hash, IDictionary<int, BinaryBuilderField> vals)
         {
             int inStartPos = inStream.Position;
             int outStartPos = outStream.Position;
@@ -614,7 +614,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (ctx.AddOldToNew(inStartPos, outStartPos, out hndPos))
                 {
                     // Object could be cached in parent builder.
-                    PortableBuilderField cachedVal;
+                    BinaryBuilderField cachedVal;
 
                     if (_parent._cache != null && _parent._cache.TryGetValue(inStartPos, out cachedVal))
                     {
@@ -637,11 +637,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                             {
                                 foreach (var inField in inSchema)
                                 {
-                                    PortableBuilderField fieldVal;
+                                    BinaryBuilderField fieldVal;
 
                                     var fieldFound = vals.TryGetValue(inField.Id, out fieldVal);
 
-                                    if (fieldFound && fieldVal == PortableBuilderField.RmvMarker)
+                                    if (fieldFound && fieldVal == BinaryBuilderField.RmvMarker)
                                         continue;
 
                                     outSchema.PushField(inField.Id, outStream.Position - outStartPos);
@@ -670,7 +670,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                             // Write remaining new fields.
                             foreach (var valEntry in vals)
                             {
-                                if (valEntry.Value == PortableBuilderField.RmvMarker)
+                                if (valEntry.Value == BinaryBuilderField.RmvMarker)
                                     continue;
 
                                 outSchema.PushField(valEntry.Key, outStream.Position - outStartPos);
@@ -744,7 +744,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Writes the specified field.
         /// </summary>
-        private static void WriteField(Context ctx, PortableBuilderField field)
+        private static void WriteField(Context ctx, BinaryBuilderField field)
         {
             var action = field.WriteAction;
 
@@ -759,10 +759,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="outStream">Output stream.</param>
         /// <param name="port">Portable.</param>
-        internal void ProcessPortable(IPortableStream outStream, PortableUserObject port)
+        internal void ProcessPortable(IBinaryStream outStream, PortableUserObject port)
         {
             // Special case: writing portable object with correct inversions.
-            PortableHeapStream inStream = new PortableHeapStream(port.Data);
+            BinaryHeapStream inStream = new BinaryHeapStream(port.Data);
 
             inStream.Seek(port.Offset, SeekOrigin.Begin);
 
@@ -775,9 +775,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="outStream">Output stream.</param>
         /// <param name="builder">Builder.</param>
-        internal void ProcessBuilder(IPortableStream outStream, PortableBuilderImpl builder)
+        internal void ProcessBuilder(IBinaryStream outStream, BinaryObjectBuilder builder)
         {
-            PortableHeapStream inStream = new PortableHeapStream(builder._obj.Data);
+            BinaryHeapStream inStream = new BinaryHeapStream(builder._obj.Data);
 
             inStream.Seek(builder._obj.Offset, SeekOrigin.Begin);
 
@@ -787,7 +787,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (builder._parent._ctx == null || builder._parent._ctx.Closed)
                 builder._parent._ctx = new Context(_parent._ctx);
 
-            builder.Mutate(inStream, outStream as PortableHeapStream, builder._desc,
+            builder.Mutate(inStream, outStream as BinaryHeapStream, builder._desc,
                     builder._hashCode, builder._vals);
         }
 
@@ -799,7 +799,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="outStream">Output stream.</param>
         /// <param name="ctx">Context.</param>
         /// <returns><c>True</c> if was written.</returns>
-        private bool WriteAsPredefined(byte hdr, PortableHeapStream inStream, IPortableStream outStream,
+        private bool WriteAsPredefined(byte hdr, BinaryHeapStream inStream, IBinaryStream outStream,
             Context ctx)
         {
             switch (hdr)
@@ -982,7 +982,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="inStream">Input stream.</param>
         /// <param name="outStream">Output stream.</param>
         /// <param name="cnt">Bytes count.</param>
-        private static void TransferBytes(PortableHeapStream inStream, IPortableStream outStream, int cnt)
+        private static void TransferBytes(BinaryHeapStream inStream, IBinaryStream outStream, int cnt)
         {
             outStream.Write(inStream.InternalArray, inStream.Position, cnt);
 
@@ -995,7 +995,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="inStream">Input stream.</param>
         /// <param name="outStream">Output stream.</param>
         /// <param name="elemSize">Element size.</param>
-        private static void TransferArray(PortableHeapStream inStream, IPortableStream outStream,
+        private static void TransferArray(BinaryHeapStream inStream, IBinaryStream outStream,
             int elemSize)
         {
             int len = inStream.ReadInt();
@@ -1017,7 +1017,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             private readonly Context _parent;
 
             /** Portable writer. */
-            private readonly BinaryWriterImpl _writer;
+            private readonly BinaryWriter _writer;
 
             /** Children contexts. */
             private ICollection<Context> _children;
@@ -1037,7 +1037,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             /// Constructor for parent context.
             /// </summary>
             /// <param name="writer">Writer</param>
-            public Context(BinaryWriterImpl writer)
+            public Context(BinaryWriter writer)
             {
                 _writer = writer;
             }
@@ -1092,7 +1092,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             /// <summary>
             /// Writer.
             /// </summary>
-            public BinaryWriterImpl Writer
+            public BinaryWriter Writer
             {
                 get { return _writer; }
             }

@@ -29,16 +29,16 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Portable writer implementation.
     /// </summary>
-    internal class BinaryWriterImpl : IBinaryWriter, IPortableRawWriter
+    internal class BinaryWriter : IBinaryWriter, IPortableRawWriter
     {
         /** Marshaller. */
         private readonly Marshaller _marsh;
 
         /** Stream. */
-        private readonly IPortableStream _stream;
+        private readonly IBinaryStream _stream;
 
         /** Builder (used only during build). */
-        private PortableBuilderImpl _builder;
+        private BinaryObjectBuilder _builder;
 
         /** Handles. */
         private PortableHandleDictionary<object, long> _hnds;
@@ -997,9 +997,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="builder">Builder.</param>
         /// <returns>Previous builder.</returns>
-        internal PortableBuilderImpl SetBuilder(PortableBuilderImpl builder)
+        internal BinaryObjectBuilder SetBuilder(BinaryObjectBuilder builder)
         {
-            PortableBuilderImpl ret = _builder;
+            BinaryObjectBuilder ret = _builder;
 
             _builder = builder;
 
@@ -1011,7 +1011,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="stream">Stream.</param>
-        internal BinaryWriterImpl(Marshaller marsh, IPortableStream stream)
+        internal BinaryWriter(Marshaller marsh, IBinaryStream stream)
         {
             _marsh = marsh;
             _stream = stream;
@@ -1241,7 +1241,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
 
                 // Special case for builder during build.
-                PortableBuilderImpl portBuilder = obj as PortableBuilderImpl;
+                BinaryObjectBuilder portBuilder = obj as BinaryObjectBuilder;
 
                 if (portBuilder != null)
                 {
@@ -1293,7 +1293,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Perform action with detached semantics.
         /// </summary>
         /// <param name="a"></param>
-        internal void WithDetach(Action<BinaryWriterImpl> a)
+        internal void WithDetach(Action<BinaryWriter> a)
         {
             if (_detaching)
                 a(this);
@@ -1328,7 +1328,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Stream.
         /// </summary>
-        internal IPortableStream Stream
+        internal IBinaryStream Stream
         {
             get { return _stream; }
         }

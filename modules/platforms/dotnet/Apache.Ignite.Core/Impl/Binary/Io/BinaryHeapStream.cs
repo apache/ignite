@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
     /// <summary>
     /// Portable onheap stream.
     /// </summary>
-    internal unsafe class PortableHeapStream : PortableAbstractStream
+    internal unsafe class BinaryHeapStream : BinaryStreamBase
     {
         /** Data array. */
         private byte[] _data;
@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         /// Constructor.
         /// </summary>
         /// <param name="cap">Initial capacity.</param>
-        public PortableHeapStream(int cap)
+        public BinaryHeapStream(int cap)
         {
             Debug.Assert(cap >= 0);
 
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         /// Constructor.
         /// </summary>
         /// <param name="data">Data array.</param>
-        public PortableHeapStream(byte[] data)
+        public BinaryHeapStream(byte[] data)
         {
             Debug.Assert(data != null);
 

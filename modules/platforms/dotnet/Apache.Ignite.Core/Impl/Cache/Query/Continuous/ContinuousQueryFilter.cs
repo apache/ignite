@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <returns>Result.</returns>
-        bool Evaluate(IPortableStream stream);
+        bool Evaluate(IBinaryStream stream);
 
         /// <summary>
         /// Inject grid.
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         }
 
         /** <inheritDoc /> */
-        public bool Evaluate(IPortableStream stream)
+        public bool Evaluate(IBinaryStream stream)
         {
             ICacheEntryEvent<TK, TV> evt = CQU.ReadEvent<TK, TV>(stream, _ignite.Marshaller, _keepPortable);
 

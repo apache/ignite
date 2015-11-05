@@ -89,9 +89,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="pos">Position.</param>
         /// <param name="builder">Builder.</param>
         /// <returns>Field value.</returns>
-        public T GetField<T>(int pos, PortableBuilderImpl builder)
+        public T GetField<T>(int pos, BinaryObjectBuilder builder)
         {
-            IPortableStream stream = new PortableHeapStream(_data);
+            IBinaryStream stream = new BinaryHeapStream(_data);
 
             stream.Seek(pos + _offset, SeekOrigin.Begin);
 
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             if (_deserialized == null)
             {
-                IPortableStream stream = new PortableHeapStream(_data);
+                IBinaryStream stream = new BinaryHeapStream(_data);
 
                 stream.Seek(_offset, SeekOrigin.Begin);
 
@@ -173,7 +173,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (_fields != null) 
                 return;
 
-            var stream = new PortableHeapStream(_data);
+            var stream = new BinaryHeapStream(_data);
 
             var hdr = PortableObjectHeader.Read(stream, _offset);
 
@@ -227,10 +227,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     // 4. Check if objects have the same raw data.
                     // ReSharper disable ImpureMethodCallOnReadonlyValueField (method is not impure)
-                    var stream = new PortableHeapStream(_data);
+                    var stream = new BinaryHeapStream(_data);
                     var rawOffset = _header.GetRawOffset(stream, _offset);
 
-                    var thatStream = new PortableHeapStream(that._data);
+                    var thatStream = new BinaryHeapStream(that._data);
                     var thatRawOffset = that._header.GetRawOffset(thatStream, that._offset);
                     // ReSharper restore ImpureMethodCallOnReadonlyValueField
 

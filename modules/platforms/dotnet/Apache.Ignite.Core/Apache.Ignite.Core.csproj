@@ -236,9 +236,9 @@
     <Compile Include="Impl\Messaging\Messaging.cs" />
     <Compile Include="Impl\NativeMethods.cs" />
     <Compile Include="Impl\Binary\DateTimeHolder.cs" />
-    <Compile Include="Impl\Binary\IO\IPortableStream.cs" />
-    <Compile Include="Impl\Binary\IO\PortableAbstractStream.cs" />
-    <Compile Include="Impl\Binary\IO\PortableHeapStream.cs" />
+    <Compile Include="Impl\Binary\IO\IBinaryStream.cs" />
+    <Compile Include="Impl\Binary\IO\BinaryStreamBase.cs" />
+    <Compile Include="Impl\Binary\IO\BinaryHeapStream.cs" />
     <Compile Include="Impl\Binary\IO\PortableStreamAdapter.cs" />
     <Compile Include="Impl\Binary\IBinarySystemTypeSerializer.cs" />
     <Compile Include="Impl\Binary\IBinaryTypeDescriptor.cs" />
@@ -247,8 +247,8 @@
     <Compile Include="Impl\Binary\Metadata\PortableHashsetMetadataHandler.cs" />
     <Compile Include="Impl\Binary\Metadata\BinaryTypeHolder.cs" />
     <Compile Include="Impl\Binary\Metadata\BinaryType.cs" />
-    <Compile Include="Impl\Binary\PortableBuilderField.cs" />
-    <Compile Include="Impl\Binary\PortableBuilderImpl.cs" />
+    <Compile Include="Impl\Binary\BinaryBuilderField.cs" />
+    <Compile Include="Impl\Binary\BinaryObjectBuilder.cs" />
     <Compile Include="Impl\Binary\BinaryFullTypeDescriptor.cs" />
     <Compile Include="Impl\Binary\PortableHandleDictionary.cs" />
     <Compile Include="Impl\Binary\BinaryMarshalAwareSerializer.cs" />
@@ -260,8 +260,8 @@
     <Compile Include="Impl\Binary\PortableObjectSchemaField.cs" />
     <Compile Include="Impl\Binary\PortableObjectSchemaHolder.cs" />
     <Compile Include="Impl\Binary\PortableReaderExtensions.cs" />
-    <Compile Include="Impl\Binary\PortableReaderHandleDictionary.cs" />
-    <Compile Include="Impl\Binary\BinaryReaderImpl.cs" />
+    <Compile Include="Impl\Binary\BinaryReaderHandleDictionary.cs" />
+    <Compile Include="Impl\Binary\BinaryReader.cs" />
     <Compile Include="Impl\Binary\PortableReflectiveRoutines.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Impl\Binary\IgniteBinary.cs" />
@@ -271,7 +271,7 @@
     <Compile Include="Impl\Binary\BinarySystemTypeSerializer.cs" />
     <Compile Include="Impl\Binary\PortableUserObject.cs" />
     <Compile Include="Impl\Binary\BinaryUtils.cs" />
-    <Compile Include="Impl\Binary\BinaryWriterImpl.cs" />
+    <Compile Include="Impl\Binary\BinaryWriter.cs" />
     <Compile Include="Impl\Binary\SerializableObjectHolder.cs" />
     <Compile Include="Impl\Binary\Structure\PortableStructure.cs" />
     <Compile Include="Impl\Binary\Structure\PortableStructureEntry.cs" />
@@ -305,7 +305,7 @@
     <Compile Include="Lifecycle\LifecycleEventType.cs" />
     <Compile Include="Messaging\IMessageListener.cs" />
     <Compile Include="Messaging\IMessaging.cs" />
-    <Compile Include="Binary\IPortableBuilder.cs" />
+    <Compile Include="Binary\IBinaryObjectBuilder.cs" />
     <Compile Include="Binary\IIdMapper.cs" />
     <Compile Include="Binary\IBinarizable.cs" />
     <Compile Include="Binary\IBinaryType.cs" />

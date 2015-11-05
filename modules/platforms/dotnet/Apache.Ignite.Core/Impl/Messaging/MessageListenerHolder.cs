@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// </summary>
         /// <param name="input">Input.</param>
         /// <returns></returns>
-        public int Invoke(IPortableStream input)
+        public int Invoke(IBinaryStream input)
         {
             var rawReader = _ignite.Marshaller.StartUnmarshal(input).GetRawReader();
 
@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /** <inheritdoc /> */
         public void WritePortable(IBinaryWriter writer)
         {
-            var writer0 = (BinaryWriterImpl)writer.GetRawWriter();
+            var writer0 = (BinaryWriter)writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(Filter));
         }
@@ -163,7 +163,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// <param name="reader">The reader.</param>
         public MessageListenerHolder(IBinaryReader reader)
         {
-            var reader0 = (BinaryReaderImpl)reader.GetRawReader();
+            var reader0 = (BinaryReader)reader.GetRawReader();
 
             _filter = reader0.ReadObject<object>();
 

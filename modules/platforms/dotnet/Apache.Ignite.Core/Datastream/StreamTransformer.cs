@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Datastream
         /** <inheritdoc /> */
         void IPortableWriteAware.WritePortable(IBinaryWriter writer)
         {
-            var w = (BinaryWriterImpl)writer;
+            var w = (BinaryWriter)writer;
 
             w.WriteByte(StreamReceiverHolder.RcvTransformer);
 

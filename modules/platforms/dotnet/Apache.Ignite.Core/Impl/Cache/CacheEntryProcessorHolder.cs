@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public void WritePortable(IBinaryWriter writer)
         {
-            var writer0 = (BinaryWriterImpl) writer.GetRawWriter();
+            var writer0 = (BinaryWriter) writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(_proc));
             writer0.WithDetach(w => w.WriteObject(_arg));
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="reader">The reader.</param>
         public CacheEntryProcessorHolder(IBinaryReader reader)
         {
-            var reader0 = (BinaryReaderImpl) reader.GetRawReader();
+            var reader0 = (BinaryReader) reader.GetRawReader();
 
             _proc = reader0.ReadObject<object>();
             _arg = reader0.ReadObject<object>();

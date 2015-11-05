@@ -28,13 +28,13 @@ namespace Apache.Ignite.Core.Impl.Binary
     internal class BinarySystemTypeSerializer<T> : IBinarySystemTypeSerializer where T : IPortableWriteAware
     {
         /** Ctor delegate. */
-        private readonly Func<BinaryReaderImpl, T> _ctor;
+        private readonly Func<BinaryReader, T> _ctor;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BinarySystemTypeSerializer{T}"/> class.
         /// </summary>
         /// <param name="ctor">Constructor delegate.</param>
-        public BinarySystemTypeSerializer(Func<BinaryReaderImpl, T> ctor)
+        public BinarySystemTypeSerializer(Func<BinaryReader, T> ctor)
         {
             Debug.Assert(ctor != null);
 
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public object ReadInstance(BinaryReaderImpl reader)
+        public object ReadInstance(BinaryReader reader)
         {
             return _ctor(reader);
         }

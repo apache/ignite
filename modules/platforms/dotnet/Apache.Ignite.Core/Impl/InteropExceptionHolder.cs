@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritDoc /> */
         public void WriteBinary(IBinaryWriter writer)
         {
-            var writer0 = (BinaryWriterImpl) writer.GetRawWriter();
+            var writer0 = (BinaryWriter) writer.GetRawWriter();
 
             if (writer0.IsPortable(_err))
             {

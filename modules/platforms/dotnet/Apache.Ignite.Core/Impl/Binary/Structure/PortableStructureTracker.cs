@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// Updates the type structure and metadata for the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        public void UpdateWriterStructure(BinaryWriterImpl writer)
+        public void UpdateWriterStructure(BinaryWriter writer)
         {
             if (_curStructUpdates != null)
             {

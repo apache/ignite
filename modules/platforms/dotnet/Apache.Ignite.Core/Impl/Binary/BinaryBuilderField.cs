@@ -22,10 +22,10 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Portable builder field.
     /// </summary>
-    internal class PortableBuilderField
+    internal class BinaryBuilderField
     {
         /** Remove marker. */
-        public static readonly PortableBuilderField RmvMarker = new PortableBuilderField(null, null, 0);
+        public static readonly BinaryBuilderField RmvMarker = new BinaryBuilderField(null, null, 0);
 
         /** Type. */
         private readonly Type _type;
@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly object _value;
         
         /** Write action. */
-        private readonly Action<BinaryWriterImpl, object> _writeAction;
+        private readonly Action<BinaryWriter, object> _writeAction;
         
         /** Type id. */
         private readonly byte _typeId;
@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="value">Value.</param>
         /// <param name="typeId">The type identifier.</param>
         /// <param name="writeAction">Optional write action.</param>
-        public PortableBuilderField(Type type, object value, byte typeId, Action<BinaryWriterImpl, object> writeAction = null)
+        public BinaryBuilderField(Type type, object value, byte typeId, Action<BinaryWriter, object> writeAction = null)
         {
             _type = type;
             _value = value;
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the write action.
         /// </summary>
-        public Action<BinaryWriterImpl, object> WriteAction
+        public Action<BinaryWriter, object> WriteAction
         {
             get { return _writeAction; }
         }

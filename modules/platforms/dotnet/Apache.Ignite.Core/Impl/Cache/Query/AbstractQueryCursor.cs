@@ -199,10 +199,10 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Entry.</returns>
-        protected abstract T Read(BinaryReaderImpl reader);
+        protected abstract T Read(BinaryReader reader);
 
         /** <inheritdoc /> */
-        protected override T1 Unmarshal<T1>(IPortableStream stream)
+        protected override T1 Unmarshal<T1>(IBinaryStream stream)
         {
             return Marshaller.Unmarshal<T1>(stream, _keepPortable);
         }
@@ -222,7 +222,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// </summary>
         /// <param name="stream">Portable stream.</param>
         /// <returns>Result.</returns>
-        private IList<T> ConvertGetAll(IPortableStream stream)
+        private IList<T> ConvertGetAll(IBinaryStream stream)
         {
             var reader = Marshaller.StartUnmarshal(stream, _keepPortable);
 
@@ -241,7 +241,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// </summary>
         /// <param name="stream">Portable stream.</param>
         /// <returns>Result.</returns>
-        private T[] ConvertGetBatch(IPortableStream stream)
+        private T[] ConvertGetBatch(IBinaryStream stream)
         {
             var reader = Marshaller.StartUnmarshal(stream, _keepPortable);
 

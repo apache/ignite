@@ -205,7 +205,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// Write batch content.
         /// </summary>
         /// <param name="writer">Portable writer.</param>
-        private void WriteTo(BinaryWriterImpl writer)
+        private void WriteTo(BinaryWriter writer)
         {
             writer.WriteInt(_size);
 

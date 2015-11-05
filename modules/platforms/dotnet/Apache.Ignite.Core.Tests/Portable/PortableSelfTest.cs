@@ -541,7 +541,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(_marsh.Unmarshal<DateTime>(_marsh.Marshal(timeUtc)), timeUtc);
 
             // Check exception with non-UTC date
-            var stream = new PortableHeapStream(128);
+            var stream = new BinaryHeapStream(128);
             var writer = _marsh.StartMarshal(stream);
             Assert.Throws<InvalidOperationException>(() => writer.WriteTimestamp(DateTime.Now));
         }
@@ -1066,8 +1066,8 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             if (detached)
             {
-                var reader = new BinaryReaderImpl(marsh, new Dictionary<long, IBinaryTypeDescriptor>(),
-                    new PortableHeapStream(bytes), PortableMode.ForcePortable, null);
+                var reader = new BinaryReader(marsh, new Dictionary<long, IBinaryTypeDescriptor>(),
+                    new BinaryHeapStream(bytes), PortableMode.ForcePortable, null);
 
                 reader.DetachNext();
 
@@ -1966,7 +1966,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             /** <inheritdoc /> */
             override public void WriteBinary(IBinaryWriter writer)
             {
-                BinaryWriterImpl writer0 = (BinaryWriterImpl)writer;
+                BinaryWriter writer0 = (BinaryWriter)writer;
 
                 writer.WriteString("before", Before);
 
@@ -1986,7 +1986,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             /** <inheritdoc /> */
             override public void ReadBinary(IBinaryReader reader)
             {
-                var reader0 = (BinaryReaderImpl) reader;
+                var reader0 = (BinaryReader) reader;
 
                 Before = reader0.ReadString("before");
 
@@ -1995,7 +1995,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
                 After = reader0.ReadString("after");
 
-                var rawReader = (BinaryReaderImpl) reader.GetRawReader();
+                var rawReader = (BinaryReader) reader.GetRawReader();
 
                 RawBefore = rawReader.ReadString();
 

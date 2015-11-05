@@ -282,7 +282,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(0, meta.Fields.Count);
 
             // Populate it with field.
-            IPortableBuilder builder = _grid.GetPortables().GetBuilder(portObj);
+            IBinaryObjectBuilder builder = _grid.GetPortables().GetBuilder(portObj);
 
             Assert.IsNull(builder.GetField<object>("val"));
 
@@ -346,8 +346,8 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestBuilderInBuilder()
         {
             // Test different builders assembly.
-            IPortableBuilder builderOuter = _grid.GetPortables().GetBuilder(typeof(BuilderInBuilderOuter));
-            IPortableBuilder builderInner = _grid.GetPortables().GetBuilder(typeof(BuilderInBuilderInner));
+            IBinaryObjectBuilder builderOuter = _grid.GetPortables().GetBuilder(typeof(BuilderInBuilderOuter));
+            IBinaryObjectBuilder builderInner = _grid.GetPortables().GetBuilder(typeof(BuilderInBuilderInner));
 
             builderOuter.SetField<object>("inner", builderInner);
             builderInner.SetField<object>("outer", builderOuter);
@@ -396,7 +396,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreSame(outer.Inner, outer.Inner2);
 
             builderOuter = _grid.GetPortables().GetBuilder(outerPortObj);
-            IPortableBuilder builderInner2 = builderOuter.GetField<IPortableBuilder>("inner2");
+            IBinaryObjectBuilder builderInner2 = builderOuter.GetField<IBinaryObjectBuilder>("inner2");
 
             builderInner2.SetField("outer", builderOuter);
 
@@ -444,8 +444,8 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestBuilderCollection()
         {
             // Test collection with single element.
-            IPortableBuilder builderCol = _grid.GetPortables().GetBuilder(typeof(BuilderCollection));
-            IPortableBuilder builderItem =
+            IBinaryObjectBuilder builderCol = _grid.GetPortables().GetBuilder(typeof(BuilderCollection));
+            IBinaryObjectBuilder builderItem =
                 _grid.GetPortables().GetBuilder(typeof(BuilderCollectionItem)).SetField("val", 1);
 
             builderCol.SetCollectionField("col", new ArrayList { builderItem });
@@ -485,7 +485,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Assert.AreEqual(1, builderColItems.Count);
 
-            PortableBuilderImpl builderColItem = (PortableBuilderImpl) builderColItems[0];
+            BinaryObjectBuilder builderColItem = (BinaryObjectBuilder) builderColItems[0];
 
             builderColItem.SetField("val", 2); // Change nested value.
 
@@ -520,7 +520,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             builderColItems = builderCol.GetField<IList>("col");
 
-            ((PortableBuilderImpl) builderColItems[1]).SetField("val", 3);
+            ((BinaryObjectBuilder) builderColItems[1]).SetField("val", 3);
 
             portCol = builderCol.Build();
 
@@ -1168,7 +1168,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         public void TestNested()
         {
             // 1. Create from scratch.
-            IPortableBuilder builder = _grid.GetPortables().GetBuilder(typeof(NestedOuter));
+            IBinaryObjectBuilder builder = _grid.GetPortables().GetBuilder(typeof(NestedOuter));
 
             NestedInner inner1 = new NestedInner {Val = 1};
             builder.SetField("inner1", inner1);
@@ -1240,7 +1240,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             byte[] outerBytes = _marsh.Marshal(outer);
 
-            IPortableBuilder builder = _grid.GetPortables().GetBuilder(typeof(MigrationOuter));
+            IBinaryObjectBuilder builder = _grid.GetPortables().GetBuilder(typeof(MigrationOuter));
 
             builder.SetHashCode(outer.GetHashCode());
 
@@ -1319,7 +1319,7 @@ namespace Apache.Ignite.Core.Tests.Portable
         [Test]
         public void TestBuildMultiple()
         {
-            IPortableBuilder builder = _grid.GetPortables().GetBuilder(typeof(Primitives));
+            IBinaryObjectBuilder builder = _grid.GetPortables().GetBuilder(typeof(Primitives));
 
             builder.SetField<byte>("fByte", 1).SetField("fBool", true);
 

@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
         /** <inheritdoc /> */
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        public void OnResult(IPortableStream stream)
+        public void OnResult(IBinaryStream stream)
         {
             try
             {

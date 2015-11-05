@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         }
 
         /** <inheritdoc /> */
-        protected override ICacheEntry<TK, TV> Read(BinaryReaderImpl reader)
+        protected override ICacheEntry<TK, TV> Read(BinaryReader reader)
         {
             TK key = reader.ReadObject<TK>();
             TV val = reader.ReadObject<TV>();

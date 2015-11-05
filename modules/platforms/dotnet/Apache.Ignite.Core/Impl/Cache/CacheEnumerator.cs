@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritdoc /> */
-        protected override T Unmarshal<T>(IPortableStream stream)
+        protected override T Unmarshal<T>(IBinaryStream stream)
         {
             throw new InvalidOperationException("Should not be called.");
         }

@@ -30,6 +30,6 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Reads and converts a value.
         /// Null stream means null value.
         /// </summary>
-        T Convert(IPortableStream stream);
+        T Convert(IBinaryStream stream);
     }
 }

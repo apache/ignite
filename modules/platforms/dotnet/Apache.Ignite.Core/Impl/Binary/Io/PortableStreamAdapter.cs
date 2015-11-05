@@ -28,13 +28,13 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         /// <summary>
         /// 
         /// </summary>
-        private readonly IPortableStream _stream;
+        private readonly IBinaryStream _stream;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="stream">Stream.</param>
-        public PortableStreamAdapter(IPortableStream stream)
+        public PortableStreamAdapter(IBinaryStream stream)
         {
             _stream = stream;
         }

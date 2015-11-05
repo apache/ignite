@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Events
         }
 
         /** <inheritdoc /> */
-        public int Invoke(IPortableStream stream)
+        public int Invoke(IBinaryStream stream)
         {
             var reader = _ignite.Marshaller.StartUnmarshal(stream);
 

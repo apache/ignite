@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Serialized data as byte array.</returns>
         public byte[] Marshal<T>(T val)
         {
-            PortableHeapStream stream = new PortableHeapStream(128);
+            BinaryHeapStream stream = new BinaryHeapStream(128);
 
             Marshal(val, stream);
 
@@ -125,9 +125,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Value.</param>
         /// <param name="stream">Output stream.</param>
         /// <returns>Collection of metadatas (if any).</returns>
-        private void Marshal<T>(T val, IPortableStream stream)
+        private void Marshal<T>(T val, IBinaryStream stream)
         {
-            BinaryWriterImpl writer = StartMarshal(stream);
+            BinaryWriter writer = StartMarshal(stream);
 
             writer.Write(val);
 
@@ -139,9 +139,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <returns>Writer.</returns>
-        public BinaryWriterImpl StartMarshal(IPortableStream stream)
+        public BinaryWriter StartMarshal(IBinaryStream stream)
         {
-            return new BinaryWriterImpl(this, stream);
+            return new BinaryWriter(this, stream);
         }
 
         /// <summary>
@@ -151,7 +151,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Dictionary with metadata.</returns>
         public void FinishMarshal(IBinaryWriter writer)
         {
-            var meta = ((BinaryWriterImpl) writer).Metadata();
+            var meta = ((BinaryWriter) writer).Metadata();
 
             var ignite = Ignite;
 
@@ -170,7 +170,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public T Unmarshal<T>(byte[] data, bool keepPortable)
         {
-            return Unmarshal<T>(new PortableHeapStream(data), keepPortable);
+            return Unmarshal<T>(new BinaryHeapStream(data), keepPortable);
         }
 
         /// <summary>
@@ -183,7 +183,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public T Unmarshal<T>(byte[] data, PortableMode mode = PortableMode.Deserialize)
         {
-            return Unmarshal<T>(new PortableHeapStream(data), mode);
+            return Unmarshal<T>(new BinaryHeapStream(data), mode);
         }
 
         /// <summary>
@@ -194,7 +194,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>
         /// Object.
         /// </returns>
-        public T Unmarshal<T>(IPortableStream stream, bool keepPortable)
+        public T Unmarshal<T>(IBinaryStream stream, bool keepPortable)
         {
             return Unmarshal<T>(stream, keepPortable ? PortableMode.KeepPortable : PortableMode.Deserialize, null);
         }
@@ -207,7 +207,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>
         /// Object.
         /// </returns>
-        public T Unmarshal<T>(IPortableStream stream, PortableMode mode = PortableMode.Deserialize)
+        public T Unmarshal<T>(IBinaryStream stream, PortableMode mode = PortableMode.Deserialize)
         {
             return Unmarshal<T>(stream, mode, null);
         }
@@ -221,9 +221,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>
         /// Object.
         /// </returns>
-        public T Unmarshal<T>(IPortableStream stream, PortableMode mode, PortableBuilderImpl builder)
+        public T Unmarshal<T>(IBinaryStream stream, PortableMode mode, BinaryObjectBuilder builder)
         {
-            return new BinaryReaderImpl(this, _idToDesc, stream, mode, builder).Deserialize<T>();
+            return new BinaryReader(this, _idToDesc, stream, mode, builder).Deserialize<T>();
         }
 
         /// <summary>
@@ -234,9 +234,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>
         /// Reader.
         /// </returns>
-        public BinaryReaderImpl StartUnmarshal(IPortableStream stream, bool keepPortable)
+        public BinaryReader StartUnmarshal(IBinaryStream stream, bool keepPortable)
         {
-            return new BinaryReaderImpl(this, _idToDesc, stream,
+            return new BinaryReader(this, _idToDesc, stream,
                 keepPortable ? PortableMode.KeepPortable : PortableMode.Deserialize, null);
         }
 
@@ -246,9 +246,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="stream">Stream.</param>
         /// <param name="mode">The mode.</param>
         /// <returns>Reader.</returns>
-        public BinaryReaderImpl StartUnmarshal(IPortableStream stream, PortableMode mode = PortableMode.Deserialize)
+        public BinaryReader StartUnmarshal(IBinaryStream stream, PortableMode mode = PortableMode.Deserialize)
         {
-            return new BinaryReaderImpl(this, _idToDesc, stream, mode, null);
+            return new BinaryReader(this, _idToDesc, stream, mode, null);
         }
         
         /// <summary>
@@ -481,7 +481,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Adds a predefined system type.
         /// </summary>
-        private void AddSystemType<T>(byte typeId, Func<BinaryReaderImpl, T> ctor) where T : IPortableWriteAware
+        private void AddSystemType<T>(byte typeId, Func<BinaryReader, T> ctor) where T : IPortableWriteAware
         {
             var type = typeof(T);
 

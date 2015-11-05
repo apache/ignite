@@ -29,6 +29,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="reader">The reader.</param>
         /// <returns>Deserialized instance.</returns>
-        object ReadInstance(BinaryReaderImpl reader);
+        object ReadInstance(BinaryReader reader);
     }
 }

@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Set result from stream.
         /// </summary>
         /// <param name="stream">Stream.</param>
-        void OnResult(IPortableStream stream);
+        void OnResult(IBinaryStream stream);
 
         /// <summary>
         /// Set null result.

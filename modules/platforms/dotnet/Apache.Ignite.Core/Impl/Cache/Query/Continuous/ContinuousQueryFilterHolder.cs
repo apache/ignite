@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="writer">Writer.</param>
         public void WritePortable(IBinaryWriter writer)
         {
-            var rawWriter = (BinaryWriterImpl) writer.GetRawWriter();
+            var rawWriter = (BinaryWriter) writer.GetRawWriter();
 
             rawWriter.WriteObject(_filter);
             rawWriter.WriteBoolean(_keepPortable);
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="reader">The reader.</param>
         public ContinuousQueryFilterHolder(IBinaryReader reader)
         {
-            var rawReader = (BinaryReaderImpl) reader.GetRawReader();
+            var rawReader = (BinaryReader) reader.GetRawReader();
 
             _filter = rawReader.ReadObject<object>();
             _keepPortable = rawReader.ReadBoolean();

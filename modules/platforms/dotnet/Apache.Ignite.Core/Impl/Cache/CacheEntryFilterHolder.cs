@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="input">The input stream.</param>
         /// <returns>Invocation result.</returns>
-        public int Invoke(IPortableStream input)
+        public int Invoke(IBinaryStream input)
         {
             var rawReader = _marsh.StartUnmarshal(input, _keepPortable).GetRawReader();
 
@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public void WritePortable(IBinaryWriter writer)
         {
-            var writer0 = (BinaryWriterImpl)writer.GetRawWriter();
+            var writer0 = (BinaryWriter)writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(_pred));
             
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="reader">The reader.</param>
         public CacheEntryFilterHolder(IBinaryReader reader)
         {
-            var reader0 = (BinaryReaderImpl)reader.GetRawReader();
+            var reader0 = (BinaryReader)reader.GetRawReader();
 
             _pred = reader0.ReadObject<object>();
 

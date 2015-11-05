@@ -32,6 +32,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
 
     /// <summary>
     /// Native utility methods.
@@ -393,7 +394,7 @@ namespace Apache.Ignite.Core.Impl
 
             var res = new List<IClusterNode>(cnt);
 
-            var ignite = ((BinaryReaderImpl)reader).Marshaller.Ignite;
+            var ignite = ((BinaryReader)reader).Marshaller.Ignite;
 
             if (pred == null)
             {

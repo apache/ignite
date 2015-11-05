@@ -29,6 +29,6 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <returns>Invocation result.</returns>
-        int Invoke(IPortableStream stream);
+        int Invoke(IBinaryStream stream);
     }
 }

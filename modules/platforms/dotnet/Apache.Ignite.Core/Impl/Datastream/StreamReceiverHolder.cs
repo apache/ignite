@@ -44,13 +44,13 @@ namespace Apache.Ignite.Core.Impl.Datastream
         private readonly object _rcv;
         
         /** Invoker delegate. */
-        private readonly Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool> _invoke;
+        private readonly Action<object, Ignite, IUnmanagedTarget, IBinaryStream, bool> _invoke;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StreamReceiverHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public StreamReceiverHolder(BinaryReaderImpl reader)
+        public StreamReceiverHolder(BinaryReader reader)
         {
             var rcvType = reader.ReadByte();
 
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="rcv">Receiver.</param>
         /// <param name="invoke">Invoke delegate.</param>
         public StreamReceiverHolder(object rcv, 
-            Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool> invoke)
+            Action<object, Ignite, IUnmanagedTarget, IBinaryStream, bool> invoke)
         {
             Debug.Assert(rcv != null);
             Debug.Assert(invoke != null);
@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="cache">Cache.</param>
         /// <param name="stream">Stream.</param>
         /// <param name="keepPortable">Portable flag.</param>
-        public void Receive(Ignite grid, IUnmanagedTarget cache, IPortableStream stream, bool keepPortable)
+        public void Receive(Ignite grid, IUnmanagedTarget cache, IBinaryStream stream, bool keepPortable)
         {
             Debug.Assert(grid != null);
             Debug.Assert(cache != null);
@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="stream">Stream.</param>
         /// <param name="keepPortable">Portable flag.</param>
         public static void InvokeReceiver<TK, TV>(IStreamReceiver<TK, TV> receiver, Ignite grid, IUnmanagedTarget cache,
-            IPortableStream stream, bool keepPortable)
+            IBinaryStream stream, bool keepPortable)
         {
             var reader = grid.Marshaller.StartUnmarshal(stream, keepPortable);
 

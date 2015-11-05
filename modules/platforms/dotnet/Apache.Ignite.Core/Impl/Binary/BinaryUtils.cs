@@ -264,8 +264,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static readonly Encoding Utf8 = Encoding.UTF8;
 
         /** Cached generic array read funcs. */
-        private static readonly CopyOnWriteConcurrentDictionary<Type, Func<BinaryReaderImpl, bool, object>>
-            ArrayReaders = new CopyOnWriteConcurrentDictionary<Type, Func<BinaryReaderImpl, bool, object>>();
+        private static readonly CopyOnWriteConcurrentDictionary<Type, Func<BinaryReader, bool, object>>
+            ArrayReaders = new CopyOnWriteConcurrentDictionary<Type, Func<BinaryReader, bool, object>>();
 
         /// <summary>
         /// Default marshaller.
@@ -280,7 +280,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="vals">Value.</param>
          * <param name="stream">Output stream.</param>
          */
-        public static void WriteBooleanArray(bool[] vals, IPortableStream stream)
+        public static void WriteBooleanArray(bool[] vals, IBinaryStream stream)
         {
             stream.WriteInt(vals.Length);
 
@@ -292,7 +292,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Output stream.</param>
          * <returns>Value.</returns>
          */
-        public static bool[] ReadBooleanArray(IPortableStream stream)
+        public static bool[] ReadBooleanArray(IBinaryStream stream)
         {
             int len = stream.ReadInt();
 
@@ -305,7 +305,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Output stream.</param>
          * <returns>Length of written data.</returns>
          */
-        public static void WriteByteArray(byte[] vals, IPortableStream stream)
+        public static void WriteByteArray(byte[] vals, IBinaryStream stream)
         {
             stream.WriteInt(vals.Length);
 
@@ -317,7 +317,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Output stream.</param>
          * <returns>Value.</returns>
          */
-        public static byte[] ReadByteArray(IPortableStream stream)
+        public static byte[] ReadByteArray(IBinaryStream stream)
         {
             return stream.ReadByteArray(stream.ReadInt());
         }
@@ -327,7 +327,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Output stream.</param>
          * <returns>Value.</returns>
          */
-        public static unsafe sbyte[] ReadSbyteArray(IPortableStream stream)
+        public static unsafe sbyte[] ReadSbyteArray(IBinaryStream stream)
         {
             int len = stream.ReadInt();
 
@@ -364,7 +364,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="vals">Value.</param>
          * <param name="stream">Output stream.</param>
          */
-        public static void WriteShortArray(short[] vals, IPortableStream stream)
+        public static void WriteShortArray(short[] vals, IBinaryStream stream)
         {
             stream.WriteInt(vals.Length);
 
@@ -376,7 +376,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <returns>Value.</returns>
          */
-        public static unsafe ushort[] ReadUshortArray(IPortableStream stream)
+        public static unsafe ushort[] ReadUshortArray(IBinaryStream stream)
         {
             int len = stream.ReadInt();
 
@@ -395,7 +395,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <returns>Value.</returns>
          */
-        public static short[] ReadShortArray(IPortableStream stream)
+        public static short[] ReadShortArray(IBinaryStream stream)
         {
             return stream.ReadShortArray(stream.ReadInt());
         }
@@ -441,7 +441,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="vals">Value.</param>
          * <param name="stream">Output stream.</param>
          */
-        public static void WriteIntArray(int[] vals, IPortableStream stream)
+        public static void WriteIntArray(int[] vals, IBinaryStream stream)
         {
             stream.WriteInt(vals.Length);
 
@@ -453,7 +453,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <returns>Value.</returns>
          */
-        public static int[] ReadIntArray(IPortableStream stream)
+        public static int[] ReadIntArray(IBinaryStream stream)
         {
             return stream.ReadIntArray(stream.ReadInt());
         }
@@ -463,7 +463,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <returns>Value.</returns>
          */
-        public static unsafe uint[] ReadUintArray(IPortableStream stream)
+        public static unsafe uint[] ReadUintArray(IBinaryStream stream)
         {
             int len = stream.ReadInt();
 
@@ -482,7 +482,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="vals">Value.</param>
          * <param name="stream">Output stream.</param>
          */
-        public static void WriteLongArray(long[] vals, IPortableStream stream)
+        public static void WriteLongArray(long[] vals, IBinaryStream stream)
         {
             stream.WriteInt(vals.Length);
 
@@ -494,7 +494,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <returns>Value.</returns>
          */
-        public static long[] ReadLongArray(IPortableStream stream)
+        public static long[] ReadLongArray(IBinaryStream stream)
         {
             return stream.ReadLongArray(stream.ReadInt());
         }
@@ -504,7 +504,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <returns>Value.</returns>
          */
-        public static unsafe ulong[] ReadUlongArray(IPortableStream stream)
+        public static unsafe ulong[] ReadUlongArray(IBinaryStream stream)
         {
             int len = stream.ReadInt();
 
@@ -523,7 +523,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="vals">Value.</param>
          * <param name="stream">Output stream.</param>
          */
-        public static void WriteCharArray(char[] vals, IPortableStream stream)
+        public static void WriteCharArray(char[] vals, IBinaryStream stream)
         {
             stream.WriteInt(vals.Length);
 
@@ -535,7 +535,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <returns>Value.</returns>
          */
-        public static char[] ReadCharArray(IPortableStream stream)
+        public static char[] ReadCharArray(IBinaryStream stream)
         {
             int len = stream.ReadInt();
 
@@ -547,7 +547,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="vals">Value.</param>
          * <param name="stream">Output stream.</param>
          */
-        public static void WriteFloatArray(float[] vals, IPortableStream stream)
+        public static void WriteFloatArray(float[] vals, IBinaryStream stream)
         {
             stream.WriteInt(vals.Length);
 
@@ -559,7 +559,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <returns>Value.</returns>
          */
-        public static float[] ReadFloatArray(IPortableStream stream)
+        public static float[] ReadFloatArray(IBinaryStream stream)
         {
             int len = stream.ReadInt();
 
@@ -571,7 +571,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="vals">Value.</param>
          * <param name="stream">Output stream.</param>
          */
-        public static void WriteDoubleArray(double[] vals, IPortableStream stream)
+        public static void WriteDoubleArray(double[] vals, IBinaryStream stream)
         {
             stream.WriteInt(vals.Length);
 
@@ -583,7 +583,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <returns>Value.</returns>
          */
-        public static double[] ReadDoubleArray(IPortableStream stream)
+        public static double[] ReadDoubleArray(IBinaryStream stream)
         {
             int len = stream.ReadInt();
 
@@ -595,7 +595,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="val">Date.</param>
          * <param name="stream">Stream.</param>
          */
-        public static void WriteTimestamp(DateTime val, IPortableStream stream)
+        public static void WriteTimestamp(DateTime val, IBinaryStream stream)
         {
             long high;
             int low;
@@ -612,7 +612,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="local">Local flag.</param>
          * <returns>Date</returns>
          */
-        public static DateTime? ReadTimestamp(IPortableStream stream)
+        public static DateTime? ReadTimestamp(IBinaryStream stream)
         {
             long high = stream.ReadLong();
             int low = stream.ReadInt();
@@ -625,7 +625,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="vals">Values.</param>
         /// <param name="stream">Stream.</param>
-        public static void WriteTimestampArray(DateTime?[] vals, IPortableStream stream)
+        public static void WriteTimestampArray(DateTime?[] vals, IBinaryStream stream)
         {
             stream.WriteInt(vals.Length);
 
@@ -647,7 +647,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="val">String.</param>
          * <param name="stream">Stream.</param>
          */
-        public static unsafe void WriteString(string val, IPortableStream stream)
+        public static unsafe void WriteString(string val, IBinaryStream stream)
         {
             stream.WriteBool(true);
 
@@ -668,7 +668,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <returns>String.</returns>
          */
-        public static string ReadString(IPortableStream stream)
+        public static string ReadString(IBinaryStream stream)
         {
             if (stream.ReadBool())
             {
@@ -687,7 +687,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="vals">String array.</param>
          * <param name="stream">Stream.</param>
          */
-        public static void WriteStringArray(string[] vals, IPortableStream stream)
+        public static void WriteStringArray(string[] vals, IBinaryStream stream)
         {
             stream.WriteInt(vals.Length);
 
@@ -708,7 +708,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <returns>String array.</returns>
          */
-        public static string[] ReadStringArray(IPortableStream stream)
+        public static string[] ReadStringArray(IBinaryStream stream)
         {
             int len = stream.ReadInt();
 
@@ -725,7 +725,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="val">Decimal value.</param>
          * <param name="stream">Stream.</param>
          */
-        public static void WriteDecimal(decimal val, IPortableStream stream) 
+        public static void WriteDecimal(decimal val, IBinaryStream stream) 
         {
             // Vals are:
             // [0] = lo
@@ -840,7 +840,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <returns>Decimal value.</returns>
          */
-        public static decimal? ReadDecimal(IPortableStream stream)
+        public static decimal? ReadDecimal(IBinaryStream stream)
         {
             int scale = stream.ReadInt();
 
@@ -900,7 +900,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="vals">Decimal array.</param>
          * <param name="stream">Stream.</param>
          */
-        public static void WriteDecimalArray(decimal?[] vals, IPortableStream stream)
+        public static void WriteDecimalArray(decimal?[] vals, IBinaryStream stream)
         {
             stream.WriteInt(vals.Length);
 
@@ -922,7 +922,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <returns>Decimal array.</returns>
          */
-        public static decimal?[] ReadDecimalArray(IPortableStream stream)
+        public static decimal?[] ReadDecimalArray(IBinaryStream stream)
         {
             int len = stream.ReadInt();
 
@@ -939,7 +939,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="val">GUID.</param>
          * <param name="stream">Stream.</param>
          */
-        public static unsafe void WriteGuid(Guid val, IPortableStream stream)
+        public static unsafe void WriteGuid(Guid val, IBinaryStream stream)
         {
             var jguid = new JavaGuid(val);
 
@@ -953,7 +953,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <returns>GUID</returns>
          */
-        public static unsafe Guid? ReadGuid(IPortableStream stream)
+        public static unsafe Guid? ReadGuid(IBinaryStream stream)
         {
             JavaGuid jguid;
 
@@ -971,7 +971,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="vals">Values.</param>
         /// <param name="stream">Stream.</param>
-        public static void WriteGuidArray(Guid?[] vals, IPortableStream stream)
+        public static void WriteGuidArray(Guid?[] vals, IBinaryStream stream)
         {
             stream.WriteInt(vals.Length);
 
@@ -993,7 +993,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <returns>GUID array.</returns>
          */
-        public static Guid?[] ReadGuidArray(IPortableStream stream)
+        public static Guid?[] ReadGuidArray(IBinaryStream stream)
         {
             int len = stream.ReadInt();
 
@@ -1010,9 +1010,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="val">Array.</param>
         /// <param name="ctx">Write context.</param>
-        public static void WriteArray(Array val, BinaryWriterImpl ctx)
+        public static void WriteArray(Array val, BinaryWriter ctx)
         {
-            IPortableStream stream = ctx.Stream;
+            IBinaryStream stream = ctx.Stream;
 
             stream.WriteInt(ObjTypeId);
 
@@ -1029,15 +1029,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="typed">Typed flag.</param>
         /// <param name="elementType">Type of the element.</param>
         /// <returns>Array.</returns>
-        public static object ReadTypedArray(BinaryReaderImpl ctx, bool typed, Type elementType)
+        public static object ReadTypedArray(BinaryReader ctx, bool typed, Type elementType)
         {
-            Func<BinaryReaderImpl, bool, object> result;
+            Func<BinaryReader, bool, object> result;
 
             if (!ArrayReaders.TryGetValue(elementType, out result))
                 result = ArrayReaders.GetOrAdd(elementType, t =>
-                    DelegateConverter.CompileFunc<Func<BinaryReaderImpl, bool, object>>(null,
+                    DelegateConverter.CompileFunc<Func<BinaryReader, bool, object>>(null,
                         MtdhReadArray.MakeGenericMethod(t),
-                        new[] {typeof (BinaryReaderImpl), typeof (bool)}, new[] {false, false, true}));
+                        new[] {typeof (BinaryReader), typeof (bool)}, new[] {false, false, true}));
 
             return result(ctx, typed);
         }
@@ -1048,7 +1048,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="ctx">Read context.</param>
         /// <param name="typed">Typed flag.</param>
         /// <returns>Array.</returns>
-        public static T[] ReadArray<T>(BinaryReaderImpl ctx, bool typed)
+        public static T[] ReadArray<T>(BinaryReader ctx, bool typed)
         {
             var stream = ctx.Stream;
 
@@ -1070,7 +1070,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <returns>Timestamp array.</returns>
-        public static DateTime?[] ReadTimestampArray(IPortableStream stream)
+        public static DateTime?[] ReadTimestampArray(IBinaryStream stream)
         {
             int len = stream.ReadInt();
 
@@ -1087,7 +1087,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="val">Value.</param>
          * <param name="ctx">Write context.</param>
          */
-        public static void WriteCollection(ICollection val, BinaryWriterImpl ctx)
+        public static void WriteCollection(ICollection val, BinaryWriter ctx)
         {
             var valType = val.GetType();
             
@@ -1120,7 +1120,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="ctx">Write context.</param>
          * <param name="colType">Collection type.</param>
          */
-        public static void WriteCollection(ICollection val, BinaryWriterImpl ctx, byte colType)
+        public static void WriteCollection(ICollection val, BinaryWriter ctx, byte colType)
         {
             ctx.Stream.WriteInt(val.Count);
 
@@ -1137,10 +1137,10 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="adder">Adder delegate.</param>
          * <returns>Collection.</returns>
          */
-        public static ICollection ReadCollection(BinaryReaderImpl ctx,
+        public static ICollection ReadCollection(BinaryReader ctx,
             PortableCollectionFactory factory, PortableCollectionAdder adder)
         {
-            IPortableStream stream = ctx.Stream;
+            IBinaryStream stream = ctx.Stream;
 
             int len = stream.ReadInt();
 
@@ -1176,7 +1176,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="val">Value.</param>
          * <param name="ctx">Write context.</param>
          */
-        public static void WriteDictionary(IDictionary val, BinaryWriterImpl ctx)
+        public static void WriteDictionary(IDictionary val, BinaryWriter ctx)
         {
             var valType = val.GetType();
 
@@ -1207,7 +1207,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="ctx">Write context.</param>
          * <param name="dictType">Dictionary type.</param>
          */
-        public static void WriteDictionary(IDictionary val, BinaryWriterImpl ctx, byte dictType)
+        public static void WriteDictionary(IDictionary val, BinaryWriter ctx, byte dictType)
         {
             ctx.Stream.WriteInt(val.Count);
 
@@ -1226,10 +1226,10 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="factory">Factory delegate.</param>
          * <returns>Dictionary.</returns>
          */
-        public static IDictionary ReadDictionary(BinaryReaderImpl ctx,
+        public static IDictionary ReadDictionary(BinaryReader ctx,
             PortableDictionaryFactory factory)
         {
-            IPortableStream stream = ctx.Stream;
+            IBinaryStream stream = ctx.Stream;
 
             int len = stream.ReadInt();
 
@@ -1266,7 +1266,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="ctx">Write context.</param>
          * <param name="val">Value.</param>
          */
-        public static void WriteMapEntry(BinaryWriterImpl ctx, DictionaryEntry val)
+        public static void WriteMapEntry(BinaryWriter ctx, DictionaryEntry val)
         {
             ctx.Write(val.Key);
             ctx.Write(val.Value);
@@ -1277,7 +1277,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="ctx">Context.</param>
          * <returns>Map entry.</returns>
          */
-        public static DictionaryEntry ReadMapEntry(BinaryReaderImpl ctx)
+        public static DictionaryEntry ReadMapEntry(BinaryReader ctx)
         {
             object key = ctx.Deserialize<object>();
             object val = ctx.Deserialize<object>();
@@ -1290,7 +1290,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="stream">Stream.</param>
          * <param name="val">Value.</param>
          */
-        public static void WritePortable(IPortableStream stream, PortableUserObject val)
+        public static void WritePortable(IBinaryStream stream, PortableUserObject val)
         {
             WriteByteArray(val.Data, stream);
 
@@ -1302,7 +1302,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <param name="val">Value.</param>
-        public static void WriteEnum(IPortableStream stream, Enum val)
+        public static void WriteEnum(IBinaryStream stream, Enum val)
         {
             if (Enum.GetUnderlyingType(val.GetType()) == TypInt)
             {
@@ -1319,7 +1319,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <returns>Enumeration.</returns>
-        public static T ReadEnum<T>(IPortableStream stream)
+        public static T ReadEnum<T>(IBinaryStream stream)
         {
             if (!typeof(T).IsEnum || Enum.GetUnderlyingType(typeof(T)) == TypInt)
             {
@@ -1599,7 +1599,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="success">Success flag.</param>
         /// <param name="res">Result.</param>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        public static void WriteInvocationResult(BinaryWriterImpl writer, bool success, object res)
+        public static void WriteInvocationResult(BinaryWriter writer, bool success, object res)
         {
             var pos = writer.Stream.Position;
 
@@ -1642,7 +1642,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="reader">Reader.</param>
         /// <param name="err">Error.</param>
         /// <returns>Result.</returns>
-        public static object ReadInvocationResult(BinaryReaderImpl reader, out object err)
+        public static object ReadInvocationResult(BinaryReader reader, out object err)
         {
             err = null;
 
@@ -1691,7 +1691,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="reader">Reader.</param>
         /// <param name="assemblies">Assemblies.</param>
         /// <param name="cfg">Portable configuration.</param>
-        public static void ReadConfiguration(BinaryReaderImpl reader, out ICollection<string> assemblies, out BinaryConfiguration cfg)
+        public static void ReadConfiguration(BinaryReader reader, out ICollection<string> assemblies, out BinaryConfiguration cfg)
         {
             if (reader.ReadBoolean())
             {
@@ -1754,7 +1754,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Creates and instance from the type name in reader.
         /// </summary>
-        private static T CreateInstance<T>(BinaryReaderImpl reader)
+        private static T CreateInstance<T>(BinaryReader reader)
         {
             var typeName = reader.ReadString();
 

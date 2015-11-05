@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>
         /// Task for previous asynchronous operation.
         /// </returns>
-        private Task<TResult> GetTask<TResult>(CacheOp lastAsyncOp, Func<BinaryReaderImpl, TResult> converter = null)
+        private Task<TResult> GetTask<TResult>(CacheOp lastAsyncOp, Func<BinaryReader, TResult> converter = null)
         {
             Debug.Assert(_flagAsync);
 
@@ -969,7 +969,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <param name="args">Arguments.</param>
-        private static void WriteQueryArgs(BinaryWriterImpl writer, object[] args)
+        private static void WriteQueryArgs(BinaryWriter writer, object[] args)
         {
             if (args == null)
                 writer.WriteInt(0);
@@ -1073,7 +1073,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         #endregion
 
         /** <inheritDoc /> */
-        protected override T Unmarshal<T>(IPortableStream stream)
+        protected override T Unmarshal<T>(IBinaryStream stream)
         {
             return Marshaller.Unmarshal<T>(stream, _flagKeepPortable);
         }
@@ -1116,7 +1116,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <typeparam name="T">The type of the result.</typeparam>
         /// <param name="inStream">Stream.</param>
         /// <returns>Results of InvokeAll operation.</returns>
-        private IDictionary<TK, ICacheEntryProcessorResult<T>> ReadInvokeAllResults<T>(IPortableStream inStream)
+        private IDictionary<TK, ICacheEntryProcessorResult<T>> ReadInvokeAllResults<T>(IBinaryStream inStream)
         {
             var count = inStream.ReadInt();
 
@@ -1144,7 +1144,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="inStream">The stream.</param>
         /// <returns>Exception.</returns>
-        private CacheEntryProcessorException ReadException(IPortableStream inStream)
+        private CacheEntryProcessorException ReadException(IBinaryStream inStream)
         {
             var item = Unmarshal<object>(inStream);
 
@@ -1163,9 +1163,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Dictionary.</returns>
-        private static IDictionary<TK, TV> ReadGetAllDictionary(BinaryReaderImpl reader)
+        private static IDictionary<TK, TV> ReadGetAllDictionary(BinaryReader reader)
         {
-            IPortableStream stream = reader.Stream;
+            IBinaryStream stream = reader.Stream;
 
             if (stream.ReadBool())
             {
@@ -1189,7 +1189,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Gets the cache result.
         /// </summary>
-        private static CacheResult<TV> GetCacheResult(BinaryReaderImpl reader)
+        private static CacheResult<TV> GetCacheResult(BinaryReader reader)
         {
             var res = reader == null
                 ? new CacheResult<TV>()
@@ -1227,7 +1227,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="type">Operation type.</param>
         /// <param name="outAction">Out action.</param>
         /// <returns>Result.</returns>
-        private CacheResult<TR> DoOutInOpNullable<TR>(int type, Action<BinaryWriterImpl> outAction)
+        private CacheResult<TR> DoOutInOpNullable<TR>(int type, Action<BinaryWriter> outAction)
         {
             var res = DoOutInOp<object>(type, outAction);
 
