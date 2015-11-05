@@ -1172,6 +1172,7 @@ $generatorXml.clusterCaches = function(caches, igfss, res) {
     return res;
 };
 
+// Generate IGFSs configs.
 $generatorXml.igfss = function(igfss, res) {
     if (!res)
         res = $generatorCommon.builder();
@@ -1206,6 +1207,7 @@ $generatorXml.igfss = function(igfss, res) {
     return res;
 };
 
+// Generate IGFS IPC configuration.
 $generatorXml.igfsIPC = function(igfs, res) {
     if (!res)
         res = $generatorCommon.builder();
@@ -1219,6 +1221,7 @@ $generatorXml.igfsIPC = function(igfs, res) {
     return res;
 };
 
+// Generate IGFS fragmentizer configuration.
 $generatorXml.igfsFragmentizer = function(igfs, res) {
     if (!res)
         res = $generatorCommon.builder();
@@ -1236,6 +1239,7 @@ $generatorXml.igfsFragmentizer = function(igfs, res) {
     return res;
 };
 
+// Generate IGFS dual mode configuration.
 $generatorXml.igfsDualMode = function(igfs, res) {
     if (!res)
         res = $generatorCommon.builder();
@@ -1299,6 +1303,7 @@ $generatorXml.igfsSecondFS = function(igfs, res) {
     return res;
 };
 
+// Generate IGFS general configuration.
 $generatorXml.igfsGeneral = function(igfs, res) {
     if (!res)
         res = $generatorCommon.builder();
@@ -1317,6 +1322,7 @@ $generatorXml.igfsGeneral = function(igfs, res) {
     return res;
 };
 
+// Generate IGFS misc configuration.
 $generatorXml.igfsMisc = function(igfs, res) {
     if (!res)
         res = $generatorCommon.builder();

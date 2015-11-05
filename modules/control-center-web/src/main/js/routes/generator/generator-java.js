@@ -1618,6 +1618,14 @@ $generatorJava.clusterSsl = function(cluster, res) {
     return res;
 };
 
+/**
+ * Java code generator for cluster's IGFS configurations.
+ *
+ * @param igfss List of configured IGFS.
+ * @param varName Name of IGFS configuration variable.
+ * @param res Optional configuration presentation builder object.
+ * @returns Configuration presentation builder object.
+ */
 $generatorJava.igfss = function(igfss, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
@@ -1653,6 +1661,14 @@ $generatorJava.igfss = function(igfss, varName, res) {
     return res;
 };
 
+/**
+ * Java code generator for IGFS IPC configuration.
+ *
+ * @param igfs Configured IGFS.
+ * @param varName Name of IGFS configuration variable.
+ * @param res Optional configuration presentation builder object.
+ * @returns Configuration presentation builder object.
+ */
 $generatorJava.igfsIPC = function(igfs, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
@@ -1669,6 +1685,14 @@ $generatorJava.igfsIPC = function(igfs, varName, res) {
     return res;
 };
 
+/**
+ * Java code generator for IGFS fragmentizer configuration.
+ *
+ * @param igfs Configured IGFS.
+ * @param varName Name of IGFS configuration variable.
+ * @param res Optional configuration presentation builder object.
+ * @returns Configuration presentation builder object.
+ */
 $generatorJava.igfsFragmentizer = function(igfs, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
@@ -1686,6 +1710,14 @@ $generatorJava.igfsFragmentizer = function(igfs, varName, res) {
     return res;
 };
 
+/**
+ * Java code generator for IGFS dual mode configuration.
+ *
+ * @param igfs Configured IGFS.
+ * @param varName Name of IGFS configuration variable.
+ * @param res Optional configuration presentation builder object.
+ * @returns Configuration presentation builder object.
+ */
 $generatorJava.igfsDualMode = function(igfs, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
@@ -1726,6 +1758,14 @@ $generatorJava.igfsSecondFS = function(igfs, varName, res) {
     return res;
 };
 
+/**
+ * Java code generator for IGFS general configuration.
+ *
+ * @param igfs Configured IGFS.
+ * @param varName Name of IGFS configuration variable.
+ * @param res Optional configuration presentation builder object.
+ * @returns Configuration presentation builder object.
+ */
 $generatorJava.igfsGeneral = function(igfs, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
@@ -1744,6 +1784,14 @@ $generatorJava.igfsGeneral = function(igfs, varName, res) {
     return res;
 };
 
+/**
+ * Java code generator for IGFS misc configuration.
+ *
+ * @param igfs Configured IGFS.
+ * @param varName Name of IGFS configuration variable.
+ * @param res Optional configuration presentation builder object.
+ * @returns Configuration presentation builder object.
+ */
 $generatorJava.igfsMisc = function(igfs, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
