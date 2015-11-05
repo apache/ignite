@@ -16,7 +16,15 @@
  */
 
 var consoleModule = angular.module('ignite-web-console',
-    ['ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.loading', 'agGrid', 'nvd3', 'dndLists']);
+    ['ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.loading', 'agGrid', 'nvd3', 'dndLists'])
+    .run(function ($rootScope, $http) {
+        $http.post('/user')
+            .success(function (user) {
+                $rootScope.user = user;
+
+                $rootScope.$broadcast('user', user);
+            });
+    });
 
 // Modal popup configuration.
 consoleModule.config(function ($modalProvider) {
@@ -1906,14 +1914,16 @@ consoleModule.controller('auth', [
 
         $scope.userDropdown = [{text: 'Profile', href: '/profile'}];
 
+        $scope.$on('user', function($rootScope, user) {
+            if (user && !user.becomeUsed) {
+                if (user && user.admin)
+                    $scope.userDropdown.push({text: 'Admin Panel', href: '/admin'});
+
+                $scope.userDropdown.push({text: 'Log Out', href: '/logout'});
+            }
+        });
+
         $focus('user_email');
-
-        if (!$scope.becomeUsed) {
-            if ($scope.user && $scope.user.admin)
-                $scope.userDropdown.push({text: 'Admin Panel', href: '/admin'});
-
-            $scope.userDropdown.push({text: 'Log Out', href: '/logout'});
-        }
 
         if ($scope.token && !$scope.error)
             $focus('user_password');
@@ -1930,6 +1940,15 @@ consoleModule.controller('auth', [
                     }
                     else
                         $common.showPopoverMessage(undefined, undefined, 'user_email', err);
+                });
+        };
+
+        $scope.validateToken = function () {
+            $http.post('/password/validate-token', {token: $common.getQueryVariable('token')})
+                .success(function (res) {
+                    $scope.email = res.email;
+                    $scope.token = res.token;
+                    $scope.error = res.error;
                 });
         };
 
@@ -2127,7 +2146,7 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$window', '$http', '
         _.forEach($scope.$root.notebooks, function (notebook) {
             $scope.notebookDropdown.push({
                 text: notebook.name,
-                href: '/sql/' + notebook._id,
+                href: '/sql?id=' + notebook._id,
                 target: '_self'
             });
         });
@@ -2155,7 +2174,7 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$window', '$http', '
             .success(function (id) {
                 _notebookNewModal.hide();
 
-                $window.location = '/sql/' + id;
+                $window.location = '/sql?id=' + id;
             })
             .error(function (message, state) {
                 $common.showError(message);

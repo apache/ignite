@@ -19,19 +19,19 @@ var router = require('express').Router();
 var db = require('../db');
 
 router.get('/rate', function (req, res) {
-    res.render('sql/paragraph-rate', {});
+    res.render('sql/paragraph-rate');
 });
 
 router.get('/chart-settings', function (req, res) {
-    res.render('sql/chart-settings', {});
+    res.render('sql/chart-settings');
 });
 
 router.get('/cache-metadata', function (req, res) {
-    res.render('sql/cache-metadata', {});
+    res.render('sql/cache-metadata');
 });
 
-router.get('/:noteId', function (req, res) {
-    res.render('sql/sql', {noteId: req.params.noteId});
+router.get('/', function (req, res) {
+    res.render('sql/sql');
 });
 
 module.exports = router;

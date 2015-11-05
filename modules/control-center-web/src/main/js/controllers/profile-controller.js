@@ -18,10 +18,12 @@
 // Controller for Profile screen.
 consoleModule.controller('profileController',
     ['$scope', '$http', '$common', '$focus', '$confirm', function ($scope, $http, $common, $focus, $confirm) {
-    $scope.profileUser = angular.copy($scope.user);
+    $scope.$on('user', function($rootScope, user) {
+        $scope.profileUser = angular.copy(user);
 
-    if ($scope.profileUser && !$scope.profileUser.token)
-        $scope.profileUser.token = 'No security token. Regenerate please.';
+        if ($scope.profileUser && !$scope.profileUser.token)
+            $scope.profileUser.token = 'No security token. Regenerate please.';
+    });
 
     $scope.generateToken = function () {
         $confirm.confirm('Are you sure you want to change security token?')
@@ -31,11 +33,11 @@ consoleModule.controller('profileController',
     };
 
     $scope.profileChanged = function () {
-        var old = $scope.user;
+        var old = $scope.$root.user;
         var cur = $scope.profileUser;
 
-        return old.username != cur.username || old.email != cur.email || old.token != cur.token ||
-            (cur.changePassword && !$common.isEmptyString(cur.newPassword));
+        return old && (old.username != cur.username || old.email != cur.email || old.token != cur.token ||
+            (cur.changePassword && !$common.isEmptyString(cur.newPassword)));
     };
 
     $scope.profileCouldBeSaved = function () {
@@ -54,13 +56,13 @@ consoleModule.controller('profileController',
 
         if (profile) {
             var userName = profile.username;
-            var changeUsername = userName != $scope.user.username;
+            var changeUsername = userName != $scope.$root.user.username;
 
             var email = profile.email;
-            var changeEmail = email != $scope.user.email;
+            var changeEmail = email != $scope.$root.user.email;
 
             var token = profile.token;
-            var changeToken = token != $scope.user.token;
+            var changeToken = token != $scope.$root.user.token;
 
             if (changeUsername || changeEmail || changeToken || profile.changePassword) {
                 $http.post('/profile/save', {
@@ -77,10 +79,10 @@ consoleModule.controller('profileController',
                     profile.confirmPassword = null;
 
                     if (changeUsername)
-                        $scope.user.username = userName;
+                        $scope.$root.user.username = userName;
 
                     if (changeEmail)
-                        $scope.user.email = email;
+                        $scope.$root.user.email = email;
 
                     $focus('profile-username');
                 }).error(function (err) {

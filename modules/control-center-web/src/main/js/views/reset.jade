@@ -17,12 +17,12 @@
 extends templates/layout
 
 block container
-    .row(ng-init='email = #{JSON.stringify(email)}; token = #{JSON.stringify(token)}; error=#{JSON.stringify(error)}')
+    .row(ng-controller='auth' ng-init='validateToken()')
         .text-center(ng-if='!token')
             p Further instructions for password reset have been sent to your e-mail address.
         .text-center(ng-if='error')
             p {{::error}}
-        div(ng-controller='auth' ng-if='token && !error')
+        div(ng-if='token && !error')
             form.form-horizontal(name='resetForm' ng-init='reset_info.token = token')
                 .settings-row
                     label.col-sm-1 E-mail:

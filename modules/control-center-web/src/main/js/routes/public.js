@@ -23,6 +23,21 @@ var db = require('../db');
 var config = require('../helpers/configuration-loader.js');
 var $commonUtils = require('./../helpers/common-utils');
 
+// GET user.
+router.post('/user', function (req, res) {
+    var becomeUsed = req.session.viewedUser && req.user.admin;
+
+    var user = req.user;
+
+    if (becomeUsed) {
+        user = req.session.viewedUser;
+
+        user.becomeUsed = true;
+    }
+
+    res.json(user);
+});
+
 // GET dropdown-menu template.
 router.get('/select', function (req, res) {
     res.render('templates/select', {});
@@ -133,8 +148,7 @@ router.post('/password/forgot', function(req, res) {
     };
 
     if (transporter.service == '' || transporter.auth.user == '' || transporter.auth.pass == '')
-        return res.status(401).send('Can\'t send e-mail with instructions to reset password.<br />' +
-            'Please ask webmaster to setup smtp server!');
+        return res.status(401).send('Can\'t send e-mail with instructions to reset password. Please ask webmaster to setup smtp server!');
 
     var token = $commonUtils.randomString(20);
 
@@ -161,7 +175,7 @@ router.post('/password/forgot', function(req, res) {
                 subject: 'Password Reset',
                 text: 'You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n' +
                 'Please click on the following link, or paste this into your browser to complete the process:\n\n' +
-                'http://' + req.headers.host + '/password/reset/' + token + '\n\n' +
+                'http://' + req.headers.host + '/password/reset?token=' + token + '\n\n' +
                 'If you did not request this, please ignore this email and your password will remain unchanged.\n\n' +
                 '--------------\n' +
                 'Apache Ignite Web Console\n'
@@ -236,8 +250,8 @@ router.get('/password/reset', function (req, res) {
 });
 
 /* GET reset password page. */
-router.get('/password/reset/:token', function (req, res) {
-    var token = req.params.token;
+router.post('/password/validate-token', function (req, res) {
+    var token = req.body.token;
 
     var data = {token: token};
 
@@ -249,7 +263,7 @@ router.get('/password/reset/:token', function (req, res) {
         else
             data.email = user.email;
 
-        res.render('reset', data);
+        res.json(data);
     });
 });
 
@@ -258,7 +272,7 @@ router.get('/', function (req, res) {
     if (req.isAuthenticated())
         res.redirect('/configuration/clusters');
     else
-        res.render('index');
+        res.render('login');
 });
 
 module.exports = router;

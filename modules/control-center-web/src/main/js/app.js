@@ -117,17 +117,6 @@ var adminOnly = function(req, res, next) {
 app.all('/configuration/*', mustAuthenticated);
 
 app.all('*', function(req, res, next) {
-    var becomeUsed = req.session.viewedUser && req.user.admin;
-
-    if (req.url.lastIndexOf('/reset', 0) === 0) {
-        res.locals.user = null;
-        res.locals.becomeUsed = false;
-    }
-    else {
-        res.locals.user = becomeUsed ? req.session.viewedUser : req.user;
-        res.locals.becomeUsed = becomeUsed;
-    }
-
     req.currentUserId = function() {
         if (!req.user)
             return null;

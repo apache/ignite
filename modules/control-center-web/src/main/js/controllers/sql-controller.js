@@ -225,11 +225,13 @@ consoleModule.controller('sqlController',
     var loadNotebook = function () {
         $loading.start('loadingNotebookScreen');
 
-        $http.post('/notebooks/get', {noteId: $scope.noteId})
+        $http.post('/notebooks/get', {noteId: $common.getQueryVariable('id')})
             .success(function (notebook) {
                 $scope.notebook = notebook;
 
                 $scope.notebook_name = notebook.name;
+
+                $scope.expandedParagraphs = notebook.expandedParagraphs;
 
                 _.forEach(notebook.paragraphs, function (paragraph) {
                     paragraph.id = paragraphId++;
@@ -255,7 +257,11 @@ consoleModule.controller('sqlController',
     loadNotebook();
 
     var _saveNotebook = function (f) {
-        $http.post('/notebooks/save', $scope.notebook)
+        var note = angular.copy($scope.notebook);
+
+        note.expandedParagraphs = $scope.expandedParagraphs;
+
+        $http.post('/notebooks/save', note)
             .success(f || function() {})
             .error(function (errMsg) {
                 $common.showError(errMsg);
@@ -353,7 +359,7 @@ consoleModule.controller('sqlController',
         if ($scope.caches && $scope.caches.length > 0)
             paragraph.cacheName = $scope.caches[0].name;
 
-        $scope.notebook.expandedParagraphs.push($scope.notebook.paragraphs.length);
+        $scope.expandedParagraphs.push($scope.notebook.paragraphs.length);
 
         $scope.notebook.paragraphs.push(paragraph);
 
@@ -393,12 +399,12 @@ consoleModule.controller('sqlController',
                         return paragraph == item;
                     });
 
-                    var panel_idx = _.findIndex($scope.notebook.expandedParagraphs, function (item) {
+                    var panel_idx = _.findIndex($scope.expandedParagraphs, function (item) {
                         return paragraph_idx == item;
                     });
 
                     if (panel_idx >= 0)
-                        $scope.notebook.expandedParagraphs.splice(panel_idx, 1);
+                        $scope.expandedParagraphs.splice(panel_idx, 1);
 
                     $scope.notebook.paragraphs.splice(paragraph_idx, 1);
 
@@ -413,7 +419,7 @@ consoleModule.controller('sqlController',
             return paragraph == item;
         });
 
-        var panel_idx = _.findIndex($scope.notebook.expandedParagraphs, function (item) {
+        var panel_idx = _.findIndex($scope.expandedParagraphs, function (item) {
             return paragraph_idx == item;
         });
 

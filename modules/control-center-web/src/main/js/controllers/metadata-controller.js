@@ -29,6 +29,10 @@ consoleModule.controller('metadataController', [
 
             $scope.ui = $common.formUI();
 
+            $scope.$on('user', function($rootScope, user) {
+                $scope.ui.packageName = user.email.replace('@', '.').split('.').reverse().join('.') + '.model';
+            });
+
             $scope.showMoreInfo = $message.message;
 
             $scope.agentGoal = 'load metadata from database schema';
@@ -402,8 +406,6 @@ consoleModule.controller('metadataController', [
 
                 return javaName.charAt(0).toLocaleLowerCase() + javaName.slice(1);
             }
-
-            $scope.ui.packageName = $scope.user.email.replace('@', '.').split('.').reverse().join('.') + '.model';
 
             function _saveBatch(batch) {
                 if (batch && batch.length > 0) {

@@ -18,15 +18,15 @@ mixin header-item(active, ref, txt)
         a(ng-class='{active: isActive("#{active}")}' href='#{ref}') #{txt}
 
 header#header.header
-    .viewedUser(ng-show='becomeUsed') Currently assuming "
-        strong {{user.username}}
+    .viewedUser(ng-show='$root.user.becomeUsed') Currently assuming "
+        strong {{$root.user.username}}
         | ",&nbsp;&nbsp;
         a(href='/admin/become') revert to your identity.
     .container(ng-controller='auth')
         h1.navbar-brand
             a(href='/') Apache Ignite Web Console
         .navbar-collapse.collapse(ng-controller='activeLink')
-            ul.nav.navbar-nav(ng-show='user')
+            ul.nav.navbar-nav(ng-show='$root.user')
                 li
                     a.dropdown-toggle(ng-class='{active: isActive("/configuration")}' data-toggle='dropdown' bs-dropdown='configurationDropdown' data-placement='bottom-right') Configuration
                         span.caret
@@ -37,6 +37,6 @@ header#header.header
                     a(ng-hide='$root.notebooks.length > 0' ng-click='inputNotebookName()') SQL
                 //+header-item('/deploy', '/deploy', 'Deploy')
             ul.nav.navbar-nav.pull-right
-                li(ng-if='user')
+                li(ng-if='$root.user')
                     a.dropdown-toggle(data-toggle='dropdown' ng-class='{active: isActive("/profile") || isActive("/admin")}' bs-dropdown='userDropdown' data-placement='bottom-right') {{user.username}}
                         span.caret

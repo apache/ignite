@@ -56,7 +56,7 @@ mixin chart-settings(mdl)
 
 block container
     .row
-        .col-sm-12(ng-init='noteId = "#{noteId}"')
+        .col-sm-12
             .docs-content(ng-controller='sqlController' dw-loading='loadingNotebookScreen' dw-loading-options='{text: "Loading notebook screen...", className: "page-loading-overlay"}')
                 div(ng-if='!notebook' style='text-align: center')
                     h2 Failed to load notebook
@@ -101,7 +101,7 @@ block container
                                 .btn-group(style='margin-top: 2px')
                                     +btn-toolbar('fa-plus', 'addParagraph()', 'Add new query')
                 .docs-body.paragraphs
-                    .panel-group(bs-collapse ng-model='notebook.expandedParagraphs' data-allow-multiple='true' data-start-collapsed='false')
+                    .panel-group(bs-collapse ng-model='expandedParagraphs' data-allow-multiple='true' data-start-collapsed='false')
                         .panel.panel-default(ng-repeat='paragraph in notebook.paragraphs')
                             .panel-heading(id='paragraph-{{paragraph.id}}' bs-collapse-toggle)
                                 .row
