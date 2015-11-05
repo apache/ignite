@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         private readonly PlatformMemoryHeader* _hdr;
 
         /** Pooled memory chunks. */
-        private PlatformPooledMemory[] _mem = new PlatformPooledMemory[PlatformMemoryUtils.PoolSize];
+        private readonly PlatformPooledMemory[] _mem = new PlatformPooledMemory[PlatformMemoryUtils.PoolSize];
 
         /// <summary>
         /// Constructor.
@@ -83,7 +83,11 @@ namespace Apache.Ignite.Core.Impl.Memory
             for (var i = 0; i < _mem.Length; i++)
             {
                 if (memPtr == (long) (_hdr + i))
+                {
+                    _mem[i] = _mem[i] ?? new PlatformPooledMemory(memPtr);
+
                     return _mem[i];
+                }
             }
 
             Debug.Fail("Failed to find pooled memory chunk by a pointer.");
