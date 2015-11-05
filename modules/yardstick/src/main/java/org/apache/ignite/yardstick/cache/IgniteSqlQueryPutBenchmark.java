@@ -24,12 +24,19 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.yardstick.cache.model.Person;
+import org.jsr166.LongAdder8;
 import org.yardstickframework.BenchmarkConfiguration;
 
 /**
  * Ignite benchmark that performs put and query operations.
  */
 public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark {
+    /** */
+    private LongAdder8 resCnt = new LongAdder8();
+
+    /** */
+    private LongAdder8 cnt = new LongAdder8();
+
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
@@ -52,7 +59,11 @@ public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark {
                 if (p.getSalary() < salary || p.getSalary() > maxSalary)
                     throw new Exception("Invalid person retrieved [min=" + salary + ", max=" + maxSalary +
                             ", person=" + p + ']');
+
+                resCnt.increment();
             }
+
+            cnt.increment();
         }
         else {
             int i = rnd.nextInt(args.range());
@@ -61,6 +72,21 @@ public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark {
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onWarmupFinished() {
+        super.onWarmupFinished();
+
+        resCnt.reset();
+        cnt.reset();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void tearDown() throws Exception {
+        ignite().log().info("Average number of entries per query: " + (resCnt.longValue() / cnt.longValue()));
+
+        super.tearDown();
     }
 
     /**
