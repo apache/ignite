@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-using System;
-using Apache.Ignite.Core.Binary;
-
-namespace Apache.Ignite.ExamplesDll.Portable
+namespace Apache.Ignite.ExamplesDll.Binary
 {
+    using System;
+    using Apache.Ignite.Core.Binary;
+
     /// <summary>
     /// Address.
     /// </summary>

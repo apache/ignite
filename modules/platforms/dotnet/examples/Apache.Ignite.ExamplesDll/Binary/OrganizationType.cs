@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-using System;
-
-namespace Apache.Ignite.ExamplesDll.Portable
+namespace Apache.Ignite.ExamplesDll.Binary
 {
+    using System;
+
     /// <summary>
     /// Organization type.
     /// </summary>

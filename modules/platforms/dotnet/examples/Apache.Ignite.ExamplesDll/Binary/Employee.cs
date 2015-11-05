@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace Apache.Ignite.ExamplesDll.Portable
+namespace Apache.Ignite.ExamplesDll.Binary
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+
     /// <summary>
     /// Employee.
     /// </summary>

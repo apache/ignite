@@ -19,10 +19,11 @@ using System;
 using System.Collections.Generic;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Transactions;
-using Apache.Ignite.ExamplesDll.Portable;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using Apache.Ignite.ExamplesDll.Binary;
+
     /// <summary>
     /// This example demonstrates how to use transactions on Apache cache.
     /// <para />
