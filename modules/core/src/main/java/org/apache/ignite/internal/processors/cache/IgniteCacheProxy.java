@@ -311,7 +311,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public <K1, V1> IgniteCache<K1, V1> withKeepPortable() {
+    @Override public <K1, V1> IgniteCache<K1, V1> withKeepBinary() {
         return keepPortable();
     }
 
@@ -445,7 +445,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         final CacheQuery<Map.Entry<K,V>> qry;
         final CacheQueryFuture<Map.Entry<K,V>> fut;
 
-        boolean isKeepPortable = opCtx != null && opCtx.isKeepPortable();
+        boolean isKeepPortable = opCtx != null && opCtx.isKeepBinary();
 
         if (filter instanceof ScanQuery) {
             IgniteBiPredicate<K, V> p = ((ScanQuery)filter).getFilter();
@@ -1672,7 +1672,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * </ul> <p> For example, if you use {@link Integer} as a key and {@code Value} class as a value (which will be
      * stored in portable format), you should acquire following projection to avoid deserialization:
      * <pre>
-     * IgniteInternalCache<Integer, GridPortableObject> prj = cache.keepPortable();
+     * IgniteInternalCache<Integer, GridPortableObject> prj = cache.keepBinary();
      *
      * // Value is not deserialized and returned in portable format.
      * GridPortableObject po = prj.get(1);
@@ -1726,7 +1726,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             CacheOperationContext opCtx0 =
                 new CacheOperationContext(true,
                     opCtx != null ? opCtx.subjectId() : null,
-                    opCtx != null && opCtx.isKeepPortable(),
+                    opCtx != null && opCtx.isKeepBinary(),
                     opCtx != null ? opCtx.expiry() : null,
                     opCtx != null && opCtx.noRetries());
 

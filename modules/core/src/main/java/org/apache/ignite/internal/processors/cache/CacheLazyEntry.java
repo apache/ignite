@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -44,15 +43,19 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     @GridToStringInclude
     protected V val;
 
+    /** Keep portable flag. */
+    private boolean keepPortable;
+
     /**
      * @param cctx Cache context.
      * @param keyObj Key cache object.
      * @param valObj Cache object value.
      */
-    public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, CacheObject valObj) {
+    public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, CacheObject valObj, boolean keepPortable) {
+        this.cctx = cctx;
         this.keyObj = keyObj;
         this.valObj = valObj;
-        this.cctx = cctx;
+        this.keepPortable = keepPortable;
     }
 
     /**
@@ -60,10 +63,11 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
      * @param val Value.
      * @param cctx Cache context.
      */
-    public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, V val) {
+    public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, V val, boolean keepPortable) {
+        this.cctx = cctx;
         this.keyObj = keyObj;
         this.val = val;
-        this.cctx = cctx;
+        this.keepPortable = keepPortable;
     }
 
     /**
@@ -77,18 +81,21 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
         KeyCacheObject keyObj,
         K key,
         CacheObject valObj,
-        V val) {
+        V val,
+        boolean keepPortable
+    ) {
         this.cctx = ctx;
         this.keyObj = keyObj;
         this.key = key;
         this.valObj = valObj;
         this.val = val;
+        this.keepPortable = keepPortable;
     }
 
     /** {@inheritDoc} */
     @Override public K getKey() {
         if (key == null)
-            key = CU.value(keyObj, cctx, true);
+            key = (K)cctx.unwrapPortableIfNeeded(keyObj, keepPortable);
 
         return key;
     }
@@ -96,7 +103,7 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     /** {@inheritDoc} */
     @Override public V getValue() {
         if (val == null)
-            val = CU.value(valObj, cctx, true);
+            val = (V)cctx.unwrapPortableIfNeeded(valObj, keepPortable);
 
         return val;
     }

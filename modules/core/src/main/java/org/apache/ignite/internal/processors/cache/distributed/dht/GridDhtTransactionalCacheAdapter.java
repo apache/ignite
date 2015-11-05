@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
 import org.apache.ignite.internal.processors.cache.GridCacheLockTimeoutException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -62,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
-import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -256,7 +254,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 null,
                                 null,
                                 req.accessTtl(),
-                                req.skipStore());
+                                req.skipStore(),
+                                req.keepBinary());
                         }
 
                         entry = entryExx(key, req.topologyVersion());
@@ -604,7 +603,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             isolation,
             accessTtl,
             CU.empty0(),
-            opCtx != null && opCtx.skipStore());
+            opCtx != null && opCtx.skipStore(),
+            opCtx != null && opCtx.isKeepBinary());
     }
 
     /**
@@ -631,7 +631,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         TransactionIsolation isolation,
         long accessTtl,
         CacheEntryPredicate[] filter,
-        boolean skipStore) {
+        boolean skipStore,
+        boolean keepBinary) {
         if (keys == null || keys.isEmpty())
             return new GridDhtFinishedFuture<>(true);
 
@@ -652,7 +653,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             tx.threadId(),
             accessTtl,
             filter,
-            skipStore);
+            skipStore,
+            keepBinary);
 
         for (KeyCacheObject key : keys) {
             try {
@@ -772,7 +774,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         req.threadId(),
                         req.accessTtl(),
                         filter,
-                        req.skipStore());
+                        req.skipStore(),
+                        req.keepBinary());
 
                     // Add before mapping.
                     if (!ctx.mvcc().addFuture(fut))
@@ -916,7 +919,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req.txRead(),
                     req.needReturnValue(),
                     req.accessTtl(),
-                    req.skipStore());
+                    req.skipStore(),
+                    req.keepBinary());
 
                 final GridDhtTxLocal t = tx;
 
@@ -1124,7 +1128,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         CU.subjectId(tx, ctx.shared()),
                                         null,
                                         tx != null ? tx.resolveTaskName() : null,
-                                        null);
+                                        null,
+                                        req.keepBinary());
 
                                 assert e.lockedBy(mappedVer) ||
                                     (ctx.mvcc().isRemoved(e.context(), mappedVer) && req.timeout() > 0) :

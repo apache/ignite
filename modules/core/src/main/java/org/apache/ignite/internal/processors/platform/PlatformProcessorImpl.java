@@ -26,7 +26,7 @@ import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComputeImpl;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
@@ -122,7 +122,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx writer = platformCtx.writer(out);
+            BinaryRawWriterEx writer = platformCtx.writer(out);
 
             writer.writeString(ctx.gridName());
 
@@ -252,6 +252,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     @Override public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepPortable)
         throws IgniteCheckedException {
         IgniteDataStreamer ldr = ctx.dataStream().dataStreamer(cacheName);
+
+        ldr.keepBinary(true);
 
         return new PlatformDataStreamer(platformCtx, cacheName, (DataStreamerImpl)ldr, keepPortable);
     }

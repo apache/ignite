@@ -1710,7 +1710,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean keepPortable() {
         CacheOperationContext opCtx = operationContextPerCall();
 
-        return opCtx != null && opCtx.isKeepPortable();
+        return opCtx != null && opCtx.isKeepBinary();
     }
 
     /**
@@ -1752,7 +1752,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Unwraps object for portables.
+     * Unwraps object for binary.
      *
      * @param o Object to unwrap.
      * @param keepPortable Keep portable flag.
@@ -1855,15 +1855,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert val != null || skipVals;
 
         if (!keepCacheObjects) {
-            Object key0 = key.value(cacheObjCtx, false);
-            Object val0 = skipVals ? true : val.value(cacheObjCtx, cpy);
+            Object key0 = unwrapPortableIfNeeded(key, !deserializePortable);
 
-            if (deserializePortable) {
-                key0 = unwrapPortableIfNeeded(key0, false);
-
-                if (!skipVals)
-                    val0 = unwrapPortableIfNeeded(val0, false);
-            }
+            Object val0 = skipVals ? true : unwrapPortableIfNeeded(val, !deserializePortable);
 
             assert key0 != null : key;
             assert val0 != null : val;

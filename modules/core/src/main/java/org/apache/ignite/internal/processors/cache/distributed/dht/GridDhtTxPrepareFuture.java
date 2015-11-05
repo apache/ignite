@@ -316,7 +316,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      *
      */
     private void onEntriesLocked() {
-        ret = new GridCacheReturn(null, tx.localResult(), null, true);
+        ret = new GridCacheReturn(null, tx.localResult(), true, null, true);
 
         for (IgniteTxEntry writeEntry : writes) {
             IgniteTxEntry txEntry = tx.entry(writeEntry.txKey());
@@ -361,7 +361,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         null,
                         null,
                         null,
-                        null);
+                        null,
+                        txEntry.keepBinary());
 
                     if (retVal || txEntry.op() == TRANSFORM) {
                         if (!F.isEmpty(txEntry.entryProcessors())) {
@@ -377,8 +378,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                              for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
                                 try {
-                                    CacheInvokeEntry<Object, Object> invokeEntry =
-                                        new CacheInvokeEntry<>(txEntry.context(), key, val, txEntry.cached().version());
+                                    CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(
+                                        txEntry.context(), key, val, txEntry.cached().version(), txEntry.keepBinary());
 
                                     EntryProcessor<Object, Object, Object> processor = t.get1();
 
@@ -403,7 +404,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             }
                         }
                         else if (retVal)
-                            ret.value(cacheCtx, val);
+                            ret.value(cacheCtx, val, txEntry.keepBinary());
                     }
 
                     if (hasFilters && !cacheCtx.isAll(cached, txEntry.filters())) {
@@ -1555,10 +1556,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                 if (rec && !entry.isInternal())
                                     cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
                                         (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
-                                        false, null, null, null);
+                                        false, null, null, null, false);
 
                                 if (retVal && !invoke)
-                                    ret.value(cacheCtx, info.value());
+                                    ret.value(cacheCtx, info.value(), false);
                             }
 
                             break;

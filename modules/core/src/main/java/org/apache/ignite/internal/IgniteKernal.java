@@ -64,7 +64,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
-import org.apache.ignite.IgnitePortables;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteServices;
@@ -102,8 +102,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessor;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessor;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -157,7 +157,6 @@ import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.mxbean.ClusterLocalNodeMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
@@ -1490,6 +1489,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 mgr.start();
         }
         catch (IgniteCheckedException e) {
+            U.error(log, "Failed to start manager: " + mgr , e);
+
             throw new IgniteCheckedException("Failed to start manager: " + mgr, e);
         }
     }
@@ -2789,8 +2790,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgnitePortables portables() {
-        return ((CacheObjectPortableProcessor)ctx.cacheObjects()).portables();
+    @Override public IgniteBinary binary() {
+        IgniteCacheObjectProcessor objProc = ctx.cacheObjects();
+
+        return objProc.binary();
     }
 
     /** {@inheritDoc} */
@@ -3088,7 +3091,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return comp;
 
         if (cls.equals(IgniteCacheObjectProcessor.class))
-            return (T)new CacheObjectPortableProcessorImpl(ctx);
+            return (T)new CacheObjectBinaryProcessorImpl(ctx);
 
         if (cls.equals(DiscoveryNodeValidationProcessor.class))
             return (T)new OsDiscoveryNodeValidationProcessor(ctx);

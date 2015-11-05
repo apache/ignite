@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 /**
- * Tests for cache store with portables.
+ * Tests for cache store with binary.
  */
 public abstract class GridCachePortableStoreAbstractSelfTest extends GridCommonAbstractTest {
     /** */
@@ -76,7 +76,7 @@ public abstract class GridCachePortableStoreAbstractSelfTest extends GridCommonA
     }
 
     /**
-     * @return Keep portables in store flag.
+     * @return Keep binary in store flag.
      */
     protected abstract boolean keepPortableInStore();
 

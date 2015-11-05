@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -144,6 +143,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public V getAndPut(K key, V val, @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         return (V)updateAllInternal(UPDATE,
             Collections.singleton(key),
             Collections.singleton(val),
@@ -153,7 +154,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             filter,
             ctx.writeThrough(),
-            ctx.readThrough());
+            ctx.readThrough(),
+            opCtx != null && opCtx.isKeepBinary());
     }
 
     /** {@inheritDoc} */
@@ -164,6 +166,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         long start = statsEnabled ? System.nanoTime() : 0L;
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         boolean res = (Boolean)updateAllInternal(UPDATE,
             Collections.singleton(key),
             Collections.singleton(val),
@@ -173,7 +177,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             filter,
             ctx.writeThrough(),
-            ctx.readThrough());
+            ctx.readThrough(),
+            opCtx != null && opCtx.isKeepBinary());
 
         if (statsEnabled)
             metrics0().addPutTimeNanos(System.nanoTime() - start);
@@ -275,7 +280,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             true,
             ctx.equalsValArray(oldVal),
             ctx.writeThrough(),
-            ctx.readThrough());
+            ctx.readThrough(),
+            ctx.operationContextPerCall().isKeepBinary());
     }
 
     /** {@inheritDoc} */
@@ -292,7 +298,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             true,
             ctx.equalsValArray(val),
             ctx.writeThrough(),
-            ctx.readThrough());
+            ctx.readThrough(),
+            ctx.operationContextPerCall().isKeepBinary());
     }
 
     /** {@inheritDoc} */
@@ -322,6 +329,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         long start = statsEnabled ? System.nanoTime() : 0L;
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         updateAllInternal(UPDATE,
             m.keySet(),
             m.values(),
@@ -331,7 +340,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             CU.empty0(),
             ctx.writeThrough(),
-            ctx.readThrough());
+            ctx.readThrough(),
+            opCtx != null && opCtx.isKeepBinary());
 
         if (statsEnabled)
             metrics0().addPutTimeNanos(System.nanoTime() - start);
@@ -350,6 +360,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public V getAndRemove(K key) throws IgniteCheckedException {
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         return (V)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
@@ -359,7 +371,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             CU.empty0(),
             ctx.writeThrough(),
-            ctx.readThrough());
+            ctx.readThrough(),
+            opCtx != null && opCtx.isKeepBinary());
     }
 
     /** {@inheritDoc} */
@@ -371,6 +384,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void removeAll(Collection<? extends K> keys) throws IgniteCheckedException {
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         updateAllInternal(DELETE,
             keys,
             null,
@@ -380,7 +395,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             CU.empty0(),
             ctx.writeThrough(),
-            ctx.readThrough());
+            ctx.readThrough(),
+            opCtx != null && opCtx.isKeepBinary());
     }
 
     /** {@inheritDoc} */
@@ -397,6 +413,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         A.notNull(key, "key");
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         Boolean rmv = (Boolean)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
@@ -406,7 +424,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             CU.empty0(),
             ctx.writeThrough(),
-            ctx.readThrough());
+            ctx.readThrough(),
+            opCtx != null && opCtx.isKeepBinary());
 
         if (statsEnabled && rmv)
             metrics0().addRemoveTimeNanos(System.nanoTime() - start);
@@ -426,6 +445,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public boolean remove(K key, V val) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         return (Boolean)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
@@ -435,7 +456,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             ctx.equalsValArray(val),
             ctx.writeThrough(),
-            ctx.readThrough());
+            ctx.readThrough(),
+            opCtx != null && opCtx.isKeepBinary());
     }
 
     /** {@inheritDoc} */
@@ -575,7 +597,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             subjId,
                             null,
                             taskName,
-                            expiry);
+                            expiry,
+                            !deserializePortable);
 
                         if (v != null)
                             ctx.addResult(vals, cacheKey, v, skipVals, false, deserializePortable, true);
@@ -644,6 +667,10 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             }
         });
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        final boolean keepPortable = opCtx != null && opCtx.isKeepBinary();
+
         return (Map<K, EntryProcessorResult<T>>)updateAllInternal(TRANSFORM,
             invokeMap.keySet(),
             invokeMap.values(),
@@ -653,7 +680,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             null,
             ctx.writeThrough(),
-            ctx.readThrough());
+            ctx.readThrough(),
+            keepPortable);
     }
 
     /** {@inheritDoc} */
@@ -727,6 +755,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(map.keySet());
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         return (Map<K, EntryProcessorResult<T>>)updateAllInternal(TRANSFORM,
             map.keySet(),
             map.values(),
@@ -736,7 +766,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             null,
             ctx.writeThrough(),
-            ctx.readThrough());
+            ctx.readThrough(),
+            opCtx != null && opCtx.isKeepBinary());
     }
 
     /** {@inheritDoc} */
@@ -787,7 +818,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         final boolean readThrough = ctx.readThrough();
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         final ExpiryPolicy expiry = expiryPerCall();
+
+        final boolean keepPortable = opCtx != null && opCtx.isKeepBinary();
 
         IgniteInternalFuture fut = asyncOp(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -800,7 +835,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     rawRetval,
                     filter,
                     writeThrough,
-                    readThrough);
+                    readThrough,
+                    keepPortable);
             }
         });
 
@@ -835,6 +871,10 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         final ExpiryPolicy expiryPlc = expiryPerCall();
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        final boolean keepPortable = opCtx != null && opCtx.isKeepBinary();
+
         IgniteInternalFuture fut = asyncOp(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return updateAllInternal(DELETE,
@@ -846,7 +886,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     rawRetval,
                     filter,
                     writeThrough,
-                    readThrough);
+                    readThrough,
+                    keepPortable);
             }
         });
 
@@ -882,7 +923,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         boolean rawRetval,
         CacheEntryPredicate[] filter,
         boolean writeThrough,
-        boolean readThrough) throws IgniteCheckedException {
+        boolean readThrough,
+        boolean keepPortable
+    ) throws IgniteCheckedException {
         if (keyCheck)
             validateCacheKeys(keys);
 
@@ -905,6 +948,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 expiryPlc,
                 ver,
                 filter,
+                keepPortable,
                 subjId,
                 taskName);
         }
@@ -945,6 +989,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         writeThrough,
                         readThrough,
                         retval,
+                        keepPortable,
                         expiryPlc,
                         true,
                         true,
@@ -999,7 +1044,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         if (err != null)
             throw err;
 
-        Object ret = res == null ? null : rawRetval ? new GridCacheReturn(ctx,  true, res.get2(), res.get1()) :
+        Object ret = res == null ? null : rawRetval ? new GridCacheReturn(ctx,  true, keepPortable, res.get2(), res.get1()) :
             (retval || op == TRANSFORM) ? res.get2() : res.get1();
 
         if (op == TRANSFORM && ret == null)
@@ -1032,6 +1077,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         @Nullable ExpiryPolicy expiryPlc,
         GridCacheVersion ver,
         @Nullable CacheEntryPredicate[] filter,
+        boolean keepPortable,
         UUID subjId,
         String taskName
     ) throws IgniteCheckedException {
@@ -1099,12 +1145,13 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             subjId,
                             entryProcessor,
                             taskName,
-                            null);
+                            null,
+                            keepPortable);
 
                         Object oldVal = null;
 
                         CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(ctx, entry.key(), old,
-                            entry.version());
+                            entry.version(), keepPortable);
 
                         CacheObject updated;
                         Object updatedVal = null;
@@ -1133,7 +1180,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             if (intercept) {
                                 IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
                                     .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(),
-                                        old, oldVal));
+                                        old, oldVal, keepPortable));
 
                                 if (ctx.cancelRemove(interceptorRes))
                                     continue;
@@ -1148,6 +1195,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                     putMap,
                                     null,
                                     expiryPlc,
+                                    keepPortable,
                                     err,
                                     subjId,
                                     taskName);
@@ -1168,7 +1216,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             if (intercept) {
                                 Object interceptorVal = ctx.config().getInterceptor()
                                     .onBeforePut(new CacheLazyEntry(ctx, entry.key(), invokeEntry.getKey(),
-                                        old, oldVal), updatedVal);
+                                        old, oldVal, keepPortable), updatedVal);
 
                                 if (interceptorVal == null)
                                     continue;
@@ -1185,6 +1233,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                     null,
                                     rmvKeys,
                                     expiryPlc,
+                                    keepPortable,
                                     err,
                                     subjId,
                                     taskName);
@@ -1218,10 +1267,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 subjId,
                                 null,
                                 taskName,
-                                null);
+                                null,
+                                keepPortable);
 
                             Object interceptorVal = ctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(
-                                ctx, entry.key(), old), val);
+                                ctx, entry.key(), old, keepPortable), val);
 
                             if (interceptorVal == null)
                                 continue;
@@ -1252,10 +1302,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 subjId,
                                 null,
                                 taskName,
-                                null);
+                                null,
+                                keepPortable);
 
                             IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
-                                .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), old));
+                                .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), old, keepPortable));
 
                             if (ctx.cancelRemove(interceptorRes))
                                 continue;
@@ -1289,6 +1340,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     putMap,
                     rmvKeys,
                     expiryPlc,
+                    keepPortable,
                     err,
                     subjId,
                     taskName);
@@ -1326,6 +1378,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         @Nullable Map<Object, Object> putMap,
         @Nullable Collection<Object> rmvKeys,
         @Nullable ExpiryPolicy expiryPlc,
+        boolean keepPortable,
         @Nullable CachePartialUpdateCheckedException err,
         UUID subjId,
         String taskName
@@ -1395,6 +1448,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     false,
                     false,
                     false,
+                    keepPortable,
                     expiryPlc,
                     true,
                     true,
@@ -1405,9 +1459,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                 if (intercept) {
                     if (op == UPDATE)
-                        ctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(ctx, entry.key(), writeVal));
+                        ctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(ctx, entry.key(), writeVal, keepPortable));
                     else
-                        ctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(ctx, entry.key(), t.get2()));
+                        ctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(ctx, entry.key(), t.get2(), keepPortable));
                 }
             }
             catch (GridCacheEntryRemovedException ignore) {
