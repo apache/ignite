@@ -511,23 +511,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     */
-    private static class TestTcpDiscoverySpi extends TcpDiscoverySpi {
-        /** */
-        private boolean ignorePingResponse;
-
-        /** {@inheritDoc} */
-        protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
-            IgniteCheckedException {
-            if (msg instanceof TcpDiscoveryPingResponse && ignorePingResponse)
-                return;
-            else
-                super.writeToSocket(sock, msg, timeout);
-        }
-    }
-
-    /**
      * @throws Exception If any error occurs.
      */
     public void testNodeAdded() throws Exception {
