@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 T res = _marsh.Unmarshal<T>(stream, mode);
 
-                IPortableTypeDescriptor desc = _marsh.GetDescriptor(true, _header.TypeId);
+                IBinaryTypeDescriptor desc = _marsh.GetDescriptor(true, _header.TypeId);
 
                 if (!desc.KeepDeserialized)
                     return res;
@@ -264,7 +264,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             StringBuilder sb;
 
-            IPortableTypeDescriptor desc = _marsh.GetDescriptor(true, _header.TypeId);
+            IBinaryTypeDescriptor desc = _marsh.GetDescriptor(true, _header.TypeId);
 
             IPortableMetadata meta;
 

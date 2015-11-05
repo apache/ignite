@@ -1050,7 +1050,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 return;
 
             // Suppose that we faced normal object and perform descriptor lookup.
-            IPortableTypeDescriptor desc = _marsh.GetDescriptor(type);
+            IBinaryTypeDescriptor desc = _marsh.GetDescriptor(type);
 
             if (desc != null)
             {

@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private readonly PortableUserObject _obj;
 
         /** Type descriptor. */
-        private readonly IPortableTypeDescriptor _desc;
+        private readonly IBinaryTypeDescriptor _desc;
 
         /** Values. */
         private IDictionary<string, PortableBuilderField> _vals;
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="obj">Initial portable object.</param>
         /// <param name="desc">Type descriptor.</param>
         public PortableBuilderImpl(PortablesImpl portables, PortableBuilderImpl parent, 
-            PortableUserObject obj, IPortableTypeDescriptor desc)
+            PortableUserObject obj, IBinaryTypeDescriptor desc)
         {
             Debug.Assert(portables != null);
             Debug.Assert(obj != null);
@@ -498,7 +498,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private void Mutate(
             PortableHeapStream inStream,
             PortableHeapStream outStream,
-            IPortableTypeDescriptor desc,
+            IBinaryTypeDescriptor desc,
             int hashCode, 
             IDictionary<string, PortableBuilderField> vals)
         {

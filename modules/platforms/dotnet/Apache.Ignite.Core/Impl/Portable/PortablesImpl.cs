@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             IgniteArgumentCheck.NotNull(type, "type");
 
-            IPortableTypeDescriptor desc = _marsh.GetDescriptor(type);
+            IBinaryTypeDescriptor desc = _marsh.GetDescriptor(type);
 
             if (desc == null)
                 throw new IgniteException("Type is not portable (add it to PortableConfiguration): " + 
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
-            IPortableTypeDescriptor desc = _marsh.GetDescriptor(typeName);
+            IBinaryTypeDescriptor desc = _marsh.GetDescriptor(typeName);
             
             return Builder0(null, PortableFromDescriptor(desc), desc);
         }
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (obj0 == null)
                 throw new ArgumentException("Unsupported object type: " + obj.GetType());
 
-            IPortableTypeDescriptor desc = _marsh.GetDescriptor(true, obj0.TypeId);
+            IBinaryTypeDescriptor desc = _marsh.GetDescriptor(true, obj0.TypeId);
             
             return Builder0(null, obj0, desc);
         }
@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="desc">Descriptor.</param>
         /// <returns>Empty portable object.</returns>
-        private PortableUserObject PortableFromDescriptor(IPortableTypeDescriptor desc)
+        private PortableUserObject PortableFromDescriptor(IBinaryTypeDescriptor desc)
         {
             var len = PortableObjectHeader.Size;
 
@@ -183,7 +183,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="desc">Type descriptor.</param>
         /// <returns>Builder.</returns>
         private PortableBuilderImpl Builder0(PortableBuilderImpl parent, PortableUserObject obj, 
-            IPortableTypeDescriptor desc)
+            IBinaryTypeDescriptor desc)
         {
             return new PortableBuilderImpl(this, parent, obj, desc);
         }

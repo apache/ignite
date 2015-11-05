@@ -241,7 +241,7 @@
     <Compile Include="Impl\Portable\IO\PortableHeapStream.cs" />
     <Compile Include="Impl\Portable\IO\PortableStreamAdapter.cs" />
     <Compile Include="Impl\Portable\IBinarySystemTypeSerializer.cs" />
-    <Compile Include="Impl\Portable\IPortableTypeDescriptor.cs" />
+    <Compile Include="Impl\Portable\IBinaryTypeDescriptor.cs" />
     <Compile Include="Impl\Portable\IPortableWriteAware.cs" />
     <Compile Include="Impl\Portable\Metadata\IPortableMetadataHandler.cs" />
     <Compile Include="Impl\Portable\Metadata\PortableHashsetMetadataHandler.cs" />
@@ -249,7 +249,7 @@
     <Compile Include="Impl\Portable\Metadata\PortableMetadataImpl.cs" />
     <Compile Include="Impl\Portable\PortableBuilderField.cs" />
     <Compile Include="Impl\Portable\PortableBuilderImpl.cs" />
-    <Compile Include="Impl\Portable\PortableFullTypeDescriptor.cs" />
+    <Compile Include="Impl\Portable\BinaryFullTypeDescriptor.cs" />
     <Compile Include="Impl\Portable\PortableHandleDictionary.cs" />
     <Compile Include="Impl\Portable\BinaryMarshalAwareSerializer.cs" />
     <Compile Include="Impl\Portable\PortableMarshaller.cs" />
@@ -266,7 +266,7 @@
     <Compile Include="Impl\Portable\BinaryReflectiveSerializer.cs" />
     <Compile Include="Impl\Portable\PortablesImpl.cs" />
     <Compile Include="Impl\Portable\Structure\PortableStructureTracker.cs" />
-    <Compile Include="Impl\Portable\PortableSurrogateTypeDescriptor.cs" />
+    <Compile Include="Impl\Portable\BinarySurrogateTypeDescriptor.cs" />
     <Compile Include="Impl\Portable\PortableSystemHandlers.cs" />
     <Compile Include="Impl\Portable\BinarySystemTypeSerializer.cs" />
     <Compile Include="Impl\Portable\PortableUserObject.cs" />

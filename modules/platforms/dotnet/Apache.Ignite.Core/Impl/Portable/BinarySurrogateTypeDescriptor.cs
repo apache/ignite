@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// Surrogate type descriptor. Used in cases when type if identified by name and 
     /// is not provided in configuration.
     /// </summary>
-    internal class PortableSurrogateTypeDescriptor : IPortableTypeDescriptor
+    internal class BinarySurrogateTypeDescriptor : IBinaryTypeDescriptor
     {
         /** Portable configuration. */
         private readonly PortableConfiguration _cfg;
@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="cfg">Portable configuration.</param>
         /// <param name="id">Type ID.</param>
-        public PortableSurrogateTypeDescriptor(PortableConfiguration cfg, int id)
+        public BinarySurrogateTypeDescriptor(PortableConfiguration cfg, int id)
         {
             _cfg = cfg;
             _id = id;
@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="cfg">Portable configuration.</param>
         /// <param name="name">Type name.</param>
-        public PortableSurrogateTypeDescriptor(PortableConfiguration cfg, string name)
+        public BinarySurrogateTypeDescriptor(PortableConfiguration cfg, string name)
         {
             _cfg = cfg;
             _name = name;

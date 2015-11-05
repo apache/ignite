@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Full type descriptor.
     /// </summary> 
-    internal class PortableFullTypeDescriptor : IPortableTypeDescriptor
+    internal class BinaryFullTypeDescriptor : IBinaryTypeDescriptor
     {
         /** Type. */
         private readonly Type _type;
@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="serializer">Serializer.</param>
         /// <param name="keepDeserialized">Whether to cache deserialized value in IPortableObject</param>
         /// <param name="affKeyFieldName">Affinity field key name.</param>
-        public PortableFullTypeDescriptor(
+        public BinaryFullTypeDescriptor(
             Type type, 
             int typeId, 
             string typeName, 

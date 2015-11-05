@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
     internal struct PortableStructureTracker
     {
         /** Current type structure. */
-        private readonly IPortableTypeDescriptor _desc;
+        private readonly IBinaryTypeDescriptor _desc;
 
         /** Struct. */
         private readonly PortableStructure _portStruct;
@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Impl.Portable.Structure
         /// </summary>
         /// <param name="desc">The desc.</param>
         /// <param name="portStruct">The structure to work with.</param>
-        public PortableStructureTracker(IPortableTypeDescriptor desc, PortableStructure portStruct)
+        public PortableStructureTracker(IBinaryTypeDescriptor desc, PortableStructure portStruct)
         {
             _desc = desc;
             _portStruct = portStruct;

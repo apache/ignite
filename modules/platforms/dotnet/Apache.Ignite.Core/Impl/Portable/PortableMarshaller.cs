@@ -40,16 +40,16 @@ namespace Apache.Ignite.Core.Impl.Portable
         private readonly PortableConfiguration _cfg;
 
         /** Type to descriptor map. */
-        private readonly IDictionary<Type, IPortableTypeDescriptor> _typeToDesc =
-            new Dictionary<Type, IPortableTypeDescriptor>();
+        private readonly IDictionary<Type, IBinaryTypeDescriptor> _typeToDesc =
+            new Dictionary<Type, IBinaryTypeDescriptor>();
 
         /** Type name to descriptor map. */
-        private readonly IDictionary<string, IPortableTypeDescriptor> _typeNameToDesc =
-            new Dictionary<string, IPortableTypeDescriptor>();
+        private readonly IDictionary<string, IBinaryTypeDescriptor> _typeNameToDesc =
+            new Dictionary<string, IBinaryTypeDescriptor>();
 
         /** ID to descriptor map. */
-        private readonly IDictionary<long, IPortableTypeDescriptor> _idToDesc =
-            new Dictionary<long, IPortableTypeDescriptor>();
+        private readonly IDictionary<long, IBinaryTypeDescriptor> _idToDesc =
+            new Dictionary<long, IBinaryTypeDescriptor>();
 
         /** Cached metadatas. */
         private volatile IDictionary<int, PortableMetadataHolder> _metas =
@@ -274,7 +274,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="desc">Type descriptor.</param>
         /// <returns>Metadata handler.</returns>
-        public IPortableMetadataHandler GetMetadataHandler(IPortableTypeDescriptor desc)
+        public IPortableMetadataHandler GetMetadataHandler(IBinaryTypeDescriptor desc)
         {
             PortableMetadataHolder holder;
 
@@ -337,9 +337,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="type">Type.</param>
         /// <returns>Descriptor.</returns>
-        public IPortableTypeDescriptor GetDescriptor(Type type)
+        public IBinaryTypeDescriptor GetDescriptor(Type type)
         {
-            IPortableTypeDescriptor desc;
+            IBinaryTypeDescriptor desc;
 
             _typeToDesc.TryGetValue(type, out desc);
 
@@ -351,12 +351,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         /// <param name="typeName">Type name.</param>
         /// <returns>Descriptor.</returns>
-        public IPortableTypeDescriptor GetDescriptor(string typeName)
+        public IBinaryTypeDescriptor GetDescriptor(string typeName)
         {
-            IPortableTypeDescriptor desc;
+            IBinaryTypeDescriptor desc;
 
             return _typeNameToDesc.TryGetValue(typeName, out desc) ? desc : 
-                new PortableSurrogateTypeDescriptor(_cfg, typeName);
+                new BinarySurrogateTypeDescriptor(_cfg, typeName);
         }
 
         /// <summary>
@@ -365,12 +365,12 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="userType"></param>
         /// <param name="typeId"></param>
         /// <returns></returns>
-        public IPortableTypeDescriptor GetDescriptor(bool userType, int typeId)
+        public IBinaryTypeDescriptor GetDescriptor(bool userType, int typeId)
         {
-            IPortableTypeDescriptor desc;
+            IBinaryTypeDescriptor desc;
 
             return _idToDesc.TryGetValue(PortableUtils.TypeKey(userType, typeId), out desc) ? desc :
-                userType ? new PortableSurrogateTypeDescriptor(_cfg, typeId) : null;
+                userType ? new BinarySurrogateTypeDescriptor(_cfg, typeId) : null;
         }
 
         /// <summary>
@@ -465,8 +465,8 @@ namespace Apache.Ignite.Core.Impl.Portable
             if (userType && _typeNameToDesc.ContainsKey(typeName))
                 throw new BinaryObjectException("Conflicting type name: " + typeName);
 
-            IPortableTypeDescriptor descriptor =
-                new PortableFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, serializer,
+            IBinaryTypeDescriptor descriptor =
+                new BinaryFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, serializer,
                     keepDeserialized, affKeyFieldName);
 
             if (type != null)

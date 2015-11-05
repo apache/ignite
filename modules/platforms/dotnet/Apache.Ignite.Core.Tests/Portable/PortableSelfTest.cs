@@ -1066,7 +1066,7 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             if (detached)
             {
-                var reader = new BinaryReaderImpl(marsh, new Dictionary<long, IPortableTypeDescriptor>(),
+                var reader = new BinaryReaderImpl(marsh, new Dictionary<long, IBinaryTypeDescriptor>(),
                     new PortableHeapStream(bytes), PortableMode.ForcePortable, null);
 
                 reader.DetachNext();

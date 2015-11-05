@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// <summary>
     /// Type descriptor.
     /// </summary>
-    internal interface IPortableTypeDescriptor
+    internal interface IBinaryTypeDescriptor
     {
         /// <summary>
         /// Type.

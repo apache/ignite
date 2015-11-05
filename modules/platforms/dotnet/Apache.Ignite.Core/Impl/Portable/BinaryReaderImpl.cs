@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         private readonly PortableMarshaller _marsh;
 
         /** Type descriptors. */
-        private readonly IDictionary<long, IPortableTypeDescriptor> _descs;
+        private readonly IDictionary<long, IBinaryTypeDescriptor> _descs;
 
         /** Parent builder. */
         private readonly PortableBuilderImpl _builder;
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="builder">Builder.</param>
         public BinaryReaderImpl
             (PortableMarshaller marsh,
-            IDictionary<long, IPortableTypeDescriptor> descs, 
+            IDictionary<long, IBinaryTypeDescriptor> descs, 
             IPortableStream stream, 
             PortableMode mode,
             PortableBuilderImpl builder)
@@ -650,7 +650,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                 else
                 {
                     // Find descriptor.
-                    IPortableTypeDescriptor desc;
+                    IBinaryTypeDescriptor desc;
 
                     if (!_descs.TryGetValue(PortableUtils.TypeKey(hdr.IsUserType, hdr.TypeId), out desc))
                         throw new BinaryObjectException("Unknown type ID: " + hdr.TypeId);
