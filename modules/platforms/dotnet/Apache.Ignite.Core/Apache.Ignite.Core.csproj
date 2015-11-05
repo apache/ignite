@@ -273,10 +273,10 @@
     <Compile Include="Impl\Binary\BinaryUtils.cs" />
     <Compile Include="Impl\Binary\BinaryWriter.cs" />
     <Compile Include="Impl\Binary\SerializableObjectHolder.cs" />
-    <Compile Include="Impl\Binary\Structure\PortableStructure.cs" />
-    <Compile Include="Impl\Binary\Structure\PortableStructureEntry.cs" />
-    <Compile Include="Impl\Binary\Structure\PortableStructureJumpTable.cs" />
-    <Compile Include="Impl\Binary\Structure\PortableStructureUpdate.cs" />
+    <Compile Include="Impl\Binary\Structure\BinaryStructure.cs" />
+    <Compile Include="Impl\Binary\Structure\BinaryStructureEntry.cs" />
+    <Compile Include="Impl\Binary\Structure\BinaryStructureJumpTable.cs" />
+    <Compile Include="Impl\Binary\Structure\BinaryStructureUpdate.cs" />
     <Compile Include="Impl\Binary\TypeResolver.cs" />
     <Compile Include="Impl\Resource\IResourceInjector.cs" />
     <Compile Include="Impl\Resource\ResourceFieldInjector.cs" />

@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
     /// <summary>
     /// Portable type structure update descriptor.
     /// </summary>
-    internal class PortableStructureUpdate
+    internal class BinaryStructureUpdate
     {
         /** Field name. */
         private readonly string _fieldName;
@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// <param name="fieldId">Field ID.</param>
         /// <param name="fieldType">Field type.</param>
         /// <param name="idx">Index.</param>
-        public PortableStructureUpdate(string fieldName, int fieldId, byte fieldType, int idx)
+        public BinaryStructureUpdate(string fieldName, int fieldId, byte fieldType, int idx)
         {
             _fieldName = fieldName;
             _fieldId = fieldId;

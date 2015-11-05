@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
     /// <summary>
     /// Jump table.
     /// </summary>
-    internal class PortableStructureJumpTable
+    internal class BinaryStructureJumpTable
     {
         /** Names. */
         private readonly string[] _names;
@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// <param name="firstPathIdx">First path index.</param>
         /// <param name="secondName">Second name.</param>
         /// <param name="secondPathIdx">Second path index.</param>
-        public PortableStructureJumpTable(string firstName, int firstPathIdx, 
+        public BinaryStructureJumpTable(string firstName, int firstPathIdx, 
             string secondName, int secondPathIdx)
         {
             _names = new[] { firstName, secondName };
@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// </summary>
         /// <param name="names">Field names.</param>
         /// <param name="pathIdxs">Path indexes.</param>
-        private PortableStructureJumpTable(string[] names, int[] pathIdxs)
+        private BinaryStructureJumpTable(string[] names, int[] pathIdxs)
         {
             Debug.Assert(names.Length > 1);
             Debug.Assert(names.Length == pathIdxs.Length);
@@ -90,9 +90,9 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// Copy jump table.
         /// </summary>
         /// <returns>New jump table.</returns>
-        public PortableStructureJumpTable Copy()
+        public BinaryStructureJumpTable Copy()
         {
-            return new PortableStructureJumpTable(_names, _pathIdxs);
+            return new BinaryStructureJumpTable(_names, _pathIdxs);
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// <param name="name">Field name.</param>
         /// <param name="pathIdx">Path index.</param>
         /// <returns>New jump table.</returns>
-        public PortableStructureJumpTable CopyAndAdd(string name, int pathIdx)
+        public BinaryStructureJumpTable CopyAndAdd(string name, int pathIdx)
         {
             var newNames = new string[_names.Length + 1];
             var newPathIdxs = new int[_pathIdxs.Length + 1];
@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
             newNames[newNames.Length - 1] = name;
             newPathIdxs[newPathIdxs.Length - 1] = pathIdx;
 
-            return new PortableStructureJumpTable(newNames, newPathIdxs);
+            return new BinaryStructureJumpTable(newNames, newPathIdxs);
         }
     }
 }

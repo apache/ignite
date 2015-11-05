@@ -55,10 +55,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly string _affKeyFieldName;
 
         /** Type structure. */
-        private volatile PortableStructure _writerTypeStruct = PortableStructure.CreateEmpty();
+        private volatile BinaryStructure _writerTypeStruct = BinaryStructure.CreateEmpty();
 
         /** Type structure. */
-        private volatile PortableStructure _readerTypeStructure = PortableStructure.CreateEmpty();
+        private volatile BinaryStructure _readerTypeStructure = BinaryStructure.CreateEmpty();
         
         /** Type schema. */
         private readonly BinaryObjectSchema _schema = new BinaryObjectSchema();
@@ -170,20 +170,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public PortableStructure WriterTypeStructure
+        public BinaryStructure WriterTypeStructure
         {
             get { return _writerTypeStruct; }
         }
 
         /** <inheritDoc /> */
-        public PortableStructure ReaderTypeStructure
+        public BinaryStructure ReaderTypeStructure
         {
             get { return _readerTypeStructure; }
         }
 
         /** <inheritDoc /> */
-        public void UpdateWriteStructure(PortableStructure exp, int pathIdx, 
-            IList<PortableStructureUpdate> updates)
+        public void UpdateWriteStructure(BinaryStructure exp, int pathIdx, 
+            IList<BinaryStructureUpdate> updates)
         {
             lock (this)
             {
@@ -192,8 +192,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public void UpdateReadStructure(PortableStructure exp, int pathIdx, 
-            IList<PortableStructureUpdate> updates)
+        public void UpdateReadStructure(BinaryStructure exp, int pathIdx, 
+            IList<BinaryStructureUpdate> updates)
         {
             lock (this)
             {

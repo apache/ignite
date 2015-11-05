@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         private readonly IBinaryTypeDescriptor _desc;
 
         /** Struct. */
-        private readonly PortableStructure _portStruct;
+        private readonly BinaryStructure _portStruct;
 
         /** Current type structure path index. */
         private int _curStructPath;
@@ -37,14 +37,14 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         private int _curStructAction;
 
         /** Current type structure updates. */
-        private List<PortableStructureUpdate> _curStructUpdates;
+        private List<BinaryStructureUpdate> _curStructUpdates;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PortableStructureTracker" /> class.
         /// </summary>
         /// <param name="desc">The desc.</param>
         /// <param name="portStruct">The structure to work with.</param>
-        public PortableStructureTracker(IBinaryTypeDescriptor desc, PortableStructure portStruct)
+        public PortableStructureTracker(IBinaryTypeDescriptor desc, BinaryStructure portStruct)
         {
             _desc = desc;
             _portStruct = portStruct;
@@ -130,9 +130,9 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
             var fieldId = BinaryUtils.FieldId(_desc.TypeId, fieldName, _desc.NameMapper, _desc.IdMapper);
 
             if (_curStructUpdates == null)
-                _curStructUpdates = new List<PortableStructureUpdate>();
+                _curStructUpdates = new List<BinaryStructureUpdate>();
 
-            _curStructUpdates.Add(new PortableStructureUpdate(fieldName, fieldId, fieldTypeId, action));
+            _curStructUpdates.Add(new BinaryStructureUpdate(fieldName, fieldId, fieldTypeId, action));
 
             return fieldId;
         }

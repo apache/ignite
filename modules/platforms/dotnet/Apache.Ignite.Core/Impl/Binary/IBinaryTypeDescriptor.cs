@@ -102,12 +102,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Write type structure.
         /// </summary>
-        PortableStructure WriterTypeStructure { get; }
+        BinaryStructure WriterTypeStructure { get; }
 
         /// <summary>
         /// Read type structure.
         /// </summary>
-        PortableStructure ReaderTypeStructure { get; }
+        BinaryStructure ReaderTypeStructure { get; }
 
         /// <summary>
         /// Update write type structure.
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="exp">Expected type structure.</param>
         /// <param name="pathIdx">Path index.</param>
         /// <param name="updates">Recorded updates.</param>
-        void UpdateWriteStructure(PortableStructure exp, int pathIdx, IList<PortableStructureUpdate> updates);
+        void UpdateWriteStructure(BinaryStructure exp, int pathIdx, IList<BinaryStructureUpdate> updates);
 
         /// <summary>
         /// Update read type structure.
@@ -123,7 +123,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="exp">Expected type structure.</param>
         /// <param name="pathIdx">Path index.</param>
         /// <param name="updates">Recorded updates.</param>
-        void UpdateReadStructure(PortableStructure exp, int pathIdx, IList<PortableStructureUpdate> updates);
+        void UpdateReadStructure(BinaryStructure exp, int pathIdx, IList<BinaryStructureUpdate> updates);
 
         /// <summary>
         /// Gets the schema.

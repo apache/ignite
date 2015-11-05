@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
     /// <summary>
     /// Portable type structure entry. Might be either a normal field, a reference to jump table, or an empty entry.
     /// </summary>
-    internal struct PortableStructureEntry
+    internal struct BinaryStructureEntry
     {
         /** Field name. */
         private readonly string _name;
@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// Constructor for jump table entry.
         /// </summary>
         /// <param name="jumpTblIdx">Jump table index.</param>
-        public PortableStructureEntry(int jumpTblIdx)
+        public BinaryStructureEntry(int jumpTblIdx)
         {
             Debug.Assert(jumpTblIdx > 0);
 
@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// <param name="name">Field name.</param>
         /// <param name="id">Field ID.</param>
         /// <param name="type">Field type.</param>
-        public PortableStructureEntry(string name, int id, byte type)
+        public BinaryStructureEntry(string name, int id, byte type)
         {
             Debug.Assert(name != null);
 

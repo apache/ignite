@@ -23,28 +23,28 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
-    /// Portable type structure. Cache field IDs and metadata to improve marshalling performance.
+    /// Binary type structure. Cache field IDs and metadata to improve marshalling performance.
     /// Every object write contains a set of field writes. Every unique ordered set of written fields
     /// produce write "path". We cache these paths allowing for very fast traverse over object structure
     /// without expensive map lookups and field ID calculations. 
     /// </summary>
-    internal class PortableStructure
+    internal class BinaryStructure
     {
         /// <summary>
         /// Create empty type structure.
         /// </summary>
         /// <returns>Empty type structure.</returns>
-        public static PortableStructure CreateEmpty()
+        public static BinaryStructure CreateEmpty()
         {
-            return new PortableStructure(new[] { new PortableStructureEntry[0] }, 
-                new PortableStructureJumpTable[1], new Dictionary<string, byte>());
+            return new BinaryStructure(new[] { new BinaryStructureEntry[0] }, 
+                new BinaryStructureJumpTable[1], new Dictionary<string, byte>());
         }
 
         /** Entries. */
-        private readonly PortableStructureEntry[][] _paths;
+        private readonly BinaryStructureEntry[][] _paths;
 
         /** Jumps. */
-        private readonly PortableStructureJumpTable[] _jumps;
+        private readonly BinaryStructureJumpTable[] _jumps;
 
         /** Field types. */
         private readonly IDictionary<string, byte> _fieldTypes;
@@ -55,8 +55,8 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// <param name="paths">Paths.</param>
         /// <param name="jumps">Jumps.</param>
         /// <param name="fieldTypes">Field types.</param>
-        private PortableStructure(PortableStructureEntry[][] paths,
-            PortableStructureJumpTable[] jumps, IDictionary<string, byte> fieldTypes)
+        private BinaryStructure(BinaryStructureEntry[][] paths,
+            BinaryStructureJumpTable[] jumps, IDictionary<string, byte> fieldTypes)
         {
             _paths = paths;
             _jumps = jumps;
@@ -76,12 +76,12 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
             Debug.Assert(pathIdx <= _paths.Length);
 
             // Get path.
-            PortableStructureEntry[] path = _paths[pathIdx];
+            BinaryStructureEntry[] path = _paths[pathIdx];
 
             if (actionIdx < path.Length)
             {
                 // Get entry matching the action index.
-                PortableStructureEntry entry = path[actionIdx];
+                BinaryStructureEntry entry = path[actionIdx];
 
                 if (entry.IsExpected(fieldName, fieldType))
                     // Entry matches our expectations, return.
@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
                     // Entry is a pointer to a jump table.
                     Debug.Assert(entry.Id < _jumps.Length);
 
-                    PortableStructureJumpTable jmpTbl = _jumps[entry.Id];
+                    BinaryStructureJumpTable jmpTbl = _jumps[entry.Id];
 
                     int pathIdx0 = jmpTbl.GetPathIndex(fieldName);
 
@@ -121,8 +121,8 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// <param name="pathIdx">Path index.</param>
         /// <param name="updates">Updates.</param>
         /// <returns>New type structure with updates.</returns>
-        public PortableStructure Merge(PortableStructure exp, int pathIdx, 
-            IList<PortableStructureUpdate> updates)
+        public BinaryStructure Merge(BinaryStructure exp, int pathIdx, 
+            IList<BinaryStructureUpdate> updates)
         {
             if (updates.Count == 0)
                 return this;
@@ -135,11 +135,11 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
             // on the same path. This should occur only during application warmup.
 
             // Note that field types are merged anyway to avoid metadata clashes.
-            PortableStructure res = MergeFieldTypes(updates);
+            BinaryStructure res = MergeFieldTypes(updates);
 
             if (ReferenceEquals(exp, this))
             {
-                PortableStructureUpdate firstUpdate = updates[0];
+                BinaryStructureUpdate firstUpdate = updates[0];
 
                 if (firstUpdate.Index == 0)
                 {
@@ -152,14 +152,14 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
 
                     ApplyUpdatesToPath(newPaths[0], updates);
 
-                    res = new PortableStructure(newPaths, _jumps, res._fieldTypes);
+                    res = new BinaryStructure(newPaths, _jumps, res._fieldTypes);
                 }
                 else
                 {
                     // Get entry where updates should start.
-                    PortableStructureEntry[] path = _paths[pathIdx];
+                    BinaryStructureEntry[] path = _paths[pathIdx];
 
-                    PortableStructureEntry startEntry = default(PortableStructureEntry);
+                    BinaryStructureEntry startEntry = default(BinaryStructureEntry);
 
                     if (firstUpdate.Index < path.Length)
                         startEntry = path[firstUpdate.Index];
@@ -171,7 +171,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
 
                         ApplyUpdatesToPath(newPaths[pathIdx], updates);
 
-                        res = new PortableStructure(newPaths, _jumps, res._fieldTypes);
+                        res = new BinaryStructure(newPaths, _jumps, res._fieldTypes);
                     }
                     else if (startEntry.IsJumpTable)
                     {
@@ -191,7 +191,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
                         newJumps[startEntry.Id] = 
                             newJumps[startEntry.Id].CopyAndAdd(firstUpdate.FieldName, newPathIdx);
 
-                        res = new PortableStructure(newPaths, newJumps, res._fieldTypes);
+                        res = new BinaryStructure(newPaths, newJumps, res._fieldTypes);
                     }
                     else
                     {
@@ -210,7 +210,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
                         // Create new jump table.
                         int newJumpIdx = newJumps.Length - 1;
 
-                        newJumps[newJumpIdx] = new PortableStructureJumpTable(startEntry.Name, oldPathIdx,
+                        newJumps[newJumpIdx] = new BinaryStructureJumpTable(startEntry.Name, oldPathIdx,
                             firstUpdate.FieldName, newPathIdx);
 
                         // Re-create old path in two steps: move old path to the new place, then clean the old path.
@@ -220,16 +220,16 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
 
                             if (i == firstUpdate.Index)
                                 // Inject jump table ...
-                                newPaths[pathIdx][i] = new PortableStructureEntry(newJumpIdx);
+                                newPaths[pathIdx][i] = new BinaryStructureEntry(newJumpIdx);
                             else
                                 // ... or just reset.
-                                newPaths[pathIdx][i] = new PortableStructureEntry();
+                                newPaths[pathIdx][i] = new BinaryStructureEntry();
                         }
 
                         // Apply updates to the new path.
                         ApplyUpdatesToPath(newPaths[newPaths.Length - 1], updates);
 
-                        res = new PortableStructure(newPaths, newJumps, res._fieldTypes);
+                        res = new BinaryStructure(newPaths, newJumps, res._fieldTypes);
                     }
 
                 }
@@ -244,15 +244,15 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// <param name="minLen">Minimum length.</param>
         /// <param name="additionalPaths">Amount of additional paths required.</param>
         /// <returns>Result.</returns>
-        private PortableStructureEntry[][] CopyPaths(int minLen, int additionalPaths)
+        private BinaryStructureEntry[][] CopyPaths(int minLen, int additionalPaths)
         {
-            var newPaths = new PortableStructureEntry[_paths.Length + additionalPaths][];
+            var newPaths = new BinaryStructureEntry[_paths.Length + additionalPaths][];
 
             int newPathLen = Math.Max(_paths[0].Length, minLen);
 
             for (int i = 0; i < newPaths.Length; i++)
             {
-                newPaths[i] = new PortableStructureEntry[newPathLen];
+                newPaths[i] = new BinaryStructureEntry[newPathLen];
 
                 if (i < _paths.Length)
                     Array.Copy(_paths[i], newPaths[i], _paths[i].Length);
@@ -266,12 +266,12 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// </summary>
         /// <param name="additionalJumps">Amount of additional jumps required.</param>
         /// <returns>Result.</returns>
-        private PortableStructureJumpTable[] CopyJumps(int additionalJumps)
+        private BinaryStructureJumpTable[] CopyJumps(int additionalJumps)
         {
-            var newJumps = new PortableStructureJumpTable[_jumps.Length + additionalJumps];
+            var newJumps = new BinaryStructureJumpTable[_jumps.Length + additionalJumps];
 
             // The very first jump is always null so that we can distinguish between jump table
-            // and empty value in PortableStructureEntry.
+            // and empty value in BinaryStructureEntry.
             for (int i = 1; i < _jumps.Length; i++)
                 newJumps[i] = _jumps[i].Copy();
 
@@ -283,11 +283,11 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// </summary>
         /// <param name="path">Path.</param>
         /// <param name="updates">Updates.</param>
-        private static void ApplyUpdatesToPath(IList<PortableStructureEntry> path,
-            IEnumerable<PortableStructureUpdate> updates)
+        private static void ApplyUpdatesToPath(IList<BinaryStructureEntry> path,
+            IEnumerable<BinaryStructureUpdate> updates)
         {
             foreach (var u in updates)
-                path[u.Index] = new PortableStructureEntry(u.FieldName, u.FieldId, u.FieldType);
+                path[u.Index] = new BinaryStructureEntry(u.FieldName, u.FieldId, u.FieldType);
         }
 
         /// <summary>
@@ -295,11 +295,11 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// </summary>
         /// <param name="updates">Updates.</param>
         /// <returns>Type structure with applied updates.</returns>
-        private PortableStructure MergeFieldTypes(IList<PortableStructureUpdate> updates)
+        private BinaryStructure MergeFieldTypes(IList<BinaryStructureUpdate> updates)
         {
             IDictionary<string, byte> newFieldTypes = new Dictionary<string, byte>(_fieldTypes);
 
-            foreach (PortableStructureUpdate update in updates)
+            foreach (BinaryStructureUpdate update in updates)
             {
                 byte expType;
 
@@ -318,7 +318,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
             }
 
             return newFieldTypes.Count == _fieldTypes.Count ?
-                this : new PortableStructure(_paths, _jumps, newFieldTypes);
+                this : new BinaryStructure(_paths, _jumps, newFieldTypes);
         }
 
         /// <summary>
