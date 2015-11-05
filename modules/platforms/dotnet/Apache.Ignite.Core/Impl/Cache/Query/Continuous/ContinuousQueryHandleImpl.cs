@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         private readonly Marshaller _marsh;
 
         /** Keep binary flag. */
-        private readonly bool _keepPortable;
+        private readonly bool _keepBinary;
 
         /** Real listener. */
         private readonly ICacheEntryEventListener<TK, TV> _lsnr;
@@ -79,11 +79,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         /// <param name="qry">Query.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Keep binary flag.</param>
-        public ContinuousQueryHandleImpl(ContinuousQuery<TK, TV> qry, Marshaller marsh, bool keepPortable)
+        /// <param name="keepBinary">Keep binary flag.</param>
+        public ContinuousQueryHandleImpl(ContinuousQuery<TK, TV> qry, Marshaller marsh, bool keepBinary)
         {
             _marsh = marsh;
-            _keepPortable = keepPortable;
+            _keepBinary = keepBinary;
 
             _lsnr = qry.Listener;
             _filter = qry.Filter;
@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
             writer.WriteBoolean(_filter != null);
 
             var filterHolder = _filter == null || qry.Local ? null :
-                new ContinuousQueryFilterHolder(_filter, _keepPortable);
+                new ContinuousQueryFilterHolder(_filter, _keepBinary);
 
             writer.WriteObject(filterHolder);
 
@@ -127,13 +127,13 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
             var nativeInitialQryCur = UU.ContinuousQueryGetInitialQueryCursor(_nativeQry);
             _initialQueryCursor = nativeInitialQryCur == null
                 ? null
-                : new QueryCursor<TK, TV>(nativeInitialQryCur, _marsh, _keepPortable);
+                : new QueryCursor<TK, TV>(nativeInitialQryCur, _marsh, _keepBinary);
         }
 
         /** <inheritdoc /> */
         public void Apply(IBinaryStream stream)
         {
-            ICacheEntryEvent<TK, TV>[] evts = CQU.ReadEvents<TK, TV>(stream, _marsh, _keepPortable);
+            ICacheEntryEvent<TK, TV>[] evts = CQU.ReadEvents<TK, TV>(stream, _marsh, _keepBinary);
 
             _lsnr.OnEvent(evts); 
         }
@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         {
             Debug.Assert(_filter != null, "Evaluate should not be called if filter is not set.");
 
-            ICacheEntryEvent<TK, TV> evt = CQU.ReadEvent<TK, TV>(stream, _marsh, _keepPortable);
+            ICacheEntryEvent<TK, TV> evt = CQU.ReadEvent<TK, TV>(stream, _marsh, _keepBinary);
 
             return _filter.Evaluate(evt);
         }

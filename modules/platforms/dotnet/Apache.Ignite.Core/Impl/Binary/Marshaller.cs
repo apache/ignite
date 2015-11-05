@@ -401,7 +401,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
 
                 var serializer = typeCfg.Serializer ?? cfg.DefaultSerializer
-                                 ?? GetPortableMarshalAwareSerializer(type) ?? dfltSerializer;
+                                 ?? GetBinarizableSerializer(type) ?? dfltSerializer;
 
                 var refSerializer = serializer as BinaryReflectiveSerializer;
 
@@ -424,14 +424,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Gets the <see cref="BinaryMarshalAwareSerializer"/> for a type if it is compatible.
+        /// Gets the <see cref="BinarizableSerializer"/> for a type if it is compatible.
         /// </summary>
         /// <param name="type">The type.</param>
-        /// <returns>Resulting <see cref="BinaryMarshalAwareSerializer"/>, or null.</returns>
-        private static IBinarySerializer GetPortableMarshalAwareSerializer(Type type)
+        /// <returns>Resulting <see cref="BinarizableSerializer"/>, or null.</returns>
+        private static IBinarySerializer GetBinarizableSerializer(Type type)
         {
             return type.GetInterfaces().Contains(typeof (IBinarizable)) 
-                ? BinaryMarshalAwareSerializer.Instance 
+                ? BinarizableSerializer.Instance 
                 : null;
         }
         

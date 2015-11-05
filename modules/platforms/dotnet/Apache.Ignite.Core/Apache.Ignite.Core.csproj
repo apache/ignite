@@ -251,7 +251,7 @@
     <Compile Include="Impl\Binary\BinaryObjectBuilder.cs" />
     <Compile Include="Impl\Binary\BinaryFullTypeDescriptor.cs" />
     <Compile Include="Impl\Binary\BinaryHandleDictionary.cs" />
-    <Compile Include="Impl\Binary\BinaryMarshalAwareSerializer.cs" />
+    <Compile Include="Impl\Binary\BinarizableSerializer.cs" />
     <Compile Include="Impl\Binary\Marshaller.cs" />
     <Compile Include="Impl\Binary\BinaryMode.cs" />
     <Compile Include="Impl\Binary\BinaryObjectHandle.cs" />

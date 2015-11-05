@@ -23,12 +23,12 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// Portable serializer which only supports <see cref="IBinarizable"/> types with a default ctor.
     /// Does not use reflection.
     /// </summary>
-    internal class BinaryMarshalAwareSerializer : IBinarySerializer
+    internal class BinarizableSerializer : IBinarySerializer
     {
         /// <summary>
         /// Default instance.
         /// </summary>
-        public static readonly BinaryMarshalAwareSerializer Instance = new BinaryMarshalAwareSerializer();
+        public static readonly BinarizableSerializer Instance = new BinarizableSerializer();
 
         /** <inheritdoc /> */
         public void WriteBinary(object obj, IBinaryWriter writer)

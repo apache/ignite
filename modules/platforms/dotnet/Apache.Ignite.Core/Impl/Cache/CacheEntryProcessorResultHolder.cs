@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 }
                 else
                 {
-                    writer.WriteByte((byte) MutableCacheEntryState.ErrPortable);
+                    writer.WriteByte((byte) MutableCacheEntryState.ErrBinary);
                     writer.Write(Error);
                 }
             }
