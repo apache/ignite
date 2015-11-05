@@ -421,17 +421,6 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
-     * Notifies data manager that no further writes will be performed on stream.
-     *
-     * @param fut File info being written.
-     */
-    public void writeClose(WriteCompletionFuture fut) {
-        assert fut != null;
-
-        fut.markWaitingLastAck();
-    }
-
-    /**
      * Store data blocks in file.<br/>
      * Note! If file concurrently deleted we'll get lost blocks.
      *
@@ -932,14 +921,14 @@ public class IgfsDataManager extends IgfsManager {
 
         storeBlocksAsync(blocks).listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> fut) {
-                try {
-                    fut.get();
+            try {
+                fut.get();
 
-                    completionFut.onWriteAck();
-                }
-                catch (IgniteCheckedException e) {
-                    completionFut.onError(e);
-                }
+                completionFut.onWriteAck();
+            }
+            catch (IgniteCheckedException e) {
+                completionFut.onError(e);
+            }
             }
         });
 

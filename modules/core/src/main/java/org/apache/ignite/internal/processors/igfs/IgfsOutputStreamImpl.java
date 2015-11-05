@@ -78,7 +78,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
     private int remainderDataLen;
 
     /** Write completion future. */
-    final WriteCompletionFuture writeCompletionFut;
+    WriteCompletionFuture writeCompletionFut = new WriteCompletionFuture();
 
     /** IGFS mode. */
     private final IgfsMode mode;
@@ -318,8 +318,6 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
         streamRange = initialStreamRange(fileInfo);
 
         fileName = path.name();
-
-        writeCompletionFut = new WriteCompletionFuture(fileInfo.id());
     }
 
     /**
@@ -484,7 +482,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
 
         // Send all IPC data from the local buffer.
         if (buf != null && buf.position() > 0)
-            sendData(true);
+            sendData(true/*flip*/);
 
         try {
             if (remainder != null) {
@@ -499,7 +497,10 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
                 fileInfo.length() + space, expWriteAmount);
 
             if (space > 0 || newReservedDelta > fileInfo.reservedDelta()) {
-                writeCompletionFut.awaitAllAcksReceived();
+                awaitForWriteCompletionFuture();
+
+                // Now renew the future:
+                writeCompletionFut = new WriteCompletionFuture();
 
                 IgfsFileInfo fileInfo0 = meta.updateInfo(fileInfo.id(),
                     new UpdateLengthClosure(space, newReservedDelta, streamRange));
@@ -538,9 +539,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
             IOException err = null;
 
             try {
-                data.writeClose(writeCompletionFut);
-
-                writeCompletionFut.get(); // Wait all the data are committed into data cache.
+                awaitForWriteCompletionFuture();
             }
             catch (IgniteCheckedException e) {
                 err = new IOException("Failed to close stream [path=" + path + ", fileInfo=" + fileInfo + ']', e);
@@ -592,6 +591,22 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
                 throw new IOException("File to read file metadata: " + fileInfo.path(), e);
             }
         }
+    }
+
+    /**
+     * Waits for write completion to happen.
+     *
+     * @throws IgniteCheckedException
+     */
+    private void awaitForWriteCompletionFuture() throws IgniteCheckedException {
+        assert writeCompletionFut != null;
+
+        // If #flush() was not invoked on the stream, we should allow the future to complete:
+        writeCompletionFut.markWaitingLastAck();
+
+        // The future should already be completed at this point,
+        // but we need to get Exception, if the future was failed.
+        writeCompletionFut.get();
     }
 
     /**
