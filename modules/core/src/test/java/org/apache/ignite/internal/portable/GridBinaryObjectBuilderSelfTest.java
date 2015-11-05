@@ -36,7 +36,7 @@ import org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.T
 import org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectInner;
 import org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectOuter;
 import org.apache.ignite.internal.portable.mutabletest.GridPortableTestClasses.TestObjectPlainPortable;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
@@ -706,7 +706,7 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         BinaryObject po = builder.build();
 
-        byte[] arr = ((CacheObjectPortableProcessorImpl)(grid(0)).context().cacheObjects()).marshal(po);
+        byte[] arr = ((CacheObjectBinaryProcessorImpl)(grid(0)).context().cacheObjects()).marshal(po);
 
         long ptr = UNSAFE.allocateMemory(arr.length + 5);
 
@@ -720,7 +720,7 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
             UNSAFE.copyMemory(arr, BYTE_ARR_OFF, null, ptr0 + 4, arr.length);
 
             BinaryObject offheapObj = (BinaryObject)
-                ((CacheObjectPortableProcessorImpl)(grid(0)).context().cacheObjects()).unmarshal(ptr, false);
+                ((CacheObjectBinaryProcessorImpl)(grid(0)).context().cacheObjects()).unmarshal(ptr, false);
 
             assertEquals(BinaryObjectOffheapImpl.class, offheapObj.getClass());
 

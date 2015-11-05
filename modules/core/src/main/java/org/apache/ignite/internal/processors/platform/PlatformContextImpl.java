@@ -37,7 +37,7 @@ import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.BinaryMetaDataImpl;
 import org.apache.ignite.internal.portable.BinaryRawReaderEx;
 import org.apache.ignite.internal.portable.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilterImpl;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryProcessor;
@@ -104,7 +104,7 @@ public class PlatformContextImpl implements PlatformContext {
     private final PlatformCallbackGateway gate;
 
     /** Cache object processor. */
-    private final CacheObjectPortableProcessorImpl cacheObjProc;
+    private final CacheObjectBinaryProcessorImpl cacheObjProc;
 
     /** Node ids that has been sent to native platform. */
     private final Set<UUID> sentNodes = Collections.newSetFromMap(new ConcurrentHashMap<UUID, Boolean>());
@@ -149,7 +149,7 @@ public class PlatformContextImpl implements PlatformContext {
         this.gate = gate;
         this.mem = mem;
 
-        cacheObjProc = (CacheObjectPortableProcessorImpl)ctx.cacheObjects();
+        cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
 
         marsh = cacheObjProc.marshaller();
     }
@@ -396,7 +396,7 @@ public class PlatformContextImpl implements PlatformContext {
             Map<String, Integer> fields = U.newHashMap(metaFields.size());
 
             for (Map.Entry<String, String> metaField : metaFields.entrySet())
-                fields.put(metaField.getKey(), CacheObjectPortableProcessorImpl.fieldTypeId(metaField.getValue()));
+                fields.put(metaField.getKey(), CacheObjectBinaryProcessorImpl.fieldTypeId(metaField.getValue()));
 
             writer.writeInt(typeId);
             writer.writeString(meta.typeName());

@@ -42,7 +42,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.portable.builder.PortableBuilderEnum;
 import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.portable.mutabletest.GridBinaryMarshalerAwareTestClass;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.portable.IgniteBinaryImpl;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
@@ -1280,7 +1280,7 @@ public class GridBinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstrac
      * @return Wrapper.
      */
     private BinaryObjectBuilderImpl newWrapper(Class<?> aCls) {
-        CacheObjectPortableProcessorImpl processor = (CacheObjectPortableProcessorImpl)(
+        CacheObjectBinaryProcessorImpl processor = (CacheObjectBinaryProcessorImpl)(
             (IgniteBinaryImpl)portables()).processor();
 
         return new BinaryObjectBuilderImpl(processor.portableContext(), processor.typeId(aCls.getName()),

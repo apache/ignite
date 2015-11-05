@@ -128,8 +128,8 @@ import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_AR
 /**
  * Portable processor implementation.
  */
-public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessorImpl implements
-    CacheObjectPortableProcessor {
+public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorImpl implements
+    CacheObjectBinaryProcessor {
     /** */
     public static final String[] FIELD_TYPE_NAMES;
 
@@ -265,7 +265,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
     /**
      * @param ctx Kernal context.
      */
-    public CacheObjectPortableProcessorImpl(GridKernalContext ctx) {
+    public CacheObjectBinaryProcessorImpl(GridKernalContext ctx) {
         super(ctx);
 
         marsh = ctx.grid().configuration().getMarshaller();
@@ -308,14 +308,14 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
                             return;
                     }
 
-                    CacheObjectPortableProcessorImpl.this.addMeta(typeId, newMeta);
+                    CacheObjectBinaryProcessorImpl.this.addMeta(typeId, newMeta);
                 }
 
                 @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
                     if (metaDataCache == null)
                         U.awaitQuiet(startLatch);
 
-                    return CacheObjectPortableProcessorImpl.this.metadata(typeId);
+                    return CacheObjectBinaryProcessorImpl.this.metadata(typeId);
                 }
             };
 
@@ -639,7 +639,7 @@ public class CacheObjectPortableProcessorImpl extends IgniteCacheObjectProcessor
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteBinary portables() throws IgniteException {
+    @Override public IgniteBinary binary() throws IgniteException {
         return portables;
     }
 

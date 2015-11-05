@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Extended cache object processor interface with additional methods for binary.
  */
-public interface CacheObjectPortableProcessor extends IgniteCacheObjectProcessor {
+public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
     /**
      * @param typeId Type ID.
      * @return Builder.
@@ -92,7 +92,7 @@ public interface CacheObjectPortableProcessor extends IgniteCacheObjectProcessor
      * @return Portables interface.
      * @throws IgniteException If failed.
      */
-    public IgniteBinary portables() throws IgniteException;
+    public IgniteBinary binary() throws IgniteException;
 
     /**
      * @param obj Original object.

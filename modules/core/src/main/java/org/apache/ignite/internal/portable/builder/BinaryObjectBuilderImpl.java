@@ -33,7 +33,7 @@ import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableUtils;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
+import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -326,7 +326,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                         else {
                             byte type = PortableUtils.typeByClass(val.getClass());
 
-                            newFldTypeName = CacheObjectPortableProcessorImpl.fieldTypeName(type);
+                            newFldTypeName = CacheObjectBinaryProcessorImpl.fieldTypeName(type);
                         }
 
                         if (oldFldTypeName == null) {
@@ -339,7 +339,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                         }
                         else {
                             String objTypeName =
-                                CacheObjectPortableProcessorImpl.FIELD_TYPE_NAMES[GridPortableMarshaller.OBJ];
+                                CacheObjectBinaryProcessorImpl.FIELD_TYPE_NAMES[GridPortableMarshaller.OBJ];
 
                             if (!objTypeName.equals(oldFldTypeName) && !oldFldTypeName.equals(newFldTypeName)) {
                                 throw new BinaryObjectException(
