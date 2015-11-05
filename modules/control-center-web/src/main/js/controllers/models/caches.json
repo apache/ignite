@@ -45,7 +45,6 @@
             "Associate clusters with the current cache"
           ],
           "addLink": {
-            "label": "Add cluster(s)",
             "ref": "/configuration/clusters?new"
           }
         },
@@ -61,7 +60,6 @@
             "Select cache type metadata to describe types in cache"
           ],
           "addLink": {
-            "label": "Add metadata(s)",
             "ref": "/configuration/metadata?new"
           }
         },

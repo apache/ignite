@@ -1637,6 +1637,7 @@ $generatorJava.igfss = function(igfss, varName, res) {
             $generatorJava.igfsIPC(igfs, igfsInst, res);
             $generatorJava.igfsFragmentizer(igfs, igfsInst, res);
             $generatorJava.igfsDualMode(igfs, igfsInst, res);
+            $generatorJava.igfsSecondFS(igfs, igfsInst, res);
             $generatorJava.igfsMisc(igfs, igfsInst, res);
 
             res.line(arrayName + '[' + ix + '] = ' + igfsInst + ';');
@@ -1697,6 +1698,30 @@ $generatorJava.igfsDualMode = function(igfs, varName, res) {
     $generatorJava.property(res, varName, igfs, 'dualModePutExecutorServiceShutdown', null, null, false);
 
     res.needEmptyLine = true;
+
+    return res;
+};
+
+$generatorJava.igfsSecondFS = function(igfs, varName, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if (igfs.secondaryFileSystemEnabled) {
+        var secondFs = igfs.secondaryFileSystem || {};
+
+        var uriDefined = $commonUtils.isDefinedAndNotEmpty(secondFs.uri);
+        var nameDefined = $commonUtils.isDefinedAndNotEmpty(secondFs.userName);
+        var cfgDefined = $commonUtils.isDefinedAndNotEmpty(secondFs.cfgPath);
+
+        res.line(varName + '.setSecondaryFileSystem(new ' +
+            res.importClass('org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem') + '(' +
+                (uriDefined ? '"' + secondFs.uri + '"' : 'null') +
+                (cfgDefined || nameDefined ? (cfgDefined ? ', "' + secondFs.cfgPath + '"' : ', null') : '') +
+                (nameDefined ? ', "' + secondFs.userName + '"' : '') +
+            '));');
+
+        res.needEmptyLine = true;
+    }
 
     return res;
 };

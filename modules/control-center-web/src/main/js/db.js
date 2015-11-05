@@ -253,7 +253,13 @@ var IgfsSchema = new Schema({
     perNodeParallelBatchCount: Number,
     prefetchBlocks: Number,
     sequentialReadsBeforePrefetch: Number,
-    trashPurgeTimeout: Number
+    trashPurgeTimeout: Number,
+    secondaryFileSystemEnabled: Boolean,
+    secondaryFileSystem: {
+        uri: String,
+        cfgPath: String,
+        userName: String
+    }
 });
 
 // Define IGFS model.

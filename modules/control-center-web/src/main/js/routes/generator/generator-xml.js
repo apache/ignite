@@ -1189,6 +1189,7 @@ $generatorXml.igfss = function(igfss, res) {
             $generatorXml.igfsIPC(igfs, res);
             $generatorXml.igfsFragmentizer(igfs, res);
             $generatorXml.igfsDualMode(igfs, res);
+            $generatorXml.igfsSecondFS(igfs, res);
             $generatorXml.igfsMisc(igfs, res);
 
             res.endBlock('</bean>');
@@ -1250,6 +1251,50 @@ $generatorXml.igfsDualMode = function(igfs, res) {
     $generatorXml.property(res, igfs, 'dualModePutExecutorServiceShutdown', undefined, false);
 
     res.needEmptyLine = true;
+
+    return res;
+};
+
+$generatorXml.igfsSecondFS = function(igfs, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if (igfs.secondaryFileSystemEnabled) {
+        var secondFs = igfs.secondaryFileSystem || {};
+
+        res.startBlock('<property name="secondaryFileSystem">');
+
+        res.startBlock('<bean class="org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem">');
+
+        var nameDefined = $commonUtils.isDefinedAndNotEmpty(secondFs.userName);
+        var cfgDefined = $commonUtils.isDefinedAndNotEmpty(secondFs.cfgPath);
+
+        if ($commonUtils.isDefinedAndNotEmpty(secondFs.uri))
+            res.line('<constructor-arg index="0" value="' + secondFs.uri + '"/>');
+        else {
+            res.startBlock('<constructor-arg index="0">');
+            res.line('<null/>');
+            res.endBlock('</constructor-arg>');
+        }
+
+        if (cfgDefined || nameDefined) {
+            if (cfgDefined)
+                res.line('<constructor-arg index="1" value="' + secondFs.cfgPath + '"/>');
+            else {
+                res.startBlock('<constructor-arg index="1">');
+                res.line('<null/>');
+                res.endBlock('</constructor-arg>');
+            }
+        }
+
+        if ($commonUtils.isDefinedAndNotEmpty(secondFs.userName))
+            res.line('<constructor-arg index="2" value="' + secondFs.userName + '"/>');
+
+        res.endBlock('</bean>');
+        res.endBlock('</property>');
+
+        res.needEmptyLine = true;
+    }
 
     return res;
 };

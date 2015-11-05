@@ -90,6 +90,7 @@ consoleModule.controller('igfsController', [
                 ipc: {xml: '', java: '', allDefaults: true},
                 fragmentizer: {xml: '', java: '', allDefaults: true},
                 dualMode: {xml: '', java: '', allDefaults: true},
+                secondaryFileSystem: {xml: '', java: '', allDefaults: true},
                 misc: {xml: '', java: '', allDefaults: true}
             };
 
@@ -182,6 +183,10 @@ consoleModule.controller('igfsController', [
                                     $scope.preview.dualMode.java = $generatorJava.igfsDualMode(val, varName).asString();
                                     $scope.preview.dualMode.allDefaults = $common.isEmptyString($scope.preview.dualMode.xml);
 
+                                    $scope.preview.secondaryFileSystem.xml = $generatorXml.igfsSecondFS(val).asString();
+                                    $scope.preview.secondaryFileSystem.java = $generatorJava.igfsSecondFS(val, varName).asString();
+                                    $scope.preview.secondaryFileSystem.allDefaults = $common.isEmptyString($scope.preview.secondaryFileSystem.xml);
+
                                     $scope.preview.misc.xml = $generatorXml.igfsMisc(val).asString();
                                     $scope.preview.misc.java = $generatorJava.igfsMisc(val, varName).asString();
                                     $scope.preview.misc.allDefaults = $common.isEmptyString($scope.preview.misc.xml);
@@ -260,6 +265,16 @@ consoleModule.controller('igfsController', [
                 if (!$common.isEmptyString(item.dualModePutExecutorService) &&
                     !$common.isValidJavaClass('Put executor service', item.dualModePutExecutorService, false, 'dualModePutExecutorService', false, $scope.panels, 'dualMode'))
                     return false;
+
+                if (!item.secondaryFileSystemEnabled && (!item.defaultMode || item.defaultMode != 'PRIMARY'))
+                    return showPopoverMessage($scope.panels, 'misc', 'secondaryFileSystem-title', 'Secondary file system should be configured for not "PRIMARY" IGFS mode');
+
+                if (item.pathModes) {
+                    for (var pathIx = 0; pathIx < item.pathModes.length; pathIx ++) {
+                        if (!item.secondaryFileSystemEnabled && item.pathModes[pathIx].mode != 'PRIMARY')
+                            return showPopoverMessage($scope.panels, 'misc', 'secondaryFileSystem-title', 'Secondary file system should be configured for not "PRIMARY" path mode');
+                    }
+                }
 
                 return true;
             }

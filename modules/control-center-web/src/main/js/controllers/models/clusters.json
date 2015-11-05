@@ -42,7 +42,6 @@
             "Select caches to start in cluster or add a new cache"
           ],
           "addLink": {
-            "label": "Add cache(s)",
             "ref": "/configuration/caches?new"
           }
         },
@@ -1296,7 +1295,6 @@
             "Select IGFS to start in cluster or add a new IGFS"
           ],
           "addLink": {
-            "label": "Add cache(s)",
             "ref": "/configuration/igfs?new"
           }
         }

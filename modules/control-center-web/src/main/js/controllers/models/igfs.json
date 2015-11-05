@@ -47,7 +47,6 @@
             "Associate clusters with the current IGFS"
           ],
           "addLink": {
-            "label": "Add cluster(s)",
             "ref": "/configuration/clusters?new"
           }
         },
@@ -89,7 +88,7 @@
           "model": "type",
           "placeholder": "TCP",
           "items": "ipcTypes",
-          "hide": "!backupItem.ipcEndpointEnabled",
+          "disabled": "!backupItem.ipcEndpointEnabled",
           "tip": [
             "IPC endpoint configuration"
           ]
@@ -100,7 +99,7 @@
           "path": "ipcEndpointConfiguration",
           "model": "host",
           "placeholder": "127.0.0.1",
-          "hide": "!backupItem.ipcEndpointEnabled",
+          "disabled": "!backupItem.ipcEndpointEnabled",
           "tip": [
             "Host"
           ]
@@ -112,7 +111,7 @@
           "model": "port",
           "placeholder": 10500,
           "max": 65535,
-          "hide": "!backupItem.ipcEndpointEnabled",
+          "disabled": "!backupItem.ipcEndpointEnabled",
           "tip": [
             "Port"
           ]
@@ -123,7 +122,7 @@
           "path": "ipcEndpointConfiguration",
           "model": "memorySize",
           "placeholder": 262144,
-          "hide": "!backupItem.ipcEndpointEnabled",
+          "disabled": "!backupItem.ipcEndpointEnabled",
           "tip": [
             "Shared memory size in bytes allocated for endpoint communication"
           ]
@@ -134,7 +133,7 @@
           "path": "ipcEndpointConfiguration",
           "model": "tokenDirectoryPath",
           "placeholder": "ipc/shmem",
-          "hide": "!backupItem.ipcEndpointEnabled",
+          "disabled": "!backupItem.ipcEndpointEnabled",
           "tip": [
             "Directory where shared memory tokens are stored"
           ]
@@ -164,7 +163,7 @@
           "type": "number",
           "model": "fragmentizerConcurrentFiles",
           "placeholder": 0,
-          "hide": "!backupItem.fragmentizerEnabled",
+          "disabled": "!backupItem.fragmentizerEnabled",
           "tip": [
             "Number of files to process concurrently by fragmentizer"
           ]
@@ -175,7 +174,7 @@
           "type": "number",
           "model": "fragmentizerThrottlingBlockLength",
           "placeholder": 16777216,
-          "hide": "!backupItem.fragmentizerEnabled",
+          "disabled": "!backupItem.fragmentizerEnabled",
           "tip": [
             "Length of file chunk to transmit before throttling is delayed"
           ]
@@ -186,7 +185,7 @@
           "type": "number",
           "model": "fragmentizerThrottlingDelay",
           "placeholder": 200,
-          "hide": "!backupItem.fragmentizerEnabled",
+          "disabled": "!backupItem.fragmentizerEnabled",
           "tip": [
             "Delay in milliseconds for which fragmentizer is paused"
           ]
@@ -228,6 +227,62 @@
           "model": "dualModePutExecutorServiceShutdown",
           "tip": [
             "DUAL mode put operation executor service shutdown flag"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Secondary file system",
+      "group": "secondaryFileSystem",
+      "tip": [
+        "Secondary file system",
+        "Secondary file system is provided for pass-through, write-through, and read-through purposes"
+      ],
+      "fields": [
+        {
+          "label": "Enabled",
+          "id": "secondaryFileSystemEnabled",
+          "type": "check",
+          "model": "secondaryFileSystemEnabled",
+          "placeholder": 0,
+          "tip": [
+            "Secondary file system enabled flag"
+          ]
+        },
+        {
+          "label": "URI",
+          "id": "hadoopURI",
+          "type": "text",
+          "model": "uri",
+          "disabled": "!backupItem.secondaryFileSystemEnabled",
+          "path": "secondaryFileSystem",
+          "placeholder": "hdfs://[namenodehost]:[port]/[path]",
+          "tip": [
+            "URI of file system"
+          ]
+        },
+        {
+          "label": "Config path",
+          "id": "cfgPath",
+          "type": "text",
+          "model": "cfgPath",
+          "disabled": "!backupItem.secondaryFileSystemEnabled",
+          "path": "secondaryFileSystem",
+          "placeholder": "Path to additional config",
+          "tip": [
+            "Additional path to Hadoop configuration"
+          ]
+        },
+        {
+          "label": "User name",
+          "id": "userName",
+          "type": "text",
+          "model": "userName",
+          "disabled": "!backupItem.secondaryFileSystemEnabled",
+          "path": "secondaryFileSystem",
+          "placeholder": "User name",
+          "tip": [
+            "User name"
           ]
         }
       ]

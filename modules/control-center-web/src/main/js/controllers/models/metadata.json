@@ -39,7 +39,6 @@
             "Select caches to associate metadata with cache"
           ],
           "addLink": {
-            "label": "Add cache(s)",
             "ref": "/configuration/caches?new"
           }
         },
