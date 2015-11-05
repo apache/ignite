@@ -41,14 +41,6 @@ namespace Apache.Ignite.Core.Impl.Memory
         private const int PoolHdrLen = MemHdrLen * PoolSize;
 
         /** Offset: capacity. */
-        private const int MemHdrOffCap = 8;
-
-        /** Offset: length. */
-        private const int MemHdrOffLen = 12;
-
-        /** Offset: flags. */
-        private const int MemHdrOffFlags = 16;
-
         /** Flag: external. */
         private const int FlagExt = 0x1;
 
@@ -77,9 +69,9 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <returns>CalculateCapacity.</returns>
-        public static int GetCapacity(long memPtr) 
+        public static int GetCapacity(long memPtr)
         {
-            return *((int*)(memPtr + MemHdrOffCap));
+            return ((PlatformMemoryHeader*) memPtr)->Capacity;
         }
 
         /// <summary>
@@ -89,7 +81,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <returns>Length.</returns>
         public static int GetLength(long memPtr) 
         {
-            return *((int*)(memPtr + MemHdrOffLen));
+            return ((PlatformMemoryHeader*)memPtr)->Length;
         }
 
         /// <summary>
@@ -99,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <param name="len">Length.</param>
         public static void SetLength(long memPtr, int len) 
         {
-            *((int*)(memPtr + MemHdrOffLen)) = len;
+            ((PlatformMemoryHeader*)memPtr)->Length = len;
         }
 
         /// <summary>
@@ -109,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <returns>Flags.</returns>
         public static int GetFlags(long memPtr) 
         {
-            return *((int*)(memPtr + MemHdrOffFlags));
+            return ((PlatformMemoryHeader*)memPtr)->Flags;
         }
 
         /// <summary>
@@ -156,10 +148,7 @@ namespace Apache.Ignite.Core.Impl.Memory
             long memPtr = Marshal.AllocHGlobal(MemHdrLen).ToInt64();
             long dataPtr = Marshal.AllocHGlobal(cap).ToInt64();
 
-            *((long*)memPtr) = dataPtr;
-            *((int*)(memPtr + MemHdrOffCap)) = cap;
-            *((int*)(memPtr + MemHdrOffLen)) = 0;
-            *((int*)(memPtr + MemHdrOffFlags)) = FlagExt;
+            *((PlatformMemoryHeader*) memPtr) = new PlatformMemoryHeader(dataPtr, cap, 0, FlagExt);
 
             return memPtr;
         }
@@ -173,14 +162,11 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <returns></returns>
         public static void ReallocateUnpooled(long memPtr, int cap)
         {
-            long dataPtr = GetData(memPtr);
+            var hdr = (PlatformMemoryHeader*) memPtr;
 
-            long newDataPtr = Marshal.ReAllocHGlobal((IntPtr)dataPtr, (IntPtr)cap).ToInt64();
+            hdr->Pointer = Marshal.ReAllocHGlobal((IntPtr) hdr->Pointer, (IntPtr) cap).ToInt64();
 
-            if (dataPtr != newDataPtr)
-                *((long*)memPtr) = newDataPtr; // Write new data address if needed.
-
-            *((int*)(memPtr + MemHdrOffCap)) = cap; // Write new capacity.
+            hdr->Capacity = cap;
         }
 
         /// <summary>
@@ -189,8 +175,10 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <param name="memPtr">Memory pointer.</param>
         public static void ReleaseUnpooled(long memPtr) 
         {
-            Marshal.FreeHGlobal((IntPtr)GetData(memPtr));
-            Marshal.FreeHGlobal((IntPtr)memPtr);
+            var hdr = (PlatformMemoryHeader*)memPtr;
+
+            Marshal.FreeHGlobal((IntPtr) hdr->Pointer);
+            Marshal.FreeHGlobal((IntPtr) memPtr);
         }
 
         #endregion
