@@ -19,6 +19,7 @@ package org.apache.ignite.stream.flume;
 
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.flume.Channel;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
@@ -26,6 +27,7 @@ import org.apache.flume.channel.PseudoTxnMemoryChannel;
 import org.apache.flume.conf.Configurables;
 import org.apache.flume.event.EventBuilder;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -34,8 +36,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * {@link IgniteSink} test.
- *
- * @author shtykh_roman
  */
 public class IgniteFlumeSinkTest extends GridCommonAbstractTest {
     private static final int CNT = 100;
@@ -55,7 +55,7 @@ public class IgniteFlumeSinkTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        // NOOP
+        stopAllGrids();
     }
 
     public void testFlumeSink() throws Exception {
@@ -75,20 +75,22 @@ public class IgniteFlumeSinkTest extends GridCommonAbstractTest {
                 return true;
             }
         };
-        grid().events(grid().cluster().forCacheNodes(sink.getCacheName())).remoteListen(callback, null, EVT_CACHE_OBJECT_PUT);
+        UUID opId = grid().events(grid().cluster().forCacheNodes(sink.getCacheName())).remoteListen(callback, null, EVT_CACHE_OBJECT_PUT);
 
         for (int i = 0; i < CNT; i++) {
             Event event = EventBuilder.withBody((String.valueOf(i) + ": " + i).getBytes());
             channel.put(event);
             sink.process();
         }
-        latch.await();
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
 
         // check with Ignite
         IgniteCache<String, Integer> cache = grid().cache(sink.getCacheName());
         for (int i = 0; i < CNT; i++) {
             assertEquals(i, (int)cache.get(String.valueOf(i)));
         }
+        assertEquals(CNT, cache.size(CachePeekMode.PRIMARY));
+        grid().events(grid().cluster().forCacheNodes(sink.getCacheName())).stopRemoteListen(opId);
         sink.stop();
     }
 
