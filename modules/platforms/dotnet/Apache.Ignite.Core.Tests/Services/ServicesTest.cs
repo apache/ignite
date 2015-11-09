@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var svc = new TestIgniteServicePortable();
 
-            var affKey = new PortableObject {Val = AffKey};
+            var affKey = new BinarizableObject {Val = AffKey};
 
             services.DeployKeyAffinitySingleton(SvcName, svc, CacheName, affKey);
 
@@ -372,13 +372,13 @@ namespace Apache.Ignite.Core.Tests.Services
             // Get proxy
             var prx = Services.WithKeepBinary().GetServiceProxy<ITestIgniteService>(SvcName);
 
-            var obj = new PortableObject {Val = 11};
+            var obj = new BinarizableObject {Val = 11};
 
             var res = (IBinaryObject) prx.Method(obj);
-            Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
+            Assert.AreEqual(11, res.Deserialize<BinarizableObject>().Val);
 
             res = (IBinaryObject) prx.Method(Grid1.GetBinary().ToBinary<IBinaryObject>(obj));
-            Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
+            Assert.AreEqual(11, res.Deserialize<BinarizableObject>().Val);
         }
         
         /// <summary>
@@ -396,12 +396,12 @@ namespace Apache.Ignite.Core.Tests.Services
             // Get proxy
             var prx = Services.WithServerKeepBinary().GetServiceProxy<ITestIgniteService>(SvcName);
 
-            var obj = new PortableObject { Val = 11 };
+            var obj = new BinarizableObject { Val = 11 };
 
-            var res = (PortableObject) prx.Method(obj);
+            var res = (BinarizableObject) prx.Method(obj);
             Assert.AreEqual(11, res.Val);
 
-            res = (PortableObject)prx.Method(Grid1.GetBinary().ToBinary<IBinaryObject>(obj));
+            res = (BinarizableObject)prx.Method(Grid1.GetBinary().ToBinary<IBinaryObject>(obj));
             Assert.AreEqual(11, res.Val);
         }
 
@@ -420,13 +420,13 @@ namespace Apache.Ignite.Core.Tests.Services
             // Get proxy
             var prx = Services.WithKeepBinary().WithServerKeepBinary().GetServiceProxy<ITestIgniteService>(SvcName);
 
-            var obj = new PortableObject { Val = 11 };
+            var obj = new BinarizableObject { Val = 11 };
 
             var res = (IBinaryObject)prx.Method(obj);
-            Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
+            Assert.AreEqual(11, res.Deserialize<BinarizableObject>().Val);
 
             res = (IBinaryObject)prx.Method(Grid1.GetBinary().ToBinary<IBinaryObject>(obj));
-            Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
+            Assert.AreEqual(11, res.Deserialize<BinarizableObject>().Val);
         }
 
         /// <summary>
@@ -572,7 +572,7 @@ namespace Apache.Ignite.Core.Tests.Services
                     {
                         new BinaryTypeConfiguration(typeof(TestIgniteServicePortable)),
                         new BinaryTypeConfiguration(typeof(TestIgniteServicePortableErr)),
-                        new BinaryTypeConfiguration(typeof(PortableObject))
+                        new BinaryTypeConfiguration(typeof(BinarizableObject))
                     }
                 }
             };
@@ -737,8 +737,8 @@ namespace Apache.Ignite.Core.Tests.Services
                     var portableObject = context.AffinityKey as IBinaryObject;
                     
                     var key = portableObject != null
-                        ? portableObject.Deserialize<PortableObject>()
-                        : (PortableObject) context.AffinityKey;
+                        ? portableObject.Deserialize<BinarizableObject>()
+                        : (BinarizableObject) context.AffinityKey;
 
                     Assert.AreEqual(AffKey, key.Val);
                 }
@@ -815,7 +815,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Portable object.
         /// </summary>
-        private class PortableObject
+        private class BinarizableObject
         {
             public int Val { get; set; }
         }

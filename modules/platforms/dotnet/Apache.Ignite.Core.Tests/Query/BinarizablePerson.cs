@@ -22,14 +22,14 @@ namespace Apache.Ignite.Core.Tests.Query
     /// <summary>
     /// Test person.
     /// </summary>
-    internal class PortablePerson : IBinarizable
+    internal class BinarizablePerson : IBinarizable
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="PortablePerson"/> class.
+        /// Initializes a new instance of the <see cref="BinarizablePerson"/> class.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="age">The age.</param>
-        public PortablePerson(string name, int age)
+        public BinarizablePerson(string name, int age)
         {
             Name = name;
             Age = age;

@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** <inheritDoc /> */
         protected override void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
         {
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableOutFunc)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableOutFunc)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableFunc)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableResult)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableException)));
@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** <inheritDoc /> */
         protected override IComputeFunc<object> OutFunc(bool err)
         {
-            return new PortableOutFunc(err);
+            return new BinarizableOutFunc(err);
         }
 
         /** <inheritDoc /> */
@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// 
         /// </summary>
-        private class PortableOutFunc : IComputeFunc<object>
+        private class BinarizableOutFunc : IComputeFunc<object>
         {
             /** Error. */
             private readonly bool _err;
@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// 
             /// </summary>
             /// <param name="err"></param>
-            public PortableOutFunc(bool err)
+            public BinarizableOutFunc(bool err)
             {
                 _err = err;
             }

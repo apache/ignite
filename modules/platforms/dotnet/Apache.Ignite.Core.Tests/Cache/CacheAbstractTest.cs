@@ -298,7 +298,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortablePerson)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizablePerson)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(CacheTestKey)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(TestReferenceObject)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableAddArgCacheEntryProcessor)));
@@ -1560,9 +1560,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestPutGetPortable()
         {
-            var cache = Cache<int, PortablePerson>();
+            var cache = Cache<int, BinarizablePerson>();
 
-            PortablePerson obj1 = new PortablePerson("obj1", 1);
+            BinarizablePerson obj1 = new BinarizablePerson("obj1", 1);
 
             cache.Put(1, obj1);
 
@@ -1575,9 +1575,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestPutGetPortableAsync()
         {
-            var cache = Cache<int, PortablePerson>().WrapAsync();
+            var cache = Cache<int, BinarizablePerson>().WrapAsync();
 
-            PortablePerson obj1 = new PortablePerson("obj1", 1);
+            BinarizablePerson obj1 = new BinarizablePerson("obj1", 1);
 
             cache.Put(1, obj1);
 
@@ -1674,7 +1674,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Category(TestUtils.CategoryIntensive)]
         public void TestPutGetAsyncMultithreaded()
         {
-            var cache = Cache<CacheTestKey, PortablePerson>();
+            var cache = Cache<CacheTestKey, BinarizablePerson>();
 
             const int threads = 10;
             const int objPerThread = 1000;
@@ -1692,7 +1692,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    futs.Add(cache.PutAsync(new CacheTestKey(key), new PortablePerson("Person-" + key, key)));
+                    futs.Add(cache.PutAsync(new CacheTestKey(key), new BinarizablePerson("Person-" + key, key)));
                 }
 
                 foreach (var fut in futs)
@@ -1729,7 +1729,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.PutAsync(new CacheTestKey(key), new PortablePerson("Person-" + key, key)).Wait();
+                    cache.PutAsync(new CacheTestKey(key), new BinarizablePerson("Person-" + key, key)).Wait();
                 }
             }, threads);
 
@@ -1739,7 +1739,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 int threadIdx = Interlocked.Increment(ref cntr);
 
-                var futs = new List<Task<PortablePerson>>();
+                var futs = new List<Task<BinarizablePerson>>();
 
                 for (int i = 0; i < objPerThread; i++)
                 {
@@ -1767,7 +1767,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         //[Category(TestUtils.CATEGORY_INTENSIVE)]
         public void TestAsyncMultithreadedKeepPortable()
         {
-            var cache = Cache().WithKeepBinary<CacheTestKey, PortablePerson>();
+            var cache = Cache().WithKeepBinary<CacheTestKey, BinarizablePerson>();
             var portCache = Cache().WithKeepBinary<CacheTestKey, IBinaryObject>();
 
             const int threads = 10;
@@ -1786,7 +1786,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    var task = cache.PutAsync(new CacheTestKey(key), new PortablePerson("Person-" + key, key));
+                    var task = cache.PutAsync(new CacheTestKey(key), new BinarizablePerson("Person-" + key, key));
 
                     futs.Add(task);
                 }
@@ -3092,7 +3092,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache0 = async ? Cache().WrapAsync() : Cache();
 
-            var cache = cache0.WithKeepBinary<int, PortablePerson>();
+            var cache = cache0.WithKeepBinary<int, BinarizablePerson>();
 
             var portCache = cache0.WithKeepBinary<int, IBinaryObject>();
 
@@ -3101,7 +3101,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             IList<int> keys = new List<int>();
 
             for (int i = 0; i < cnt; i++ ) {
-                cache.Put(i, new PortablePerson("person-" + i, i));
+                cache.Put(i, new BinarizablePerson("person-" + i, i));
 
                 keys.Add(i);
             }
@@ -3150,7 +3150,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(expName, obj.GetField<string>("name"));
             Assert.AreEqual(expAge, obj.GetField<int>("age"));
 
-            PortablePerson person = obj.Deserialize<PortablePerson>();
+            BinarizablePerson person = obj.Deserialize<BinarizablePerson>();
 
             Assert.AreEqual(expName, person.Name);
             Assert.AreEqual(expAge, person.Age);

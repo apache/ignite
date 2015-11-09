@@ -130,7 +130,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Query\ImplicitPortablePerson.cs" />
     <Compile Include="Query\NoDefPortablePerson.cs" />
-    <Compile Include="Query\PortablePerson.cs" />
+    <Compile Include="Query\BinarizablePerson.cs" />
     <Compile Include="Services\ServicesTest.cs" />
     <Compile Include="Services\ServicesTestAsync.cs" />
     <Compile Include="Services\ServiceProxyTest.cs" />
