@@ -73,13 +73,13 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
         if (stackTrace == null)
             stackTrace = stackTrace();
 
-        rwLock.readLock();
+//        rwLock.readLock();
 
         GridKernalState state = this.state.get();
 
         if (state != GridKernalState.STARTED) {
             // Unlock just acquired lock.
-            rwLock.readUnlock();
+//            rwLock.readUnlock();
 
             if (state == GridKernalState.DISCONNECTED) {
                 assert reconnectFut != null;
@@ -96,7 +96,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
         if (stackTrace == null)
             stackTrace = stackTrace();
 
-        rwLock.readLock();
+//        rwLock.readLock();
 
         if (state.get() == GridKernalState.DISCONNECTED)
             throw new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + gridName);
@@ -104,7 +104,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
 
     /** {@inheritDoc} */
     @Override public void readUnlock() {
-        rwLock.readUnlock();
+//        rwLock.readUnlock();
     }
 
     /** {@inheritDoc} */

@@ -51,7 +51,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
     /** Semaphore. */
     @GridToStringExclude
-    private final Semaphore sem;
+    private final Semaphore sem = null;
 
     /** Write buffer. */
     private ByteBuffer writeBuf;
@@ -103,7 +103,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
         this.selectorIdx = selectorIdx;
 
-        sem = sndQueueLimit > 0 ? new Semaphore(sndQueueLimit) : null;
+//        sem = sndQueueLimit > 0 ? new Semaphore(sndQueueLimit) : null;
 
         if (writeBuf != null) {
             writeBuf.clear();

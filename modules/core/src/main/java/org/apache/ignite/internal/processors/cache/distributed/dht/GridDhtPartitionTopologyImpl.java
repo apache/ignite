@@ -686,6 +686,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Override public Collection<ClusterNode> nodes(int p, AffinityTopologyVersion topVer) {
         Collection<ClusterNode> affNodes = cctx.affinity().nodes(p, topVer);
 
+        if (true)
+            return affNodes;
+
         lock.readLock().lock();
 
         try {
