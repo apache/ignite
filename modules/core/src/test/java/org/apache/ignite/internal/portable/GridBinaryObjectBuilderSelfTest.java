@@ -971,13 +971,6 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @return Builder.
      */
-    private <T> BinaryObjectBuilder builder(int typeId) {
-        return portables().builder(typeId);
-    }
-
-    /**
-     * @return Builder.
-     */
     private <T> BinaryObjectBuilder builder(String clsName) {
         return portables().builder(clsName);
     }

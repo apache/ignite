@@ -71,18 +71,6 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObjectBuilder builder(int typeId) {
-        guard();
-
-        try {
-            return proc.builder(typeId);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public BinaryObjectBuilder builder(String typeName) {
         guard();
 

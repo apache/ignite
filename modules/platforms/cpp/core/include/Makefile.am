@@ -36,29 +36,29 @@ nobase_include_HEADERS = ignite/cache/cache.h \
                          ignite/impl/interop/interop_input_stream.h \
                          ignite/impl/interop/interop_memory.h \
                          ignite/impl/interop/interop_output_stream.h \
-                         ignite/impl/portable/portable_metadata_handler.h \
-                         ignite/impl/portable/portable_metadata_manager.h \
-                         ignite/impl/portable/portable_metadata_snapshot.h \
-                         ignite/impl/portable/portable_metadata_updater.h \
-                         ignite/impl/portable/portable_metadata_updater_impl.h \
-                         ignite/impl/portable/portable_common.h \
-                         ignite/impl/portable/portable_id_resolver.h \
-                         ignite/impl/portable/portable_reader_impl.h \
-                         ignite/impl/portable/portable_utils.h \
-                         ignite/impl/portable/portable_writer_impl.h \
-                         ignite/impl/portable/portable_schema.h \
+                         ignite/impl/binary/binary_type_handler.h \
+                         ignite/impl/binary/binary_type_manager.h \
+                         ignite/impl/binary/binary_type_snapshot.h \
+                         ignite/impl/binary/binary_type_updater.h \
+                         ignite/impl/binary/binary_type_updater_impl.h \
+                         ignite/impl/binary/binary_common.h \
+                         ignite/impl/binary/binary_id_resolver.h \
+                         ignite/impl/binary/binary_reader_impl.h \
+                         ignite/impl/binary/binary_utils.h \
+                         ignite/impl/binary/binary_writer_impl.h \
+                         ignite/impl/binary/binary_schema.h \
                          ignite/impl/ignite_environment.h \
                          ignite/impl/ignite_impl.h \
                          ignite/impl/handle_registry.h \
                          ignite/impl/operations.h \
-                         ignite/portable/portable.h \
-                         ignite/portable/portable_consts.h \
-                         ignite/portable/portable_containers.h \
-                         ignite/portable/portable_type.h \
-                         ignite/portable/portable_raw_reader.h \
-                         ignite/portable/portable_raw_writer.h \
-                         ignite/portable/portable_reader.h \
-                         ignite/portable/portable_writer.h \
+                         ignite/binary/binary.h \
+                         ignite/binary/binary_consts.h \
+                         ignite/binary/binary_containers.h \
+                         ignite/binary/binary_type.h \
+                         ignite/binary/binary_raw_reader.h \
+                         ignite/binary/binary_raw_writer.h \
+                         ignite/binary/binary_reader.h \
+                         ignite/binary/binary_writer.h \
                          ignite/ignite.h \
                          ignite/ignite_configuration.h \
                          ignite/ignite_error.h \

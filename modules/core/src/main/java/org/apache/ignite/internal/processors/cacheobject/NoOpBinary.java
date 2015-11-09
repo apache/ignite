@@ -39,11 +39,6 @@ public class NoOpBinary implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObjectBuilder builder(int typeId) throws BinaryObjectException {
-        throw unsupported();
-    }
-
-    /** {@inheritDoc} */
     @Override public BinaryObjectBuilder builder(String typeName) throws BinaryObjectException {
         throw unsupported();
     }

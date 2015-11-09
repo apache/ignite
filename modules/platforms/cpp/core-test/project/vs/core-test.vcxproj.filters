@@ -13,18 +13,6 @@
     <ClCompile Include="..\..\src\handle_registry_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\portable_reader_writer_raw_test.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\portable_reader_writer_test.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\portable_session_test.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\portable_test_defs.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\cache_query_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
@@ -34,16 +22,28 @@
     <ClCompile Include="..\..\src\teamcity_messages.cpp">
       <Filter>TeamCity</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\binary_test_defs.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\binary_session_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\binary_reader_writer_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\binary_reader_writer_raw_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\ignite\portable_test_defs.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\portable_test_utils.h">
-      <Filter>Code</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\teamcity_messages.h">
       <Filter>TeamCity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\binary_test_defs.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\binary_test_utils.h">
+      <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

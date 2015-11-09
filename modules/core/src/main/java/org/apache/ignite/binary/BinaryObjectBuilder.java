@@ -60,7 +60,6 @@ import org.jetbrains.annotations.Nullable;
  * String city = personBinaryObj.getField("address").getField("city");
  * </pre>
  *
- * @see org.apache.ignite.IgniteBinary#builder(int)
  * @see org.apache.ignite.IgniteBinary#builder(String)
  * @see org.apache.ignite.IgniteBinary#builder(BinaryObject)
  */
