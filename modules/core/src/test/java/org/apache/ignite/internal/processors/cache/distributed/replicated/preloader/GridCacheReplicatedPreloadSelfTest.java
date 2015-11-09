@@ -142,26 +142,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testSingleZeroPoolSize() throws Exception {
-        preloadMode = SYNC;
-        poolSize = 0;
-
-        try {
-            startGrid(1);
-
-            assert false : "Grid should have been failed to start.";
-        }
-        catch (IgniteCheckedException e) {
-            info("Caught expected exception: " + e);
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
      * @throws Exception If test failed.
      */
     public void testIntegrity() throws Exception {
