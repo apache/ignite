@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";
 
         /** Binary argument task name. */
-        private const string BinaryArgTask = "org.apache.ignite.platform.PlatformComputePortableArgTask";
+        private const string BinaryArgTask = "org.apache.ignite.platform.PlatformComputeBinarizableArgTask";
 
         /** Broadcast task name. */
         private const string BroadcastTask = "org.apache.ignite.platform.PlatformComputeBroadcastTask";
@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private const string DecimalTask = "org.apache.ignite.platform.PlatformComputeDecimalTask";
 
         /** Java binary class name. */
-        private const string JavaBinaryCls = "GridInteropComputeJavaPortable";
+        private const string JavaBinaryCls = "PlatformComputeJavaBinarizable";
 
         /** Echo type: null. */
         private const int EchoTypeNull = 0;
@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Echo type: map. */
         private const int EchoTypeMap = 11;
 
-        /** Echo type: portable. */
+        /** Echo type: binarizable. */
         private const int EchoTypeBinarizable = 12;
 
         /** Echo type: binary (Java only). */
@@ -823,7 +823,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(1, res.GetField<int>("field"));
 
-            // This call must fail because "keepPortable" flag is reset.
+            // This call must fail because "keepBinary" flag is reset.
             Assert.Catch(typeof(BinaryObjectException), () =>
             {
                 compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinarizableJava);
