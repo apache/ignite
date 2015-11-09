@@ -552,11 +552,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObjectBuilder builder(int typeId) {
-        return new BinaryObjectBuilderImpl(portableCtx, typeId);
-    }
-
-    /** {@inheritDoc} */
     @Override public BinaryObjectBuilder builder(String clsName) {
         return new BinaryObjectBuilderImpl(portableCtx, clsName);
     }
