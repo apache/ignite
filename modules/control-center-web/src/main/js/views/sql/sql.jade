@@ -42,14 +42,15 @@ mixin result-toolbar
         +btn-toolbar-data('fa-area-chart', 'area', 'Show area chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values')
 
 mixin chart-settings(mdl)
-    .row(ng-show='paragraph.chart && paragraph.chartColumns.length > 0')
-        .col-xs-4.chart-settings-link
-            i.fa.fa-chevron-circle-down
-            a(ng-click='$event.stopPropagation()' bs-popover data-template-url='chart-settings' data-placement='bottom' data-auto-close='1' data-trigger='click') Chart settings
-            div(ng-show='paragraphTimeSpanVisible(paragraph)')
-                label Show
-                button.select-manual-caret.btn.btn-default(ng-model='paragraph.timeLineSpan' ng-change='applyChartTimeFrame(paragraph)' bs-options='item for item in timeLineSpans' bs-select data-caret-html='<span class="caret"></span>')
-                label min
+    .row
+        .col-xs-4
+            .chart-settings-link(ng-show='paragraph.chart && paragraph.chartColumns.length > 0')
+                i.fa.fa-chevron-circle-down
+                a(ng-click='$event.stopPropagation()' bs-popover data-template-url='chart-settings' data-placement='bottom' data-auto-close='1' data-trigger='click') Chart settings
+                div(ng-show='paragraphTimeSpanVisible(paragraph)')
+                    label Show
+                    button.select-manual-caret.btn.btn-default(ng-model='paragraph.timeLineSpan' ng-change='applyChartTimeFrame(paragraph)' bs-options='item for item in timeLineSpans' bs-select data-caret-html='<span class="caret"></span>')
+                    label min
         .col-xs-4
             +result-toolbar
 
