@@ -20,14 +20,14 @@ namespace Apache.Ignite.Core.Tests.Query
     /// <summary>
     /// Test person.
     /// </summary>
-    internal class ImplicitPortablePerson
+    internal class ImplicitBinarizablePerson
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImplicitPortablePerson"/> class.
+        /// Initializes a new instance of the <see cref="ImplicitBinarizablePerson"/> class.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="age">The age.</param>
-        public ImplicitPortablePerson(string name, int age)
+        public ImplicitBinarizablePerson(string name, int age)
         {
             Name = name;
             Age = age;
