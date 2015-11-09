@@ -87,9 +87,6 @@ public class PortableMarshaller extends AbstractMarshaller {
     /** Types. */
     private Collection<BinaryTypeConfiguration> typeCfgs;
 
-    /** Whether to convert string to bytes using UTF-8 encoding. */
-    private boolean convertString = true;
-
     /** Keep deserialized flag. */
     private boolean keepDeserialized = true;
 
@@ -169,28 +166,6 @@ public class PortableMarshaller extends AbstractMarshaller {
      */
     public void setTypeConfigurations(Collection<BinaryTypeConfiguration> typeCfgs) {
         this.typeCfgs = typeCfgs;
-    }
-
-    /**
-     * Gets strings must be converted to or from bytes using UTF-8 encoding.
-     * <p>
-     * Default value is {@code true}.
-     *
-     * @return Flag indicating whether string must be converted to byte array using UTF-8 encoding.
-     */
-    public boolean isConvertStringToBytes() {
-        return convertString;
-    }
-
-    /**
-     * Sets strings must be converted to or from bytes using UTF-8 encoding.
-     * <p>
-     * Default value is {@code true}.
-     *
-     * @param convertString Flag indicating whether string must be converted to byte array using UTF-8 encoding.
-     */
-    public void setConvertStringToBytes(boolean convertString) {
-        this.convertString = convertString;
     }
 
     /**

@@ -337,19 +337,9 @@ public final class BinaryObjectImpl extends BinaryObjectEx implements Externaliz
                 break;
 
             case STRING: {
-                boolean utf = PortablePrimitives.readBoolean(arr, fieldPos + 1);
+                int dataLen = PortablePrimitives.readInt(arr, fieldPos + 1);
 
-                if (utf) {
-                    int dataLen = PortablePrimitives.readInt(arr, fieldPos + 2);
-
-                    val = new String(arr, fieldPos + 6, dataLen, UTF_8);
-                }
-                else {
-                    int dataLen = PortablePrimitives.readInt(arr, fieldPos + 2);
-                    char[] data = PortablePrimitives.readCharArray(arr, fieldPos + 6, dataLen);
-
-                    val = String.valueOf(data);
-                }
+                val = new String(arr, fieldPos + 5, dataLen, UTF_8);
 
                 break;
             }

@@ -1658,21 +1658,17 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
      * @return Value.
      */
     private String doReadString() {
-        if (in.readBoolean()) {
-            if (!in.hasArray())
-                return new String(doReadByteArray(), UTF_8);
+        if (!in.hasArray())
+            return new String(doReadByteArray(), UTF_8);
 
-            int strLen = in.readInt();
-            int strOff = in.position();
+        int strLen = in.readInt();
+        int strOff = in.position();
 
-            String res = new String(in.array(), strOff, strLen, UTF_8);
+        String res = new String(in.array(), strOff, strLen, UTF_8);
 
-            in.position(in.position() + strLen);
+        in.position(in.position() + strLen);
 
-            return res;
-        }
-        else
-            return String.valueOf(doReadCharArray());
+        return res;
     }
 
     /**

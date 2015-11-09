@@ -149,9 +149,6 @@ public class PortableContext implements Externalizable {
     private final OptimizedMarshaller optmMarsh = new OptimizedMarshaller();
 
     /** */
-    private boolean convertStrings;
-
-    /** */
     private boolean keepDeserialized;
 
     /** Object schemas. */
@@ -253,7 +250,6 @@ public class PortableContext implements Externalizable {
         if (marsh == null)
             return;
 
-        convertStrings = marsh.isConvertStringToBytes();
         keepDeserialized = marsh.isKeepDeserialized();
 
         marshCtx = marsh.getContext();
@@ -833,13 +829,6 @@ public class PortableContext implements Externalizable {
      */
     public void updateMetaData(int typeId, BinaryMetaDataImpl meta) throws BinaryObjectException {
         metaHnd.addMeta(typeId, meta);
-    }
-
-    /**
-     * @return Whether to convert string to UTF8 bytes.
-     */
-    public boolean isConvertString() {
-        return convertStrings;
     }
 
     /**

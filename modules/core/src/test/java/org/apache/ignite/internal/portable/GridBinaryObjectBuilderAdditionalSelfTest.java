@@ -82,8 +82,6 @@ public class GridBinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstrac
 
         marsh.setClassNames(Arrays.asList("org.apache.ignite.internal.portable.mutabletest.*"));
 
-        marsh.setConvertStringToBytes(useUtf8());
-
         cfg.setMarshaller(marsh);
 
         return cfg;
@@ -102,13 +100,6 @@ public class GridBinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         jcache(0).clear();
-    }
-
-    /**
-     * @return Whether to use UTF8 strings.
-     */
-    protected boolean useUtf8() {
-        return true;
     }
 
     /**

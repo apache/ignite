@@ -500,24 +500,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         else {
             doWriteByte(STRING);
 
-            if (ctx.isConvertString()) {
-                doWriteBoolean(true);
+            byte[] strArr = val.getBytes(UTF_8);
 
-                byte[] strArr = val.getBytes(UTF_8);
+            doWriteInt(strArr.length);
 
-                doWriteInt(strArr.length);
-
-                out.writeByteArray(strArr);
-            }
-            else {
-                doWriteBoolean(false);
-
-                char[] strArr = val.toCharArray();
-
-                doWriteInt(strArr.length);
-
-                out.writeCharArray(strArr);
-            }
+            out.writeByteArray(strArr);
         }
     }
 
