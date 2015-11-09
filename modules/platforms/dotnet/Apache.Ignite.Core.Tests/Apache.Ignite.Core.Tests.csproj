@@ -95,7 +95,7 @@
     <Compile Include="Compute\IgniteExceptionTaskSelfTest.cs" />
     <Compile Include="Compute\FailoverTaskSelfTest.cs" />
     <Compile Include="Compute\BinarizableClosureTaskTest.cs" />
-    <Compile Include="Compute\PortableTaskTest.cs" />
+    <Compile Include="Compute\BinarizableTaskTest.cs" />
     <Compile Include="Compute\ResourceTaskTest.cs" />
     <Compile Include="Compute\SerializableClosureTaskTest.cs" />
     <Compile Include="Compute\TaskAdapterTest.cs" />

@@ -171,7 +171,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
-                PortableTypeConfigurations(portTypeCfgs);
+                GetBinaryTypeConfigurations(portTypeCfgs);
 
                 portCfg.TypeConfigurations = portTypeCfgs;
 
@@ -209,7 +209,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Define portable types.
         /// </summary>
         /// <param name="portTypeCfgs">Portable type configurations.</param>
-        protected virtual void PortableTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
+        protected virtual void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
         {
             // No-op.
         }
