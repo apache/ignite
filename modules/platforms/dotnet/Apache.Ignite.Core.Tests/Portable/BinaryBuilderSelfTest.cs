@@ -29,9 +29,9 @@ namespace Apache.Ignite.Core.Tests.Portable
     using NUnit.Framework;
 
     /// <summary>
-    /// Portable builder self test.
+    /// Binary builder self test.
     /// </summary>
-    public class PortableApiSelfTest
+    public class BinaryBuilderSelfTest
     {
         /** Undefined type: Empty. */
         private const string TypeEmpty = "EmptyUndefined";

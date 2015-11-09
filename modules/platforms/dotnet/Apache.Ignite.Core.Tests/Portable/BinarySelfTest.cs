@@ -20,7 +20,7 @@
 // ReSharper disable PossibleInvalidOperationException
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable MemberCanBePrivate.Global
-namespace Apache.Ignite.Core.Tests.Portable 
+namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
     using System.Collections;
@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Tests.Portable
     /// 
     /// </summary>
     [TestFixture]
-    public class PortableSelfTest { 
+    public class BinarySelfTest { 
         /** */
         private Marshaller _marsh;
 
@@ -658,15 +658,15 @@ namespace Apache.Ignite.Core.Tests.Portable
         }
 
         /**
-         * <summary>Check write of primitive fields through portable interface.</summary>
+         * <summary>Check write of primitive fields through binary interface.</summary>
          */
         [Test]
-        public void TestPrimitiveFieldsPortable()
+        public void TestPrimitiveFieldsBinary()
         {
             ICollection<BinaryTypeConfiguration> typeCfgs = 
                 new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldPortableType)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldBinaryType)));
 
             BinaryConfiguration cfg = new BinaryConfiguration();
 
@@ -674,21 +674,21 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Marshaller marsh = new Marshaller(cfg);
 
-            PrimitiveFieldPortableType obj = new PrimitiveFieldPortableType();
+            PrimitiveFieldBinaryType obj = new PrimitiveFieldBinaryType();
 
             CheckPrimitiveFields(marsh, obj);
         }
 
         /**
-         * <summary>Check write of primitive fields through portable interface.</summary>
+         * <summary>Check write of primitive fields through binary interface.</summary>
          */
         [Test]
-        public void TestPrimitiveFieldsRawPortable()
+        public void TestPrimitiveFieldsRawBinary()
         {
             ICollection<BinaryTypeConfiguration> typeCfgs = 
                 new List<BinaryTypeConfiguration>();
 
-            typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldRawPortableType)));
+            typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldRawBinaryType)));
 
             BinaryConfiguration cfg = new BinaryConfiguration();
 
@@ -696,13 +696,13 @@ namespace Apache.Ignite.Core.Tests.Portable
 
             Marshaller marsh = new Marshaller(cfg);
 
-            PrimitiveFieldRawPortableType obj = new PrimitiveFieldRawPortableType();
+            PrimitiveFieldRawBinaryType obj = new PrimitiveFieldRawBinaryType();
 
             CheckPrimitiveFields(marsh, obj);
         }
 
         /**
-         * <summary>Check write of primitive fields through portable interface.</summary>
+         * <summary>Check write of primitive fields through binary interface.</summary>
          */
         [Test]
         public void TestPrimitiveFieldsSerializer()
@@ -1026,7 +1026,7 @@ namespace Apache.Ignite.Core.Tests.Portable
          * <summary>Test handles with exclusive writes.</summary>
          */
         [Test]
-        public void TestHandlesExclusive([Values(true, false)] bool detached, [Values(true, false)] bool asPortable)
+        public void TestHandlesExclusive([Values(true, false)] bool detached, [Values(true, false)] bool asbinary)
         {
             var marsh = new Marshaller(new BinaryConfiguration
             {
@@ -1058,7 +1058,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             inner.Outer = outer;
             inner.RawOuter = outer;
 
-            var bytes = asPortable
+            var bytes = asbinary
                 ? marsh.Marshal(new IgniteBinary(marsh).ToBinary<IBinaryObject>(outer))
                 : marsh.Marshal(outer);
 
@@ -1200,7 +1200,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(dateArr, obj1.DateArr);
             Assert.AreEqual(nDateArr, obj1.NDateArr);
 
-            // Use special with IGridPortableMarshalAware.
+            // Use special with IGridbinaryMarshalAware.
             SpecialArrayMarshalAware obj2 = new SpecialArrayMarshalAware();
 
             obj2.GuidArr = guidArr;
@@ -1627,7 +1627,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public class PrimitiveFieldPortableType : PrimitiveFieldType, IBinarizable
+        public class PrimitiveFieldBinaryType : PrimitiveFieldType, IBinarizable
         {
             public unsafe void WriteBinary(IBinaryWriter writer)
             {
@@ -1687,7 +1687,7 @@ namespace Apache.Ignite.Core.Tests.Portable
             }
         }
 
-        public class PrimitiveFieldRawPortableType : PrimitiveFieldType, IBinarizable
+        public class PrimitiveFieldRawBinaryType : PrimitiveFieldType, IBinarizable
         {
             public unsafe void WriteBinary(IBinaryWriter writer)
             {
