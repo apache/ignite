@@ -480,6 +480,9 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
      * Query cursor iterator.
      */
     private static class QueryCursorIterator extends ReentrantLock {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Query cursor. */
         private QueryCursor cur;
 
