@@ -17,7 +17,7 @@
 
 // ReSharper disable UnassignedField.Global
 // ReSharper disable CollectionNeverUpdated.Global
-namespace Apache.Ignite.Core.Tests.Binary
+namespace Apache.Ignite.Core.Tests.Portable
 {
     using System;
     using System.Collections;

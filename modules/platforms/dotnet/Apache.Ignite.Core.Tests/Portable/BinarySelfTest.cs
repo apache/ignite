@@ -20,7 +20,7 @@
 // ReSharper disable PossibleInvalidOperationException
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable MemberCanBePrivate.Global
-namespace Apache.Ignite.Core.Tests.Binary
+namespace Apache.Ignite.Core.Tests.Portable
 {
     using System;
     using System.Collections;
