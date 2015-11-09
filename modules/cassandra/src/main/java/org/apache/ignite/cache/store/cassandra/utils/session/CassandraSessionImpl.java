@@ -227,6 +227,54 @@ public class CassandraSessionImpl implements CassandraSession {
         return assistant.processedData();
     }
 
+    @Override public void execute(BatchLoaderAssistant assistant) {
+        int attempt = 0;
+        String errorMsg = "Failed to execute Cassandra " + assistant.operationName() + " operation";
+        Throwable error = null;
+
+        incrementSessionRefs();
+
+        try {
+            while (attempt < CQL_EXECUTION_ATTEMPTS_COUNT) {
+                Statement statement = tuneStatementExecutionOptions(assistant.getStatement());
+                ResultSetFuture future = session().executeAsync(statement);
+
+                try {
+                    ResultSet resultSet = future.getUninterruptibly();
+                    if (resultSet == null || !resultSet.iterator().hasNext())
+                        return;
+
+                    for (Row row : resultSet)
+                        assistant.process(row);
+
+                    return;
+                }
+                catch (Throwable e) {
+                    if (!CassandraHelper.isTableAbsenceError(e) && !CassandraHelper.isHostsAvailabilityError(e))
+                        throw new IgniteException(errorMsg, e);
+
+                    if (logger != null)
+                        logger.warning(errorMsg, e);
+
+                    if (CassandraHelper.isTableAbsenceError(e))
+                        return;
+
+                    if (CassandraHelper.isHostsAvailabilityError(e))
+                        handleHostsAvailabilityError(e, attempt, errorMsg);
+
+                    error = e;
+                }
+
+                attempt++;
+            }
+        }
+        finally {
+            decrementSessionRefs();
+        }
+
+        throw new IgniteException(errorMsg, error);
+    }
+
     @Override public synchronized void close() throws IOException {
         if (decrementSessionRefs() == 0 && session != null) {
             SessionPool.put(this, session);

@@ -28,5 +28,7 @@ import java.io.Closeable;
 public interface CassandraSession extends Closeable {
     public <V> V execute(ExecutionAssistant<V> assistant);
 
-    public <R, V> R execute(BatchExecutionAssistant<R, V> controller, Iterable<? extends V> data);
+    public <R, V> R execute(BatchExecutionAssistant<R, V> assistant, Iterable<? extends V> data);
+
+    public void execute(BatchLoaderAssistant assistant);
 }
