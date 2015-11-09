@@ -616,7 +616,7 @@ namespace Apache.Ignite.Core.Tests
                 {
                     TypeConfigurations = new List<BinaryTypeConfiguration>
                     {
-                        new BinaryTypeConfiguration(typeof (RemoteEventPortableFilter))
+                        new BinaryTypeConfiguration(typeof (RemoteEventBinarizableFilter))
                     }
                 }
             };
@@ -884,16 +884,16 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Portable remote event filter.
     /// </summary>
-    public class RemoteEventPortableFilter : IEventFilter<IEvent>, IBinarizable
+    public class RemoteEventBinarizableFilter : IEventFilter<IEvent>, IBinarizable
     {
         /** */
         private int _type;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="RemoteEventPortableFilter"/> class.
+        /// Initializes a new instance of the <see cref="RemoteEventBinarizableFilter"/> class.
         /// </summary>
         /// <param name="type">The event type.</param>
-        public RemoteEventPortableFilter(int type)
+        public RemoteEventBinarizableFilter(int type)
         {
             _type = type;
         }

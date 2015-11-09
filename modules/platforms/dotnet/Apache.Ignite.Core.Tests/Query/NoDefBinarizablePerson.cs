@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Tests.Query
     /// <summary>
     /// Test person.
     /// </summary>
-    internal class NoDefPortablePerson
+    internal class NoDefBinarizablePerson
     {
         /// <summary>
         /// Gets or sets the name.
