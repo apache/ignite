@@ -583,13 +583,13 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 eventNodeId(),
                                                 nodeId,
                                                 false,
-                                                false,
                                                 true,
                                                 true,
                                                 topVer,
                                                 null,
                                                 replicate ? DR_BACKUP : DR_NONE,
-                                                near() ? null : explicitVer, CU.subjectId(this, cctx),
+                                                near() ? null : explicitVer,
+                                                CU.subjectId(this, cctx),
                                                 resolveTaskName(),
                                                 dhtVer);
                                         else {
@@ -628,7 +628,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         cached.innerRemove(this,
                                             eventNodeId(),
                                             nodeId,
-                                            false,
                                             false,
                                             true,
                                             true,

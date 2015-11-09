@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,7 +25,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -57,6 +57,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
@@ -88,7 +89,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private ConcurrentMap<Long, GridCacheExplicitLockSpan> pendingExplicit;
 
     /** Set of removed lock versions. */
-    private Collection<GridCacheVersion> rmvLocks =
+    private GridBoundedConcurrentLinkedHashSet<GridCacheVersion> rmvLocks =
         new GridBoundedConcurrentLinkedHashSet<>(MAX_REMOVED_LOCKS, MAX_REMOVED_LOCKS, 0.75f, 16, PER_SEGMENT_Q);
 
     /** Current local candidates. */
@@ -114,7 +115,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentMap<GridCacheVersion, GridCacheVersion> near2dht = newMap();
 
     /** Finish futures. */
-    private final Queue<FinishLockFuture> finishFuts = new ConcurrentLinkedDeque8<>();
+    private final ConcurrentLinkedDeque8<FinishLockFuture> finishFuts = new ConcurrentLinkedDeque8<>();
 
     /** Logger. */
     @SuppressWarnings( {"FieldAccessedSynchronizedAndUnsynchronized"})
@@ -143,17 +144,18 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                 Collection<? extends GridCacheFuture> futCol = futs.get(owner.version());
 
                 if (futCol != null) {
-                    for (GridCacheFuture fut : futCol) {
-                        if (fut instanceof GridCacheMvccFuture && !fut.isDone()) {
-                            GridCacheMvccFuture<Boolean> mvccFut =
-                                (GridCacheMvccFuture<Boolean>)fut;
+                    synchronized (futCol) {
+                        for (GridCacheFuture fut : futCol) {
+                            if (fut instanceof GridCacheMvccFuture && !fut.isDone()) {
+                                GridCacheMvccFuture<Boolean> mvccFut = (GridCacheMvccFuture<Boolean>)fut;
 
-                            // Since this method is called outside of entry synchronization,
-                            // we can safely invoke any method on the future.
-                            // Also note that we don't remove future here if it is done.
-                            // The removal is initiated from within future itself.
-                            if (mvccFut.onOwnerChanged(entry, owner))
-                                return;
+                                // Since this method is called outside of entry synchronization,
+                                // we can safely invoke any method on the future.
+                                // Also note that we don't remove future here if it is done.
+                                // The removal is initiated from within future itself.
+                                if (mvccFut.onOwnerChanged(entry, owner))
+                                    return;
+                            }
                         }
                     }
                 }
@@ -171,8 +173,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             else if (log.isDebugEnabled())
                 log.debug("Failed to find transaction for changed owner: " + owner);
 
-            for (FinishLockFuture f : finishFuts)
-                f.recheck(entry);
+            if (!finishFuts.isEmptyx()) {
+                for (FinishLockFuture f : finishFuts)
+                    f.recheck(entry);
+            }
         }
 
         /** {@inheritDoc} */
@@ -203,21 +207,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             if (log.isDebugEnabled())
                 log.debug("Processing node left [nodeId=" + discoEvt.eventNode().id() + "]");
 
-            for (Collection<GridCacheFuture<?>> futsCol : futs.values()) {
-                for (GridCacheFuture<?> fut : futsCol) {
-                    if (!fut.trackable()) {
-                        if (log.isDebugEnabled())
-                            log.debug("Skipping non-trackable future: " + fut);
-
-                        continue;
-                    }
-
-                    fut.onNodeLeft(discoEvt.eventNode().id());
-
-                    if (fut.isCancelled() || fut.isDone())
-                        removeFuture(fut);
-                }
-            }
+            for (GridCacheFuture<?> fut : activeFutures())
+                fut.onNodeLeft(discoEvt.eventNode().id());
 
             for (IgniteInternalFuture<?> fut : atomicFuts.values()) {
                 if (fut instanceof GridCacheFuture) {
@@ -272,7 +263,15 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Collection of active futures.
      */
     public Collection<GridCacheFuture<?>> activeFutures() {
-        return F.flatCollections(futs.values());
+        ArrayList<GridCacheFuture<?>> col = new ArrayList<>();
+
+        for (Collection<GridCacheFuture<?>> verFuts : futs.values()) {
+            synchronized (verFuts) {
+                col.addAll(verFuts);
+            }
+        }
+
+        return col;
     }
 
     /**
@@ -345,10 +344,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param err Error.
      */
     private void cancelClientFutures(IgniteCheckedException err) {
-        for (Collection<GridCacheFuture<?>> futures : futs.values()) {
-            for (GridCacheFuture<?> future : futures)
-                ((GridFutureAdapter)future).onDone(err);
-        }
+        for (GridCacheFuture<?> fut : activeFutures())
+            ((GridFutureAdapter)fut).onDone(err);
 
         for (GridCacheAtomicFuture<?> future : atomicFuts.values())
             ((GridFutureAdapter)future).onDone(err);
@@ -444,11 +441,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             return true;
 
         while (true) {
-            Collection<GridCacheFuture<?>> old = futs.putIfAbsent(fut.version(),
-                new ConcurrentLinkedDeque8<GridCacheFuture<?>>() {
-                    /** */
-                    private int hash;
+            Collection<GridCacheFuture<?>> old = futs.get(fut.version());
 
+            if (old == null) {
+                Collection<GridCacheFuture<?>> col = new HashSet<GridCacheFuture<?>>(U.capacity(4), 0.75f) {
                     {
                         // Make sure that we add future to queue before
                         // adding queue to the map of futures.
@@ -456,16 +452,16 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                     }
 
                     @Override public int hashCode() {
-                        if (hash == 0)
-                            hash = System.identityHashCode(this);
-
-                        return hash;
+                        return System.identityHashCode(this);
                     }
 
                     @Override public boolean equals(Object obj) {
                         return obj == this;
                     }
-                });
+                };
+
+                old = futs.putIfAbsent(fut.version(), col);
+            }
 
             if (old != null) {
                 boolean empty, dup = false;
@@ -474,10 +470,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                     empty = old.isEmpty();
 
                     if (!empty)
-                        dup = old.contains(fut);
-
-                    if (!empty && !dup)
-                        old.add(fut);
+                        dup = !old.add(fut);
                 }
 
                 // Future is being removed, so we force-remove here and try again.
@@ -594,14 +587,18 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     @Nullable public GridCacheFuture future(GridCacheVersion ver, IgniteUuid futId) {
         Collection<? extends GridCacheFuture> futs = this.futs.get(ver);
 
-        if (futs != null)
-            for (GridCacheFuture<?> fut : futs)
-                if (fut.futureId().equals(futId)) {
-                    if (log.isDebugEnabled())
-                        log.debug("Found future in futures map: " + fut);
+        if (futs != null) {
+            synchronized (futs) {
+                for (GridCacheFuture<?> fut : futs) {
+                    if (fut.futureId().equals(futId)) {
+                        if (log.isDebugEnabled())
+                            log.debug("Found future in futures map: " + fut);
 
-                    return fut;
+                        return fut;
+                    }
                 }
+            }
+        }
 
         if (log.isDebugEnabled())
             log.debug("Failed to find future in futures map [ver=" + ver + ", futId=" + futId + ']');
@@ -619,7 +616,13 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     public <T> Collection<? extends IgniteInternalFuture<T>> futures(GridCacheVersion ver) {
         Collection c = futs.get(ver);
 
-        return c == null ? Collections.<IgniteInternalFuture<T>>emptyList() : (Collection<IgniteInternalFuture<T>>)c;
+        if (c == null)
+            return Collections.<IgniteInternalFuture<T>>emptyList();
+        else {
+            synchronized (c) {
+                return new ArrayList<>((Collection<IgniteInternalFuture<T>>)c);
+            }
+        }
     }
 
     /**
@@ -949,12 +952,12 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     @Override public void printMemoryStats() {
         X.println(">>> ");
         X.println(">>> Mvcc manager memory stats [grid=" + cctx.gridName() + ']');
-        X.println(">>>   rmvLocksSize: " + rmvLocks.size());
+        X.println(">>>   rmvLocksSize: " + rmvLocks.sizex());
         X.println(">>>   dhtLocCandsSize: " + dhtLocCands.size());
         X.println(">>>   lockedSize: " + locked.size());
         X.println(">>>   futsSize: " + futs.size());
         X.println(">>>   near2dhtSize: " + near2dht.size());
-        X.println(">>>   finishFutsSize: " + finishFuts.size());
+        X.println(">>>   finishFutsSize: " + finishFuts.sizex());
     }
 
     /**
@@ -974,9 +977,11 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     public Map<IgniteTxKey, Collection<GridCacheMvccCandidate>> unfinishedLocks(AffinityTopologyVersion topVer) {
         Map<IgniteTxKey, Collection<GridCacheMvccCandidate>> cands = new HashMap<>();
 
-        for (FinishLockFuture fut : finishFuts) {
-            if (fut.topologyVersion().equals(topVer))
-                cands.putAll(fut.pendingLocks());
+        if (!finishFuts.isEmptyx()) {
+            for (FinishLockFuture fut : finishFuts) {
+                if (fut.topologyVersion().equals(topVer))
+                    cands.putAll(fut.pendingLocks());
+            }
         }
 
         return cands;
@@ -1054,8 +1059,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param topVer Topology version.
      * @return Future that signals when all locks for given partitions will be released.
      */
-    private IgniteInternalFuture<?> finishLocks(@Nullable final IgnitePredicate<GridDistributedCacheEntry> filter,
-        AffinityTopologyVersion topVer) {
+    private IgniteInternalFuture<?> finishLocks(
+        @Nullable final IgnitePredicate<GridDistributedCacheEntry> filter,
+        AffinityTopologyVersion topVer
+    ) {
         assert topVer.topologyVersion() != 0;
 
         if (topVer.equals(AffinityTopologyVersion.NONE))
@@ -1069,10 +1076,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         finishFut.listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> e) {
                 finishFuts.remove(finishFut);
-
-                // This call is required to make sure that the concurrent queue
-                // clears memory occupied by internal nodes.
-                finishFuts.peek();
             }
         });
 
@@ -1088,8 +1091,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         if (exchLog.isDebugEnabled())
             exchLog.debug("Rechecking pending locks for completion.");
 
-        for (FinishLockFuture fut : finishFuts)
-            fut.recheck();
+        if (!finishFuts.isEmptyx()) {
+            for (FinishLockFuture fut : finishFuts)
+                fut.recheck();
+        }
     }
 
     /**
