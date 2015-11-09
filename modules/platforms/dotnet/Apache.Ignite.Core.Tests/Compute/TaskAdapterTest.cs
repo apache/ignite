@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Test for job adapter.
         /// </summary>
         [Test]
-        public void TestPortableJobAdapter()
+        public void TestBinarizableJobAdapter()
         {
             for (int i = 0; i < 10; i++)
             {

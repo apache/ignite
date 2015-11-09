@@ -99,7 +99,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Test for task result.
         /// </summary>
         [Test]
-        public void TestTaskResultPortable()
+        public void TestTaskResultBinarizable()
         {
             TestTask<BinarizableResult> task = new TestTask<BinarizableResult>();
 
@@ -159,7 +159,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         override protected void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
         {
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableResult)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(TestPortableJob)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(TestBinarizableJob)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableOutFunc)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableFunc)));
         }
@@ -293,7 +293,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 if (res is BinarizableResult)
                 {
-                    TestPortableJob job0 = new TestPortableJob();
+                    TestBinarizableJob job0 = new TestBinarizableJob();
 
                     job0.SetArguments(res);
 
@@ -398,7 +398,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         class TestJob<T> : ComputeJobAdapter<T>
         {
             [InstanceResource]
-            private IIgnite _grid = null;
+            private readonly IIgnite _grid = null;
 
             /** <inheritDoc /> */
             override public T Execute()
@@ -416,10 +416,10 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        class TestPortableJob : ComputeJobAdapter<BinarizableResult>
+        class TestBinarizableJob : ComputeJobAdapter<BinarizableResult>
         {
             [InstanceResource]
-            private IIgnite _grid = null;
+            private readonly IIgnite _grid = null;
 
             /** <inheritDoc /> */
             override public BinarizableResult Execute()
