@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                         new BinaryTypeConfiguration(typeof (CompositeInner)),
                         new BinaryTypeConfiguration(typeof (CompositeArray)),
                         new BinaryTypeConfiguration(typeof (CompositeContainer)),
-                        new BinaryTypeConfiguration(typeof (ToPortable)),
+                        new BinaryTypeConfiguration(typeof (ToBinary)),
                         new BinaryTypeConfiguration(typeof (Remove)),
                         new BinaryTypeConfiguration(typeof (RemoveInner)),
                         new BinaryTypeConfiguration(typeof (BuilderInBuilderOuter)),
@@ -80,9 +80,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                         new BinaryTypeConfiguration(typeof (BuilderCollection)),
                         new BinaryTypeConfiguration(typeof (BuilderCollectionItem)),
                         new BinaryTypeConfiguration(typeof (DecimalHolder)),
-                        new BinaryTypeConfiguration(TypeEmpty),
-                        TypeConfigurationNoMeta(typeof (EmptyNoMeta)),
-                        TypeConfigurationNoMeta(typeof (ToPortableNoMeta))
+                        new BinaryTypeConfiguration(TypeEmpty)
                     },
                     DefaultIdMapper = new IdMapper()
                 },
@@ -100,7 +98,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                     "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005",
                     "-XX:+HeapDumpOnOutOfMemoryError"
                 },
-                SpringConfigUrl = "config\\portable.xml"
+                SpringConfigUrl = "config\\binary.xml"
             };
 
             _grid = (Ignite) Ignition.Start(cfg);
@@ -121,7 +119,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
-        /// Ensure that portable engine is able to work with type names, which are not configured.
+        /// Ensure that binary engine is able to work with type names, which are not configured.
         /// </summary>
         [Test]
         public void TestNonConfigured()
@@ -238,30 +236,23 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new[] { TestEnum.One }, api.ToBinary<TestEnum[]>(new[] { TestEnum.One }));
 
             // 4. Objects.
-            IBinaryObject portObj = api.ToBinary<IBinaryObject>(new ToPortable(1));
+            IBinaryObject portObj = api.ToBinary<IBinaryObject>(new ToBinary(1));
 
-            Assert.AreEqual(typeof(ToPortable).Name, portObj.GetMetadata().TypeName);
+            Assert.AreEqual(typeof(ToBinary).Name, portObj.GetMetadata().TypeName);
             Assert.AreEqual(1, portObj.GetMetadata().Fields.Count);
             Assert.AreEqual("Val", portObj.GetMetadata().Fields.First());
             Assert.AreEqual(BinaryTypeNames.TypeNameInt, portObj.GetMetadata().GetFieldTypeName("Val"));
 
             Assert.AreEqual(1, portObj.GetField<int>("val"));
-            Assert.AreEqual(1, portObj.Deserialize<ToPortable>().Val);
-
-            portObj = api.ToBinary<IBinaryObject>(new ToPortableNoMeta(1));
-
-            Assert.AreEqual(1, portObj.GetMetadata().Fields.Count);
-
-            Assert.AreEqual(1, portObj.GetField<int>("Val"));
-            Assert.AreEqual(1, portObj.Deserialize<ToPortableNoMeta>().Val);
+            Assert.AreEqual(1, portObj.Deserialize<ToBinary>().Val);
 
             // 5. Object array.
-            var portObjArr = api.ToBinary<object[]>(new object[] {new ToPortable(1)})
+            var portObjArr = api.ToBinary<object[]>(new object[] {new ToBinary(1)})
                 .OfType<IBinaryObject>().ToArray();
 
             Assert.AreEqual(1, portObjArr.Length);
             Assert.AreEqual(1, portObjArr[0].GetField<int>("Val"));
-            Assert.AreEqual(1, portObjArr[0].Deserialize<ToPortable>().Val);
+            Assert.AreEqual(1, portObjArr[0].Deserialize<ToBinary>().Val);
         }
 
         /// <summary>
@@ -478,7 +469,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(1, col.Col.Count);
             Assert.AreEqual(1, ((BuilderCollectionItem) col.Col[0]).Val);
 
-            // Add more portable objects to collection.
+            // Add more binary objects to collection.
             builderCol = _grid.GetBinary().GetBuilder(portCol);
 
             IList builderColItems = builderCol.GetField<IList>("col");
@@ -491,7 +482,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             builderColItems.Add(builderColItem); // Add the same object to check handles.
             builderColItems.Add(builderItem); // Add item from another builder.
-            builderColItems.Add(portItem); // Add item in portable form.
+            builderColItems.Add(portItem); // Add item in binary form.
 
             portCol = builderCol.Build();
 
@@ -556,22 +547,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
-        /// Test build of an empty object with disabled metadata.
-        /// </summary>
-        [Test]
-        public void TestEmptyNoMeta()
-        {
-            IBinaryObject portObj = _grid.GetBinary().GetBuilder(typeof(EmptyNoMeta)).Build();
-
-            Assert.IsNotNull(portObj);
-            Assert.AreEqual(0, portObj.GetHashCode());
-
-            EmptyNoMeta obj = portObj.Deserialize<EmptyNoMeta>();
-
-            Assert.IsNotNull(obj);
-        }
-
-        /// <summary>
         /// Test build of an empty undefined object.
         /// </summary>
         [Test]
@@ -595,7 +570,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestEmptyRebuild()
         {
-            var portObj = (BinaryObject) _grid.GetBinary().GetBuilder(typeof(EmptyNoMeta)).Build();
+            var portObj = (BinaryObject) _grid.GetBinary().GetBuilder(typeof(Empty)).Build();
 
             BinaryObject newPortObj = (BinaryObject) _grid.GetBinary().GetBuilder(portObj).Build();
 
@@ -608,7 +583,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestHashCodeChange()
         {
-            IBinaryObject portObj = _grid.GetBinary().GetBuilder(typeof(EmptyNoMeta)).SetHashCode(100).Build();
+            IBinaryObject portObj = _grid.GetBinary().GetBuilder(typeof(Empty)).SetHashCode(100).Build();
 
             Assert.AreEqual(100, portObj.GetHashCode());
         }
@@ -1116,7 +1091,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(BinaryTypeNames.TypeNameCollection, meta.GetFieldTypeName("col"));
             Assert.AreEqual(BinaryTypeNames.TypeNameMap, meta.GetFieldTypeName("dict"));
 
-            // 2. Check in portable form.
+            // 2. Check in binary form.
             Assert.AreEqual(1, portObj.GetField<ICollection>("col").Count);
             Assert.AreEqual(1, portObj.GetField<ICollection>("col").OfType<IBinaryObject>().First()
                 .GetField<int>("val"));
@@ -1197,7 +1172,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(outer.Inner1.Val, 1);
             Assert.IsNull(outer.Inner2);
 
-            // 2. Add another field over existing portable object.
+            // 2. Add another field over existing binary object.
             builder = _grid.GetBinary().GetBuilder(outerPortObj);
 
             NestedInner inner2 = new NestedInner {Val = 2};
@@ -1209,7 +1184,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(1, outer.Inner1.Val);
             Assert.AreEqual(2, outer.Inner2.Val);
 
-            // 3. Try setting inner object in portable form.
+            // 3. Try setting inner object in binary form.
             innerPortObj1 = _grid.GetBinary().GetBuilder(innerPortObj1).SetField("val", 3).Build();
 
             inner1 = innerPortObj1.Deserialize<NestedInner>();
@@ -1303,7 +1278,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreSame(innerNew, innerNew.Outer.Inner);
 
-            // 2. Ensure that portable object with external dependencies could be added to builder.
+            // 2. Ensure that binary object with external dependencies could be added to builder.
             IBinaryObject portOuterNew =
                 _grid.GetBinary().GetBuilder(typeof(InversionOuter)).SetField<object>("inner", portInner).Build();
 
@@ -1412,20 +1387,10 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(new[] {"val", "valArr"}, decimalMeta.Fields);
         }
-
-        /// <summary>
-        /// Create portable type configuration with disabled metadata.
-        /// </summary>
-        /// <param name="typ">Type.</param>
-        /// <returns>Configuration.</returns>
-        private static BinaryTypeConfiguration TypeConfigurationNoMeta(Type typ)
-        {
-            return new BinaryTypeConfiguration(typ);
-        }
     }
 
     /// <summary>
-    /// Empty portable class.
+    /// Empty binary class.
     /// </summary>
     public class Empty
     {
@@ -1433,15 +1398,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     }
 
     /// <summary>
-    /// Empty portable class with no metadata.
-    /// </summary>
-    public class EmptyNoMeta
-    {
-        // No-op.
-    }
-
-    /// <summary>
-    /// Portable with primitive fields.
+    /// binary with primitive fields.
     /// </summary>
     public class Primitives
     {
@@ -1456,7 +1413,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     }
 
     /// <summary>
-    /// Portable with primitive array fields.
+    /// binary with primitive array fields.
     /// </summary>
     public class PrimitiveArrays
     {
@@ -1471,7 +1428,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     }
 
     /// <summary>
-    /// Portable having strings, dates, Guids and enums.
+    /// binary having strings, dates, Guids and enums.
     /// </summary>
     public class StringDateGuidEnum
     {
@@ -1495,7 +1452,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     }
 
     /// <summary>
-    /// Portable with raw data.
+    /// binary with raw data.
     /// </summary>
     public class WithRaw : IBinarizable
     {
@@ -1630,26 +1587,13 @@ namespace Apache.Ignite.Core.Tests.Binary
     }
 
     /// <summary>
-    /// Type to test "ToPortable()" logic.
+    /// Type to test "ToBinary()" logic.
     /// </summary>
-    public class ToPortable
+    public class ToBinary
     {
         public int Val;
 
-        public ToPortable(int val)
-        {
-            Val = val;
-        }
-    }
-
-    /// <summary>
-    /// Type to test "ToPortable()" logic with metadata disabled.
-    /// </summary>
-    public class ToPortableNoMeta
-    {
-        public int Val;
-
-        public ToPortableNoMeta(int val)
+        public ToBinary(int val)
         {
             Val = val;
         }

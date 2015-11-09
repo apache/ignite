@@ -222,7 +222,7 @@
     <Content Include="Config\native-client-test-cache.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Config\portable.xml">
+    <Content Include="Config\binary.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\start-test-grid1.xml">
