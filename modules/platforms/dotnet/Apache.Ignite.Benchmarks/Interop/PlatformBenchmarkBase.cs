@@ -75,7 +75,7 @@ namespace Apache.Ignite.Benchmarks.Interop
         }
 
         /// <summary>
-        /// Get portable configuration.
+        /// Get binary configuration.
         /// </summary>
         /// <returns>Portable configuration.</returns>
         private static BinaryConfiguration GetBinaryConfiguration()

@@ -123,7 +123,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Portable test class.
+        /// Binary test class.
         /// </summary>
         private class Binarizable : IBinarizable
         {

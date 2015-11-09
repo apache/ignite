@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests deployment.
         /// </summary>
         [Test]
-        public void TestDeploy([Values(true, false)] bool portable)
+        public void TestDeploy([Values(true, false)] bool binarizable)
         {
             var cfg = new ServiceConfiguration
             {
@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 MaxPerNodeCount = 3,
                 TotalCount = 3,
                 NodeFilter = new NodeFilter {NodeId = Grid1.GetCluster().GetLocalNode().Id},
-                Service = portable ? new TestIgniteServiceBinarizable() : new TestIgniteServiceSerializable()
+                Service = binarizable ? new TestIgniteServiceBinarizable() : new TestIgniteServiceSerializable()
             };
 
             Services.Deploy(cfg);
@@ -358,7 +358,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests the client portable flag.
+        /// Tests the client binary flag.
         /// </summary>
         [Test]
         public void TestWithKeepBinaryClient()
@@ -382,7 +382,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
         
         /// <summary>
-        /// Tests the server portable flag.
+        /// Tests the server binary flag.
         /// </summary>
         [Test]
         public void TestWithKeepBinaryServer()
@@ -406,7 +406,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests server and client portable flag.
+        /// Tests server and client binary flag.
         /// </summary>
         [Test]
         public void TestWithKeepBinaryBoth()
@@ -751,7 +751,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Test portable service.
+        /// Test binary service.
         /// </summary>
         private class TestIgniteServiceBinarizable : TestIgniteServiceSerializable, IBinarizable
         {
@@ -769,7 +769,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Test portable service with exceptions in marshalling.
+        /// Test binary service with exceptions in marshalling.
         /// </summary>
         private class TestIgniteServiceBinarizableErr : TestIgniteServiceSerializable, IBinarizable
         {
@@ -813,7 +813,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Portable object.
+        /// Binary object.
         /// </summary>
         private class BinarizableObject
         {

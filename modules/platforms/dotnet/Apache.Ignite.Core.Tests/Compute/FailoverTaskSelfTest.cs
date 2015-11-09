@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Test for GridComputeJobFailoverException with portable job.
+        /// Test for GridComputeJobFailoverException with binary job.
         /// </summary>
         [Test]
         public void TestTaskAdapterFailoverExceptionBinarizable()

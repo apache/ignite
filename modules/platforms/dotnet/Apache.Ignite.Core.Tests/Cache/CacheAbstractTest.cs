@@ -204,7 +204,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     }
 
     /// <summary>
-    /// Portable add processor.
+    /// Binary add processor.
     /// </summary>
     public class BinarizableAddArgCacheEntryProcessor : AddArgCacheEntryProcessor, IBinarizable
     {
@@ -244,7 +244,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     }
 
     /// <summary>
-    /// Portable exception.
+    /// Binary exception.
     /// </summary>
     public class BinarizableTestException : Exception, IBinarizable
     {

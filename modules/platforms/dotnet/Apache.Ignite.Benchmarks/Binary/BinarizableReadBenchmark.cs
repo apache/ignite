@@ -26,7 +26,7 @@ namespace Apache.Ignite.Benchmarks.Binary
     using Apache.Ignite.Core.Impl.Memory;
 
     /// <summary>
-    /// Portable read benchmark.
+    /// Binary read benchmark.
     /// </summary>
     internal class BinarizableReadBenchmark : BenchmarkBase
     {

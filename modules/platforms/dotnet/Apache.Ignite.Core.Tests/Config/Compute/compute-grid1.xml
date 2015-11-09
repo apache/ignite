@@ -67,7 +67,7 @@
             </bean>
         </property>
 
-        <!-- Portable marshaller configuration -->
+        <!-- Binary marshaller configuration -->
         <property name="marshaller">
             <bean class="org.apache.ignite.marshaller.portable.PortableMarshaller">
                 <property name="typeConfigurations">

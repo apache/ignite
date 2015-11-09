@@ -509,7 +509,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         }
 
         /// <summary>
-        /// Test portable receiver.
+        /// Test binary receiver.
         /// </summary>
         [Serializable]
         private class StreamReceiverKeepBinary : IStreamReceiver<int, IBinaryObject>

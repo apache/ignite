@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Echo task name. */
         private const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";
 
-        /** Portable argument task name. */
+        /** Binary argument task name. */
         private const string BinaryArgTask = "org.apache.ignite.platform.PlatformComputePortableArgTask";
 
         /** Broadcast task name. */
@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Broadcast task name. */
         private const string DecimalTask = "org.apache.ignite.platform.PlatformComputeDecimalTask";
 
-        /** Java portable class name. */
+        /** Java binary class name. */
         private const string JavaBinaryCls = "GridInteropComputeJavaPortable";
 
         /** Echo type: null. */
@@ -90,13 +90,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Echo type: portable. */
         private const int EchoTypeBinarizable = 12;
 
-        /** Echo type: portable (Java only). */
+        /** Echo type: binary (Java only). */
         private const int EchoTypeBinarizableJava = 13;
 
         /** Type: object array. */
         private const int EchoTypeObjArray = 14;
 
-        /** Type: portable object array. */
+        /** Type: binary object array. */
         private const int EchoTypeBinarizableArray = 15;
 
         /** Type: enum. */
@@ -799,7 +799,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Test echo task returning portable object.
+        /// Test echo task returning binary object.
         /// </summary>
         [Test]
         public void TestEchoTaskBinarizable()
@@ -810,7 +810,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Test echo task returning portable object with no corresponding class definition.
+        /// Test echo task returning binary object with no corresponding class definition.
         /// </summary>
         [Test]
         public void TestEchoTaskBinarizableNoClass()
@@ -842,7 +842,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Tests the echo task returning portable array.
+        /// Tests the echo task returning binary array.
         /// </summary>
         [Test]
         public void TestEchoTaskBinarizableArray()
@@ -883,7 +883,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Test for portable argument in Java.
+        /// Test for binary argument in Java.
         /// </summary>
         [Test]
         public void TestBinarizableArgTask()

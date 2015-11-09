@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Compute.Forked
 {
     /// <summary>
-    /// Forked closure execution tests for portable objects.
+    /// Forked closure execution tests for binary objects.
     /// </summary>
     public class ForkedBinarizableClosureTaskTest : BinarizableClosureTaskTest
     {

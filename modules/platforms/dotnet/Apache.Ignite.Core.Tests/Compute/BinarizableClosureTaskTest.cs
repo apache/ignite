@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using NUnit.Framework;
 
     /// <summary>
-    /// Closure execution tests for portable objects.
+    /// Closure execution tests for binary objects.
     /// </summary>
     public class BinarizableClosureTaskTest : ClosureTaskTest
     {

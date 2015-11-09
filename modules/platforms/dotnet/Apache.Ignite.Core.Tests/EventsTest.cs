@@ -378,7 +378,7 @@ namespace Apache.Ignite.Core.Tests
 
             var expectedType = EventType.JobStarted;
 
-            var remoteFilter = portable 
+            var remoteFilter = binary 
                 ?  (IEventFilter<IEvent>) new RemoteEventPortableFilter(expectedType)
                 :  new RemoteEventFilter(expectedType);
 
@@ -882,7 +882,7 @@ namespace Apache.Ignite.Core.Tests
     }
 
     /// <summary>
-    /// Portable remote event filter.
+    /// Binary remote event filter.
     /// </summary>
     public class RemoteEventBinarizableFilter : IEventFilter<IEvent>, IBinarizable
     {

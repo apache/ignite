@@ -26,7 +26,7 @@ namespace Apache.Ignite.Benchmarks.Binary
     using Apache.Ignite.Core.Impl.Memory;
 
     /// <summary>
-    /// Portable write benchmark.
+    /// Binary write benchmark.
     /// </summary>
     internal class BinarizableWriteBenchmark : BenchmarkBase
     {

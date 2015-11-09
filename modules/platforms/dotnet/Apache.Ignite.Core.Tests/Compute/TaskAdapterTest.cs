@@ -236,7 +236,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Test portable job.
+        /// Test binary job.
         /// </summary>
         public class BinarizableJob : ComputeJobAdapter<bool>
         {
