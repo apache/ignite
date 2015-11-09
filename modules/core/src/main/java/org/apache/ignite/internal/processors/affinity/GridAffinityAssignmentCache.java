@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMa
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -406,6 +407,18 @@ public class GridAffinityAssignmentCache {
      */
     public Set<Integer> backupPartitions(UUID nodeId, AffinityTopologyVersion topVer) {
         return cachedAffinity(topVer).backupPartitions(nodeId);
+    }
+
+    /**
+     * Dumps debug information.
+     */
+    public void dumpDebugInfo() {
+        if (!readyFuts.isEmpty()) {
+            U.warn(log, "Pending affinity ready futures [cache=" + cacheName + "]:");
+
+            for (AffinityReadyFuture fut : readyFuts.values())
+                U.warn(log, ">>> " + fut);
+        }
     }
 
     /**
