@@ -3094,7 +3094,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             var cache = cache0.WithKeepBinary<int, BinarizablePerson>();
 
-            var portCache = cache0.WithKeepBinary<int, IBinaryObject>();
+            var binCache = cache0.WithKeepBinary<int, IBinaryObject>();
 
             int cnt = 10;
 
@@ -3110,7 +3110,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             for (int i = 0; i < cnt; i++)
             {
-                var obj = portCache.Get(i);
+                var obj = binCache.Get(i);
 
                 CheckPersonData(obj, "person-" + i, i);
 
@@ -3125,10 +3125,10 @@ namespace Apache.Ignite.Core.Tests.Cache
                 CheckPersonData(obj, "person-" + i, i);
             }
 
-            // Check keepPortable for GetAll operation.
-            var allObjs1 = portCache.GetAll(keys);
+            // Check keepBinary for GetAll operation.
+            var allObjs1 = binCache.GetAll(keys);
 
-            var allObjs2 = portCache.GetAll(keys);
+            var allObjs2 = binCache.GetAll(keys);
 
             for (int i = 0; i < cnt; i++)
             {
@@ -3137,7 +3137,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 CheckPersonData(allObjs2[i], "person-" + i, i);
             }
 
-            // Check keepPortable for Remove operation.
+            // Check keepBinary for Remove operation.
             var success0 = cache.Remove(0);
             var success1 = cache.Remove(1);
 
