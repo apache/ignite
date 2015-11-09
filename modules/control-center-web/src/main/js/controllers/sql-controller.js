@@ -34,6 +34,8 @@ consoleModule.controller('sqlController',
 
     $scope.timeLineSpans = ['1', '5', '10', '15', '30'];
 
+    $scope.aggregateFxs = ['FIRST', 'LAST', 'MIN', 'MAX', 'AVG', 'SUM', 'COUNT'];
+
     $scope.modes = $common.mkOptions(['PARTITIONED', 'REPLICATED', 'LOCAL']);
 
     $scope.timeUnit = [
@@ -111,6 +113,8 @@ consoleModule.controller('sqlController',
         if (accepted) {
             if (valCols.length == MAX_VAL_COLS - 1)
                 valCols.shift();
+
+            item.aggFx = $scope.aggregateFxs[0];
 
             valCols.push(item);
 
