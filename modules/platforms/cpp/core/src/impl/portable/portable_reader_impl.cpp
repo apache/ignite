@@ -249,8 +249,6 @@ namespace ignite
                 CheckRawMode(false);
                 CheckSingleMode(true);
 
-                int32_t pos = stream->Position();
-
                 int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
                 int32_t fieldPos = FindField(fieldId);
 
@@ -283,8 +281,6 @@ namespace ignite
                 CheckRawMode(false);
                 CheckSingleMode(true);
 
-                int32_t pos = stream->Position();
-                
                 int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
                 int32_t fieldPos = FindField(fieldId);
 
@@ -347,26 +343,17 @@ namespace ignite
                 int8_t hdr = stream->ReadInt8();
 
                 if (hdr == IGNITE_TYPE_STRING) {
-                    bool utf8Mode = stream->ReadBool();
                     int32_t realLen = stream->ReadInt32();
 
                     if (res && len >= realLen) {
-                        if (utf8Mode)
-                        {
-                            for (int i = 0; i < realLen; i++)
-                                *(res + i) = static_cast<char>(stream->ReadInt8());
-                        }
-                        else
-                        {
-                            for (int i = 0; i < realLen; i++)
-                                *(res + i) = static_cast<char>(stream->ReadUInt16());
-                        }
+                        for (int i = 0; i < realLen; i++)
+                            *(res + i) = static_cast<char>(stream->ReadInt8());
 
                         if (len > realLen)
                             *(res + realLen) = 0; // Set NULL terminator if possible.
                     }
                     else
-                        stream->Position(stream->Position() - 6);
+                        stream->Position(stream->Position() - 4 - 1);
 
                     return realLen;
                 }

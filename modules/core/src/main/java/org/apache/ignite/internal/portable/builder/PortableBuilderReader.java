@@ -151,11 +151,7 @@ public class PortableBuilderReader implements PortablePositionReadable {
      * @return String length.
      */
     public int readStringLength() {
-        boolean utf = PortablePrimitives.readBoolean(arr, pos);
-
-        int arrLen = PortablePrimitives.readInt(arr, pos + 1);
-
-        return 1 + (utf ? arrLen : arrLen << 1);
+        return PortablePrimitives.readInt(arr, pos);
     }
 
     /**
@@ -172,21 +168,11 @@ public class PortableBuilderReader implements PortablePositionReadable {
         if (flag != STRING)
             throw new BinaryObjectException("Failed to deserialize String.");
 
-        boolean convert = readBoolean();
         int len = readInt();
 
-        String str;
+        String str = new String(arr, pos, len, UTF_8);
 
-        if (convert) {
-            str = new String(arr, pos, len, UTF_8);
-
-            pos += len;
-        }
-        else {
-            str = String.valueOf(PortablePrimitives.readCharArray(arr, pos, len));
-
-            pos += len << 1;
-        }
+        pos += len;
 
         return str;
     }

@@ -21,8 +21,6 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.portable.GridPortableAffinityKeySelfTest;
 import org.apache.ignite.internal.portable.GridBinaryObjectBuilderAdditionalSelfTest;
 import org.apache.ignite.internal.portable.GridBinaryObjectBuilderSelfTest;
-import org.apache.ignite.internal.portable.GridBinaryObjectBuilderStringAsCharsAdditionalSelfTest;
-import org.apache.ignite.internal.portable.GridBinaryObjectBuilderStringAsCharsSelfTest;
 import org.apache.ignite.internal.portable.GridPortableMarshallerCtxDisabledSelfTest;
 import org.apache.ignite.internal.portable.GridPortableMarshallerSelfTest;
 import org.apache.ignite.internal.portable.GridPortableMetaDataSelfTest;
@@ -62,9 +60,7 @@ public class IgnitePortableObjectsTestSuite extends TestSuite {
         suite.addTestSuite(GridPortableMarshallerSelfTest.class);
         suite.addTestSuite(GridPortableMarshallerCtxDisabledSelfTest.class);
         suite.addTestSuite(GridBinaryObjectBuilderSelfTest.class);
-        suite.addTestSuite(GridBinaryObjectBuilderStringAsCharsSelfTest.class);
         suite.addTestSuite(GridBinaryObjectBuilderAdditionalSelfTest.class);
-        suite.addTestSuite(GridBinaryObjectBuilderStringAsCharsAdditionalSelfTest.class);
         suite.addTestSuite(BinaryFieldsHeapSelfTest.class);
         suite.addTestSuite(BinaryFieldsOffheapSelfTest.class);
         suite.addTestSuite(PortableCompactOffsetsHeapSelfTest.class);

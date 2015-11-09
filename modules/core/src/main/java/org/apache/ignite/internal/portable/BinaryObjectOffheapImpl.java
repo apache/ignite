@@ -269,20 +269,10 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
                 break;
 
             case STRING: {
-                boolean utf = PortablePrimitives.readBoolean(ptr, fieldPos + 1);
+                int dataLen = PortablePrimitives.readInt(ptr, fieldPos + 1);
+                byte[] data = PortablePrimitives.readByteArray(ptr, fieldPos + 5, dataLen);
 
-                if (utf) {
-                    int dataLen = PortablePrimitives.readInt(ptr, fieldPos + 2);
-                    byte[] data = PortablePrimitives.readByteArray(ptr, fieldPos + 6, dataLen);
-
-                    val = new String(data, UTF_8);
-                }
-                else {
-                    int dataLen = PortablePrimitives.readInt(ptr, fieldPos + 2);
-                    char[] data = PortablePrimitives.readCharArray(ptr, fieldPos + 6, dataLen);
-
-                    val = String.valueOf(data);
-                }
+                val = new String(data, UTF_8);
 
                 break;
             }

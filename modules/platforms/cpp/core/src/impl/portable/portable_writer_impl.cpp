@@ -298,16 +298,11 @@ namespace ignite
                 if (val)
                 {
                     stream->WriteInt8(IGNITE_TYPE_STRING);
-                    stream->WriteBool(false);
-                    stream->WriteInt32(len);
 
-                    for (int i = 0; i < len; i++)
-                        stream->WriteUInt16(*(val + i));
+                    PortableUtils::WriteString(stream, val, len);
                 }
                 else
-                {
                     stream->WriteInt8(IGNITE_HDR_NULL);
-                }
             }
 
             int32_t PortableWriterImpl::WriteStringArray()
