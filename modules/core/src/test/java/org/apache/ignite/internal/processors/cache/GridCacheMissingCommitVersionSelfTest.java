@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -32,13 +33,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_COMPLETED_TX_COUNT;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
  */
 public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTest {
     /** */
-    private volatile Integer failedKey;
+    private volatile boolean putFailed;
 
     /** */
     private String maxCompletedTxCount;
@@ -67,6 +69,7 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -90,43 +93,48 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
 
         final AtomicInteger keyStart = new AtomicInteger();
 
+        final ConcurrentLinkedDeque<Integer> q = new ConcurrentLinkedDeque<>();
+
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 int start = keyStart.getAndAdd(KEYS_PER_THREAD);
 
-                for (int i = 0; i < KEYS_PER_THREAD && failedKey == null; i++) {
+                for (int i = 0; i < KEYS_PER_THREAD && !putFailed; i++) {
                     int key = start + i;
 
                     try {
                         cache.put(key, 1);
                     }
                     catch (Exception e) {
-                        log.info("Put failed: " + e);
+                        log.info("Put failed [err=" + e + ", i=" + i + ']');
 
-                        failedKey = key;
+                        putFailed = true;
+
+                        q.add(key);
                     }
                 }
-
 
                 return null;
             }
         }, 10, "put-thread");
 
-        assertNotNull("Test failed to provoke 'missing commit version' error.", failedKey);
+        assertTrue("Test failed to provoke 'missing commit version' error.", putFailed);
 
-        log.info("Trying to update " + failedKey);
+        for (Integer key : q) {
+            log.info("Trying to update " + key);
 
-        IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
+            IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
 
-        asyncCache.put(failedKey, 2);
+            asyncCache.put(key, 2);
 
-        IgniteFuture<?> fut = asyncCache.future();
+            IgniteFuture<?> fut = asyncCache.future();
 
-        try {
-            fut.get(5000);
-        }
-        catch (IgniteFutureTimeoutException ignore) {
-            fail("Put failed to finish in 5s.");
+            try {
+                fut.get(5000);
+            }
+            catch (IgniteFutureTimeoutException ignore) {
+                fail("Put failed to finish in 5s: " + key);
+            }
         }
     }
 }

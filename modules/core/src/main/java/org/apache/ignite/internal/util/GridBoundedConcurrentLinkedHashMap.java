@@ -116,9 +116,6 @@ public class GridBoundedConcurrentLinkedHashMap<K, V> extends ConcurrentLinkedHa
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        // TODO GG-4788
-        return policy() != SINGLE_Q ?
-            S.toString(GridBoundedConcurrentLinkedHashMap.class, this) :
-            S.toString(GridBoundedConcurrentLinkedHashMap.class, this, "entrySet", keySet());
+        return S.toString(GridBoundedConcurrentLinkedHashMap.class, this, "entrySet", keySet());
     }
 }
