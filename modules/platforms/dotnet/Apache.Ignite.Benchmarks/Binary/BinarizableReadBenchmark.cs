@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Benchmarks.Portable
+namespace Apache.Ignite.Benchmarks.Binary
 {
     using System;
     using System.Collections.Generic;
@@ -26,9 +26,9 @@ namespace Apache.Ignite.Benchmarks.Portable
     using Apache.Ignite.Core.Impl.Memory;
 
     /// <summary>
-    /// Portable write benchmark.
+    /// Portable read benchmark.
     /// </summary>
-    internal class BinarizableWriteBenchmark : BenchmarkBase
+    internal class BinarizableReadBenchmark : BenchmarkBase
     {
         /** Marshaller. */
         private readonly Marshaller _marsh;
@@ -36,8 +36,12 @@ namespace Apache.Ignite.Benchmarks.Portable
         /** Memory manager. */
         private readonly PlatformMemoryManager _memMgr = new PlatformMemoryManager(1024);
 
+        /** Memory chunk. */
+        private readonly IPlatformMemory _mem;
+
         /** Pre-allocated address. */
         private readonly Address _address = BenchmarkUtils.GetRandomAddress();
+
 
         /** Pre-allocated model. */
         private readonly TestModel _model = new TestModel
@@ -69,18 +73,27 @@ namespace Apache.Ignite.Benchmarks.Portable
         };
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BinarizableWriteBenchmark"/> class.
+        /// Initializes a new instance of the <see cref="BinarizableReadBenchmark"/> class.
         /// </summary>
-        public BinarizableWriteBenchmark()
+        public BinarizableReadBenchmark()
         {
             _marsh = new Marshaller(new BinaryConfiguration
             {
                 TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
-                    new BinaryTypeConfiguration(typeof (Address))
-                    //new PortableTypeConfiguration(typeof (TestModel))
+                    new BinaryTypeConfiguration(typeof (Address)),
+                    new BinaryTypeConfiguration(typeof (TestModel))
                 }
             });
+
+            _mem = _memMgr.Allocate();
+
+            var stream = _mem.GetStream();
+
+            //_marsh.StartMarshal(stream).Write(_model);
+            _marsh.StartMarshal(stream).Write(_address);
+
+            stream.SynchronizeOutput();
         }
 
         /// <summary>
@@ -89,47 +102,25 @@ namespace Apache.Ignite.Benchmarks.Portable
         /// <param name="descs">Descriptors.</param>
         protected override void GetDescriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
-            descs.Add(BenchmarkOperationDescriptor.Create("WriteAddress", WriteAddress, 1));
-            //descs.Add(BenchmarkOperationDescriptor.Create("WriteTestModel", WriteTestModel, 1));
+            descs.Add(BenchmarkOperationDescriptor.Create("ReadTestModel", ReadTestModel, 1));
         }
 
         /// <summary>
         /// Write address.
         /// </summary>
         /// <param name="state">State.</param>
-        private void WriteAddress(BenchmarkState state)
+        private void ReadTestModel(BenchmarkState state)
         {
-            var mem = _memMgr.Allocate();
+            //var model = _marsh.StartUnmarshal(_mem.GetStream()).ReadObject<TestModel>();
 
-            try
-            {
-                var stream = mem.GetStream();
+            //if (model.Byte != _model.Byte)
+            //    throw new InvalidOperationException();
 
-                _marsh.StartMarshal(stream).Write(_address);
-            }
-            finally
-            {
-                mem.Release();
-            }
-        }
-        /// <summary>
-        /// Write address.
-        /// </summary>
-        /// <param name="state">State.</param>
-        private void WriteTestModel(BenchmarkState state)
-        {
-            var mem = _memMgr.Allocate();
+            var model = _marsh.StartUnmarshal(_mem.GetStream()).ReadObject<Address>();
 
-            try
-            {
-                var stream = mem.GetStream();
+            if (model.FlatNumber != _address.FlatNumber)
+                throw new InvalidOperationException();
 
-                _marsh.StartMarshal(stream).Write(_model);
-            }
-            finally
-            {
-                mem.Release();
-            }
         }
     }
 }
