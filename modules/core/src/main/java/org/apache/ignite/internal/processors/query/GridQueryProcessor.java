@@ -44,6 +44,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -1804,6 +1805,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** */
         private volatile int isKeyProp;
 
+        /** Binary field to speed-up deserialization. */
+        private volatile BinaryField field;
+
         /**
          * Constructor.
          *
@@ -1853,7 +1857,32 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 obj = isKeyProp0 == 1 ? key : val;
             }
 
-            return ctx.cacheObjects().field(obj, propName);
+            assert obj instanceof BinaryObject;
+
+            BinaryObject obj0 = (BinaryObject)obj;
+
+            return binaryField(obj0).value(obj0);
+        }
+
+        /**
+         * Get binary field for the property.
+         *
+         * @param obj Target object.
+         * @return Binary field.
+         */
+        private BinaryField binaryField(BinaryObject obj) {
+            BinaryField field0 = field;
+
+            if (field0 == null)
+            {
+                field0 = obj.fieldDescriptor(propName);
+
+                assert field0 != null;
+
+                field = field0;
+            }
+
+            return field0;
         }
 
         /** {@inheritDoc} */
