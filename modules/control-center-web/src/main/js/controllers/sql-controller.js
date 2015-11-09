@@ -44,7 +44,11 @@ consoleModule.controller('sqlController',
 
     $scope.exportDropdown = [{ 'text': 'Export all', 'click': 'exportAll(paragraph)'}];
 
-    $scope.treeOptions = {
+    $scope.metadata = [];
+
+    $scope.metaFilter = "";
+
+    $scope.metaOptions = {
         nodeChildren: 'children',
         dirSelectable: true,
         injectClasses: {
@@ -213,7 +217,7 @@ consoleModule.controller('sqlController',
     var _setActiveCache = function () {
         if ($scope.caches.length > 0)
             _.forEach($scope.notebook.paragraphs, function (paragraph) {
-                if (!paragraph.cacheName || !_.find($scope.caches, {name: paragraph.cacheName}))
+                if (!_.find($scope.caches, {name: paragraph.cacheName}))
                     paragraph.cacheName = $scope.caches[0].name;
             });
     };
@@ -431,16 +435,7 @@ consoleModule.controller('sqlController',
     function getTopology(caches, onSuccess) {
         onSuccess();
 
-        var oldCaches = $scope.caches;
-
         $scope.caches = _.sortBy(caches, 'name');
-
-        _.forEach(caches, function (cache) {
-            var old = _.find(oldCaches, { name: cache.name });
-
-            if (old && old.metadata)
-                cache.metadata = old.metadata;
-        });
 
         _setActiveCache();
     }
@@ -668,7 +663,7 @@ consoleModule.controller('sqlController',
             type: "QUERY",
             query: paragraph.query,
             pageSize: paragraph.pageSize,
-            cacheName: paragraph.cacheName
+            cacheName: paragraph.cacheName || undefined
         };
 
         $http.post('/agent/query', paragraph.queryArgs)
@@ -705,7 +700,7 @@ consoleModule.controller('sqlController',
             type: "EXPLAIN",
             query: 'EXPLAIN ' + paragraph.query,
             pageSize: paragraph.pageSize,
-            cacheName: paragraph.cacheName
+            cacheName: paragraph.cacheName || undefined
         };
 
         $http.post('/agent/query', paragraph.queryArgs)
@@ -731,7 +726,7 @@ consoleModule.controller('sqlController',
         paragraph.queryArgs = {
             type: "SCAN",
             pageSize: paragraph.pageSize,
-            cacheName: paragraph.cacheName
+            cacheName: paragraph.cacheName || undefined
         };
 
         $http.post('/agent/scan', paragraph.queryArgs)
@@ -1274,7 +1269,7 @@ consoleModule.controller('sqlController',
     }
 
     $scope.actionAvailable = function (paragraph, needQuery) {
-        return $scope.caches.length > 0 && paragraph.cacheName && (!needQuery || paragraph.query) && !paragraph.loading;
+        return $scope.caches.length > 0 && (!needQuery || paragraph.query) && !paragraph.loading;
     };
 
     $scope.actionTooltip = function (paragraph, action, needQuery) {
@@ -1282,7 +1277,7 @@ consoleModule.controller('sqlController',
             return;
 
         if (paragraph.loading)
-            return 'Wating for server response';
+            return 'Waiting for server response';
 
         return 'To ' + action + ' query select cache' + (needQuery ? ' and input query' : '');
     };
@@ -1304,21 +1299,21 @@ consoleModule.controller('sqlController',
         }, 1);
     };
 
-    $scope.tryLoadMetadata = function (cache) {
-        if (!cache.metadata) {
-            $loading.start('loadingCacheMetadata');
+    $scope.loadMetadata = function () {
+        $loading.start('loadingCacheMetadata');
 
-            $http.post('/agent/cache/metadata', {cacheName: cache.name})
-                .success(function (metadata) {
-                    cache.metadata = _.sortBy(metadata, 'name');
-                })
-                .error(function (errMsg) {
-                    $common.showError(errMsg);
-                })
-                .finally(function() {
-                    $loading.finish('loadingCacheMetadata');
-                });
-        }
+        $scope.metadata = [];
+
+        $http.post('/agent/cache/metadata')
+            .success(function (metadata) {
+                $scope.metadata = _.sortBy(metadata, 'name');
+            })
+            .error(function (errMsg) {
+                $common.showError(errMsg);
+            })
+            .finally(function() {
+                $loading.finish('loadingCacheMetadata');
+            });
     };
 
     $scope.showResultQuery = function (paragraph) {

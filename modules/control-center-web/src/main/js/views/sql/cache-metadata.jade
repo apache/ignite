@@ -11,16 +11,26 @@
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
-.popover.cache-metadata(tabindex='-1' dw-loading='loadingCacheMetadata' dw-loading-options='{text: ""}' ng-init='tryLoadMetadata(cache)')
-    h3.popover-title Metadata for: <b>{{cache.name}}</b></br>Cache mode: <b>{{cache.mode}}</b>
-    button.close(id='cache-metadata-close' ng-click='$hide()') &times;
-    .popover-content(ng-if='cache.metadata && cache.metadata.length > 0')
-        treecontrol.tree-classic(tree-model='cache.metadata' options='treeOptions')
-            label.clickable(ng-if='node.type == "type"' ng-dblclick='dblclickMetadata(paragraph, node)') {{node.name}}
-            label.clickable(ng-if='node.type == "field"' ng-dblclick='dblclickMetadata(paragraph, node)') {{node.name}} [{{node.clazz}}]
-            label(ng-if='node.type == "indexes"') {{node.name}}
-            label(ng-if='node.type == "index"') {{node.name}}
-            label.clickable(ng-if='node.type == "index-field"' ng-dblclick='dblclickMetadata(paragraph, node)') {{node.name}} [{{node.order ? 'ASC' : 'DESC'}}]
-    .popover-content(ng-if='!cache.metadata || cache.metadata.length == 0')
+.popover.cache-metadata(tabindex='-1' dw-loading='loadingCacheMetadata' dw-loading-options='{text: ""}' ng-init='loadMetadata()')
+    h3.popover-title
+        label.labelField Metadata for caches:
+        button.close(id='cache-metadata-close' ng-click='$hide()') &times;
+        .input-tip
+            input.form-control(type='text' ng-model='metaFilter' placeholder='Filter matadata...')
+    .popover-content(ng-if='metadata && metadata.length > 0')
+        treecontrol.tree-classic(tree-model='metadata' options='metaOptions' filter-expression="metaFilter")
+            span(ng-switch='' on='node.type')
+                span(ng-switch-when='type' ng-dblclick='dblclickMetadata(paragraph, node)')
+                    i.fa.fa-table
+                    label.clickable {{node.name}}
+                span(ng-switch-when='field' ng-dblclick='dblclickMetadata(paragraph, node)')
+                    i.fa(ng-class='node.system ? "fa-file-text-o" : "fa-file-o"')
+                    label.clickable {{node.name}} [{{node.clazz}}]
+                label(ng-switch-when='indexes') {{node.name}}
+                label(ng-switch-when='index') {{node.name}}
+                span(ng-switch-when='index-field' ng-dblclick='dblclickMetadata(paragraph, node)')
+                    i.fa(ng-class='node.order ? "fa-sort-amount-asc" : "fa-sort-amount-desc"')
+                    label.clickable {{node.name}}
+    .popover-content(ng-if='!metadata || metadata.length == 0')
         label.content-empty No types found
     h3.popover-footer Double click to paste into editor

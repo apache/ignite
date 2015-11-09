@@ -130,6 +130,7 @@ block container
                                     .col-xs-4.col-sm-3
                                         div(ng-show='caches.length > 0' style='padding: 5px 10px' st-table='displayedCaches' st-safe-src='caches')
                                             lable.labelField.labelFormField Caches:
+                                            i.fa.fa-database.tipField(bs-popover data-template-url='cache-metadata', data-placement='bottom', data-trigger='click')
                                             .input-tip
                                                 input.form-control(type='text' st-search placeholder='Filter caches...')
                                             table.links
@@ -137,7 +138,7 @@ block container
                                                     tr(ng-repeat='cache in displayedCaches track by cache.name')
                                                         td(style='width: 100%')
                                                             input.labelField(type='radio' value='{{cache.name}}')
-                                                            a(bs-popover data-template-url='cache-metadata', data-placement='bottom', data-trigger='click') {{cache.name}}
+                                                            label {{cache.name || "&lt;default&gt;"}}
                                         .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
                                             label Wrong caches filter
                                         .empty-caches(ng-show='caches.length == 0')
