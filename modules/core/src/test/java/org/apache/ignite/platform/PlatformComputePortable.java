@@ -18,22 +18,25 @@
 package org.apache.ignite.platform;
 
 /**
- * Binarizable object defined only in Java.
+ * Binarizable object for task tests.
  */
-public class PlatformComputeJavaBinarizable extends PlatformComputeBinarizable {
+public class PlatformComputePortable {
+    /** Field. */
+    public int field;
+
     /**
      * Constructor.
      */
-    public PlatformComputeJavaBinarizable() {
+    public PlatformComputePortable() {
         // No-op.
     }
 
     /**
-     * Constructor.
+     * Constructor,
      *
      * @param field Field.
      */
-    public PlatformComputeJavaBinarizable(int field) {
-        super(field);
+    public PlatformComputePortable(int field) {
+        this.field = field;
     }
 }

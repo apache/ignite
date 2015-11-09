@@ -41,10 +41,10 @@ import java.util.Map;
 /**
  * Task working with binarizable argument.
  */
-public class PlatformComputeBinarizableArgTask extends ComputeTaskAdapter<Object, Integer> {
+public class PlatformComputePortableArgTask extends ComputeTaskAdapter<Object, Integer> {
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
-        return Collections.singletonMap(new BinarizableArgJob(arg), F.first(subgrid));
+        return Collections.singletonMap(new PortableArgJob(arg), F.first(subgrid));
     }
 
     /** {@inheritDoc} */
@@ -61,7 +61,7 @@ public class PlatformComputeBinarizableArgTask extends ComputeTaskAdapter<Object
     /**
      * Job.
      */
-    private static class BinarizableArgJob extends ComputeJobAdapter implements Externalizable {
+    private static class PortableArgJob extends ComputeJobAdapter implements Externalizable {
         /** */
         @IgniteInstanceResource
         private Ignite ignite;
@@ -72,7 +72,7 @@ public class PlatformComputeBinarizableArgTask extends ComputeTaskAdapter<Object
         /**
          * Constructor.
          */
-        public BinarizableArgJob() {
+        public PortableArgJob() {
             // No-op.
         }
 
@@ -81,7 +81,7 @@ public class PlatformComputeBinarizableArgTask extends ComputeTaskAdapter<Object
          *
          * @param arg Argument.
          */
-        private BinarizableArgJob(Object arg) {
+        private PortableArgJob(Object arg) {
             this.arg = arg;
         }
 
