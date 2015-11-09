@@ -2,13 +2,17 @@ package org.apache.ignite.internal.processors.query.odbc;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgnitePortProtocol;
+import org.jetbrains.annotations.Nullable;
 
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -53,7 +57,7 @@ public class GridTcpOdbcServer {
 
     @SuppressWarnings("BusyWait")
     public void start() throws IgniteCheckedException {
-        ConnectorConfiguration cfg = ctx.config().getConnectorConfiguration();
+        OdbcConfiguration cfg = ctx.config().getOdbcConfiguration();
 
         assert cfg != null;
 
@@ -64,20 +68,35 @@ public class GridTcpOdbcServer {
         try {
             host = resolveOdbcTcpHost(ctx.config());
 
-            int lastPort = cfg.getPort() + cfg.getPortRange() - 1;
+            SSLContext sslCtx = null;
 
-            for (int port0 = cfg.getPort(); port0 <= lastPort; port0++) {
-                if (startTcpServer(host, port0, lsnr, parser, cfg)) {
-                    port = port0;
+            if (cfg.isSslEnabled()) {
+                Factory<SSLContext> igniteFactory = ctx.config().getSslContextFactory();
 
-                    System.out.println("ODBC Server has started on TCP port " + port);
+                Factory<SSLContext> factory = cfg.getSslFactory();
 
-                    return;
-                }
+                if (factory == null && igniteFactory == null)
+                    // Thrown SSL exception instead of IgniteCheckedException for writing correct warning message into log.
+                    throw new SSLException("SSL is enabled, but SSL context factory is not specified.");
+
+                if (factory != null)
+                    sslCtx = factory.create();
+                else
+                    sslCtx = igniteFactory.create();
+            }
+
+            int odbcPort = cfg.getPort();
+
+            if (startTcpServer(host, odbcPort, lsnr, parser, sslCtx, cfg)) {
+                port = odbcPort;
+
+                System.out.println("ODBC Server has started on TCP port " + port);
+
+                return;
             }
 
             U.warn(log, "Failed to start " + name() + " (possibly all ports in range are in use) " +
-                    "[firstPort=" + cfg.getPort() + ", lastPort=" + lastPort + ", host=" + host + ']');
+                    "[odbcPort=" + odbcPort + ", host=" + host + ']');
         }
         catch (SSLException e) {
             U.warn(log, "Failed to start " + name() + " on port " + port + ": " + e.getMessage(),
@@ -132,11 +151,31 @@ public class GridTcpOdbcServer {
      *      server was unable to start.
      */
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<byte[]> lsnr,
-                                   GridNioParser parser, ConnectorConfiguration cfg) {
+                                   GridNioParser parser, @Nullable SSLContext sslCtx, OdbcConfiguration cfg) {
         try {
             GridNioFilter codec = new GridNioCodecFilter(parser, log, false);
 
-            GridNioFilter[] filters = null; // new GridNioFilter[] { codec };
+            GridNioFilter[] filters;
+
+            if (sslCtx != null) {
+                GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx,
+                        cfg.isDirectBuffer(), ByteOrder.nativeOrder(), log);
+
+                sslFilter.directMode(false);
+
+                boolean auth = cfg.isSslClientAuth();
+
+                sslFilter.wantClientAuth(auth);
+
+                sslFilter.needClientAuth(auth);
+
+                filters = new GridNioFilter[] {
+                       // codec,
+                        sslFilter
+                };
+            }
+            else
+                filters = null; //new GridNioFilter[] { codec };
 
             srv = GridNioServer.<byte[]>builder()
                     .address(hostAddr)

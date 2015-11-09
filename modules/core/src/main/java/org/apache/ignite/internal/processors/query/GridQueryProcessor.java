@@ -140,7 +140,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idx.start(ctx, busyLock);
         }
 
-        odbc.start();
+        if (ctx.config().getOdbcConfiguration().isEnabled())
+            odbc.start();
     }
 
     /**

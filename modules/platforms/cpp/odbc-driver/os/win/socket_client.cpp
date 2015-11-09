@@ -72,15 +72,13 @@ namespace ignite
                 // Resolve the server address and port
                 iResult = getaddrinfo(hostname, converter.str().c_str(), &hints, &result);
 
-                LOG_MSG("%d\n", iResult);
-
                 if (iResult != 0)
                     return false;
 
                 // Attempt to connect to an address until one succeeds
                 for (ptr = result; ptr != NULL; ptr = ptr->ai_next) 
                 {
-                    LOG_MSG("Addr: %d.%d.%d.%d\n", ptr->ai_addr->sa_data[0], ptr->ai_addr->sa_data[1], ptr->ai_addr->sa_data[2], ptr->ai_addr->sa_data[3]);
+                    LOG_MSG("Addr: %u.%u.%u.%u\n", ptr->ai_addr->sa_data[2], ptr->ai_addr->sa_data[3], ptr->ai_addr->sa_data[4], ptr->ai_addr->sa_data[5]);
 
                     // Create a SOCKET for connecting to server
                     socketHandle = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);

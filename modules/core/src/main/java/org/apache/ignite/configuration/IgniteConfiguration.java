@@ -406,6 +406,9 @@ public class IgniteConfiguration {
     /** Client access configuration. */
     private ConnectorConfiguration connectorCfg = new ConnectorConfiguration();
 
+    /** Client access configuration. */
+    private OdbcConfiguration odbcCfg = new OdbcConfiguration();
+
     /** Warmup closure. Will be invoked before actual grid start. */
     private IgniteInClosure<IgniteConfiguration> warmupClos;
 
@@ -465,6 +468,7 @@ public class IgniteConfiguration {
         cacheCfg = cfg.getCacheConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
         connectorCfg = cfg.getConnectorConfiguration();
+        odbcCfg = cfg.getOdbcConfiguration();
         classLdr = cfg.getClassLoader();
         clientMode = cfg.isClientMode();
         clockSyncFreq = cfg.getClockSyncFrequency();
@@ -2200,6 +2204,23 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setConnectorConfiguration(ConnectorConfiguration connectorCfg) {
         this.connectorCfg = connectorCfg;
+
+        return this;
+    }
+
+    /**
+     * @return Odbc configuration.
+     */
+    public OdbcConfiguration getOdbcConfiguration() {
+        return odbcCfg;
+    }
+
+    /**
+     * @param odbcCfg Odbc configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setOdbcConfiguration(OdbcConfiguration odbcCfg) {
+        this.odbcCfg = odbcCfg;
 
         return this;
     }
