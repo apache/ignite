@@ -418,7 +418,14 @@ $generatorXml.clusterConnector = function(cluster, res) {
         res = $generatorCommon.builder();
 
     if ($commonUtils.isDefined(cluster.connector) && cluster.connector.enabled) {
-        $generatorXml.beanProperty(res, cluster.connector, 'connectorConfiguration', $generatorCommon.CONNECTOR_CONFIGURATION, true);
+        var cfg = _.cloneDeep($generatorCommon.CONNECTOR_CONFIGURATION);
+
+        if (cluster.connector.sslEnabled) {
+            cfg.fields.sslClientAuth = {dflt: false};
+            cfg.fields.sslFactory = {type: 'bean'};
+        }
+
+        $generatorXml.beanProperty(res, cluster.connector, 'connectorConfiguration', cfg, true);
 
         res.needEmptyLine = true;
     }

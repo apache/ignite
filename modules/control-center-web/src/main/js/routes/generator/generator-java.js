@@ -521,11 +521,16 @@ $generatorJava.clusterConnector = function (cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    var cfg = $generatorCommon.CONNECTOR_CONFIGURATION;
-
     if ($commonUtils.isDefined($commonUtils.isDefined(cluster.connector) && cluster.connector.enabled)) {
+        var cfg = _.cloneDeep($generatorCommon.CONNECTOR_CONFIGURATION);
+
+        if (cluster.connector.sslEnabled) {
+            cfg.fields.sslClientAuth = {dflt: false};
+            cfg.fields.sslFactory = {type: 'bean'};
+        }
+
         $generatorJava.beanProperty(res, 'cfg', cluster.connector, 'connectorConfiguration', 'clientCfg',
-            $generatorCommon.CONNECTOR_CONFIGURATION.className, $generatorCommon.CONNECTOR_CONFIGURATION.fields, true);
+            cfg.className, cfg.fields, true);
 
         res.needEmptyLine = true;
     }
