@@ -26,23 +26,21 @@
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="localHost" value="127.0.0.1"/>
-        <property name="connectorConfiguration"><null/></property>
+        <!-- Set to true to enable distributed class loading for examples, default is false. -->
+        <property name="peerClassLoadingEnabled" value="true"/>
 
         <property name="platformConfiguration">
             <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
-                <property name="binaryConfiguration">
-                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration">
+                <property name="portableConfiguration">
+                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration">
                         <property name="types">
                             <list>
-                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64]</value>
-                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Type]</value>
-                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64]]</value>
-                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Collections.Generic.List[System.Tuple[System.Int64,System.String]]]</value>
-                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String]</value>
-                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,Apache.Ignite.Core.Tests.TestGenericPortable[System.String]]</value>
-                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String,System.Type]</value>
-                                <value>Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String,Apache.Ignite.Core.Tests.TestGenericPortable[System.Int64,System.String,System.Type]]</value>
+                                <value>Apache.Ignite.Examples.Dll.Portable.Account</value>
+                                <value>Apache.Ignite.Examples.Dll.Portable.Address</value>
+                                <value>Apache.Ignite.Examples.Dll.Portable.Employee</value>
+                                <value>Apache.Ignite.Examples.Dll.Portable.EmployeeKey</value>
+                                <value>Apache.Ignite.Examples.Dll.Portable.Organization</value>
+                                <value>Apache.Ignite.Examples.Dll.Portable.OrganizationType</value>
                             </list>
                         </property>
                     </bean>
@@ -50,20 +48,27 @@
             </bean>
         </property>
 
-        <property name="includeEventTypes">
-            <util:constant static-field="org.apache.ignite.events.EventType.EVTS_CACHE"/>
-        </property>
-
         <property name="cacheConfiguration">
             <list>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration" />
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="cache*"/>
+                    <property name="atomicityMode" value="ATOMIC"/>
+                    <property name="backups" value="1"/>
+                </bean>
+
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="tx"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="backups" value="1"/>
+                </bean>
             </list>
         </property>
 
+        <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
                         <property name="addresses">
                             <list>
                                 <!-- In distributed environment, replace with actual host IP address. -->
