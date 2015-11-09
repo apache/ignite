@@ -42,7 +42,6 @@ namespace Apache.Ignite.Benchmarks.Binary
         /** Pre-allocated address. */
         private readonly Address _address = BenchmarkUtils.GetRandomAddress();
 
-
         /** Pre-allocated model. */
         private readonly TestModel _model = new TestModel
         {
