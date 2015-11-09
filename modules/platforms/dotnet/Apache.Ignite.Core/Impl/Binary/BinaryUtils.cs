@@ -1477,7 +1477,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="typeName">Type name.</param>
          * <returns>Simple type name.</returns>
          */
-        public static string GetSimpleTypeName(string typeName)
+        public static string SimpleTypeName(string typeName)
         {
             int idx = typeName.LastIndexOf('.');
 
