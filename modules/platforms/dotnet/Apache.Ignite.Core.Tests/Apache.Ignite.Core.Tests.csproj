@@ -116,7 +116,7 @@
     <Compile Include="IgniteManagerTest.cs" />
     <Compile Include="MarshallerTest.cs" />
     <Compile Include="MessagingTest.cs" />
-    <Compile Include="PortableConfigurationTest.cs" />
+    <Compile Include="BinaryConfigurationTest.cs" />
     <Compile Include="Binary\BinaryStructureTest.cs" />
     <Compile Include="SerializationTest.cs" />
     <Compile Include="IgniteStartStopTest.cs" />

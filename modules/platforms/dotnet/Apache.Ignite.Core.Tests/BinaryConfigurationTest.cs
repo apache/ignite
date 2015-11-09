@@ -25,44 +25,44 @@ namespace Apache.Ignite.Core.Tests
     using NUnit.Framework;
 
     /// <summary>
-    /// Portable configuration tests.
+    /// Binary configuration tests.
     /// </summary>
-    public class PortableConfigurationTest
+    public class BinaryConfigurationTest
     {
         /** Cache. */
-        private ICache<int, TestGenericPortableBase> _cache;
+        private ICache<int, TestGenericBinarizableBase> _cache;
 
         /** Random generator. */
         private static readonly Random Rnd = new Random();
 
         /** Test types for code config */
         private static readonly Type[] TestTypes = {
-            typeof (TestGenericPortable<int>),
-            typeof (TestGenericPortable<string>),
-            typeof (TestGenericPortable<TestGenericPortable<int>>),
-            typeof (TestGenericPortable<List<Tuple<int, string>>>),
-            typeof (TestGenericPortable<int, string>),
-            typeof (TestGenericPortable<int, TestGenericPortable<string>>),
-            typeof (TestGenericPortable<int, string, Type>),
-            typeof (TestGenericPortable<int, string, TestGenericPortable<int, string, Type>>)
+            typeof (TestGenericBinarizable<int>),
+            typeof (TestGenericBinarizable<string>),
+            typeof (TestGenericBinarizable<TestGenericBinarizable<int>>),
+            typeof (TestGenericBinarizable<List<Tuple<int, string>>>),
+            typeof (TestGenericBinarizable<int, string>),
+            typeof (TestGenericBinarizable<int, TestGenericBinarizable<string>>),
+            typeof (TestGenericBinarizable<int, string, Type>),
+            typeof (TestGenericBinarizable<int, string, TestGenericBinarizable<int, string, Type>>)
         };
 
         /** Test types for xml config */
         private static readonly Type[] TestTypesXml = {
-            typeof (TestGenericPortable<long>),
-            typeof (TestGenericPortable<Type>),
-            typeof (TestGenericPortable<TestGenericPortable<long>>),
-            typeof (TestGenericPortable<List<Tuple<long, string>>>),
-            typeof (TestGenericPortable<long, string>),
-            typeof (TestGenericPortable<long, TestGenericPortable<string>>),
-            typeof (TestGenericPortable<long, string, Type>),
-            typeof (TestGenericPortable<long, string, TestGenericPortable<long, string, Type>>)
+            typeof (TestGenericBinarizable<long>),
+            typeof (TestGenericBinarizable<Type>),
+            typeof (TestGenericBinarizable<TestGenericBinarizable<long>>),
+            typeof (TestGenericBinarizable<List<Tuple<long, string>>>),
+            typeof (TestGenericBinarizable<long, string>),
+            typeof (TestGenericBinarizable<long, TestGenericBinarizable<string>>),
+            typeof (TestGenericBinarizable<long, string, Type>),
+            typeof (TestGenericBinarizable<long, string, TestGenericBinarizable<long, string, Type>>)
         };
 
         /// <summary>
         /// Starts the grid with provided config.
         /// </summary>
-        /// <param name="binaryConfiguration">The portable configuration.</param>
+        /// <param name="binaryConfiguration">The binary configuration.</param>
         private void StartGrid(BinaryConfiguration binaryConfiguration)
         {
             Ignition.StopAll(true);
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests
                 BinaryConfiguration = binaryConfiguration
             });
 
-            _cache = grid.GetCache<int, TestGenericPortableBase>(null);
+            _cache = grid.GetCache<int, TestGenericBinarizableBase>(null);
         }
 
         /// <summary>
@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Tests
                 TypeConfigurations = TestTypes.Select(x => new BinaryTypeConfiguration(x)).ToList()
             });
 
-            CheckPortableTypes(TestTypes);
+            CheckBinarizableTypes(TestTypes);
         }
 
         /// <summary>
@@ -109,13 +109,13 @@ namespace Apache.Ignite.Core.Tests
         {
             StartGrid(null);
 
-            CheckPortableTypes(TestTypesXml);
+            CheckBinarizableTypes(TestTypesXml);
         }
 
         /// <summary>
-        /// Checks that specified types are portable and can be successfully used in cache.
+        /// Checks that specified types are binarizable and can be successfully used in cache.
         /// </summary>
-        private void CheckPortableTypes(IEnumerable<Type> testTypes)
+        private void CheckBinarizableTypes(IEnumerable<Type> testTypes)
         {
             int key = 0;
 
@@ -136,11 +136,11 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Creates the instance of specified test portable type and sets a value on it.
+        /// Creates the instance of specified test binarizable type and sets a value on it.
         /// </summary>
-        private static TestGenericPortableBase CreateInstance(Type type)
+        private static TestGenericBinarizableBase CreateInstance(Type type)
         {
-            var inst = (TestGenericPortableBase)Activator.CreateInstance(type);
+            var inst = (TestGenericBinarizableBase)Activator.CreateInstance(type);
 
             inst.Prop = Rnd.Next(int.MaxValue);
 
@@ -148,23 +148,23 @@ namespace Apache.Ignite.Core.Tests
         }
     }
 
-    public abstract class TestGenericPortableBase
+    public abstract class TestGenericBinarizableBase
     {
         public object Prop { get; set; }
     }
 
-    public class TestGenericPortable<T> : TestGenericPortableBase
+    public class TestGenericBinarizable<T> : TestGenericBinarizableBase
     {
         public T Prop1 { get; set; }
     }
 
-    public class TestGenericPortable<T1, T2> : TestGenericPortableBase
+    public class TestGenericBinarizable<T1, T2> : TestGenericBinarizableBase
     {
         public T1 Prop1 { get; set; }
         public T2 Prop2 { get; set; }
     }
 
-    public class TestGenericPortable<T1, T2, T3> : TestGenericPortableBase
+    public class TestGenericBinarizable<T1, T2, T3> : TestGenericBinarizableBase
     {
         public T1 Prop1 { get; set; }
         public T2 Prop2 { get; set; }
