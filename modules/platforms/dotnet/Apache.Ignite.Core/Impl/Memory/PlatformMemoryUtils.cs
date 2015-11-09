@@ -59,7 +59,6 @@ namespace Apache.Ignite.Core.Impl.Memory
             return memPtr;
         }
 
-
         /// <summary>
         /// Reallocate unpooled memory chunk.
         /// </summary>
