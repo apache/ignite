@@ -337,6 +337,7 @@ public class PortableClassDescriptor {
     /**
      * @return portableReadResolve() method
      */
+    @SuppressWarnings("UnusedDeclaration")
     @Nullable Method getReadResolveMethod() {
         return readResolveMtd;
     }
@@ -430,62 +431,62 @@ public class PortableClassDescriptor {
                 break;
 
             case SHORT_ARR:
-                writer.doWriteShortArray((short[])obj);
+                writer.doWriteShortArray((short[]) obj);
 
                 break;
 
             case INT_ARR:
-                writer.doWriteIntArray((int[])obj);
+                writer.doWriteIntArray((int[]) obj);
 
                 break;
 
             case LONG_ARR:
-                writer.doWriteLongArray((long[])obj);
+                writer.doWriteLongArray((long[]) obj);
 
                 break;
 
             case FLOAT_ARR:
-                writer.doWriteFloatArray((float[])obj);
+                writer.doWriteFloatArray((float[]) obj);
 
                 break;
 
             case DOUBLE_ARR:
-                writer.doWriteDoubleArray((double[])obj);
+                writer.doWriteDoubleArray((double[]) obj);
 
                 break;
 
             case CHAR_ARR:
-                writer.doWriteCharArray((char[])obj);
+                writer.doWriteCharArray((char[]) obj);
 
                 break;
 
             case BOOLEAN_ARR:
-                writer.doWriteBooleanArray((boolean[])obj);
+                writer.doWriteBooleanArray((boolean[]) obj);
 
                 break;
 
             case DECIMAL_ARR:
-                writer.doWriteDecimalArray((BigDecimal[])obj);
+                writer.doWriteDecimalArray((BigDecimal[]) obj);
 
                 break;
 
             case STRING_ARR:
-                writer.doWriteStringArray((String[])obj);
+                writer.doWriteStringArray((String[]) obj);
 
                 break;
 
             case UUID_ARR:
-                writer.doWriteUuidArray((UUID[])obj);
+                writer.doWriteUuidArray((UUID[]) obj);
 
                 break;
 
             case DATE_ARR:
-                writer.doWriteDateArray((Date[])obj);
+                writer.doWriteDateArray((Date[]) obj);
 
                 break;
 
             case TIMESTAMP_ARR:
-                writer.doWriteTimestampArray((Timestamp[])obj);
+                writer.doWriteTimestampArray((Timestamp[]) obj);
 
                 break;
 
@@ -711,6 +712,7 @@ public class PortableClassDescriptor {
      * @return Constructor.
      * @throws org.apache.ignite.binary.BinaryObjectException If constructor doesn't exist.
      */
+    @SuppressWarnings("ConstantConditions")
     @Nullable private static Constructor<?> constructor(Class<?> cls) throws BinaryObjectException {
         assert cls != null;
 
@@ -739,11 +741,8 @@ public class PortableClassDescriptor {
             Method writeObj = cls.getDeclaredMethod("writeObject", ObjectOutputStream.class);
             Method readObj = cls.getDeclaredMethod("readObject", ObjectInputStream.class);
 
-            if (!Modifier.isStatic(writeObj.getModifiers()) && !Modifier.isStatic(readObj.getModifiers()) &&
-                writeObj.getReturnType() == void.class && readObj.getReturnType() == void.class)
-                use = true;
-            else
-                use = false;
+            use = !Modifier.isStatic(writeObj.getModifiers()) && !Modifier.isStatic(readObj.getModifiers()) &&
+                writeObj.getReturnType() == void.class && readObj.getReturnType() == void.class;
         }
         catch (NoSuchMethodException e) {
             use = false;
@@ -961,62 +960,62 @@ public class PortableClassDescriptor {
                     break;
 
                 case SHORT_ARR:
-                    writer.writeShortArrayField((short[])val);
+                    writer.writeShortArrayField((short[]) val);
 
                     break;
 
                 case INT_ARR:
-                    writer.writeIntArrayField((int[])val);
+                    writer.writeIntArrayField((int[]) val);
 
                     break;
 
                 case LONG_ARR:
-                    writer.writeLongArrayField((long[])val);
+                    writer.writeLongArrayField((long[]) val);
 
                     break;
 
                 case FLOAT_ARR:
-                    writer.writeFloatArrayField((float[])val);
+                    writer.writeFloatArrayField((float[]) val);
 
                     break;
 
                 case DOUBLE_ARR:
-                    writer.writeDoubleArrayField((double[])val);
+                    writer.writeDoubleArrayField((double[]) val);
 
                     break;
 
                 case CHAR_ARR:
-                    writer.writeCharArrayField((char[])val);
+                    writer.writeCharArrayField((char[]) val);
 
                     break;
 
                 case BOOLEAN_ARR:
-                    writer.writeBooleanArrayField((boolean[])val);
+                    writer.writeBooleanArrayField((boolean[]) val);
 
                     break;
 
                 case DECIMAL_ARR:
-                    writer.writeDecimalArrayField((BigDecimal[])val);
+                    writer.writeDecimalArrayField((BigDecimal[]) val);
 
                     break;
 
                 case STRING_ARR:
-                    writer.writeStringArrayField((String[])val);
+                    writer.writeStringArrayField((String[]) val);
 
                     break;
 
                 case UUID_ARR:
-                    writer.writeUuidArrayField((UUID[])val);
+                    writer.writeUuidArrayField((UUID[]) val);
 
                     break;
 
                 case DATE_ARR:
-                    writer.writeDateArrayField((Date[])val);
+                    writer.writeDateArrayField((Date[]) val);
 
                     break;
 
                 case TIMESTAMP_ARR:
-                    writer.writeTimestampArrayField((Timestamp[])val);
+                    writer.writeTimestampArrayField((Timestamp[]) val);
 
                     break;
 
@@ -1275,134 +1274,134 @@ public class PortableClassDescriptor {
     /** */
     enum Mode {
         /** */
-        BYTE("byte"),
+        BYTE(GridPortableMarshaller.BYTE),
 
         /** */
-        SHORT("short"),
+        SHORT(GridPortableMarshaller.SHORT),
 
         /** */
-        INT("int"),
+        INT(GridPortableMarshaller.INT),
 
         /** */
-        LONG("long"),
+        LONG(GridPortableMarshaller.LONG),
 
         /** */
-        FLOAT("float"),
+        FLOAT(GridPortableMarshaller.FLOAT),
 
         /** */
-        DOUBLE("double"),
+        DOUBLE(GridPortableMarshaller.DOUBLE),
 
         /** */
-        CHAR("char"),
+        CHAR(GridPortableMarshaller.CHAR),
 
         /** */
-        BOOLEAN("boolean"),
+        BOOLEAN(GridPortableMarshaller.BOOLEAN),
 
         /** */
-        DECIMAL("decimal"),
+        DECIMAL(GridPortableMarshaller.DECIMAL),
 
         /** */
-        STRING("String"),
+        STRING(GridPortableMarshaller.STRING),
 
         /** */
-        UUID("UUID"),
+        UUID(GridPortableMarshaller.UUID),
 
         /** */
-        DATE("Date"),
+        DATE(GridPortableMarshaller.DATE),
 
         /** */
-        TIMESTAMP("Timestamp"),
+        TIMESTAMP(GridPortableMarshaller.TIMESTAMP),
 
         /** */
-        BYTE_ARR("byte[]"),
+        BYTE_ARR(GridPortableMarshaller.BYTE_ARR),
 
         /** */
-        SHORT_ARR("short[]"),
+        SHORT_ARR(GridPortableMarshaller.SHORT_ARR),
 
         /** */
-        INT_ARR("int[]"),
+        INT_ARR(GridPortableMarshaller.INT_ARR),
 
         /** */
-        LONG_ARR("long[]"),
+        LONG_ARR(GridPortableMarshaller.LONG_ARR),
 
         /** */
-        FLOAT_ARR("float[]"),
+        FLOAT_ARR(GridPortableMarshaller.FLOAT_ARR),
 
         /** */
-        DOUBLE_ARR("double[]"),
+        DOUBLE_ARR(GridPortableMarshaller.DOUBLE_ARR),
 
         /** */
-        CHAR_ARR("char[]"),
+        CHAR_ARR(GridPortableMarshaller.CHAR_ARR),
 
         /** */
-        BOOLEAN_ARR("boolean[]"),
+        BOOLEAN_ARR(GridPortableMarshaller.BOOLEAN_ARR),
 
         /** */
-        DECIMAL_ARR("decimal[]"),
+        DECIMAL_ARR(GridPortableMarshaller.DECIMAL_ARR),
 
         /** */
-        STRING_ARR("String[]"),
+        STRING_ARR(GridPortableMarshaller.STRING_ARR),
 
         /** */
-        UUID_ARR("UUID[]"),
+        UUID_ARR(GridPortableMarshaller.UUID_ARR),
 
         /** */
-        DATE_ARR("Date[]"),
+        DATE_ARR(GridPortableMarshaller.DATE_ARR),
 
         /** */
-        TIMESTAMP_ARR("Timestamp[]"),
+        TIMESTAMP_ARR(GridPortableMarshaller.TIMESTAMP_ARR),
 
         /** */
-        OBJ_ARR("Object[]"),
+        OBJ_ARR(GridPortableMarshaller.OBJ_ARR),
 
         /** */
-        COL("Collection"),
+        COL(GridPortableMarshaller.COL),
 
         /** */
-        MAP("Map"),
+        MAP(GridPortableMarshaller.MAP),
 
         /** */
-        MAP_ENTRY("Entry"),
+        MAP_ENTRY(GridPortableMarshaller.MAP_ENTRY),
 
         /** */
-        PORTABLE_OBJ("Object"),
+        PORTABLE_OBJ(GridPortableMarshaller.OBJ),
 
         /** */
-        ENUM("Enum"),
+        ENUM(GridPortableMarshaller.ENUM),
 
         /** */
-        ENUM_ARR("Enum[]"),
+        ENUM_ARR(GridPortableMarshaller.ENUM_ARR),
 
         /** */
-        CLASS("Class"),
+        CLASS(GridPortableMarshaller.CLASS),
 
         /** */
-        PORTABLE("Object"),
+        PORTABLE(GridPortableMarshaller.PORTABLE_OBJ),
 
         /** */
-        EXTERNALIZABLE("Object"),
+        EXTERNALIZABLE(GridPortableMarshaller.OBJ),
 
         /** */
-        OBJECT("Object"),
+        OBJECT(GridPortableMarshaller.OBJ),
 
         /** */
-        EXCLUSION("Exclusion");
+        EXCLUSION(GridPortableMarshaller.OBJ);
 
         /** */
-        private final String typeName;
+        private final int typeId;
 
         /**
-         * @param typeName Type name.
+         * @param typeId Type ID.
          */
-        Mode(String typeName) {
-            this.typeName = typeName;
+        Mode(int typeId) {
+            this.typeId = typeId;
         }
 
         /**
          * @return Type name.
          */
         String typeName() {
-            return typeName;
+            return PortableUtils.fieldTypeName(typeId);
         }
     }
 }
