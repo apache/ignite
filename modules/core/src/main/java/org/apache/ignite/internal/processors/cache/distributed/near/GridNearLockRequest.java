@@ -121,6 +121,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
      * @param firstClientReq {@code True} if first lock request for lock operation sent from client node.
+     * @param addDepInfo Deployment info flag.
      */
     public GridNearLockRequest(
         int cacheId,
@@ -144,7 +145,9 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         int taskNameHash,
         long accessTtl,
         boolean skipStore,
-        boolean firstClientReq
+        boolean firstClientReq,
+        boolean addDepInfo
+
     ) {
         super(
             cacheId,
@@ -160,7 +163,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
             timeout,
             keyCnt,
             txSize,
-            skipStore);
+            skipStore,
+            addDepInfo);
 
         assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 

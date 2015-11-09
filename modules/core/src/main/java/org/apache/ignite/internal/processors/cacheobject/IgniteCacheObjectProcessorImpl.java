@@ -91,7 +91,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public byte[] marshal(CacheObjectContext ctx, Object val) throws IgniteCheckedException {
-        return CU.marshal(ctx.kernalContext().cache().context(), val);
+        return CU.marshal(ctx.kernalContext().cache().context(), ctx.addDeploymentInfo(), val);
     }
 
     /** {@inheritDoc} */
@@ -209,7 +209,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         CacheObjectContext res = new CacheObjectContext(ctx,
             ccfg.getAffinityMapper() != null ? ccfg.getAffinityMapper() : new GridCacheDefaultAffinityKeyMapper(),
             ccfg.isCopyOnRead() && memMode != OFFHEAP_VALUES,
-            storeVal);
+            storeVal,
+            ctx.config().isPeerClassLoadingEnabled() && !isPortableEnabled(ccfg));
 
         ctx.resource().injectGeneric(res.defaultAffMapper());
 

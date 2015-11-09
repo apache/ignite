@@ -83,14 +83,19 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
         grid().<Integer, String>getOrCreateCache(defaultCacheConfiguration());
 
         broker = new BrokerService();
-        broker.deleteAllMessages();
+        broker.setDeleteAllMessagesOnStartup(true);
         broker.setPersistent(false);
+        broker.setPersistenceAdapter(null);
+        broker.setPersistenceFactory(null);
 
         PolicyMap policyMap = new PolicyMap();
         PolicyEntry policy = new PolicyEntry();
+
         policy.setQueuePrefetch(1);
+
         broker.setDestinationPolicy(policyMap);
         broker.getDestinationPolicy().setDefaultEntry(policy);
+        broker.setSchedulerSupport(false);
 
         broker.start(true);
 
@@ -102,8 +107,8 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     public void afterTest() throws Exception {
         grid().cache(null).clear();
 
-        broker.deleteAllMessages();
         broker.stop();
+        broker.deleteAllMessages();
     }
 
     public void testQueueFromName() throws Exception {

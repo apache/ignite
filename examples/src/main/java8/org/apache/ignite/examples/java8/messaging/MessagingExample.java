@@ -54,13 +54,8 @@ public final class MessagingExample {
      */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2)) {
-                System.out.println();
-                System.out.println(">>> Please start at least 2 cluster nodes to run example.");
-                System.out.println();
-
+            if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2))
                 return;
-            }
 
             System.out.println();
             System.out.println(">>> Messaging example started.");

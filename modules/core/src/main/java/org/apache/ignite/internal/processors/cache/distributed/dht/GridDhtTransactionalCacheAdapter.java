@@ -408,7 +408,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean cancelled = false;
 
         try {
-            res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), cnt);
+            res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), cnt,
+                ctx.deploymentEnabled());
 
             dhtTx = startRemoteTx(nodeId, req, res);
             nearTx = isNearEnabled(cacheCfg) ? near().startRemoteTx(nodeId, req) : null;
@@ -435,7 +436,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             U.error(log, err, e);
 
             res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(),
-                new IgniteTxRollbackCheckedException(err, e));
+                new IgniteTxRollbackCheckedException(err, e), ctx.deploymentEnabled());
 
             fail = true;
         }
@@ -448,7 +449,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.version(),
                 req.futureId(),
                 req.miniId(),
-                new IgniteCheckedException(err, e));
+                new IgniteCheckedException(err, e), ctx.deploymentEnabled());
 
             fail = true;
         }
@@ -671,9 +672,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         if (log.isDebugEnabled())
                             log.debug("Got removed entry when adding lock (will retry): " + entry);
                     }
-                    catch (GridDistributedLockCancelledException e) {
+                    catch (IgniteCheckedException | GridDistributedLockCancelledException e) {
                         if (log.isDebugEnabled())
-                            log.debug("Got lock request for cancelled lock (will fail): " + entry);
+                            log.debug("Failed to add entry [err=" + e + ", entry=" + entry + ']');
 
                         return new GridDhtFinishedFuture<>(e);
                     }
@@ -1035,7 +1036,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             false,
             0,
             null,
-            topVer);
+            topVer,
+            ctx.deploymentEnabled());
 
         try {
             ctx.io().send(nearNode, res, ctx.ioPolicy());
@@ -1080,7 +1082,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 tx != null && tx.onePhaseCommit(),
                 entries.size(),
                 err,
-                null);
+                null,
+                ctx.deploymentEnabled());
 
             if (err == null) {
                 res.pending(localDhtPendingVersions(entries, mappedVer));
@@ -1103,62 +1106,55 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             if (tx == null || !tx.isRollbackOnly()) {
                                 GridCacheVersion dhtVer = req.dhtVersion(i);
 
-                                try {
-                                    GridCacheVersion ver = e.version();
+                                GridCacheVersion ver = e.version();
 
-                                    boolean ret = req.returnValue(i) || dhtVer == null || !dhtVer.equals(ver);
+                                boolean ret = req.returnValue(i) || dhtVer == null || !dhtVer.equals(ver);
 
-                                    CacheObject val = null;
+                                CacheObject val = null;
 
-                                    if (ret)
-                                        val = e.innerGet(tx,
-                                            /*swap*/true,
-                                            /*read-through*/false,
-                                            /*fail-fast.*/false,
-                                            /*unmarshal*/false,
-                                            /*update-metrics*/true,
-                                            /*event notification*/req.returnValue(i),
-                                            /*temporary*/false,
-                                            CU.subjectId(tx, ctx.shared()),
-                                            null,
-                                            tx != null ? tx.resolveTaskName() : null,
-                                            null);
+                                if (ret)
+                                    val = e.innerGet(tx,
+                                        /*swap*/true,
+                                        /*read-through*/false,
+                                        /*fail-fast.*/false,
+                                        /*unmarshal*/false,
+                                        /*update-metrics*/true,
+                                        /*event notification*/req.returnValue(i),
+                                        /*temporary*/false,
+                                        CU.subjectId(tx, ctx.shared()),
+                                        null,
+                                        tx != null ? tx.resolveTaskName() : null,
+                                        null);
 
-                                    assert e.lockedBy(mappedVer) ||
-                                        (ctx.mvcc().isRemoved(e.context(), mappedVer) && req.timeout() > 0) :
-                                        "Entry does not own lock for tx [locNodeId=" + ctx.localNodeId() +
-                                            ", entry=" + e +
-                                            ", mappedVer=" + mappedVer + ", ver=" + ver +
-                                            ", tx=" + tx + ", req=" + req +
-                                            ", err=" + err + ']';
+                                assert e.lockedBy(mappedVer) ||
+                                    (ctx.mvcc().isRemoved(e.context(), mappedVer) && req.timeout() > 0) :
+                                    "Entry does not own lock for tx [locNodeId=" + ctx.localNodeId() +
+                                        ", entry=" + e +
+                                        ", mappedVer=" + mappedVer + ", ver=" + ver +
+                                        ", tx=" + tx + ", req=" + req +
+                                        ", err=" + err + ']';
 
-                                    boolean filterPassed = false;
+                                boolean filterPassed = false;
 
-                                    if (tx != null && tx.onePhaseCommit()) {
-                                        IgniteTxEntry writeEntry = tx.entry(ctx.txKey(e.key()));
+                                if (tx != null && tx.onePhaseCommit()) {
+                                    IgniteTxEntry writeEntry = tx.entry(ctx.txKey(e.key()));
 
-                                        assert writeEntry != null :
-                                            "Missing tx entry for locked cache entry: " + e;
+                                    assert writeEntry != null :
+                                        "Missing tx entry for locked cache entry: " + e;
 
-                                        filterPassed = writeEntry.filtersPassed();
-                                    }
-
-                                    if (ret && val == null)
-                                        val = e.valueBytes(null);
-
-                                    // We include values into response since they are required for local
-                                    // calls and won't be serialized. We are also including DHT version.
-                                    res.addValueBytes(
-                                        ret ? val : null,
-                                        filterPassed,
-                                        ver,
-                                        mappedVer);
+                                    filterPassed = writeEntry.filtersPassed();
                                 }
-                                catch (GridCacheFilterFailedException ex) {
-                                    assert false : "Filter should never fail if fail-fast is false.";
 
-                                    ex.printStackTrace();
-                                }
+                                if (ret && val == null)
+                                    val = e.valueBytes(null);
+
+                                // We include values into response since they are required for local
+                                // calls and won't be serialized. We are also including DHT version.
+                                res.addValueBytes(
+                                    ret ? val : null,
+                                    filterPassed,
+                                    ver,
+                                    mappedVer);
                             }
                             else {
                                 // We include values into response since they are required for local
@@ -1196,7 +1192,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 false,
                 entries.size(),
                 e,
-                null);
+                null,
+                ctx.deploymentEnabled());
         }
     }
 
@@ -1522,7 +1519,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             List<KeyCacheObject> keyBytes = entry.getValue();
 
-            GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size());
+            GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size(),
+                ctx.deploymentEnabled());
 
             req.version(dhtVer);
 
@@ -1556,7 +1554,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             if (!dhtMap.containsKey(n)) {
                 List<KeyCacheObject> keyBytes = entry.getValue();
 
-                GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size());
+                GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size(),
+                    ctx.deploymentEnabled());
 
                 req.version(dhtVer);
 

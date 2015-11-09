@@ -126,6 +126,9 @@ public class GridCacheMvccCandidate implements Externalizable,
     @GridToStringInclude
     private transient volatile GridCacheVersion ownerVer;
 
+    /** */
+    private GridCacheVersion serOrder;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -147,6 +150,7 @@ public class GridCacheMvccCandidate implements Externalizable,
      * @param singleImplicit Single-key-implicit-transaction flag.
      * @param nearLoc Near-local flag.
      * @param dhtLoc DHT local flag.
+     * @param serOrder Version for serializable transactions ordering.
      */
     public GridCacheMvccCandidate(
         GridCacheEntryEx parent,
@@ -161,7 +165,9 @@ public class GridCacheMvccCandidate implements Externalizable,
         boolean tx,
         boolean singleImplicit,
         boolean nearLoc,
-        boolean dhtLoc) {
+        boolean dhtLoc,
+        @Nullable GridCacheVersion serOrder
+    ) {
         assert nodeId != null;
         assert ver != null;
         assert parent != null;
@@ -173,6 +179,7 @@ public class GridCacheMvccCandidate implements Externalizable,
         this.threadId = threadId;
         this.ver = ver;
         this.timeout = timeout;
+        this.serOrder = serOrder;
 
         mask(LOCAL, loc);
         mask(REENTRY, reentry);
@@ -244,7 +251,8 @@ public class GridCacheMvccCandidate implements Externalizable,
             tx(),
             singleImplicit(),
             nearLocal(),
-            dhtLocal());
+            dhtLocal(),
+            serializableOrder());
 
         reentry.topVer = topVer;
 
@@ -449,6 +457,20 @@ public class GridCacheMvccCandidate implements Externalizable,
      */
     public boolean dhtLocal() {
         return DHT_LOCAL.get(flags());
+    }
+
+    /**
+     * @return Serializable transaction flag.
+     */
+    public boolean serializable() {
+        return serOrder != null;
+    }
+
+    /**
+     * @return Version for serializable transactions ordering.
+     */
+    @Nullable public GridCacheVersion serializableOrder() {
+        return serOrder;
     }
 
     /**

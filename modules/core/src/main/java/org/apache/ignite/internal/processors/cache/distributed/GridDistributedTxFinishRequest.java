@@ -89,6 +89,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      * @param txSize Expected transaction size.
+     * @param addDepInfo Deployment info flag.
      */
     public GridDistributedTxFinishRequest(
         GridCacheVersion xidVer,
@@ -104,9 +105,10 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        int txSize
+        int txSize,
+        boolean addDepInfo
     ) {
-        super(xidVer, 0);
+        super(xidVer, 0, addDepInfo);
         assert xidVer != null;
 
         this.futId = futId;

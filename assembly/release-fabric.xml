@@ -31,21 +31,10 @@
 
     <componentDescriptors>
         <componentDescriptor>release-base.xml</componentDescriptor>
+        <componentDescriptor>release-fabric-base.xml</componentDescriptor>
     </componentDescriptors>
 
     <files>
-        <file>
-            <source>assembly/LICENSE_FABRIC</source>
-            <destName>LICENSE</destName>
-            <outputDirectory>/</outputDirectory>
-        </file>
-
-        <file>
-            <source>assembly/NOTICE_FABRIC</source>
-            <destName>NOTICE</destName>
-            <outputDirectory>/</outputDirectory>
-        </file>
-
         <file>
             <source>examples/pom-standalone.xml</source>
             <outputDirectory>/examples</outputDirectory>
@@ -53,75 +42,9 @@
         </file>
 
         <file>
-            <source>examples/schema-import/pom-standalone.xml</source>
-            <outputDirectory>/examples/schema-import</outputDirectory>
-            <destName>pom.xml</destName>
+            <source>examples/README.txt</source>
+            <outputDirectory>/examples</outputDirectory>
+            <destName>README.txt</destName>
         </file>
     </files>
-
-    <fileSets>
-        <fileSet>
-            <directory>bin</directory>
-            <outputDirectory>/bin</outputDirectory>
-            <includes>
-                <include>igniterouter.bat</include>
-            </includes>
-        </fileSet>
-
-        <fileSet>
-            <directory>bin</directory>
-            <outputDirectory>/bin</outputDirectory>
-            <fileMode>0755</fileMode>
-            <includes>
-                <include>igniterouter.sh</include>
-            </includes>
-        </fileSet>
-
-        <fileSet>
-            <directory>config/router</directory>
-            <outputDirectory>/config/router</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>examples</directory>
-            <outputDirectory>/examples</outputDirectory>
-            <includes>
-                <include>rest/**</include>
-                <include>memcached/**</include>
-                <include>schema-import/src/**</include>
-                <include>schema-import/bin/**</include>
-                <include>schema-import/README.txt</include>
-                <include>README.txt</include>
-            </includes>
-        </fileSet>
-
-        <fileSet>
-            <directory>target/javadoc/core</directory>
-            <outputDirectory>/docs/javadoc</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>modules/scalar/target/site/scaladocs</directory>
-            <outputDirectory>/docs/scaladoc/scalar</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>examples</directory>
-            <outputDirectory>/examples</outputDirectory>
-            <includes>
-                <include>config/**</include>
-                <include>src/**</include>
-            </includes>
-            <excludes>
-                <exclude>**/package.html</exclude>
-                <exclude>pom-standalone.xml</exclude>
-                <exclude>src/test/**</exclude>
-            </excludes>
-        </fileSet>
-
-        <fileSet>
-            <directory>assembly/libs</directory>
-            <outputDirectory>/libs</outputDirectory>
-        </fileSet>
-    </fileSets>
 </assembly>

@@ -61,6 +61,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
@@ -1358,7 +1359,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public int getOutboundMessagesQueueSize() {
-        return nioSrvr.outboundMessagesQueueSize();
+        GridNioServer<Message> srv = nioSrvr;
+
+        return srv != null ? srv.outboundMessagesQueueSize() : 0;
     }
 
     /** {@inheritDoc} */
@@ -1870,25 +1873,25 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param node Destination node.
      * @param msg Message to send.
-     * @param ackClosure Ack closure.
+     * @param ackC Ack closure.
      * @throws org.apache.ignite.spi.IgniteSpiException Thrown in case of any error during sending the message.
      *      Note that this is not guaranteed that failed communication will result
      *      in thrown exception as this is dependant on SPI implementation.
      */
-    public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+    public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
         throws IgniteSpiException {
-        sendMessage0(node, msg, ackClosure);
+        sendMessage0(node, msg, ackC);
     }
 
     /**
      * @param node Destination node.
      * @param msg Message to send.
-     * @param ackClosure Ack closure.
+     * @param ackC Ack closure.
      * @throws org.apache.ignite.spi.IgniteSpiException Thrown in case of any error during sending the message.
      *      Note that this is not guaranteed that failed communication will result
      *      in thrown exception as this is dependant on SPI implementation.
      */
-    private void sendMessage0(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+    private void sendMessage0(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
         throws IgniteSpiException {
         assert node != null;
         assert msg != null;
@@ -1896,13 +1899,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (log.isTraceEnabled())
             log.trace("Sending message with ack to node [node=" + node + ", msg=" + msg + ']');
 
-        ClusterNode localNode = getLocalNode();
+        ClusterNode locNode = getLocalNode();
 
-        if (localNode == null)
+        if (locNode == null)
             throw new IgniteSpiException("Local node has not been started or fully initialized " +
                 "[isStopping=" + getSpiContext().isStopping() + ']');
 
-        if (node.id().equals(localNode.id()))
+        if (node.id().equals(locNode.id()))
             notifyListener(node.id(), msg, NOOP);
         else {
             GridCommunicationClient client = null;
@@ -1915,10 +1918,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     UUID nodeId = null;
 
-                    if (!client.async() && !localNode.version().equals(node.version()))
+                    if (!client.async() && !locNode.version().equals(node.version()))
                         nodeId = node.id();
 
-                    retry = client.sendMessage(nodeId, msg, ackClosure);
+                    retry = client.sendMessage(nodeId, msg, ackC);
 
                     client.release();
 
@@ -2290,6 +2293,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         U.closeQuiet(ch);
 
                         return null;
+                    }
+
+                    if (getSpiContext().node(node.id()) == null) {
+                        recoveryDesc.release();
+
+                        U.closeQuiet(ch);
+
+                        throw new ClusterTopologyCheckedException("Failed to send message, " +
+                            "node left cluster: " + node);
                     }
 
                     long rcvCnt = -1;
@@ -3100,10 +3112,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 assert !left.isEmpty();
 
                 for (ClientKey id : left) {
-                    GridNioRecoveryDescriptor recoverySnd = recoveryDescs.remove(id);
+                    GridNioRecoveryDescriptor recoverySnd = recoveryDescs.get(id);
 
-                    if (recoverySnd != null)
-                        recoverySnd.onNodeLeft();
+                    if (recoverySnd != null && recoverySnd.onNodeLeft())
+                        recoveryDescs.remove(id);
                 }
             }
         }

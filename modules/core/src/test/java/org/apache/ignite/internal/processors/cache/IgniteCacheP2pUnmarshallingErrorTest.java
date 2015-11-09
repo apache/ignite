@@ -87,7 +87,7 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     }
 
     /** Test key 1. */
-    public static class TestKey implements Externalizable {
+    protected static class TestKey implements Externalizable {
         /** Field. */
         @QuerySqlField(index = true)
         private String field;

@@ -600,7 +600,7 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                 restReq0.cacheName((String)params.get("cacheName"));
 
-                restReq0.className((String)params.get("classname"));
+                restReq0.className((String)params.get("className"));
 
                 restReq0.queryType(RestQueryRequest.QueryType.SCAN);
 
