@@ -44,12 +44,12 @@ namespace Apache.Ignite.Core.Tests
 
         /// <summary>
         /// Tests the portable marhsaller.
-        /// BinaryMarshaller can be specified explicitly in config.
+        /// Marshaller can be specified explicitly in config.
         /// </summary>
         [Test]
         public void TestExplicitMarhsaller()
         {
-            using (var grid = Ignition.Start("config\\marshaller-portable.xml"))
+            using (var grid = Ignition.Start("config\\marshaller-explicit.xml"))
             {
                 var cache = grid.GetOrCreateCache<int, int>(null);
 

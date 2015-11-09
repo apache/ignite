@@ -207,7 +207,7 @@
     <Content Include="Config\marshaller-invalid.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Config\marshaller-portable.xml">
+    <Content Include="Config\marshaller-explicit.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\native-client-test-cache-affinity.xml">
