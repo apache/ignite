@@ -17,22 +17,26 @@
 
 namespace Apache.Ignite.Core.Impl.Memory
 {
+    using System;
     using System.Runtime.InteropServices;
 
     /// <summary>
     /// Mutable struct that represents memory layout of the platform memory header.
+    /// This struct is meant for direct memory access via pointer, and not meant to be passed around.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 0)]
     public struct PlatformMemoryHeader
     {
-        /** Flag: external. */
-        public const int FlagExt = 0x1;
-
-        /** Flag: pooled. */
-        public const int FlagPooled = 0x2;
-
-        /** Flag: whether this pooled memory chunk is acquired. */
-        public const int FlagAcquired = 0x4;
+        /// <summary>
+        /// Flags.
+        /// </summary>
+        [Flags]
+        public enum Flag
+        {
+            External = 1,
+            Pooled = 2,
+            Acquired = 4
+        }
 
         /// <summary>
         /// The pointer to the memory chunk.
@@ -52,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <summary>
         /// The flags.
         /// </summary>
-        public int Flags;
+        public Flag Flags;
 
         /// <summary>
         /// Check whether flags denote that this memory chunk is external.
@@ -60,7 +64,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <value><c>True</c> if owned by Java.</value>
         public bool IsExternal
         {
-            get { return (Flags & FlagExt) != FlagExt; }
+            get { return (Flags & Flag.External) != 0; }
         }
 
         /// <summary>
@@ -69,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <value><c>True</c> if pooled.</value>
         public bool IsPooled
         {
-            get { return (Flags & FlagPooled) != 0; }
+            get { return (Flags & Flag.Pooled) != 0; }
         }
 
         /// <summary>
@@ -78,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <value><c>True</c> if acquired.</value>
         public bool IsAcquired
         {
-            get { return (Flags & FlagAcquired) != 0; }
+            get { return (Flags & Flag.Acquired) != 0; }
         }
 
         /// <summary>
@@ -88,7 +92,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <param name="capacity">Capacity.</param>
         /// <param name="length">Length.</param>
         /// <param name="flags">Flags.</param>
-        public PlatformMemoryHeader(long pointer, int capacity, int length, int flags)
+        public PlatformMemoryHeader(long pointer, int capacity, int length, Flag flags)
         {
             Pointer = pointer;
             Capacity = capacity;

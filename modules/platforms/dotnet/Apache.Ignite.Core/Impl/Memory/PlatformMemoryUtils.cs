@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Memory
             var memPtr = (PlatformMemoryHeader*) Marshal.AllocHGlobal(MemHdrLen);
             long dataPtr = Marshal.AllocHGlobal(cap).ToInt64();
 
-            *memPtr = new PlatformMemoryHeader(dataPtr, cap, 0, PlatformMemoryHeader.FlagExt);
+            *memPtr = new PlatformMemoryHeader(dataPtr, cap, 0, PlatformMemoryHeader.Flag.External);
 
             return memPtr;
         }
@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Impl.Memory
 
             for (var i = 0; i < PoolSize; i++)
                 *(poolPtr + i) = new PlatformMemoryHeader(0, 0, 0,
-                    PlatformMemoryHeader.FlagExt | PlatformMemoryHeader.FlagPooled);
+                    PlatformMemoryHeader.Flag.External | PlatformMemoryHeader.Flag.Pooled);
 
             return poolPtr;
         }
@@ -167,8 +167,8 @@ namespace Apache.Ignite.Core.Impl.Memory
                 hdr->Capacity = cap;
             }
 
-            hdr->Flags = PlatformMemoryHeader.FlagExt | PlatformMemoryHeader.FlagPooled |
-                         PlatformMemoryHeader.FlagAcquired;
+            hdr->Flags = PlatformMemoryHeader.Flag.External | PlatformMemoryHeader.Flag.Pooled |
+                         PlatformMemoryHeader.Flag.Acquired;
         }
 
         /// <summary>
@@ -193,7 +193,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <param name="hdr">Memory header.</param>
         public static void ReleasePooled(PlatformMemoryHeader* hdr)
         {
-            hdr->Flags ^= PlatformMemoryHeader.FlagAcquired;
+            hdr->Flags ^= PlatformMemoryHeader.Flag.Acquired;
         }
 
         #endregion
