@@ -1361,29 +1361,29 @@ namespace Apache.Ignite.Core.Tests.Binary
         public void TestMetadata()
         {
             // Populate metadata
-            var portables = _grid.GetBinary();
+            var binary = _grid.GetBinary();
 
-            portables.ToBinary<IBinaryObject>(new DecimalHolder());
+            binary.ToBinary<IBinaryObject>(new DecimalHolder());
 
             // All meta
-            var allMetas = portables.GetMetadata();
+            var allMetas = binary.GetMetadata();
 
             var decimalMeta = allMetas.Single(x => x.TypeName == "DecimalHolder");
 
             Assert.AreEqual(new[] {"val", "valArr"}, decimalMeta.Fields);
 
             // By type
-            decimalMeta = portables.GetMetadata(typeof (DecimalHolder));
+            decimalMeta = binary.GetMetadata(typeof (DecimalHolder));
 
             Assert.AreEqual(new[] {"val", "valArr"}, decimalMeta.Fields);
             
             // By type id
-            decimalMeta = portables.GetMetadata(portables.GetTypeId("DecimalHolder"));
+            decimalMeta = binary.GetMetadata(binary.GetTypeId("DecimalHolder"));
 
             Assert.AreEqual(new[] {"val", "valArr"}, decimalMeta.Fields);
 
             // By type name
-            decimalMeta = portables.GetMetadata("DecimalHolder");
+            decimalMeta = binary.GetMetadata("DecimalHolder");
 
             Assert.AreEqual(new[] {"val", "valArr"}, decimalMeta.Fields);
         }
