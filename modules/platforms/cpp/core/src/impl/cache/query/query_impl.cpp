@@ -21,7 +21,7 @@
 using namespace ignite::common::concurrent;
 using namespace ignite::common::java;
 using namespace ignite::impl::interop;
-using namespace ignite::impl::portable;
+using namespace ignite::impl::binary;
 
 namespace ignite
 {
@@ -100,7 +100,7 @@ namespace ignite
                         {
                             InteropInputStream in(inMem.Get());
 
-                            portable::PortableReaderImpl reader(&in);
+                            binary::BinaryReaderImpl reader(&in);
 
                             op.ProcessOutput(reader);
 
@@ -183,7 +183,7 @@ namespace ignite
 
                         InteropInputStream in(inMem.Get());
 
-                        portable::PortableReaderImpl reader(&in);
+                        binary::BinaryReaderImpl reader(&in);
 
                         op.ProcessOutput(reader);
                     }
