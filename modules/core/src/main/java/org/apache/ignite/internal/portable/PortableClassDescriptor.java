@@ -92,7 +92,7 @@ public class PortableClassDescriptor {
     private final Method readResolveMtd;
 
     /** */
-    private final Map<String, String> fieldsMeta;
+    private final Map<String, Integer> fieldsMeta;
 
     /** */
     private final boolean keepDeserialized;
@@ -182,7 +182,7 @@ public class PortableClassDescriptor {
             case UUID_ARR:
             case DATE_ARR:
             case TIMESTAMP_ARR:
-            case OBJ_ARR:
+            case OBJECT_ARR:
             case COL:
             case MAP:
             case MAP_ENTRY:
@@ -210,7 +210,7 @@ public class PortableClassDescriptor {
 
                 ctor = constructor(cls);
                 fields = new ArrayList<>();
-                fieldsMeta = metaDataEnabled ? new HashMap<String, String>() : null;
+                fieldsMeta = metaDataEnabled ? new HashMap<String, Integer>() : null;
 
                 Collection<String> names = new HashSet<>();
                 Collection<Integer> ids = new HashSet<>();
@@ -237,7 +237,7 @@ public class PortableClassDescriptor {
                             fields.add(fieldInfo);
 
                             if (metaDataEnabled)
-                                fieldsMeta.put(name, fieldInfo.fieldMode().typeName());
+                                fieldsMeta.put(name, fieldInfo.fieldMode().typeId());
                         }
                     }
                 }
@@ -283,7 +283,7 @@ public class PortableClassDescriptor {
     /**
      * @return Fields meta data.
      */
-    Map<String, String> fieldsMeta() {
+    Map<String, Integer> fieldsMeta() {
         return fieldsMeta;
     }
 
@@ -490,7 +490,7 @@ public class PortableClassDescriptor {
 
                 break;
 
-            case OBJ_ARR:
+            case OBJECT_ARR:
                 writer.doWriteObjectArray((Object[])obj);
 
                 break;
@@ -812,7 +812,7 @@ public class PortableClassDescriptor {
         else if (cls == Timestamp[].class)
             return Mode.TIMESTAMP_ARR;
         else if (cls.isArray())
-            return cls.getComponentType().isEnum() ? Mode.ENUM_ARR : Mode.OBJ_ARR;
+            return cls.getComponentType().isEnum() ? Mode.ENUM_ARR : Mode.OBJECT_ARR;
         else if (cls == BinaryObjectImpl.class)
             return Mode.PORTABLE_OBJ;
         else if (Binarylizable.class.isAssignableFrom(cls))
@@ -1019,7 +1019,7 @@ public class PortableClassDescriptor {
 
                     break;
 
-                case OBJ_ARR:
+                case OBJECT_ARR:
                     writer.writeObjectArrayField((Object[])val);
 
                     break;
@@ -1210,7 +1210,7 @@ public class PortableClassDescriptor {
 
                     break;
 
-                case OBJ_ARR:
+                case OBJECT_ARR:
                     val = reader.readObjectArray(id);
 
                     break;
@@ -1352,7 +1352,7 @@ public class PortableClassDescriptor {
         TIMESTAMP_ARR(GridPortableMarshaller.TIMESTAMP_ARR),
 
         /** */
-        OBJ_ARR(GridPortableMarshaller.OBJ_ARR),
+        OBJECT_ARR(GridPortableMarshaller.OBJ_ARR),
 
         /** */
         COL(GridPortableMarshaller.COL),
@@ -1398,10 +1398,10 @@ public class PortableClassDescriptor {
         }
 
         /**
-         * @return Type name.
+         * @return Type ID.
          */
-        String typeName() {
-            return PortableUtils.fieldTypeName(typeId);
+        int typeId() {
+            return typeId;
         }
     }
 }

@@ -284,7 +284,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             if (assignedVals != null && (remainsFlds == null || !remainsFlds.isEmpty())) {
                 BinaryType metadata = ctx.metaData(typeId);
 
-                Map<String, String> newFldsMetadata = null;
+                Map<String, Integer> newFldsMetadata = null;
 
                 for (Map.Entry<String, Object> entry : assignedVals.entrySet()) {
                     Object val = entry.getValue();
@@ -305,15 +305,14 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                     String oldFldTypeName = metadata == null ? null : metadata.fieldTypeName(name);
 
-                    String newFldTypeName;
+                    int newFldTypeId;
 
                     if (val instanceof PortableValueWithType)
-                        newFldTypeName = ((PortableValueWithType) val).typeName();
-                    else {
-                        byte type = PortableUtils.typeByClass(val.getClass());
+                        newFldTypeId = ((PortableValueWithType) val).typeId();
+                    else
+                        newFldTypeId = PortableUtils.typeByClass(val.getClass());
 
-                        newFldTypeName = PortableUtils.fieldTypeName(type);
-                    }
+                    String newFldTypeName = PortableUtils.fieldTypeName(newFldTypeId);
 
                     if (oldFldTypeName == null) {
                         // It's a new field, we have to add it to metadata.
@@ -321,7 +320,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                         if (newFldsMetadata == null)
                             newFldsMetadata = new HashMap<>();
 
-                        newFldsMetadata.put(name, newFldTypeName);
+                        newFldsMetadata.put(name, PortableUtils.fieldTypeId(newFldTypeName));
                     }
                     else {
                         String objTypeName = PortableUtils.fieldTypeName(GridPortableMarshaller.OBJ);

@@ -45,7 +45,7 @@ public class BinaryMetaDataImpl implements BinaryType, Externalizable {
 
     /** Recorded object fields. */
     @GridToStringInclude
-    private Map<String, String> fields;
+    private Map<String, Integer> fields;
 
     /** Affinity key field name. */
     private String affKeyFieldName;
@@ -65,7 +65,7 @@ public class BinaryMetaDataImpl implements BinaryType, Externalizable {
      * @param fields Fields map.
      * @param affKeyFieldName Affinity key field name.
      */
-    public BinaryMetaDataImpl(int typeId, String typeName, @Nullable Map<String, String> fields,
+    public BinaryMetaDataImpl(int typeId, String typeName, @Nullable Map<String, Integer> fields,
         @Nullable String affKeyFieldName) {
         assert typeName != null;
 
@@ -95,13 +95,15 @@ public class BinaryMetaDataImpl implements BinaryType, Externalizable {
     /**
      * @return Fields.
      */
-    public Map<String, String> fields0() {
-        return fields != null ? fields : Collections.<String, String>emptyMap();
+    public Map<String, Integer> fields0() {
+        return fields != null ? fields : Collections.<String, Integer>emptyMap();
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public String fieldTypeName(String fieldName) {
-        return fields != null ? fields.get(fieldName) : null;
+        Integer typeId = fields != null ? fields.get(fieldName) : null;
+
+        return typeId != null ? PortableUtils.fieldTypeName(typeId) : null;
     }
 
     /** {@inheritDoc} */

@@ -165,7 +165,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                         if (oldMeta == null || checkMeta(typeId, oldMeta, newMeta, null)) {
                             synchronized (this) {
-                                Map<String, String> fields = new HashMap<>();
+                                Map<String, Integer> fields = new HashMap<>();
 
                                 if (checkMeta(typeId, oldMeta, newMeta, fields)) {
                                     newMeta = new BinaryMetaDataImpl(typeId, newMeta.typeName(), fields,
@@ -440,8 +440,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @Override public void updateMetaData(int typeId, String typeName, @Nullable String affKeyFieldName,
         Map<String, Integer> fieldTypeIds) throws BinaryObjectException {
-        portableCtx.updateMetaData(typeId, new BinaryMetaDataImpl(typeId, typeName,
-            PortableUtils.fieldTypeNames(fieldTypeIds), affKeyFieldName));
+        portableCtx.updateMetaData(typeId, new BinaryMetaDataImpl(typeId, typeName, fieldTypeIds, affKeyFieldName));
     }
 
     /** {@inheritDoc} */
@@ -716,11 +715,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     private static boolean checkMeta(int typeId, @Nullable BinaryType oldMeta,
-        BinaryType newMeta, @Nullable Map<String, String> fields) throws BinaryObjectException {
+        BinaryType newMeta, @Nullable Map<String, Integer> fields) throws BinaryObjectException {
         assert newMeta != null;
 
-        Map<String, String> oldFields = oldMeta != null ? ((BinaryMetaDataImpl)oldMeta).fields0() : null;
-        Map<String, String> newFields = ((BinaryMetaDataImpl)newMeta).fields0();
+        Map<String, Integer> oldFields = oldMeta != null ? ((BinaryMetaDataImpl)oldMeta).fields0() : null;
+        Map<String, Integer> newFields = ((BinaryMetaDataImpl)newMeta).fields0();
 
         boolean changed = false;
 
@@ -751,17 +750,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         else
             changed = true;
 
-        for (Map.Entry<String, String> e : newFields.entrySet()) {
-            String typeName = oldFields != null ? oldFields.get(e.getKey()) : null;
+        for (Map.Entry<String, Integer> e : newFields.entrySet()) {
+            Integer oldTypeId = oldFields != null ? oldFields.get(e.getKey()) : null;
 
-            if (typeName != null) {
-                if (!typeName.equals(e.getValue())) {
+            if (oldTypeId != null) {
+                if (!oldTypeId.equals(e.getValue())) {
                     throw new BinaryObjectException(
                         "Portable field has different types on different clients [" +
                             "typeName=" + newMeta.typeName() +
                             ", fieldName=" + e.getKey() +
-                            ", fieldTypeName1=" + typeName +
-                            ", fieldTypeName2=" + e.getValue() +
+                            ", fieldTypeName1=" + PortableUtils.fieldTypeName(oldTypeId) +
+                            ", fieldTypeName2=" + PortableUtils.fieldTypeName(e.getValue()) +
                             ']'
                     );
                 }
@@ -815,7 +814,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             try {
                 BinaryType oldMeta = entry.getValue();
 
-                Map<String, String> fields = new HashMap<>();
+                Map<String, Integer> fields = new HashMap<>();
 
                 if (checkMeta(typeId, oldMeta, newMeta, fields)) {
                     BinaryType res = new BinaryMetaDataImpl(typeId, newMeta.typeName(), fields,

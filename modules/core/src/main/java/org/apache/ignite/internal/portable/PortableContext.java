@@ -751,7 +751,7 @@ public class PortableContext implements Externalizable {
 
         typeMappers.put(typeName, idMapper);
 
-        Map<String, String> fieldsMeta = null;
+        Map<String, Integer> fieldsMeta = null;
 
         if (cls != null) {
             PortableClassDescriptor desc = new PortableClassDescriptor(
@@ -815,7 +815,7 @@ public class PortableContext implements Externalizable {
      * @param fields Fields map.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public void updateMetaData(int typeId, String typeName, Map<String, String> fields) throws BinaryObjectException {
+    public void updateMetaData(int typeId, String typeName, Map<String, Integer> fields) throws BinaryObjectException {
         updateMetaData(typeId, new BinaryMetaDataImpl(typeId, typeName, fields, null));
     }
 
@@ -889,6 +889,7 @@ public class PortableContext implements Externalizable {
      * @param clsName Class name.
      * @return Type name.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public static String typeName(String clsName) {
         assert clsName != null;
 
