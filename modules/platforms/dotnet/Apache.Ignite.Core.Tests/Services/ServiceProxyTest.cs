@@ -221,13 +221,13 @@ namespace Apache.Ignite.Core.Tests.Services
 
             ex = Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionBinarizableMethod(true, false));
             Assert.IsTrue(ex.ToString().Contains(
-                "Call completed with error, but error serialization failed [errType=CustomExceptionPortable, " +
-                "serializationErrMsg=Expected exception in CustomExceptionPortable.WritePortable]"));
+                "Call completed with error, but error serialization failed [errType=CustomExceptionBinarizable, " +
+                "serializationErrMsg=Expected exception in CustomExceptionBinarizable.WriteBinary]"));
 
             ex = Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionBinarizableMethod(true, true));
             Assert.IsTrue(ex.ToString().Contains(
-                "Call completed with error, but error serialization failed [errType=CustomExceptionPortable, " +
-                "serializationErrMsg=Expected exception in CustomExceptionPortable.WritePortable]"));
+                "Call completed with error, but error serialization failed [errType=CustomExceptionBinarizable, " +
+                "serializationErrMsg=Expected exception in CustomExceptionBinarizable.WriteBinary]"));
         }
 
         /// <summary>
@@ -609,7 +609,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 writer.WriteBoolean("ThrowOnRead", ThrowOnRead);
 
                 if (ThrowOnWrite)
-                    throw new Exception("Expected exception in CustomExceptionPortable.WritePortable");
+                    throw new Exception("Expected exception in CustomExceptionBinarizable.WriteBinary");
             }
 
             /** <inheritdoc /> */
@@ -618,7 +618,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 ThrowOnRead = reader.ReadBoolean("ThrowOnRead");
 
                 if (ThrowOnRead)
-                    throw new Exception("Expected exception in CustomExceptionPortable.ReadPortable");
+                    throw new Exception("Expected exception in CustomExceptionBinarizable.ReadPortable");
             }
         }
 
@@ -643,7 +643,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 writer.WriteBoolean("ThrowOnRead", ThrowOnRead);
 
                 if (ThrowOnWrite)
-                    throw new Exception("Expected exception in TestPortableClass.WritePortable");
+                    throw new Exception("Expected exception in TestPortableClass.WriteBinary");
             }
 
             /** <inheritdoc /> */
