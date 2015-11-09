@@ -441,36 +441,36 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             builderCol.SetCollectionField("col", new ArrayList { builderItem });
 
-            IBinaryObject portCol = builderCol.Build();
+            IBinaryObject binCol = builderCol.Build();
 
-            IBinaryType meta = portCol.GetMetadata();
+            IBinaryType meta = binCol.GetMetadata();
 
             Assert.AreEqual(typeof(BuilderCollection).Name, meta.TypeName);
             Assert.AreEqual(1, meta.Fields.Count);
             Assert.AreEqual("col", meta.Fields.First());
             Assert.AreEqual(BinaryTypeNames.TypeNameCollection, meta.GetFieldTypeName("col"));
 
-            var portColItems = portCol.GetField<ArrayList>("col");
+            var binColItems = binCol.GetField<ArrayList>("col");
 
-            Assert.AreEqual(1, portColItems.Count);
+            Assert.AreEqual(1, binColItems.Count);
 
-            var portItem = (IBinaryObject) portColItems[0];
+            var binItem = (IBinaryObject) binColItems[0];
 
-            meta = portItem.GetMetadata();
+            meta = binItem.GetMetadata();
 
             Assert.AreEqual(typeof(BuilderCollectionItem).Name, meta.TypeName);
             Assert.AreEqual(1, meta.Fields.Count);
             Assert.AreEqual("val", meta.Fields.First());
             Assert.AreEqual(BinaryTypeNames.TypeNameInt, meta.GetFieldTypeName("val"));
 
-            BuilderCollection col = portCol.Deserialize<BuilderCollection>();
+            BuilderCollection col = binCol.Deserialize<BuilderCollection>();
 
             Assert.IsNotNull(col.Col);
             Assert.AreEqual(1, col.Col.Count);
             Assert.AreEqual(1, ((BuilderCollectionItem) col.Col[0]).Val);
 
             // Add more binary objects to collection.
-            builderCol = _grid.GetBinary().GetBuilder(portCol);
+            builderCol = _grid.GetBinary().GetBuilder(binCol);
 
             IList builderColItems = builderCol.GetField<IList>("col");
 
@@ -482,11 +482,11 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             builderColItems.Add(builderColItem); // Add the same object to check handles.
             builderColItems.Add(builderItem); // Add item from another builder.
-            builderColItems.Add(portItem); // Add item in binary form.
+            builderColItems.Add(binItem); // Add item in binary form.
 
-            portCol = builderCol.Build();
+            binCol = builderCol.Build();
 
-            col = portCol.Deserialize<BuilderCollection>();
+            col = binCol.Deserialize<BuilderCollection>();
 
             Assert.AreEqual(4, col.Col.Count);
 
@@ -507,15 +507,15 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreNotSame(item2, item3);
 
             // Test handle update inside collection.
-            builderCol = _grid.GetBinary().GetBuilder(portCol);
+            builderCol = _grid.GetBinary().GetBuilder(binCol);
 
             builderColItems = builderCol.GetField<IList>("col");
 
             ((BinaryObjectBuilder) builderColItems[1]).SetField("val", 3);
 
-            portCol = builderCol.Build();
+            binCol = builderCol.Build();
 
-            col = portCol.Deserialize<BuilderCollection>();
+            col = binCol.Deserialize<BuilderCollection>();
 
             item0 = (BuilderCollectionItem) col.Col[0];
             item1 = (BuilderCollectionItem) col.Col[1];
@@ -923,10 +923,10 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(100, binObj.GetHashCode());
 
-            IBinaryObject[] portInArr = binObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
+            var binInArr = binObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
 
-            Assert.AreEqual(1, portInArr.Length);
-            Assert.AreEqual(1, portInArr[0].GetField<int>("val"));
+            Assert.AreEqual(1, binInArr.Length);
+            Assert.AreEqual(1, binInArr[0].GetField<int>("val"));
 
             CompositeArray arr = binObj.Deserialize<CompositeArray>();
 
@@ -936,15 +936,15 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             // 2. Test addition to array.
             binObj = _grid.GetBinary().GetBuilder(binObj).SetHashCode(200)
-                .SetField("inArr", new object[] { portInArr[0], null }).Build();
+                .SetField("inArr", new object[] { binInArr[0], null }).Build();
 
             Assert.AreEqual(200, binObj.GetHashCode());
 
-            portInArr = binObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
+            binInArr = binObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
 
-            Assert.AreEqual(2, portInArr.Length);
-            Assert.AreEqual(1, portInArr[0].GetField<int>("val"));
-            Assert.IsNull(portInArr[1]);
+            Assert.AreEqual(2, binInArr.Length);
+            Assert.AreEqual(1, binInArr[0].GetField<int>("val"));
+            Assert.IsNull(binInArr[1]);
 
             arr = binObj.Deserialize<CompositeArray>();
 
@@ -953,18 +953,18 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(1, ((CompositeInner) arr.InArr[0]).Val);
             Assert.IsNull(arr.InArr[1]);
 
-            portInArr[1] = _grid.GetBinary().GetBuilder(typeof(CompositeInner)).SetField("val", 2).Build();
+            binInArr[1] = _grid.GetBinary().GetBuilder(typeof(CompositeInner)).SetField("val", 2).Build();
 
             binObj = _grid.GetBinary().GetBuilder(binObj).SetHashCode(300)
-                .SetField("inArr", portInArr.OfType<object>().ToArray()).Build();
+                .SetField("inArr", binInArr.OfType<object>().ToArray()).Build();
 
             Assert.AreEqual(300, binObj.GetHashCode());
 
-            portInArr = binObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
+            binInArr = binObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
 
-            Assert.AreEqual(2, portInArr.Length);
-            Assert.AreEqual(1, portInArr[0].GetField<int>("val"));
-            Assert.AreEqual(2, portInArr[1].GetField<int>("val"));
+            Assert.AreEqual(2, binInArr.Length);
+            Assert.AreEqual(1, binInArr[0].GetField<int>("val"));
+            Assert.AreEqual(2, binInArr[1].GetField<int>("val"));
 
             arr = binObj.Deserialize<CompositeArray>();
 
@@ -983,11 +983,11 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(100, binObj.GetHashCode());
 
-            portInArr = binObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
+            binInArr = binObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
 
-            Assert.AreEqual(2, portInArr.Length);
-            Assert.AreEqual(1, portInArr[0].GetField<int>("val"));
-            Assert.AreEqual(1, portInArr[1].GetField<int>("val"));
+            Assert.AreEqual(2, binInArr.Length);
+            Assert.AreEqual(1, binInArr[0].GetField<int>("val"));
+            Assert.AreEqual(1, binInArr[1].GetField<int>("val"));
 
             arr = binObj.Deserialize<CompositeArray>();
 
@@ -996,18 +996,18 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(1, ((CompositeInner)arr.InArr[0]).Val);
             Assert.AreEqual(1, ((CompositeInner)arr.InArr[1]).Val);
 
-            portInArr[0] = _grid.GetBinary().GetBuilder(typeof(CompositeInner)).SetField("val", 2).Build();
+            binInArr[0] = _grid.GetBinary().GetBuilder(typeof(CompositeInner)).SetField("val", 2).Build();
 
             binObj = _grid.GetBinary().GetBuilder(binObj).SetHashCode(200)
-                .SetField("inArr", portInArr.ToArray<object>()).Build();
+                .SetField("inArr", binInArr.ToArray<object>()).Build();
 
             Assert.AreEqual(200, binObj.GetHashCode());
 
-            portInArr = binObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
+            binInArr = binObj.GetField<object[]>("inArr").Cast<IBinaryObject>().ToArray();
 
-            Assert.AreEqual(2, portInArr.Length);
-            Assert.AreEqual(2, portInArr[0].GetField<int>("val"));
-            Assert.AreEqual(1, portInArr[1].GetField<int>("val"));
+            Assert.AreEqual(2, binInArr.Length);
+            Assert.AreEqual(2, binInArr[0].GetField<int>("val"));
+            Assert.AreEqual(1, binInArr[1].GetField<int>("val"));
 
             arr = binObj.Deserialize<CompositeArray>();
 
@@ -1031,11 +1031,11 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(100, binObj.GetHashCode());
 
-            var portOutArr = binObj.GetField<object[]>("outArr").Cast<IBinaryObject>().ToArray();
+            var binOutArr = binObj.GetField<object[]>("outArr").Cast<IBinaryObject>().ToArray();
 
-            Assert.AreEqual(2, portOutArr.Length);
-            Assert.AreEqual(1, portOutArr[0].GetField<IBinaryObject>("inner").GetField<int>("val"));
-            Assert.AreEqual(1, portOutArr[1].GetField<IBinaryObject>("inner").GetField<int>("val"));
+            Assert.AreEqual(2, binOutArr.Length);
+            Assert.AreEqual(1, binOutArr[0].GetField<IBinaryObject>("inner").GetField<int>("val"));
+            Assert.AreEqual(1, binOutArr[1].GetField<IBinaryObject>("inner").GetField<int>("val"));
 
             arr = binObj.Deserialize<CompositeArray>();
 
@@ -1044,19 +1044,19 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(1, ((CompositeOuter) arr.OutArr[0]).Inner.Val);
             Assert.AreEqual(1, ((CompositeOuter) arr.OutArr[0]).Inner.Val);
 
-            portOutArr[0] = _grid.GetBinary().GetBuilder(typeof(CompositeOuter))
+            binOutArr[0] = _grid.GetBinary().GetBuilder(typeof(CompositeOuter))
                 .SetField("inner", new CompositeInner(2)).Build();
 
             binObj = _grid.GetBinary().GetBuilder(binObj).SetHashCode(200)
-                .SetField("outArr", portOutArr.ToArray<object>()).Build();
+                .SetField("outArr", binOutArr.ToArray<object>()).Build();
 
             Assert.AreEqual(200, binObj.GetHashCode());
 
-            portInArr = binObj.GetField<object[]>("outArr").Cast<IBinaryObject>().ToArray();
+            binInArr = binObj.GetField<object[]>("outArr").Cast<IBinaryObject>().ToArray();
 
-            Assert.AreEqual(2, portInArr.Length);
-            Assert.AreEqual(2, portOutArr[0].GetField<IBinaryObject>("inner").GetField<int>("val"));
-            Assert.AreEqual(1, portOutArr[1].GetField<IBinaryObject>("inner").GetField<int>("val"));
+            Assert.AreEqual(2, binInArr.Length);
+            Assert.AreEqual(2, binOutArr[0].GetField<IBinaryObject>("inner").GetField<int>("val"));
+            Assert.AreEqual(1, binOutArr[1].GetField<IBinaryObject>("inner").GetField<int>("val"));
 
             arr = binObj.Deserialize<CompositeArray>();
 
