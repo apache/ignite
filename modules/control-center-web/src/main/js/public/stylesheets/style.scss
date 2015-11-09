@@ -1594,7 +1594,7 @@ a {
 
     overflow: auto;
 
-    li {
+    & > li {
         float: left;
     }
 
