@@ -414,7 +414,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 // Type is not found.
-                string typeName = BinaryUtils.SimpleTypeName(typeCfg.TypeName);
+                string typeName = BinaryUtils.GetSimpleTypeName(typeCfg.TypeName);
 
                 int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
 

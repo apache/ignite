@@ -1477,9 +1477,16 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="typeName">Type name.</param>
          * <returns>Simple type name.</returns>
          */
-        public static string SimpleTypeName(string typeName)
+        public static string GetSimpleTypeName(string typeName)
         {
-            int idx = typeName.LastIndexOf('.');
+            Debug.Assert(!string.IsNullOrEmpty(typeName));
+
+            var genericIdx = typeName.IndexOf('[');
+
+            if (genericIdx <= 0)
+                genericIdx = typeName.Length - 1;
+
+            int idx = typeName.LastIndexOf('.', genericIdx);
 
             return idx < 0 ? typeName : typeName.Substring(idx + 1);
         }
