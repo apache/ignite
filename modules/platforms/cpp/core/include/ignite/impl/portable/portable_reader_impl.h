@@ -1284,21 +1284,12 @@ namespace ignite
 
                 if (typeId == IGNITE_TYPE_STRING)
                 {
-                    bool utf8Mode = stream->ReadBool();
                     int32_t realLen = stream->ReadInt32();
 
                     ignite::impl::utils::SafeArray<char> arr(realLen + 1);
 
-                    if (utf8Mode)
-                    {
-                        for (int i = 0; i < realLen; i++)
-                            *(arr.target + i) = static_cast<char>(stream->ReadInt8());
-                    }
-                    else
-                    {
-                        for (int i = 0; i < realLen; i++)
-                            *(arr.target + i) = static_cast<char>(stream->ReadUInt16());
-                    }
+                    for (int i = 0; i < realLen; i++)
+                        *(arr.target + i) = static_cast<char>(stream->ReadInt8());
 
                     *(arr.target + realLen) = 0;
 

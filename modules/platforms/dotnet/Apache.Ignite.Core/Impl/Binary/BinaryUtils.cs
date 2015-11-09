@@ -649,8 +649,6 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static unsafe void WriteString(string val, IBinaryStream stream)
         {
-            stream.WriteBool(true);
-
             int charCnt = val.Length;
 
             fixed (char* chars = val)
@@ -670,16 +668,9 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static string ReadString(IBinaryStream stream)
         {
-            if (stream.ReadBool())
-            {
-                byte[] bytes = ReadByteArray(stream);
+            byte[] bytes = ReadByteArray(stream);
 
-                return bytes != null ? Utf8.GetString(bytes) : null;
-            }
-            
-            char[] chars = ReadCharArray(stream);
-
-            return new string(chars);
+            return bytes != null ? Utf8.GetString(bytes) : null;
         }
 
         /**

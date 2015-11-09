@@ -55,16 +55,13 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     /**
      * Create marshaller.
      *
-     * @param stringAsBytes Whether to marshal strings as bytes (UTF8).
      * @return Portable marshaller.
      * @throws Exception If failed.
      */
-    protected static PortableMarshaller createMarshaller(boolean stringAsBytes) throws Exception {
+    protected static PortableMarshaller createMarshaller() throws Exception {
         PortableContext ctx = new PortableContext(META_HND, new IgniteConfiguration());
 
         PortableMarshaller marsh = new PortableMarshaller();
-
-        marsh.setConvertStringToBytes(stringAsBytes);
 
         marsh.setTypeConfigurations(Arrays.asList(
             new BinaryTypeConfiguration(TestObject.class.getName()),
@@ -95,7 +92,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        dfltMarsh = createMarshaller(true);
+        dfltMarsh = createMarshaller();
     }
 
     /**
@@ -249,18 +246,6 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      */
     public void testString() throws Exception {
         check("fString");
-    }
-
-    /**
-     * Test string field.
-     *
-     * @throws Exception If failed.
-     */
-    public void testStringAsChars() throws Exception {
-        PortableMarshaller marsh = createMarshaller(false);
-
-        checkNormal(marsh, "fString", true);
-        checkNested(marsh, "fString", true);
     }
 
     /**
