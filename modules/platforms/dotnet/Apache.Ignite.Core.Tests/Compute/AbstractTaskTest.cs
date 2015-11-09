@@ -206,9 +206,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Define portable types.
+        /// Define binary types.
         /// </summary>
-        /// <param name="portTypeCfgs">Portable type configurations.</param>
+        /// <param name="portTypeCfgs">Binary type configurations.</param>
         protected virtual void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
         {
             // No-op.
