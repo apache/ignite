@@ -85,19 +85,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                     DefaultIdMapper = new IdMapper()
                 },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = new List<string>
-                {
-                    "-ea",
-                    "-Xcheck:jni",
-                    "-Xms4g",
-                    "-Xmx4g",
-                    "-DIGNITE_QUIET=false",
-                    "-Xnoagent",
-                    "-Djava.compiler=NONE",
-                    "-Xdebug",
-                    "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005",
-                    "-XX:+HeapDumpOnOutOfMemoryError"
-                },
+                JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = "config\\binary.xml"
             };
 
