@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Services
             if (_srvKeepBinary)
                 return this;
 
-            return new Services(UU.ServicesWithServerKeepPortable(Target), Marshaller, _clusterGroup, _keepBinary, true);
+            return new Services(UU.ServicesWithServerKeepBinary(Target), Marshaller, _clusterGroup, _keepBinary, true);
         }
 
         /** <inheritDoc /> */
