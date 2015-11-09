@@ -161,7 +161,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableResult)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(TestPortableJob)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableOutFunc)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableFunc)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableFunc)));
         }
 
         [Test]
@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestFuncResultPrimitive1()
         {
-            ICollection<int> res = Grid1.GetCompute().Broadcast(new PortableFunc(), 10);
+            ICollection<int> res = Grid1.GetCompute().Broadcast(new BinarizableFunc(), 10);
 
             Assert.AreEqual(3, res.Count);
 
@@ -216,7 +216,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test function.
         /// </summary>
-        public class PortableFunc : IComputeFunc<int, int>, IUserInterface<int, int>
+        public class BinarizableFunc : IComputeFunc<int, int>, IUserInterface<int, int>
         {
             int IComputeFunc<int, int>.Invoke(int arg)
             {

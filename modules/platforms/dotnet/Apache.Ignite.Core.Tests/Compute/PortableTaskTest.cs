@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableJobResult)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableTaskArgument)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableTaskResult)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableJob)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableJob)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableWrapper)));
         }
 
@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 {
                     if (!Grid3Name.Equals(node.GetAttribute<string>("org.apache.ignite.ignite.name"))) // Grid3 does not have cache.
                     {
-                        var job = new PortableJob
+                        var job = new BinarizableJob
                         {
                             Arg = new PortableWrapper {Item = ToPortable(_grid, new PortableJobArgument(200))}
                         };
@@ -228,7 +228,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        class PortableJob : IComputeJob<PortableWrapper>
+        class BinarizableJob : IComputeJob<PortableWrapper>
         {
             [InstanceResource]
             private IIgnite _grid = null;
