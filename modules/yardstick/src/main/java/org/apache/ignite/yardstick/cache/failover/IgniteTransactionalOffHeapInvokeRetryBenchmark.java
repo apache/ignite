@@ -14,20 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.logger.log4j2;
 
-import org.apache.ignite.lang.IgniteClosure;
+package org.apache.ignite.yardstick.cache.failover;
+
 /**
- * Porting for the Log4j2, the interface is useless with the new implementation
- * of the module  
- * @author  Gianfranco Murador 
+ * Invoke retry failover benchmark.
+ * <p>
+ * Each client maintains a local map that it updates together with cache.
+ * Client invokes an increment closure for all generated keys and atomically increments value for corresponding
+ * keys in the local map. To validate cache contents, all writes from the client are stopped, values in
+ * the local map are compared to the values in the cache.
  */
-public interface Log4j2FileAware {
-
-	 /**
-     * Sets closure that later evaluate file path.
-     *
-     * @param filePathClos Closure that generates actual file path.
-     */
-    void updateFilePath(IgniteClosure<String, String> filePathClos);
+public class IgniteTransactionalOffHeapInvokeRetryBenchmark extends IgniteTransactionalInvokeRetryBenchmark {
+    /** {@inheritDoc} */
+    @Override protected String cacheName() {
+        return "tx-offheap-invoke-retry";
+    }
 }

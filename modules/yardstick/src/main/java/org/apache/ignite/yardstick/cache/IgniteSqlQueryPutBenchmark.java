@@ -29,7 +29,7 @@ import org.yardstickframework.BenchmarkConfiguration;
 /**
  * Ignite benchmark that performs put and query operations.
  */
-public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark {
+public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);

@@ -149,6 +149,9 @@ public class IgniteConfiguration {
     /** Default keep alive time for public thread pool. */
     public static final long DFLT_PUBLIC_KEEP_ALIVE_TIME = 0;
 
+    /** Default limit of threads used for rebalance. */
+    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 1;
+
     /** Default max queue capacity of public thread pool. */
     public static final int DFLT_PUBLIC_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 
@@ -354,6 +357,9 @@ public class IgniteConfiguration {
     /** Client mode flag. */
     private Boolean clientMode;
 
+    /** Rebalance thread pool size. */
+    private int rebalanceThreadPoolSize = DFLT_REBALANCE_THREAD_POOL_SIZE;
+
     /** Transactions configuration. */
     private TransactionConfiguration txCfg = new TransactionConfiguration();
 
@@ -500,6 +506,7 @@ public class IgniteConfiguration {
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         pluginCfgs = cfg.getPluginConfigurations();
         pubPoolSize = cfg.getPublicThreadPoolSize();
+        rebalanceThreadPoolSize = cfg.getRebalanceThreadPoolSize();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -1326,6 +1333,29 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setClockSyncFrequency(long clockSyncFreq) {
         this.clockSyncFreq = clockSyncFreq;
+
+        return this;
+    }
+
+    /**
+     * Gets Max count of threads can be used at rebalancing.
+     * Minimum is 1.
+     * @return count.
+     */
+    public int getRebalanceThreadPoolSize() {
+        return rebalanceThreadPoolSize;
+    }
+
+    /**
+     * Sets Max count of threads can be used at rebalancing.
+     *
+     * Default is {@code 1} which has minimal impact on the operation of the grid.
+     *
+     * @param size Size.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setRebalanceThreadPoolSize(int size) {
+        this.rebalanceThreadPoolSize = size;
 
         return this;
     }

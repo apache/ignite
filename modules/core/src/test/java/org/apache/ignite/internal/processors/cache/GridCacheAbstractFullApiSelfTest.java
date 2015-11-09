@@ -3997,6 +3997,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testIgniteCacheIterator() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1756");
+
         IgniteCache<String, Integer> cache = jcache(0);
 
         Iterator<Cache.Entry<String, Integer>> it = cache.iterator();

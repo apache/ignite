@@ -1617,8 +1617,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     {
         for (final IgniteInternalTx tx : txs()) {
             if (nearVer.equals(tx.nearXidVersion())) {
-                TransactionState state = tx.state();
-
                 IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();
 
                 if (prepFut != null && !prepFut.isDone()) {
@@ -1647,6 +1645,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     return fut0;
                 }
+
+                TransactionState state = tx.state();
 
                 if (state == PREPARED || state == COMMITTING || state == COMMITTED) {
                     if (--txNum == 0) {
