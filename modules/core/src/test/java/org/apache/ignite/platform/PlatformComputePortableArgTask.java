@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Task working with portable argument.
+ * Task working with binarizable argument.
  */
 public class PlatformComputePortableArgTask extends ComputeTaskAdapter<Object, Integer> {
     /** {@inheritDoc} */

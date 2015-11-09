@@ -17,10 +17,10 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Portable;
     using NUnit.Framework;
 
     /// <summary>
@@ -77,23 +77,23 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
-        /// Test affinity with portable flag.
+        /// Test affinity with binary flag.
         /// </summary>
         [Test]
-        public void TestAffinityPortable()
+        public void TestAffinityBinary()
         {
             IIgnite g = Ignition.GetIgnite("grid-0");
 
             ICacheAffinity aff = g.GetAffinity(null);  
 
-            IPortableObject affKey = g.GetPortables().ToPortable<IPortableObject>(new AffinityTestKey(0, 1));
+            IBinaryObject affKey = g.GetBinary().ToBinary<IBinaryObject>(new AffinityTestKey(0, 1));
 
             IClusterNode node = aff.MapKeyToNode(affKey);
 
             for (int i = 0; i < 10; i++)
             {
-                IPortableObject otherAffKey =
-                    g.GetPortables().ToPortable<IPortableObject>(new AffinityTestKey(i, 1));
+                IBinaryObject otherAffKey =
+                    g.GetBinary().ToBinary<IBinaryObject>(new AffinityTestKey(i, 1));
 
                 Assert.AreEqual(node.Id, aff.MapKeyToNode(otherAffKey).Id);
             }

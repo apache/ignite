@@ -28,7 +28,7 @@ import java.util.List;
  */
 public class PlatformDotNetConfiguration implements PlatformConfiguration {
     /** */
-    private PlatformDotNetPortableConfiguration portableCfg;
+    private PlatformDotNetBinaryConfiguration binaryCfg;
 
     /** */
     private List<String> assemblies;
@@ -46,8 +46,8 @@ public class PlatformDotNetConfiguration implements PlatformConfiguration {
      * @param cfg Configuration to copy.
      */
     public PlatformDotNetConfiguration(PlatformDotNetConfiguration cfg) {
-        if (cfg.getPortableConfiguration() != null)
-            portableCfg = new PlatformDotNetPortableConfiguration(cfg.getPortableConfiguration());
+        if (cfg.getBinaryConfiguration() != null)
+            binaryCfg = new PlatformDotNetBinaryConfiguration(cfg.getBinaryConfiguration());
 
         if (cfg.getAssemblies() != null)
             assemblies = new ArrayList<>(cfg.getAssemblies());
@@ -56,15 +56,15 @@ public class PlatformDotNetConfiguration implements PlatformConfiguration {
     /**
      * @return Configuration.
      */
-    public PlatformDotNetPortableConfiguration getPortableConfiguration() {
-        return portableCfg;
+    public PlatformDotNetBinaryConfiguration getBinaryConfiguration() {
+        return binaryCfg;
     }
 
     /**
      * @param portableCfg Configuration.
      */
-    public void setPortableConfiguration(PlatformDotNetPortableConfiguration portableCfg) {
-        this.portableCfg = portableCfg;
+    public void setBinaryConfiguration(PlatformDotNetBinaryConfiguration portableCfg) {
+        this.binaryCfg = portableCfg;
     }
 
     /**

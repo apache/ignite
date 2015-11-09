@@ -23,12 +23,12 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Events;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
@@ -365,7 +365,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestRemoteListen(
             [Values(true, false)] bool async, 
-            [Values(true, false)] bool portable,
+            [Values(true, false)] bool binarizable,
             [Values(true, false)] bool autoUnsubscribe)
         {
             foreach (var g in _grids)
@@ -378,8 +378,8 @@ namespace Apache.Ignite.Core.Tests
 
             var expectedType = EventType.JobStarted;
 
-            var remoteFilter = portable 
-                ?  (IEventFilter<IEvent>) new RemoteEventPortableFilter(expectedType)
+            var remoteFilter = binary 
+                ?  (IEventFilter<IEvent>) new RemoteEventBinarizableFilter(expectedType)
                 :  new RemoteEventFilter(expectedType);
 
             var localListener = EventsTestHelper.GetListener();
@@ -612,11 +612,11 @@ namespace Apache.Ignite.Core.Tests
                 SpringConfigUrl = springConfigUrl,
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                PortableConfiguration = new PortableConfiguration
+                BinaryConfiguration = new BinaryConfiguration
                 {
-                    TypeConfigurations = new List<PortableTypeConfiguration>
+                    TypeConfigurations = new List<BinaryTypeConfiguration>
                     {
-                        new PortableTypeConfiguration(typeof (RemoteEventPortableFilter))
+                        new BinaryTypeConfiguration(typeof (RemoteEventBinarizableFilter))
                     }
                 }
             };
@@ -882,18 +882,18 @@ namespace Apache.Ignite.Core.Tests
     }
 
     /// <summary>
-    /// Portable remote event filter.
+    /// Binary remote event filter.
     /// </summary>
-    public class RemoteEventPortableFilter : IEventFilter<IEvent>, IPortableMarshalAware
+    public class RemoteEventBinarizableFilter : IEventFilter<IEvent>, IBinarizable
     {
         /** */
         private int _type;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="RemoteEventPortableFilter"/> class.
+        /// Initializes a new instance of the <see cref="RemoteEventBinarizableFilter"/> class.
         /// </summary>
         /// <param name="type">The event type.</param>
-        public RemoteEventPortableFilter(int type)
+        public RemoteEventBinarizableFilter(int type)
         {
             _type = type;
         }
@@ -905,13 +905,13 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /** <inheritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             writer.GetRawWriter().WriteInt(_type);
         }
 
         /** <inheritdoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             _type = reader.GetRawReader().ReadInt();
         }

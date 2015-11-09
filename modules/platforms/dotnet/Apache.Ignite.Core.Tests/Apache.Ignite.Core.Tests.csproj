@@ -84,7 +84,7 @@
     <Compile Include="Cache\Store\CacheStoreTest.cs" />
     <Compile Include="Cache\Store\CacheTestParallelLoadStore.cs" />
     <Compile Include="Cache\Store\CacheTestStore.cs" />
-    <Compile Include="Compute\Forked\ForkedPortableClosureTaskTest.cs" />
+    <Compile Include="Compute\Forked\ForkedBinarizableClosureTaskTest.cs" />
     <Compile Include="Compute\Forked\ForkedResourceTaskTest.cs" />
     <Compile Include="Compute\Forked\ForkedSerializableClosureTaskTest.cs" />
     <Compile Include="Compute\Forked\ForkedTaskAdapterTest.cs" />
@@ -94,8 +94,8 @@
     <Compile Include="Compute\ComputeMultithreadedTest.cs" />
     <Compile Include="Compute\IgniteExceptionTaskSelfTest.cs" />
     <Compile Include="Compute\FailoverTaskSelfTest.cs" />
-    <Compile Include="Compute\PortableClosureTaskTest.cs" />
-    <Compile Include="Compute\PortableTaskTest.cs" />
+    <Compile Include="Compute\BinarizableClosureTaskTest.cs" />
+    <Compile Include="Compute\BinarizableTaskTest.cs" />
     <Compile Include="Compute\ResourceTaskTest.cs" />
     <Compile Include="Compute\SerializableClosureTaskTest.cs" />
     <Compile Include="Compute\TaskAdapterTest.cs" />
@@ -116,21 +116,21 @@
     <Compile Include="IgniteManagerTest.cs" />
     <Compile Include="MarshallerTest.cs" />
     <Compile Include="MessagingTest.cs" />
-    <Compile Include="PortableConfigurationTest.cs" />
-    <Compile Include="Portable\PortableStructureTest.cs" />
+    <Compile Include="BinaryConfigurationTest.cs" />
+    <Compile Include="Binary\BinaryStructureTest.cs" />
     <Compile Include="SerializationTest.cs" />
     <Compile Include="IgniteStartStopTest.cs" />
     <Compile Include="TestUtils.cs" />
     <Compile Include="Memory\InteropMemoryTest.cs" />
-    <Compile Include="Portable\PortableApiSelfTest.cs" />
-    <Compile Include="Portable\PortableSelfTest.cs" />
+    <Compile Include="Binary\BinaryBuilderSelfTest.cs" />
+    <Compile Include="Binary\BinarySelfTest.cs" />
     <Compile Include="Process\IgniteProcess.cs" />
     <Compile Include="Process\IgniteProcessConsoleOutputReader.cs" />
     <Compile Include="Process\IIgniteProcessOutputReader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Query\ImplicitPortablePerson.cs" />
-    <Compile Include="Query\NoDefPortablePerson.cs" />
-    <Compile Include="Query\PortablePerson.cs" />
+    <Compile Include="Query\ImplicitBinarizablePerson.cs" />
+    <Compile Include="Query\NoDefBinarizablePerson.cs" />
+    <Compile Include="Query\BinarizablePerson.cs" />
     <Compile Include="Services\ServicesTest.cs" />
     <Compile Include="Services\ServicesTestAsync.cs" />
     <Compile Include="Services\ServiceProxyTest.cs" />
@@ -161,7 +161,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Config\cache-portables.xml">
+    <Content Include="Config\cache-binarizables.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\cache-query-continuous.xml">
@@ -207,7 +207,7 @@
     <Content Include="Config\marshaller-invalid.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Config\marshaller-portable.xml">
+    <Content Include="Config\marshaller-explicit.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\native-client-test-cache-affinity.xml">
@@ -222,7 +222,7 @@
     <Content Include="Config\native-client-test-cache.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Config\portable.xml">
+    <Content Include="Config\binary.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\start-test-grid1.xml">

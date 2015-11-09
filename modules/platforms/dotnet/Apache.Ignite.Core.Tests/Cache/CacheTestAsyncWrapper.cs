@@ -65,9 +65,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public bool IsKeepPortable
+        public bool IsKeepBinary
         {
-            get { return _cache.IsKeepPortable; }
+            get { return _cache.IsKeepBinary; }
         }
 
         /** <inheritDoc /> */
@@ -83,9 +83,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public ICache<TK1, TV1> WithKeepPortable<TK1, TV1>()
+        public ICache<TK1, TV1> WithKeepBinary<TK1, TV1>()
         {
-            return _cache.WithKeepPortable<TK1, TV1>().WrapAsync();
+            return _cache.WithKeepBinary<TK1, TV1>().WrapAsync();
         }
         
         /** <inheritDoc /> */

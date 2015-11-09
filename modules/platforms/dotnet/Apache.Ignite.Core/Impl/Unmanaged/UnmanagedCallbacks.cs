@@ -26,6 +26,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Cache.Store;
@@ -36,8 +38,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Messaging;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Lifecycle;
@@ -358,7 +358,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <param name="inOutStream">Stream.</param>
         /// <param name="grid">Grid.</param>
         /// <returns>CacheEntryProcessor result.</returns>
-        private CacheEntryProcessorResultHolder ReadAndRunCacheEntryProcessor(IPortableStream inOutStream,
+        private CacheEntryProcessorResultHolder ReadAndRunCacheEntryProcessor(IBinaryStream inOutStream,
             Ignite grid)
         {
             var marsh = grid.Marshaller;
@@ -547,7 +547,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     // 2. Create real filter from it's holder.
                     var filter = (IContinuousQueryFilter) DelegateTypeDescriptor.GetContinuousQueryFilterCtor(
-                        filterHolder.Filter.GetType())(filterHolder.Filter, filterHolder.KeepPortable);
+                        filterHolder.Filter.GetType())(filterHolder.Filter, filterHolder.KeepBinary);
 
                     // 3. Inject grid.
                     filter.Inject(_ignite);
@@ -604,22 +604,22 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         private void DataStreamerStreamReceiverInvoke(void* target, long rcvPtr, void* cache, long memPtr, 
-            byte keepPortable)
+            byte keepBinary)
         {
             SafeCall(() =>
             {
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    var reader = _ignite.Marshaller.StartUnmarshal(stream, PortableMode.ForcePortable);
+                    var reader = _ignite.Marshaller.StartUnmarshal(stream, BinaryMode.ForceBinary);
 
-                    var portableReceiver = reader.ReadObject<PortableUserObject>();
+                    var binaryReceiver = reader.ReadObject<BinaryObject>();
 
                     var receiver = _handleRegistry.Get<StreamReceiverHolder>(rcvPtr) ??
-                                   portableReceiver.Deserialize<StreamReceiverHolder>();
+                                   binaryReceiver.Deserialize<StreamReceiverHolder>();
 
                     if (receiver != null)
                         receiver.Receive(_ignite, new UnmanagedNonReleaseableTarget(_ctx, cache), stream,
-                            keepPortable != 0);
+                            keepBinary != 0);
                 }
             });
         }
@@ -893,12 +893,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                    bool srvKeepPortable = reader.ReadBoolean();
+                    bool srvKeepBinary = reader.ReadBoolean();
                     var svc = reader.ReadObject<IService>();
 
                     ResourceProcessor.Inject(svc, _ignite);
 
-                    svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepPortable)));
+                    svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
 
                     return _handleRegistry.Allocate(svc);
                 }
@@ -915,10 +915,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                    bool srvKeepPortable = reader.ReadBoolean();
+                    bool srvKeepBinary = reader.ReadBoolean();
 
                     svc.Execute(new ServiceContext(
-                        _ignite.Marshaller.StartUnmarshal(stream, srvKeepPortable)));
+                        _ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
                 }
             });
         }
@@ -935,9 +935,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     {
                         var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                        bool srvKeepPortable = reader.ReadBoolean();
+                        bool rvKeepBinary = reader.ReadBoolean();
 
-                        svc.Cancel(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepPortable)));
+                        svc.Cancel(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, rvKeepBinary)));
                     }
                 }
                 finally

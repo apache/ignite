@@ -18,14 +18,14 @@
 namespace Apache.Ignite.Core.Impl.Compute.Closure
 {
     using System;
-    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Resource;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// System job which wraps over <c>Func</c>.
     /// </summary>
-    internal class ComputeFuncJob : IComputeJob, IComputeResourceInjector, IPortableWriteAware
+    internal class ComputeFuncJob : IComputeJob, IComputeResourceInjector, IBinaryWriteAware
     {
         /** Closure. */
         private readonly IComputeFunc _clo;
@@ -63,9 +63,9 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
-            PortableWriterImpl writer0 = (PortableWriterImpl) writer.GetRawWriter();
+            BinaryWriter writer0 = (BinaryWriter) writer.GetRawWriter();
 
             writer0.WithDetach(w => w.WriteObject(_clo));
             writer0.WithDetach(w => w.WriteObject(_arg));
@@ -75,9 +75,9 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// Initializes a new instance of the <see cref="ComputeFuncJob"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ComputeFuncJob(IPortableReader reader)
+        public ComputeFuncJob(IBinaryReader reader)
         {
-            var reader0 = (PortableReaderImpl) reader.GetRawReader();
+            var reader0 = (BinaryReader) reader.GetRawReader();
 
             _clo = reader0.ReadObject<IComputeFunc>();
             _arg = reader0.ReadObject<object>();

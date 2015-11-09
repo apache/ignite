@@ -23,11 +23,11 @@ namespace Apache.Ignite.Core.Tests.Compute
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -39,8 +39,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Echo task name. */
         private const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";
 
-        /** Portable argument task name. */
-        private const string PortableArgTask = "org.apache.ignite.platform.PlatformComputePortableArgTask";
+        /** Binary argument task name. */
+        private const string BinaryArgTask = "org.apache.ignite.platform.PlatformComputeBinarizableArgTask";
 
         /** Broadcast task name. */
         private const string BroadcastTask = "org.apache.ignite.platform.PlatformComputeBroadcastTask";
@@ -48,8 +48,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Broadcast task name. */
         private const string DecimalTask = "org.apache.ignite.platform.PlatformComputeDecimalTask";
 
-        /** Java portable class name. */
-        private const string JavaPortableCls = "GridInteropComputeJavaPortable";
+        /** Java binary class name. */
+        private const string JavaBinaryCls = "PlatformComputeJavaBinarizable";
 
         /** Echo type: null. */
         private const int EchoTypeNull = 0;
@@ -87,17 +87,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Echo type: map. */
         private const int EchoTypeMap = 11;
 
-        /** Echo type: portable. */
-        private const int EchoTypePortable = 12;
+        /** Echo type: binarizable. */
+        private const int EchoTypeBinarizable = 12;
 
-        /** Echo type: portable (Java only). */
-        private const int EchoTypePortableJava = 13;
+        /** Echo type: binary (Java only). */
+        private const int EchoTypeBinarizableJava = 13;
 
         /** Type: object array. */
         private const int EchoTypeObjArray = 14;
 
-        /** Type: portable object array. */
-        private const int EchoTypePortableArray = 15;
+        /** Type: binary object array. */
+        private const int EchoTypeBinarizableArray = 15;
 
         /** Type: enum. */
         private const int EchoTypeEnum = 16;
@@ -799,34 +799,34 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Test echo task returning portable object.
+        /// Test echo task returning binary object.
         /// </summary>
         [Test]
-        public void TestEchoTaskPortable()
+        public void TestEchoTaskBinarizable()
         {
-            PlatformComputePortable res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputePortable>(EchoTask, EchoTypePortable);
+            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(EchoTask, EchoTypeBinarizable);
 
             Assert.AreEqual(1, res.Field);
         }
 
         /// <summary>
-        /// Test echo task returning portable object with no corresponding class definition.
+        /// Test echo task returning binary object with no corresponding class definition.
         /// </summary>
         [Test]
-        public void TestEchoTaskPortableNoClass()
+        public void TestEchoTaskBinarizableNoClass()
         {
             ICompute compute = _grid1.GetCompute();
 
-            compute.WithKeepPortable();
+            compute.WithKeepBinary();
 
-            IPortableObject res = compute.ExecuteJavaTask<IPortableObject>(EchoTask, EchoTypePortableJava);
+            IBinaryObject res = compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinarizableJava);
 
             Assert.AreEqual(1, res.GetField<int>("field"));
 
-            // This call must fail because "keepPortable" flag is reset.
-            Assert.Catch(typeof(PortableException), () =>
+            // This call must fail because "keepBinary" flag is reset.
+            Assert.Catch(typeof(BinaryObjectException), () =>
             {
-                compute.ExecuteJavaTask<IPortableObject>(EchoTask, EchoTypePortableJava);
+                compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinarizableJava);
             });
         }
 
@@ -842,17 +842,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Tests the echo task returning portable array.
+        /// Tests the echo task returning binary array.
         /// </summary>
         [Test]
-        public void TestEchoTaskPortableArray()
+        public void TestEchoTaskBinarizableArray()
         {
-            var res = _grid1.GetCompute().ExecuteJavaTask<object[]>(EchoTask, EchoTypePortableArray);
+            var res = _grid1.GetCompute().ExecuteJavaTask<object[]>(EchoTask, EchoTypeBinarizableArray);
             
             Assert.AreEqual(3, res.Length);
 
             for (var i = 0; i < res.Length; i++)
-                Assert.AreEqual(i + 1, ((PlatformComputePortable) res[i]).Field);
+                Assert.AreEqual(i + 1, ((PlatformComputeBinarizable) res[i]).Field);
         }
 
         /// <summary>
@@ -883,20 +883,20 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Test for portable argument in Java.
+        /// Test for binary argument in Java.
         /// </summary>
         [Test]
-        public void TestPortableArgTask()
+        public void TestBinarizableArgTask()
         {
             ICompute compute = _grid1.GetCompute();
 
-            compute.WithKeepPortable();
+            compute.WithKeepBinary();
 
-            PlatformComputeNetPortable arg = new PlatformComputeNetPortable();
+            PlatformComputeNetBinarizable arg = new PlatformComputeNetBinarizable();
 
             arg.Field = 100;
 
-            int res = compute.ExecuteJavaTask<int>(PortableArgTask, arg);
+            int res = compute.ExecuteJavaTask<int>(BinaryArgTask, arg);
 
             Assert.AreEqual(arg.Field, res);
         }
@@ -1095,17 +1095,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             IgniteConfiguration cfg = new IgniteConfiguration();
 
-            PortableConfiguration portCfg = new PortableConfiguration();
+            BinaryConfiguration portCfg = new BinaryConfiguration();
 
-            ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PlatformComputePortable)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PlatformComputeNetPortable)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(JavaPortableCls));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PlatformComputeBinarizable)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PlatformComputeNetBinarizable)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(JavaBinaryCls));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
-            cfg.PortableConfiguration = portCfg;
+            cfg.BinaryConfiguration = portCfg;
 
             cfg.JvmClasspath = Classpath.CreateClasspath(cfg, true);
 
@@ -1117,7 +1117,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    class PlatformComputePortable
+    class PlatformComputeBinarizable
     {
         public int Field
         {
@@ -1126,7 +1126,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    class PlatformComputeNetPortable : PlatformComputePortable
+    class PlatformComputeNetBinarizable : PlatformComputeBinarizable
     {
 
     }

@@ -18,7 +18,7 @@
 package org.apache.ignite.platform;
 
 /**
- * Portable object for task tests.
+ * Binarizable object for task tests.
  */
 public class PlatformComputePortable {
     /** Field. */

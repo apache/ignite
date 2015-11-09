@@ -36,7 +36,7 @@
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="portable_store"/>
+                    <property name="name" value="binary_store"/>
                     <property name="cacheMode" value="LOCAL"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeThrough" value="true"/>

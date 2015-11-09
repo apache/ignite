@@ -22,11 +22,11 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using System.Runtime.Serialization.Formatters.Binary;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Portable;
     using NUnit.Framework;
 
     /// <summary>
@@ -107,18 +107,18 @@ namespace Apache.Ignite.Core.Tests
             TestPartialUpdateException(false, (x, g) => x);
 
             // User type
-            TestPartialUpdateException(false, (x, g) => new PortableEntry(x));
+            TestPartialUpdateException(false, (x, g) => new BinarizableEntry(x));
         }
 
         /// <summary>
-        /// Tests CachePartialUpdateException keys propagation in portable mode.
+        /// Tests CachePartialUpdateException keys propagation in binary mode.
         /// </summary>
         [Test]
         [Category(TestUtils.CategoryIntensive)]
-        public void TestPartialUpdateExceptionPortable()
+        public void TestPartialUpdateExceptionBinarizable()
         {
             // User type
-            TestPartialUpdateException(false, (x, g) => g.GetPortables().ToPortable<IPortableObject>(new PortableEntry(x)));
+            TestPartialUpdateException(false, (x, g) => g.GetBinary().ToBinary<IBinaryObject>(new BinarizableEntry(x)));
         }
 
         /// <summary>
@@ -195,17 +195,17 @@ namespace Apache.Ignite.Core.Tests
             TestPartialUpdateException(true, (x, g) => x);
 
             // User type
-            TestPartialUpdateException(true, (x, g) => new PortableEntry(x));
+            TestPartialUpdateException(true, (x, g) => new BinarizableEntry(x));
         }
 
         /// <summary>
-        /// Tests CachePartialUpdateException keys propagation in portable mode.
+        /// Tests CachePartialUpdateException keys propagation in binary mode.
         /// </summary>
         [Test]
         [Category(TestUtils.CategoryIntensive)]
-        public void TestPartialUpdateExceptionAsyncPortable()
+        public void TestPartialUpdateExceptionAsyncBinarizable()
         {
-            TestPartialUpdateException(true, (x, g) => g.GetPortables().ToPortable<IPortableObject>(new PortableEntry(x)));
+            TestPartialUpdateException(true, (x, g) => g.GetBinary().ToBinary<IBinaryObject>(new BinarizableEntry(x)));
         }
 
         /// <summary>
@@ -217,8 +217,8 @@ namespace Apache.Ignite.Core.Tests
             {
                 var cache = grid.GetCache<TK, int>("partitioned_atomic").WithNoRetries();
 
-                if (typeof (TK) == typeof (IPortableObject))
-                    cache = cache.WithKeepPortable<TK, int>();
+                if (typeof (TK) == typeof (IBinaryObject))
+                    cache = cache.WithKeepBinary<TK, int>();
 
                 // Do cache puts in parallel
                 var putTask = Task.Factory.StartNew(() =>
@@ -291,20 +291,20 @@ namespace Apache.Ignite.Core.Tests
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 GridName = gridName,
-                PortableConfiguration = new PortableConfiguration
+                BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = new[]
                     {
-                        new PortableTypeConfiguration(typeof (PortableEntry))
+                        new BinaryTypeConfiguration(typeof (BinarizableEntry))
                     }
                 }
             });
         }
 
         /// <summary>
-        /// Portable entry.
+        /// Binarizable entry.
         /// </summary>
-        private class PortableEntry
+        private class BinarizableEntry
         {
             /** Value. */
             private readonly int _val;
@@ -319,7 +319,7 @@ namespace Apache.Ignite.Core.Tests
             /// Constructor.
             /// </summary>
             /// <param name="val">Value.</param>
-            public PortableEntry(int val)
+            public BinarizableEntry(int val)
             {
                 _val = val;
             }
@@ -327,12 +327,12 @@ namespace Apache.Ignite.Core.Tests
             /** <inheritDoc /> */
             public override bool Equals(object obj)
             {
-                return obj is PortableEntry && ((PortableEntry)obj)._val == _val;
+                return obj is BinarizableEntry && ((BinarizableEntry)obj)._val == _val;
             }
         }
 
         /// <summary>
-        /// Portable entry.
+        /// Serializable entry.
         /// </summary>
         [Serializable]
         private class SerializableEntry

@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Tests
     {
         /// <summary>
         /// Tests the default marhsaller.
-        /// By default, portable marshaller is used.
+        /// By default, binary marshaller is used.
         /// </summary>
         [Test]
         public void TestDefaultMarhsaller()
@@ -43,13 +43,13 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Tests the portable marhsaller.
-        /// PortableMarshaller can be specified explicitly in config.
+        /// Tests the binary marhsaller.
+        /// Marshaller can be specified explicitly in config.
         /// </summary>
         [Test]
-        public void TestPortableMarhsaller()
+        public void TestExplicitMarhsaller()
         {
-            using (var grid = Ignition.Start("config\\marshaller-portable.xml"))
+            using (var grid = Ignition.Start("config\\marshaller-explicit.xml"))
             {
                 var cache = grid.GetOrCreateCache<int, int>(null);
 

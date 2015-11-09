@@ -19,8 +19,8 @@ namespace Apache.Ignite.Core.Cache.Query
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
-    using Apache.Ignite.Core.Impl.Portable;
 
     /// <summary>
     /// SQL Query.
@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Cache.Query
         public object[] Arguments { get; set; }
 
         /** <inheritDoc /> */
-        internal override void Write(PortableWriterImpl writer, bool keepPortable)
+        internal override void Write(BinaryWriter writer, bool keepBinary)
         {
             if (string.IsNullOrEmpty(Sql))
                 throw new ArgumentException("Sql cannot be null or empty");
