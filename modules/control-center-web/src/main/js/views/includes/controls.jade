@@ -562,6 +562,7 @@ mixin preview(preview, id)
 mixin save-remove-buttons(objectName)
     -var removeTip = '"Remove current ' + objectName + '"'
     -var cloneTip = '"Clone current ' + objectName + '"'
+    -var undoTip = '"Undo all changes for current ' + objectName + '"'
 
     div(ng-show='tableVisibleRow(displayedRows, selectedItem)' style='display: inline-block;')
         .panel-tip-container(ng-hide='!backupItem || backupItem._id')
@@ -574,3 +575,5 @@ mixin save-remove-buttons(objectName)
             button.btn.btn-primary(id='remove-item' ng-click='removeItem()' bs-tooltip=removeTip data-placement='bottom' data-trigger='hover') Remove
             button.btn.dropdown-toggle.btn-primary(id='remove-item-dropdown' data-toggle='dropdown' data-container='body' bs-dropdown='removeDropdown' data-placement='bottom-right')
                 span.caret
+        .panel-tip-container(ng-show='backupItem')
+            i.btn.btn-primary.fa.fa-undo(id='undo-item' ng-disabled='!ui.isDirty()' ng-click='ui.isDirty() ? resetAll() : ""' bs-tooltip=undoTip data-placement='bottom' data-trigger='hover')

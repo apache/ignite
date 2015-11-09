@@ -267,7 +267,7 @@ consoleModule.controller('igfsController', [
                     return false;
 
                 if (!item.secondaryFileSystemEnabled && (!item.defaultMode || item.defaultMode != 'PRIMARY'))
-                    return showPopoverMessage($scope.panels, 'misc', 'secondaryFileSystem-title', 'Secondary file system should be configured for not "PRIMARY" IGFS mode');
+                    return showPopoverMessage($scope.panels, 'secondaryFileSystem', 'secondaryFileSystem-title', 'Secondary file system should be configured for not "PRIMARY" IGFS mode');
 
                 if (item.pathModes) {
                     for (var pathIx = 0; pathIx < item.pathModes.length; pathIx ++) {

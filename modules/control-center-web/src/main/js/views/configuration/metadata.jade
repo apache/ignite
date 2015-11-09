@@ -59,13 +59,9 @@ block content
                     .panel-tip-container(bs-tooltip data-title='Load new metadata from database' data-placement='bottom')
                         button.btn.btn-primary(ng-click='showLoadMetadataModal()') Load from database
                     +save-remove-buttons('metadata')
-                    .panel-tip-container(ng-show='backupItem')
-                        a.btn.btn-primary(id='reset-item-top' ng-disabled='!ui.isDirty()' ng-click='ui.isDirty() ? resetAll() : ""' bs-tooltip data-title='Reset current metadata' data-placement='bottom' data-trigger='hover') Reset
                 hr
                 form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow((displayedRows | metadatasValidation:ui.showValid:true), selectedItem)' novalidate unsaved-warning-form)
                     .panel-group(bs-collapse ng-model='panels.activePanels' data-allow-multiple='true')
                         +groups('metadata', 'backupItem')
                     .section
                         +save-remove-buttons('metadata')
-                        .panel-tip-container(ng-show='backupItem')
-                            a.btn.btn-primary(id='reset-item-bottom' ng-disabled='!ui.isDirty()' ng-click='ui.isDirty() ? resetAll() : ""' bs-tooltip data-title='Reset current metadata' data-placement='bottom' data-trigger='hover') Reset
