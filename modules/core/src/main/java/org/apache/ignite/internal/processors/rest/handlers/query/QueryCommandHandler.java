@@ -86,20 +86,20 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
                 long time = U.currentTimeMillis();
 
                 for (Map.Entry<Long, QueryCursorIterator> e : qryCurs.entrySet()) {
-                    QueryCursorIterator val = e.getValue();
+                    QueryCursorIterator qryCurIt = e.getValue();
 
-                    long createTime = val.timestamp();
+                    long createTime = qryCurIt.timestamp();
 
-                    if (createTime + idleQryCurTimeout > time && val.lock().tryLock()) {
+                    if (createTime + idleQryCurTimeout > time && qryCurIt.tryLock()) {
                         try {
-                            val.timestamp(-1);
+                            qryCurIt.timestamp(-1);
 
-                            qryCurs.remove(e.getKey(), val);
+                            qryCurs.remove(e.getKey(), qryCurIt);
 
-                            val.close();
+                            qryCurIt.close();
                         }
                         finally {
-                            val.lock().unlock();
+                            qryCurIt.unlock();
                         }
                     }
                 }
@@ -142,23 +142,23 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
      * @param qryCurs Query cursors.
      */
     private static void removeQueryCursor(Long qryId, ConcurrentHashMap<Long, QueryCursorIterator> qryCurs) {
-        QueryCursorIterator t = qryCurs.get(qryId);
+        QueryCursorIterator qryCurIt = qryCurs.get(qryId);
 
-        if (t == null)
+        if (qryCurIt == null)
             return;
 
-        t.lock().lock();
+        qryCurIt.lock();
 
         try {
-            if (t.timestamp() == -1)
+            if (qryCurIt.timestamp() == -1)
                 return;
 
-            t.close();
+            qryCurIt.close();
 
             qryCurs.remove(qryId);
         }
         finally {
-            t.lock().unlock();
+            qryCurIt.unlock();
         }
     }
 
@@ -308,12 +308,12 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
 
                 Iterator cur = qryCur.iterator();
 
-                QueryCursorIterator val = new QueryCursorIterator(qryCur, cur);
+                QueryCursorIterator qryCurIt = new QueryCursorIterator(qryCur, cur);
 
-                val.lock().lock();
+                qryCurIt.lock();
 
                 try {
-                    qryCurs.put(qryId, val);
+                    qryCurs.put(qryId, qryCurIt);
 
                     CacheQueryResult res = createQueryResult(cur, req, qryId, qryCurs);
 
@@ -344,7 +344,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
                     return new GridRestResponse(res);
                 }
                 finally {
-                    val.lock().unlock();
+                    qryCurIt.unlock();
                 }
             }
             catch (Exception e) {
@@ -392,23 +392,23 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
             try {
-                QueryCursorIterator val = qryCurs.get(req.queryId());
+                QueryCursorIterator qryCurIt = qryCurs.get(req.queryId());
 
-                if (val == null)
+                if (qryCurIt == null)
                     return new GridRestResponse(true);
 
-                val.lock().lock();
+                qryCurIt.lock();
 
                 try {
-                    if (val.timestamp() == -1)
+                    if (qryCurIt.timestamp() == -1)
                         return new GridRestResponse(true);
 
-                    val.close();
+                    qryCurIt.close();
 
                     qryCurs.remove(req.queryId());
                 }
                 finally {
-                    val.lock().unlock();
+                    qryCurIt.unlock();
                 }
 
                 return new GridRestResponse(true);
@@ -443,29 +443,29 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
             try {
-                QueryCursorIterator val = qryCurs.get(req.queryId());
+                QueryCursorIterator qryCurIt = qryCurs.get(req.queryId());
 
-                if (val == null)
+                if (qryCurIt == null)
                     return new GridRestResponse(GridRestResponse.STATUS_FAILED,
                         "Failed to find query with ID: " + req.queryId());
 
-                val.lock().lock();
+                qryCurIt.lock();
 
                 try {
-                    if (val.timestamp() == -1)
+                    if (qryCurIt.timestamp() == -1)
                         return new GridRestResponse(GridRestResponse.STATUS_FAILED,
                             "Query is closed by timeout. Restart query with ID: " + req.queryId());
 
-                    val.timestamp(U.currentTimeMillis());
+                    qryCurIt.timestamp(U.currentTimeMillis());
 
-                    Iterator cur = val.iterator();
+                    Iterator cur = qryCurIt.iterator();
 
                     CacheQueryResult res = createQueryResult(cur, req, req.queryId(), qryCurs);
 
                     return new GridRestResponse(res);
                 }
                 finally {
-                    val.lock().unlock();
+                    qryCurIt.unlock();
                 }
             }
             catch (Exception e) {
@@ -479,7 +479,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
     /**
      * Query cursor iterator.
      */
-    private static class QueryCursorIterator {
+    private static class QueryCursorIterator extends ReentrantLock {
         /** Query cursor. */
         private QueryCursor cur;
 
@@ -489,9 +489,6 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
         /** Last timestamp. */
         private volatile long ts;
 
-        /** Reentrant lock. */
-        private final ReentrantLock lock = new ReentrantLock();
-
         /**
          * @param cur Query cursor.
          * @param it Query iterator.
@@ -500,13 +497,6 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
             this.cur = cur;
             this.it = it;
             ts = U.currentTimeMillis();
-        }
-
-        /**
-         * @return Lock.
-         */
-        public ReentrantLock lock() {
-            return lock;
         }
 
         /**
