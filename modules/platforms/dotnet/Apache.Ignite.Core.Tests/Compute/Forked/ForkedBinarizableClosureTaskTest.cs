@@ -20,11 +20,11 @@ namespace Apache.Ignite.Core.Tests.Compute.Forked
     /// <summary>
     /// Forked closure execution tests for portable objects.
     /// </summary>
-    public class ForkedPortableClosureTaskTest : PortableClosureTaskTest
+    public class ForkedBinarizableClosureTaskTest : BinarizableClosureTaskTest
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        public ForkedPortableClosureTaskTest() : base(true) { }
+        public ForkedBinarizableClosureTaskTest() : base(true) { }
     }
 }

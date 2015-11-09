@@ -84,7 +84,7 @@
     <Compile Include="Cache\Store\CacheStoreTest.cs" />
     <Compile Include="Cache\Store\CacheTestParallelLoadStore.cs" />
     <Compile Include="Cache\Store\CacheTestStore.cs" />
-    <Compile Include="Compute\Forked\ForkedPortableClosureTaskTest.cs" />
+    <Compile Include="Compute\Forked\ForkedBinarizableClosureTaskTest.cs" />
     <Compile Include="Compute\Forked\ForkedResourceTaskTest.cs" />
     <Compile Include="Compute\Forked\ForkedSerializableClosureTaskTest.cs" />
     <Compile Include="Compute\Forked\ForkedTaskAdapterTest.cs" />
@@ -94,7 +94,7 @@
     <Compile Include="Compute\ComputeMultithreadedTest.cs" />
     <Compile Include="Compute\IgniteExceptionTaskSelfTest.cs" />
     <Compile Include="Compute\FailoverTaskSelfTest.cs" />
-    <Compile Include="Compute\PortableClosureTaskTest.cs" />
+    <Compile Include="Compute\BinarizableClosureTaskTest.cs" />
     <Compile Include="Compute\PortableTaskTest.cs" />
     <Compile Include="Compute\ResourceTaskTest.cs" />
     <Compile Include="Compute\SerializableClosureTaskTest.cs" />

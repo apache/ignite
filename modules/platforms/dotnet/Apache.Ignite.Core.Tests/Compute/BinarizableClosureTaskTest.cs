@@ -26,18 +26,18 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Closure execution tests for portable objects.
     /// </summary>
-    public class PortableClosureTaskTest : ClosureTaskTest
+    public class BinarizableClosureTaskTest : ClosureTaskTest
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        public PortableClosureTaskTest() : base(false) { }
+        public BinarizableClosureTaskTest() : base(false) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="fork">Fork flag.</param>
-        protected PortableClosureTaskTest(bool fork) : base(fork) { }
+        protected BinarizableClosureTaskTest(bool fork) : base(fork) { }
 
         /** <inheritDoc /> */
         protected override void PortableTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
@@ -88,15 +88,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private class PortableOutFunc : IComputeFunc<object>
         {
             /** Error. */
-            private bool _err;
-
-            /// <summary>
-            /// 
-            /// </summary>
-            public PortableOutFunc()
-            {
-                // No-op.
-            }
+            private readonly bool _err;
 
             /// <summary>
             /// 
@@ -122,15 +114,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private class PortableFunc : IComputeFunc<object, object>
         {
             /** Error. */
-            private bool _err;
-
-            /// <summary>
-            /// 
-            /// </summary>
-            public PortableFunc()
-            {
-                // No-op.
-            }
+            private readonly bool _err;
 
             /// <summary>
             /// 
@@ -161,16 +145,8 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <summary>
             /// 
             /// </summary>
-            public PortableException()
-            {
-                // No-op.
-            }
-
-            /// <summary>
-            /// 
-            /// </summary>
             /// <param name="msg"></param>
-            public PortableException(string msg) : this()
+            public PortableException(string msg)
             {
                 Msg = msg;
             }
@@ -194,15 +170,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private class PortableResult
         {
             /** */
-            public int Res;
-
-            /// <summary>
-            /// 
-            /// </summary>
-            public PortableResult()
-            {
-                // No-op.
-            }
+            public readonly int Res;
 
             /// <summary>
             /// 
