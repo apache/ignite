@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Portable meta data implementation.
  */
-public class BinaryMetaDataImpl implements BinaryType, Binarylizable, Externalizable {
+public class BinaryMetaDataImpl implements BinaryType, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -49,9 +49,6 @@ public class BinaryMetaDataImpl implements BinaryType, Binarylizable, Externaliz
     /** */
     @GridToStringInclude
     private Map<String, String> fields;
-
-    /** */
-    private volatile Map<Integer, String> fldIdToName;
 
     /** */
     private String affKeyFieldName;
@@ -104,13 +101,6 @@ public class BinaryMetaDataImpl implements BinaryType, Binarylizable, Externaliz
         return affKeyFieldName;
     }
 
-    /**
-     * @return Fields meta data.
-     */
-    public Map<String, String> fieldsMeta() {
-        return fields != null ? fields : Collections.<String, String>emptyMap();
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, typeName);
@@ -123,24 +113,6 @@ public class BinaryMetaDataImpl implements BinaryType, Binarylizable, Externaliz
         typeName = U.readString(in);
         fields = U.readMap(in);
         affKeyFieldName = U.readString(in);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-        BinaryRawWriter raw = writer.rawWriter();
-
-        raw.writeString(typeName);
-        raw.writeString(affKeyFieldName);
-        raw.writeMap(fields);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-        BinaryRawReader raw = reader.rawReader();
-
-        typeName = raw.readString();
-        affKeyFieldName = raw.readString();
-        fields = raw.readMap();
     }
 
     /** {@inheritDoc} */

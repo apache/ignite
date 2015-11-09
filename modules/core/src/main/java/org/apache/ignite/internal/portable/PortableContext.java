@@ -237,9 +237,6 @@ public class PortableContext implements Externalizable {
         registerPredefinedType(T2.class, 62);
 
         // IDs range [200..1000] is used by Ignite internal APIs.
-
-        registerPredefinedType(BinaryObjectImpl.class, 200);
-        registerPredefinedType(BinaryMetaDataImpl.class, 201);
     }
 
     /**

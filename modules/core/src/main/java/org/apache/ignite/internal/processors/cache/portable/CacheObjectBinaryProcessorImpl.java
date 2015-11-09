@@ -843,8 +843,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         BinaryType newMeta, @Nullable Map<String, String> fields) throws BinaryObjectException {
         assert newMeta != null;
 
-        Map<String, String> oldFields = oldMeta != null ? ((BinaryMetaDataImpl)oldMeta).fieldsMeta() : null;
-        Map<String, String> newFields = ((BinaryMetaDataImpl)newMeta).fieldsMeta();
+        Map<String, String> oldFields = oldMeta != null ? ((BinaryMetaDataImpl)oldMeta).fields0() : null;
+        Map<String, String> newFields = ((BinaryMetaDataImpl)newMeta).fields0();
 
         boolean changed = false;
 
