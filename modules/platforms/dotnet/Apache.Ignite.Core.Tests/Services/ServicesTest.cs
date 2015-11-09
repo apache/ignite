@@ -236,7 +236,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests service proxy.
         /// </summary>
         [Test]
-        public void TestGetServiceProxy([Values(true, false)] bool portable)
+        public void TestGetServiceProxy([Values(true, false)] bool binarizable)
         {
             // Test proxy without a service
             var prx = Services.GetServiceProxy<ITestIgniteService>(SvcName);
@@ -247,7 +247,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual("Failed to find deployed service: " + SvcName, ex.Message);
 
             // Deploy to grid2 & grid3
-            var svc = portable
+            var svc = binarizable
                 ? new TestIgniteServiceBinarizable {TestProperty = 17}
                 : new TestIgniteServiceSerializable {TestProperty = 17};
 
@@ -734,10 +734,10 @@ namespace Apache.Ignite.Core.Tests.Services
 
                 if (context.AffinityKey != null && !(context.AffinityKey is int))
                 {
-                    var portableObject = context.AffinityKey as IBinaryObject;
+                    var binaryObj = context.AffinityKey as IBinaryObject;
                     
-                    var key = portableObject != null
-                        ? portableObject.Deserialize<BinarizableObject>()
+                    var key = binaryObj != null
+                        ? binaryObj.Deserialize<BinarizableObject>()
                         : (BinarizableObject) context.AffinityKey;
 
                     Assert.AreEqual(AffKey, key.Val);

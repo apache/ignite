@@ -444,7 +444,7 @@ namespace Apache.Ignite.Core.Tests.Services
             /// <summary>
             /// Initializes a new instance of the <see cref="TestIgniteService"/> class.
             /// </summary>
-            /// <param name="igniteBinary">The portables.</param>
+            /// <param name="igniteBinary">Binary.</param>
             public TestIgniteService(IIgniteBinary igniteBinary)
             {
                 _igniteBinary = igniteBinary;
@@ -618,7 +618,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 ThrowOnRead = reader.ReadBoolean("ThrowOnRead");
 
                 if (ThrowOnRead)
-                    throw new Exception("Expected exception in CustomExceptionBinarizable.ReadPortable");
+                    throw new Exception("Expected exception in CustomExceptionBinarizable.ReadBinary");
             }
         }
 
@@ -643,7 +643,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 writer.WriteBoolean("ThrowOnRead", ThrowOnRead);
 
                 if (ThrowOnWrite)
-                    throw new Exception("Expected exception in TestPortableClass.WriteBinary");
+                    throw new Exception("Expected exception in TestBinarizableClass.WriteBinary");
             }
 
             /** <inheritdoc /> */
@@ -653,7 +653,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 ThrowOnRead = reader.ReadBoolean("ThrowOnRead");
 
                 if (ThrowOnRead)
-                    throw new Exception("Expected exception in TestPortableClass.ReadPortable");
+                    throw new Exception("Expected exception in TestBinarizableClass.ReadBinary");
             }
         }
     }
@@ -712,7 +712,7 @@ namespace Apache.Ignite.Core.Tests.Services
     }
 
     /// <summary>
-    /// Tests <see cref="ServiceProxySerializer"/> functionality with keepPortable mode enabled on client and on server.
+    /// Tests <see cref="ServiceProxySerializer"/> functionality with keepBinary mode enabled on client and on server.
     /// </summary>
     public class ServiceProxyTestKeepBinaryClientServer : ServiceProxyTest
     {

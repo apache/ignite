@@ -78,7 +78,7 @@ namespace Apache.Ignite.Benchmarks.Binary
                 TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
                     new BinaryTypeConfiguration(typeof (Address))
-                    //new PortableTypeConfiguration(typeof (TestModel))
+                    //new BinaryTypeConfiguration(typeof (TestModel))
                 }
             });
         }
