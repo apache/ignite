@@ -155,19 +155,19 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
                     return Collections.singletonMap(1, 1);
 
                 case TYPE_PORTABLE:
-                    return new PlatformComputePortable(1);
+                    return new PlatformComputeBinarizable(1);
 
                 case TYPE_PORTABLE_JAVA:
-                    return new PlatformComputeJavaPortable(1);
+                    return new PlatformComputeJavaBinarizable(1);
 
                 case TYPE_OBJ_ARRAY:
                     return new String[] { "foo", "bar", "baz" };
 
                 case TYPE_PORTABLE_ARRAY:
-                    return new PlatformComputePortable[] {
-                        new PlatformComputePortable(1),
-                        new PlatformComputePortable(2),
-                        new PlatformComputePortable(3)
+                    return new PlatformComputeBinarizable[] {
+                        new PlatformComputeBinarizable(1),
+                        new PlatformComputeBinarizable(2),
+                        new PlatformComputeBinarizable(3)
                     };
 
                 case TYPE_ENUM:

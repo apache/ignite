@@ -804,7 +804,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskBinarizable()
         {
-            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputePortable>(EchoTask, EchoTypeBinarizable);
+            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(EchoTask, EchoTypeBinarizable);
 
             Assert.AreEqual(1, res.Field);
         }
@@ -852,7 +852,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(3, res.Length);
 
             for (var i = 0; i < res.Length; i++)
-                Assert.AreEqual(i + 1, ((PlatformComputePortable) res[i]).Field);
+                Assert.AreEqual(i + 1, ((PlatformComputeBinarizable) res[i]).Field);
         }
 
         /// <summary>
@@ -892,7 +892,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             compute.WithKeepBinary();
 
-            PlatformComputeNetPortable arg = new PlatformComputeNetPortable();
+            PlatformComputeNetBinarizable arg = new PlatformComputeNetBinarizable();
 
             arg.Field = 100;
 
@@ -1099,8 +1099,8 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PlatformComputePortable)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PlatformComputeNetPortable)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PlatformComputeBinarizable)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PlatformComputeNetBinarizable)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(JavaBinaryCls));
 
             portCfg.TypeConfigurations = portTypeCfgs;
@@ -1117,7 +1117,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    class PlatformComputePortable
+    class PlatformComputeBinarizable
     {
         public int Field
         {
@@ -1126,7 +1126,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    class PlatformComputeNetPortable : PlatformComputePortable
+    class PlatformComputeNetBinarizable : PlatformComputeBinarizable
     {
 
     }

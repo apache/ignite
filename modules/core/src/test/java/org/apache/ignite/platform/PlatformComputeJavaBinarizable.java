@@ -18,25 +18,22 @@
 package org.apache.ignite.platform;
 
 /**
- * Portable object for task tests.
+ * Portable object defined only in Java.
  */
-public class PlatformComputePortable {
-    /** Field. */
-    public int field;
-
+public class PlatformComputeJavaBinarizable extends PlatformComputeBinarizable {
     /**
      * Constructor.
      */
-    public PlatformComputePortable() {
+    public PlatformComputeJavaBinarizable() {
         // No-op.
     }
 
     /**
-     * Constructor,
+     * Constructor.
      *
      * @param field Field.
      */
-    public PlatformComputePortable(int field) {
-        this.field = field;
+    public PlatformComputeJavaBinarizable(int field) {
+        super(field);
     }
 }
