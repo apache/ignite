@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <value><c>True</c> if owned by Java.</value>
         public bool IsExternal
         {
-            get { return (Flags & Flag.External) != 0; }
+            get { return (Flags & Flag.External) != Flag.External; }
         }
 
         /// <summary>
