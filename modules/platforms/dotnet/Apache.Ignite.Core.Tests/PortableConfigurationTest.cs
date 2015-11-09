@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Tests
 
             var grid = Ignition.Start(new IgniteConfiguration
             {
-                SpringConfigUrl = "config\\cache-portables.xml",
+                SpringConfigUrl = "config\\cache-binarizables.xml",
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
                 BinaryConfiguration = binaryConfiguration

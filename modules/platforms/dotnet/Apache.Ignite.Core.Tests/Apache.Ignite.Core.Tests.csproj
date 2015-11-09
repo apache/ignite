@@ -161,7 +161,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Config\cache-portables.xml">
+    <Content Include="Config\cache-binarizables.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\cache-query-continuous.xml">
