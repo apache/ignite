@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.UUID;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMemoryMode;
@@ -56,6 +57,9 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     /** Immutable classes. */
     private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
 
+    /** */
+    private IgniteBinary noOpBinary = new NoOpBinary();
+
     /**
      *
      */
@@ -79,6 +83,11 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
      */
     public IgniteCacheObjectProcessorImpl(GridKernalContext ctx) {
         super(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteBinary binary() {
+        return noOpBinary;
     }
 
     /** {@inheritDoc} */

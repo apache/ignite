@@ -33,7 +33,7 @@ public class GridCacheOffHeapTieredAtomicPortableSelfTest extends GridCacheOffHe
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        // Enable portables.
+        // Enable binary.
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         PortableMarshaller marsh = new PortableMarshaller();

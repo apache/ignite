@@ -376,6 +376,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         long ttl,
         long expireTime,
         boolean evt,
+        boolean keepBinary,
         AffinityTopologyVersion topVer,
         UUID subjId)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
@@ -417,8 +418,20 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 }
 
                 if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
-                    cctx.events().addEvent(partition(), key, tx, null, EVT_CACHE_OBJECT_READ,
-                        val, val != null, old, hasVal, subjId, null, null);
+                    cctx.events().addEvent(
+                        partition(),
+                        key,
+                        tx,
+                        null,
+                        EVT_CACHE_OBJECT_READ,
+                        val,
+                        val != null,
+                        old,
+                        hasVal,
+                        subjId,
+                        null,
+                        null,
+                        keepBinary);
 
                 return ret;
             }

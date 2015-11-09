@@ -33,11 +33,10 @@ import org.apache.ignite.IgniteDataStreamer;
  *     <li>A single tuple extractor, which extracts either no or 1 tuple out of a message. See
  *     see {@link #setTupleExtractor(StreamTupleExtractor)}.</li>
  *     <li>A multiple tuple extractor, which is capable of extracting multiple tuples out of a single message, in the
- *     form of a {@link Map<K, V>}. See {@link #setMultipleTupleExtractor(StreamMultipleTupleExtractor)}.</li>
+ *     form of a {@link Map}. See {@link #setMultipleTupleExtractor(StreamMultipleTupleExtractor)}.</li>
  * </ol>
  */
 public abstract class StreamAdapter<T, K, V> {
-
     /** Tuple extractor extracting a single tuple from an event */
     private StreamSingleTupleExtractor<T, K, V> singleTupleExtractor;
 

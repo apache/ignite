@@ -315,6 +315,16 @@ public interface Ignite extends AutoCloseable {
     public <K, V> IgniteCache<K, V> cache(@Nullable String name);
 
     /**
+     * Gets the collection of names of currently available caches.
+     *
+     * Collection may contain {@code null} as a value for a cache name. Refer to {@link CacheConfiguration#getName()}
+     * for more info.
+     *
+     * @return Collection of names of currently available caches or an empty collection if no caches are available.
+     */
+    public Collection<String> cacheNames();
+
+    /**
      * Gets grid transactions facade.
      *
      * @return Grid transactions facade.
@@ -459,11 +469,11 @@ public interface Ignite extends AutoCloseable {
     public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException;
 
     /**
-     * Gets an instance of {@link IgnitePortables} interface.
+     * Gets an instance of {@link IgniteBinary} interface.
      *
-     * @return Instance of {@link IgnitePortables} interface.
+     * @return Instance of {@link IgniteBinary} interface.
      */
-    public IgnitePortables portables();
+    public IgniteBinary binary();
 
     /**
      * Closes {@code this} instance of grid. This method is identical to calling

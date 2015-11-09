@@ -20,8 +20,8 @@ package org.apache.ignite.internal.portable;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.portable.PortableObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -32,7 +32,7 @@ class PortableReaderContext {
     private Object oHandles;
 
     /** */
-    private Map<Integer, PortableObject> poHandles;
+    private Map<Integer, BinaryObject> poHandles;
 
     /**
      * @param handle Handle.
@@ -62,7 +62,7 @@ class PortableReaderContext {
      * @param handle Handle.
      * @param po Portable object.
      */
-    void setPortableHandler(int handle, PortableObject po) {
+    void setPortableHandler(int handle, BinaryObject po) {
         assert po != null;
 
         if (poHandles == null)
@@ -94,7 +94,7 @@ class PortableReaderContext {
      * @param handle Handle.
      * @return Object.
      */
-    @Nullable PortableObject getPortableByHandle(int handle) {
+    @Nullable BinaryObject getPortableByHandle(int handle) {
         return poHandles != null ? poHandles.get(handle) : null;
     }
 

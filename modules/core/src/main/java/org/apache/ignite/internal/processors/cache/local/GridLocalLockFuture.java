@@ -230,7 +230,8 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
             timeout,
             !inTx(),
             inTx(),
-            implicitSingle()
+            implicitSingle(),
+            true
         );
 
         entries.add(entry);

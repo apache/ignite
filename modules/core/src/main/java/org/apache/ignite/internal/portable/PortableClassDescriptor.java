@@ -23,10 +23,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableIdMapper;
-import org.apache.ignite.portable.PortableMarshalAware;
-import org.apache.ignite.portable.PortableSerializer;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Externalizable;
@@ -47,6 +43,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryTypeIdMapper;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.binary.BinarySerializer;
 
 import static java.lang.reflect.Modifier.isStatic;
 import static java.lang.reflect.Modifier.isTransient;
@@ -62,10 +62,10 @@ public class PortableClassDescriptor {
     private final Class<?> cls;
 
     /** */
-    private final PortableSerializer serializer;
+    private final BinarySerializer serializer;
 
     /** ID mapper. */
-    private final PortableIdMapper idMapper;
+    private final BinaryTypeIdMapper idMapper;
 
     /** */
     private final Mode mode;
@@ -118,7 +118,7 @@ public class PortableClassDescriptor {
      * @param keepDeserialized Keep deserialized flag.
      * @param registered Whether typeId has been successfully registered by MarshallerContext or not.
      * @param predefined Whether the class is predefined or not.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     PortableClassDescriptor(
         PortableContext ctx,
@@ -126,13 +126,13 @@ public class PortableClassDescriptor {
         boolean userType,
         int typeId,
         String typeName,
-        @Nullable PortableIdMapper idMapper,
-        @Nullable PortableSerializer serializer,
+        @Nullable BinaryTypeIdMapper idMapper,
+        @Nullable BinarySerializer serializer,
         boolean metaDataEnabled,
         boolean keepDeserialized,
         boolean registered,
         boolean predefined
-    ) throws PortableException {
+    ) throws BinaryObjectException {
         assert ctx != null;
         assert cls != null;
 
@@ -225,12 +225,12 @@ public class PortableClassDescriptor {
                             String name = f.getName();
 
                             if (!names.add(name))
-                                throw new PortableException("Duplicate field name: " + name);
+                                throw new BinaryObjectException("Duplicate field name: " + name);
 
                             int fieldId = idMapper.fieldId(typeId, name);
 
                             if (!ids.add(fieldId))
-                                throw new PortableException("Duplicate field ID: " + name);
+                                throw new BinaryObjectException("Duplicate field ID: " + name);
 
                             FieldInfo fieldInfo = new FieldInfo(f, fieldId);
 
@@ -246,7 +246,7 @@ public class PortableClassDescriptor {
 
             default:
                 // Should never happen.
-                throw new PortableException("Invalid mode: " + mode);
+                throw new BinaryObjectException("Invalid mode: " + mode);
         }
 
         if (mode == Mode.PORTABLE || mode == Mode.EXTERNALIZABLE || mode == Mode.OBJECT) {
@@ -271,6 +271,13 @@ public class PortableClassDescriptor {
      */
     public int typeId() {
         return typeId;
+    }
+
+    /**
+     * @return User type flag.
+     */
+    public boolean userType() {
+        return userType;
     }
 
     /**
@@ -316,7 +323,7 @@ public class PortableClassDescriptor {
      *
      * @return ID mapper.
      */
-    public PortableIdMapper idMapper() {
+    public BinaryTypeIdMapper idMapper() {
         return idMapper;
     }
 
@@ -337,9 +344,9 @@ public class PortableClassDescriptor {
     /**
      * @param obj Object.
      * @param writer Writer.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    void write(Object obj, PortableWriterExImpl writer) throws PortableException {
+    void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
         assert obj != null;
         assert writer != null;
 
@@ -423,62 +430,62 @@ public class PortableClassDescriptor {
                 break;
 
             case SHORT_ARR:
-                writer.doWriteShortArray((short[]) obj);
+                writer.doWriteShortArray((short[])obj);
 
                 break;
 
             case INT_ARR:
-                writer.doWriteIntArray((int[]) obj);
+                writer.doWriteIntArray((int[])obj);
 
                 break;
 
             case LONG_ARR:
-                writer.doWriteLongArray((long[]) obj);
+                writer.doWriteLongArray((long[])obj);
 
                 break;
 
             case FLOAT_ARR:
-                writer.doWriteFloatArray((float[]) obj);
+                writer.doWriteFloatArray((float[])obj);
 
                 break;
 
             case DOUBLE_ARR:
-                writer.doWriteDoubleArray((double[]) obj);
+                writer.doWriteDoubleArray((double[])obj);
 
                 break;
 
             case CHAR_ARR:
-                writer.doWriteCharArray((char[]) obj);
+                writer.doWriteCharArray((char[])obj);
 
                 break;
 
             case BOOLEAN_ARR:
-                writer.doWriteBooleanArray((boolean[]) obj);
+                writer.doWriteBooleanArray((boolean[])obj);
 
                 break;
 
             case DECIMAL_ARR:
-                writer.doWriteDecimalArray((BigDecimal[]) obj);
+                writer.doWriteDecimalArray((BigDecimal[])obj);
 
                 break;
 
             case STRING_ARR:
-                writer.doWriteStringArray((String[]) obj);
+                writer.doWriteStringArray((String[])obj);
 
                 break;
 
             case UUID_ARR:
-                writer.doWriteUuidArray((UUID[]) obj);
+                writer.doWriteUuidArray((UUID[])obj);
 
                 break;
 
             case DATE_ARR:
-                writer.doWriteDateArray((Date[]) obj);
+                writer.doWriteDateArray((Date[])obj);
 
                 break;
 
             case TIMESTAMP_ARR:
-                writer.doWriteTimestampArray((Timestamp[]) obj);
+                writer.doWriteTimestampArray((Timestamp[])obj);
 
                 break;
 
@@ -518,7 +525,7 @@ public class PortableClassDescriptor {
                 break;
 
             case PORTABLE_OBJ:
-                writer.doWritePortableObject((PortableObjectImpl)obj);
+                writer.doWritePortableObject((BinaryObjectImpl)obj);
 
                 break;
 
@@ -526,9 +533,9 @@ public class PortableClassDescriptor {
                 if (writeHeader(obj, writer)) {
                     try {
                         if (serializer != null)
-                            serializer.writePortable(obj, writer);
+                            serializer.writeBinary(obj, writer);
                         else
-                            ((PortableMarshalAware) obj).writePortable(writer);
+                            ((Binarylizable)obj).writeBinary(writer);
 
                         writer.postWrite(userType);
                     }
@@ -536,14 +543,14 @@ public class PortableClassDescriptor {
                         writer.popSchema();
                     }
 
-                    if (obj.getClass() != PortableMetaDataImpl.class
+                    if (obj.getClass() != BinaryMetaDataImpl.class
                         && ctx.isMetaDataChanged(typeId, writer.metaDataHashSum())) {
-                        PortableMetaDataCollector metaCollector = new PortableMetaDataCollector(typeName);
+                        BinaryMetaDataCollector metaCollector = new BinaryMetaDataCollector(typeName);
 
                         if (serializer != null)
-                            serializer.writePortable(obj, metaCollector);
+                            serializer.writeBinary(obj, metaCollector);
                         else
-                            ((PortableMarshalAware)obj).writePortable(metaCollector);
+                            ((Binarylizable)obj).writeBinary(metaCollector);
 
                         ctx.updateMetaData(typeId, typeName, metaCollector.meta());
                     }
@@ -561,7 +568,7 @@ public class PortableClassDescriptor {
                         writer.postWrite(userType);
                     }
                     catch (IOException e) {
-                        throw new PortableException("Failed to write Externalizable object: " + obj, e);
+                        throw new BinaryObjectException("Failed to write Externalizable object: " + obj, e);
                     }
                     finally {
                         writer.popSchema();
@@ -593,9 +600,9 @@ public class PortableClassDescriptor {
     /**
      * @param reader Reader.
      * @return Object.
-     * @throws PortableException If failed.
+     * @throws org.apache.ignite.binary.BinaryObjectException If failed.
      */
-    Object read(PortableReaderExImpl reader) throws PortableException {
+    Object read(BinaryReaderExImpl reader) throws BinaryObjectException {
         assert reader != null;
 
         Object res;
@@ -607,9 +614,9 @@ public class PortableClassDescriptor {
                 reader.setHandler(res);
 
                 if (serializer != null)
-                    serializer.readPortable(res, reader);
+                    serializer.readBinary(res, reader);
                 else
-                    ((PortableMarshalAware)res).readPortable(reader);
+                    ((Binarylizable)res).readBinary(reader);
 
                 break;
 
@@ -622,7 +629,7 @@ public class PortableClassDescriptor {
                     ((Externalizable)res).readExternal(reader);
                 }
                 catch (IOException | ClassNotFoundException e) {
-                    throw new PortableException("Failed to read Externalizable object: " +
+                    throw new BinaryObjectException("Failed to read Externalizable object: " +
                         res.getClass().getName(), e);
                 }
 
@@ -654,10 +661,10 @@ public class PortableClassDescriptor {
                 throw new RuntimeException(e);
             }
             catch (InvocationTargetException e) {
-                if (e.getTargetException() instanceof PortableException)
-                    throw (PortableException)e.getTargetException();
+                if (e.getTargetException() instanceof BinaryObjectException)
+                    throw (BinaryObjectException)e.getTargetException();
 
-                throw new PortableException("Failed to execute readResolve() method on " + res, e);
+                throw new BinaryObjectException("Failed to execute readResolve() method on " + res, e);
             }
         }
 
@@ -669,7 +676,7 @@ public class PortableClassDescriptor {
      * @param writer Writer.
      * @return Whether further write is needed.
      */
-    private boolean writeHeader(Object obj, PortableWriterExImpl writer) {
+    private boolean writeHeader(Object obj, BinaryWriterExImpl writer) {
         if (writer.tryWriteAsHandle(obj))
             return false;
 
@@ -686,25 +693,25 @@ public class PortableClassDescriptor {
 
     /**
      * @return Instance.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    private Object newInstance() throws PortableException {
+    private Object newInstance() throws BinaryObjectException {
         assert ctor != null;
 
         try {
             return ctor.newInstance();
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
-            throw new PortableException("Failed to instantiate instance: " + cls, e);
+            throw new BinaryObjectException("Failed to instantiate instance: " + cls, e);
         }
     }
 
     /**
      * @param cls Class.
      * @return Constructor.
-     * @throws PortableException If constructor doesn't exist.
+     * @throws org.apache.ignite.binary.BinaryObjectException If constructor doesn't exist.
      */
-    @Nullable private static Constructor<?> constructor(Class<?> cls) throws PortableException {
+    @Nullable private static Constructor<?> constructor(Class<?> cls) throws BinaryObjectException {
         assert cls != null;
 
         try {
@@ -715,7 +722,7 @@ public class PortableClassDescriptor {
             return ctor;
         }
         catch (IgniteCheckedException e) {
-            throw new PortableException("Failed to get constructor for class: " + cls.getName(), e);
+            throw new BinaryObjectException("Failed to get constructor for class: " + cls.getName(), e);
         }
     }
 
@@ -807,9 +814,9 @@ public class PortableClassDescriptor {
             return Mode.TIMESTAMP_ARR;
         else if (cls.isArray())
             return cls.getComponentType().isEnum() ? Mode.ENUM_ARR : Mode.OBJ_ARR;
-        else if (cls == PortableObjectImpl.class)
+        else if (cls == BinaryObjectImpl.class)
             return Mode.PORTABLE_OBJ;
-        else if (PortableMarshalAware.class.isAssignableFrom(cls))
+        else if (Binarylizable.class.isAssignableFrom(cls))
             return Mode.PORTABLE;
         else if (Externalizable.class.isAssignableFrom(cls))
             return Mode.EXTERNALIZABLE;
@@ -819,7 +826,7 @@ public class PortableClassDescriptor {
             return Mode.COL;
         else if (Map.class.isAssignableFrom(cls))
             return Mode.MAP;
-        else if (cls == PortableObjectImpl.class)
+        else if (cls == BinaryObjectImpl.class)
             return Mode.PORTABLE_OBJ;
         else if (cls.isEnum())
             return Mode.ENUM;
@@ -865,9 +872,9 @@ public class PortableClassDescriptor {
         /**
          * @param obj Object.
          * @param writer Writer.
-         * @throws PortableException In case of error.
+         * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
          */
-        public void write(Object obj, PortableWriterExImpl writer) throws PortableException {
+        public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             assert obj != null;
             assert writer != null;
 
@@ -879,7 +886,7 @@ public class PortableClassDescriptor {
                 val = field.get(obj);
             }
             catch (IllegalAccessException e) {
-                throw new PortableException("Failed to get value for field: " + field, e);
+                throw new BinaryObjectException("Failed to get value for field: " + field, e);
             }
 
             switch (mode) {
@@ -954,62 +961,62 @@ public class PortableClassDescriptor {
                     break;
 
                 case SHORT_ARR:
-                    writer.writeShortArrayField((short[]) val);
+                    writer.writeShortArrayField((short[])val);
 
                     break;
 
                 case INT_ARR:
-                    writer.writeIntArrayField((int[]) val);
+                    writer.writeIntArrayField((int[])val);
 
                     break;
 
                 case LONG_ARR:
-                    writer.writeLongArrayField((long[]) val);
+                    writer.writeLongArrayField((long[])val);
 
                     break;
 
                 case FLOAT_ARR:
-                    writer.writeFloatArrayField((float[]) val);
+                    writer.writeFloatArrayField((float[])val);
 
                     break;
 
                 case DOUBLE_ARR:
-                    writer.writeDoubleArrayField((double[]) val);
+                    writer.writeDoubleArrayField((double[])val);
 
                     break;
 
                 case CHAR_ARR:
-                    writer.writeCharArrayField((char[]) val);
+                    writer.writeCharArrayField((char[])val);
 
                     break;
 
                 case BOOLEAN_ARR:
-                    writer.writeBooleanArrayField((boolean[]) val);
+                    writer.writeBooleanArrayField((boolean[])val);
 
                     break;
 
                 case DECIMAL_ARR:
-                    writer.writeDecimalArrayField((BigDecimal[]) val);
+                    writer.writeDecimalArrayField((BigDecimal[])val);
 
                     break;
 
                 case STRING_ARR:
-                    writer.writeStringArrayField((String[]) val);
+                    writer.writeStringArrayField((String[])val);
 
                     break;
 
                 case UUID_ARR:
-                    writer.writeUuidArrayField((UUID[]) val);
+                    writer.writeUuidArrayField((UUID[])val);
 
                     break;
 
                 case DATE_ARR:
-                    writer.writeDateArrayField((Date[]) val);
+                    writer.writeDateArrayField((Date[])val);
 
                     break;
 
                 case TIMESTAMP_ARR:
-                    writer.writeTimestampArrayField((Timestamp[]) val);
+                    writer.writeTimestampArrayField((Timestamp[])val);
 
                     break;
 
@@ -1034,7 +1041,7 @@ public class PortableClassDescriptor {
                     break;
 
                 case PORTABLE_OBJ:
-                    writer.writePortableObjectField((PortableObjectImpl)val);
+                    writer.writePortableObjectField((BinaryObjectImpl)val);
 
                     break;
 
@@ -1068,9 +1075,9 @@ public class PortableClassDescriptor {
         /**
          * @param obj Object.
          * @param reader Reader.
-         * @throws PortableException In case of error.
+         * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
          */
-        public void read(Object obj, PortableReaderExImpl reader) throws PortableException {
+        public void read(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             Object val = null;
 
             switch (mode) {
@@ -1260,7 +1267,7 @@ public class PortableClassDescriptor {
                     field.set(obj, val);
             }
             catch (IllegalAccessException e) {
-                throw new PortableException("Failed to set value for field: " + field, e);
+                throw new BinaryObjectException("Failed to set value for field: " + field, e);
             }
         }
     }

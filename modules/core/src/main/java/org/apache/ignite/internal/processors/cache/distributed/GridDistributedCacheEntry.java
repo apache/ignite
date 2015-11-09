@@ -746,8 +746,9 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     @Override public boolean tmLock(IgniteInternalTx tx,
         long timeout,
         @Nullable GridCacheVersion serOrder,
-        GridCacheVersion serReadVer)
-        throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
+        GridCacheVersion serReadVer,
+        boolean keepBinary
+    ) throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (tx.local())
             // Null is returned if timeout is negative and there is other lock owner.
             return addLocal(
@@ -821,7 +822,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
                 // Event notification.
                 cctx.events().addEvent(partition(), key, prev.nodeId(), prev, EVT_CACHE_OBJECT_UNLOCKED, val, hasVal,
-                    val, hasVal, null, null, null);
+                    val, hasVal, null, null, null, true);
             }
 
             if (owner != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_LOCKED)) {
@@ -829,7 +830,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
                 // Event notification.
                 cctx.events().addEvent(partition(), key, owner.nodeId(), owner, EVT_CACHE_OBJECT_LOCKED, val, hasVal,
-                    val, hasVal, null, null, null);
+                    val, hasVal, null, null, null, true);
             }
         }
     }
