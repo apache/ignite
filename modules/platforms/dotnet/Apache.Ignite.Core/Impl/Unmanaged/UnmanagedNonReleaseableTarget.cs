@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
+    using System;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
@@ -39,6 +41,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             _ctx = ctx;
             _target = target;
+
+            StackTrace = new StackTrace().ToString();
         }
 
         /** <inheritdoc /> */
@@ -53,9 +57,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             get { return _target; }
         }
 
+        public string StackTrace { get; set; }
+
         /** <inheritdoc /> */
         public IUnmanagedTarget ChangeTarget(void* target)
         {
+            // TODO:
+            if (target == _target)
+                throw new InvalidOperationException("Invalid handle target change!");
+
             return new UnmanagedTarget(_ctx, target);
         }
 

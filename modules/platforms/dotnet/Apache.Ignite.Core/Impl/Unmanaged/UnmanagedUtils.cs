@@ -1181,6 +1181,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static void Release(IUnmanagedTarget target)
         {
+            Console.WriteLine("RELEASING: {0} ({1})|| Allocated from: {2}", target.GetType(), (long) target.Target,
+                target.StackTrace);
+
             RELEASE(target.Target);
         }
 

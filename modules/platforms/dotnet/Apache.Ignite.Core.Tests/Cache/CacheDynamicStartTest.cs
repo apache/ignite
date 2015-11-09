@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// Tests for dynamic a cache start.
     /// </summary>
+    [Ignore]  // TODO
     public class CacheDynamicStartTest
     {
         /** Grid name: data. */
