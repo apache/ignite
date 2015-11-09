@@ -117,13 +117,13 @@
     <Compile Include="MarshallerTest.cs" />
     <Compile Include="MessagingTest.cs" />
     <Compile Include="PortableConfigurationTest.cs" />
-    <Compile Include="Portable\BinaryStructureTest.cs" />
+    <Compile Include="Binary\BinaryStructureTest.cs" />
     <Compile Include="SerializationTest.cs" />
     <Compile Include="IgniteStartStopTest.cs" />
     <Compile Include="TestUtils.cs" />
     <Compile Include="Memory\InteropMemoryTest.cs" />
-    <Compile Include="Portable\BinaryBuilderSelfTest.cs" />
-    <Compile Include="Portable\BinarySelfTest.cs" />
+    <Compile Include="Binary\BinaryBuilderSelfTest.cs" />
+    <Compile Include="Binary\BinarySelfTest.cs" />
     <Compile Include="Process\IgniteProcess.cs" />
     <Compile Include="Process\IgniteProcessConsoleOutputReader.cs" />
     <Compile Include="Process\IIgniteProcessOutputReader.cs" />
