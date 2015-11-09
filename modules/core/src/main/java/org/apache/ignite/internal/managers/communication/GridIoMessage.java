@@ -143,7 +143,7 @@ public class GridIoMessage implements Message {
     /**
      * @return Message.
      */
-    public Object message() {
+    public Message message() {
         return msg;
     }
 
