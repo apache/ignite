@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         override protected void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
         {
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableJobArgument)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableJobResult)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableJobResult)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableTaskArgument)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableTaskResult)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableJob)));
@@ -160,7 +160,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                     Assert.AreEqual(300, jobRes.GetField<int>("val"));
 
-                    PortableJobResult jobResObj = jobRes.Deserialize<PortableJobResult>();
+                    BinarizableJobResult jobResObj = jobRes.Deserialize<BinarizableJobResult>();
 
                     Assert.AreEqual(300, jobResObj.Val);
                 }
@@ -186,12 +186,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        class PortableJobResult
+        class BinarizableJobResult
         {
             /** */
             public readonly int Val;
 
-            public PortableJobResult(int val)
+            public BinarizableJobResult(int val)
             {
                 Val = val;
             }
@@ -252,7 +252,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.AreEqual(200, argObj.Val);
 
-                return new BinarizableWrapper {Item = ToBinary(_grid, new PortableJobResult(300))};
+                return new BinarizableWrapper {Item = ToBinary(_grid, new BinarizableJobResult(300))};
             }
 
             public void Cancel()

@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public bool ThrowErr { get; set; }
 
         // Error flag
-        public bool ThrowErrPortable { get; set; }
+        public bool ThrowErrBinarizable { get; set; }
 
         // Error flag
         public bool ThrowErrNonSerializable { get; set; }
@@ -179,8 +179,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 if (ThrowErr)
                     throw new Exception(ExceptionText);
 
-                if (ThrowErrPortable)
-                    throw new PortableTestException {Info = ExceptionText};
+                if (ThrowErrBinarizable)
+                    throw new BinarizableTestException {Info = ExceptionText};
 
                 if (ThrowErrNonSerializable)
                     throw new NonSerializableException();
@@ -206,7 +206,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// Portable add processor.
     /// </summary>
-    public class PortableAddArgCacheEntryProcessor : AddArgCacheEntryProcessor, IBinarizable
+    public class BinarizableAddArgCacheEntryProcessor : AddArgCacheEntryProcessor, IBinarizable
     {
         /** <inheritdoc /> */
         public void WriteBinary(IBinaryWriter writer)
@@ -214,7 +214,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             var w = writer.GetRawWriter();
 
             w.WriteBoolean(ThrowErr);
-            w.WriteBoolean(ThrowErrPortable);
+            w.WriteBoolean(ThrowErrBinarizable);
             w.WriteBoolean(ThrowErrNonSerializable);
             w.WriteInt(ThrowOnKey);
             w.WriteBoolean(Remove);
@@ -227,7 +227,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             var r = reader.GetRawReader();
 
             ThrowErr = r.ReadBoolean();
-            ThrowErrPortable = r.ReadBoolean();
+            ThrowErrBinarizable = r.ReadBoolean();
             ThrowErrNonSerializable = r.ReadBoolean();
             ThrowOnKey = r.ReadInt();
             Remove = r.ReadBoolean();
@@ -246,7 +246,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// Portable exception.
     /// </summary>
-    public class PortableTestException : Exception, IBinarizable
+    public class BinarizableTestException : Exception, IBinarizable
     {
         /// <summary>
         /// Gets or sets exception info.
@@ -301,8 +301,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizablePerson)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(CacheTestKey)));
             portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(TestReferenceObject)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableAddArgCacheEntryProcessor)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableTestException)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableAddArgCacheEntryProcessor)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableTestException)));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
@@ -1558,7 +1558,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestPutGetPortable()
+        public void TestPutGetBinary()
         {
             var cache = Cache<int, BinarizablePerson>();
 
@@ -1573,7 +1573,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestPutGetPortableAsync()
+        public void TestPutGetBinaryAsync()
         {
             var cache = Cache<int, BinarizablePerson>().WrapAsync();
 
@@ -1588,7 +1588,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestPutGetPortableKey()
+        public void TestPutGetBinaryKey()
         {
             var cache = Cache<CacheTestKey, string>();
 
@@ -1765,7 +1765,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         //[Test]
         //[Category(TestUtils.CATEGORY_INTENSIVE)]
-        public void TestAsyncMultithreadedKeepPortable()
+        public void TestAsyncMultithreadedKeepBinary()
         {
             var cache = Cache().WithKeepBinary<CacheTestKey, BinarizablePerson>();
             var portCache = Cache().WithKeepBinary<CacheTestKey, IBinaryObject>();
@@ -2742,15 +2742,15 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestKeepPortableFlag()
+        public void TestKeepBinaryFlag()
         {
-            TestKeepPortableFlag(false);
+            TestKeepBinaryFlag(false);
         }
 
         [Test]
-        public void TestKeepPortableFlagAsync()
+        public void TestKeepBinaryFlagAsync()
         {
-            TestKeepPortableFlag(true);
+            TestKeepBinaryFlag(true);
         }
 
         [Test]
@@ -2793,7 +2793,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestSerializableKeepPortable()
+        public void TestSerializableKeepBinary()
         {
             var cache = Cache<int, TestSerializableObject>();
 
@@ -2801,9 +2801,9 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.Put(1, obj);
 
-            var portableResult = cache.WithKeepBinary<int, IBinaryObject>().Get(1);
+            var binaryRes = cache.WithKeepBinary<int, IBinaryObject>().Get(1);
 
-            var resultObj = portableResult.Deserialize<TestSerializableObject>();
+            var resultObj = binaryRes.Deserialize<TestSerializableObject>();
 
             Assert.AreEqual(obj, resultObj);
         }
@@ -2823,7 +2823,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         private void TestInvoke(bool async)
         {
             TestInvoke<AddArgCacheEntryProcessor>(async);
-            TestInvoke<PortableAddArgCacheEntryProcessor>(async);
+            TestInvoke<BinarizableAddArgCacheEntryProcessor>(async);
 
             try
             {
@@ -2863,7 +2863,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Test exceptions
             AssertThrowsCacheEntryProcessorException(() => cache.Invoke(key, new T {ThrowErr = true}, arg));
             AssertThrowsCacheEntryProcessorException(
-                () => cache.Invoke(key, new T {ThrowErrPortable = true}, arg));
+                () => cache.Invoke(key, new T {ThrowErrBinarizable = true}, arg));
             AssertThrowsCacheEntryProcessorException(
                 () => cache.Invoke(key, new T { ThrowErrNonSerializable = true }, arg), "BinaryObjectException");
         }
@@ -2904,7 +2904,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             for (var i = 1; i < 10; i++)
             {
                 TestInvokeAll<AddArgCacheEntryProcessor>(async, i);
-                TestInvokeAll<PortableAddArgCacheEntryProcessor>(async, i);
+                TestInvokeAll<BinarizableAddArgCacheEntryProcessor>(async, i);
 
                 try
                 {
@@ -2956,7 +2956,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             var errKey = entries.Keys.Reverse().Take(5).Last();
 
             TestInvokeAllException(cache, entries, new T { ThrowErr = true, ThrowOnKey = errKey }, arg, errKey);
-            TestInvokeAllException(cache, entries, new T { ThrowErrPortable = true, ThrowOnKey = errKey }, 
+            TestInvokeAllException(cache, entries, new T { ThrowErrBinarizable = true, ThrowOnKey = errKey }, 
                 arg, errKey);
             TestInvokeAllException(cache, entries, new T { ThrowErrNonSerializable = true, ThrowOnKey = errKey },
                 arg, errKey, "BinaryObjectException");
@@ -3088,7 +3088,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(5, cache[1]);
         }
 
-        private void TestKeepPortableFlag(bool async)
+        private void TestKeepBinaryFlag(bool async)
         {
             var cache0 = async ? Cache().WrapAsync() : Cache();
 

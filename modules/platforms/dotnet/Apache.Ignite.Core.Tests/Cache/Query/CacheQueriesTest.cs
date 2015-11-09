@@ -63,8 +63,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     TypeConfigurations = new[]
                     {
                         new BinaryTypeConfiguration(typeof (QueryPerson)),
-                        new BinaryTypeConfiguration(typeof (PortableScanQueryFilter<QueryPerson>)),
-                        new BinaryTypeConfiguration(typeof (PortableScanQueryFilter<BinaryObject>))
+                        new BinaryTypeConfiguration(typeof (BinarizableScanQueryFilter<QueryPerson>)),
+                        new BinaryTypeConfiguration(typeof (BinarizableScanQueryFilter<BinaryObject>))
                     }
                 },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
@@ -355,10 +355,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// Check SQL query in portable mode.
+        /// Check SQL query in binary mode.
         /// </summary>
         [Test]
-        public void TestSqlQueryPortable()
+        public void TestSqlQueryBinary()
         {
             CheckSqlQuery(MaxItemCnt, false, true);
         }
@@ -373,10 +373,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// Check local SQL query in portable mode.
+        /// Check local SQL query in binary mode.
         /// </summary>
         [Test]
-        public void TestSqlQueryLocalPortable()
+        public void TestSqlQueryLocalBinary()
         {
             CheckSqlQuery(MaxItemCnt, true, true);
         }
@@ -475,10 +475,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// Check SQL query in portable mode.
+        /// Check SQL query in binary mode.
         /// </summary>
         [Test]
-        public void TestTextQueryPortable()
+        public void TestTextQueryBinary()
         {
             CheckTextQuery(MaxItemCnt, false, true);
         }
@@ -493,10 +493,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// Check local SQL query in portable mode.
+        /// Check local SQL query in binary mode.
         /// </summary>
         [Test]
-        public void TestTextQueryLocalPortable()
+        public void TestTextQueryLocalBinary()
         {
             CheckTextQuery(MaxItemCnt, true, true);
         }
@@ -531,10 +531,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// Check scan query in portable mode.
+        /// Check scan query in binary mode.
         /// </summary>
         [Test]
-        public void TestScanQueryPortable()
+        public void TestScanQueryBinary()
         {
             CheckScanQuery<BinaryObject>(MaxItemCnt, false, true);
         }
@@ -549,10 +549,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// Check local scan query in portable mode.
+        /// Check local scan query in binary mode.
         /// </summary>
         [Test]
-        public void TestScanQueryLocalPortable()
+        public void TestScanQueryLocalBinary()
         {
             CheckScanQuery<BinaryObject>(MaxItemCnt, true, true);
         }
@@ -568,11 +568,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// Check scan query with partitions in portable mode.
+        /// Check scan query with partitions in binary mode.
         /// </summary>
         [Test]
         [Ignore("IGNITE-1012")]
-        public void TestScanQueryPartitionsPortable([Values(true, false)]  bool loc)
+        public void TestScanQueryPartitionsBinary([Values(true, false)]  bool loc)
         {
             CheckScanQueryPartitions<BinaryObject>(MaxItemCnt, loc, true);
         }
@@ -622,7 +622,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Portable
             exp = PopulateCache(cache, loc, cnt, x => x < 50);
-            qry = new ScanQuery<int, TV>(new PortableScanQueryFilter<TV>());
+            qry = new ScanQuery<int, TV>(new BinarizableScanQueryFilter<TV>());
             ValidateQueryResults(cache, qry, exp, keepPortable);
 
             // Exception
@@ -897,9 +897,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     }
 
     /// <summary>
-    /// Portable query filter.
+    /// binary query filter.
     /// </summary>
-    public class PortableScanQueryFilter<TV> : ScanQueryFilter<TV>, IBinarizable
+    public class BinarizableScanQueryFilter<TV> : ScanQueryFilter<TV>, IBinarizable
     {
         /** <inheritdoc /> */
         public void WriteBinary(IBinaryWriter writer)
