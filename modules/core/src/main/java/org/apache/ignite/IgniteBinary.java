@@ -308,14 +308,6 @@ public interface IgniteBinary {
     /**
      * Creates new portable builder.
      *
-     * @param typeId ID of the type.
-     * @return Newly portable builder.
-     */
-    public BinaryObjectBuilder builder(int typeId) throws BinaryObjectException;
-
-    /**
-     * Creates new portable builder.
-     *
      * @param typeName Type name.
      * @return Newly portable builder.
      */

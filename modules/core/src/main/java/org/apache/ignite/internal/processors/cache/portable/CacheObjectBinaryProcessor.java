@@ -32,12 +32,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
     /**
-     * @param typeId Type ID.
-     * @return Builder.
-     */
-    public BinaryObjectBuilder builder(int typeId);
-
-    /**
      * @param clsName Class name.
      * @return Builder.
      */

@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "ignite/cache/query/query_argument.h"
-#include "ignite/portable/portable_raw_writer.h"
+#include "ignite/binary/binary_raw_writer.h"
 
 namespace ignite
 {    
@@ -207,7 +207,7 @@ namespace ignite
                  *
                  * @param writer Writer.
                  */
-                void Write(portable::PortableRawWriter& writer) const
+                void Write(binary::BinaryRawWriter& writer) const
                 {
                     writer.WriteBool(loc);
                     writer.WriteString(sql);

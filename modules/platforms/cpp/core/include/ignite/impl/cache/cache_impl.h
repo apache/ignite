@@ -403,8 +403,8 @@ namespace ignite
                     ignite::common::concurrent::SharedPointer<interop::InteropMemory> mem = env.Get()->AllocateMemory();
                     interop::InteropMemory* mem0 = mem.Get();
                     interop::InteropOutputStream out(mem0);
-                    portable::PortableWriterImpl writer(&out, env.Get()->GetMetadataManager());
-                    ignite::portable::PortableRawWriter rawWriter(&writer);
+                    binary::BinaryWriterImpl writer(&out, env.Get()->GetTypeManager());
+                    ignite::binary::BinaryRawWriter rawWriter(&writer);
 
                     qry.Write(rawWriter);
 

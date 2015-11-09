@@ -18,10 +18,10 @@
 #include "ignite/cache/cache_peek_mode.h"
 #include "ignite/impl/cache/cache_impl.h"
 #include "ignite/impl/interop/interop.h"
-#include "ignite/impl/portable/portable_reader_impl.h"
+#include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/utils.h"
-#include "ignite/impl/portable/portable_metadata_updater_impl.h"
-#include "ignite/portable/portable.h"
+#include "ignite/impl/binary/binary_type_updater_impl.h"
+#include "ignite/binary/binary.h"
 
 using namespace ignite::common::concurrent;
 using namespace ignite::common::java;
@@ -30,9 +30,9 @@ using namespace ignite::cache::query;
 using namespace ignite::impl;
 using namespace ignite::impl::cache::query;
 using namespace ignite::impl::interop;
-using namespace ignite::impl::portable;
+using namespace ignite::impl::binary;
 using namespace ignite::impl::utils;
-using namespace ignite::portable;
+using namespace ignite::binary;
 
 namespace ignite
 {
@@ -301,12 +301,12 @@ namespace ignite
 
             int64_t CacheImpl::WriteTo(InteropMemory* mem, InputOperation& inOp, IgniteError* err)
             {
-                PortableMetadataManager* metaMgr = env.Get()->GetMetadataManager();
+                BinaryTypeManager* metaMgr = env.Get()->GetTypeManager();
 
                 int32_t metaVer = metaMgr->GetVersion();
 
                 InteropOutputStream out(mem);
-                PortableWriterImpl writer(&out, metaMgr);
+                BinaryWriterImpl writer(&out, metaMgr);
                 
                 inOp.ProcessInput(writer);
 
@@ -314,7 +314,7 @@ namespace ignite
 
                 if (metaMgr->IsUpdatedSince(metaVer))
                 {
-                    PortableMetadataUpdaterImpl metaUpdater(env, javaRef);
+                    BinaryTypeUpdaterImpl metaUpdater(env, javaRef);
 
                     if (!metaMgr->ProcessPendingUpdates(&metaUpdater, err))
                         return 0;
@@ -327,7 +327,7 @@ namespace ignite
             {
                 InteropInputStream in(mem);
 
-                PortableReaderImpl reader(&in);
+                BinaryReaderImpl reader(&in);
 
                 outOp.ProcessOutput(reader);
             }
