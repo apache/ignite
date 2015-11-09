@@ -28,7 +28,7 @@ namespace Apache.Ignite.Benchmarks.Portable
     /// <summary>
     /// Portable write benchmark.
     /// </summary>
-    internal class PortableWriteBenchmark : BenchmarkBase
+    internal class BinarizableWriteBenchmark : BenchmarkBase
     {
         /** Marshaller. */
         private readonly Marshaller _marsh;
@@ -69,9 +69,9 @@ namespace Apache.Ignite.Benchmarks.Portable
         };
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PortableWriteBenchmark"/> class.
+        /// Initializes a new instance of the <see cref="BinarizableWriteBenchmark"/> class.
         /// </summary>
-        public PortableWriteBenchmark()
+        public BinarizableWriteBenchmark()
         {
             _marsh = new Marshaller(new BinaryConfiguration
             {
