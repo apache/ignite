@@ -201,6 +201,9 @@ namespace Apache.Ignite.Core
 
                     if (interopProc != null)
                         UU.ProcessorReleaseStart(interopProc);
+
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
                 }
             }
         }
@@ -502,6 +505,7 @@ namespace Apache.Ignite.Core
                 Nodes.Remove(key);
                 
                 GC.Collect();
+                GC.WaitForPendingFinalizers();
 
                 return true;
             }
