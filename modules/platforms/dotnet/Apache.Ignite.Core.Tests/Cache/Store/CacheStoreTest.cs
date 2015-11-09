@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     public class CacheStoreTest
     {
         /** */
-        private const string BinaryStoreCacheName = "portable_store";
+        private const string BinaryStoreCacheName = "binary_store";
 
         /** */
         private const string ObjectStoreCacheName = "object_store";

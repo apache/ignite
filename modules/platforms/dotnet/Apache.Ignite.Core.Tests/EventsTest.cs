@@ -365,7 +365,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestRemoteListen(
             [Values(true, false)] bool async, 
-            [Values(true, false)] bool portable,
+            [Values(true, false)] bool binarizable,
             [Values(true, false)] bool autoUnsubscribe)
         {
             foreach (var g in _grids)
@@ -379,7 +379,7 @@ namespace Apache.Ignite.Core.Tests
             var expectedType = EventType.JobStarted;
 
             var remoteFilter = binary 
-                ?  (IEventFilter<IEvent>) new RemoteEventPortableFilter(expectedType)
+                ?  (IEventFilter<IEvent>) new RemoteEventBinarizableFilter(expectedType)
                 :  new RemoteEventFilter(expectedType);
 
             var localListener = EventsTestHelper.GetListener();
