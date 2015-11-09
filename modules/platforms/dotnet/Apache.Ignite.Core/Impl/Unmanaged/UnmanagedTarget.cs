@@ -30,6 +30,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Context. */
         private readonly UnmanagedContext _ctx;
 
+        private void* _target;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -39,6 +41,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             : base(IntPtr.Zero)
         {
             _ctx = ctx;
+
+            _target = target;
             
             SetHandle(new IntPtr(target));
 
@@ -63,7 +67,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public IUnmanagedTarget ChangeTarget(void* target)
         {
             // TODO
-            if (target != handle.ToPointer())
+            if (target == _target)
                 throw new InvalidOperationException("Invalid handle target change!");
 
             return new UnmanagedTarget(_ctx, target);
