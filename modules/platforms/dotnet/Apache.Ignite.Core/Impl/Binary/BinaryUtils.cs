@@ -1479,14 +1479,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static string GetSimpleTypeName(string typeName)
         {
-            Debug.Assert(!string.IsNullOrEmpty(typeName));
-
-            var genericIdx = typeName.IndexOf('[');
-
-            if (genericIdx <= 0)
-                genericIdx = typeName.Length - 1;
-
-            int idx = typeName.LastIndexOf('.', genericIdx);
+            int idx = typeName.LastIndexOf('.');
 
             return idx < 0 ? typeName : typeName.Substring(idx + 1);
         }
