@@ -17,15 +17,10 @@
 
 package org.apache.ignite.internal.portable.builder;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.portable.BinaryObjectImpl;
 import org.apache.ignite.internal.portable.BinaryObjectOffheapImpl;
@@ -33,12 +28,17 @@ import org.apache.ignite.internal.portable.BinaryWriterExImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableUtils;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.DFLT_HDR_LEN;
 import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLAGS_POS;
@@ -312,7 +312,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                     else {
                         byte type = PortableUtils.typeByClass(val.getClass());
 
-                        newFldTypeName = CacheObjectBinaryProcessorImpl.fieldTypeName(type);
+                        newFldTypeName = PortableUtils.fieldTypeName(type);
                     }
 
                     if (oldFldTypeName == null) {
@@ -324,8 +324,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                         newFldsMetadata.put(name, newFldTypeName);
                     }
                     else {
-                        String objTypeName =
-                            CacheObjectBinaryProcessorImpl.FIELD_TYPE_NAMES[GridPortableMarshaller.OBJ];
+                        String objTypeName = PortableUtils.fieldTypeName(GridPortableMarshaller.OBJ);
 
                         if (!objTypeName.equals(oldFldTypeName) && !oldFldTypeName.equals(newFldTypeName)) {
                             throw new BinaryObjectException(

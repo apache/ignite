@@ -37,6 +37,7 @@ import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.BinaryMetaDataImpl;
 import org.apache.ignite.internal.portable.BinaryRawReaderEx;
 import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilterImpl;
@@ -396,7 +397,7 @@ public class PlatformContextImpl implements PlatformContext {
             Map<String, Integer> fields = U.newHashMap(metaFields.size());
 
             for (Map.Entry<String, String> metaField : metaFields.entrySet())
-                fields.put(metaField.getKey(), CacheObjectBinaryProcessorImpl.fieldTypeId(metaField.getValue()));
+                fields.put(metaField.getKey(), PortableUtils.fieldTypeId(metaField.getValue()));
 
             writer.writeInt(typeId);
             writer.writeString(meta.typeName());

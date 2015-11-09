@@ -17,41 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.portable;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import javax.cache.Cache;
-import javax.cache.CacheException;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryListenerException;
-import javax.cache.event.CacheEntryUpdatedListener;
-import javax.cache.event.EventType;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.MutableEntry;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterTopologyException;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.PortableContext;
-import org.apache.ignite.internal.portable.PortableMetaDataHandler;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.portable.BinaryMetaDataImpl;
 import org.apache.ignite.internal.portable.BinaryObjectImpl;
 import org.apache.ignite.internal.portable.BinaryObjectOffheapImpl;
+import org.apache.ignite.internal.portable.GridPortableMarshaller;
+import org.apache.ignite.internal.portable.PortableContext;
+import org.apache.ignite.internal.portable.PortableMetaDataHandler;
 import org.apache.ignite.internal.portable.PortableUtils;
 import org.apache.ignite.internal.portable.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.portable.streams.PortableInputStream;
@@ -84,58 +68,36 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryObject;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import sun.misc.Unsafe;
 
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.BOOLEAN_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.BYTE_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CHAR_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.CLASS;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.COL;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DATE_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DECIMAL;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DECIMAL_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.DOUBLE_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.ENUM;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.ENUM_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.FLOAT_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.INT_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.LONG_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.MAP_ENTRY;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.OBJ_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.PORTABLE_OBJ;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.SHORT_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.STRING_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.TIMESTAMP_ARR;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID;
-import static org.apache.ignite.internal.portable.GridPortableMarshaller.UUID_ARR;
+import javax.cache.Cache;
+import javax.cache.CacheException;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.CacheEntryUpdatedListener;
+import javax.cache.event.EventType;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Portable processor implementation.
  */
 public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorImpl implements
     CacheObjectBinaryProcessor {
-    /** */
-    public static final String[] FIELD_TYPE_NAMES;
-
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -178,92 +140,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** */
     private UUID metaCacheQryId;
-
-    /**
-     *
-     */
-    static {
-        FIELD_TYPE_NAMES = new String[104];
-
-        FIELD_TYPE_NAMES[BYTE] = "byte";
-        FIELD_TYPE_NAMES[SHORT] = "short";
-        FIELD_TYPE_NAMES[INT] = "int";
-        FIELD_TYPE_NAMES[LONG] = "long";
-        FIELD_TYPE_NAMES[BOOLEAN] = "boolean";
-        FIELD_TYPE_NAMES[FLOAT] = "float";
-        FIELD_TYPE_NAMES[DOUBLE] = "double";
-        FIELD_TYPE_NAMES[CHAR] = "char";
-        FIELD_TYPE_NAMES[UUID] = "UUID";
-        FIELD_TYPE_NAMES[DECIMAL] = "decimal";
-        FIELD_TYPE_NAMES[STRING] = "String";
-        FIELD_TYPE_NAMES[DATE] = "Date";
-        FIELD_TYPE_NAMES[TIMESTAMP] = "Timestamp";
-        FIELD_TYPE_NAMES[ENUM] = "Enum";
-        FIELD_TYPE_NAMES[OBJ] = "Object";
-        FIELD_TYPE_NAMES[PORTABLE_OBJ] = "Object";
-        FIELD_TYPE_NAMES[COL] = "Collection";
-        FIELD_TYPE_NAMES[MAP] = "Map";
-        FIELD_TYPE_NAMES[MAP_ENTRY] = "Entry";
-        FIELD_TYPE_NAMES[CLASS] = "Class";
-        FIELD_TYPE_NAMES[BYTE_ARR] = "byte[]";
-        FIELD_TYPE_NAMES[SHORT_ARR] = "short[]";
-        FIELD_TYPE_NAMES[INT_ARR] = "int[]";
-        FIELD_TYPE_NAMES[LONG_ARR] = "long[]";
-        FIELD_TYPE_NAMES[BOOLEAN_ARR] = "boolean[]";
-        FIELD_TYPE_NAMES[FLOAT_ARR] = "float[]";
-        FIELD_TYPE_NAMES[DOUBLE_ARR] = "double[]";
-        FIELD_TYPE_NAMES[CHAR_ARR] = "char[]";
-        FIELD_TYPE_NAMES[UUID_ARR] = "UUID[]";
-        FIELD_TYPE_NAMES[DECIMAL_ARR] = "decimal[]";
-        FIELD_TYPE_NAMES[STRING_ARR] = "String[]";
-        FIELD_TYPE_NAMES[DATE_ARR] = "Date[]";
-        FIELD_TYPE_NAMES[TIMESTAMP_ARR] = "Timestamp[]";
-        FIELD_TYPE_NAMES[OBJ_ARR] = "Object[]";
-        FIELD_TYPE_NAMES[ENUM_ARR] = "Enum[]";
-    }
-
-    /**
-     * @param typeName Field type name.
-     * @return Field type ID;
-     */
-    @SuppressWarnings("StringEquality")
-    public static int fieldTypeId(String typeName) {
-        for (int i = 0; i < FIELD_TYPE_NAMES.length; i++) {
-            String typeName0 = FIELD_TYPE_NAMES[i];
-
-            if (typeName.equals(typeName0))
-                return i;
-        }
-
-        throw new IllegalArgumentException("Invalid metadata type name: " + typeName);
-    }
-
-    /**
-     * @param typeId Field type ID.
-     * @return Field type name.
-     */
-    public static String fieldTypeName(int typeId) {
-        assert typeId >= 0 && typeId < FIELD_TYPE_NAMES.length : typeId;
-
-        String typeName = FIELD_TYPE_NAMES[typeId];
-
-        assert typeName != null : typeId;
-
-        return typeName;
-    }
-
-    /**
-     * @param typeIds Field type IDs.
-     * @return Field type names.
-     */
-    public static Map<String, String> fieldTypeNames(Map<String, Integer> typeIds) {
-        Map<String, String> names = U.newHashMap(typeIds.size());
-
-        for (Map.Entry<String, Integer> e : typeIds.entrySet())
-            names.put(e.getKey(), fieldTypeName(e.getValue()));
-
-        return names;
-    }
 
     /**
      * @param ctx Kernal context.
@@ -479,6 +355,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public Object marshalToPortable(@Nullable Object obj) throws BinaryObjectException {
         if (obj == null)
             return null;
@@ -563,8 +440,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @Override public void updateMetaData(int typeId, String typeName, @Nullable String affKeyFieldName,
         Map<String, Integer> fieldTypeIds) throws BinaryObjectException {
-        portableCtx.updateMetaData(typeId, new BinaryMetaDataImpl(typeId, typeName, fieldTypeNames(fieldTypeIds),
-            affKeyFieldName));
+        portableCtx.updateMetaData(typeId, new BinaryMetaDataImpl(typeId, typeName,
+            PortableUtils.fieldTypeNames(fieldTypeIds), affKeyFieldName));
     }
 
     /** {@inheritDoc} */
