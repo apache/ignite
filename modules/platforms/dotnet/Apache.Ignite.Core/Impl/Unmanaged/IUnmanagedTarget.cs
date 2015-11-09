@@ -34,8 +34,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         void* Target { get; }
 
-        string StackTrace { get; set; }  // TODO
-
         /// <summary>
         /// Creates new instance with same context and different target.
         /// </summary>

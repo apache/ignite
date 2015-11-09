@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
-    using System.Diagnostics;
     using System.Runtime.InteropServices;
     using UU = UnmanagedUtils;
 
@@ -30,8 +29,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Context. */
         private readonly UnmanagedContext _ctx;
 
-        private void* _target;
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -42,11 +39,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             _ctx = ctx;
 
-            _target = target;
-            
             SetHandle(new IntPtr(target));
-
-            StackTrace = new StackTrace().ToString();
         }
 
         /** <inheritdoc /> */
@@ -61,15 +54,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             get { return handle.ToPointer(); }
         }
 
-        public unsafe string StackTrace { get; set; }
-
         /** <inheritdoc /> */
         public IUnmanagedTarget ChangeTarget(void* target)
         {
-            // TODO
-            if (target == _target)
-                throw new InvalidOperationException("Invalid handle target change!");
-
             return new UnmanagedTarget(_ctx, target);
         }
 
