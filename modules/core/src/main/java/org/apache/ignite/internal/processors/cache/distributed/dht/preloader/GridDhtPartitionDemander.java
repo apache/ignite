@@ -1191,7 +1191,7 @@ public class GridDhtPartitionDemander {
 
                     // While.
                     // =====
-                    while (!topologyChanged(fut)) {
+                    while (!fut.isDone() && !topologyChanged(fut)) {
                         SupplyMessage s = poll(msgQ, timeout);
 
                         // If timed out.
@@ -1350,7 +1350,7 @@ public class GridDhtPartitionDemander {
                         }
                     }
                 }
-                while (retry && !topologyChanged(fut));
+                while (retry && !fut.isDone() && !topologyChanged(fut));
             }
             finally {
                 cctx.io().removeOrderedHandler(d.topic());
