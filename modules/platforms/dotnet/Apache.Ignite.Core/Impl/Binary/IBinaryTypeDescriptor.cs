@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Name converter.
         /// </summary>
-        INameMapper NameMapper
+        IBinaryTypeNameMapper NameMapper
         {
             get;
         }
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Mapper.
         /// </summary>
-        IIdMapper IdMapper
+        IBinaryTypeIdMapper IdMapper
         {
             get;
         }

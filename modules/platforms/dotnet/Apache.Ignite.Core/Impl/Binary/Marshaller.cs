@@ -384,9 +384,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             TypeResolver typeResolver, IBinarySerializer dfltSerializer)
         {
             // Get converter/mapper/serializer.
-            INameMapper nameMapper = typeCfg.NameMapper ?? cfg.DefaultNameMapper;
+            IBinaryTypeNameMapper nameMapper = typeCfg.NameMapper ?? cfg.DefaultNameMapper;
 
-            IIdMapper idMapper = typeCfg.IdMapper ?? cfg.DefaultIdMapper;
+            IBinaryTypeIdMapper idMapper = typeCfg.IdMapper ?? cfg.DefaultIdMapper;
 
             bool keepDeserialized = typeCfg.KeepDeserialized ?? cfg.DefaultKeepDeserialized;
 
@@ -448,7 +448,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="serializer">Serializer.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
         private void AddType(Type type, int typeId, string typeName, bool userType, 
-            bool keepDeserialized, INameMapper nameMapper, IIdMapper idMapper,
+            bool keepDeserialized, IBinaryTypeNameMapper nameMapper, IBinaryTypeIdMapper idMapper,
             IBinarySerializer serializer, string affKeyFieldName)
         {
             long typeKey = BinaryUtils.TypeKey(userType, typeId);

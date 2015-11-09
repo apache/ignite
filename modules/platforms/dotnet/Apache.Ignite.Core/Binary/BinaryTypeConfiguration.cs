@@ -72,14 +72,14 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Name mapper for the given type. 
         /// </summary>
-        public INameMapper NameMapper { get; set; }
+        public IBinaryTypeNameMapper NameMapper { get; set; }
 
         /// <summary>
         /// ID mapper for the given type. When it is necessary to resolve class (field) ID, then 
         /// this property will be checked first. 
         /// Otherwise, ID will be hash code of the class (field) simple name in lower case. 
         /// </summary>
-        public IIdMapper IdMapper { get; set; }
+        public IBinaryTypeIdMapper IdMapper { get; set; }
 
         /// <summary>
         /// Serializer for the given type. If not provided and class implements <see cref="IBinarizable" />

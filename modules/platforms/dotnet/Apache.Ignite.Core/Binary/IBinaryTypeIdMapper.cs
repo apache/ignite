@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Binary
     /// <summary>
     /// Maps class name and class field names to integer identifiers.
     /// </summary>
-    public interface IIdMapper
+    public interface IBinaryTypeIdMapper
     {
         /// <summary>
         /// Gets type ID for the given type.

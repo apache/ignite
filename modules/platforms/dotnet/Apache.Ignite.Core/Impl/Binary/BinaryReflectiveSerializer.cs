@@ -85,8 +85,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="typeId">Type ID.</param>
         /// <param name="converter">Name converter.</param>
         /// <param name="idMapper">ID mapper.</param>
-        public void Register(Type type, int typeId, INameMapper converter,
-            IIdMapper idMapper)
+        public void Register(Type type, int typeId, IBinaryTypeNameMapper converter,
+            IBinaryTypeIdMapper idMapper)
         {
             if (type.GetInterface(typeof(IBinarizable).Name) != null)
                 return;

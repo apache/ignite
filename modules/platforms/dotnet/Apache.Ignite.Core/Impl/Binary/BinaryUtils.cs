@@ -1422,7 +1422,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="converter">Converter.</param>
          * <returns>Converted name.</returns>
          */
-        public static string ConvertTypeName(string typeName, INameMapper converter)
+        public static string ConvertTypeName(string typeName, IBinaryTypeNameMapper converter)
         {
             var typeName0 = typeName;
 
@@ -1450,7 +1450,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="converter">Converter.</param>
          * <returns>Converted name.</returns>
          */
-        public static string ConvertFieldName(string fieldName, INameMapper converter)
+        public static string ConvertFieldName(string fieldName, IBinaryTypeNameMapper converter)
         {
             var fieldName0 = fieldName;
 
@@ -1490,8 +1490,8 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="nameMapper">Name mapper.</param>
          * <param name="idMapper">ID mapper.</param>
          */
-        public static int TypeId(string typeName, INameMapper nameMapper,
-            IIdMapper idMapper)
+        public static int TypeId(string typeName, IBinaryTypeNameMapper nameMapper,
+            IBinaryTypeIdMapper idMapper)
         {
             Debug.Assert(typeName != null);
 
@@ -1525,8 +1525,8 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="nameMapper">Name mapper.</param>
          * <param name="idMapper">ID mapper.</param>
          */
-        public static int FieldId(int typeId, string fieldName, INameMapper nameMapper,
-            IIdMapper idMapper)
+        public static int FieldId(int typeId, string fieldName, IBinaryTypeNameMapper nameMapper,
+            IBinaryTypeIdMapper idMapper)
         {
             Debug.Assert(typeId != 0);
             Debug.Assert(fieldName != null);
@@ -1712,8 +1712,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                         cfg.TypeConfigurations.Add(new BinaryTypeConfiguration
                         {
                             TypeName = reader.ReadString(),
-                            NameMapper = CreateInstance<INameMapper>(reader),
-                            IdMapper = CreateInstance<IIdMapper>(reader),
+                            NameMapper = CreateInstance<IBinaryTypeNameMapper>(reader),
+                            IdMapper = CreateInstance<IBinaryTypeIdMapper>(reader),
                             Serializer = CreateInstance<IBinarySerializer>(reader),
                             AffinityKeyFieldName = reader.ReadString(),
                             KeepDeserialized = reader.ReadObject<bool?>()
@@ -1733,8 +1733,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
 
                 // Read the rest.
-                cfg.DefaultNameMapper = CreateInstance<INameMapper>(reader);
-                cfg.DefaultIdMapper = CreateInstance<IIdMapper>(reader);
+                cfg.DefaultNameMapper = CreateInstance<IBinaryTypeNameMapper>(reader);
+                cfg.DefaultIdMapper = CreateInstance<IBinaryTypeIdMapper>(reader);
                 cfg.DefaultSerializer = CreateInstance<IBinarySerializer>(reader);
                 cfg.DefaultKeepDeserialized = reader.ReadBoolean();
             }

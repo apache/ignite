@@ -1754,7 +1754,7 @@ namespace Apache.Ignite.Core.Tests.Portable
     /// <summary>
     /// Test id mapper.
     /// </summary>
-    public class IdMapper : IIdMapper
+    public class IdMapper : IBinaryTypeIdMapper
     {
         /** */
         public const string TestTypeName = "IdMapperTestType";
