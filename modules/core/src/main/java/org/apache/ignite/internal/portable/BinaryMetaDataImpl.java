@@ -27,13 +27,7 @@ import java.util.Map;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -43,14 +37,17 @@ public class BinaryMetaDataImpl implements BinaryType, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Type ID. */
+    private int typeId;
+
+    /** Type name. */
     private String typeName;
 
-    /** */
+    /** Recorded object fields. */
     @GridToStringInclude
     private Map<String, String> fields;
 
-    /** */
+    /** Affinity key field name. */
     private String affKeyFieldName;
 
     /**
@@ -61,17 +58,28 @@ public class BinaryMetaDataImpl implements BinaryType, Externalizable {
     }
 
     /**
+     * Constructor.
+     *
+     * @param typeId Type ID.
      * @param typeName Type name.
      * @param fields Fields map.
      * @param affKeyFieldName Affinity key field name.
      */
-    public BinaryMetaDataImpl(String typeName, @Nullable Map<String, String> fields,
+    public BinaryMetaDataImpl(int typeId, String typeName, @Nullable Map<String, String> fields,
         @Nullable String affKeyFieldName) {
         assert typeName != null;
 
+        this.typeId = typeId;
         this.typeName = typeName;
         this.fields = fields;
         this.affKeyFieldName = affKeyFieldName;
+    }
+
+    /**
+     * @return Type ID.
+     */
+    public int typeId() {
+        return typeId;
     }
 
     /** {@inheritDoc} */
@@ -103,6 +111,7 @@ public class BinaryMetaDataImpl implements BinaryType, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeInt(typeId);
         U.writeString(out, typeName);
         U.writeMap(out, fields);
         U.writeString(out, affKeyFieldName);
@@ -110,6 +119,7 @@ public class BinaryMetaDataImpl implements BinaryType, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        typeId = in.readInt();
         typeName = U.readString(in);
         fields = U.readMap(in);
         affKeyFieldName = U.readString(in);

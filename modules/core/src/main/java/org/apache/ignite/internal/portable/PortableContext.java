@@ -776,7 +776,7 @@ public class PortableContext implements Externalizable {
             descByCls.put(cls, desc);
         }
 
-        metaHnd.addMeta(id, new BinaryMetaDataImpl(typeName, fieldsMeta, affKeyFieldName));
+        metaHnd.addMeta(id, new BinaryMetaDataImpl(id, typeName, fieldsMeta, affKeyFieldName));
     }
 
     /**
@@ -816,7 +816,7 @@ public class PortableContext implements Externalizable {
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public void updateMetaData(int typeId, String typeName, Map<String, String> fields) throws BinaryObjectException {
-        updateMetaData(typeId, new BinaryMetaDataImpl(typeName, fields, null));
+        updateMetaData(typeId, new BinaryMetaDataImpl(typeId, typeName, fields, null));
     }
 
     /**
