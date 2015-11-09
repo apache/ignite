@@ -984,7 +984,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
-        private transient IgniteKernal ignite;
+        private transient IgniteEx ignite;
 
         /** {@inheritDoc} */
         @Override public Collection<GridCacheSqlMetadata> execute() {
