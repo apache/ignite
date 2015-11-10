@@ -20,7 +20,8 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{4F15669B-92EB-49F0-B774-8F19BAE0B960}</ProjectGuid>
-    <RootNamespace>portable</RootNamespace>
+    <RootNamespace>binary</RootNamespace>
+    <ProjectName>binary</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -164,42 +165,50 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\impl\portable\portable_metadata_handler.cpp" />
-    <ClCompile Include="..\..\src\impl\portable\portable_metadata_manager.cpp" />
-    <ClCompile Include="..\..\src\impl\portable\portable_metadata_snapshot.cpp" />
-    <ClCompile Include="..\..\src\impl\portable\portable_metadata_updater.cpp" />
-    <ClCompile Include="..\..\src\impl\portable\portable_metadata_updater_impl.cpp" />
-    <ClCompile Include="..\..\src\impl\portable\portable_reader_impl.cpp" />
-    <ClCompile Include="..\..\src\impl\portable\portable_utils.cpp" />
-    <ClCompile Include="..\..\src\impl\portable\portable_writer_impl.cpp" />
-    <ClCompile Include="..\..\src\interop\interop_input_stream.cpp" />
-    <ClCompile Include="..\..\src\interop\interop_memory.cpp" />
-    <ClCompile Include="..\..\src\interop\interop_output_stream.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\include\ignite\impl\portable\portable_common.h" />
-    <ClInclude Include="..\..\include\ignite\impl\portable\portable_id_resolver.h" />
-    <ClInclude Include="..\..\include\ignite\impl\portable\portable_metadata_handler.h" />
-    <ClInclude Include="..\..\include\ignite\impl\portable\portable_metadata_manager.h" />
-    <ClInclude Include="..\..\include\ignite\impl\portable\portable_metadata_snapshot.h" />
-    <ClInclude Include="..\..\include\ignite\impl\portable\portable_metadata_updater.h" />
-    <ClInclude Include="..\..\include\ignite\impl\portable\portable_metadata_updater_impl.h" />
-    <ClInclude Include="..\..\include\ignite\impl\portable\portable_reader_impl.h" />
-    <ClInclude Include="..\..\include\ignite\impl\portable\portable_utils.h" />
-    <ClInclude Include="..\..\include\ignite\impl\portable\portable_writer_impl.h" />
+    <ClInclude Include="..\..\include\ignite\binary\binary.h" />
+    <ClInclude Include="..\..\include\ignite\binary\binary_consts.h" />
+    <ClInclude Include="..\..\include\ignite\binary\binary_containers.h" />
+    <ClInclude Include="..\..\include\ignite\binary\binary_raw_reader.h" />
+    <ClInclude Include="..\..\include\ignite\binary\binary_raw_writer.h" />
+    <ClInclude Include="..\..\include\ignite\binary\binary_reader.h" />
+    <ClInclude Include="..\..\include\ignite\binary\binary_type.h" />
+    <ClInclude Include="..\..\include\ignite\binary\binary_writer.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_common.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_id_resolver.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_reader_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_schema.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_handler.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_manager.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_snapshot.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_utils.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_writer_impl.h" />
     <ClInclude Include="..\..\include\ignite\interop\interop.h" />
     <ClInclude Include="..\..\include\ignite\interop\interop_input_stream.h" />
     <ClInclude Include="..\..\include\ignite\interop\interop_memory.h" />
     <ClInclude Include="..\..\include\ignite\interop\interop_output_stream.h" />
     <ClInclude Include="..\..\include\ignite\interop\interop_stream_position_guard.h" />
-    <ClInclude Include="..\..\include\ignite\portable\portable.h" />
-    <ClInclude Include="..\..\include\ignite\portable\portable_consts.h" />
-    <ClInclude Include="..\..\include\ignite\portable\portable_containers.h" />
-    <ClInclude Include="..\..\include\ignite\portable\portable_raw_reader.h" />
-    <ClInclude Include="..\..\include\ignite\portable\portable_raw_writer.h" />
-    <ClInclude Include="..\..\include\ignite\portable\portable_reader.h" />
-    <ClInclude Include="..\..\include\ignite\portable\portable_type.h" />
-    <ClInclude Include="..\..\include\ignite\portable\portable_writer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\binary\binary_containers.cpp" />
+    <ClCompile Include="..\..\src\binary\binary_raw_reader.cpp" />
+    <ClCompile Include="..\..\src\binary\binary_raw_writer.cpp" />
+    <ClCompile Include="..\..\src\binary\binary_reader.cpp" />
+    <ClCompile Include="..\..\src\binary\binary_type.cpp" />
+    <ClCompile Include="..\..\src\binary\binary_writer.cpp" />
+    <ClCompile Include="..\..\src\impl\binary\binary_reader_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\binary\binary_schema.cpp" />
+    <ClCompile Include="..\..\src\impl\binary\binary_type_handler.cpp" />
+    <ClCompile Include="..\..\src\impl\binary\binary_type_manager.cpp" />
+    <ClCompile Include="..\..\src\impl\binary\binary_type_snapshot.cpp" />
+    <ClCompile Include="..\..\src\impl\binary\binary_type_updater.cpp" />
+    <ClCompile Include="..\..\src\impl\binary\binary_type_updater_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\binary\binary_utils.cpp" />
+    <ClCompile Include="..\..\src\impl\binary\binary_writer_impl.cpp" />
+    <ClCompile Include="..\..\src\interop\interop_input_stream.cpp" />
+    <ClCompile Include="..\..\src\interop\interop_memory.cpp" />
+    <ClCompile Include="..\..\src\interop\interop_output_stream.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
