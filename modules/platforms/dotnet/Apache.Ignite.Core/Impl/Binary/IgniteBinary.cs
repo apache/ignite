@@ -117,33 +117,33 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public ICollection<IBinaryType> GetMetadata()
+        public ICollection<IBinaryType> GetBinaryTypes()
         {
-            return Marshaller.Ignite.ClusterGroup.Metadata();
+            return Marshaller.Ignite.ClusterGroup.GetBinaryTypes();
         }
 
         /** <inheritDoc /> */
-        public IBinaryType GetMetadata(int typeId)
+        public IBinaryType GetBinaryType(int typeId)
         {
-            return Marshaller.GetMetadata(typeId);
+            return Marshaller.GetBinaryType(typeId);
         }
 
         /** <inheritDoc /> */
-        public IBinaryType GetMetadata(string typeName)
+        public IBinaryType GetBinaryType(string typeName)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
-            return GetMetadata(GetTypeId(typeName));
+            return GetBinaryType(GetTypeId(typeName));
         }
 
         /** <inheritDoc /> */
-        public IBinaryType GetMetadata(Type type)
+        public IBinaryType GetBinaryType(Type type)
         {
             IgniteArgumentCheck.NotNull(type, "type");
 
             var desc = Marshaller.GetDescriptor(type);
 
-            return desc == null ? null : Marshaller.GetMetadata(desc.TypeId);
+            return desc == null ? null : Marshaller.GetBinaryType(desc.TypeId);
         }
 
         /// <summary>

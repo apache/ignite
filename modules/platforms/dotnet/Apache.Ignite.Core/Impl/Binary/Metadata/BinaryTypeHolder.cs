@@ -74,12 +74,10 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <summary>
         /// Get current type metadata.
         /// </summary>
-        /// <returns>Type metadata.</returns>
-        public IBinaryType Metadata()
+        /// <value>Type metadata.</value>
+        public IBinaryType BinaryType
         {
-            BinaryType meta0 = _meta;
-
-            return meta0 != null ? _meta : _emptyMeta;
+            get { return _meta ?? _emptyMeta; }
         }
 
         /// <summary>

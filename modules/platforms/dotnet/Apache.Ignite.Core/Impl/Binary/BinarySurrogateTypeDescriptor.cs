@@ -101,13 +101,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public IBinaryTypeNameMapper NameMapper
+        public IBinaryNameMapper NameMapper
         {
             get { return _cfg.DefaultNameMapper; }
         }
 
         /** <inheritDoc /> */
-        public IBinaryTypeIdMapper IdMapper
+        public IBinaryIdMapper IdMapper
         {
             get { return _cfg.DefaultIdMapper; }
         }

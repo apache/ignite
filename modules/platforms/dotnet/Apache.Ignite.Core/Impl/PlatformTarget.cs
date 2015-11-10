@@ -578,18 +578,18 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Put metadata to Grid.
+        /// Put binary types to Grid.
         /// </summary>
-        /// <param name="metas">Metadatas.</param>
-        internal void PutMetadata(IDictionary<int, IBinaryType> metas)
+        /// <param name="types">Binary types.</param>
+        internal void PutBinaryTypes(IDictionary<int, IBinaryType> types)
         {
             DoOutOp(OpMeta, stream =>
             {
                 BinaryWriter metaWriter = _marsh.StartMarshal(stream);
 
-                metaWriter.WriteInt(metas.Count);
+                metaWriter.WriteInt(types.Count);
 
-                foreach (var meta in metas.Values)
+                foreach (var meta in types.Values)
                 {
                     BinaryType meta0 = (BinaryType)meta;
 
@@ -611,7 +611,7 @@ namespace Apache.Ignite.Core.Impl
                 _marsh.FinishMarshal(metaWriter);
             });
 
-            _marsh.OnMetadataSent(metas);
+            _marsh.OnBinaryTypesSent(types);
         }
 
         /// <summary>

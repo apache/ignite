@@ -472,15 +472,15 @@ namespace Apache.Ignite.Core.Impl
         /// Put metadata to Grid.
         /// </summary>
         /// <param name="metas">Metadata.</param>
-        internal void PutMetadata(IDictionary<int, IBinaryType> metas)
+        internal void PutBinaryTypes(IDictionary<int, IBinaryType> metas)
         {
-            _prj.PutMetadata(metas);
+            _prj.PutBinaryTypes(metas);
         }
 
         /** <inheritDoc /> */
-        public IBinaryType GetMetadata(int typeId)
+        public IBinaryType GetBinaryType(int typeId)
         {
-            return _prj.GetMetadata(typeId);
+            return _prj.GetBinaryType(typeId);
         }
 
         /// <summary>

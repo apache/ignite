@@ -151,12 +151,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Dictionary with metadata.</returns>
         public void FinishMarshal(IBinaryWriter writer)
         {
-            var meta = ((BinaryWriter) writer).Metadata();
+            var meta = ((BinaryWriter) writer).GetBinaryTypes();
 
             var ignite = Ignite;
 
             if (ignite != null && meta != null && meta.Count > 0)
-                ignite.PutMetadata(meta);
+                ignite.PutBinaryTypes(meta);
         }
 
         /// <summary>
@@ -256,11 +256,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="typeId">Type ID.</param>
         /// <returns>Metadata or null.</returns>
-        public IBinaryType GetMetadata(int typeId)
+        public IBinaryType GetBinaryType(int typeId)
         {
             if (Ignite != null)
             {
-                IBinaryType meta = Ignite.GetMetadata(typeId);
+                IBinaryType meta = Ignite.GetBinaryType(typeId);
 
                 if (meta != null)
                     return meta;
@@ -270,11 +270,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Gets metadata handler for the given type ID.
+        /// Gets binary type handler for the given type ID.
         /// </summary>
         /// <param name="desc">Type descriptor.</param>
-        /// <returns>Metadata handler.</returns>
-        public IBinaryTypeHandler GetMetadataHandler(IBinaryTypeDescriptor desc)
+        /// <returns>Binary type handler.</returns>
+        public IBinaryTypeHandler GetBinaryTypeHandler(IBinaryTypeDescriptor desc)
         {
             BinaryTypeHolder holder;
 
@@ -311,8 +311,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Callback invoked when metadata has been sent to the server and acknowledged by it.
         /// </summary>
-        /// <param name="newMetas"></param>
-        public void OnMetadataSent(IDictionary<int, IBinaryType> newMetas)
+        /// <param name="newMetas">Binary types.</param>
+        public void OnBinaryTypesSent(IDictionary<int, IBinaryType> newMetas)
         {
             foreach (KeyValuePair<int, IBinaryType> metaEntry in newMetas)
             {
@@ -384,9 +384,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             TypeResolver typeResolver, IBinarySerializer dfltSerializer)
         {
             // Get converter/mapper/serializer.
-            IBinaryTypeNameMapper nameMapper = typeCfg.NameMapper ?? cfg.DefaultNameMapper;
+            IBinaryNameMapper nameMapper = typeCfg.NameMapper ?? cfg.DefaultNameMapper;
 
-            IBinaryTypeIdMapper idMapper = typeCfg.IdMapper ?? cfg.DefaultIdMapper;
+            IBinaryIdMapper idMapper = typeCfg.IdMapper ?? cfg.DefaultIdMapper;
 
             bool keepDeserialized = typeCfg.KeepDeserialized ?? cfg.DefaultKeepDeserialized;
 
@@ -448,7 +448,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="serializer">Serializer.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
         private void AddType(Type type, int typeId, string typeName, bool userType, 
-            bool keepDeserialized, IBinaryTypeNameMapper nameMapper, IBinaryTypeIdMapper idMapper,
+            bool keepDeserialized, IBinaryNameMapper nameMapper, IBinaryIdMapper idMapper,
             IBinarySerializer serializer, string affKeyFieldName)
         {
             long typeKey = BinaryUtils.TypeKey(userType, typeId);

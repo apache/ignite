@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Binary
         /// <returns>Metadata.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
             Justification = "Expensive operation.")]
-        IBinaryType GetMetadata();
+        IBinaryType GetBinaryType();
 
         /// <summary>
         /// Gets field value.

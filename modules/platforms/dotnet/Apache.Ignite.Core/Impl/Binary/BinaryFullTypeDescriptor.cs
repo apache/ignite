@@ -40,10 +40,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly bool _userType;
 
         /** Name converter. */
-        private readonly IBinaryTypeNameMapper _nameMapper;
+        private readonly IBinaryNameMapper _nameMapper;
 
         /** Mapper. */
-        private readonly IBinaryTypeIdMapper _idMapper;
+        private readonly IBinaryIdMapper _idMapper;
 
         /** Serializer. */
         private readonly IBinarySerializer _serializer;
@@ -80,8 +80,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             int typeId, 
             string typeName, 
             bool userType, 
-            IBinaryTypeNameMapper nameMapper, 
-            IBinaryTypeIdMapper idMapper, 
+            IBinaryNameMapper nameMapper, 
+            IBinaryIdMapper idMapper, 
             IBinarySerializer serializer, 
             bool keepDeserialized, 
             string affKeyFieldName)
@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Name converter.
         /// </summary>
-        public IBinaryTypeNameMapper NameMapper
+        public IBinaryNameMapper NameMapper
         {
             get { return _nameMapper; }
         }
@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Mapper.
         /// </summary>
-        public IBinaryTypeIdMapper IdMapper
+        public IBinaryIdMapper IdMapper
         {
             get { return _idMapper; }
         }

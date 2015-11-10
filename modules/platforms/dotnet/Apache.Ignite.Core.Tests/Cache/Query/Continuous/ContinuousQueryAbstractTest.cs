@@ -1114,7 +1114,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 {
                     IBinaryObject val = evt.Value;
 
-                    IBinaryType meta = val.GetMetadata();
+                    IBinaryType meta = val.GetBinaryType();
 
                     Assert.AreEqual(typeof(BinarizableEntry).Name, meta.TypeName);
                 }

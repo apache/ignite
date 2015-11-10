@@ -288,7 +288,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(val, binObj.GetField<object>("val"));
             Assert.AreEqual(val, binObj.Deserialize<Remove>().Val);
 
-            meta = binObj.GetMetadata();
+            meta = portObj.GetBinaryType();
 
             Assert.AreEqual(typeof(Remove).Name, meta.TypeName);
             Assert.AreEqual(1, meta.Fields.Count);
@@ -443,7 +443,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             IBinaryObject binCol = builderCol.Build();
 
-            IBinaryType meta = binCol.GetMetadata();
+            IBinaryType meta = portCol.GetMetadata();
 
             Assert.AreEqual(typeof(BuilderCollection).Name, meta.TypeName);
             Assert.AreEqual(1, meta.Fields.Count);
@@ -456,7 +456,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var binItem = (IBinaryObject) binColItems[0];
 
-            meta = binItem.GetMetadata();
+            meta = portItem.GetMetadata();
 
             Assert.AreEqual(typeof(BuilderCollectionItem).Name, meta.TypeName);
             Assert.AreEqual(1, meta.Fields.Count);
@@ -1698,7 +1698,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// <summary>
     /// Test id mapper.
     /// </summary>
-    public class IdMapper : IBinaryTypeIdMapper
+    public class IdMapper : IBinaryIdMapper
     {
         /** */
         public const string TestTypeName = "IdMapperTestType";

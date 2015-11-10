@@ -70,12 +70,12 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Default name mapper.
         /// </summary>
-        public IBinaryTypeNameMapper DefaultNameMapper { get; set; }
+        public IBinaryNameMapper DefaultNameMapper { get; set; }
 
         /// <summary>
         /// Default ID mapper.
         /// </summary>
-        public IBinaryTypeIdMapper DefaultIdMapper { get; set; }
+        public IBinaryIdMapper DefaultIdMapper { get; set; }
 
         /// <summary>
         /// Default serializer.
