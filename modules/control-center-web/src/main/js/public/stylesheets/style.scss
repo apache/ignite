@@ -568,6 +568,7 @@ button.form-control {
     }
 
     .sql-empty-result {
+        margin-top: 10px;
         margin-bottom: 10px;
         text-align: center;
         color: $ignite-placeholder-color;
@@ -1014,24 +1015,32 @@ button.form-control {
     .popover-title {
         color: black;
 
-        line-height: $line-height-base;
+        line-height: 27px;
 
-        padding: 8px 20px 8px 10px;
+        padding: 3px 5px 3px 10px;
 
         white-space: nowrap;
         overflow: hidden;
         -o-text-overflow: ellipsis;
         text-overflow: ellipsis;
+
+        .close {
+            float: right;
+            top: 0;
+            right: 0;
+            position: relative;
+            margin-left: 10px;
+            line-height: 27px;
+        }
     }
 
     > .popover-content {
-        overflow: scroll;
+        overflow: auto;
+
+        white-space: nowrap;
 
         min-height: 400px;
         max-height: 400px;
-
-        min-width: 300px;
-        max-width: 300px;
 
         .content-empty {
             display: block;
@@ -1042,9 +1051,7 @@ button.form-control {
         }
     }
 
-    label.clickable {
-        cursor: pointer;
-    }
+    .clickable { cursor: pointer; }
 }
 
 .theme-line .popover.validation-error {
@@ -1593,7 +1600,7 @@ a {
 
     overflow: auto;
 
-    li {
+    & > li {
         float: left;
     }
 
@@ -1618,6 +1625,12 @@ a {
 .btn-chart-column-movable {
     @extend .btn-chart-column;
     cursor: move;
+}
+
+.btn-chart-column-agg-fx {
+    border: 0;
+    margin-left: 10px;
+    padding: 0 !important;
 }
 
 .page-loading-overlay {
@@ -1694,14 +1707,28 @@ treecontrol.tree-classic {
         padding: 0;
     }
 
-    li.tree-expanded i.tree-branch-head, li.tree-collapsed i.tree-branch-head {
-        background: none;
-        padding-left: 0;
+    li {
+        padding-left: 17px;
+    }
+
+
+    li.tree-expanded i.fa, li.tree-collapsed i.fa, li.tree-leaf i.fa {
+        background: none no-repeat;
+        padding: 1px 5px 1px 1px;
+    }
+
+    li.tree-leaf i.tree-leaf-head {
+        background: none no-repeat;
+        padding: 0;
     }
 
     li .tree-selected {
         background-color: white;
         font-weight: normal;
+    }
+
+    span {
+        margin-right: 10px;
     }
 }
 

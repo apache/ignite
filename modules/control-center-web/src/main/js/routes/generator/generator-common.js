@@ -384,11 +384,9 @@ $generatorCommon.CONNECTOR_CONFIGURATION = {
         noDelay: {dflt: false},
         selectorCount: null,
         threadPoolSize: null,
-        messageInterceptor: null,
+        messageInterceptor: {type: 'bean'},
         secretKey: null,
-        sslEnabled: {dflt: false},
-        sslClientAuth: {dflt: false},
-        sslFactory: null
+        sslEnabled: {dflt: false}
     }
 };
 

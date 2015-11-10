@@ -87,7 +87,7 @@ router.post('/topology', function (req, res) {
     var client = _client(req, res);
 
     if (client) {
-        client.ignite().cluster().then(function (clusters) {
+        client.ignite().cluster(false).then(function (clusters) {
             var caches = clusters.map(function (cluster) {
                 return Object.keys(cluster._caches).map(function (key) {
                     return {name: key, mode: cluster._caches[key]}
@@ -207,59 +207,71 @@ router.post('/cache/metadata', function (req, res) {
     var client = _client(req, res);
 
     if (client) {
-        client.ignite().cache(req.body.cacheName).metadata().then(function (meta) {
-            var tables = meta.types.map(function (typeName) {
-                var fields = meta.fields[typeName];
+        client.ignite().cache(req.body.cacheName).metadata().then(function (caches) {
+            var types = [];
 
-                var showSystem = fields.length == 2 && fields["_KEY"] && fields["_VAL"];
+            for (var meta of caches) {
+                var cacheTypes = meta.types.map(function (typeName) {
+                    var cacheName = meta.cacheName ? meta.cacheName : '<default>';
 
-                var columns = [];
+                    var fullTypeName = '"' + (meta.cacheName ? meta.cacheName : "") + '".' + typeName;
 
-                for (var fieldName in fields)
-                    if (showSystem || fieldName != "_KEY" && fieldName != "_VAL") {
+                    var fields = meta.fields[typeName];
+
+                    var columns = [];
+
+                    for (var fieldName in fields) {
                         var fieldClass = _compact(fields[fieldName]);
 
                         columns.push({
                             type: 'field',
                             name: fieldName,
-                            fullName: typeName + '.' + fieldName,
-                            clazz: fieldClass
+                            clazz: fieldClass,
+                            system: fieldName == "_KEY" || fieldName == "_VAL",
+                            cacheName: cacheName,
+                            typeName: typeName
                         });
                     }
 
-                var indexes = [];
+                    var indexes = [];
 
-                for (var index of meta.indexes[typeName]) {
-                    fields = [];
+                    for (var index of meta.indexes[typeName]) {
+                        fields = [];
 
-                    for (var field of index.fields) {
-                        fields.push({
-                            type: 'index-field',
-                            name: field,
-                            fullName: typeName + '.' + index.name + '.' + field,
-                            order: index.descendings.indexOf(field) < 0,
-                            unique: index.unique
-                        });
+                        for (var field of index.fields) {
+                            fields.push({
+                                type: 'index-field',
+                                name: field,
+                                order: index.descendings.indexOf(field) < 0,
+                                unique: index.unique,
+                                cacheName: cacheName,
+                                typeName: typeName
+                            });
+                        }
+
+                        if (fields.length > 0)
+                            indexes.push({
+                                type: 'index',
+                                name: index.name,
+                                children: fields,
+                                cacheName: cacheName,
+                                typeName: typeName
+                            });
                     }
 
-                    if (fields.length > 0)
-                        indexes.push({
-                            type: 'index',
-                            name: index.name,
-                            fullName: typeName + '.' + index.name,
-                            children: fields
-                        });
-                }
+                    columns = _.sortBy(columns, 'name');
 
-                columns = _.sortBy(columns, 'name');
+                    if (!_.isEmpty(indexes))
+                        columns = columns.concat({type: 'indexes', name: 'Indexes', cacheName: cacheName, typeName: typeName, children: indexes });
 
-                if (indexes.length > 0)
-                    columns = columns.concat({type: 'indexes', name: 'Indexes', fullName: typeName + '.indexes', children: indexes });
+                    return {type: 'type', name: cacheName + '.' + typeName, fullName: fullTypeName,  children: columns };
+                });
 
-                return {type: 'type', name: typeName, fullName: '"' + req.body.cacheName + '".' +typeName,  children: columns };
-            });
+                if (!_.isEmpty(cacheTypes))
+                    types = types.concat(cacheTypes);
+            }
 
-            res.json(tables);
+            res.json(types);
         }, function (err) {
             res.status(500).send(err);
         });

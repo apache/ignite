@@ -830,7 +830,7 @@ consoleModule.controller('metadataController', [
                     var indexes = item.indexes;
 
                     if (indexes && indexes.length > 0) {
-                        _.forEach(indexes, function(index) {
+                        _.forEach(indexes, function(index, i) {
                             if ($common.isEmptyArray(index.fields))
                                 return showPopoverMessage($scope.panels, 'query', 'indexes' + i, 'Group fields are not specified');
                         });

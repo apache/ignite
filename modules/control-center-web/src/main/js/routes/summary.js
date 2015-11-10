@@ -67,7 +67,7 @@ router.post('/download', function (req, res) {
 
         zip.file('config/' + cluster.name + '-server.xml', $generatorXml.cluster(cluster));
         zip.file('config/' + cluster.name + '-client.xml', $generatorXml.cluster(cluster, clientNearConfiguration));
-        zip.file(srcPath + 'ConfigurationFactory.java', $generatorJava.cluster(cluster, 'ServerConfigurationFactory'));
+        zip.file(srcPath + 'ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'ServerConfigurationFactory'));
         zip.file(srcPath + 'ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'ClientConfigurationFactory', clientNearConfiguration));
         zip.file('pom.xml', $generatorPom.pom(cluster.caches, '1.5.0').asString());
 

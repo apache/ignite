@@ -1454,17 +1454,17 @@ class ServerImpl extends TcpDiscoveryImpl {
             tmp = U.arrayList(readers);
         }
 
-        for (ClientMessageWorker msgWorker : clientMsgWorkers.values()) {
-            U.interrupt(msgWorker);
-
-            U.join(msgWorker, log);
-        }
-
         U.interrupt(tmp);
         U.joinThreads(tmp, log);
 
         U.interrupt(msgWorker);
         U.join(msgWorker, log);
+
+        for (ClientMessageWorker msgWorker : clientMsgWorkers.values()) {
+            U.interrupt(msgWorker);
+
+            U.join(msgWorker, log);
+        }
 
         U.interrupt(statsPrinter);
         U.join(statsPrinter, log);
@@ -1778,7 +1778,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     Collection<TcpDiscoveryNode> top = new ArrayList<>(allNodes.size());
 
                     for (TcpDiscoveryNode n0 : allNodes) {
-                        if (n0.internalOrder() != 0 && n0.internalOrder() < node.internalOrder())
+                        assert n0.internalOrder() > 0 : n0;
+
+                        if (n0.internalOrder() < node.internalOrder())
                             top.add(n0);
                     }
 
@@ -3239,6 +3241,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
             else {
+                if (isLocalNodeCoordinator())
+                    addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id(), false));
+
                 if (isLocNodeRouter) {
                     ClientMessageWorker wrk = clientMsgWorkers.get(nodeId);
 
@@ -3249,7 +3254,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             locNodeId + ", clientNodeId=" + nodeId + ']');
                 }
                 else {
-                    if (ring.hasRemoteNodes() && !locNodeId.equals(msg.verifierNodeId()))
+                    if (ring.hasRemoteNodes() && !isLocalNodeCoordinator())
                         sendMessageAcrossRing(msg);
                 }
             }

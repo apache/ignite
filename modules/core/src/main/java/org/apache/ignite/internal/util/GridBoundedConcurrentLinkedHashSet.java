@@ -156,9 +156,6 @@ public class GridBoundedConcurrentLinkedHashSet<E> extends GridSetWrapper<E> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        // TODO GG-4788
-        return ((ConcurrentLinkedHashMap<E, Object>)map()).policy() != SINGLE_Q ?
-            S.toString(GridBoundedConcurrentLinkedHashSet.class, this) :
-            S.toString(GridBoundedConcurrentLinkedHashSet.class, this, "elements", map().keySet());
+        return S.toString(GridBoundedConcurrentLinkedHashSet.class, this, "elements", map().keySet());
     }
 }

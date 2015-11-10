@@ -3997,6 +3997,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testIgniteCacheIterator() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1756");
+
         IgniteCache<String, Integer> cache = jcache(0);
 
         Iterator<Cache.Entry<String, Integer>> it = cache.iterator();
@@ -4694,7 +4696,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         TransactionIsolation txIsolation)
         throws  Exception
     {
-        log.info("Test tx skip store [concurrency=" + txConcurrency + ", isolation=" + txIsolation + ']');
+        info("Test tx skip store [concurrency=" + txConcurrency + ", isolation=" + txIsolation + ']');
 
         cache.removeAll(data.keySet());
         checkEmpty(cache, cacheSkipStore);

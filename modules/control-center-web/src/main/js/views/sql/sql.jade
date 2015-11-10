@@ -42,14 +42,15 @@ mixin result-toolbar
         +btn-toolbar-data('fa-area-chart', 'area', 'Show area chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values')
 
 mixin chart-settings(mdl)
-    .row(ng-show='paragraph.chart')
-        .col-xs-4.chart-settings-link
-            i.fa.fa-chevron-circle-down
-            a(ng-click='$event.stopPropagation()' bs-popover data-template-url='chart-settings' data-placement='bottom' data-auto-close='1' data-trigger='click') Chart settings
-            div(ng-show='paragraphTimeSpanVisible(paragraph)')
-                label Show
-                button.select-manual-caret.btn.btn-default(ng-model='paragraph.timeLineSpan' ng-change='applyChartTimeFrame(paragraph)' bs-options='item for item in timeLineSpans' bs-select data-caret-html='<span class="caret"></span>')
-                label min
+    .row
+        .col-xs-4
+            .chart-settings-link(ng-show='paragraph.chart && paragraph.chartColumns.length > 0')
+                i.fa.fa-chevron-circle-down
+                a(ng-click='$event.stopPropagation()' bs-popover data-template-url='chart-settings' data-placement='bottom' data-auto-close='1' data-trigger='click') Chart settings
+                div(ng-show='paragraphTimeSpanVisible(paragraph)')
+                    label Show
+                    button.select-manual-caret.btn.btn-default(ng-model='paragraph.timeLineSpan' ng-change='applyChartTimeFrame(paragraph)' bs-options='item for item in timeLineSpans' bs-select data-caret-html='<span class="caret"></span>')
+                    label min
         .col-xs-4
             +result-toolbar
 
@@ -130,6 +131,7 @@ block container
                                     .col-xs-4.col-sm-3
                                         div(ng-show='caches.length > 0' style='padding: 5px 10px' st-table='displayedCaches' st-safe-src='caches')
                                             lable.labelField.labelFormField Caches:
+                                            i.fa.fa-database.tipField(bs-popover data-template-url='cache-metadata', data-placement='bottom', data-trigger='click')
                                             .input-tip
                                                 input.form-control(type='text' st-search placeholder='Filter caches...')
                                             table.links
@@ -137,7 +139,7 @@ block container
                                                     tr(ng-repeat='cache in displayedCaches track by cache.name')
                                                         td(style='width: 100%')
                                                             input.labelField(type='radio' value='{{cache.name}}')
-                                                            a(bs-popover data-template-url='cache-metadata', data-placement='bottom', data-trigger='click') {{cache.name}}
+                                                            label {{cache.name || "&lt;default&gt;"}}
                                         .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
                                             label Wrong caches filter
                                         .empty-caches(ng-show='caches.length == 0')
@@ -180,9 +182,11 @@ block container
                                     div(ng-show='paragraph.chart() && paragraph.nonEmpty()')
                                         div(ng-show='paragraph.queryExecute()')
                                             +chart-settings
-                                            div(ng-hide='paragraph.chartColumnsConfigured()')
+                                            div(ng-show='paragraph.chartColumns.length > 0 && !paragraph.chartColumnsConfigured()')
                                                 .sql-empty-result Cannot display chart. Please configure axis using&nbsp
                                                     b Chart settings
+                                            div(ng-show='paragraph.chartColumns.length == 0')
+                                                .sql-empty-result Cannot display chart. Result set must contain Java build-in type columns. Please change query and execute it again.
                                             div(ng-show='paragraph.chartColumnsConfigured()')
                                                 div(ng-show='paragraph.timeLineSupported() || !paragraph.chartTimeLineEnabled()')
                                                     div(ng-repeat='chart in paragraph.charts')

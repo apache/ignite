@@ -809,18 +809,22 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                                         remap(res);
                                                     }
                                                     catch (IgniteCheckedException e) {
+                                                        err.compareAndSet(null, e);
+
                                                         onDone(e);
                                                     }
                                                 }
                                             });
                                         }
                                         else {
-                                            ClusterTopologyCheckedException err = new ClusterTopologyCheckedException(
+                                            ClusterTopologyCheckedException err0 = new ClusterTopologyCheckedException(
                                                 "Cluster topology changed while client transaction is preparing.");
 
-                                            err.retryReadyFuture(affFut);
+                                            err0.retryReadyFuture(affFut);
 
-                                            onDone(err);
+                                            err.compareAndSet(null, err0);
+
+                                            onDone(err0);
                                         }
                                     }
                                     catch (IgniteCheckedException e) {
@@ -828,6 +832,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                             log.debug("Prepare failed, will not remap tx: " +
                                                 GridNearOptimisticSerializableTxPrepareFuture.this);
                                         }
+
+                                        err.compareAndSet(null, e);
 
                                         onDone(e);
                                     }

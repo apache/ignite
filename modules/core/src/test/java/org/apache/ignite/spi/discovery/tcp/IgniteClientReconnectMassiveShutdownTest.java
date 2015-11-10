@@ -22,6 +22,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
@@ -35,12 +36,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -131,7 +134,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
 
         assertTrue(client.configuration().isClientMode());
 
-        CacheConfiguration<String, Integer> cfg = new CacheConfiguration<>();
+        final CacheConfiguration<String, Integer> cfg = new CacheConfiguration<>();
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
@@ -140,6 +143,8 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
         cfg.setMemoryMode(OFFHEAP_TIERED);
 
         IgniteCache<String, Integer> cache = client.getOrCreateCache(cfg);
+
+        assertNotNull(cache);
 
         HashMap<String, Integer> put = new HashMap<>();
 
@@ -155,59 +160,80 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
         for (int i = GRID_CNT; i < GRID_CNT + CLIENT_GRID_CNT; i++)
             clientIdx.add(i);
 
+        final CountDownLatch latch = new CountDownLatch(CLIENT_GRID_CNT);
+
         IgniteInternalFuture<?> clientsFut = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    int idx = clientIdx.take();
+                    try {
+                        int idx = clientIdx.take();
 
-                    Ignite ignite = grid(idx);
+                        Ignite ignite = grid(idx);
 
-                    Thread.currentThread().setName("client-thread-" + ignite.name());
+                        Thread.currentThread().setName("client-thread-" + ignite.name());
 
-                    assertTrue(ignite.configuration().isClientMode());
+                        assertTrue(ignite.configuration().isClientMode());
 
-                    IgniteCache<String, Integer> cache = ignite.cache(null);
+                        IgniteCache<String, Integer> cache = ignite.getOrCreateCache(cfg);
 
-                    IgniteTransactions txs = ignite.transactions();
+                        assertNotNull(cache);
 
-                    Random rand = new Random();
+                        IgniteTransactions txs = ignite.transactions();
 
-                    while (!done.get()) {
-                        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                            cache.put(String.valueOf(rand.nextInt(10_000)), rand.nextInt(50_000));
+                        Random rand = new Random();
 
-                            tx.commit();
-                        }
-                        catch (ClusterTopologyException ex) {
-                            ex.retryReadyFuture().get();
-                        }
-                        catch (IgniteException | CacheException e) {
-                            if (X.hasCause(e, IgniteClientDisconnectedException.class)) {
-                                IgniteClientDisconnectedException cause = X.cause(e,
-                                    IgniteClientDisconnectedException.class);
+                        latch.countDown();
 
-                                assert cause != null;
+                        while (!done.get()) {
+                            try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                cache.put(String.valueOf(rand.nextInt(10_000)), rand.nextInt(50_000));
 
-                                cause.reconnectFuture().get();
+                                tx.commit();
                             }
-                            else if (X.hasCause(e, ClusterTopologyException.class)) {
-                                ClusterTopologyException cause = X.cause(e, ClusterTopologyException.class);
-
-                                assert cause != null;
-
-                                cause.retryReadyFuture().get();
+                            catch (ClusterTopologyException ex) {
+                                ex.retryReadyFuture().get();
                             }
-                            else
-                                throw e;
+                            catch (IgniteException | CacheException e) {
+                                if (X.hasCause(e, IgniteClientDisconnectedException.class)) {
+                                    IgniteClientDisconnectedException cause = X.cause(e,
+                                        IgniteClientDisconnectedException.class);
+
+                                    assert cause != null;
+
+                                    cause.reconnectFuture().get();
+                                }
+                                else if (X.hasCause(e, ClusterTopologyException.class)) {
+                                    ClusterTopologyException cause = X.cause(e, ClusterTopologyException.class);
+
+                                    assert cause != null;
+
+                                    cause.retryReadyFuture().get();
+                                }
+                                else
+                                    throw e;
+                            }
                         }
+
+                        return null;
                     }
+                    catch (Throwable e) {
+                        log.error("Unexpected error: " + e, e);
 
-                    return null;
+                        throw e;
+                    }
                 }
             },
             CLIENT_GRID_CNT, "client-thread");
 
         try {
+            if (!latch.await(30, SECONDS)) {
+                log.warning("Failed to wait for for clients start.");
+
+                U.dumpThreads(log);
+
+                fail("Failed to wait for for clients start.");
+            }
+
             // Killing a half of server nodes.
             final int srvsToKill = GRID_CNT / 2;
 
