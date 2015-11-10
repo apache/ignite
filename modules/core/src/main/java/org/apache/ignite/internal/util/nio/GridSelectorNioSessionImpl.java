@@ -21,14 +21,14 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.util.Collection;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * Session implementation bound to selector API and socket API.
@@ -37,7 +37,7 @@ import org.jsr166.ConcurrentLinkedDeque8;
  */
 class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /** Pending write requests. */
-    private final ConcurrentLinkedDeque8<GridNioFuture<?>> queue = new ConcurrentLinkedDeque8<>();
+    private final ConcurrentLinkedQueue<GridNioFuture<?>> queue = new ConcurrentLinkedQueue<>();
 
     /** Selection key associated with this session. */
     @GridToStringExclude
@@ -47,11 +47,11 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     private final int selectorIdx;
 
     /** Size counter. */
-    private final AtomicInteger queueSize = new AtomicInteger();
+    private final AtomicBoolean wakeupSelector = new AtomicBoolean();
 
     /** Semaphore. */
     @GridToStringExclude
-    private final Semaphore sem = null;
+    private final Semaphore sem;
 
     /** Write buffer. */
     private ByteBuffer writeBuf;
@@ -103,7 +103,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
         this.selectorIdx = selectorIdx;
 
-//        sem = sndQueueLimit > 0 ? new Semaphore(sndQueueLimit) : null;
+        sem = sndQueueLimit > 0 ? new Semaphore(sndQueueLimit) : null;
 
         if (writeBuf != null) {
             writeBuf.clear();
@@ -163,14 +163,14 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @param writeFut Write request.
      * @return Updated size of the queue.
      */
-    int offerSystemFuture(GridNioFuture<?> writeFut) {
+    boolean offerSystemFuture(GridNioFuture<?> writeFut) {
         writeFut.messageThread(true);
 
-        boolean res = queue.offerFirst(writeFut);
+        boolean res = queue.offer(writeFut);
 
         assert res : "Future was not added to queue";
 
-        return queueSize.incrementAndGet();
+        return !wakeupSelector.get() && wakeupSelector.compareAndSet(false, true);
     }
 
     /**
@@ -183,7 +183,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @param writeFut Write request to add.
      * @return Updated size of the queue.
      */
-    int offerFuture(GridNioFuture<?> writeFut) {
+    boolean offerFuture(GridNioFuture<?> writeFut) {
         boolean msgThread = GridNioBackPressureControl.threadProcessingMessage();
 
         if (sem != null && !msgThread)
@@ -195,7 +195,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
         assert res : "Future was not added to queue";
 
-        return queueSize.incrementAndGet();
+        return !wakeupSelector.get() && wakeupSelector.compareAndSet(false, true);
     }
 
     /**
@@ -208,9 +208,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
         assert add;
 
-        boolean set = queueSize.compareAndSet(0, futs.size());
-
-        assert set;
+        wakeupSelector.set(false);
     }
 
     /**
@@ -219,9 +217,13 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     @Nullable GridNioFuture<?> pollFuture() {
         GridNioFuture<?> last = queue.poll();
 
-        if (last != null) {
-            queueSize.decrementAndGet();
+        if (last == null) {
+            wakeupSelector.set(false);
 
+            last = queue.poll();
+        }
+
+        if (last != null) {
             if (sem != null && !last.messageThread())
                 sem.release();
 
@@ -246,22 +248,12 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     }
 
     /**
-     * @param fut Future.
-     * @return {@code True} if future was removed from queue.
-     */
-    boolean removeFuture(GridNioFuture<?> fut) {
-        assert closed();
-
-        return queue.removeLastOccurrence(fut);
-    }
-
-    /**
      * Gets number of write requests in a queue that have not been processed yet.
      *
      * @return Number of write requests.
      */
     int writeQueueSize() {
-        return queueSize.get();
+        return queue.size();
     }
 
     /** {@inheritDoc} */

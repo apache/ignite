@@ -424,7 +424,7 @@ public class GridNioServer<T> {
         assert ses != null;
         assert fut != null;
 
-        int msgCnt = sys ? ses.offerSystemFuture(fut) : ses.offerFuture(fut);
+        boolean wakeup = sys ? ses.offerSystemFuture(fut) : ses.offerFuture(fut);
 
         IgniteInClosure<IgniteException> ackClosure;
 
@@ -432,17 +432,17 @@ public class GridNioServer<T> {
             fut.ackClosure(ackClosure);
 
         if (ses.closed()) {
-            if (ses.removeFuture(fut))
-                fut.connectionClosed();
+            fut.connectionClosed();
         }
-        else if (msgCnt == 1)
+        else if (wakeup)
             // Change from 0 to 1 means that worker thread should be waken up.
             clientWorkers.get(ses.selectorIndex()).offer(fut);
 
         IgniteBiInClosure<GridNioSession, Integer> lsnr0 = msgQueueLsnr;
 
         if (lsnr0 != null)
-            lsnr0.apply(ses, msgCnt);
+            // TODO ignite-perftest pass correct queue size.
+            lsnr0.apply(ses, 0);
     }
 
     /**
