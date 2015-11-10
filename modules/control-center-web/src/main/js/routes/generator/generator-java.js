@@ -521,7 +521,7 @@ $generatorJava.clusterConnector = function (cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if ($commonUtils.isDefined($commonUtils.isDefined(cluster.connector) && cluster.connector.enabled)) {
+    if ($commonUtils.isDefined(cluster.connector) && $commonUtils.isDefined(cluster.connector.enabled)) {
         var cfg = _.cloneDeep($generatorCommon.CONNECTOR_CONFIGURATION);
 
         if (cluster.connector.sslEnabled) {
