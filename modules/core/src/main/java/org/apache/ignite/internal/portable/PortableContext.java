@@ -792,7 +792,7 @@ public class PortableContext implements Externalizable {
 
         int fieldId = userTypeIdMapper(typeId).fieldId(typeId, fieldName);
 
-        return new BinaryFieldImpl(schemaReg, fieldName, fieldId);
+        return new BinaryFieldImpl(typeId, schemaReg, fieldName, fieldId);
     }
 
     /**
