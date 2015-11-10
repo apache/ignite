@@ -15,27 +15,20 @@
  * limitations under the License.
  */
 
-#include "environment.h"
+#include "statement.h"
 
 namespace ignite
 {
     namespace odbc
     {
-        Environment::Environment()
-        {
-            // HACK: move it to library-wide initialisation.
-            InitNetworking();
-            // No-op.
-        }
-
-        Environment::~Environment()
+        Statement::Statement()
         {
             // No-op.
         }
 
-        Connection* Environment::CreateConnection()
+        Statement::~Statement()
         {
-            return new Connection();
+            // No-op.
         }
     }
 }

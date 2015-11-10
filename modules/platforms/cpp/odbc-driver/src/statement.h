@@ -15,28 +15,31 @@
  * limitations under the License.
  */
 
-#include "environment.h"
+#ifndef _IGNITE_ODBC_DRIVER_STATEMENT
+#define _IGNITE_ODBC_DRIVER_STATEMENT
+
+#include <stdint.h>
 
 namespace ignite
 {
     namespace odbc
     {
-        Environment::Environment()
+        class Statement
         {
-            // HACK: move it to library-wide initialisation.
-            InitNetworking();
-            // No-op.
-        }
+        public:
+            /**
+             * Constructor.
+             */
+            Statement();
 
-        Environment::~Environment()
-        {
-            // No-op.
-        }
+            /**
+             * Destructor.
+             */
+            ~Statement();
 
-        Connection* Environment::CreateConnection()
-        {
-            return new Connection();
-        }
+        private:
+        };
     }
 }
 
+#endif

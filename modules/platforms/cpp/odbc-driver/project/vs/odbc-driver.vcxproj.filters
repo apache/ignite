@@ -25,6 +25,9 @@
     <ClCompile Include="..\..\src\configuration.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\statement.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -45,6 +48,9 @@
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\utility.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\statement.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>

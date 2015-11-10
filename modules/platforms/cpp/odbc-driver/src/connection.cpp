@@ -56,6 +56,11 @@ namespace ignite
 
             return !connected;
         }
+
+        Statement* Connection::CreateStatement()
+        {
+            return new Statement;
+        }
     }
 }
 

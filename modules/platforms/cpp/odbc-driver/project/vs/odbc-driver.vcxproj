@@ -150,11 +150,15 @@
     <ClCompile Include="..\..\src\connection.cpp" />
     <ClCompile Include="..\..\src\environment.cpp" />
     <ClCompile Include="..\..\src\odbc.cpp" />
+    <ClCompile Include="..\..\src\statement.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\binary\project\vs\binary.vcxproj">
+      <Project>{4f15669b-92eb-49f0-b774-8f19bae0b960}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\common\project\vs\common.vcxproj">
       <Project>{4f7e4917-4612-4b96-9838-025711ade391}</Project>
     </ProjectReference>
@@ -164,6 +168,7 @@
     <ClInclude Include="..\..\src\configuration.h" />
     <ClInclude Include="..\..\src\connection.h" />
     <ClInclude Include="..\..\src\environment.h" />
+    <ClInclude Include="..\..\src\statement.h" />
     <ClInclude Include="..\..\src\utility.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

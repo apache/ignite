@@ -106,7 +106,25 @@ SQLRETURN SQL_API SQLAllocConnect(SQLHENV env, SQLHDBC *conn)
 
 SQLRETURN SQL_API SQLAllocStmt(SQLHDBC conn, SQLHSTMT *stmt)
 {
+    using ignite::odbc::Connection;
+    using ignite::odbc::Statement;
+
     LOG_MSG("SQLAllocStmt called\n");
+
+    *stmt = SQL_NULL_HDBC;
+
+    Connection *connection = reinterpret_cast<Connection*>(conn);
+
+    if (!connection)
+        return SQL_INVALID_HANDLE;
+
+    Statement *statement = connection->CreateStatement();
+
+    if (!statement)
+        return SQL_ERROR;
+
+    *stmt = reinterpret_cast<SQLHSTMT>(statement);
+
     return SQL_SUCCESS;
 }
 
@@ -153,6 +171,8 @@ SQLRETURN SQL_API SQLFreeConnect(SQLHDBC conn)
 {
     using ignite::odbc::Connection;
 
+    LOG_MSG("SQLFreeConnect called\n");
+
     Connection *connection = reinterpret_cast<Connection*>(conn);
 
     if (!connection)
@@ -160,13 +180,50 @@ SQLRETURN SQL_API SQLFreeConnect(SQLHDBC conn)
 
     delete connection;
 
-    LOG_MSG("SQLFreeConnect called\n");
     return SQL_SUCCESS;
 }
 
 SQLRETURN SQL_API SQLFreeStmt(SQLHSTMT stmt, SQLUSMALLINT option)
 {
+    using ignite::odbc::Statement;
+
     LOG_MSG("SQLFreeStmt called\n");
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    switch (option)
+    {
+        case SQL_DROP:
+        {
+            delete statement;
+            break;
+        }
+
+        case SQL_CLOSE:
+        {
+            // Not supported yet.
+            // Falling through.
+        }
+
+        case SQL_UNBIND:
+        {
+            // Not supported yet.
+            // Falling through.
+        }
+
+        case SQL_RESET_PARAMS:
+        {
+            // Not supported yet.
+            // Falling through.
+        }
+
+        default:
+            return SQL_ERROR;
+    }
+
     return SQL_SUCCESS;
 }
 
@@ -234,10 +291,7 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC conn)
     return success ? SQL_SUCCESS : SQL_ERROR;
 }
 
-SQLRETURN SQL_API SQLExecDirect(
-    SQLHSTMT		hStmt,
-    UCHAR*		sStmtText,
-    SDWORD		iStmtLen)
+SQLRETURN SQL_API SQLExecDirect(SQLHSTMT stmt, SQLCHAR* query, SQLINTEGER queryLen)
 {
     LOG_MSG("SQLExecDirect called\n");
     return SQL_SUCCESS;

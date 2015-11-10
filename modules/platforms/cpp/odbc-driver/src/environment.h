@@ -40,7 +40,9 @@ namespace ignite
             ~Environment();
 
             /**
+             * Create connection associated with the environment.
              *
+             * @return Pointer to valid instance on success and NULL on failure.
              */
             Connection* CreateConnection();
 

@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include "socket_client.h"
+#include "statement.h"
 
 namespace ignite
 {
@@ -50,6 +51,13 @@ namespace ignite
              * @return True on success.
              */
             bool Release();
+            
+            /**
+             * Create statement associated with the connection.
+             *
+             * @return Pointer to valid instance on success and NULL on failure.
+             */
+            Statement* CreateStatement();
 
         private:
             /**
