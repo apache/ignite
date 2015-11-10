@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Portable metadata which is passed over a wire.
  */
-public class BinaryMetaDataImpl implements Externalizable {
+public class BinaryMetadata implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,7 +52,7 @@ public class BinaryMetaDataImpl implements Externalizable {
     /**
      * For {@link Externalizable}.
      */
-    public BinaryMetaDataImpl() {
+    public BinaryMetadata() {
         // No-op.
     }
 
@@ -64,7 +64,7 @@ public class BinaryMetaDataImpl implements Externalizable {
      * @param fields Fields map.
      * @param affKeyFieldName Affinity key field name.
      */
-    public BinaryMetaDataImpl(int typeId, String typeName, @Nullable Map<String, Integer> fields,
+    public BinaryMetadata(int typeId, String typeName, @Nullable Map<String, Integer> fields,
         @Nullable String affKeyFieldName) {
         assert typeName != null;
 
@@ -147,6 +147,6 @@ public class BinaryMetaDataImpl implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(BinaryMetaDataImpl.class, this);
+        return S.toString(BinaryMetadata.class, this);
     }
 }

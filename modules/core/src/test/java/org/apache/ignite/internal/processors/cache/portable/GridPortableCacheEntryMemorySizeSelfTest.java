@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.portable;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.portable.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.portable.PortableContext;
-import org.apache.ignite.internal.portable.TestNoopMetadataHandler;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.marshaller.Marshaller;
@@ -37,7 +37,7 @@ public class GridPortableCacheEntryMemorySizeSelfTest extends GridCacheEntryMemo
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        PortableContext pCtx = new PortableContext(new TestNoopMetadataHandler(), new IgniteConfiguration());
+        PortableContext pCtx = new PortableContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration());
 
         IgniteUtils.invoke(PortableMarshaller.class, marsh, "setPortableContext", pCtx);
 

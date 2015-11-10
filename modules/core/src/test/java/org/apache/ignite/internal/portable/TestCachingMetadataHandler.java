@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Test metadata handler.
  */
-public class TestMetadataHandler implements PortableMetaDataHandler {
+public class TestCachingMetadataHandler implements BinaryMetadataHandler2 {
     /** Cached metadatas. */
     private final ConcurrentHashMap<Integer, BinaryType> metas = new ConcurrentHashMap<>();
 
@@ -35,7 +35,7 @@ public class TestMetadataHandler implements PortableMetaDataHandler {
 
         if (otherType != null)
             throw new IllegalStateException("Metadata replacement is not allowed in " +
-                TestMetadataHandler.class.getSimpleName() + '.');
+                TestCachingMetadataHandler.class.getSimpleName() + '.');
     }
 
     /** {@inheritDoc} */

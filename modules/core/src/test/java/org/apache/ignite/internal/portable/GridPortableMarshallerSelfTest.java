@@ -2403,7 +2403,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     protected PortableContext initPortableContext(PortableMarshaller marsh) throws IgniteCheckedException {
         IgniteConfiguration iCfg = new IgniteConfiguration();
 
-        PortableContext ctx = new PortableContext(new TestNoopMetadataHandler(), iCfg);
+        PortableContext ctx = new PortableContext(BinaryNoopMetadataHandler.instance(), iCfg);
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 

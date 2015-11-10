@@ -47,7 +47,7 @@ public abstract class PortableCompactOffsetsAbstractSelfTest extends GridCommonA
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        ctx = new PortableContext(new TestMetadataHandler(), new IgniteConfiguration());
+        ctx = new PortableContext(new TestCachingMetadataHandler(), new IgniteConfiguration());
 
         marsh = new PortableMarshaller();
 

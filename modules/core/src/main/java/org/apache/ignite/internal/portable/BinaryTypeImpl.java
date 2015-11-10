@@ -29,7 +29,7 @@ public class BinaryTypeImpl implements BinaryType {
     private final PortableContext ctx;
 
     /** Type metadata. */
-    private final BinaryMetaDataImpl meta;
+    private final BinaryMetadata meta;
 
     /**
      * Constructor.
@@ -37,7 +37,7 @@ public class BinaryTypeImpl implements BinaryType {
      * @param ctx Portable context.
      * @param meta Type  metadata.
      */
-    public BinaryTypeImpl(PortableContext ctx, BinaryMetaDataImpl meta) {
+    public BinaryTypeImpl(PortableContext ctx, BinaryMetadata meta) {
         this.ctx = ctx;
         this.meta = meta;
     }
@@ -69,7 +69,7 @@ public class BinaryTypeImpl implements BinaryType {
     /**
      * @return Metadata.
      */
-    public BinaryMetaDataImpl metadata() {
+    public BinaryMetadata metadata() {
         return meta;
     }
 }

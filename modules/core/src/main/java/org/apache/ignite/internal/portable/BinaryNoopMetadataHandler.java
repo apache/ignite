@@ -23,7 +23,24 @@ import org.apache.ignite.binary.BinaryType;
 /**
  * No-op metadata handler.
  */
-public class TestNoopMetadataHandler implements PortableMetaDataHandler {
+public class BinaryNoopMetadataHandler implements BinaryMetadataHandler2 {
+    /** Cached singleton instance. */
+    private static final BinaryNoopMetadataHandler INSTANCE = new BinaryNoopMetadataHandler();
+
+    /**
+     * @return Instance.
+     */
+    public static BinaryNoopMetadataHandler instance() {
+        return INSTANCE;
+    }
+
+    /**
+     * Private constructor.
+     */
+    private BinaryNoopMetadataHandler() {
+        // No-op.
+    }
+
     /** {@inheritDoc} */
     @Override public void addMeta(int typeId, BinaryType meta) throws BinaryObjectException {
         // No-op.

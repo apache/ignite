@@ -134,7 +134,7 @@ public class PortableContext implements Externalizable {
     private final Map<String, BinaryTypeIdMapper> typeMappers = new ConcurrentHashMap8<>(0);
 
     /** */
-    private PortableMetaDataHandler metaHnd;
+    private BinaryMetadataHandler2 metaHnd;
 
     /** */
     private MarshallerContext marshCtx;
@@ -165,7 +165,7 @@ public class PortableContext implements Externalizable {
      * @param metaHnd Meta data handler.
      * @param igniteCfg Ignite configuration.
      */
-    public PortableContext(PortableMetaDataHandler metaHnd, IgniteConfiguration igniteCfg) {
+    public PortableContext(BinaryMetadataHandler2 metaHnd, IgniteConfiguration igniteCfg) {
         assert metaHnd != null;
         assert igniteCfg != null;
 
@@ -777,7 +777,7 @@ public class PortableContext implements Externalizable {
             descByCls.put(cls, desc);
         }
 
-        metaHnd.addMeta(id, new BinaryMetaDataImpl(id, typeName, fieldsMeta, affKeyFieldName).wrap(this));
+        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName).wrap(this));
     }
 
     /**
@@ -832,7 +832,7 @@ public class PortableContext implements Externalizable {
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public void updateMetaData(int typeId, String typeName, Map<String, Integer> fields) throws BinaryObjectException {
-        updateMetaData(typeId, new BinaryMetaDataImpl(typeId, typeName, fields, null));
+        updateMetaData(typeId, new BinaryMetadata(typeId, typeName, fields, null));
     }
 
     /**
@@ -840,7 +840,7 @@ public class PortableContext implements Externalizable {
      * @param meta Meta data.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public void updateMetaData(int typeId, BinaryMetaDataImpl meta) throws BinaryObjectException {
+    public void updateMetaData(int typeId, BinaryMetadata meta) throws BinaryObjectException {
         metaHnd.addMeta(typeId, meta.wrap(this));
     }
 

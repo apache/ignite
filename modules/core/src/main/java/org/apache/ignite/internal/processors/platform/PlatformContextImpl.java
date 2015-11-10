@@ -34,7 +34,7 @@ import org.apache.ignite.events.SwapSpaceEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.BinaryMetaDataImpl;
+import org.apache.ignite.internal.portable.BinaryMetadata;
 import org.apache.ignite.internal.portable.BinaryRawReaderEx;
 import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
@@ -390,7 +390,7 @@ public class PlatformContextImpl implements PlatformContext {
         else {
             writer.writeBoolean(true);
 
-            Map<String, Integer> fields = ((BinaryMetaDataImpl)meta).fieldsMap();
+            Map<String, Integer> fields = ((BinaryMetadata)meta).fieldsMap();
 
             writer.writeInt(typeId);
             writer.writeString(meta.typeName());

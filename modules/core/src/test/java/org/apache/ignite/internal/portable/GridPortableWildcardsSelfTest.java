@@ -36,7 +36,7 @@ public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
      * @return Portable context.
      */
     private PortableContext portableContext() {
-        return new PortableContext(new TestNoopMetadataHandler(), new IgniteConfiguration());
+        return new PortableContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration());
     }
 
     /**
