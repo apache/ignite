@@ -337,10 +337,6 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
                             break;
                     }
 
-                    List<GridQueryFieldMetadata> fieldsMeta = ((QueryCursorImpl<?>)qryCur).fieldsMeta();
-
-                    res.setFieldsMetadata(convertMetadata(fieldsMeta));
-
                     return new GridRestResponse(res);
                 }
                 finally {
