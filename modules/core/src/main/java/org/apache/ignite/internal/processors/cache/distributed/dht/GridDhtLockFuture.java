@@ -380,9 +380,10 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      * @return Lock candidate.
      * @throws GridCacheEntryRemovedException If entry was removed.
      * @throws GridDistributedLockCancelledException If lock is canceled.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public GridCacheMvccCandidate addEntry(GridDhtCacheEntry entry)
-        throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
+        throws GridCacheEntryRemovedException, GridDistributedLockCancelledException, IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Adding entry: " + entry);
 
@@ -400,6 +401,8 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             topVer,
             threadId,
             lockVer,
+            null,
+            null,
             timeout,
             /*reenter*/false,
             inTx(),
@@ -779,14 +782,12 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             if (log.isDebugEnabled())
                 log.debug("Mapping entry for DHT lock future: " + this);
 
-            boolean hasRmtNodes = false;
-
             // Assign keys to primary nodes.
             for (GridDhtCacheEntry entry : entries) {
                 try {
                     while (true) {
                         try {
-                            hasRmtNodes = cctx.dhtMap(
+                            cctx.dhtMap(
                                 nearNodeId,
                                 topVer,
                                 entry,
@@ -819,9 +820,6 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                     assert false : "DHT lock should never get invalid partition [err=" + e + ", fut=" + this + ']';
                 }
             }
-
-            if (tx != null)
-                tx.needsCompletedVersions(hasRmtNodes);
 
             if (isDone()) {
                 if (log.isDebugEnabled())

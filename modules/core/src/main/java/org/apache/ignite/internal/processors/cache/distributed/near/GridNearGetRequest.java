@@ -109,7 +109,6 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
      * @param ver Version.
      * @param keys Keys.
      * @param readThrough Read through flag.
-     * @param reload Reload flag.
      * @param skipVals Skip values flag. When false, only boolean values will be returned indicating whether
      *      cache entry has a value.
      * @param topVer Topology version.
@@ -125,7 +124,6 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
         GridCacheVersion ver,
         LinkedHashMap<KeyCacheObject, Boolean> keys,
         boolean readThrough,
-        boolean reload,
         @NotNull AffinityTopologyVersion topVer,
         UUID subjId,
         int taskNameHash,
@@ -145,7 +143,6 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
         this.keys = keys.keySet();
         this.flags = keys.values();
         this.readThrough = readThrough;
-        this.reload = reload;
         this.topVer = topVer;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;

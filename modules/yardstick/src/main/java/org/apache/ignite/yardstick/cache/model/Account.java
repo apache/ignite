@@ -15,18 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.yardstick.cache.model;
 
-import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import java.io.Serializable;
 
 /**
- * Tests exclude neighbors flag for rendezvous affinity function.
+ *
  */
-public class GridCacheRendezvousAffinityFunctionExcludeNeighborsSelfTest extends
-    GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected AffinityFunction affinityFunction() {
-        return new RendezvousAffinityFunction(true);
+public class Account implements Serializable {
+    /** */
+    private final int balance;
+
+    /**
+     * @param balance Balance.
+     */
+    public Account(int balance) {
+        this.balance = balance;
+    }
+
+    /**
+     * @return Balance.
+     */
+    public int balance() {
+        return balance;
     }
 }

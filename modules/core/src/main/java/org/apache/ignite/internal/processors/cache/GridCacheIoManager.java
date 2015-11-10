@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNe
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
@@ -53,6 +52,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
@@ -73,6 +74,9 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
  * Cache communication manager.
  */
 public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
+    /** Communication topic prefix for distributed queries. */
+    private static final String QUERY_TOPIC_PREFIX = "QUERY";
+
     /** Message ID generator. */
     private static final AtomicLong idGen = new AtomicLong();
 
@@ -264,7 +268,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             unmarshall(nodeId, cacheMsg);
 
             if (cacheMsg.classError() != null)
-                processFailedMessage(nodeId, cacheMsg);
+                processFailedMessage(nodeId, cacheMsg, c);
             else
                 processMessage(nodeId, cacheMsg, c);
         }
@@ -304,11 +308,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     /**
      * Processes failed messages.
      *
-     * @param nodeId niode id.
-     * @param msg message.
+     * @param nodeId Node ID.
+     * @param msg Message.
      * @throws IgniteCheckedException If failed.
      */
-    private void processFailedMessage(UUID nodeId, GridCacheMessage msg) throws IgniteCheckedException {
+    private void processFailedMessage(UUID nodeId, GridCacheMessage msg, IgniteBiInClosure<UUID, GridCacheMessage> c)
+        throws IgniteCheckedException {
         GridCacheContext ctx = cctx.cacheContext(msg.cacheId());
 
         switch (msg.directType()) {
@@ -407,9 +412,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             break;
 
             case 45: {
-                GridDhtPartitionSupplyMessage req = (GridDhtPartitionSupplyMessage)msg;
-
-                U.error(log, "Supply message cannot be unmarshalled.", req.classError());
+                processMessage(nodeId,msg,c);// Will be handled by Rebalance Demander.
             }
 
             break;
@@ -493,6 +496,31 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
+            case 58: {
+                GridCacheQueryRequest req = (GridCacheQueryRequest)msg;
+
+                GridCacheQueryResponse res = new GridCacheQueryResponse(
+                    req.cacheId(),
+                    req.id(),
+                    req.classError(),
+                    cctx.deploymentEnabled());
+
+                cctx.io().sendOrderedMessage(
+                    ctx.node(nodeId),
+                    TOPIC_CACHE.topic(QUERY_TOPIC_PREFIX, nodeId, req.id()),
+                    res,
+                    ctx.ioPolicy(),
+                    Long.MAX_VALUE);
+            }
+
+            break;
+
+            case 114: {
+                processMessage(nodeId,msg,c);// Will be handled by Rebalance Demander.
+            }
+
+            break;
+
             default:
                 throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [message="
                     + msg + "]");
@@ -504,8 +532,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param msg Message.
      * @param c Closure.
      */
-    private void processMessage(UUID nodeId, GridCacheMessage msg,
-        IgniteBiInClosure<UUID, GridCacheMessage> c) {
+    private void processMessage(UUID nodeId, GridCacheMessage msg, IgniteBiInClosure<UUID, GridCacheMessage> c) {
         try {
             // We will not end up with storing a bunch of new UUIDs
             // in each cache entry, since node ID is stored in NIO session

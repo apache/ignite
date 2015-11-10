@@ -1595,7 +1595,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /**
      * @param node Node to check.
-     * @return Cache names accessible on the given node.
+     * @return Public cache names accessible on the given node.
      */
     public Map<String, CacheMode> nodeCaches(ClusterNode node) {
         Map<String, CacheMode> caches = U.newHashMap(registeredCaches.size());
@@ -1605,7 +1605,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             CachePredicate pred = entry.getValue();
 
-            if (pred != null && pred.cacheNode(node))
+            if (!CU.isSystemCache(cacheName) && !CU.isIgfsCache(ctx.config(), cacheName) &&
+                pred != null && pred.cacheNode(node))
                 caches.put(cacheName, pred.cacheMode);
         }
 

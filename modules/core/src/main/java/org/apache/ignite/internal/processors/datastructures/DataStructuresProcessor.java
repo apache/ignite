@@ -1295,6 +1295,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                                         catch (IgniteCheckedException e) {
                                             U.error(log, "Failed to remove count down latch: " + latch0.name(), e);
                                         }
+                                        finally {
+                                            ctx.cache().context().txContextReset();
+                                        }
                                     }
                                 });
 

@@ -323,7 +323,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     inTx(),
                     inTx() && tx.implicitSingle(),
                     false,
-                    false);
+                    false,
+                    null);
 
                 cand.topologyVersion(topVer.get());
             }
@@ -342,7 +343,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     inTx(),
                     inTx() && tx.implicitSingle(),
                     false,
-                    false);
+                    false,
+                    null);
 
                 cand.topologyVersion(topVer.get());
             }

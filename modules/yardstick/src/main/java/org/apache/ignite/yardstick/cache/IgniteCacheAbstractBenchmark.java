@@ -27,9 +27,9 @@ import org.yardstickframework.BenchmarkUtils;
 /**
  * Abstract class for Ignite benchmarks which use cache.
  */
-public abstract class IgniteCacheAbstractBenchmark extends IgniteAbstractBenchmark {
+public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractBenchmark {
     /** Cache. */
-    protected IgniteCache<Integer, Object> cache;
+    protected IgniteCache<K, V> cache;
 
     /** */
     private ThreadLocal<ThreadRange> threadRange = new ThreadLocal<>();
@@ -77,7 +77,7 @@ public abstract class IgniteCacheAbstractBenchmark extends IgniteAbstractBenchma
      *
      * @return IgniteCache Cache to use.
      */
-    protected abstract IgniteCache<Integer, Object> cache();
+    protected abstract IgniteCache<K, V> cache();
 
     /**
      *
@@ -88,6 +88,9 @@ public abstract class IgniteCacheAbstractBenchmark extends IgniteAbstractBenchma
         /** */
         final int max;
 
+        /** */
+        final ThreadLocalRandom rnd;
+
         /**
          * @param min Min.
          * @param max Max.
@@ -95,13 +98,15 @@ public abstract class IgniteCacheAbstractBenchmark extends IgniteAbstractBenchma
         private ThreadRange(int min, int max) {
             this.min = min;
             this.max = max;
+
+            rnd = ThreadLocalRandom.current();
         }
 
         /**
          * @return Next random key.
          */
         int nextRandom() {
-            return ThreadLocalRandom.current().nextInt(min, max);
+            return rnd.nextInt(min, max);
         }
     }
 }

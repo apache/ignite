@@ -14,20 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.logger.log4j2;
 
-import org.apache.ignite.lang.IgniteClosure;
+package org.apache.ignite.testsuites;
+
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheNearReaderUpdateTest;
+import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
+
 /**
- * Porting for the Log4j2, the interface is useless with the new implementation
- * of the module  
- * @author  Gianfranco Murador 
+ * Test suite.
  */
-public interface Log4j2FileAware {
-
-	 /**
-     * Sets closure that later evaluate file path.
-     *
-     * @param filePathClos Closure that generates actual file path.
+public class IgniteCacheTestSuite5 extends TestSuite {
+    /**
+     * @return IgniteCache test suite.
+     * @throws Exception Thrown in case of the failure.
      */
-    void updateFilePath(IgniteClosure<String, String> filePathClos);
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("IgniteCache Test Suite part 5");
+
+        suite.addTestSuite(CacheSerializableTransactionsTest.class);
+        suite.addTestSuite(CacheNearReaderUpdateTest.class);
+
+        return suite;
+    }
 }

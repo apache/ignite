@@ -15,13 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed;
+package org.apache.ignite.cache.affinity;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -37,11 +35,10 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
 /**
- * Partitioned affinity test.
+ * Base tests of {@link AffinityFunction} implementations with user provided backup filter.
  */
-@SuppressWarnings({"PointlessArithmeticExpression"})
-public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstractTest {
-    /** */
+public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridCommonAbstractTest {
+    /** Ip finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Backup count. */
@@ -54,7 +51,7 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
     private String splitAttrVal;
 
     /** Test backup filter. */
-    private static final IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter =
+    protected static final IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter =
         new IgniteBiPredicate<ClusterNode, ClusterNode>() {
             @Override public boolean apply(ClusterNode primary, ClusterNode backup) {
                 assert primary != null : "primary is null";
@@ -66,32 +63,31 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        RendezvousAffinityFunction aff = new RendezvousAffinityFunction();
-
-        aff.setBackupFilter(backupFilter);
-
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(BACKUPS);
-        cacheCfg.setAffinity(aff);
+        cacheCfg.setAffinity(affinityFunction());
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
         spi.setIpFinder(IP_FINDER);
 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setDiscoverySpi(spi);
-
         cfg.setUserAttributes(F.asMap(SPLIT_ATTRIBUTE_NAME, splitAttrVal));
 
         return cfg;
     }
+
+    /**
+     * @return Affinity function for test.
+     */
+    protected abstract AffinityFunction affinityFunction();
 
     /**
      * @throws Exception If failed.
@@ -120,16 +116,15 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     private void checkPartitions() throws Exception {
-        int partCnt = RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
-
         AffinityFunction aff = cacheConfiguration(grid(0).configuration(), null).getAffinity();
+
+        int partCnt = aff.partitions();
 
         IgniteCache<Object, Object> cache = grid(0).cache(null);
 
         for (int i = 0; i < partCnt; i++) {
-            assertEquals(i, aff.partition(i));
-
             Collection<ClusterNode> nodes = affinity(cache).mapKeyToPrimaryAndBackups(i);
 
             assertEquals(2, nodes.size());

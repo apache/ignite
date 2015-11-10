@@ -62,9 +62,9 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
-import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -672,9 +672,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         if (log.isDebugEnabled())
                             log.debug("Got removed entry when adding lock (will retry): " + entry);
                     }
-                    catch (GridDistributedLockCancelledException e) {
+                    catch (IgniteCheckedException | GridDistributedLockCancelledException e) {
                         if (log.isDebugEnabled())
-                            log.debug("Got lock request for cancelled lock (will fail): " + entry);
+                            log.debug("Failed to add entry [err=" + e + ", entry=" + entry + ']');
 
                         return new GridDhtFinishedFuture<>(e);
                     }
@@ -1090,8 +1090,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 // We have to add completed versions for cases when nearLocal and remote transactions
                 // execute concurrently.
-                res.completedVersions(ctx.tm().committedVersions(req.version()),
-                    ctx.tm().rolledbackVersions(req.version()));
+                IgnitePair<Collection<GridCacheVersion>> versPair = ctx.tm().versions(req.version());
+
+                res.completedVersions(versPair.get1(), versPair.get2());
 
                 int i = 0;
 
@@ -1106,62 +1107,55 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             if (tx == null || !tx.isRollbackOnly()) {
                                 GridCacheVersion dhtVer = req.dhtVersion(i);
 
-                                try {
-                                    GridCacheVersion ver = e.version();
+                                GridCacheVersion ver = e.version();
 
-                                    boolean ret = req.returnValue(i) || dhtVer == null || !dhtVer.equals(ver);
+                                boolean ret = req.returnValue(i) || dhtVer == null || !dhtVer.equals(ver);
 
-                                    CacheObject val = null;
+                                CacheObject val = null;
 
-                                    if (ret)
-                                        val = e.innerGet(tx,
-                                            /*swap*/true,
-                                            /*read-through*/false,
-                                            /*fail-fast.*/false,
-                                            /*unmarshal*/false,
-                                            /*update-metrics*/true,
-                                            /*event notification*/req.returnValue(i),
-                                            /*temporary*/false,
-                                            CU.subjectId(tx, ctx.shared()),
-                                            null,
-                                            tx != null ? tx.resolveTaskName() : null,
-                                            null);
+                                if (ret)
+                                    val = e.innerGet(tx,
+                                        /*swap*/true,
+                                        /*read-through*/false,
+                                        /*fail-fast.*/false,
+                                        /*unmarshal*/false,
+                                        /*update-metrics*/true,
+                                        /*event notification*/req.returnValue(i),
+                                        /*temporary*/false,
+                                        CU.subjectId(tx, ctx.shared()),
+                                        null,
+                                        tx != null ? tx.resolveTaskName() : null,
+                                        null);
 
-                                    assert e.lockedBy(mappedVer) ||
-                                        (ctx.mvcc().isRemoved(e.context(), mappedVer) && req.timeout() > 0) :
-                                        "Entry does not own lock for tx [locNodeId=" + ctx.localNodeId() +
-                                            ", entry=" + e +
-                                            ", mappedVer=" + mappedVer + ", ver=" + ver +
-                                            ", tx=" + tx + ", req=" + req +
-                                            ", err=" + err + ']';
+                                assert e.lockedBy(mappedVer) ||
+                                    (ctx.mvcc().isRemoved(e.context(), mappedVer) && req.timeout() > 0) :
+                                    "Entry does not own lock for tx [locNodeId=" + ctx.localNodeId() +
+                                        ", entry=" + e +
+                                        ", mappedVer=" + mappedVer + ", ver=" + ver +
+                                        ", tx=" + tx + ", req=" + req +
+                                        ", err=" + err + ']';
 
-                                    boolean filterPassed = false;
+                                boolean filterPassed = false;
 
-                                    if (tx != null && tx.onePhaseCommit()) {
-                                        IgniteTxEntry writeEntry = tx.entry(ctx.txKey(e.key()));
+                                if (tx != null && tx.onePhaseCommit()) {
+                                    IgniteTxEntry writeEntry = tx.entry(ctx.txKey(e.key()));
 
-                                        assert writeEntry != null :
-                                            "Missing tx entry for locked cache entry: " + e;
+                                    assert writeEntry != null :
+                                        "Missing tx entry for locked cache entry: " + e;
 
-                                        filterPassed = writeEntry.filtersPassed();
-                                    }
-
-                                    if (ret && val == null)
-                                        val = e.valueBytes(null);
-
-                                    // We include values into response since they are required for local
-                                    // calls and won't be serialized. We are also including DHT version.
-                                    res.addValueBytes(
-                                        ret ? val : null,
-                                        filterPassed,
-                                        ver,
-                                        mappedVer);
+                                    filterPassed = writeEntry.filtersPassed();
                                 }
-                                catch (GridCacheFilterFailedException ex) {
-                                    assert false : "Filter should never fail if fail-fast is false.";
 
-                                    ex.printStackTrace();
-                                }
+                                if (ret && val == null)
+                                    val = e.valueBytes(null);
+
+                                // We include values into response since they are required for local
+                                // calls and won't be serialized. We are also including DHT version.
+                                res.addValueBytes(
+                                    ret ? val : null,
+                                    filterPassed,
+                                    ver,
+                                    mappedVer);
                             }
                             else {
                                 // We include values into response since they are required for local
@@ -1517,8 +1511,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
         }
 
-        Collection<GridCacheVersion> committed = ctx.tm().committedVersions(ver);
-        Collection<GridCacheVersion> rolledback = ctx.tm().rolledbackVersions(ver);
+        IgnitePair<Collection<GridCacheVersion>> versPair = ctx.tm().versions(ver);
+
+        Collection<GridCacheVersion> committed = versPair.get1();
+        Collection<GridCacheVersion> rolledback = versPair.get2();
 
         // Backups.
         for (Map.Entry<ClusterNode, List<KeyCacheObject>> entry : dhtMap.entrySet()) {
