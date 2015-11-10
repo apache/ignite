@@ -1889,7 +1889,7 @@ namespace ignite
 
 				ExceptionCheck(env);
 
-				return res;
+				return LocalToGlobal(env, res);;
 			}
 
             long long JniContext::AtomicLongGet(jobject obj)
