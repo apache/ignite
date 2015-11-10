@@ -1,9 +1,9 @@
-var gulp = require('gulp');
-var gulp_jade = require('./tasks/jade');
-var gulp_sass = require('./tasks/sass');
+var gulp       = require('gulp');
+var requireDir = require('require-dir');
 
+// Require all tasks in gulpfile.js/tasks, including subfolders
+requireDir('./tasks', { recurse: true });
+
+// Summary tasks
 gulp.task('default', ['build']);
-
-gulp.task('build', ['jade', 'sass']);
-
-gulp.task('watch', ['build', 'sass:watch', 'jade:watch']);
+gulp.task('watch', ['build', 'sass:watch', 'jade:watch', 'copy:watch']);
