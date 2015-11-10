@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 #include <ignite/common/java.h>
-
-#include "ignite/impl/utils.h"
-#include "ignite/ignite_error.h"
+#include <ignite/common/ignite_error.h>
+#include <ignite/common/utils.h>
 
 using namespace ignite::common::java;
-using namespace ignite::impl::utils;
+using namespace ignite::common::utils;
 
 namespace ignite
 {

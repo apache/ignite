@@ -69,6 +69,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>ignite.core</TargetName>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetName>ignite.core</TargetName>
@@ -77,6 +79,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetName>ignite.core</TargetName>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <TargetName>ignite.core</TargetName>
@@ -202,27 +206,19 @@
     <ClInclude Include="..\..\include\ignite\cache\query\query_text.h" />
     <ClInclude Include="..\..\include\ignite\ignite.h" />
     <ClInclude Include="..\..\include\ignite\ignite_configuration.h" />
-    <ClInclude Include="..\..\include\ignite\ignite_error.h" />
     <ClInclude Include="..\..\include\ignite\ignition.h" />
-    <ClInclude Include="..\..\include\ignite\guid.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_fields_row_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_impl.h" />
-    <ClInclude Include="..\..\include\ignite\impl\ignite_environment.h" />
     <ClInclude Include="..\..\include\ignite\impl\ignite_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\handle_registry.h" />
     <ClInclude Include="..\..\include\ignite\impl\operations.h" />
-    <ClInclude Include="..\..\os\win\include\ignite\impl\utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\os\win\src\impl\utils.cpp" />
     <ClCompile Include="..\..\src\ignite.cpp" />
-    <ClCompile Include="..\..\src\ignite_error.cpp" />
     <ClCompile Include="..\..\src\ignition.cpp" />
-    <ClCompile Include="..\..\src\guid.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\query\query_impl.cpp" />
-    <ClCompile Include="..\..\src\impl\ignite_environment.cpp" />
     <ClCompile Include="..\..\src\impl\ignite_impl.cpp" />
     <ClCompile Include="..\..\src\impl\handle_registry.cpp" />
   </ItemGroup>

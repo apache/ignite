@@ -23,7 +23,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "ignite/impl/utils.h"
+#include <ignite/common/utils.h>
 #include "ignite/cache/cache.h"
 #include "ignite/cache/query/query_cursor.h"
 #include "ignite/cache/query/query_sql.h"
@@ -37,7 +37,7 @@ using namespace boost::unit_test;
 using namespace ignite;
 using namespace ignite::cache;
 using namespace ignite::cache::query;
-using namespace ignite::impl::utils;
+using namespace ignite::common::utils;
 
 /**
  * Person class for query tests.

@@ -17,8 +17,8 @@
 
 #include <ignite/common/java.h>
 
-#include "ignite/impl/interop/interop_memory.h"
-#include "ignite/ignite_error.h"
+#include "ignite/impl/interop//interop_memory.h"
+#include <ignite/common/ignite_error.h>
 
 using namespace ignite::common::java;
 

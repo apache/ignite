@@ -18,8 +18,8 @@
 #ifndef _IGNITE_IMPL_INTEROP
 #define _IGNITE_IMPL_INTEROP
 
-#include "ignite/impl/interop/interop_memory.h"
-#include "ignite/impl/interop/interop_output_stream.h"
-#include "ignite/impl/interop/interop_input_stream.h"
+#include "ignite/impl/interop//interop_memory.h"
+#include "ignite/impl/interop//interop_output_stream.h"
+#include "ignite/impl/interop//interop_input_stream.h"
 
 #endif

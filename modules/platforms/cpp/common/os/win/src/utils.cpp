@@ -17,11 +17,11 @@
 
 #include <windows.h>
 
-#include "ignite/impl/utils.h"
+#include <ignite/common/utils.h>
 
 namespace ignite
 {
-    namespace impl
+    namespace common
     {
         namespace utils
         {

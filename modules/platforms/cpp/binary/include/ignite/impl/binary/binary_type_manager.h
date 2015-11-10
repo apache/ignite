@@ -20,7 +20,7 @@
 
 #include <vector>
 
-#include "ignite/ignite_error.h"
+#include <ignite/common/ignite_error.h>
 #include "ignite/impl/binary/binary_type_handler.h"
 #include "ignite/impl/binary/binary_type_updater.h"
 

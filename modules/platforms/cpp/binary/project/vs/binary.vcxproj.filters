@@ -8,14 +8,14 @@
     <Filter Include="Code\binary">
       <UniqueIdentifier>{1815eb01-65f5-4142-b773-06abf2dcd0af}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\interop">
-      <UniqueIdentifier>{67a7b567-e749-437e-9061-d5f998b41db1}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Code\impl">
       <UniqueIdentifier>{7cb1d41b-cf13-4c88-a663-3d74f0bd1b52}</UniqueIdentifier>
     </Filter>
     <Filter Include="Code\impl\binary">
       <UniqueIdentifier>{12775752-54bd-4c9c-b890-0252b2f221b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\interop">
+      <UniqueIdentifier>{d41f0ecd-360a-4a59-a5fb-98db54a3e170}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -42,21 +42,6 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\binary\binary_writer.h">
       <Filter>Code\binary</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\interop\interop.h">
-      <Filter>Code\interop</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\interop\interop_input_stream.h">
-      <Filter>Code\interop</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\interop\interop_memory.h">
-      <Filter>Code\interop</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\interop\interop_output_stream.h">
-      <Filter>Code\interop</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\interop\interop_stream_position_guard.h">
-      <Filter>Code\interop</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_common.h">
       <Filter>Code\impl\binary</Filter>
@@ -91,6 +76,27 @@
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_writer_impl.h">
       <Filter>Code\impl\binary</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_input_stream.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_memory.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_output_stream.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_stream_position_guard.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\guid.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\ignite_environment.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\binary\binary_containers.cpp">
@@ -110,15 +116,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\binary\binary_writer.cpp">
       <Filter>Code\binary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\interop\interop_input_stream.cpp">
-      <Filter>Code\interop</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\interop\interop_memory.cpp">
-      <Filter>Code\interop</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\interop\interop_output_stream.cpp">
-      <Filter>Code\interop</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\impl\binary\binary_reader_impl.cpp">
       <Filter>Code\impl\binary</Filter>
@@ -146,6 +143,21 @@
     </ClCompile>
     <ClCompile Include="..\..\src\impl\binary\binary_writer_impl.cpp">
       <Filter>Code\impl\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\interop\interop_input_stream.cpp">
+      <Filter>Code\impl\interop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\interop\interop_memory.cpp">
+      <Filter>Code\impl\interop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\interop\interop_output_stream.cpp">
+      <Filter>Code\impl\interop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\guid.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\ignite_environment.cpp">
+      <Filter>Code\impl</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

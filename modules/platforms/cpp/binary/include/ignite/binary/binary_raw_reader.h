@@ -240,7 +240,7 @@ namespace ignite
 
                 if (len != -1)
                 {
-                    ignite::impl::utils::SafeArray<char> arr(len + 1);
+                    ignite::common::utils::SafeArray<char> arr(len + 1);
 
                     ReadString(arr.target, len + 1);
 

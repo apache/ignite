@@ -4,25 +4,13 @@
     <ClCompile Include="..\..\src\impl\cache\cache_impl.cpp">
       <Filter>Code\impl\cache</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\impl\ignite_environment.cpp">
-      <Filter>Code\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\impl\ignite_impl.cpp">
-      <Filter>Code\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\os\win\src\impl\utils.cpp">
       <Filter>Code\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ignite.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ignite_error.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ignition.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\guid.cpp">
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\impl\handle_registry.cpp">
@@ -42,16 +30,10 @@
     <ClInclude Include="..\..\include\ignite\cache\cache_peek_mode.h">
       <Filter>Code\cache</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\ignite_environment.h">
-      <Filter>Code\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\ignite_impl.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\operations.h">
-      <Filter>Code\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\os\win\include\ignite\impl\utils.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\ignite.h">
@@ -60,13 +42,7 @@
     <ClInclude Include="..\..\include\ignite\ignite_configuration.h">
       <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\ignite_error.h">
-      <Filter>Code</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\ignition.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\guid.h">
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\handle_registry.h">

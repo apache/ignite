@@ -19,7 +19,7 @@
 #include "ignite/impl/cache/cache_impl.h"
 #include "ignite/impl/interop/interop.h"
 #include "ignite/impl/binary/binary_reader_impl.h"
-#include "ignite/impl/utils.h"
+#include <ignite/common/utils.h>
 #include "ignite/impl/binary/binary_type_updater_impl.h"
 #include "ignite/binary/binary.h"
 
@@ -31,7 +31,7 @@ using namespace ignite::impl;
 using namespace ignite::impl::cache::query;
 using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
-using namespace ignite::impl::utils;
+using namespace ignite::common::utils;
 using namespace ignite::binary;
 
 namespace ignite

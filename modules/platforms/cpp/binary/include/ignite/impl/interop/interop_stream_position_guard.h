@@ -18,7 +18,7 @@
 #ifndef _IGNITE_IMPL_INTEROP_STREAM_POSITION_GUARD
 #define _IGNITE_IMPL_INTEROP_OUTPUT_POSITION_GUARD
 
-#include "ignite/impl/interop/interop_memory.h"
+#include "ignite/impl/interop//interop_memory.h"
 
 namespace ignite
 {

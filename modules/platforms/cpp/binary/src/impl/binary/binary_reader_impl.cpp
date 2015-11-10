@@ -16,13 +16,13 @@
  */
 
 #include "ignite/impl/interop/interop.h"
+#include "ignite/impl/interop/interop_stream_position_guard.h"
 #include "ignite/impl/binary/binary_common.h"
 #include "ignite/impl/binary/binary_id_resolver.h"
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/binary/binary_utils.h"
 #include "ignite/binary/binary_type.h"
-#include "ignite/ignite_error.h"
-#include "ignite/impl/interop/interop_stream_position_guard.h"
+#include <ignite/common/ignite_error.h>
 
 using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;

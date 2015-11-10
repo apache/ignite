@@ -18,7 +18,7 @@
 #ifndef _IGNITE_CACHE_QUERY_IMPL
 #define _IGNITE_CACHE_QUERY_IMPL
 
-#include "ignite/ignite_error.h"
+#include <ignite/common/ignite_error.h>
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/impl/operations.h"
 

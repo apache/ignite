@@ -26,7 +26,7 @@
 #include "ignite/impl/binary/binary_common.h"
 #include "ignite/impl/binary/binary_id_resolver.h"
 #include "ignite/impl/binary/binary_schema.h"
-#include "ignite/impl/utils.h"
+#include "ignite/common/utils.h"
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_type.h"
 #include "ignite/guid.h"
@@ -1286,7 +1286,7 @@ namespace ignite
                 {
                     int32_t realLen = stream->ReadInt32();
 
-                    ignite::impl::utils::SafeArray<char> arr(realLen + 1);
+                    ignite::common::utils::SafeArray<char> arr(realLen + 1);
 
                     for (int i = 0; i < realLen; i++)
                         *(arr.target + i) = static_cast<char>(stream->ReadInt8());

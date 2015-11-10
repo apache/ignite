@@ -23,7 +23,7 @@
 #include <ignite/common/concurrent.h>
 
 #include "ignite/cache/cache_entry.h"
-#include "ignite/ignite_error.h"
+#include <ignite/common/ignite_error.h>
 #include "ignite/impl/cache/query/query_impl.h"
 #include "ignite/impl/operations.h"
 

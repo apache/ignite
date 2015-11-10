@@ -23,7 +23,7 @@
 
 #include "ignite/impl/cache/cache_impl.h"
 #include "ignite/impl/ignite_environment.h"
-#include "ignite/impl/utils.h"
+#include <ignite/common/utils.h>
 
 namespace ignite 
 {

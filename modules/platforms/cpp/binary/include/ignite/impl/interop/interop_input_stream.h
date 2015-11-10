@@ -18,7 +18,7 @@
 #ifndef _IGNITE_IMPL_INTEROP_INPUT_STREAM
 #define _IGNITE_IMPL_INTEROP_INPUT_STREAM
 
-#include "ignite/impl/interop/interop_memory.h"
+#include "ignite/impl/interop//interop_memory.h"
 
 namespace ignite
 {    

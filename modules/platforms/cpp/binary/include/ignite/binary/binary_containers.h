@@ -20,9 +20,10 @@
 
 #include <stdint.h>
 
+#include <ignite/common/utils.h>
+
 #include "ignite/impl/binary/binary_writer_impl.h"
 #include "ignite/impl/binary/binary_reader_impl.h"
-#include "ignite/impl/utils.h"
 #include "ignite/binary/binary_consts.h"
 
 namespace ignite
@@ -255,7 +256,7 @@ namespace ignite
 
                 if (len != -1)
                 {
-                    impl::utils::SafeArray<char> arr(len + 1);
+                    common::utils::SafeArray<char> arr(len + 1);
 
                     GetNext(arr.target, len + 1);
 

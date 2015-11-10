@@ -61,7 +61,7 @@
 
 #include "ignite/ignite.h"
 #include "ignite/ignite_configuration.h"
-#include "ignite/ignite_error.h"
+#include <ignite/common/ignite_error.h>
 
 namespace ignite
 {
