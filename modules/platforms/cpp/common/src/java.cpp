@@ -1507,14 +1507,14 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
-            void* JniContext::ContinuousQueryGetInitialQueryCursor(jobject obj) {
+            jobject JniContext::ContinuousQueryGetInitialQueryCursor(jobject obj) {
                 JNIEnv* env = Attach();
 
                 jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformContinuousQuery_getInitialQueryCursor);
 
                 ExceptionCheck(env);
 
-                return res;
+                return LocalToGlobal(env,  res);
             }
 
             void JniContext::DataStreamerListenTopology(jobject obj, long long ptr) {
@@ -1889,7 +1889,7 @@ namespace ignite
 
 				ExceptionCheck(env);
 
-				return res;
+				return LocalToGlobal(env, res);;
 			}
 
             long long JniContext::AtomicLongGet(jobject obj)
