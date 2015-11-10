@@ -510,7 +510,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             try
             {
                 // Prepare fields.
-                IBinaryTypeHandler metaHnd = _igniteBinary.Marshaller.GetMetadataHandler(desc);
+                IBinaryTypeHandler metaHnd = _igniteBinary.Marshaller.GetBinaryTypeHandler(desc);
 
                 IDictionary<int, BinaryBuilderField> vals0;
 

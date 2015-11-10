@@ -50,10 +50,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         private int _curTypeId;
 
         /** Current name converter */
-        private IBinaryTypeNameMapper _curConverter;
+        private IBinaryNameMapper _curConverter;
 
         /** Current mapper. */
-        private IBinaryTypeIdMapper _curMapper;
+        private IBinaryIdMapper _curMapper;
         
         /** Current object start position. */
         private int _curPos;
@@ -1064,8 +1064,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 // Preserve old frame.
                 int oldTypeId = _curTypeId;
-                IBinaryTypeNameMapper oldConverter = _curConverter;
-                IBinaryTypeIdMapper oldMapper = _curMapper;
+                IBinaryNameMapper oldConverter = _curConverter;
+                IBinaryIdMapper oldMapper = _curMapper;
                 int oldRawPos = _curRawPos;
                 var oldPos = _curPos;
                 
@@ -1337,7 +1337,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets collected metadatas.
         /// </summary>
         /// <returns>Collected metadatas (if any).</returns>
-        internal IDictionary<int, IBinaryType> Metadata()
+        internal IDictionary<int, IBinaryType> GetBinaryTypes()
         {
             return _metas;
         }

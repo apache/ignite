@@ -133,9 +133,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public IBinaryType GetMetadata()
+        public IBinaryType GetBinaryType()
         {
-            return _marsh.GetMetadata(_header.TypeId);
+            return _marsh.GetBinaryType(_header.TypeId);
         }
 
         /// <summary>
@@ -270,7 +270,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             try
             {
-                meta = _marsh.GetMetadata(_header.TypeId);
+                meta = _marsh.GetBinaryType(_header.TypeId);
             }
             catch (IgniteException)
             {

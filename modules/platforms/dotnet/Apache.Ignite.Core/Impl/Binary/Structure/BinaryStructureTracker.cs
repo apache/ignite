@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
 
                 var marsh = writer.Marshaller;
 
-                var metaHnd = marsh.GetMetadataHandler(_desc);
+                var metaHnd = marsh.GetBinaryTypeHandler(_desc);
 
                 if (metaHnd != null)
                 {

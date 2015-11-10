@@ -97,24 +97,24 @@ namespace Apache.Ignite.Core.Binary
         /// Gets metadata for all known types.
         /// </summary>
         /// <returns>Metadata.</returns>
-        ICollection<IBinaryType> GetMetadata();
+        ICollection<IBinaryType> GetBinaryTypes();
 
         /// <summary>
         /// Gets metadata for specified type id.
         /// </summary>
         /// <returns>Metadata.</returns>
-        IBinaryType GetMetadata(int typeId);
+        IBinaryType GetBinaryType(int typeId);
 
         /// <summary>
         /// Gets metadata for specified type name.
         /// </summary>
         /// <returns>Metadata.</returns>
-        IBinaryType GetMetadata(string typeName);
+        IBinaryType GetBinaryType(string typeName);
 
         /// <summary>
         /// Gets metadata for specified type.
         /// </summary>
         /// <returns>Metadata.</returns>
-        IBinaryType GetMetadata(Type type);
+        IBinaryType GetBinaryType(Type type);
     }
 }

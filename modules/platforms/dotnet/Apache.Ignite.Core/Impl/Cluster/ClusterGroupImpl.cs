@@ -538,7 +538,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
         
         /** <inheritDoc /> */
-        public IBinaryType GetMetadata(int typeId)
+        public IBinaryType GetBinaryType(int typeId)
         {
             return DoOutInOp<IBinaryType>(OpMetadata, 
                 writer => writer.WriteInt(typeId),
@@ -554,7 +554,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <summary>
         /// Gets metadata for all known types.
         /// </summary>
-        public List<IBinaryType> Metadata()
+        public List<IBinaryType> GetBinaryTypes()
         {
             return DoInOp(OpAllMetadata, s =>
             {

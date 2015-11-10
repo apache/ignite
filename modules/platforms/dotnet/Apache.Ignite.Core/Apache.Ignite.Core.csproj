@@ -306,10 +306,10 @@
     <Compile Include="Messaging\IMessageListener.cs" />
     <Compile Include="Messaging\IMessaging.cs" />
     <Compile Include="Binary\IBinaryObjectBuilder.cs" />
-    <Compile Include="Binary\IBinaryTypeIdMapper.cs" />
+    <Compile Include="Binary\IBinaryIdMapper.cs" />
     <Compile Include="Binary\IBinarizable.cs" />
     <Compile Include="Binary\IBinaryType.cs" />
-    <Compile Include="Binary\IBinaryTypeNameMapper.cs" />
+    <Compile Include="Binary\IBinaryNameMapper.cs" />
     <Compile Include="Binary\IBinaryObject.cs" />
     <Compile Include="Binary\IBinaryRawReader.cs" />
     <Compile Include="Binary\IBinaryRawWriter.cs" />

@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Binary
     /// <summary>
     /// Maps type and field names to different names.
     /// </summary>
-    public interface IBinaryTypeNameMapper
+    public interface IBinaryNameMapper
     {
         /// <summary>
         /// Gets the type name.

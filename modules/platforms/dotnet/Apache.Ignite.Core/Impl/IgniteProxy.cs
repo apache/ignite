@@ -335,9 +335,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IBinaryType GetMetadata(int typeId)
+        public IBinaryType GetBinaryType(int typeId)
         {
-            return ((IClusterGroupEx)_ignite).GetMetadata(typeId);
+            return ((IClusterGroupEx)_ignite).GetBinaryType(typeId);
         }
     }
 }
