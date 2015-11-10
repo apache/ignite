@@ -17,6 +17,8 @@
 
 package org.apache.ignite.stream.flume;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +40,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
  * {@link IgniteSink} test.
  */
 public class IgniteFlumeSinkTest extends GridCommonAbstractTest {
-    private static final int CNT = 100;
+    private static final int CNT = 1000;
     private IgniteSink sink;
     private Context ctx;
 
@@ -62,20 +64,26 @@ public class IgniteFlumeSinkTest extends GridCommonAbstractTest {
         initContext();
         Channel channel = new PseudoTxnMemoryChannel();
         Configurables.configure(channel, new Context());
-        sink = new IgniteSink();
-        Configurables.configure(sink, ctx);
-        sink.setChannel(channel);
-        sink.specifyGrid(grid());
-        sink.start();
 
+        final List<UUID> opId = new ArrayList<>(1);
         final CountDownLatch latch = new CountDownLatch(CNT);
-        IgniteBiPredicate<UUID, CacheEvent> callback = new IgniteBiPredicate<UUID, CacheEvent>() {
+        final IgniteBiPredicate<UUID, CacheEvent> callback = new IgniteBiPredicate<UUID, CacheEvent>() {
             @Override public boolean apply(UUID uuid, CacheEvent evt) {
                 latch.countDown();
                 return true;
             }
         };
-        UUID opId = grid().events(grid().cluster().forCacheNodes(sink.getCacheName())).remoteListen(callback, null, EVT_CACHE_OBJECT_PUT);
+
+        sink = new IgniteSink(grid()) {
+            // setting the listener on cache before sink processing starts
+            @Override synchronized public void start() {
+                super.start();
+                opId.add(grid().events(grid().cluster().forCacheNodes(sink.getCacheName())).remoteListen(callback, null, EVT_CACHE_OBJECT_PUT));
+            }
+        };
+        Configurables.configure(sink, ctx);
+        sink.setChannel(channel);
+        sink.start();
 
         for (int i = 0; i < CNT; i++) {
             Event event = EventBuilder.withBody((String.valueOf(i) + ": " + i).getBytes());
@@ -90,13 +98,21 @@ public class IgniteFlumeSinkTest extends GridCommonAbstractTest {
             assertEquals(i, (int)cache.get(String.valueOf(i)));
         }
         assertEquals(CNT, cache.size(CachePeekMode.PRIMARY));
-        grid().events(grid().cluster().forCacheNodes(sink.getCacheName())).stopRemoteListen(opId);
+
+        if (opId != null && opId.size() == 1)
+            grid().events(grid().cluster().forCacheNodes(sink.getCacheName())).stopRemoteListen(opId.get(0));
+
         sink.stop();
     }
 
+    /**
+     * Flume sink's context needed to start a data streamer.
+     */
     private void initContext() {
         ctx = new Context();
         ctx.put(IgniteSinkConstants.CFG_CACHE_NAME, "testCache");
-        ctx.put(IgniteSinkConstants.CFG_STREAMER_TYPE, "org.apache.ignite.stream.flume.TestFlumeStreamer");
+        ctx.put(IgniteSinkConstants.CFG_TUPLE_EXTRACTOR, "org.apache.ignite.stream.flume.TestTupleExtractor");
+        ctx.put(IgniteSinkConstants.CFG_STREAMER_OVERWRITE, "true");
+        ctx.put(IgniteSinkConstants.CFG_STREAMER_FLUSH_FREQ, "10");
     }
 }

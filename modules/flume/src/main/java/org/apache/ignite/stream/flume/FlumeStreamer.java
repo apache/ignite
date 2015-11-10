@@ -17,37 +17,23 @@
 
 package org.apache.ignite.stream.flume;
 
-import java.util.Map;
-import org.apache.ignite.Ignite;
+import org.apache.flume.Event;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.stream.StreamAdapter;
+import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 
 /**
  * Flume streamer that receives events from a sink and feeds key-value pairs into an {@link IgniteDataStreamer}.
+ *
+ * @param <T> Type of Flume Event.
+ * @param <K> Type of cache key.
+ * @param <V> Type of cache value.
  */
-public abstract class FlumeStreamer<Event, K, V> {
-    private IgniteDataStreamer<K, V> dataStreamer;
+public class FlumeStreamer<T extends Event, K, V> extends StreamAdapter<T, K, V> {
 
-    public IgniteDataStreamer<K, V> getDataStreamer() {
-        return dataStreamer;
-    }
-
-    /**
-     * Starts streamer.
-     *
-     * @throws IgniteException if failed.
-     */
-    public void start(Ignite ignite, String cacheName) {
-        ignite.getOrCreateCache(cacheName);
-        dataStreamer = ignite.dataStreamer(cacheName);
-    }
-
-    /**
-     * Stops streamer.
-     */
-    public void stop() {
-        if (dataStreamer != null)
-            dataStreamer.close();
+    /** {@inheritDoc} */
+    protected FlumeStreamer(IgniteDataStreamer<K, V> stmr, StreamMultipleTupleExtractor<T, K, V> extractor) {
+        super(stmr, extractor);
     }
 
     /**
@@ -55,20 +41,7 @@ public abstract class FlumeStreamer<Event, K, V> {
      *
      * @param event Flume event.
      */
-    protected void writeEvent(Event event) {
-        Map<K, V> entries = transform(event);
-
-        if (entries == null || entries.size() == 0)
-            return;
-
-        dataStreamer.addData(entries);
+    protected void writeEvent(T event) {
+        addMessage(event);
     }
-
-    /**
-     * Transforms {@link Event} into key-values.
-     *
-     * @param event Flume event.
-     * @return Map of transformed key-values.
-     */
-    protected abstract Map<K, V> transform(Event event);
 }

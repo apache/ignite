@@ -26,8 +26,10 @@ import org.apache.flume.Transaction;
 import org.apache.flume.conf.Configurable;
 import org.apache.flume.sink.AbstractSink;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,36 +39,51 @@ import org.slf4j.LoggerFactory;
 public class IgniteSink extends AbstractSink implements Configurable {
     private static final Logger log = LoggerFactory.getLogger(IgniteSink.class);
 
-    /**
-     * Ignite configuration file.
-     */
+    /** Ignite configuration file. */
     private String springCfgPath;
 
-    /**
-     * Cache name.
-     */
+    /** Cache name. */
     private String cacheName;
 
-    /**
-     * Streamer implementation class.
-     */
-    private String streamerType;
+    /** Event transformer implementation class. */
+    private String tupleExtractorCls;
 
-    private FlumeStreamer flumeStreamer;
+    /** Flag to enable overwriting existing values in cache. See {@link IgniteDataStreamer}. */
+    private boolean streamerAllowOverwrite;
+
+    /** Flush frequency. See {@link IgniteDataStreamer}. See {@link IgniteDataStreamer}. */
+    private long streamerFlushFreq;
+
+    /** Flag to disable write-through behavior. See {@link IgniteDataStreamer}. */
+    private boolean skipStore;
+
+    /** Size of per node key-value pairs buffer. See {@link IgniteDataStreamer}. */
+    private int perNodeDataSize;
+
+    /** Maximum number of parallel stream operations for a single node. See {@link IgniteDataStreamer}. */
+    private int perNodeParallelOps;
+
+    /** Flume streamer. */
+    private FlumeStreamer<Event, Object, Object> flumeStreamer;
+
+    /** Ignite instance. */
     private Ignite ignite;
 
+    /** Empty constructor. */
+    public IgniteSink() {
+    }
+
     /**
-     * Method to receive an initialized {@link Ignite} instance. Normally, it is sufficient to specify {@link
-     * #springCfgPath} to access the grid from the sink.
+     * Constructor with provided grid instance.
      *
-     * @param ignite {@link Ignite} instance.
+     * @param ignite Grid instance.
      */
-    public void specifyGrid(Ignite ignite) {
+    public IgniteSink(Ignite ignite) {
         this.ignite = ignite;
     }
 
     /**
-     * Returns cache name.
+     * Returns cache name for the sink.
      *
      * @return Cache name.
      */
@@ -76,32 +93,43 @@ public class IgniteSink extends AbstractSink implements Configurable {
 
     /**
      * Sink configurations with Ignite-specific settings.
+     *
+     * @param context Context for sink.
      */
     @Override public void configure(Context context) {
         springCfgPath = context.getString(IgniteSinkConstants.CFG_PATH);
         cacheName = context.getString(IgniteSinkConstants.CFG_CACHE_NAME);
-        streamerType = context.getString(IgniteSinkConstants.CFG_STREAMER_TYPE);
+        tupleExtractorCls = context.getString(IgniteSinkConstants.CFG_TUPLE_EXTRACTOR);
+        streamerAllowOverwrite = context.getBoolean(IgniteSinkConstants.CFG_STREAMER_OVERWRITE, false);
+        streamerFlushFreq = context.getLong(IgniteSinkConstants.CFG_STREAMER_FLUSH_FREQ, 0L);
+        skipStore = context.getBoolean(IgniteSinkConstants.CFG_STREAMER_SKIP_STORE, false);
+        perNodeDataSize = context.getInteger(IgniteSinkConstants.CFG_STREAMER_NODE_BUFFER_SIZE, IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE);
+        perNodeParallelOps = context.getInteger(IgniteSinkConstants.CFG_STREAMER_NODE_PARALLEL_OPS, IgniteDataStreamer.DFLT_MAX_PARALLEL_OPS);
     }
 
     /**
      * Starts a grid and a streamer.
      */
     @Override synchronized public void start() {
-        Ignition.setClientMode(true);
+        A.notNull(tupleExtractorCls, "Tuple Extractor class");
+        A.notNull(springCfgPath, "Ignite config file");
 
         try {
             if (ignite == null)
                 ignite = Ignition.start(springCfgPath);
 
-            if (ignite.cluster().forServers().nodes().isEmpty())
-                throw new IgniteException("No remote server nodes!");
+            ignite.getOrCreateCache(cacheName);
 
-            if (streamerType != null && !streamerType.isEmpty()) {
-                Class<? extends FlumeStreamer> clazz =
-                    (Class<? extends FlumeStreamer>)Class.forName(streamerType);
-                flumeStreamer = clazz.newInstance();
-
-                flumeStreamer.start(ignite, cacheName);
+            if (tupleExtractorCls != null && !tupleExtractorCls.isEmpty()) {
+                Class<? extends StreamMultipleTupleExtractor> clazz =
+                    (Class<? extends StreamMultipleTupleExtractor>)Class.forName(tupleExtractorCls);
+                StreamMultipleTupleExtractor<Event, Object, Object> tupleExtractor = clazz.newInstance();
+                flumeStreamer = new FlumeStreamer(ignite.dataStreamer(cacheName), tupleExtractor);
+                flumeStreamer.getStreamer().allowOverwrite(streamerAllowOverwrite);
+                flumeStreamer.getStreamer().autoFlushFrequency(streamerFlushFreq);
+                flumeStreamer.getStreamer().skipStore(skipStore);
+                flumeStreamer.getStreamer().perNodeBufferSize(perNodeDataSize);
+                flumeStreamer.getStreamer().perNodeParallelOperations(perNodeParallelOps);
             }
         }
         catch (Exception e) {
@@ -112,9 +140,12 @@ public class IgniteSink extends AbstractSink implements Configurable {
         super.start();
     }
 
+    /**
+     * Stops the streamer and the grid.
+     */
     @Override synchronized public void stop() {
         if (flumeStreamer != null)
-            flumeStreamer.stop();
+            flumeStreamer.getStreamer().close();
 
         if (ignite != null)
             ignite.close();
@@ -122,6 +153,9 @@ public class IgniteSink extends AbstractSink implements Configurable {
         super.stop();
     }
 
+    /**
+     * Processes Flume events from the sink.
+     */
     @Override public Status process() throws EventDeliveryException {
         Status status = Status.READY;
         Channel channel = getChannel();
@@ -132,12 +166,10 @@ public class IgniteSink extends AbstractSink implements Configurable {
             transaction.begin();
             event = channel.take();
 
-            if (event != null) {
+            if (event != null)
                 flumeStreamer.writeEvent(event);
-            }
-            else {
+            else
                 status = Status.BACKOFF;
-            }
 
             transaction.commit();
         }
