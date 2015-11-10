@@ -241,6 +241,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Apache.Ignite.Core.Tests.nunit" />
     <None Include="Apache.Ignite.Core.Tests.snk" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
