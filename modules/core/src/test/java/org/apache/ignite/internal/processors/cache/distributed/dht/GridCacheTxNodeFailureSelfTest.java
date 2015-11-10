@@ -137,6 +137,8 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPrimaryNodeFailureBackupRollbackOptimistic() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1731");
+
         checkPrimaryNodeFailureBackupCommit(OPTIMISTIC, false, false);
     }
 

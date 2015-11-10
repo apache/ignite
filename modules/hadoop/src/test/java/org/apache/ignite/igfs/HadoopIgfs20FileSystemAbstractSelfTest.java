@@ -897,7 +897,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
 
         os.close();
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
+        GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return fs.create(new Path(fsHome, dir), EnumSet.of(CreateFlag.APPEND),
                     Options.CreateOpts.perms(FsPermission.getDefault()));
@@ -919,8 +919,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
             Options.CreateOpts.perms(FsPermission.getDefault()));
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 return fs.create(file, EnumSet.of(CreateFlag.APPEND),
                     Options.CreateOpts.perms(FsPermission.getDefault()));
             }
@@ -1125,10 +1124,10 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
         is.close();
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testRenameDirectoryIfDstPathExists() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-825"); 
-        
         Path fsHome = new Path(primaryFsUri);
         Path srcDir = new Path(fsHome, "/tmp/");
         Path dstDir = new Path(fsHome, "/tmpNew/");
@@ -1143,11 +1142,21 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
 
         os.close();
 
-        fs.rename(srcDir, dstDir);
+        try {
+            fs.rename(srcDir, dstDir);
 
+            fail("FileAlreadyExistsException expected.");
+        }
+        catch (FileAlreadyExistsException ignore) {
+            // No-op.
+        }
+
+        // Check all the files stay unchanged:
         assertPathExists(fs, dstDir);
-        assertPathExists(fs, new Path(fsHome, "/tmpNew/tmp"));
-        assertPathExists(fs, new Path(fsHome, "/tmpNew/tmp/file1"));
+        assertPathExists(fs, new Path(dstDir, "file2"));
+
+        assertPathExists(fs, srcDir);
+        assertPathExists(fs, new Path(srcDir, "file1"));
     }
 
     /** @throws Exception If failed. */

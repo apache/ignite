@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -57,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLeanSet;
@@ -429,9 +429,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             catch (GridCacheEntryRemovedException e) {
                 assert false : "Got entry removed exception while holding transactional lock on entry: " + e;
             }
-            catch (GridCacheFilterFailedException e) {
-                assert false : "Got filter failed exception with fail fast false " + e;
-            }
         }
     }
 
@@ -472,8 +469,18 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (log.isDebugEnabled())
             log.debug("Marking all local candidates as ready: " + this);
 
-        Iterable<IgniteTxEntry> checkEntries = writes;
+        readyLocks(writes);
 
+        if (tx.serializable() && tx.optimistic())
+            readyLocks(reads);
+
+        locksReady = true;
+    }
+
+    /**
+     * @param checkEntries Entries.
+     */
+    private void readyLocks(Iterable<IgniteTxEntry> checkEntries) {
         for (IgniteTxEntry txEntry : checkEntries) {
             GridCacheContext cacheCtx = txEntry.context();
 
@@ -513,8 +520,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 }
             }
         }
-
-        locksReady = true;
     }
 
     /**
@@ -568,27 +573,35 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (tx.onePhaseCommit() && tx.commitOnPrepare()) {
             assert last;
 
+            Throwable prepErr = this.err.get();
+
             // Must create prepare response before transaction is committed to grab correct return value.
-            final GridNearTxPrepareResponse res = createPrepareResponse();
+            final GridNearTxPrepareResponse res = createPrepareResponse(prepErr);
 
             onComplete(res);
 
             if (tx.commitOnPrepare()) {
                 if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
-                    IgniteInternalFuture<IgniteInternalTx> fut = this.err.get() == null ?
-                        tx.commitAsync() : tx.rollbackAsync();
+                    IgniteInternalFuture<IgniteInternalTx> fut = null;
 
-                    fut.listen(new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
-                        @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
-                            try {
-                                if (replied.compareAndSet(false, true))
-                                    sendPrepareResponse(res);
+                    if (prepErr == null)
+                        fut = tx.commitAsync();
+                    else if (!cctx.kernalContext().isStopping())
+                        fut = tx.rollbackAsync();
+
+                    if (fut != null) {
+                        fut.listen(new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
+                            @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
+                                try {
+                                    if (replied.compareAndSet(false, true))
+                                        sendPrepareResponse(res);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    U.error(log, "Failed to send prepare response for transaction: " + tx, e);
+                                }
                             }
-                            catch (IgniteCheckedException e) {
-                                U.error(log, "Failed to send prepare response for transaction: " + tx, e);
-                            }
-                        }
-                    });
+                        });
+                    }
                 }
             }
             else {
@@ -605,7 +618,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         }
         else {
             if (replied.compareAndSet(false, true)) {
-                GridNearTxPrepareResponse res = createPrepareResponse();
+                GridNearTxPrepareResponse res = createPrepareResponse(this.err.get());
 
                 try {
                     sendPrepareResponse(res);
@@ -654,12 +667,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     }
 
     /**
+     * @param prepErr Error.
      * @return Prepare response.
      */
-    private GridNearTxPrepareResponse createPrepareResponse() {
-        // Send reply back to originating near node.
-        Throwable prepErr = err.get();
-
+    private GridNearTxPrepareResponse createPrepareResponse(@Nullable Throwable prepErr) {
         assert F.isEmpty(tx.invalidPartitions());
 
         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
@@ -670,7 +681,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             tx.writeVersion(),
             ret,
             prepErr,
-            null);
+            null,
+            tx.activeCachesDeploymentEnabled());
 
         if (prepErr == null) {
             addDhtValues(res);
@@ -812,11 +824,18 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         this.writes = writes;
         this.txNodes = txNodes;
 
-        if (!F.isEmpty(writes)) {
+        boolean ser = tx.serializable() && tx.optimistic();
+
+        if (!F.isEmpty(writes) || (ser && !F.isEmpty(reads))) {
             Map<Integer, Collection<KeyCacheObject>> forceKeys = null;
 
             for (IgniteTxEntry entry : writes)
                 forceKeys = checkNeedRebalanceKeys(entry, forceKeys);
+
+            if (ser) {
+                for (IgniteTxEntry entry : reads)
+                    forceKeys = checkNeedRebalanceKeys(entry, forceKeys);
+            }
 
             forceKeysFut = forceRebalanceKeys(forceKeys);
         }
@@ -846,7 +865,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         IgniteTxEntry e,
         Map<Integer, Collection<KeyCacheObject>> map
     ) {
-        if (retVal || !F.isEmpty(e.entryProcessors()) || !F.isEmpty(e.filters())) {
+        if (retVal ||
+            !F.isEmpty(e.entryProcessors()) ||
+            !F.isEmpty(e.filters()) ||
+            e.serializableReadVersion() != null) {
             if (map == null)
                 map = new HashMap<>();
 
@@ -905,10 +927,86 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     }
 
     /**
+     * @param entries Entries.
+     * @return Not null exception if version check failed.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable private IgniteCheckedException checkReadConflict(Iterable<IgniteTxEntry> entries)
+        throws IgniteCheckedException {
+        try {
+            for (IgniteTxEntry entry : entries) {
+                GridCacheVersion serReadVer = entry.serializableReadVersion();
+
+                if (serReadVer != null) {
+                    entry.cached().unswap();
+
+                    if (!entry.cached().checkSerializableReadVersion(serReadVer))
+                        return versionCheckError(entry);
+                }
+            }
+        }
+        catch (GridCacheEntryRemovedException e) {
+            assert false : "Got removed exception on entry with dht local candidate: " + entries;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param entry Entry.
+     * @return Optimistic version check error.
+     */
+    private IgniteTxOptimisticCheckedException versionCheckError(IgniteTxEntry entry) {
+        GridCacheContext cctx = entry.context();
+
+        return new IgniteTxOptimisticCheckedException("Failed to prepare transaction, " +
+            "read/write conflict [key=" + entry.key().value(cctx.cacheObjectContext(), false) +
+            ", cache=" + cctx.name() + ']');
+    }
+
+    /**
      *
      */
     private void prepare0() {
         try {
+            if (tx.serializable() && tx.optimistic()) {
+                IgniteCheckedException err0;
+
+                try {
+                    err0 = checkReadConflict(writes);
+
+                    if (err0 == null)
+                        err0 = checkReadConflict(reads);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to check entry version: " + e, e);
+
+                    err0 = e;
+                }
+
+                if (err0 != null) {
+                    err.compareAndSet(null, err0);
+
+                    final GridNearTxPrepareResponse res = createPrepareResponse(err.get());
+
+                    tx.rollbackAsync().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+                        @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+                            if (GridDhtTxPrepareFuture.super.onDone(res, res.error())) {
+                                try {
+                                    if (replied.compareAndSet(false, true))
+                                        sendPrepareResponse(res);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    U.error(log, "Failed to send prepare response for transaction: " + tx, e);
+                                }
+                            }
+                        }
+                    });
+
+                    return;
+                }
+            }
+
             // We are holding transaction-level locks for entries here, so we can get next write version.
             onEntriesLocked();
 
@@ -976,7 +1074,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         true,
                         tx.onePhaseCommit(),
                         tx.subjectId(),
-                        tx.taskNameHash());
+                        tx.taskNameHash(),
+                        tx.activeCachesDeploymentEnabled());
 
                     int idx = 0;
 
@@ -1075,7 +1174,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             true,
                             tx.onePhaseCommit(),
                             tx.subjectId(),
-                            tx.taskNameHash());
+                            tx.taskNameHash(),
+                            tx.activeCachesDeploymentEnabled());
 
                         for (IgniteTxEntry entry : nearMapping.writes()) {
                             try {

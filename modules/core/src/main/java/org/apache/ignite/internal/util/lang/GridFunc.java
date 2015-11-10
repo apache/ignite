@@ -117,6 +117,9 @@ public class GridFunc {
 
     /** */
     private static final IgnitePredicate<Object> ALWAYS_TRUE = new P1<Object>() {
+        /** */
+        private static final long serialVersionUID = 6101914246981105862L;
+
         @Override public boolean apply(Object e) {
             return true;
         }
@@ -1221,9 +1224,10 @@ public class GridFunc {
         if (isEmpty(nodeIds))
             return alwaysFalse();
 
-        assert nodeIds != null;
-
         return new P1<T>() {
+            /** */
+            private static final long serialVersionUID = -5664060422647374863L;
+
             @Override public boolean apply(ClusterNode e) {
                 return nodeIds.contains(e.id());
             }

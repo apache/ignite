@@ -558,6 +558,9 @@ public class GridCacheSharedContext<K, V> {
             if (store.isWriteBehind() != activeStore.isWriteBehind())
                 return "caches with different write-behind setting can't be enlisted in one transaction";
 
+            if (activeCacheCtx.deploymentEnabled() != cacheCtx.deploymentEnabled())
+                return "caches with enabled and disabled deployment modes can't be enlisted in one transaction";
+
             // If local and write-behind validations passed, this must be true.
             assert store.isWriteToStoreFromDht() == activeStore.isWriteToStoreFromDht();
         }

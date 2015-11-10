@@ -90,12 +90,14 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
      * @param futId Future ID.
      * @param miniId Sub ID.
      * @param ver Version.
+     * @param addDepInfo Deployment info.
      */
     public GridNearGetResponse(
         int cacheId,
         IgniteUuid futId,
         IgniteUuid miniId,
-        GridCacheVersion ver
+        GridCacheVersion ver,
+        boolean addDepInfo
     ) {
         assert futId != null;
         assert miniId != null;
@@ -105,6 +107,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
         this.futId = futId;
         this.miniId = miniId;
         this.ver = ver;
+        this.addDepInfo = addDepInfo;
     }
 
     /**
@@ -204,6 +207,11 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
 
         if (errBytes != null)
             err = ctx.marshaller().unmarshal(errBytes, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
     /** {@inheritDoc} */
