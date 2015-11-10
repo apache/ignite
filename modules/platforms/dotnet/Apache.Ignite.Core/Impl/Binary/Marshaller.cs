@@ -453,13 +453,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             long typeKey = BinaryUtils.TypeKey(userType, typeId);
 
-            if (_idToDesc.ContainsKey(typeKey))
-            {
-                string type1 = _idToDesc[typeKey].Type != null ? _idToDesc[typeKey].Type.AssemblyQualifiedName : null;
-                string type2 = type != null ? type.AssemblyQualifiedName : null;
+            IBinaryTypeDescriptor conflictingType;
 
-                throw new BinaryObjectException("Conflicting type IDs [type1=" + type1 + ", type2=" + type2 +
-                    ", typeId=" + typeId + ']');
+            if (_idToDesc.TryGetValue(typeKey, out conflictingType))
+            {
+                var type1 = conflictingType.Type != null
+                    ? conflictingType.Type.AssemblyQualifiedName
+                    : conflictingType.TypeName;
+
+                var type2 = type != null ? type.AssemblyQualifiedName : typeName;
+
+                throw new BinaryObjectException(string.Format("Conflicting type IDs [type1='{0}', " +
+                                                              "type2='{1}', typeId={2}]", type1, type2, typeId));
             }
 
             if (userType && _typeNameToDesc.ContainsKey(typeName))
