@@ -568,6 +568,7 @@ public class PortableContext implements Externalizable {
 
         mappers.putIfAbsent(typeId, idMapper);
 
+        // TODO: IGNITE-1847: Cannot proceed further due to this bug.
         // TODO uncomment for https://issues.apache.org/jira/browse/IGNITE-1377
 //        if (registerMetadata && isMetaDataEnabled(typeId))
 //            metaHnd.addMeta(typeId, new PortableMetaDataImpl(typeName, desc.fieldsMeta(), null));
