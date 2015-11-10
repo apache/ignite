@@ -56,5 +56,9 @@ public class GridTcpOdbcNioListener extends GridNioServerListenerAdapter<byte[]>
     @Override
     public void onMessage(GridNioSession ses, byte[] msg) {
         System.out.println("onMessage");
+        System.out.println("length: " + msg.length);
+        for (int i = 0; i < msg.length && i < 32; ++i) {
+            System.out.println("msg[" + i + "] = " + msg[i]);
+        }
     }
 }

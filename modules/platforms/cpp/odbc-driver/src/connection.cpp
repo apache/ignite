@@ -35,7 +35,7 @@ namespace ignite
             // No-op.
         }
 
-        bool Connection::Establish(const std::string & host, uint16_t port)
+        bool Connection::Establish(const std::string& host, uint16_t port)
         {
             if (connected)
                 return false;

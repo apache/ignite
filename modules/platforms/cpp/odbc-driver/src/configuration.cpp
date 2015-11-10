@@ -36,7 +36,7 @@ namespace ignite
             const std::string host = "localhost";
 
             /** Default value for port param. */
-            const uint16_t port = 11213;
+            const uint16_t port = 11443;
         }
 
         /** Connection attribute keywords. */

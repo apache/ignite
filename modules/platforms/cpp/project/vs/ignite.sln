@@ -14,6 +14,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "odbc-driver", "..\..\odbc-d
 		{4F7E4917-4612-4B96-9838-025711ADE391} = {4F7E4917-4612-4B96-9838-025711ADE391}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "portable", "..\..\portable\project\vs\portable.vcxproj", "{4F15669B-92EB-49F0-B774-8F19BAE0B960}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -54,6 +56,14 @@ Global
 		{12F77E12-38FE-42D3-B1DA-7E5979362961}.Release|Win32.Build.0 = Release|Win32
 		{12F77E12-38FE-42D3-B1DA-7E5979362961}.Release|x64.ActiveCfg = Release|x64
 		{12F77E12-38FE-42D3-B1DA-7E5979362961}.Release|x64.Build.0 = Release|x64
+		{4F15669B-92EB-49F0-B774-8F19BAE0B960}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4F15669B-92EB-49F0-B774-8F19BAE0B960}.Debug|Win32.Build.0 = Debug|Win32
+		{4F15669B-92EB-49F0-B774-8F19BAE0B960}.Debug|x64.ActiveCfg = Debug|x64
+		{4F15669B-92EB-49F0-B774-8F19BAE0B960}.Debug|x64.Build.0 = Debug|x64
+		{4F15669B-92EB-49F0-B774-8F19BAE0B960}.Release|Win32.ActiveCfg = Release|Win32
+		{4F15669B-92EB-49F0-B774-8F19BAE0B960}.Release|Win32.Build.0 = Release|Win32
+		{4F15669B-92EB-49F0-B774-8F19BAE0B960}.Release|x64.ActiveCfg = Release|x64
+		{4F15669B-92EB-49F0-B774-8F19BAE0B960}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

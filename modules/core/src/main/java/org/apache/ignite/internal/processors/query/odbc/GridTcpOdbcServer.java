@@ -16,6 +16,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
@@ -63,7 +64,20 @@ public class GridTcpOdbcServer {
 
         lsnr = new GridTcpOdbcNioListener(log, this, ctx);
 
-        GridNioParser parser = null;
+        GridNioParser parser = new GridNioParser() {
+            @Nullable
+            @Override
+            public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
+                byte[] bytes = new byte[buf.remaining()];
+                buf.get(bytes);
+                return bytes;
+            }
+
+            @Override
+            public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
+                return null;
+            }
+        };
 
         try {
             host = resolveOdbcTcpHost(ctx.config());
@@ -170,12 +184,12 @@ public class GridTcpOdbcServer {
                 sslFilter.needClientAuth(auth);
 
                 filters = new GridNioFilter[] {
-                       // codec,
+                        codec,
                         sslFilter
                 };
             }
             else
-                filters = null; //new GridNioFilter[] { codec };
+                filters = new GridNioFilter[] { codec };
 
             srv = GridNioServer.<byte[]>builder()
                     .address(hostAddr)
