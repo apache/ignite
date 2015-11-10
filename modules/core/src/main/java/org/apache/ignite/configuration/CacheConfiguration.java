@@ -169,8 +169,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default size for onheap SQL row cache size. */
     public static final int DFLT_SQL_ONHEAP_ROW_CACHE_SIZE = 10 * 1024;
 
+    /** Default threshold for concurrent load-all */
+    public static final int DFLT_LOAD_ALL_THRESHOLD = 5;
+
     /** Cache name. */
     private String name;
+
+    private int storeConcurrentLoadAllThreshold = DFLT_LOAD_ALL_THRESHOLD;
 
     /** Rebalance thread pool size. */
     private int rebalancePoolSize = DFLT_REBALANCE_THREAD_POOL_SIZE;
@@ -1817,6 +1822,24 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheConfiguration.class, this);
+    }
+
+    /**
+     * The key-count threshold above which concurrent loads are applied
+     * @return The concurrent load-all threshold
+     */
+    public int getStoreConcurrentLoadAllThreshold() {
+        return storeConcurrentLoadAllThreshold;
+    }
+
+    /**
+     * Sets the key count threshold above which concurrent loads are applied
+     * @param storeConcurrentLoadAllThreshold The concurrent load-all threshold
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setStoreConcurrentLoadAllThreshold(int storeConcurrentLoadAllThreshold) {
+        this.storeConcurrentLoadAllThreshold = storeConcurrentLoadAllThreshold;
+        return this;
     }
 
     /**
