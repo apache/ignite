@@ -167,10 +167,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private final Marshaller marsh;
 
     /** Busy lock. */
-    private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
+//    private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
 
     /** Lock to sync maps access. */
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+//    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** Fully started flag. When set to true, can send and receive messages. */
     private volatile boolean started;
@@ -396,7 +396,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         }
 
                         // Clean up delayed and ordered messages (need exclusive lock).
-                        lock.writeLock().lock();
+//                        lock.writeLock().lock();
 
                         try {
                             ConcurrentLinkedDeque8<DelayedMessage> waitList = waitMap.remove(nodeId);
@@ -406,7 +406,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                                     "(sender node left topology): " + waitList);
                         }
                         finally {
-                            lock.writeLock().unlock();
+//                            lock.writeLock().unlock();
                         }
 
                         break;
@@ -424,7 +424,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         // 1. Process wait list.
         Collection<Collection<DelayedMessage>> delayedMsgs = new ArrayList<>();
 
-        lock.writeLock().lock();
+//        lock.writeLock().lock();
 
         try {
             started = true;
@@ -442,7 +442,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         }
         finally {
-            lock.writeLock().unlock();
+//            lock.writeLock().unlock();
         }
 
         // After write lock released.
@@ -501,19 +501,19 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         boolean interrupted = false;
 
         // Busy wait is intentional.
-        while (true) {
-            try {
-                if (busyLock.tryWriteLock(200, TimeUnit.MILLISECONDS))
-                    break;
-                else
-                    Thread.sleep(200);
-            }
-            catch (InterruptedException ignore) {
-                // Preserve interrupt status & ignore.
-                // Note that interrupted flag is cleared.
-                interrupted = true;
-            }
-        }
+//        while (true) {
+//            try {
+//                if (busyLock.tryWriteLock(200, TimeUnit.MILLISECONDS))
+//                    break;
+//                else
+//                    Thread.sleep(200);
+//            }
+//            catch (InterruptedException ignore) {
+//                // Preserve interrupt status & ignore.
+//                // Note that interrupted flag is cleared.
+//                interrupted = true;
+//            }
+//        }
 
         try {
             if (interrupted)
@@ -529,7 +529,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             stopping = true;
         }
         finally {
-            busyLock.writeUnlock();
+//            busyLock.writeUnlock();
         }
     }
 
@@ -553,7 +553,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assert nodeId != null;
         assert msg != null;
 
-        busyLock.readLock();
+//        busyLock.readLock();
 
         try {
             if (stopping) {
@@ -581,7 +581,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
 
             if (!started) {
-                lock.readLock().lock();
+//                lock.readLock().lock();
 
                 try {
                     if (!started) { // Sets to true in write lock, so double checking.
@@ -601,7 +601,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     }
                 }
                 finally {
-                    lock.readLock().unlock();
+//                    lock.readLock().unlock();
                 }
             }
 
@@ -649,7 +649,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             U.error(log, "Failed to process message (will ignore): " + msg, e);
         }
         finally {
-            busyLock.readUnlock();
+//            busyLock.readUnlock();
         }
     }
 
@@ -2001,7 +2001,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 return;
             }
 
-            busyLock.readLock();
+//            busyLock.readLock();
 
             try {
                 if (stopping) {
@@ -2077,7 +2077,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
             }
             finally {
-                busyLock.readUnlock();
+//                busyLock.readUnlock();
             }
         }
 

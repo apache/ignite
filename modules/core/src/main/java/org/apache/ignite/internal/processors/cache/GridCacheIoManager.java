@@ -101,7 +101,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     private boolean stopping;
 
     /** Mutex. */
-    private final GridSpinReadWriteLock rw = new GridSpinReadWriteLock();
+//    private final GridSpinReadWriteLock rw = new GridSpinReadWriteLock();
 
     /** Deployment enabled. */
     private boolean depEnabled;
@@ -218,19 +218,19 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         boolean interrupted = false;
 
         // Busy wait is intentional.
-        while (true) {
-            try {
-                if (rw.tryWriteLock(200, TimeUnit.MILLISECONDS))
-                    break;
-                else
-                    Thread.sleep(200);
-            }
-            catch (InterruptedException ignore) {
-                // Preserve interrupt status & ignore.
-                // Note that interrupted flag is cleared.
-                interrupted = true;
-            }
-        }
+//        while (true) {
+//            try {
+//                if (rw.tryWriteLock(200, TimeUnit.MILLISECONDS))
+//                    break;
+//                else
+//                    Thread.sleep(200);
+//            }
+//            catch (InterruptedException ignore) {
+//                // Preserve interrupt status & ignore.
+//                // Note that interrupted flag is cleared.
+//                interrupted = true;
+//            }
+//        }
 
         if (interrupted)
             Thread.currentThread().interrupt();
@@ -239,7 +239,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             stopping = true;
         }
         finally {
-            rw.writeUnlock();
+//            rw.writeUnlock();
         }
     }
 
@@ -251,7 +251,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     @SuppressWarnings({"unchecked", "ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
     private void onMessage0(final UUID nodeId, final GridCacheMessage cacheMsg,
         final IgniteBiInClosure<UUID, GridCacheMessage> c) {
-        rw.readLock();
+//        rw.readLock();
 
         try {
             if (stopping) {
@@ -282,7 +282,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             if (depEnabled)
                 cctx.deploy().ignoreOwnership(false);
 
-            rw.readUnlock();
+//            rw.readUnlock();
         }
     }
 

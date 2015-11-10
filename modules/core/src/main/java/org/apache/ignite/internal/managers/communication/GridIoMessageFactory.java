@@ -121,6 +121,7 @@ import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRe
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -687,6 +688,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 114:
                 msg = new GridDhtPartitionSupplyMessageV2();
+
+                break;
+
+            case 115:
+                msg = new UUIDCollectionMessage();
 
                 break;
 

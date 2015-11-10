@@ -78,44 +78,44 @@ public class GridSpinReadWriteLock {
      */
     @SuppressWarnings("BusyWait")
     public void readLock() {
-        int cnt = readLockEntryCnt.get();
-
-        // Read lock reentry or acquiring read lock while holding write lock.
-        if (cnt > 0 || Thread.currentThread().getId() == writeLockOwner) {
-            assert state > 0 || state == -1;
-
-            readLockEntryCnt.set(cnt + 1);
-
-            return;
-        }
-
-        boolean interrupted = false;
-
-        while (true) {
-            int cur = state;
-
-            assert cur >= -1;
-
-            if (cur == -1 || pendingWLocks > 0) {
-                try {
-                    Thread.sleep(10);
-                }
-                catch (InterruptedException ignored) {
-                    interrupted = true;
-                }
-
-                continue;
-            }
-
-            if (compareAndSet(STATE_OFFS, cur, cur + 1)) {
-                if (interrupted)
-                    Thread.currentThread().interrupt();
-
-                break;
-            }
-        }
-
-        readLockEntryCnt.set(1);
+//        int cnt = readLockEntryCnt.get();
+//
+//        // Read lock reentry or acquiring read lock while holding write lock.
+//        if (cnt > 0 || Thread.currentThread().getId() == writeLockOwner) {
+//            assert state > 0 || state == -1;
+//
+//            readLockEntryCnt.set(cnt + 1);
+//
+//            return;
+//        }
+//
+//        boolean interrupted = false;
+//
+//        while (true) {
+//            int cur = state;
+//
+//            assert cur >= -1;
+//
+//            if (cur == -1 || pendingWLocks > 0) {
+//                try {
+//                    Thread.sleep(10);
+//                }
+//                catch (InterruptedException ignored) {
+//                    interrupted = true;
+//                }
+//
+//                continue;
+//            }
+//
+//            if (compareAndSet(STATE_OFFS, cur, cur + 1)) {
+//                if (interrupted)
+//                    Thread.currentThread().interrupt();
+//
+//                break;
+//            }
+//        }
+//
+//        readLockEntryCnt.set(1);
     }
 
     /**
@@ -124,60 +124,62 @@ public class GridSpinReadWriteLock {
      * @return {@code true} if acquired.
      */
     public boolean tryReadLock() {
-        int cnt = readLockEntryCnt.get();
+//        int cnt = readLockEntryCnt.get();
+//
+//        // Read lock reentry or acquiring read lock while holding write lock.
+//        if (cnt > 0 || Thread.currentThread().getId() == writeLockOwner) {
+//            assert state > 0 || state == -1;
+//
+//            readLockEntryCnt.set(cnt + 1);
+//
+//            return true;
+//        }
+//
+//        while (true) {
+//            int cur = state;
+//
+//            if (cur == -1 || pendingWLocks > 0)
+//                return false;
+//
+//            if (compareAndSet(STATE_OFFS, cur, cur + 1)) {
+//                readLockEntryCnt.set(1);
+//
+//                return true;
+//            }
+//        }
 
-        // Read lock reentry or acquiring read lock while holding write lock.
-        if (cnt > 0 || Thread.currentThread().getId() == writeLockOwner) {
-            assert state > 0 || state == -1;
-
-            readLockEntryCnt.set(cnt + 1);
-
-            return true;
-        }
-
-        while (true) {
-            int cur = state;
-
-            if (cur == -1 || pendingWLocks > 0)
-                return false;
-
-            if (compareAndSet(STATE_OFFS, cur, cur + 1)) {
-                readLockEntryCnt.set(1);
-
-                return true;
-            }
-        }
+        return true;
     }
 
     /**
      * Read unlock.
      */
     public void readUnlock() {
-        int cnt = readLockEntryCnt.get();
-
-        if (cnt == 0)
-            throw new IllegalMonitorStateException();
-
-        // Read unlock when holding write lock is performed here.
-        if (cnt > 1 || Thread.currentThread().getId() == writeLockOwner) {
-            assert state > 0 || state == -1;
-
-            readLockEntryCnt.set(cnt - 1);
-
-            return;
-        }
-
-        while (true) {
-            int cur = state;
-
-            assert cur > 0;
-
-            if (compareAndSet(STATE_OFFS, cur, cur - 1)) {
-                readLockEntryCnt.set(0);
-
-                return;
-            }
-        }
+//        int cnt = readLockEntryCnt.get();
+//
+//        if (cnt == 0)
+//            throw new IllegalMonitorStateException();
+//
+//        // Read unlock when holding write lock is performed here.
+//        if (cnt > 1 || Thread.currentThread().getId() == writeLockOwner) {
+//            assert state > 0 || state == -1;
+//
+//            readLockEntryCnt.set(cnt - 1);
+//
+//            return;
+//        }
+//
+//        while (true) {
+//            int cur = state;
+//
+//            assert cur > 0;
+//
+//            if (compareAndSet(STATE_OFFS, cur, cur - 1)) {
+//                readLockEntryCnt.set(0);
+//
+//                return;
+//            }
+//        }
     }
 
     /**
@@ -185,95 +187,95 @@ public class GridSpinReadWriteLock {
      */
     @SuppressWarnings("BusyWait")
     public void writeLock() {
-        long threadId = Thread.currentThread().getId();
-
-        if (threadId == writeLockOwner) {
-            assert state == -1;
-
-            writeLockEntryCnt++;
-
-            return;
-        }
-
-        // Increment pending write locks.
-        while (true) {
-            int pendingWLocks0 = pendingWLocks;
-
-            if (compareAndSet(PENDING_WLOCKS_OFFS, pendingWLocks0, pendingWLocks0 + 1))
-                break;
-        }
-
-        boolean interrupted = false;
-
-        while (!compareAndSet(STATE_OFFS, 0, -1)) {
-            try {
-                Thread.sleep(10);
-            }
-            catch (InterruptedException ignored) {
-                interrupted = true;
-            }
-        }
-
-        // Decrement pending write locks.
-        while (true) {
-            int pendingWLocks0 = pendingWLocks;
-
-            assert pendingWLocks0 > 0;
-
-            if (compareAndSet(PENDING_WLOCKS_OFFS, pendingWLocks0, pendingWLocks0 - 1))
-                break;
-        }
-
-        if (interrupted)
-            Thread.currentThread().interrupt();
-
-        assert writeLockOwner == -1;
-
-        writeLockOwner = threadId;
-        writeLockEntryCnt = 1;
+//        long threadId = Thread.currentThread().getId();
+//
+//        if (threadId == writeLockOwner) {
+//            assert state == -1;
+//
+//            writeLockEntryCnt++;
+//
+//            return;
+//        }
+//
+//        // Increment pending write locks.
+//        while (true) {
+//            int pendingWLocks0 = pendingWLocks;
+//
+//            if (compareAndSet(PENDING_WLOCKS_OFFS, pendingWLocks0, pendingWLocks0 + 1))
+//                break;
+//        }
+//
+//        boolean interrupted = false;
+//
+//        while (!compareAndSet(STATE_OFFS, 0, -1)) {
+//            try {
+//                Thread.sleep(10);
+//            }
+//            catch (InterruptedException ignored) {
+//                interrupted = true;
+//            }
+//        }
+//
+//        // Decrement pending write locks.
+//        while (true) {
+//            int pendingWLocks0 = pendingWLocks;
+//
+//            assert pendingWLocks0 > 0;
+//
+//            if (compareAndSet(PENDING_WLOCKS_OFFS, pendingWLocks0, pendingWLocks0 - 1))
+//                break;
+//        }
+//
+//        if (interrupted)
+//            Thread.currentThread().interrupt();
+//
+//        assert writeLockOwner == -1;
+//
+//        writeLockOwner = threadId;
+//        writeLockEntryCnt = 1;
     }
 
     /**
      * Acquires write lock without sleeping between unsuccessful attempts.
      */
     public void writeLock0() {
-        long threadId = Thread.currentThread().getId();
-
-        if (threadId == writeLockOwner) {
-            assert state == -1;
-
-            writeLockEntryCnt++;
-
-            return;
-        }
-
-        // Increment pending write locks.
-        while (true) {
-            int pendingWLocks0 = pendingWLocks;
-
-            if (compareAndSet(PENDING_WLOCKS_OFFS, pendingWLocks0, pendingWLocks0 + 1))
-                break;
-        }
-
-        for (;;) {
-            if (compareAndSet(STATE_OFFS, 0, -1))
-                break;
-        }
-
-        // Decrement pending write locks.
-        while (true) {
-            int pendingWLocks0 = pendingWLocks;
-
-            assert pendingWLocks0 > 0;
-
-            if (compareAndSet(PENDING_WLOCKS_OFFS, pendingWLocks0, pendingWLocks0 - 1))
-                break;
-        }
-
-        assert writeLockOwner == -1;
-
-        writeLockOwner = threadId;
-        writeLockEntryCnt = 1;
+//        long threadId = Thread.currentThread().getId();
+//
+//        if (threadId == writeLockOwner) {
+//            assert state == -1;
+//
+//            writeLockEntryCnt++;
+//
+//            return;
+//        }
+//
+//        // Increment pending write locks.
+//        while (true) {
+//            int pendingWLocks0 = pendingWLocks;
+//
+//            if (compareAndSet(PENDING_WLOCKS_OFFS, pendingWLocks0, pendingWLocks0 + 1))
+//                break;
+//        }
+//
+//        for (;;) {
+//            if (compareAndSet(STATE_OFFS, 0, -1))
+//                break;
+//        }
+//
+//        // Decrement pending write locks.
+//        while (true) {
+//            int pendingWLocks0 = pendingWLocks;
+//
+//            assert pendingWLocks0 > 0;
+//
+//            if (compareAndSet(PENDING_WLOCKS_OFFS, pendingWLocks0, pendingWLocks0 - 1))
+//                break;
+//        }
+//
+//        assert writeLockOwner == -1;
+//
+//        writeLockOwner = threadId;
+//        writeLockEntryCnt = 1;
     }
 
     /**
@@ -289,26 +291,28 @@ public class GridSpinReadWriteLock {
      * @return {@code True} if write lock has been acquired.
      */
     public boolean tryWriteLock() {
-        long threadId = Thread.currentThread().getId();
+//        long threadId = Thread.currentThread().getId();
+//
+//        if (threadId == writeLockOwner) {
+//            assert state == -1;
+//
+//            writeLockEntryCnt++;
+//
+//            return true;
+//        }
+//
+//        if (compareAndSet(STATE_OFFS, 0, -1)) {
+//            assert writeLockOwner == -1;
+//
+//            writeLockOwner = threadId;
+//            writeLockEntryCnt = 1;
+//
+//            return true;
+//        }
+//
+//        return false;
 
-        if (threadId == writeLockOwner) {
-            assert state == -1;
-
-            writeLockEntryCnt++;
-
-            return true;
-        }
-
-        if (compareAndSet(STATE_OFFS, 0, -1)) {
-            assert writeLockOwner == -1;
-
-            writeLockOwner = threadId;
-            writeLockEntryCnt = 1;
-
-            return true;
-        }
-
-        return false;
+        return true;
     }
 
     /**
@@ -319,81 +323,83 @@ public class GridSpinReadWriteLock {
      */
     @SuppressWarnings("BusyWait")
     public boolean tryWriteLock(long timeout, TimeUnit unit) throws InterruptedException {
-        long threadId = Thread.currentThread().getId();
+//        long threadId = Thread.currentThread().getId();
+//
+//        if (threadId == writeLockOwner) {
+//            assert state == -1;
+//
+//            writeLockEntryCnt++;
+//
+//            return true;
+//        }
+//
+//        try {
+//            // Increment pending write locks.
+//            while (true) {
+//                int pendingWLocks0 = pendingWLocks;
+//
+//                if (compareAndSet(PENDING_WLOCKS_OFFS, pendingWLocks0, pendingWLocks0 + 1))
+//                    break;
+//            }
+//
+//            long end = U.currentTimeMillis() + unit.toMillis(timeout);
+//
+//            while (true) {
+//                if (compareAndSet(STATE_OFFS, 0, -1)) {
+//                    assert writeLockOwner == -1;
+//
+//                    writeLockOwner = threadId;
+//                    writeLockEntryCnt = 1;
+//
+//                    return true;
+//                }
+//
+//                Thread.sleep(10);
+//
+//                if (end <= U.currentTimeMillis())
+//                    return false;
+//            }
+//        }
+//        finally {
+//            // Decrement pending write locks.
+//            while (true) {
+//                int pendingWLocks0 = pendingWLocks;
+//
+//                assert pendingWLocks0 > 0;
+//
+//                if (compareAndSet(PENDING_WLOCKS_OFFS, pendingWLocks0, pendingWLocks0 - 1))
+//                    break;
+//            }
+//        }
 
-        if (threadId == writeLockOwner) {
-            assert state == -1;
-
-            writeLockEntryCnt++;
-
-            return true;
-        }
-
-        try {
-            // Increment pending write locks.
-            while (true) {
-                int pendingWLocks0 = pendingWLocks;
-
-                if (compareAndSet(PENDING_WLOCKS_OFFS, pendingWLocks0, pendingWLocks0 + 1))
-                    break;
-            }
-
-            long end = U.currentTimeMillis() + unit.toMillis(timeout);
-
-            while (true) {
-                if (compareAndSet(STATE_OFFS, 0, -1)) {
-                    assert writeLockOwner == -1;
-
-                    writeLockOwner = threadId;
-                    writeLockEntryCnt = 1;
-
-                    return true;
-                }
-
-                Thread.sleep(10);
-
-                if (end <= U.currentTimeMillis())
-                    return false;
-            }
-        }
-        finally {
-            // Decrement pending write locks.
-            while (true) {
-                int pendingWLocks0 = pendingWLocks;
-
-                assert pendingWLocks0 > 0;
-
-                if (compareAndSet(PENDING_WLOCKS_OFFS, pendingWLocks0, pendingWLocks0 - 1))
-                    break;
-            }
-        }
+        return true;
     }
 
     /**
      * Releases write lock.
      */
     public void writeUnlock() {
-        long threadId = Thread.currentThread().getId();
-
-        if (threadId != writeLockOwner)
-            throw new IllegalMonitorStateException();
-
-        if (writeLockEntryCnt > 1) {
-            writeLockEntryCnt--;
-
-            return;
-        }
-
-        writeLockEntryCnt = 0;
-        writeLockOwner = -1;
-
-        // Current thread holds write and read locks and is releasing
-        // write lock now.
-        int update = readLockEntryCnt.get() > 0 ? 1 : 0;
-
-        boolean b = compareAndSet(STATE_OFFS, -1, update);
-
-        assert b;
+//        long threadId = Thread.currentThread().getId();
+//
+//        if (threadId != writeLockOwner)
+//            throw new IllegalMonitorStateException();
+//
+//        if (writeLockEntryCnt > 1) {
+//            writeLockEntryCnt--;
+//
+//            return;
+//        }
+//
+//        writeLockEntryCnt = 0;
+//        writeLockOwner = -1;
+//
+//        // Current thread holds write and read locks and is releasing
+//        // write lock now.
+//        int update = readLockEntryCnt.get() > 0 ? 1 : 0;
+//
+//        boolean b = compareAndSet(STATE_OFFS, -1, update);
+//
+//        assert b;
     }
 
     /**
