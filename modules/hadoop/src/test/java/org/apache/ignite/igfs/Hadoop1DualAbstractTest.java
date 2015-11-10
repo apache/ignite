@@ -24,7 +24,7 @@ import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAbstractSelfTest;
 
-import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.IGFS_SCHEME;
+import static org.apache.ignite.IgniteFileSystem.IGFS_SCHEME;
 import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.SECONDARY_CFG_PATH;
 import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.configuration;
 import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.mkUri;

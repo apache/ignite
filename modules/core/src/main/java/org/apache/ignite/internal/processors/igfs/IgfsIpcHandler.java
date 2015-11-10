@@ -209,13 +209,15 @@ class IgfsIpcHandler implements IgfsServerHandler {
      * @throws IgniteCheckedException In case of handshake failure.
      */
     private IgfsMessage processHandshakeRequest(IgfsHandshakeRequest req) throws IgniteCheckedException {
-        if (!F.eq(ctx.gridName(), req.gridName()))
-            throw new IgniteCheckedException("Failed to perform handshake because actual Grid name differs from expected " +
-                "[expected=" + req.gridName() + ", actual=" + ctx.gridName() + ']');
+        if (req.gridName() != null && !F.eq(ctx.gridName(), req.gridName()))
+            throw new IgniteCheckedException("Failed to perform handshake because existing Grid name " +
+                "differs from requested " +
+                "[requested=" + req.gridName() + ", existing=" + ctx.gridName() + ']');
 
-        if (!F.eq(igfs.name(), req.igfsName()))
-            throw new IgniteCheckedException("Failed to perform handshake because actual IGFS name differs from expected " +
-                "[expected=" + req.igfsName() + ", actual=" + igfs.name() + ']');
+        if (req.igfsName() != null && !F.eq(igfs.name(), req.igfsName()))
+            throw new IgniteCheckedException("Failed to perform handshake because existing IGFS name " +
+                "differs from requested " +
+                "[requested=" + req.igfsName() + ", existing=" + igfs.name() + ']');
 
         IgfsControlResponse res = new IgfsControlResponse();
 
