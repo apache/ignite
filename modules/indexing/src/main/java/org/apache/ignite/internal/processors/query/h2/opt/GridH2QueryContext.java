@@ -34,6 +34,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.LOCAL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
 
 /**
  * Thread local SQL query context which is intended to be accessible from everywhere.
@@ -117,10 +118,21 @@ public class GridH2QueryContext {
      * @return Cache for table filter collocation states.
      */
     public Map<TableFilter, GridH2TableFilterCollocation> tableFilterStateCache() {
+        assert type() == PREPARE : type();
+
         if (tableFilterStateCache == null)
             tableFilterStateCache = new HashMap<>();
 
         return tableFilterStateCache;
+    }
+
+    /**
+     * @return {@code true} If it was proved that the query is fully collocated.
+     */
+    public boolean tryProveCollocated() {
+        assert type() == PREPARE : type();
+
+        return GridH2IndexBase.tryProveCollocated(tableFilterStateCache);
     }
 
     /**

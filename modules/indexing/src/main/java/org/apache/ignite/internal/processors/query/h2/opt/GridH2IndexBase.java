@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -135,6 +137,16 @@ public abstract class GridH2IndexBase extends BaseIndex {
         }
 
         return s;
+    }
+
+    /**
+     * @param states States map.
+     * @return {@code true} If it was proved that the query is fully collocated.
+     */
+    public static boolean tryProveCollocated(Map<TableFilter,GridH2TableFilterCollocation> states) {
+        // We can't use values from the state cache because they can be outdated, but the cache
+        // must contain all the filters by the end of optimization.
+
     }
 
     /**
