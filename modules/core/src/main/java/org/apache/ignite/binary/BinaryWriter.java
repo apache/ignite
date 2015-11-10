@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  * It has been tested that hash code conflicts for the type names or the field names
  * within the same type are virtually non-existent and, to gain performance, it is safe
  * to work with hash codes. For the cases when hash codes for different types or fields
- * actually do collide, Ignite provides {@link BinaryTypeIdMapper} which
+ * actually do collide, Ignite provides {@link BinaryIdMapper} which
  * allows to override the automatically generated hash code IDs for the type and field names.
  */
 public interface BinaryWriter {

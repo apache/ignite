@@ -254,7 +254,7 @@ import org.jetbrains.annotations.Nullable;
  * <h1 class="header">Custom ID Mappers</h1>
  * Ignite implementation uses name hash codes to generate IDs for class names or field names
  * internally. However, in cases when you want to provide your own ID mapping schema,
- * you can provide your own {@link org.apache.ignite.binary.BinaryTypeIdMapper} implementation.
+ * you can provide your own {@link org.apache.ignite.binary.BinaryIdMapper} implementation.
  * <p>
  * ID-mapper may be provided either globally in {@link PortableMarshaller},
  * or for a specific type via {@link org.apache.ignite.binary.BinaryTypeConfiguration} instance.

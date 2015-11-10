@@ -50,7 +50,7 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.binary.BinaryTypeIdMapper;
+import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -800,7 +800,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryTypeConfiguration type =
             new BinaryTypeConfiguration(CustomMappedObject1.class.getName());
 
-        type.setIdMapper(new BinaryTypeIdMapper() {
+        type.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 11111;
             }
@@ -839,7 +839,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
     public void testCustomIdMapperWithGlobal() throws Exception {
         PortableMarshaller marsh = new PortableMarshaller();
 
-        marsh.setIdMapper(new BinaryTypeIdMapper() {
+        marsh.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 11111;
             }
@@ -861,7 +861,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryTypeConfiguration type2 =
             new BinaryTypeConfiguration(CustomMappedObject2.class.getName());
 
-        type2.setIdMapper(new BinaryTypeIdMapper() {
+        type2.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 44444;
             }
@@ -1078,7 +1078,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryTypeConfiguration customMappingType =
             new BinaryTypeConfiguration(TestBinary.class.getName());
 
-        customMappingType.setIdMapper(new BinaryTypeIdMapper() {
+        customMappingType.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 String typeName;
 
@@ -1132,7 +1132,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryTypeConfiguration customType1 = new BinaryTypeConfiguration(Value.class.getName());
 
-        customType1.setIdMapper(new BinaryTypeIdMapper() {
+        customType1.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 300;
             }
@@ -1144,7 +1144,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryTypeConfiguration customType2 = new BinaryTypeConfiguration("org.gridgain.NonExistentClass1");
 
-        customType2.setIdMapper(new BinaryTypeIdMapper() {
+        customType2.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 400;
             }
@@ -1156,7 +1156,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryTypeConfiguration customType3 = new BinaryTypeConfiguration("NonExistentClass2");
 
-        customType3.setIdMapper(new BinaryTypeIdMapper() {
+        customType3.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 500;
             }
@@ -1168,7 +1168,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryTypeConfiguration customType4 = new BinaryTypeConfiguration("NonExistentClass5");
 
-        customType4.setIdMapper(new BinaryTypeIdMapper() {
+        customType4.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 0;
             }
@@ -1208,7 +1208,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryTypeConfiguration customType1 = new BinaryTypeConfiguration(Value.class.getName());
 
-        customType1.setIdMapper(new BinaryTypeIdMapper() {
+        customType1.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 300;
             }
@@ -1229,7 +1229,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryTypeConfiguration customType2 = new BinaryTypeConfiguration("NonExistentClass1");
 
-        customType2.setIdMapper(new BinaryTypeIdMapper() {
+        customType2.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 400;
             }
@@ -1274,7 +1274,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryTypeConfiguration customType1 = new BinaryTypeConfiguration("org.gridgain.Class1");
 
-        customType1.setIdMapper(new BinaryTypeIdMapper() {
+        customType1.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 100;
             }
@@ -1286,7 +1286,7 @@ public class GridPortableMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryTypeConfiguration customType2 = new BinaryTypeConfiguration("org.gridgain.Class2");
 
-        customType2.setIdMapper(new BinaryTypeIdMapper() {
+        customType2.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 100;
             }
