@@ -15,14 +15,6 @@
  * limitations under the License.
  */
 
-// For server side we should load required libraries.
-if (typeof window === 'undefined') {
-    _ = require('lodash');
-
-    $commonUtils = require('../../helpers/common-utils');
-    $dataStructures = require('../../helpers/data-structures');
-}
-
 // Entry point for common functions for code generation.
 $generatorCommon = {};
 
@@ -429,8 +421,3 @@ $generatorCommon.IGFS_IPC_CONFIGURATION = {
         tokenDirectoryPath: {dflt: 'ipc/shmem'}
     }
 };
-
-// For server side we should export Java code generation entry point.
-if (typeof window === 'undefined') {
-    module.exports = $generatorCommon;
-}

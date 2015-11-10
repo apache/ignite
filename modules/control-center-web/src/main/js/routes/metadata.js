@@ -16,6 +16,7 @@
  */
 
 var async = require('async');
+var _ = require('lodash');
 var router = require('express').Router();
 var db = require('../db');
 

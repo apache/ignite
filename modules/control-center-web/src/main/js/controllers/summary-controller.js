@@ -116,17 +116,17 @@ consoleModule.controller('summaryController', [
             var curServCls = $scope.configServer.pojoClass;
             var curCliCls = $scope.configClient.pojoClass;
 
-            $generatorJava.pojos($scope.selectedItem.caches, $scope.configServer.useConstructor, $scope.configServer.includeKeyFields);
+            var metadatas = $generatorJava.pojos($scope.selectedItem.caches, $scope.configServer.useConstructor, $scope.configServer.includeKeyFields);
 
             function restoreSelected(selected, config, tabs) {
-                if (!$common.isDefined(selected) || _.findIndex($generatorJava.metadatas, function (meta) {
+                if (!$common.isDefined(selected) || _.findIndex(metadatas, function (meta) {
                         return meta.keyType == selected || meta.valueType == selected;
                     }) < 0) {
-                    if ($generatorJava.metadatas.length > 0) {
-                        if ($common.isDefined($generatorJava.metadatas[0].keyType))
-                            config.pojoClass = $generatorJava.metadatas[0].keyType;
+                    if (metadatas.length > 0) {
+                        if ($common.isDefined(metadatas[0].keyType))
+                            config.pojoClass = metadatas[0].keyType;
                         else
-                            config.pojoClass = $generatorJava.metadatas[0].valueType;
+                            config.pojoClass = metadatas[0].valueType;
                     }
                     else {
                         config.pojoClass = undefined;
@@ -191,6 +191,49 @@ consoleModule.controller('summaryController', [
 
     $scope.pojoAvailable = function() {
         return $common.isDefined($generatorJava.metadatas) && $generatorJava.metadatas.length > 0;
+    };
+
+    $scope.downloadConfiguration = function () {
+        var cluster = $scope.selectedItem;
+        var clientNearConfiguration = $scope.backupItem.nearConfiguration;
+
+        var zip = new JSZip();
+
+        zip.file('Dockerfile', $scope.dockerServer);
+
+        var builder = $generatorProperties.sslProperties(cluster);
+
+        builder = $generatorProperties.dataSourcesProperties(cluster, builder);
+
+        if (builder)
+            zip.file('src/main/resources/secret.properties', builder.asString());
+
+        var srcPath = 'src/main/java/';
+
+        zip.file('config/' + cluster.name + '-server.xml', $generatorXml.cluster(cluster));
+        zip.file('config/' + cluster.name + '-client.xml', $generatorXml.cluster(cluster, clientNearConfiguration));
+
+        zip.file(srcPath + 'ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'ServerConfigurationFactory'));
+        zip.file(srcPath + 'ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'ClientConfigurationFactory', clientNearConfiguration));
+
+        zip.file('pom.xml', $generatorPom.pom(cluster.caches, '1.5.0').asString());
+
+        zip.file('README.txt', $generatorReadme.readme().asString());
+        zip.file('jdbc-drivers/README.txt', $generatorReadme.readmeJdbc().asString());
+
+        for (var meta of $generatorJava.pojos(cluster.caches, $scope.configServer.useConstructor, $scope.configServer.includeKeyFields)) {
+            if (meta.keyClass)
+                zip.file(srcPath + meta.keyType.replace(/\./g, '/') + '.java', meta.keyClass);
+
+            zip.file(srcPath + meta.valueType.replace(/\./g, '/') + '.java', meta.valueClass);
+        }
+
+        var blob = zip.generate({type:'blob', mimeType: 'application/octet-stream'});
+
+        console.log(blob);
+
+        // Download archive.
+        saveAs(blob, cluster.name + '-configuration.zip');
     };
 
     $loading.start('loadingSummaryScreen');

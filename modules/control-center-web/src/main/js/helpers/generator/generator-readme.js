@@ -15,18 +15,13 @@
  * limitations under the License.
  */
 
-// For server side we should load required libraries.
-if (typeof window === 'undefined') {
-    $generatorCommon = require('./generator-common');
-}
-
 // README.txt generation entry point.
 $generatorReadme = {};
 
 /**
  * Generate README.txt.
  *
- * @param res Resulting output with generated pom.
+ * @param res Resulting output with generated readme.
  * @returns {string} Generated content.
  */
 $generatorReadme.readme = function (res) {
@@ -54,7 +49,17 @@ $generatorReadme.readme = function (res) {
     return res;
 };
 
-// For server side we should export properties generation entry point.
-if (typeof window === 'undefined') {
-    module.exports = $generatorReadme;
-}
+/**
+ * Generate README.txt for jdbc folder.
+ *
+ * @param res Resulting output with generated readme.
+ * @returns {string} Generated content.
+ */
+$generatorReadme.readmeJdbc = function (res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    res.line('Copy proprietary JDBC drivers to this folder.');
+
+    return res;
+};

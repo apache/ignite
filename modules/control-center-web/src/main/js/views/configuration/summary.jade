@@ -19,7 +19,14 @@ extends sidebar
 append scripts
     script(src='//cdnjs.cloudflare.com/ajax/libs/ace/1.2.0/mode-dockerfile.js')
 
-    script(src='/generator-docker.js')
+    script(src='/js/jszip.min.js')
+    script(src='/js/FileSaver.min.js')
+    script(src='/js/Blob.js')
+
+    script(src='/generator/generator-docker.js')
+    script(src='/generator/generator-properties.js')
+    script(src='/generator/generator-pom.js')
+    script(src='/generator/generator-readme.js')
     script(src='/summary-controller.js')
 
 include ../includes/controls
@@ -57,13 +64,7 @@ block content
             a(href='clusters') here.
         +main-table('Clusters:', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}')
         .padding-top-dflt(bs-affix)
-            form.panel-tip-container(data-placement='bottom' bs-tooltip data-title='Download configuration' method='post' action='summary/download')
-                input(type='hidden' name='_id' value='{{selectedItem._id}}')
-                input(type='hidden' name='os' value='{{os}}')
-                input(type='hidden' name='clientNearConfiguration' value='{{backupItem.nearConfiguration}}')
-                input(type='hidden' name='useConstructor' value='{{configServer.useConstructor}}')
-                input(type='hidden' name='includeKeyFields' value='{{configServer.includeKeyFields}}')
-                button.btn.btn-primary(id='download' type='submit' ng-click='$event.stopPropagation()') Download
+            button.btn.btn-primary(id='download' ng-click='downloadConfiguration()' bs-tooltip data-title='Download configuration' data-placement='bottom') Download
             hr
         div(ng-show='selectedItem && tableVisibleRow(displayedRows, selectedItem)' role='tab')
             .panel-group(bs-collapse ng-init='panels.activePanels=[0,1]' ng-model='panels.activePanels' data-allow-multiple='true')
