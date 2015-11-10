@@ -17,37 +17,26 @@
 
 package org.apache.ignite.internal.portable;
 
-import java.util.Arrays;
-import java.util.Map;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.binary.BinaryTypeIdMapper;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.binary.BinaryTypeIdMapper;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.util.Arrays;
+import java.util.Map;
 
 /**
  * Wildcards test.
  */
 public class GridPortableWildcardsSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final PortableMetaDataHandler META_HND = new PortableMetaDataHandler() {
-        @Override public void addMeta(int typeId, BinaryType meta) {
-            // No-op.
-        }
-
-        @Override public BinaryType metadata(int typeId) {
-            return null;
-        }
-    };
-
     /**
      * @return Portable context.
      */
     private PortableContext portableContext() {
-        return new PortableContext(META_HND, new IgniteConfiguration());
+        return new PortableContext(new TestNoopMetadataHandler(), new IgniteConfiguration());
     }
 
     /**
