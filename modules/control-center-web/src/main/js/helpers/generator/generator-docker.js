@@ -51,8 +51,3 @@ $generatorDocker.clusterDocker = function (cluster, os) {
         '\n' +
         'RUN mv /tmp/*.xml /home/$(ls)/config';
 };
-
-// For server side we should export Java code generation entry point.
-if (typeof window === 'undefined') {
-    module.exports = $generatorDocker;
-}

@@ -15,15 +15,6 @@
  * limitations under the License.
  */
 
-// For server side we should load required libraries.
-if (typeof window === 'undefined') {
-    _ = require('lodash');
-
-    $commonUtils = require('../../helpers/common-utils');
-    $dataStructures = require('../../helpers/data-structures');
-    $generatorCommon = require('./generator-common');
-}
-
 // XML generation entry point.
 $generatorXml = {};
 
@@ -1486,8 +1477,3 @@ $generatorXml.cluster = function (cluster, clientNearCfg) {
 
     return '';
 };
-
-// For server side we should export XML generation entry point.
-if (typeof window === 'undefined') {
-    module.exports = $generatorXml;
-}

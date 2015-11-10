@@ -105,13 +105,10 @@ var CacheSchema = new Schema({
     swapEnabled: Boolean,
 
     evictionPolicy: {
-        kind: {type: String, enum: ['LRU', 'RND', 'FIFO', 'Sorted']},
+        kind: {type: String, enum: ['LRU', 'FIFO', 'Sorted']},
         LRU: {
             batchSize: Number,
             maxMemorySize: Number,
-            maxSize: Number
-        },
-        RND: {
             maxSize: Number
         },
         FIFO: {
@@ -189,13 +186,10 @@ var CacheSchema = new Schema({
     nearConfiguration: {
         nearStartSize: Number,
         nearEvictionPolicy: {
-            kind: {type: String, enum: ['LRU', 'RND', 'FIFO', 'Sorted']},
+            kind: {type: String, enum: ['LRU', 'FIFO', 'Sorted']},
             LRU: {
                 batchSize: Number,
                 maxMemorySize: Number,
-                maxSize: Number
-            },
-            RND: {
                 maxSize: Number
             },
             FIFO: {
