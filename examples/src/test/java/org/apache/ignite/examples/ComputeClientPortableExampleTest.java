@@ -16,7 +16,7 @@
  */
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.portable.computegrid.ComputeClientPortableTaskExecutionExample;
+import org.apache.ignite.examples.binary.computegrid.ComputeClientBinaryTaskExecutionExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
@@ -32,6 +32,6 @@ public class ComputeClientPortableExampleTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     public void testPortableTaskExecutionExample() throws Exception {
-        ComputeClientPortableTaskExecutionExample.main(new String[] {});
+        ComputeClientBinaryTaskExecutionExample.main(new String[] {});
     }
 }

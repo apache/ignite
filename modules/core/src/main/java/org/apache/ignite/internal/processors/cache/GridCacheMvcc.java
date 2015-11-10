@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -52,6 +53,32 @@ public final class GridCacheMvcc {
 
     /** Logger. */
     private static volatile IgniteLogger log;
+
+    /** */
+    private static final Comparator<GridCacheVersion> SER_VER_COMPARATOR = new Comparator<GridCacheVersion>() {
+        @Override public int compare(GridCacheVersion ver1, GridCacheVersion ver2) {
+            long time1 = ver1.globalTime();
+            long time2 = ver2.globalTime();
+
+            if (time1 == time2) {
+                int nodeOrder1 = ver1.nodeOrder();
+                int nodeOrder2 = ver2.nodeOrder();
+
+                if (nodeOrder1 == nodeOrder2) {
+                    long order1 = ver1.order();
+                    long order2 = ver2.order();
+
+                    assert order1 != order2;
+
+                    return order1 > order2 ? 1 : -1;
+                }
+                else
+                    return nodeOrder1 > nodeOrder2 ? 1 : -1;
+            }
+            else
+                return time1 > time2 ? 1 : -1;
+        }
+    };
 
     /** Cache context. */
     @GridToStringExclude
@@ -160,8 +187,9 @@ public final class GridCacheMvcc {
 
     /**
      * @param cand Candidate to add.
+     * @return {@code False} if failed to add candidate and transaction should be cancelled.
      */
-    private void add0(GridCacheMvccCandidate cand) {
+    private boolean add0(GridCacheMvccCandidate cand) {
         assert cand != null;
 
         // Local.
@@ -171,31 +199,59 @@ public final class GridCacheMvcc {
 
             if (!cand.nearLocal()) {
                 if (!locs.isEmpty()) {
-                    GridCacheMvccCandidate c = locs.getFirst();
+                    if (cand.serializable()) {
+                        GridCacheMvccCandidate last = locs.getLast();
 
-                    if (c.owner()) {
+                        if (!last.serializable())
+                            return false;
+
+                        GridCacheVersion lastOrder = last.serializableOrder();
+
+                        assert lastOrder != null : last;
+
+                        GridCacheVersion candOrder = cand.serializableOrder();
+
+                        assert candOrder != null : cand;
+
+                        int cmp = SER_VER_COMPARATOR.compare(lastOrder, candOrder);
+
+                        assert cmp != 0;
+
+                        if (cmp > 0)
+                            return false;
+
+                        locs.addLast(cand);
+
+                        return true;
+                    }
+
+                    GridCacheMvccCandidate first = locs.getFirst();
+
+                    if (first.owner()) {
                         // If reentry, add at the beginning. Note that
                         // no reentry happens for DHT-local candidates.
-                        if (!cand.dhtLocal() && c.threadId() == cand.threadId()) {
+                        if (!cand.dhtLocal() && first.threadId() == cand.threadId()) {
+                            assert !first.serializable();
+
                             cand.setOwner();
                             cand.setReady();
                             cand.setReentry();
 
                             locs.addFirst(cand);
 
-                            return;
+                            return true;
                         }
                     }
 
                     // Iterate in reverse order.
                     for (ListIterator<GridCacheMvccCandidate> it = locs.listIterator(locs.size()); it.hasPrevious(); ) {
-                        c = it.previous();
+                        GridCacheMvccCandidate c = it.previous();
 
                         assert !c.version().equals(cand.version()) : "Versions can't match [existing=" + c +
                             ", new=" + cand + ']';
 
-                        // Add after the owner.
-                        if (c.owner()) {
+                        // Add after the owner or serializable tx.
+                        if (c.owner() || c.serializable()) {
                             // Threads are checked above.
                             assert cand.dhtLocal() || c.threadId() != cand.threadId();
 
@@ -204,7 +260,7 @@ public final class GridCacheMvcc {
 
                             it.add(cand);
 
-                            return;
+                            return true;
                         }
 
                         // If not the owner, add after the lesser version.
@@ -214,7 +270,7 @@ public final class GridCacheMvcc {
 
                             it.add(cand);
 
-                            return;
+                            return true;
                         }
                     }
                 }
@@ -228,6 +284,8 @@ public final class GridCacheMvcc {
         }
         // Remote.
         else {
+            assert !cand.serializable() : cand;
+
             if (rmts == null)
                 rmts = new LinkedList<>();
 
@@ -241,12 +299,14 @@ public final class GridCacheMvcc {
                 if (cand.owner())
                     cur.setOwner();
 
-                return;
+                return true;
             }
 
             // Either list is empty or candidate is last.
             rmts.add(cand);
         }
+
+        return true;
     }
 
     /**
@@ -456,6 +516,7 @@ public final class GridCacheMvcc {
             threadId,
             ver,
             timeout,
+            /*serializable order*/null,
             reenter,
             tx,
             implicitSingle,
@@ -470,6 +531,7 @@ public final class GridCacheMvcc {
      * @param threadId Thread ID.
      * @param ver Lock version.
      * @param timeout Lock acquisition timeout.
+     * @param serOrder Version for serializable transactions ordering.
      * @param reenter Reentry flag ({@code true} if reentry is allowed).
      * @param tx Transaction flag.
      * @param implicitSingle Implicit flag.
@@ -484,6 +546,7 @@ public final class GridCacheMvcc {
         long threadId,
         GridCacheVersion ver,
         long timeout,
+        @Nullable GridCacheVersion serOrder,
         boolean reenter,
         boolean tx,
         boolean implicitSingle,
@@ -528,12 +591,23 @@ public final class GridCacheMvcc {
             tx,
             implicitSingle,
             /*near-local*/false,
-            dhtLoc
+            dhtLoc,
+            serOrder
         );
 
-        cctx.mvcc().addLocal(cand);
+        if (serOrder == null) {
+            cctx.mvcc().addLocal(cand);
 
-        add0(cand);
+            boolean add = add0(cand);
+
+            assert add : cand;
+        }
+        else {
+            if (!add0(cand))
+                return null;
+
+            cctx.mvcc().addLocal(cand);
+        }
 
         return cand;
     }
@@ -575,7 +649,8 @@ public final class GridCacheMvcc {
             tx,
             implicitSingle,
             nearLoc,
-            false
+            false,
+            null
         );
 
         addRemote(cand);
@@ -596,11 +671,28 @@ public final class GridCacheMvcc {
      * @param implicitSingle Implicit flag.
      * @return Add remote candidate.
      */
-    public GridCacheMvccCandidate addNearLocal(GridCacheEntryEx parent, UUID nodeId,
-        @Nullable UUID otherNodeId, long threadId, GridCacheVersion ver, long timeout, boolean tx,
+    public GridCacheMvccCandidate addNearLocal(GridCacheEntryEx parent,
+        UUID nodeId,
+        @Nullable UUID otherNodeId,
+        long threadId,
+        GridCacheVersion ver,
+        long timeout,
+        boolean tx,
         boolean implicitSingle) {
-        GridCacheMvccCandidate cand = new GridCacheMvccCandidate(parent, nodeId, otherNodeId, null, threadId, ver,
-            timeout, /*local*/true, /*reentry*/false, tx, implicitSingle, /*near loc*/true, /*dht loc*/false);
+        GridCacheMvccCandidate cand = new GridCacheMvccCandidate(parent,
+            nodeId,
+            otherNodeId,
+            null,
+            threadId,
+            ver,
+            timeout,
+            /*local*/true,
+            /*reentry*/false,
+            tx,
+            implicitSingle,
+            /*near loc*/true,
+            /*dht loc*/false,
+            null);
 
         add0(cand);
 
@@ -855,8 +947,21 @@ public final class GridCacheMvcc {
         }
 
         if (locs != null) {
+            boolean first = true;
+
             for (ListIterator<GridCacheMvccCandidate> it = locs.listIterator(); it.hasNext(); ) {
                 GridCacheMvccCandidate cand = it.next();
+
+                if (first && cand.serializable()) {
+                    if (cand.owner() || !cand.ready())
+                        return;
+
+                    cand.setOwner();
+
+                    return;
+                }
+
+                first = false;
 
                 if (cand.owner())
                     return;

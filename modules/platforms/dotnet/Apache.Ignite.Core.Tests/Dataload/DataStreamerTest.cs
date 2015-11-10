@@ -32,13 +32,13 @@ namespace Apache.Ignite.Core.Tests.Dataload
     /// <summary>
     /// Data streamer tests.
     /// </summary>
-    public class DataStreamerTest
+    public sealed class DataStreamerTest
     {
         /** Node name. */
-        protected const string GridName = "grid";
+        private const string GridName = "grid";
 
         /** Cache name. */
-        protected const string CacheName = "partitioned";
+        private const string CacheName = "partitioned";
 
         /** Node. */
         private IIgnite _grid;
@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// Initialization routine.
         /// </summary>
         [TestFixtureSetUp]
-        public virtual void InitClient()
+        public void InitClient()
         {
             _grid = Ignition.Start(GetIgniteConfiguration(GridName));
 
@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         ///
         /// </summary>
         [TestFixtureTearDown]
-        public virtual void StopGrids()
+        public void StopGrids()
         {
             Ignition.StopAll(true);
         }
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         ///
         /// </summary>
         [SetUp]
-        public virtual void BeforeTest()
+        public void BeforeTest()
         {
             Console.WriteLine("Test started: " + TestContext.CurrentContext.Test.Name);
 
@@ -178,7 +178,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 ldr.TryFlush();
 
-                fut.Get();
+                fut.Wait();
 
                 Assert.AreEqual(1, _cache.Get(1));
             }
@@ -196,14 +196,14 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 Thread.Sleep(100);
 
-                Assert.IsFalse(fut.IsDone);
+                Assert.IsFalse(fut.IsCompleted);
 
                 ldr.PerNodeBufferSize = 2;
 
                 ldr.AddData(2, 2);
                 ldr.AddData(3, 3);
-                ldr.AddData(4, 4).Get();
-                fut.Get();
+                ldr.AddData(4, 4).Wait();
+                fut.Wait();
 
                 Assert.AreEqual(1, _cache.Get(1));
                 Assert.AreEqual(2, _cache.Get(2));
@@ -216,7 +216,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                     new KeyValuePair<int, int>(6, 6),
                     new KeyValuePair<int, int>(7, 7), 
                     new KeyValuePair<int, int>(8, 8)
-                }).Get();
+                }).Wait();
 
                 Assert.AreEqual(5, _cache.Get(5));
                 Assert.AreEqual(6, _cache.Get(6));
@@ -237,7 +237,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 ldr.Close(false);
 
-                fut.Get();
+                fut.Wait();
 
                 Assert.AreEqual(1, _cache.Get(1));
             }
@@ -255,7 +255,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 ldr.Close(true);
 
-                fut.Get();
+                fut.Wait();
 
                 Assert.IsFalse(_cache.ContainsKey(1));
             }
@@ -292,29 +292,29 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 // Test auto flush turning on.
                 var fut = ldr.AddData(1, 1);
                 Thread.Sleep(100);
-                Assert.IsFalse(fut.IsDone);
+                Assert.IsFalse(fut.IsCompleted);
                 ldr.AutoFlushFrequency = 1000;                
-                fut.Get();
+                fut.Wait();
 
                 // Test forced flush after frequency change.
                 fut = ldr.AddData(2, 2);
-                ldr.AutoFlushFrequency = long.MaxValue;                
-                fut.Get();
+                ldr.AutoFlushFrequency = long.MaxValue;
+                fut.Wait();
 
                 // Test another forced flush after frequency change.
                 fut = ldr.AddData(3, 3);
                 ldr.AutoFlushFrequency = 1000;
-                fut.Get();
+                fut.Wait();
 
                 // Test flush before stop.
                 fut = ldr.AddData(4, 4);
                 ldr.AutoFlushFrequency = 0;
-                fut.Get();
+                fut.Wait();
 
                 // Test flush after second turn on.
                 fut = ldr.AddData(5, 5);
                 ldr.AutoFlushFrequency = 1000;
-                fut.Get();
+                fut.Wait();
 
                 Assert.AreEqual(1, _cache.Get(1));
                 Assert.AreEqual(2, _cache.Get(2));

@@ -992,6 +992,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         for (GridDhtPartitionsExchangeFuture fut : exchWorker.futQ)
             U.warn(log, ">>> " + fut);
 
+        if (!readyFuts.isEmpty()) {
+            U.warn(log, "Pending affinity ready futures:");
+
+            for (AffinityReadyFuture fut : readyFuts.values())
+                U.warn(log, ">>> " + fut);
+        }
+
         ExchangeFutureSet exchFuts = this.exchFuts;
 
         if (exchFuts != null) {
@@ -1040,6 +1047,23 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             for (GridCacheFuture<?> fut : mvcc.atomicFutures())
                 U.warn(log, ">>> " + fut);
+        }
+
+        for (GridCacheContext ctx : cctx.cacheContexts()) {
+            if (ctx.isLocal())
+                continue;
+
+            GridCacheContext ctx0 = ctx.isNear() ? ctx.near().dht().context() : ctx;
+
+            GridCachePreloader preloader = ctx0.preloader();
+
+            if (preloader != null)
+                preloader.dumpDebugInfo();
+
+            GridCacheAffinityManager affMgr = ctx0.affinity();
+
+            if (affMgr != null)
+                affMgr.dumpDebugInfo();
         }
     }
 

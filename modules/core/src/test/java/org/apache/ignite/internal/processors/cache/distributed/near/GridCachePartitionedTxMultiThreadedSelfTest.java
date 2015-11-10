@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteTxMultiThreadedAbstractTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -40,11 +41,6 @@ public class GridCachePartitionedTxMultiThreadedSelfTest extends IgniteTxMultiTh
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override public void testOptimisticSerializableCommitMultithreaded() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-806");
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions"})
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
@@ -60,6 +56,8 @@ public class GridCachePartitionedTxMultiThreadedSelfTest extends IgniteTxMultiTh
 
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
+        cc.setNearConfiguration(nearEnabled() ? new NearCacheConfiguration() : null);
+
         c.setCacheConfiguration(cc);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -72,6 +70,13 @@ public class GridCachePartitionedTxMultiThreadedSelfTest extends IgniteTxMultiTh
             resetLog4j(Level.DEBUG, true, GridCacheProcessor.class.getPackage().getName());
 
         return c;
+    }
+
+    /**
+     * @return {@code True} if near cache is enabled.
+     */
+    protected boolean nearEnabled() {
+        return true;
     }
 
     /** {@inheritDoc} */

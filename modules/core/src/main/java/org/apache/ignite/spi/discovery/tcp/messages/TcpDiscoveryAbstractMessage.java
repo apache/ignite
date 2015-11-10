@@ -79,6 +79,17 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     }
 
     /**
+     * @param msg Message.
+     */
+    protected TcpDiscoveryAbstractMessage(TcpDiscoveryAbstractMessage msg) {
+        this.id = msg.id;
+        this.verifierNodeId = msg.verifierNodeId;
+        this.topVer = msg.topVer;
+        this.flags = msg.flags;
+        this.pendingIdx = msg.pendingIdx;
+    }
+
+    /**
      * Gets creator node.
      *
      * @return Creator node ID.

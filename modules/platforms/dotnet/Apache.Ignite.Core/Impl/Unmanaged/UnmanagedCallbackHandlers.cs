@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     /// <summary>
     /// Unmanaged callback handler function pointers.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 0)]
     internal unsafe struct UnmanagedCallbackHandlers
     {
         internal void* target;

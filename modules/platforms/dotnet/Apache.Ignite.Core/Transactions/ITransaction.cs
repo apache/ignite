@@ -19,7 +19,7 @@ namespace Apache.Ignite.Core.Transactions
 {
     using System;
     using System.Collections.Generic;
-    using Apache.Ignite.Core.Common;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Grid cache transaction. 
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Transactions
     ///     </code>
     /// </example>
     /// </summary>
-    public interface ITransaction : IDisposable, IAsyncSupport<ITransaction>
+    public interface ITransaction : IDisposable
     {
         /// <summary>
         /// ID of the node on which this transaction started.
@@ -196,14 +196,22 @@ namespace Apache.Ignite.Core.Transactions
         /// <summary>
         /// Commits this transaction.
         /// </summary>
-        [AsyncSupported]
         void Commit();
+
+        /// <summary>
+        /// Commits this transaction.
+        /// </summary>
+        Task CommitAsync();
 
         /// <summary>
         /// Rolls back this transaction.
         /// </summary>
-        [AsyncSupported]
         void Rollback();
+
+        /// <summary>
+        /// Rolls back this transaction.
+        /// </summary>
+        Task RollbackAsync();
 
         /// <summary>
         /// Adds a new metadata.

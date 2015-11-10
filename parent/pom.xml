@@ -36,6 +36,7 @@
     <properties>
         <ignite.edition>fabric</ignite.edition>
         <hadoop.version>2.4.1</hadoop.version>
+        <spark.version>1.5.1</spark.version>
         <spring.version>4.1.0.RELEASE</spring.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
@@ -319,8 +320,8 @@
                                 <packages>org.apache.ignite.marshaller*</packages>
                             </group>
                             <group>
-                                <title>Portable Objects API</title>
-                                <packages>org.apache.ignite.portable*</packages>
+                                <title>Ignite Binary Objects API</title>
+                                <packages>org.apache.ignite.binary*</packages>
                             </group>
                             <group>
                                 <title>Visor Plugins</title>
@@ -738,22 +739,18 @@
                                         <exclude>ipc/shmem/igniteshmem/.deps/*</exclude><!--tmp files-->
                                         <exclude>ipc/shmem/igniteshmem/libigniteshmem.la</exclude><!--tmp (not under VCS)-->
                                         <exclude>ipc/shmem/igniteshmem/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo</exclude><!--tmp (not under VCS)-->
-                                        <!--platform-->
-                                        <exclude>src/main/dotnet/Apache.Ignite.Core/Apache.Ignite.Core.csproj</exclude>
-                                        <exclude>src/main/dotnet/Apache.Ignite.sln</exclude>
-                                        <exclude>src/main/dotnet/Apache.Ignite.sln.DotSettings</exclude>
+                                        <!--platforms-->
                                         <exclude>src/main/java/META-INF/services/org.apache.ignite.internal.processors.platform.PlatformBootstrapFactory</exclude>
                                         <exclude>src/main/resources/META-INF/services/org.apache.ignite.internal.processors.platform.PlatformBootstrapFactory</exclude>
-                                        <exclude>src/test/dotnet/Apache.Ignite.Core.Tests/Apache.Ignite.Core.Tests.csproj</exclude>
                                         <exclude>src/test/portables/repo/org/apache/ignite/portable/test1/1.1/test1-1.1.jar</exclude>
                                         <exclude>src/test/portables/repo/org/apache/ignite/portable/test2/1.1/test2-1.1.jar</exclude>
-                                        <!--platforms-->
                                         <exclude>**/META-INF/services/*.PlatformBootstrapFactory</exclude>
                                         <exclude>**/Makefile.am</exclude>
                                         <exclude>**/configure.ac</exclude>
                                         <exclude>**/*.pc.in</exclude>
                                         <exclude>**/*.sln</exclude>
-                                        <exclude>**/*.slnrel</exclude>                                        
+                                        <exclude>**/*.snk</exclude>
+                                        <exclude>**/*.slnrel</exclude>
                                         <exclude>**/*.sln.DotSettings</exclude>
                                         <exclude>**/*.FxCop</exclude>
                                         <exclude>**/*.csproj</exclude>
@@ -761,6 +758,7 @@
                                         <exclude>**/*.vcxproj</exclude>
                                         <exclude>**/*.vcxprojrel</exclude>
                                         <exclude>**/*.vcxproj.filters</exclude>
+                                        <exclude>**/mkbuild.cmd</exclude>
                                         <exclude>**/module.def</exclude>
                                         <exclude>**/*.fxcop</exclude>
                                         <exclude>**/*.metaproj</exclude>

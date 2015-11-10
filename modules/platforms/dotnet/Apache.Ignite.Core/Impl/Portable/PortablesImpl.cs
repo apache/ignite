@@ -164,17 +164,15 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <returns>Empty portable object.</returns>
         private PortableUserObject PortableFromDescriptor(IPortableTypeDescriptor desc)
         {
-            PortableHeapStream stream = new PortableHeapStream(18);
+            var len = PortableObjectHeader.Size;
 
-            stream.WriteByte(PortableUtils.HdrFull);
-            stream.WriteByte(PortableUtils.ProtoVer);
-            stream.WriteBool(true);
-            stream.WriteInt(desc.TypeId);
-            stream.WriteInt(0); // Hash.
-            stream.WriteInt(PortableUtils.FullHdrLen); // Length.
-            stream.WriteInt(PortableUtils.FullHdrLen); // Raw data offset.
+            var hdr = new PortableObjectHeader(desc.UserType, desc.TypeId, 0, len, 0, len, true, 0);
 
-            return new PortableUserObject(_marsh, stream.InternalArray, 0, desc.TypeId, 0);
+            var stream = new PortableHeapStream(len);
+
+            PortableObjectHeader.Write(hdr, stream, 0);
+
+            return new PortableUserObject(_marsh, stream.InternalArray, 0, hdr);
         }
 
         /// <summary>

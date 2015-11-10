@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.InteropServices;
     using System.Security;
     using System.Threading;
     using Apache.Ignite.Core.Cache;
@@ -35,7 +34,6 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Managed environment. Acts as a gateway for native code.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
     internal static class ExceptionUtils
     {
         /** NoClassDefFoundError fully-qualified class name which is important during startup phase. */

@@ -37,11 +37,12 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
+import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -58,6 +59,7 @@ import static org.apache.ignite.testframework.GridTestUtils.setMemoryMode;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  *
@@ -90,7 +92,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
         if (gridName.equals(getTestGridName(GRID_CNT - 1)))
             cfg.setClientMode(true);
 
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
+        cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -170,6 +172,13 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
      */
     public void testCrossCacheOptimisticTxFailover() throws Exception {
         crossCacheTxFailover(PARTITIONED, true, OPTIMISTIC, REPEATABLE_READ, TestMemoryMode.HEAP);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCrossCacheOptimisticSerializableTxFailover() throws Exception {
+        crossCacheTxFailover(PARTITIONED, true, OPTIMISTIC, SERIALIZABLE, TestMemoryMode.HEAP);
     }
 
     /**
@@ -424,6 +433,11 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
         @Override public int hashCode() {
             return (int)(key ^ (key >>> 32));
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TestKey.class, this);
+        }
     }
 
     /**
@@ -445,6 +459,11 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
          */
         public long value() {
             return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TestValue.class, this);
         }
     }
 

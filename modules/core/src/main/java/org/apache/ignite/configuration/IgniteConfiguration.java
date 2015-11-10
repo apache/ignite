@@ -31,6 +31,7 @@ import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -430,6 +431,9 @@ public class IgniteConfiguration {
     /** Platform configuration. */
     private PlatformConfiguration platformCfg;
 
+    /** Cache key configuration. */
+    private CacheKeyConfiguration[] cacheKeyCfg;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -466,6 +470,7 @@ public class IgniteConfiguration {
         atomicCfg = cfg.getAtomicConfiguration();
         daemon = cfg.isDaemon();
         cacheCfg = cfg.getCacheConfiguration();
+        cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
         connectorCfg = cfg.getConnectorConfiguration();
         odbcCfg = cfg.getOdbcConfiguration();
@@ -1951,6 +1956,25 @@ public class IgniteConfiguration {
         this.clientMode = clientMode;
 
         return this;
+    }
+
+    /**
+     * Gets cache key configuration.
+     *
+     * @return Cache key configuration.
+     */
+    public CacheKeyConfiguration[] getCacheKeyConfiguration() {
+        return cacheKeyCfg;
+    }
+
+    /**
+     * Sets cache key configuration.
+     * Cache key configuration defines
+     *
+     * @param cacheKeyCfg Cache key configuration.
+     */
+    public void setCacheKeyCfg(CacheKeyConfiguration... cacheKeyCfg) {
+        this.cacheKeyCfg = cacheKeyCfg;
     }
 
     /**

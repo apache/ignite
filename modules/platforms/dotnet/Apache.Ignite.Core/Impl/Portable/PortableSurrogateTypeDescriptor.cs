@@ -43,6 +43,9 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Type structure. */
         private PortableStructure _readerTypeStructure = PortableStructure.CreateEmpty();
+        
+        /** Type schema. */
+        private readonly PortableObjectSchema _schema = new PortableObjectSchema();
 
         /// <summary>
         /// Constructor.
@@ -93,25 +96,19 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /** <inheritDoc /> */
-        public bool MetadataEnabled
-        {
-            get { return _cfg.DefaultMetadataEnabled; }
-        }
-
-        /** <inheritDoc /> */
         public bool KeepDeserialized
         {
             get { return _cfg.DefaultKeepDeserialized; }
         }
 
         /** <inheritDoc /> */
-        public IPortableNameMapper NameConverter
+        public IPortableNameMapper NameMapper
         {
             get { return _cfg.DefaultNameMapper; }
         }
 
         /** <inheritDoc /> */
-        public IPortableIdMapper Mapper
+        public IPortableIdMapper IdMapper
         {
             get { return _cfg.DefaultIdMapper; }
         }
@@ -155,6 +152,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 _readerTypeStructure = _readerTypeStructure.Merge(exp, pathIdx, updates);
             }
+        }
+
+        /** <inheritDoc /> */
+        public PortableObjectSchema Schema
+        {
+            get { return _schema; }
         }
     }
 }

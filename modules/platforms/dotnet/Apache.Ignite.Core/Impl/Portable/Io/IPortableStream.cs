@@ -289,20 +289,20 @@ namespace Apache.Ignite.Core.Impl.Portable.IO
         /// <summary>
         /// Gets remaining bytes in the stream.
         /// </summary>
-        /// <returns>Remaining bytes.</returns>
-        int Remaining();
+        /// <value>Remaining bytes.</value>
+        int Remaining { get; }
 
         /// <summary>
         /// Gets underlying array, avoiding copying if possible.
         /// </summary>
         /// <returns>Underlying array.</returns>
-        byte[] Array();
+        byte[] GetArray();
 
         /// <summary>
         /// Gets underlying data in a new array.
         /// </summary>
         /// <returns>New array with data.</returns>
-        byte[] ArrayCopy();
+        byte[] GetArrayCopy();
         
         /// <summary>
         /// Check whether array passed as argument is the same as the stream hosts.

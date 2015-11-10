@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.portable;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableMetaDataHandler;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
@@ -25,8 +26,8 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
 
 /**
  *
@@ -39,14 +40,14 @@ public class GridPortableCacheEntryMemorySizeSelfTest extends GridCacheEntryMemo
         marsh.setContext(new MarshallerContextTestImpl(null));
 
         PortableContext pCtx = new PortableContext(new PortableMetaDataHandler() {
-            @Override public void addMeta(int typeId, PortableMetadata meta) throws PortableException {
+            @Override public void addMeta(int typeId, BinaryType meta) throws BinaryObjectException {
                 // No-op
             }
 
-            @Override public PortableMetadata metadata(int typeId) throws PortableException {
+            @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
                 return null;
             }
-        }, null);
+        }, new IgniteConfiguration());
 
         IgniteUtils.invoke(PortableMarshaller.class, marsh, "setPortableContext", pCtx);
 

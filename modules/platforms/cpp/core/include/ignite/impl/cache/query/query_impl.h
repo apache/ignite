@@ -30,6 +30,8 @@ namespace ignite
         {
             namespace query
             {
+                class QueryFieldsRowImpl;
+
                 /**
                  * Query cursor implementation.
                  */
@@ -64,6 +66,14 @@ namespace ignite
                      * @param err Error.
                      */
                     void GetNext(OutputOperation& op, IgniteError* err);
+
+                    /**
+                     * Get next row.
+                     *
+                     * @param err Error.
+                     * @return Output row.
+                     */
+                    QueryFieldsRowImpl* GetNextRow(IgniteError* err);
 
                     /**
                      * Get all cursor entries.

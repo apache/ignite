@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Tests.Portable
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Portable.IO;
@@ -527,6 +526,24 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(obj.UtcRaw, otherObj.UtcRaw);
             Assert.AreEqual(obj.UtcNullRaw, otherObj.UtcNullRaw);
             Assert.AreEqual(obj.UtcArrRaw, otherObj.UtcArrRaw);
+        }
+
+        /// <summary>
+        /// Tests the DateTime marshalling.
+        /// </summary>
+        [Test]
+        public void TestDateTime()
+        {
+            var time = DateTime.Now;
+            Assert.AreEqual(_marsh.Unmarshal<DateTime>(_marsh.Marshal(time)), time);
+
+            var timeUtc = DateTime.UtcNow;
+            Assert.AreEqual(_marsh.Unmarshal<DateTime>(_marsh.Marshal(timeUtc)), timeUtc);
+
+            // Check exception with non-UTC date
+            var stream = new PortableHeapStream(128);
+            var writer = _marsh.StartMarshal(stream);
+            Assert.Throws<InvalidOperationException>(() => writer.WriteTimestamp(DateTime.Now));
         }
 
         /**
@@ -1208,6 +1225,38 @@ namespace Apache.Ignite.Core.Tests.Portable
             Assert.AreEqual(nDateArr, obj2.NDateArr);
         }
 
+        /// <summary>
+        /// Writes objects of various sizes to test schema compaction 
+        /// (where field offsets can be stored as 1, 2 or 4 bytes).
+        /// </summary>
+        [Test]
+        public void TestCompactSchema()
+        {
+            var marsh = new PortableMarshaller(new PortableConfiguration
+            {
+                TypeConfigurations = new List<PortableTypeConfiguration>
+                {
+                    new PortableTypeConfiguration(typeof (SpecialArray)),
+                    new PortableTypeConfiguration(typeof (SpecialArrayMarshalAware))
+                }
+            });
+
+            var dt = new SpecialArrayMarshalAware();
+
+            foreach (var i in new[] {1, 5, 10, 13, 14, 15, 100, 200, 1000, 5000, 15000, 30000})
+            {
+                dt.NGuidArr = Enumerable.Range(1, i).Select(x => (Guid?) Guid.NewGuid()).ToArray();
+                dt.NDateArr = Enumerable.Range(1, i).Select(x => (DateTime?) DateTime.Now.AddDays(x)).ToArray();
+
+                var bytes = marsh.Marshal(dt);
+
+                var res = marsh.Unmarshal<SpecialArrayMarshalAware>(bytes);
+
+                CollectionAssert.AreEquivalent(dt.NGuidArr, res.NGuidArr);
+                CollectionAssert.AreEquivalent(dt.NDateArr, res.NDateArr);
+            }
+        }
+
         private static void CheckKeepSerialized(PortableConfiguration cfg, bool expKeep)
         {
             if (cfg.TypeConfigurations == null)
@@ -1394,29 +1443,6 @@ namespace Apache.Ignite.Core.Tests.Portable
                 Pairs = (IDictionary<TKey, TValue>) reader.ReadObject<object>("Pairs");
                 Objects = (ICollection<object>) reader.ReadObject<object>("Objects");
             }
-        }
-
-        private static string CollectionAsString(ICollection col)
-        {
-            if (col == null)
-                return null;
-            StringBuilder sb = new StringBuilder("[");
-
-            bool first = true;
-
-            foreach (object elem in col)
-            {
-                if (first)
-                    first = false;
-                else
-                    sb.Append(", ");
-
-                sb.Append(elem);
-            }
-
-            sb.Append("]");
-
-            return sb.ToString();
         }
 
         public class TestList : ArrayList

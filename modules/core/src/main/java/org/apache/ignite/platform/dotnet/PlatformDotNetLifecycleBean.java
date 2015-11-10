@@ -26,11 +26,8 @@ import java.util.Map;
  * Lifecycle bean implementation which can be used to configure .Net lifecycle beans in Java Spring configuration.
  */
 public class PlatformDotNetLifecycleBean extends PlatformLifecycleBean implements LifecycleBean {
-    /** Assembly name. */
-    private String assemblyName;
-
-    /** Class name. */
-    private String clsName;
+    /** Type name. */
+    private String typName;
 
     /** Properties. */
     private Map<String, ?> props;
@@ -45,48 +42,28 @@ public class PlatformDotNetLifecycleBean extends PlatformLifecycleBean implement
     /**
      * Constructor.
      *
-     * @param assemblyName Assembly name.
-     * @param clsName Class name.
+     * @param typName Type name.
      */
-    public PlatformDotNetLifecycleBean(String assemblyName, String clsName) {
-        this.assemblyName = assemblyName;
-        this.clsName = clsName;
+    public PlatformDotNetLifecycleBean(String typName) {
+        this.typName = typName;
     }
 
     /**
-     * Get assembly name.
+     * Get type name.
      *
-     * @return Assembly name.
+     * @return Type name.
      */
-    public String getAssemblyName() {
-        return assemblyName;
+    public String getTypeName() {
+        return typName;
     }
 
     /**
-     * Set assembly name.
+     * Set type name.
      *
-     * @param assemblyName Assembly name.
+     * @param typName Type name.
      */
-    public void setAssemblyName(String assemblyName) {
-        this.assemblyName = assemblyName;
-    }
-
-    /**
-     * Get class name.
-     *
-     * @return Class name.
-     */
-    public String getClassName() {
-        return clsName;
-    }
-
-    /**
-     * Set class name.
-     *
-     * @param clsName Class name.
-     */
-    public void setClassName(String clsName) {
-        this.clsName = clsName;
+    public void setTypeName(String typName) {
+        this.typName = typName;
     }
 
     /**

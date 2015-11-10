@@ -194,14 +194,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [SuppressMessage("ReSharper", "ReturnValueOfPureMethodIsNotUsed")]
         public void TestCursor()
         {
-            var cache0 = Cache().WithAsync();
-
-            cache0.WithAsync().Put(1, new QueryPerson("Ivanov", 30));
-
-            IFuture<object> res = cache0.GetFuture<object>();
-
-            res.Get();
-
             Cache().Put(1, new QueryPerson("Ivanov", 30));
             Cache().Put(1, new QueryPerson("Petrov", 40));
             Cache().Put(1, new QueryPerson("Sidorov", 50));

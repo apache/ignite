@@ -28,11 +28,10 @@ import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableIdMapper;
-import org.apache.ignite.portable.PortableObject;
-import org.apache.ignite.portable.PortableSerializer;
-import org.apache.ignite.portable.PortableTypeConfiguration;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryTypeIdMapper;
+import org.apache.ignite.binary.BinarySerializer;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -75,23 +74,18 @@ import org.jetbrains.annotations.Nullable;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public class PortableMarshaller extends AbstractMarshaller {
+    // TODO ignite-1282 Move to IgniteConfiguration.
     /** Class names. */
     private Collection<String> clsNames;
 
     /** ID mapper. */
-    private PortableIdMapper idMapper;
+    private BinaryTypeIdMapper idMapper;
 
     /** Serializer. */
-    private PortableSerializer serializer;
+    private BinarySerializer serializer;
 
     /** Types. */
-    private Collection<PortableTypeConfiguration> typeCfgs;
-
-    /** Whether to convert string to bytes using UTF-8 encoding. */
-    private boolean convertString = true;
-
-    /** Meta data enabled flag. */
-    private boolean metaDataEnabled = true;
+    private Collection<BinaryTypeConfiguration> typeCfgs;
 
     /** Keep deserialized flag. */
     private boolean keepDeserialized = true;
@@ -125,7 +119,7 @@ public class PortableMarshaller extends AbstractMarshaller {
      *
      * @return ID mapper.
      */
-    public PortableIdMapper getIdMapper() {
+    public BinaryTypeIdMapper getIdMapper() {
         return idMapper;
     }
 
@@ -134,7 +128,7 @@ public class PortableMarshaller extends AbstractMarshaller {
      *
      * @param idMapper ID mapper.
      */
-    public void setIdMapper(PortableIdMapper idMapper) {
+    public void setIdMapper(BinaryTypeIdMapper idMapper) {
         this.idMapper = idMapper;
     }
 
@@ -143,7 +137,7 @@ public class PortableMarshaller extends AbstractMarshaller {
      *
      * @return Serializer.
      */
-    public PortableSerializer getSerializer() {
+    public BinarySerializer getSerializer() {
         return serializer;
     }
 
@@ -152,7 +146,7 @@ public class PortableMarshaller extends AbstractMarshaller {
      *
      * @param serializer Serializer.
      */
-    public void setSerializer(PortableSerializer serializer) {
+    public void setSerializer(BinarySerializer serializer) {
         this.serializer = serializer;
     }
 
@@ -161,7 +155,7 @@ public class PortableMarshaller extends AbstractMarshaller {
      *
      * @return Types configuration.
      */
-    public Collection<PortableTypeConfiguration> getTypeConfigurations() {
+    public Collection<BinaryTypeConfiguration> getTypeConfigurations() {
         return typeCfgs;
     }
 
@@ -170,57 +164,16 @@ public class PortableMarshaller extends AbstractMarshaller {
      *
      * @param typeCfgs Type configurations.
      */
-    public void setTypeConfigurations(Collection<PortableTypeConfiguration> typeCfgs) {
+    public void setTypeConfigurations(Collection<BinaryTypeConfiguration> typeCfgs) {
         this.typeCfgs = typeCfgs;
     }
 
     /**
-     * Gets strings must be converted to or from bytes using UTF-8 encoding.
-     * <p>
-     * Default value is {@code true}.
-     *
-     * @return Flag indicating whether string must be converted to byte array using UTF-8 encoding.
-     */
-    public boolean isConvertStringToBytes() {
-        return convertString;
-    }
-
-    /**
-     * Sets strings must be converted to or from bytes using UTF-8 encoding.
-     * <p>
-     * Default value is {@code true}.
-     *
-     * @param convertString Flag indicating whether string must be converted to byte array using UTF-8 encoding.
-     */
-    public void setConvertStringToBytes(boolean convertString) {
-        this.convertString = convertString;
-    }
-
-    /**
-     * If {@code true}, meta data will be collected or all types. If you need to override this behaviour for
-     * some specific type, use {@link PortableTypeConfiguration#setMetaDataEnabled(Boolean)} method.
-     * <p>
-     * Default value if {@code true}.
-     *
-     * @return Whether meta data is collected.
-     */
-    public boolean isMetaDataEnabled() {
-        return metaDataEnabled;
-    }
-
-    /**
-     * @param metaDataEnabled Whether meta data is collected.
-     */
-    public void setMetaDataEnabled(boolean metaDataEnabled) {
-        this.metaDataEnabled = metaDataEnabled;
-    }
-
-    /**
-     * If {@code true}, {@link PortableObject} will cache deserialized instance after
-     * {@link PortableObject#deserialize()} is called. All consequent calls of this
-     * method on the same instance of {@link PortableObject} will return that cached
+     * If {@code true}, {@link org.apache.ignite.binary.BinaryObject} will cache deserialized instance after
+     * {@link org.apache.ignite.binary.BinaryObject#deserialize()} is called. All consequent calls of this
+     * method on the same instance of {@link org.apache.ignite.binary.BinaryObject} will return that cached
      * value without actually deserializing portable object. If you need to override this
-     * behaviour for some specific type, use {@link PortableTypeConfiguration#setKeepDeserialized(Boolean)}
+     * behaviour for some specific type, use {@link org.apache.ignite.binary.BinaryTypeConfiguration#setKeepDeserialized(Boolean)}
      * method.
      * <p>
      * Default value if {@code true}.
@@ -252,6 +205,7 @@ public class PortableMarshaller extends AbstractMarshaller {
      * <p/>
      * @param ctx Portable context.
      */
+    @SuppressWarnings("UnusedDeclaration")
     private void setPortableContext(PortableContext ctx) {
         ctx.configure(this);
 
@@ -260,7 +214,7 @@ public class PortableMarshaller extends AbstractMarshaller {
 
     /** {@inheritDoc} */
     @Override public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException {
-        return impl.marshal(obj, 0);
+        return impl.marshal(obj);
     }
 
     /** {@inheritDoc} */
@@ -271,7 +225,7 @@ public class PortableMarshaller extends AbstractMarshaller {
             out.write(arr);
         }
         catch (IOException e) {
-            throw new PortableException("Failed to marshal the object: " + obj, e);
+            throw new BinaryObjectException("Failed to marshal the object: " + obj, e);
         }
     }
 
@@ -298,7 +252,12 @@ public class PortableMarshaller extends AbstractMarshaller {
             return impl.deserialize(buf.toByteArray(), clsLdr);
         }
         catch (IOException e) {
-            throw new PortableException("Failed to unmarshal the object from InputStream", e);
+            throw new BinaryObjectException("Failed to unmarshal the object from InputStream", e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onUndeploy(ClassLoader ldr) {
+        impl.context().onUndeploy(ldr);
     }
 }

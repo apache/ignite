@@ -61,6 +61,11 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isPlatformType() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
         assert val != null;

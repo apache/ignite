@@ -254,11 +254,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 writeAction = GetWriter<Guid?[]>(field, (f, w, o) => w.WriteGuidArray(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadGuidArray(f));
             } 
-            else if (elemType == typeof(DateTime?))
-            {
-                writeAction = GetWriter<DateTime?[]>(field, (f, w, o) => w.WriteTimestampArray(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadTimestampArray(f));
-            }
             else if (elemType.IsEnum)
             {
                 writeAction = GetWriter(field, MthdWriteEnumArray, elemType);
@@ -308,16 +303,6 @@ namespace Apache.Ignite.Core.Impl.Portable
                 writeAction = GetWriter<Guid?>(field, (f, w, o) => w.WriteGuid(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadGuid(f));
             } 
-            else if (type == typeof(DateTime))
-            {
-                writeAction = GetWriter<DateTime>(field, (f, w, o) => w.WriteTimestamp(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadTimestamp(f));
-            }
-            else if (nullable && nullableType == typeof(DateTime))
-            {
-                writeAction = GetWriter<DateTime?>(field, (f, w, o) => w.WriteTimestamp(f, o));
-                readAction = GetReader(field, (f, r) => r.ReadTimestamp(f));
-            }
             else if (type.IsEnum)
             {
                 writeAction = GetWriter<object>(field, (f, w, o) => w.WriteEnum(f, o), true);

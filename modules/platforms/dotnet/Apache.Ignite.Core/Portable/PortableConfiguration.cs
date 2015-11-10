@@ -30,7 +30,6 @@ namespace Apache.Ignite.Core.Portable
         /// </summary>
         public PortableConfiguration()
         {
-            DefaultMetadataEnabled = true;
             DefaultKeepDeserialized = true;
         }
 
@@ -42,7 +41,6 @@ namespace Apache.Ignite.Core.Portable
         {
             DefaultIdMapper = cfg.DefaultIdMapper;
             DefaultNameMapper = cfg.DefaultNameMapper;
-            DefaultMetadataEnabled = cfg.DefaultMetadataEnabled;
             DefaultKeepDeserialized = cfg.DefaultKeepDeserialized;
             DefaultSerializer = cfg.DefaultSerializer;
 
@@ -99,15 +97,6 @@ namespace Apache.Ignite.Core.Portable
         /// Default serializer.
         /// </summary>
         public IPortableSerializer DefaultSerializer
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
-        /// Default metadata enabled flag. Defaults to true.
-        /// </summary>
-        public bool DefaultMetadataEnabled
         {
             get;
             set;

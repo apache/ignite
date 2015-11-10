@@ -41,16 +41,13 @@ namespace Apache.Ignite.Core.Impl.Portable
         private readonly bool _userType;
 
         /** Name converter. */
-        private readonly IPortableNameMapper _nameConverter;
+        private readonly IPortableNameMapper _nameMapper;
 
         /** Mapper. */
-        private readonly IPortableIdMapper _mapper;
+        private readonly IPortableIdMapper _idMapper;
 
         /** Serializer. */
         private readonly IPortableSerializer _serializer;
-
-        /** Metadata enabled flag. */
-        private readonly bool _metaEnabled;
 
         /** Whether to cache deserialized value in IPortableObject */
         private readonly bool _keepDeserialized;
@@ -63,6 +60,9 @@ namespace Apache.Ignite.Core.Impl.Portable
 
         /** Type structure. */
         private volatile PortableStructure _readerTypeStructure = PortableStructure.CreateEmpty();
+        
+        /** Type schema. */
+        private readonly PortableObjectSchema _schema = new PortableObjectSchema();
 
         /// <summary>
         /// Constructor.
@@ -71,10 +71,9 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <param name="typeId">Type ID.</param>
         /// <param name="typeName">Type name.</param>
         /// <param name="userType">User type flag.</param>
-        /// <param name="nameConverter">Name converter.</param>
-        /// <param name="mapper">Mapper.</param>
+        /// <param name="nameMapper">Name converter.</param>
+        /// <param name="idMapper">Mapper.</param>
         /// <param name="serializer">Serializer.</param>
-        /// <param name="metaEnabled">Metadata enabled flag.</param>
         /// <param name="keepDeserialized">Whether to cache deserialized value in IPortableObject</param>
         /// <param name="affKeyFieldName">Affinity field key name.</param>
         public PortableFullTypeDescriptor(
@@ -82,10 +81,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             int typeId, 
             string typeName, 
             bool userType, 
-            IPortableNameMapper nameConverter, 
-            IPortableIdMapper mapper, 
+            IPortableNameMapper nameMapper, 
+            IPortableIdMapper idMapper, 
             IPortableSerializer serializer, 
-            bool metaEnabled, 
             bool keepDeserialized, 
             string affKeyFieldName)
         {
@@ -93,10 +91,9 @@ namespace Apache.Ignite.Core.Impl.Portable
             _typeId = typeId;
             _typeName = typeName;
             _userType = userType;
-            _nameConverter = nameConverter;
-            _mapper = mapper;
+            _nameMapper = nameMapper;
+            _idMapper = idMapper;
             _serializer = serializer;
-            _metaEnabled = metaEnabled;
             _keepDeserialized = keepDeserialized;
             _affKeyFieldName = affKeyFieldName;
         }
@@ -134,14 +131,6 @@ namespace Apache.Ignite.Core.Impl.Portable
         }
 
         /// <summary>
-        /// Metadata enabled flag.
-        /// </summary>
-        public bool MetadataEnabled
-        {
-            get { return _metaEnabled; }
-        }
-
-        /// <summary>
         /// Whether to cache deserialized value in IPortableObject
         /// </summary>
         public bool KeepDeserialized
@@ -152,17 +141,17 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// <summary>
         /// Name converter.
         /// </summary>
-        public IPortableNameMapper NameConverter
+        public IPortableNameMapper NameMapper
         {
-            get { return _nameConverter; }
+            get { return _nameMapper; }
         }
 
         /// <summary>
         /// Mapper.
         /// </summary>
-        public IPortableIdMapper Mapper
+        public IPortableIdMapper IdMapper
         {
-            get { return _mapper; }
+            get { return _idMapper; }
         }
 
         /// <summary>
@@ -211,6 +200,12 @@ namespace Apache.Ignite.Core.Impl.Portable
             {
                 _readerTypeStructure = _readerTypeStructure.Merge(exp, pathIdx, updates);
             }
+        }
+
+        /** <inheritDoc /> */
+        public PortableObjectSchema Schema
+        {
+            get { return _schema; }
         }
     }
 }

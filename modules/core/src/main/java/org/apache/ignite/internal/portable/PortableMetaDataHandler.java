@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.portable;
 
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMetadata;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
 
 /**
  * Portable meta data handler.
@@ -29,16 +29,16 @@ public interface PortableMetaDataHandler {
      *
      * @param typeId Type ID.
      * @param meta Meta data.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public void addMeta(int typeId, PortableMetadata meta) throws PortableException;
+    public void addMeta(int typeId, BinaryType meta) throws BinaryObjectException;
 
     /**
      * Gets meta data for provided type ID.
      *
      * @param typeId Type ID.
      * @return Meta data.
-     * @throws PortableException In case of error.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public PortableMetadata metadata(int typeId) throws PortableException;
+    public BinaryType metadata(int typeId) throws BinaryObjectException;
 }

@@ -289,6 +289,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 col,
                 req.ignoreDeploymentOwnership(),
                 req.skipStore(),
+                req.keepBinary(),
                 updater);
 
             Exception err = null;

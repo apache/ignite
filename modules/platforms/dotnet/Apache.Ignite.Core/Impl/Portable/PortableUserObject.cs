@@ -31,6 +31,9 @@ namespace Apache.Ignite.Core.Impl.Portable
     /// </summary>
     internal class PortableUserObject : IPortableObject
     {
+        /** Cache empty dictionary. */
+        private static readonly IDictionary<int, int> EmptyFields = new Dictionary<int, int>();
+
         /** Marshaller. */
         private readonly PortableMarshaller _marsh;
 
@@ -40,11 +43,8 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** Offset in data array. */
         private readonly int _offset;
 
-        /** Type ID. */
-        private readonly int _typeId;
-
-        /** Hash code. */
-        private readonly int _hashCode;
+        /** Header. */
+        private readonly PortableObjectHeader _header;
 
         /** Fields. */
         private volatile IDictionary<int, int> _fields;
@@ -53,34 +53,49 @@ namespace Apache.Ignite.Core.Impl.Portable
         private object _deserialized;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PortableUserObject"/> class.
+        /// Initializes a new instance of the <see cref="PortableUserObject" /> class.
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="data">Raw data of this portable object.</param>
         /// <param name="offset">Offset in data array.</param>
-        /// <param name="typeId">Type ID.</param>
-        /// <param name="hashCode">Hash code.</param>
-        public PortableUserObject(PortableMarshaller marsh, byte[] data, int offset, int typeId, int hashCode)
+        /// <param name="header">The header.</param>
+        public PortableUserObject(PortableMarshaller marsh, byte[] data, int offset, PortableObjectHeader header)
         {
             _marsh = marsh;
 
             _data = data;
             _offset = offset;
 
-            _typeId = typeId;
-            _hashCode = hashCode;
+            _header = header;
         }
 
         /** <inheritdoc /> */
         public int TypeId
         {
-            get { return _typeId; }
+            get { return _header.TypeId; }
         }
 
         /** <inheritdoc /> */
         public T GetField<T>(string fieldName)
         {
-            return Field<T>(fieldName, null);
+            int pos;
+
+            return TryGetFieldPosition(fieldName, out pos) ? GetField<T>(pos, null) : default(T);
+        }
+
+        /// <summary>
+        /// Gets field value on the given object.
+        /// </summary>
+        /// <param name="pos">Position.</param>
+        /// <param name="builder">Builder.</param>
+        /// <returns>Field value.</returns>
+        public T GetField<T>(int pos, PortableBuilderImpl builder)
+        {
+            IPortableStream stream = new PortableHeapStream(_data);
+
+            stream.Seek(pos + _offset, SeekOrigin.Begin);
+
+            return _marsh.Unmarshal<T>(stream, PortableMode.ForcePortable, builder);
         }
 
         /** <inheritdoc /> */
@@ -106,7 +121,7 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                 T res = _marsh.Unmarshal<T>(stream, mode);
 
-                IPortableTypeDescriptor desc = _marsh.GetDescriptor(true, _typeId);
+                IPortableTypeDescriptor desc = _marsh.GetDescriptor(true, _header.TypeId);
 
                 if (!desc.KeepDeserialized)
                     return res;
@@ -120,7 +135,7 @@ namespace Apache.Ignite.Core.Impl.Portable
         /** <inheritdoc /> */
         public IPortableMetadata GetMetadata()
         {
-            return _marsh.GetMetadata(_typeId);
+            return _marsh.GetMetadata(_header.TypeId);
         }
 
         /// <summary>
@@ -139,42 +154,15 @@ namespace Apache.Ignite.Core.Impl.Portable
             get { return _offset; }
         }
 
-        /// <summary>
-        /// Get field with builder.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="fieldName"></param>
-        /// <param name="builder"></param>
-        /// <returns></returns>
-        public T Field<T>(string fieldName, PortableBuilderImpl builder)
+        public bool TryGetFieldPosition(string fieldName, out int pos)
         {
-            IPortableTypeDescriptor desc = _marsh.GetDescriptor(true, _typeId);
+            var desc = _marsh.GetDescriptor(true, _header.TypeId);
 
             InitializeFields();
 
-            int fieldId = PortableUtils.FieldId(_typeId, fieldName, desc.NameConverter, desc.Mapper);
+            int fieldId = PortableUtils.FieldId(_header.TypeId, fieldName, desc.NameMapper, desc.IdMapper);
 
-            int pos;
-
-            if (_fields.TryGetValue(fieldId, out pos))
-            {
-                if (builder != null)
-                {
-                    // Read in scope of build process.
-                    T res;
-
-                    if (!builder.CachedField(pos, out res))
-                    {
-                        res = Field0<T>(pos, builder);
-
-                        builder.CacheField(pos, res);
-                    }
-
-                    return res;
-                }
-                return Field0<T>(pos, null);
-            }
-            return default(T);
+            return _fields.TryGetValue(fieldId, out pos);
         }
 
         /// <summary>
@@ -182,37 +170,20 @@ namespace Apache.Ignite.Core.Impl.Portable
         /// </summary>
         private void InitializeFields()
         {
-            if (_fields == null)
-            {
-                IPortableStream stream = new PortableHeapStream(_data);
+            if (_fields != null) 
+                return;
 
-                stream.Seek(_offset + PortableUtils.OffsetRaw, SeekOrigin.Begin);
+            var stream = new PortableHeapStream(_data);
 
-                int rawDataOffset = stream.ReadInt();
+            var hdr = PortableObjectHeader.Read(stream, _offset);
 
-                _fields = PortableUtils.ObjectFields(stream, _typeId, rawDataOffset);
-            }
-        }
-
-        /// <summary>
-        /// Gets field value on the given object.
-        /// </summary>
-        /// <param name="pos">Position.</param>
-        /// <param name="builder">Builder.</param>
-        /// <returns>Field value.</returns>
-        private T Field0<T>(int pos, PortableBuilderImpl builder)
-        {
-            IPortableStream stream = new PortableHeapStream(_data);
-
-            stream.Seek(pos, SeekOrigin.Begin);
-
-            return _marsh.Unmarshal<T>(stream, PortableMode.ForcePortable, builder);
+            _fields = hdr.ReadSchemaAsDictionary(stream, _offset) ?? EmptyFields;
         }
 
         /** <inheritdoc /> */
         public override int GetHashCode()
         {
-            return _hashCode;
+            return _header.HashCode;
         }
 
         /** <inheritdoc /> */
@@ -228,8 +199,8 @@ namespace Apache.Ignite.Core.Impl.Portable
                 if (_data == that._data && _offset == that._offset)
                     return true;
 
-                // 1. Check hash code and type IDs.
-                if (_hashCode == that._hashCode && _typeId == that._typeId)
+                // 1. Check headers
+                if (_header == that._header)
                 {
                     // 2. Check if objects have the same field sets.
                     InitializeFields();
@@ -240,33 +211,31 @@ namespace Apache.Ignite.Core.Impl.Portable
 
                     foreach (int id in _fields.Keys)
                     {
-                        if (!that._fields.Keys.Contains(id))
+                        if (!that._fields.ContainsKey(id))
                             return false;
                     }
 
                     // 3. Check if objects have the same field values.
                     foreach (KeyValuePair<int, int> field in _fields)
                     {
-                        object fieldVal = Field0<object>(field.Value, null);
-                        object thatFieldVal = that.Field0<object>(that._fields[field.Key], null);
+                        object fieldVal = GetField<object>(field.Value, null);
+                        object thatFieldVal = that.GetField<object>(that._fields[field.Key], null);
 
                         if (!Equals(fieldVal, thatFieldVal))
                             return false;
                     }
 
                     // 4. Check if objects have the same raw data.
-                    IPortableStream stream = new PortableHeapStream(_data);
-                    stream.Seek(_offset + PortableUtils.OffsetLen, SeekOrigin.Begin);
-                    int len = stream.ReadInt();
-                    int rawOffset = stream.ReadInt();
+                    // ReSharper disable ImpureMethodCallOnReadonlyValueField (method is not impure)
+                    var stream = new PortableHeapStream(_data);
+                    var rawOffset = _header.GetRawOffset(stream, _offset);
 
-                    IPortableStream thatStream = new PortableHeapStream(that._data);
-                    thatStream.Seek(_offset + PortableUtils.OffsetLen, SeekOrigin.Begin);
-                    int thatLen = thatStream.ReadInt();
-                    int thatRawOffset = thatStream.ReadInt();
+                    var thatStream = new PortableHeapStream(that._data);
+                    var thatRawOffset = that._header.GetRawOffset(thatStream, that._offset);
+                    // ReSharper restore ImpureMethodCallOnReadonlyValueField
 
-                    return PortableUtils.CompareArrays(_data, _offset + rawOffset, len - rawOffset, that._data,
-                        that._offset + thatRawOffset, thatLen - thatRawOffset);
+                    return PortableUtils.CompareArrays(_data, _offset + rawOffset, _header.Length - rawOffset, 
+                        that._data, that._offset + thatRawOffset, that._header.Length - thatRawOffset);
                 }
             }
 
@@ -295,13 +264,13 @@ namespace Apache.Ignite.Core.Impl.Portable
 
             StringBuilder sb;
 
-            IPortableTypeDescriptor desc = _marsh.GetDescriptor(true, _typeId);
+            IPortableTypeDescriptor desc = _marsh.GetDescriptor(true, _header.TypeId);
 
             IPortableMetadata meta;
 
             try
             {
-                meta = _marsh.GetMetadata(_typeId);
+                meta = _marsh.GetMetadata(_header.TypeId);
             }
             catch (IgniteException)
             {
@@ -309,7 +278,7 @@ namespace Apache.Ignite.Core.Impl.Portable
             }
 
             if (meta == null)
-                sb = new StringBuilder("PortableObject [typeId=").Append(_typeId).Append(", idHash=" + idHash);
+                sb = new StringBuilder("PortableObject [typeId=").Append(_header.TypeId).Append(", idHash=" + idHash);
             else
             {
                 sb = new StringBuilder(meta.TypeName).Append(" [idHash=" + idHash);
@@ -324,7 +293,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                     {
                         sb.Append(", ");
 
-                        int fieldId = PortableUtils.FieldId(_typeId, fieldName, desc.NameConverter, desc.Mapper);
+                        int fieldId = PortableUtils.FieldId(_header.TypeId, fieldName, desc.NameMapper, desc.IdMapper);
 
                         int fieldPos;
 
@@ -332,7 +301,7 @@ namespace Apache.Ignite.Core.Impl.Portable
                         {
                             sb.Append(fieldName).Append('=');
 
-                            ToString0(sb, Field0<object>(fieldPos, null), handled);
+                            ToString0(sb, GetField<object>(fieldPos, null), handled);
                         }
                     }
                 }

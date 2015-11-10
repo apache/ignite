@@ -24,9 +24,6 @@ import org.jetbrains.annotations.Nullable;
  * Mirror of .Net class GridDotNetPortableTypeConfiguration.cs
  */
 public class PlatformDotNetPortableTypeConfiguration {
-    /** Assembly name. */
-    private String assemblyName;
-
     /** Type name. */
     private String typeName;
 
@@ -41,9 +38,6 @@ public class PlatformDotNetPortableTypeConfiguration {
 
     /** Affinity key field name. */
     private String affinityKeyFieldName;
-
-    /** Metadata enabled. */
-    private Boolean metadataEnabled;
 
     /** Whether to cache deserialized value in IGridPortableObject. */
     private Boolean keepDeserialized;
@@ -60,28 +54,12 @@ public class PlatformDotNetPortableTypeConfiguration {
      * @param cfg configuration to copy.
      */
     public PlatformDotNetPortableTypeConfiguration(PlatformDotNetPortableTypeConfiguration cfg) {
-        assemblyName = cfg.getAssemblyName();
         typeName = cfg.getTypeName();
         nameMapper = cfg.getNameMapper();
         idMapper = cfg.getIdMapper();
         serializer = cfg.getSerializer();
         affinityKeyFieldName = cfg.getAffinityKeyFieldName();
-        metadataEnabled = cfg.getMetadataEnabled();
         keepDeserialized = cfg.isKeepDeserialized();
-    }
-
-    /**
-     * @return Assembly name.
-     */
-    public String getAssemblyName() {
-        return assemblyName;
-    }
-
-    /**
-     * @param assemblyName New assembly name.
-     */
-    public void setAssemblyName(String assemblyName) {
-        this.assemblyName = assemblyName;
     }
 
     /**
@@ -138,27 +116,6 @@ public class PlatformDotNetPortableTypeConfiguration {
      */
     public void setSerializer(String serializer) {
         this.serializer = serializer;
-    }
-
-    /**
-     * Gets metadata enabled flag. See {@link #setMetadataEnabled(Boolean)} for more information.
-     *
-     * @return Metadata enabled flag.
-     */
-    public Boolean getMetadataEnabled() {
-        return metadataEnabled;
-    }
-
-    /**
-     * Sets metadata enabled flag.
-     * <p />
-     * When set to {@code null} default value taken from
-     * {@link PlatformDotNetPortableConfiguration#isDefaultMetadataEnabled()} will be used.
-     *
-     * @param metadataEnabled New metadata enabled.
-     */
-    public void setMetadataEnabled(Boolean metadataEnabled) {
-        this.metadataEnabled = metadataEnabled;
     }
 
     /**
