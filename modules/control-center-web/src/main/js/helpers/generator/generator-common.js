@@ -192,10 +192,6 @@ $generatorCommon.EVICTION_POLICIES = {
         className: 'org.apache.ignite.cache.eviction.lru.LruEvictionPolicy',
         fields: {batchSize: null, maxMemorySize: null, maxSize: null}
     },
-    RND: {
-        className: 'org.apache.ignite.cache.eviction.random.RandomEvictionPolicy',
-        fields: {maxSize: null}
-    },
     FIFO: {
         className: 'org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy',
         fields: {batchSize: null, maxMemorySize: null, maxSize: null}
