@@ -155,6 +155,20 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
         }, threads, "load-thread");
     }
 
+    public void testConcurrentLoadAllCustomThreshold() throws Exception {
+        int threads = 15;
+        final int threshold = 15;
+        final int keysCnt = 150;
+
+        final CyclicBarrier beforeBarrier = new CyclicBarrier(threads);
+
+        ConcurrentVerifyStore store = new ConcurrentVerifyStore(keysCnt);
+
+        final CacheStoreBalancingWrapper<Integer, Integer> wrapper = new CacheStoreBalancingWrapper<Integer, Integer>(store, threshold);
+
+        concurrentLoadAll(threads, threshold, keysCnt, beforeBarrier, wrapper);
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -171,6 +185,12 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
 
         final CacheStoreBalancingWrapper<Integer, Integer> wrapper =new CacheStoreBalancingWrapper<>(store);
 
+        concurrentLoadAll(threads, threshold, keysCnt, beforeBarrier, wrapper);
+    }
+
+    private void concurrentLoadAll(int threads, final int threshold, final int keysCnt,
+        final CyclicBarrier beforeBarrier,
+        final CacheStoreBalancingWrapper<Integer, Integer> wrapper) throws Exception {
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
                 for (int i = 0; i < keysCnt; i += threshold) {
