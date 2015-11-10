@@ -89,14 +89,14 @@ namespace ignite
              * @param val Value.
              * @return Result.
              */
-            IGNITE_FRIEND_EXPORT char* CopyChars(const char* val);
+            IGNITE_IMPORT_EXPORT char* CopyChars(const char* val);
 
             /**
              * Release characters.
              *
              * @param val Value.
              */
-            IGNITE_FRIEND_EXPORT void ReleaseChars(char* val);
+            IGNITE_IMPORT_EXPORT void ReleaseChars(char* val);
             
             /**
              * Read system environment variable taking thread-safety in count.
@@ -105,7 +105,7 @@ namespace ignite
              * @param found Whether environment variable with such name was found.
              * @return Environment variable value.
              */
-            IGNITE_FRIEND_EXPORT std::string GetEnv(const std::string& name, bool* found);
+            IGNITE_IMPORT_EXPORT std::string GetEnv(const std::string& name, bool* found);
                                 
             /**
              * Ensure that file on the given path exists in the system.
@@ -113,7 +113,7 @@ namespace ignite
              * @param path Path.
              * @return True if file exists, false otherwise.
              */
-            IGNITE_FRIEND_EXPORT bool FileExists(const std::string& path);
+            IGNITE_IMPORT_EXPORT bool FileExists(const std::string& path);
 
             /**
              * Attempts to find JVM library to load it into the process later.
@@ -124,7 +124,7 @@ namespace ignite
              * @param found Whether library was found.
              * @return Path to the file.
              */
-            IGNITE_FRIEND_EXPORT std::string FindJvmLibrary(const std::string* path, bool* found);
+            IGNITE_IMPORT_EXPORT std::string FindJvmLibrary(const std::string* path, bool* found);
 
             /**
              * Load JVM library into the process.
@@ -132,7 +132,7 @@ namespace ignite
              * @param path Optional path to the library.
              * @return Whether load was successful.
              */
-            IGNITE_FRIEND_EXPORT bool LoadJvmLibrary(const std::string& path);
+            IGNITE_IMPORT_EXPORT bool LoadJvmLibrary(const std::string& path);
 
             /**
              * Resolve IGNITE_HOME directory. Resolution is performed in several
@@ -148,7 +148,7 @@ namespace ignite
              * @param found Whether IGNITE_HOME home was found.
              * @return Resolved GG home.
              */
-            IGNITE_FRIEND_EXPORT std::string ResolveIgniteHome(const std::string* path, bool* found);
+            IGNITE_IMPORT_EXPORT std::string ResolveIgniteHome(const std::string* path, bool* found);
 
             /**
              * Create Ignite classpath based on user input and home directory.
@@ -157,7 +157,7 @@ namespace ignite
              * @param home Ignite home directory.
              * @return Classpath.
              */
-            IGNITE_FRIEND_EXPORT std::string CreateIgniteClasspath(const std::string* usrCp, const std::string* home);
+            IGNITE_IMPORT_EXPORT std::string CreateIgniteClasspath(const std::string* usrCp, const std::string* home);
 
             /**
              * Create Ignite classpath based on user input and home directory.
@@ -167,13 +167,13 @@ namespace ignite
              * @param test Whether test classpath must be used.
              * @return Classpath.
              */
-            IGNITE_FRIEND_EXPORT std::string CreateIgniteClasspath(const std::string* usrCp, const std::string* home, bool test);
+            IGNITE_IMPORT_EXPORT std::string CreateIgniteClasspath(const std::string* usrCp, const std::string* home, bool test);
 
             /**
              * Safe array which automatically reclaims occupied memory when out of scope.
              */
             template<typename T>
-            struct IGNITE_FRIEND_EXPORT SafeArray
+            struct IGNITE_IMPORT_EXPORT SafeArray
             {
                 /** Target array. */
                 T* target;

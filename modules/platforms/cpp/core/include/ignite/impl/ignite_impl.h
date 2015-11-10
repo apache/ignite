@@ -83,7 +83,7 @@ namespace ignite
                     return NULL;
                 }
 
-                char* name0 = utils::CopyChars(name);
+                char* name0 = common::utils::CopyChars(name);
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
@@ -108,7 +108,7 @@ namespace ignite
                     return NULL;
                 }
 
-                char* name0 = utils::CopyChars(name);
+                char* name0 = common::utils::CopyChars(name);
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
@@ -133,7 +133,7 @@ namespace ignite
                     return NULL;
                 }
 
-                char* name0 = utils::CopyChars(name);
+                char* name0 = common::utils::CopyChars(name);
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
