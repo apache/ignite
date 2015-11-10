@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Tests
         [TestFixtureTearDown]
         public void TestFixtureTearDown()
         {
-            TestUtils.KillProcesses();
+            Ignition.StopAll(true);
         }
 
         /// <summary>

@@ -55,6 +55,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void SetUp()
         {
             TestUtils.KillProcesses();
+            Ignition.StopAll(true);
 
             Ignition.Start(CreateConfiguration(GridData, @"config/dynamic/dynamic-data.xml"));
             Ignition.Start(CreateConfiguration(GridDataNoCfg, @"config/dynamic/dynamic-data-no-cfg.xml"));
