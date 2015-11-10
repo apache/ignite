@@ -23,7 +23,7 @@ import org.apache.ignite.binary.BinaryType;
 /**
  * Portable meta data handler.
  */
-public interface BinaryMetadataHandler2 {
+public interface BinaryMetadataHandler {
     /**
      * Adds meta data.
      *

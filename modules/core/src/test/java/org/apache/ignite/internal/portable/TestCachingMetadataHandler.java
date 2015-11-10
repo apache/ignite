@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Test metadata handler.
  */
-public class TestCachingMetadataHandler implements BinaryMetadataHandler2 {
+public class TestCachingMetadataHandler implements BinaryMetadataHandler {
     /** Cached metadatas. */
     private final ConcurrentHashMap<Integer, BinaryType> metas = new ConcurrentHashMap<>();
 

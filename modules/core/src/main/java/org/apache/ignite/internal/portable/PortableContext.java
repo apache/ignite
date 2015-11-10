@@ -134,7 +134,7 @@ public class PortableContext implements Externalizable {
     private final Map<String, BinaryTypeIdMapper> typeMappers = new ConcurrentHashMap8<>(0);
 
     /** */
-    private BinaryMetadataHandler2 metaHnd;
+    private BinaryMetadataHandler metaHnd;
 
     /** */
     private MarshallerContext marshCtx;
@@ -165,7 +165,7 @@ public class PortableContext implements Externalizable {
      * @param metaHnd Meta data handler.
      * @param igniteCfg Ignite configuration.
      */
-    public PortableContext(BinaryMetadataHandler2 metaHnd, IgniteConfiguration igniteCfg) {
+    public PortableContext(BinaryMetadataHandler metaHnd, IgniteConfiguration igniteCfg) {
         assert metaHnd != null;
         assert igniteCfg != null;
 

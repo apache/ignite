@@ -23,7 +23,7 @@ import org.apache.ignite.binary.BinaryType;
 /**
  * No-op metadata handler.
  */
-public class BinaryNoopMetadataHandler implements BinaryMetadataHandler2 {
+public class BinaryNoopMetadataHandler implements BinaryMetadataHandler {
     /** Cached singleton instance. */
     private static final BinaryNoopMetadataHandler INSTANCE = new BinaryNoopMetadataHandler();
 

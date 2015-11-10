@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Writer for meta data collection.
  */
-class BinaryMetadataCollector2 implements BinaryWriter {
+class BinaryMetadataCollector implements BinaryWriter {
     /** */
     private final Map<String, Integer> meta = new HashMap<>();
 
@@ -45,7 +45,7 @@ class BinaryMetadataCollector2 implements BinaryWriter {
     /**
      * @param typeName Type name.
      */
-    BinaryMetadataCollector2(String typeName) {
+    BinaryMetadataCollector(String typeName) {
         this.typeName = typeName;
     }
 

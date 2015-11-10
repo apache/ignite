@@ -546,7 +546,7 @@ public class PortableClassDescriptor {
 
                     if (obj.getClass() != BinaryMetadata.class
                         && ctx.isMetaDataChanged(typeId, writer.metaDataHashSum())) {
-                        BinaryMetadataCollector2 metaCollector = new BinaryMetadataCollector2(typeName);
+                        BinaryMetadataCollector metaCollector = new BinaryMetadataCollector(typeName);
 
                         if (serializer != null)
                             serializer.writeBinary(obj, metaCollector);
