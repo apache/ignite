@@ -821,8 +821,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
                 }
 
                 next++;
-            }
-            while (next != hdr.tail());
+            } while (next != hdr.tail());
 
             GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(),
                 hdr.capacity(),

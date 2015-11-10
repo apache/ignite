@@ -19,10 +19,13 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -30,6 +33,8 @@ import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -38,6 +43,7 @@ import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
@@ -151,7 +157,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testAtomicLongConstantMultipleTopologyChange() throws Exception {
-        doTestAtomicLong(new ConstantMultipleTopologyChangeWorker());
+        doTestAtomicLong(multipleTopologyChangeWorker());
     }
 
     /**
@@ -213,7 +219,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testAtomicReferenceConstantMultipleTopologyChange() throws Exception {
-        doTestAtomicReference(new ConstantMultipleTopologyChangeWorker());
+        doTestAtomicReference(multipleTopologyChangeWorker());
     }
 
     /**
@@ -281,7 +287,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testAtomicStampedConstantMultipleTopologyChange() throws Exception {
-        doTestAtomicStamped(new ConstantMultipleTopologyChangeWorker());
+        doTestAtomicStamped(multipleTopologyChangeWorker());
     }
 
     /**
@@ -360,7 +366,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testCountDownLatchConstantMultipleTopologyChange() throws Exception {
-        doTestCountDownLatch(new ConstantMultipleTopologyChangeWorker());
+        doTestCountDownLatch(multipleTopologyChangeWorker());
     }
 
     /**
@@ -432,7 +438,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testQueueConstantMultipleTopologyChange() throws Exception {
-        doTestQueue(new ConstantMultipleTopologyChangeWorker());
+        doTestQueue(multipleTopologyChangeWorker());
     }
 
     /**
@@ -573,7 +579,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testAtomicSequenceConstantMultipleTopologyChange() throws Exception {
-        doTestAtomicSequence(new ConstantMultipleTopologyChangeWorker());
+        doTestAtomicSequence(multipleTopologyChangeWorker());
     }
 
     /**
@@ -641,6 +647,14 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     }
 
     /**
+     * @return Specific multiple topology change worker implementation.
+     */
+    private ConstantTopologyChangeWorker multipleTopologyChangeWorker() {
+        return collectionCacheMode() == CacheMode.PARTITIONED ? new PartitionedMultipleTopologyChangeWorker() :
+            new MultipleTopologyChangeWorker();
+    }
+
+    /**
      *
      */
     private class ConstantTopologyChangeWorker {
@@ -653,6 +667,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
          * @return Future.
          */
         IgniteInternalFuture<?> startChangingTopology(final IgniteClosure<Ignite, ?> callback) {
+            final boolean partitioned = collectionCacheMode() == CacheMode.PARTITIONED;
+
             IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
@@ -668,8 +684,21 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                                 callback.apply(g);
                             }
                             finally {
-                                if (i != TOP_CHANGE_CNT - 1)
-                                    stopGrid(name);
+                                if (i != TOP_CHANGE_CNT - 1) {
+                                    stopGrid(name, !partitioned);
+
+                                    if (partitioned) {
+                                        while (true) {
+                                            try {
+                                                awaitPartitionMapExchange();
+
+                                                break;
+                                            } catch(Exception ex){
+                                                U.error(log, ex.getMessage());
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -687,7 +716,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      *
      */
-    private class ConstantMultipleTopologyChangeWorker extends ConstantTopologyChangeWorker {
+    private class MultipleTopologyChangeWorker extends ConstantTopologyChangeWorker {
         /**
          * Starts changing cluster's topology.
          *
@@ -719,7 +748,6 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                             }
                             finally {
                                 if (i != TOP_CHANGE_CNT - 1) {
-
                                     for (String name : names)
                                         stopGrid(name);
                                 }
@@ -729,6 +757,106 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                     catch (Exception e) {
                         if (failed.compareAndSet(false, true))
                             throw F.wrap(e);
+                    }
+                }
+            }, TOP_CHANGE_THREAD_CNT, "topology-change-thread");
+
+            return fut;
+        }
+    }
+
+    /**
+     *
+     */
+    private class PartitionedMultipleTopologyChangeWorker extends ConstantTopologyChangeWorker {
+        /** */
+        private CyclicBarrier barrier;
+
+        /**
+         * Starts changing cluster's topology.
+         *
+         * @return Future.
+         */
+        @Override IgniteInternalFuture<?> startChangingTopology(final IgniteClosure<Ignite, ?> callback) {
+            final Semaphore sem = new Semaphore(TOP_CHANGE_THREAD_CNT);
+
+            final ConcurrentSkipListSet<String> startedNodes = new ConcurrentSkipListSet<>();
+
+            barrier = new CyclicBarrier(TOP_CHANGE_THREAD_CNT, new Runnable() {
+                @Override public void run() {
+                    try {
+                        assertEquals(TOP_CHANGE_THREAD_CNT * 3, startedNodes.size());
+
+                        for (String name : startedNodes) {
+                            stopGrid(name, false);
+
+                            while (true) {
+                                try {
+                                    awaitPartitionMapExchange();
+
+                                    break;
+                                } catch(Exception ex){
+                                    U.error(log, ex.getMessage());
+                                }
+                            }
+                        }
+
+                        startedNodes.clear();
+
+                        sem.release(TOP_CHANGE_THREAD_CNT);
+
+                        barrier.reset();
+                    }
+                    catch (Exception e) {
+                        if (failed.compareAndSet(false, true)) {
+                            sem.release(TOP_CHANGE_THREAD_CNT);
+
+                            barrier.reset();
+
+                            throw F.wrap(e);
+                        }
+                    }
+                }
+            });
+
+            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+                @Override public void apply() {
+                    try {
+                        for (int i = 0; i < TOP_CHANGE_CNT; i++) {
+                            sem.acquire();
+
+                            if (failed.get())
+                                return;
+
+                            for (int j = 0; j < 3; j++) {
+                                if (failed.get())
+                                    return;
+
+                                String name = UUID.randomUUID().toString();
+
+                                startedNodes.add(name);
+
+                                Ignite g = startGrid(name);
+
+                                callback.apply(g);
+                            }
+
+                            try {
+                                barrier.await();
+                            }
+                            catch (BrokenBarrierException e) {
+                                // Ignore.
+                            }
+                        }
+                    }
+                    catch (Exception e) {
+                        if (failed.compareAndSet(false, true)) {
+                            sem.release(TOP_CHANGE_THREAD_CNT);
+
+                            barrier.reset();
+
+                            throw F.wrap(e);
+                        }
                     }
                 }
             }, TOP_CHANGE_THREAD_CNT, "topology-change-thread");

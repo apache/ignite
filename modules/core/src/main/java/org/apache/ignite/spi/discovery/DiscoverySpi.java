@@ -164,11 +164,4 @@ public interface DiscoverySpi extends IgniteSpi {
      * @throws IllegalStateException If discovery SPI has not started.
      */
     public boolean isClientMode() throws IllegalStateException;
-
-    /**
-     * Checks whether failure detection timeout is enabled for the discovery SPI.
-     *
-     * @return {@code true} if enabled, {@code false} otherwise.
-     */
-    public boolean failureDetectionTimeoutEnabled();
 }
