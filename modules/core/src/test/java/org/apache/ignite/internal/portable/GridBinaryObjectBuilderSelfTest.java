@@ -41,7 +41,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryTypeIdMapper;
+import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
@@ -71,7 +71,7 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         BinaryTypeConfiguration customIdMapper = new BinaryTypeConfiguration();
 
         customIdMapper.setClassName(CustomIdMapper.class.getName());
-        customIdMapper.setIdMapper(new BinaryTypeIdMapper() {
+        customIdMapper.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return ~PortableContext.DFLT_ID_MAPPER.typeId(clsName);
             }
