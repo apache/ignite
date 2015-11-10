@@ -165,8 +165,9 @@ public class PortableContext implements Externalizable {
      * @param metaHnd Meta data handler.
      * @param igniteCfg Ignite configuration.
      */
-    public PortableContext(PortableMetaDataHandler metaHnd, @Nullable IgniteConfiguration igniteCfg) {
+    public PortableContext(PortableMetaDataHandler metaHnd, IgniteConfiguration igniteCfg) {
         assert metaHnd != null;
+        assert igniteCfg != null;
 
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;
@@ -776,7 +777,22 @@ public class PortableContext implements Externalizable {
             descByCls.put(cls, desc);
         }
 
-        metaHnd.addMeta(id, new BinaryMetaDataImpl(id, typeName, fieldsMeta, affKeyFieldName));
+        metaHnd.addMeta(id, new BinaryMetaDataImpl(id, typeName, fieldsMeta, affKeyFieldName).wrap(this));
+    }
+
+    /**
+     * Create binary field.
+     *
+     * @param typeId Type ID.
+     * @param fieldName Field name.
+     * @return Binary field.
+     */
+    public BinaryFieldImpl createField(int typeId, String fieldName) {
+        PortableSchemaRegistry schemaReg = schemaRegistry(typeId);
+
+        int fieldId = userTypeIdMapper(typeId).fieldId(typeId, fieldName);
+
+        return new BinaryFieldImpl(schemaReg, fieldName, fieldId);
     }
 
     /**
@@ -825,7 +841,7 @@ public class PortableContext implements Externalizable {
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public void updateMetaData(int typeId, BinaryMetaDataImpl meta) throws BinaryObjectException {
-        metaHnd.addMeta(typeId, meta);
+        metaHnd.addMeta(typeId, meta.wrap(this));
     }
 
     /**

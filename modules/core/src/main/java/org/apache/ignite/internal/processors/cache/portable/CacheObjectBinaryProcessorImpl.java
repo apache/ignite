@@ -33,6 +33,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.portable.BinaryMetaDataImpl;
 import org.apache.ignite.internal.portable.BinaryObjectImpl;
 import org.apache.ignite.internal.portable.BinaryObjectOffheapImpl;
+import org.apache.ignite.internal.portable.BinaryTypeImpl;
 import org.apache.ignite.internal.portable.GridPortableMarshaller;
 import org.apache.ignite.internal.portable.PortableContext;
 import org.apache.ignite.internal.portable.PortableMetaDataHandler;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.jetbrains.annotations.Nullable;
@@ -108,10 +110,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     private final boolean clientNode;
 
     /** */
-    private volatile IgniteCacheProxy<PortableMetaDataKey, BinaryType> metaDataCache;
+    private volatile IgniteCacheProxy<PortableMetaDataKey, BinaryMetaDataImpl> metaDataCache;
 
     /** */
-    private final ConcurrentHashMap8<PortableMetaDataKey, BinaryType> clientMetaDataCache;
+    private final ConcurrentHashMap8<Integer, BinaryTypeImpl> clientMetaDataCache;
 
     /** Predicate to filter portable meta data in utility cache. */
     private final CacheEntryPredicate metaPred = new CacheEntryPredicateAdapter() {
@@ -136,7 +138,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     private IgniteBinary portables;
 
     /** Metadata updates collected before metadata cache is initialized. */
-    private final Map<Integer, BinaryType> metaBuf = new ConcurrentHashMap<>();
+    private final Map<Integer, BinaryMetaDataImpl> metaBuf = new ConcurrentHashMap<>();
 
     /** */
     private UUID metaCacheQryId;
@@ -151,27 +153,31 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         clientNode = this.ctx.clientNode();
 
-        clientMetaDataCache = clientNode ? new ConcurrentHashMap8<PortableMetaDataKey, BinaryType>() : null;
+        clientMetaDataCache = clientNode ? new ConcurrentHashMap8<Integer, BinaryTypeImpl>() : null;
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         if (marsh instanceof PortableMarshaller) {
             PortableMetaDataHandler metaHnd = new PortableMetaDataHandler() {
-                @Override public void addMeta(int typeId, BinaryType newMeta)
-                    throws BinaryObjectException {
-                    if (metaDataCache == null) {
-                        BinaryType oldMeta = metaBuf.get(typeId);
+                @Override public void addMeta(int typeId, BinaryType newMeta) throws BinaryObjectException {
+                    assert newMeta != null;
+                    assert newMeta instanceof BinaryTypeImpl;
 
-                        if (oldMeta == null || checkMeta(typeId, oldMeta, newMeta, null)) {
+                    BinaryMetaDataImpl newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
+
+                    if (metaDataCache == null) {
+                        BinaryMetaDataImpl oldMeta = metaBuf.get(typeId);
+
+                        if (oldMeta == null || checkMeta(typeId, oldMeta, newMeta0, null)) {
                             synchronized (this) {
                                 Map<String, Integer> fields = new HashMap<>();
 
-                                if (checkMeta(typeId, oldMeta, newMeta, fields)) {
-                                    newMeta = new BinaryMetaDataImpl(typeId, newMeta.typeName(), fields,
-                                        newMeta.affinityKeyFieldName());
+                                if (checkMeta(typeId, oldMeta, newMeta0, fields)) {
+                                    newMeta0 = new BinaryMetaDataImpl(typeId, newMeta0.typeName(), fields,
+                                        newMeta0.affinityKeyFieldName());
 
-                                    metaBuf.put(typeId, newMeta);
+                                    metaBuf.put(typeId, newMeta0);
                                 }
                                 else
                                     return;
@@ -186,7 +192,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                             return;
                     }
 
-                    CacheObjectBinaryProcessorImpl.this.addMeta(typeId, newMeta);
+                    CacheObjectBinaryProcessorImpl.this.addMeta(typeId, newMeta0.wrap(portableCtx));
                 }
 
                 @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
@@ -232,7 +238,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                 GridCacheQueryManager qryMgr = metaDataCache.context().queries();
 
-                CacheQuery<Map.Entry<PortableMetaDataKey, BinaryType>> qry =
+                CacheQuery<Map.Entry<PortableMetaDataKey, BinaryMetaDataImpl>> qry =
                     qryMgr.createScanQuery(new MetaDataPredicate(), null, false);
 
                 qry.keepAll(false);
@@ -240,9 +246,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 qry.projection(ctx.cluster().get().forNode(oldestSrvNode));
 
                 try {
-                    CacheQueryFuture<Map.Entry<PortableMetaDataKey, BinaryType>> fut = qry.execute();
+                    CacheQueryFuture<Map.Entry<PortableMetaDataKey, BinaryMetaDataImpl>> fut = qry.execute();
 
-                    Map.Entry<PortableMetaDataKey, BinaryType> next;
+                    Map.Entry<PortableMetaDataKey, BinaryMetaDataImpl> next;
 
                     while ((next = fut.next()) != null) {
                         assert next.getKey() != null : next;
@@ -270,8 +276,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         startLatch.countDown();
 
-        for (Map.Entry<Integer, BinaryType> e : metaBuf.entrySet())
-            addMeta(e.getKey(), e.getValue());
+        for (Map.Entry<Integer, BinaryMetaDataImpl> e : metaBuf.entrySet())
+            addMeta(e.getKey(), e.getValue().wrap(portableCtx));
 
         metaBuf.clear();
     }
@@ -288,20 +294,24 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      * @param key Metadata key.
      * @param newMeta Metadata.
      */
-    private void addClientCacheMetaData(PortableMetaDataKey key, final BinaryType newMeta) {
-        clientMetaDataCache.compute(key,
-            new ConcurrentHashMap8.BiFun<PortableMetaDataKey, BinaryType, BinaryType>() {
-                @Override public BinaryType apply(PortableMetaDataKey key, BinaryType oldMeta) {
-                    BinaryType res;
+    private void addClientCacheMetaData(PortableMetaDataKey key, final BinaryMetaDataImpl newMeta) {
+        int key0 = key.typeId();
+
+        clientMetaDataCache.compute(key0,
+            new ConcurrentHashMap8.BiFun<Integer, BinaryTypeImpl, BinaryTypeImpl>() {
+                @Override public BinaryTypeImpl apply(Integer key, BinaryTypeImpl oldMeta) {
+                    BinaryMetaDataImpl res;
+
+                    BinaryMetaDataImpl oldMeta0 = oldMeta != null ? oldMeta.metadata() : null;
 
                     try {
-                        res = checkMeta(key.typeId(), oldMeta, newMeta, null) ? newMeta : oldMeta;
+                        res = checkMeta(key, oldMeta0, newMeta, null) ? newMeta : oldMeta0;
                     }
                     catch (BinaryObjectException e) {
-                        res = oldMeta;
+                        res = oldMeta0;
                     }
 
-                    return res;
+                    return res != null ? res.wrap(portableCtx) : null;
                 }
             }
         );
@@ -446,14 +456,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @Override public void addMeta(final int typeId, final BinaryType newMeta) throws BinaryObjectException {
         assert newMeta != null;
+        assert newMeta instanceof BinaryTypeImpl;
+
+        BinaryMetaDataImpl newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
 
         final PortableMetaDataKey key = new PortableMetaDataKey(typeId);
 
         try {
-            BinaryType oldMeta = metaDataCache.localPeek(key);
+            BinaryMetaDataImpl oldMeta = metaDataCache.localPeek(key);
 
-            if (oldMeta == null || checkMeta(typeId, oldMeta, newMeta, null)) {
-                BinaryObjectException err = metaDataCache.invoke(key, new MetaDataProcessor(typeId, newMeta));
+            if (oldMeta == null || checkMeta(typeId, oldMeta, newMeta0, null)) {
+                BinaryObjectException err = metaDataCache.invoke(key, new MetaDataProcessor(typeId, newMeta0));
 
                 if (err != null)
                     throw err;
@@ -468,9 +481,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @Nullable @Override public BinaryType metadata(final int typeId) throws BinaryObjectException {
         try {
             if (clientNode)
-                return clientMetaDataCache.get(new PortableMetaDataKey(typeId));
+                return clientMetaDataCache.get(typeId);
+            else {
+                BinaryMetaDataImpl meta = metaDataCache.localPeek(new PortableMetaDataKey(typeId));
 
-            return metaDataCache.localPeek(new PortableMetaDataKey(typeId));
+                return meta != null ? meta.wrap(portableCtx) : null;
+            }
         }
         catch (CacheException e) {
             throw new BinaryObjectException(e);
@@ -486,12 +502,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             for (Integer typeId : typeIds)
                 keys.add(new PortableMetaDataKey(typeId));
 
-            Map<PortableMetaDataKey, BinaryType> meta = metaDataCache.getAll(keys);
+            Map<PortableMetaDataKey, BinaryMetaDataImpl> meta = metaDataCache.getAll(keys);
 
             Map<Integer, BinaryType> res = U.newHashMap(meta.size());
 
-            for (Map.Entry<PortableMetaDataKey, BinaryType> e : meta.entrySet())
-                res.put(e.getKey().typeId(), e.getValue());
+            for (Map.Entry<PortableMetaDataKey, BinaryMetaDataImpl> e : meta.entrySet())
+                res.put(e.getKey().typeId(), e.getValue().wrap(portableCtx));
 
             return res;
         }
@@ -504,17 +520,21 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @SuppressWarnings("unchecked")
     @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
         if (clientNode)
-            return new ArrayList<>(clientMetaDataCache.values());
-
-        return F.viewReadOnly(metaDataCache.entrySetx(metaPred),
-            new C1<Cache.Entry<PortableMetaDataKey, BinaryType>, BinaryType>() {
-                private static final long serialVersionUID = 0L;
-
-                @Override public BinaryType apply(
-                    Cache.Entry<PortableMetaDataKey, BinaryType> e) {
-                    return e.getValue();
+            return F.viewReadOnly(clientMetaDataCache.values(), new IgniteClosure<BinaryTypeImpl, BinaryType>() {
+                @Override public BinaryType apply(BinaryTypeImpl meta) {
+                    return meta;
                 }
             });
+        else {
+            return F.viewReadOnly(metaDataCache.entrySetx(metaPred),
+                new C1<Cache.Entry<PortableMetaDataKey, BinaryMetaDataImpl>, BinaryType>() {
+                    private static final long serialVersionUID = 0L;
+
+                    @Override public BinaryType apply(Cache.Entry<PortableMetaDataKey, BinaryMetaDataImpl> e) {
+                        return e.getValue().wrap(portableCtx);
+                    }
+                });
+        }
     }
 
     /** {@inheritDoc} */
@@ -714,12 +734,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      * @return Whether meta is changed.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    private static boolean checkMeta(int typeId, @Nullable BinaryType oldMeta,
-        BinaryType newMeta, @Nullable Map<String, Integer> fields) throws BinaryObjectException {
+    private static boolean checkMeta(int typeId, @Nullable BinaryMetaDataImpl oldMeta,
+        BinaryMetaDataImpl newMeta, @Nullable Map<String, Integer> fields) throws BinaryObjectException {
         assert newMeta != null;
 
-        Map<String, Integer> oldFields = oldMeta != null ? ((BinaryMetaDataImpl)oldMeta).fields0() : null;
-        Map<String, Integer> newFields = ((BinaryMetaDataImpl)newMeta).fields0();
+        Map<String, Integer> oldFields = oldMeta != null ? oldMeta.fieldsMap() : null;
+        Map<String, Integer> newFields = newMeta.fieldsMap();
 
         boolean changed = false;
 
@@ -779,7 +799,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /**
      */
     private static class MetaDataProcessor implements
-        EntryProcessor<PortableMetaDataKey, BinaryType, BinaryObjectException>, Externalizable {
+        EntryProcessor<PortableMetaDataKey, BinaryMetaDataImpl, BinaryObjectException>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -787,7 +807,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         private int typeId;
 
         /** */
-        private BinaryType newMeta;
+        private BinaryMetaDataImpl newMeta;
 
         /**
          * For {@link Externalizable}.
@@ -800,7 +820,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
          * @param typeId Type ID.
          * @param newMeta New metadata.
          */
-        private MetaDataProcessor(int typeId, BinaryType newMeta) {
+        private MetaDataProcessor(int typeId, BinaryMetaDataImpl newMeta) {
             assert newMeta != null;
 
             this.typeId = typeId;
@@ -809,15 +829,15 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         /** {@inheritDoc} */
         @Override public BinaryObjectException process(
-            MutableEntry<PortableMetaDataKey, BinaryType> entry,
+            MutableEntry<PortableMetaDataKey, BinaryMetaDataImpl> entry,
             Object... args) {
             try {
-                BinaryType oldMeta = entry.getValue();
+                BinaryMetaDataImpl oldMeta = entry.getValue();
 
                 Map<String, Integer> fields = new HashMap<>();
 
                 if (checkMeta(typeId, oldMeta, newMeta, fields)) {
-                    BinaryType res = new BinaryMetaDataImpl(typeId, newMeta.typeName(), fields,
+                    BinaryMetaDataImpl res = new BinaryMetaDataImpl(typeId, newMeta.typeName(), fields,
                         newMeta.affinityKeyFieldName());
 
                     entry.setValue(res);
@@ -841,7 +861,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             typeId = in.readInt();
-            newMeta = (BinaryType)in.readObject();
+            newMeta = (BinaryMetaDataImpl)in.readObject();
         }
 
         /** {@inheritDoc} */
@@ -853,17 +873,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /**
      *
      */
-    class MetaDataEntryListener implements CacheEntryUpdatedListener<PortableMetaDataKey, BinaryType> {
+    class MetaDataEntryListener implements CacheEntryUpdatedListener<PortableMetaDataKey, BinaryMetaDataImpl> {
         /** {@inheritDoc} */
         @Override public void onUpdated(
-            Iterable<CacheEntryEvent<? extends PortableMetaDataKey, ? extends BinaryType>> evts)
+            Iterable<CacheEntryEvent<? extends PortableMetaDataKey, ? extends BinaryMetaDataImpl>> evts)
             throws CacheEntryListenerException {
-            for (CacheEntryEvent<? extends PortableMetaDataKey, ? extends BinaryType> evt : evts) {
+            for (CacheEntryEvent<? extends PortableMetaDataKey, ? extends BinaryMetaDataImpl> evt : evts) {
                 assert evt.getEventType() == EventType.CREATED || evt.getEventType() == EventType.UPDATED : evt;
 
                 PortableMetaDataKey key = evt.getKey();
 
-                final BinaryType newMeta = evt.getValue();
+                final BinaryMetaDataImpl newMeta = evt.getValue();
 
                 assert newMeta != null : evt;
 

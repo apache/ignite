@@ -143,13 +143,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectEx implements Externali
     @Override public BinaryField fieldDescriptor(String fieldName) throws BinaryObjectException {
         A.notNull(fieldName, "fieldName");
 
-        int typeId = typeId();
-
-        PortableSchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
-
-        int fieldId = ctx.userTypeIdMapper(typeId).fieldId(typeId, fieldName);
-
-        return new BinaryFieldImpl(schemaReg, fieldName, fieldId);
+        return ctx.createField(typeId(), fieldName);
     }
 
     /** {@inheritDoc} */

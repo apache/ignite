@@ -390,7 +390,7 @@ public class PlatformContextImpl implements PlatformContext {
         else {
             writer.writeBoolean(true);
 
-            Map<String, Integer> fields = ((BinaryMetaDataImpl)meta).fields0();
+            Map<String, Integer> fields = ((BinaryMetaDataImpl)meta).fieldsMap();
 
             writer.writeInt(typeId);
             writer.writeString(meta.typeName());

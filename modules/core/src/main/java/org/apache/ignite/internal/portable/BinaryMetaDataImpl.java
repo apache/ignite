@@ -27,13 +27,12 @@ import java.util.Map;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.binary.BinaryType;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Portable meta data implementation.
+ * Portable metadata which is passed over a wire.
  */
-public class BinaryMetaDataImpl implements BinaryType, Externalizable {
+public class BinaryMetaDataImpl implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -82,33 +81,52 @@ public class BinaryMetaDataImpl implements BinaryType, Externalizable {
         return typeId;
     }
 
-    /** {@inheritDoc} */
-    @Override public String typeName() {
+    /**
+     * @return Type name.
+     */
+    public String typeName() {
         return typeName;
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<String> fields() {
+    /**
+     * @return Fields.
+     */
+    public Collection<String> fields() {
         return fields != null ? fields.keySet() : Collections.<String>emptyList();
     }
 
     /**
      * @return Fields.
      */
-    public Map<String, Integer> fields0() {
+    public Map<String, Integer> fieldsMap() {
         return fields != null ? fields : Collections.<String, Integer>emptyMap();
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public String fieldTypeName(String fieldName) {
+    /**
+     * @param fieldName Field name.
+     * @return Field type name.
+     */
+    @Nullable public String fieldTypeName(String fieldName) {
         Integer typeId = fields != null ? fields.get(fieldName) : null;
 
         return typeId != null ? PortableUtils.fieldTypeName(typeId) : null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public String affinityKeyFieldName() {
+    /**
+     * @return Affinity key field name.
+     */
+    @Nullable public String affinityKeyFieldName() {
         return affKeyFieldName;
+    }
+
+    /**
+     * Wrap metadata into binary type.
+     *
+     * @param ctx Portable context.
+     * @return Binary type.
+     */
+    public BinaryTypeImpl wrap(PortableContext ctx) {
+        return new BinaryTypeImpl(ctx, this);
     }
 
     /** {@inheritDoc} */
