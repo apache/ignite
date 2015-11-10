@@ -114,8 +114,6 @@ consoleModule.controller('sqlController',
             if (valCols.length == MAX_VAL_COLS - 1)
                 valCols.shift();
 
-            item.aggFx = $scope.aggregateFxs[0];
-
             valCols.push(item);
 
             _chartApplySettings(paragraph, true);
@@ -471,7 +469,7 @@ consoleModule.controller('sqlController',
         _.forEach(paragraph.meta, function (col, idx) {
             if (paragraph.columnFilter(col)) {
                 if (_notObjectType(col.fieldTypeName))
-                    paragraph.chartColumns.push({value: idx, type: col.fieldTypeName, label: col.fieldName});
+                    paragraph.chartColumns.push({value: idx, type: col.fieldTypeName, label: col.fieldName, aggFx: $scope.aggregateFxs[0]});
 
                 // Index for explain, execute and fieldName for scan.
                 var colValue = 'data[' +  (paragraph.queryArgs.query ? idx : '"' + col.fieldName + '"') + ']';
