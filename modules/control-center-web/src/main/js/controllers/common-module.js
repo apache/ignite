@@ -20,7 +20,7 @@ var consoleModule = angular.module('ignite-web-console',
         'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.loading', 'agGrid', 'nvd3', 'dndLists'
         /* ignite:modules */
         , 'ignite-web-console.navbar'
-        /* endignite*/
+        /* endignite */
         /* ignite:plugins */
         /* endignite */
     ])

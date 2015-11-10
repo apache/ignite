@@ -9,7 +9,6 @@ var paths = [
 ];
 
 var options = {
-    'pretty': true
 };
 
 gulp.task('jade', function() {

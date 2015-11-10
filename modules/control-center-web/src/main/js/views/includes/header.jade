@@ -39,7 +39,6 @@ header#header.header
                 li(ng-repeat='item in navbar.items')
                     a(ng-class='{active: isActive(item.href)}' ng-href='{{ item.href }}') {{ item.title }}
 
-                //+header-item('/deploy', '/deploy', 'Deploy')
             ul.nav.navbar-nav.pull-right
                 li(ng-if='$root.user')
                     a.dropdown-toggle(data-toggle='dropdown' ng-class='{active: isActive("/profile") || isActive("/admin")}' bs-dropdown='userDropdown' data-placement='bottom-right') {{user.username}}
