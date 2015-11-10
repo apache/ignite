@@ -48,7 +48,7 @@ public class BinaryTypeImpl implements BinaryType {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<String> fields() {
+    @Override public Collection<String> fieldNames() {
         return meta.fields();
     }
 
@@ -58,7 +58,11 @@ public class BinaryTypeImpl implements BinaryType {
     }
 
     /** {@inheritDoc} */
-    @Override public String affinityKeyFieldName() {
+    @Override public BinaryFieldImpl field(String fieldName) {
+        return ctx.createField(meta.typeId(), fieldName);
+    }
+
+    public String affinityKeyFieldName() {
         return meta.affinityKeyFieldName();
     }
 
@@ -67,15 +71,5 @@ public class BinaryTypeImpl implements BinaryType {
      */
     public BinaryMetaDataImpl metadata() {
         return meta;
-    }
-
-    /**
-     * Create field.
-     *
-     * @param fieldName Field name.
-     * @return Field.
-     */
-    public BinaryFieldImpl field(String fieldName) {
-        return ctx.createField(meta.typeId(), fieldName);
     }
 }

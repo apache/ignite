@@ -176,10 +176,10 @@ public abstract class BinaryObjectEx implements BinaryObject {
 
         SB buf = new SB(meta.typeName());
 
-        if (meta.fields() != null) {
+        if (meta.fieldNames() != null) {
             buf.a(" [hash=").a(idHash);
 
-            for (String name : meta.fields()) {
+            for (String name : meta.fieldNames()) {
                 Object val = field(ctx, name);
 
                 buf.a(", ").a(name).a('=');

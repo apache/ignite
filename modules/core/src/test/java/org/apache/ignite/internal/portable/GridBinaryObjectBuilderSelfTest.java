@@ -789,7 +789,7 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         assertEquals("MetaTest", meta.typeName());
 
-        Collection<String> fields = meta.fields();
+        Collection<String> fields = meta.fieldNames();
 
         assertEquals(2, fields.size());
 
@@ -812,7 +812,7 @@ public class GridBinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         assertEquals("MetaTest", meta.typeName());
 
-        fields = meta.fields();
+        fields = meta.fieldNames();
 
         assertEquals(3, fields.size());
 

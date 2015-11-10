@@ -998,7 +998,7 @@ public class GridBinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstrac
 
         BinaryType metadata = portables().metadata(c.getClass());
 
-        assertTrue(metadata.fields().containsAll(Arrays.asList("intField", "intArrField", "arrField", "strField",
+        assertTrue(metadata.fieldNames().containsAll(Arrays.asList("intField", "intArrField", "arrField", "strField",
             "colField", "mapField", "enumField", "enumArrField")));
 
         assertEquals("int", metadata.fieldTypeName("intField"));

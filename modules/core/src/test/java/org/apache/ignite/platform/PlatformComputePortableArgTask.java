@@ -94,7 +94,7 @@ public class PlatformComputePortableArgTask extends ComputeTaskAdapter<Object, I
             if (meta == null)
                 throw new IgniteException("Metadata doesn't exist.");
 
-            if (meta.fields() == null || !meta.fields().contains("Field"))
+            if (meta.fieldNames() == null || !meta.fieldNames().contains("Field"))
                 throw new IgniteException("Field metadata doesn't exist.");
 
             if (!F.eq("int", meta.fieldTypeName("Field")))

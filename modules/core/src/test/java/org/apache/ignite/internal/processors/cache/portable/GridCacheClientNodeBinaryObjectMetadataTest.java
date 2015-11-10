@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.portable;
 import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
@@ -29,9 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.marshaller.portable.PortableMarshaller;
-import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
@@ -127,7 +124,7 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
             for (BinaryType m2 : meta1) {
                 if (m1.typeName().equals(m2.typeName())) {
                     assertEquals(m1.affinityKeyFieldName(), m2.affinityKeyFieldName());
-                    assertEquals(m1.fields(), m2.fields());
+                    assertEquals(m1.fieldNames(), m2.fieldNames());
 
                     found = true;
 
