@@ -54,7 +54,7 @@ import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryTypeIdMapper;
+import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinarySerializer;
@@ -85,10 +85,10 @@ public class PortableContext implements Externalizable {
     private static final ClassLoader dfltLdr = U.gridClassLoader();
 
     /** */
-    static final BinaryTypeIdMapper DFLT_ID_MAPPER = new IdMapperWrapper(null);
+    static final BinaryIdMapper DFLT_ID_MAPPER = new IdMapperWrapper(null);
 
     /** */
-    static final BinaryTypeIdMapper BASIC_CLS_ID_MAPPER = new BasicClassIdMapper();
+    static final BinaryIdMapper BASIC_CLS_ID_MAPPER = new BasicClassIdMapper();
 
     /** */
     static final char[] LOWER_CASE_CHARS;
@@ -128,10 +128,10 @@ public class PortableContext implements Externalizable {
     private final Map<Class<? extends Map>, Byte> mapTypes = new HashMap<>();
 
     /** */
-    private final ConcurrentMap<Integer, BinaryTypeIdMapper> mappers = new ConcurrentHashMap8<>(0);
+    private final ConcurrentMap<Integer, BinaryIdMapper> mappers = new ConcurrentHashMap8<>(0);
 
     /** */
-    private final Map<String, BinaryTypeIdMapper> typeMappers = new ConcurrentHashMap8<>(0);
+    private final Map<String, BinaryIdMapper> typeMappers = new ConcurrentHashMap8<>(0);
 
     /** */
     private PortableMetaDataHandler metaHnd;
@@ -276,7 +276,7 @@ public class PortableContext implements Externalizable {
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     private void configure(
-        BinaryTypeIdMapper globalIdMapper,
+        BinaryIdMapper globalIdMapper,
         BinarySerializer globalSerializer,
         boolean globalKeepDeserialized,
         Collection<String> clsNames,
@@ -285,7 +285,7 @@ public class PortableContext implements Externalizable {
         TypeDescriptors descs = new TypeDescriptors();
 
         if (clsNames != null) {
-            BinaryTypeIdMapper idMapper = new IdMapperWrapper(globalIdMapper);
+            BinaryIdMapper idMapper = new IdMapperWrapper(globalIdMapper);
 
             for (String clsName : clsNames) {
                 if (clsName.endsWith(".*")) { // Package wildcard
@@ -313,7 +313,7 @@ public class PortableContext implements Externalizable {
                 if (clsName == null)
                     throw new BinaryObjectException("Class name is required for portable type configuration.");
 
-                BinaryTypeIdMapper idMapper = globalIdMapper;
+                BinaryIdMapper idMapper = globalIdMapper;
 
                 if (typeCfg.getIdMapper() != null)
                     idMapper = typeCfg.getIdMapper();
@@ -537,7 +537,7 @@ public class PortableContext implements Externalizable {
 
         String typeName = typeName(cls.getName());
 
-        BinaryTypeIdMapper idMapper = userTypeIdMapper(typeName);
+        BinaryIdMapper idMapper = userTypeIdMapper(typeName);
 
         int typeId = idMapper.typeId(typeName);
 
@@ -635,8 +635,8 @@ public class PortableContext implements Externalizable {
      * @param typeId Type ID.
      * @return Instance of ID mapper.
      */
-    public BinaryTypeIdMapper userTypeIdMapper(int typeId) {
-        BinaryTypeIdMapper idMapper = mappers.get(typeId);
+    public BinaryIdMapper userTypeIdMapper(int typeId) {
+        BinaryIdMapper idMapper = mappers.get(typeId);
 
         if (idMapper != null)
             return idMapper;
@@ -651,8 +651,8 @@ public class PortableContext implements Externalizable {
      * @param typeName Type name.
      * @return Instance of ID mapper.
      */
-    private BinaryTypeIdMapper userTypeIdMapper(String typeName) {
-        BinaryTypeIdMapper idMapper = typeMappers.get(typeName);
+    private BinaryIdMapper userTypeIdMapper(String typeName) {
+        BinaryIdMapper idMapper = typeMappers.get(typeName);
 
         return idMapper != null ? idMapper : DFLT_ID_MAPPER;
     }
@@ -725,7 +725,7 @@ public class PortableContext implements Externalizable {
      */
     @SuppressWarnings("ErrorNotRethrown")
     public void registerUserType(String clsName,
-        BinaryTypeIdMapper idMapper,
+        BinaryIdMapper idMapper,
         @Nullable BinarySerializer serializer,
         @Nullable String affKeyFieldName,
         boolean keepDeserialized)
@@ -958,14 +958,14 @@ public class PortableContext implements Externalizable {
 
     /**
      */
-    private static class IdMapperWrapper implements BinaryTypeIdMapper {
+    private static class IdMapperWrapper implements BinaryIdMapper {
         /** */
-        private final BinaryTypeIdMapper mapper;
+        private final BinaryIdMapper mapper;
 
         /**
          * @param mapper Custom ID mapper.
          */
-        private IdMapperWrapper(@Nullable BinaryTypeIdMapper mapper) {
+        private IdMapperWrapper(@Nullable BinaryIdMapper mapper) {
             this.mapper = mapper;
         }
 
@@ -993,7 +993,7 @@ public class PortableContext implements Externalizable {
     /**
      * Basic class ID mapper.
      */
-    private static class BasicClassIdMapper implements BinaryTypeIdMapper {
+    private static class BasicClassIdMapper implements BinaryIdMapper {
         /** {@inheritDoc} */
         @Override public int typeId(String clsName) {
             return clsName.hashCode();
@@ -1024,7 +1024,7 @@ public class PortableContext implements Externalizable {
          * @throws org.apache.ignite.binary.BinaryObjectException If failed.
          */
         private void add(String clsName,
-            BinaryTypeIdMapper idMapper,
+            BinaryIdMapper idMapper,
             BinarySerializer serializer,
             String affKeyFieldName,
             boolean keepDeserialized,
@@ -1063,7 +1063,7 @@ public class PortableContext implements Externalizable {
         private final String clsName;
 
         /** ID mapper. */
-        private BinaryTypeIdMapper idMapper;
+        private BinaryIdMapper idMapper;
 
         /** Serializer. */
         private BinarySerializer serializer;
@@ -1087,7 +1087,7 @@ public class PortableContext implements Externalizable {
          * @param keepDeserialized Keep deserialized flag.
          * @param canOverride Whether this descriptor can be override.
          */
-        private TypeDescriptor(String clsName, BinaryTypeIdMapper idMapper, BinarySerializer serializer,
+        private TypeDescriptor(String clsName, BinaryIdMapper idMapper, BinarySerializer serializer,
             String affKeyFieldName, boolean keepDeserialized, boolean canOverride) {
             this.clsName = clsName;
             this.idMapper = idMapper;

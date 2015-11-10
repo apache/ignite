@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.portable;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryTypeIdMapper;
+import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.internal.portable.streams.PortableHeapOutputStream;
 import org.apache.ignite.internal.portable.streams.PortableOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -145,7 +145,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     private int fieldCnt;
 
     /** ID mapper. */
-    private BinaryTypeIdMapper idMapper;
+    private BinaryIdMapper idMapper;
 
     /**
      * @param ctx Context.
