@@ -58,7 +58,28 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Binary\BinaryBuilderSelfTest.cs" />
+    <Compile Include="Cache\CacheDynamicStartTest.cs" />
+    <Compile Include="Cache\CacheTestAsyncWrapper.cs" />
+    <Compile Include="Cache\CacheAbstractTest.cs" />
+    <Compile Include="Cache\CacheAffinityTest.cs" />
+    <Compile Include="Cache\CacheEntryTest.cs" />
+    <Compile Include="Cache\CacheForkedTest.cs" />
+    <Compile Include="Cache\CacheLocalAtomicTest.cs" />
+    <Compile Include="Cache\CacheLocalTest.cs" />
+    <Compile Include="Cache\CachePartitionedAtomicNearEnabledTest.cs" />
+    <Compile Include="Cache\CachePartitionedAtomicTest.cs" />
+    <Compile Include="Cache\CachePartitionedNearEnabledTest.cs" />
+    <Compile Include="Cache\CachePartitionedTest.cs" />
+    <Compile Include="Cache\CacheReplicatedAtomicTest.cs" />
+    <Compile Include="Cache\CacheReplicatedTest.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryAbstractTest.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryAtomicBackupTest.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryAtomicNoBackupTest.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryNoBackupAbstractTest.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryTransactionalBackupTest.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryTransactionalNoBackupTest.cs" />
+    <Compile Include="Cache\Query\CacheQueriesTest.cs" />
+    <Compile Include="Cache\Store\CacheParallelLoadStoreTest.cs" />
     <Compile Include="Cache\Store\CacheStoreSessionTest.cs" />
     <Compile Include="Cache\Store\CacheStoreTest.cs" />
     <Compile Include="Cache\Store\CacheTestParallelLoadStore.cs" />
@@ -79,6 +100,7 @@
     <Compile Include="Compute\SerializableClosureTaskTest.cs" />
     <Compile Include="Compute\TaskAdapterTest.cs" />
     <Compile Include="Compute\TaskResultTest.cs" />
+    <Compile Include="Dataload\DataStreamerTest.cs" />
     <Compile Include="DataStructures\AtomicLongTest.cs" />
     <Compile Include="EventsTest.cs" />
     <Compile Include="Examples\Example.cs" />
@@ -94,10 +116,14 @@
     <Compile Include="IgniteManagerTest.cs" />
     <Compile Include="MarshallerTest.cs" />
     <Compile Include="MessagingTest.cs" />
+    <Compile Include="BinaryConfigurationTest.cs" />
+    <Compile Include="Binary\BinaryStructureTest.cs" />
     <Compile Include="SerializationTest.cs" />
     <Compile Include="IgniteStartStopTest.cs" />
     <Compile Include="TestUtils.cs" />
     <Compile Include="Memory\InteropMemoryTest.cs" />
+    <Compile Include="Binary\BinaryBuilderSelfTest.cs" />
+    <Compile Include="Binary\BinarySelfTest.cs" />
     <Compile Include="Process\IgniteProcess.cs" />
     <Compile Include="Process\IgniteProcessConsoleOutputReader.cs" />
     <Compile Include="Process\IIgniteProcessOutputReader.cs" />
@@ -110,6 +136,7 @@
     <Compile Include="Services\ServiceProxyTest.cs" />
     <Compile Include="Services\ServicesAsyncWrapper.cs" />
     <Compile Include="TestRunner.cs" />
+    <Compile Include="TypeResolverTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj">
@@ -216,9 +243,6 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.Tests.nunit" />
     <None Include="Apache.Ignite.Core.Tests.snk" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Cache\Query\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
