@@ -18,5 +18,5 @@
 ACLOCAL_AMFLAGS = "-Im4"
 
 nobase_include_HEADERS = teamcity_messages.h \
-                         ignite/portable_test_defs.h \
-                         ignite/portable_test_utils.h
+                         ignite/binary_test_defs.h \
+                         ignite/binary_test_utils.h

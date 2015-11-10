@@ -32,7 +32,7 @@
         <property name="cacheConfiguration">
             <list>
                 <!--
-                    Partitioned cache example configuration with portable objects enabled.
+                    Partitioned cache example configuration with binary objects enabled.
                     Used in .NET example that is available only in enterprise edition.
                 -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">

@@ -42,13 +42,13 @@ namespace ignite
     {
         namespace interop 
         {
-            union PortableFloatInt32
+            union BinaryFloatInt32
             {
                 float f;
                 int32_t i;                
             };
 
-            union PortableDoubleInt64
+            union BinaryDoubleInt64
             {
                 double d;
                 int64_t i;                
@@ -147,7 +147,7 @@ namespace ignite
 
             void InteropOutputStream::WriteFloat(const float val)
             {
-                PortableFloatInt32 u;
+                BinaryFloatInt32 u;
 
                 u.f = val;
 
@@ -162,7 +162,7 @@ namespace ignite
 
             void InteropOutputStream::WriteDouble(const double val)
             {
-                PortableDoubleInt64 u;
+                BinaryDoubleInt64 u;
 
                 u.d = val;
 

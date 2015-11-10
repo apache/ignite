@@ -99,14 +99,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     }
 
     /**
-     * @param typeId Type ID.
-     * @param ctx Portable context.
-     */
-    public BinaryObjectBuilderImpl(PortableContext ctx, int typeId) {
-        this(ctx, typeId, null);
-    }
-
-    /**
      * @param typeName Type name.
      * @param ctx Context.
      * @param typeId Type id.
@@ -350,8 +342,11 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 if (newFldsMetadata != null) {
                     String typeName = this.typeName;
 
-                    if (typeName == null)
+                    if (typeName == null) {
+                        assert metadata != null;
+
                         typeName = metadata.typeName();
+                    }
 
                     ctx.updateMetaData(typeId, typeName, newFldsMetadata);
                 }
