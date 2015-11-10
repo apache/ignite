@@ -617,13 +617,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @return {@code True} if topology has changed.
-     */
-    public boolean topologyChanged() {
-        return exchWorker.topologyChanged();
-    }
-
-    /**
      * @param exchFut Exchange future.
      * @param reassign Dummy reassign flag.
      */
@@ -673,7 +666,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (log.isDebugEnabled())
             log.debug("Refreshing partitions [oldest=" + oldest.id() + ", loc=" + cctx.localNodeId() + ']');
 
-        Collection<ClusterNode> rmts = null;
+        Collection<ClusterNode> rmts;
 
         // If this is the oldest node.
         if (oldest.id().equals(cctx.localNodeId())) {
@@ -1362,7 +1355,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         if (marshR != null || !rebalanceQ.isEmpty()) {
                             if (futQ.isEmpty()) {
-                                U.log(log, "Starting caches rebalancing [top=" + exchFut.topologyVersion() + "]");
+                                U.log(log, "Rebalancing required" +
+                                    "[top=" + exchFut.topologyVersion() + ", evt=" + exchFut.discoveryEvent().name() +
+                                    ", node=" + exchFut.discoveryEvent().node().id() + ']');
 
                                 if (marshR != null)
                                     try {
@@ -1404,13 +1399,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     }
                                 }, /*system pool*/ true);
                             }
-                            else {
-                                U.log(log, "Obsolete exchange, skipping rebalancing [top=" + exchFut.topologyVersion() + "]");
-                            }
+                            else
+                                U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
+                                    "[top=" + exchFut.topologyVersion() + ", evt=" + exchFut.discoveryEvent().name() +
+                                    ", node=" + exchFut.discoveryEvent().node().id() + ']');
                         }
-                        else {
-                            U.log(log, "Nothing scheduled, skipping rebalancing [top=" + exchFut.topologyVersion() + "]");
-                        }
+                        else
+                            U.log(log, "Skipping rebalancing (nothing scheduled) " +
+                                "[top=" + exchFut.topologyVersion() + ", evt=" + exchFut.discoveryEvent().name() +
+                                ", node=" + exchFut.discoveryEvent().node().id() + ']');
                     }
                 }
                 catch (IgniteInterruptedCheckedException e) {
@@ -1424,13 +1421,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         "(preloading will not start): " + exchFut, e);
                 }
             }
-        }
-
-        /**
-         * @return {@code True} if another exchange future has been queued up.
-         */
-        boolean topologyChanged() {
-            return !futQ.isEmpty() || busy;
         }
     }
 
