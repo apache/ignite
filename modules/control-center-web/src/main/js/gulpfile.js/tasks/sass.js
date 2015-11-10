@@ -6,7 +6,7 @@ var paths = [
 ]
 
 gulp.task('sass', function () {
-    gulp.src(paths)
+    return gulp.src(paths)
         .pipe(sass({ outputStyle: 'nested' }).on('error', sass.logError))
         .pipe(gulp.dest('./build/stylesheets'));
 });
