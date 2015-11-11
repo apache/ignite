@@ -71,6 +71,10 @@ namespace ignite
 
             /** Column bindings. */
             ColumnBindingMap columnBindings;
+
+            //TODO: Move to separate Cursor class.
+            /** Cursor id.*/
+            int32_t resultCursorId;
         };
     }
 }

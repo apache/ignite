@@ -31,7 +31,8 @@ namespace ignite
 {
     namespace odbc
     {
-        Statement::Statement(Connection& parent) : connection(parent)
+        Statement::Statement(Connection& parent) : 
+            connection(parent), columnBindings(), resultCursorId(0)
         {
             // No-op.
         }
@@ -56,6 +57,7 @@ namespace ignite
 
             writer.WriteInt32(0);
 
+            // TODO: implement argument support.
             //writer.WriteInt32(static_cast<int32_t>(args.size()));
 
             //for (std::vector<QueryArgumentBase*>::const_iterator it = args.begin(); it != args.end(); ++it)
@@ -66,12 +68,23 @@ namespace ignite
             if (!sent)
                 return false;
 
-            //InteropUnpooledMemory inMem(1024);
-            //InteropInputStream inStream(&inMem);
+            std::vector<uint8_t> response;
 
-            //connection.Receive()
+            bool responseReceived = connection.Receive(response);
 
-            return false;
+            if (!responseReceived)
+                return false;
+
+            InteropUnpooledMemory inMem(static_cast<int32_t>(response.size()));
+
+            // TODO: optimize me.
+            memcpy(inMem.Data(), response.data(), response.size());
+
+            InteropInputStream inStream(&inMem);
+
+            resultCursorId = inStream.ReadInt32();
+
+            return true;
         }
 
         void Statement::BindResultColumn(uint16_t columnIdx, const ApplicationDataBuffer& buffer)
