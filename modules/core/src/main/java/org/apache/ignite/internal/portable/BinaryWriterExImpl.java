@@ -347,7 +347,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.writeInt(start + SCHEMA_OR_RAW_OFF_POS, out.position() - start);
 
             // Write the schema.
-            int offsetByteCnt = schema.write(this, fieldCnt, !ctx.isCompactFooter());
+            int offsetByteCnt = schema.write(this, fieldCnt, ctx.isCompactFooter());
 
             // Write raw offset if needed.
             if (rawOffPos != 0)
@@ -1853,10 +1853,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
          *
          * @param writer Writer.
          * @param fieldCnt Count.
-         * @param writeFieldId Whether to write field IDs.
+         * @param compactFooter Whether footer should be written in compact form.
          * @return Amount of bytes dedicated to each field offset. Could be 1, 2 or 4.
          */
-        public int write(BinaryWriterExImpl writer, int fieldCnt, boolean writeFieldId) {
+        public int write(BinaryWriterExImpl writer, int fieldCnt, boolean compactFooter) {
             int startIdx = idx - fieldCnt * 2;
 
             assert startIdx >= 0;
@@ -1865,35 +1865,51 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
             int res;
 
-            if (lastOffset < MAX_OFFSET_1) {
-                for (int idx0 = startIdx; idx0 < idx; ) {
-                    if (writeFieldId)
-                        writer.writeInt(data[idx0++]);
+            if (compactFooter) {
+                if (lastOffset < MAX_OFFSET_1) {
+                    for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
+                        writer.writeByte((byte)data[curIdx]);
 
-                    writer.writeByte((byte) data[idx0++]);
+                    res = PortableUtils.OFFSET_1;
                 }
+                else if (lastOffset < MAX_OFFSET_2) {
+                    for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
+                        writer.writeShort((short)data[curIdx]);
 
-                res = PortableUtils.OFFSET_1;
-            }
-            else if (lastOffset < MAX_OFFSET_2) {
-                for (int idx0 = startIdx; idx0 < idx; ) {
-                    if (writeFieldId)
-                        writer.writeInt(data[idx0++]);
-
-                    writer.writeShort((short)data[idx0++]);
+                    res = PortableUtils.OFFSET_2;
                 }
+                else {
+                    for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
+                        writer.writeInt(data[curIdx]);
 
-                res = PortableUtils.OFFSET_2;
+                    res = PortableUtils.OFFSET_4;
+                }
             }
             else {
-                for (int idx0 = startIdx; idx0 < idx; ) {
-                    if (writeFieldId)
-                        writer.writeInt(data[idx0++]);
+                if (lastOffset < MAX_OFFSET_1) {
+                    for (int curIdx = startIdx; curIdx < idx;) {
+                        writer.writeInt(data[curIdx++]);
+                        writer.writeByte((byte) data[curIdx++]);
+                    }
 
-                    writer.writeInt(data[idx0++]);
+                    res = PortableUtils.OFFSET_1;
                 }
+                else if (lastOffset < MAX_OFFSET_2) {
+                    for (int curIdx = startIdx; curIdx < idx;) {
+                        writer.writeInt(data[curIdx++]);
+                        writer.writeShort((short)data[curIdx++]);
+                    }
 
-                res = PortableUtils.OFFSET_4;
+                    res = PortableUtils.OFFSET_2;
+                }
+                else {
+                    for (int curIdx = startIdx; curIdx < idx;) {
+                        writer.writeInt(data[curIdx++]);
+                        writer.writeInt(data[curIdx++]);
+                    }
+
+                    res = PortableUtils.OFFSET_4;
+                }
             }
 
             return res;

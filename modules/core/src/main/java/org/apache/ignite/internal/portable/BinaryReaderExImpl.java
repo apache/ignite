@@ -2620,19 +2620,35 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
                 schema0 = ctx.schemaRegistry(typeId).schema(schemaId);
 
                 if (schema0 == null) {
-                    if (fieldIdLen == 0)
-                        throw new BinaryObjectException("Cannot find schema for object without field IDs [" +
-                            "typeId=" + typeId + ", schemaId=" + schemaId + ']');
+                    if (fieldIdLen == 0) {
+                        BinaryTypeImpl type = (BinaryTypeImpl)ctx.metaData(typeId);
 
-                    schema0 = createSchema();
+                        if (type == null || type.metadata() == null)
+                            throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
+                                typeId);
+
+                        for (PortableSchema typeSchema : type.metadata().schemas()) {
+                            if (schemaId == typeSchema.schemaId()) {
+                                schema0 = typeSchema;
+
+                                break;
+                            }
+                        }
+
+                        if (schema0 == null)
+                            throw new BinaryObjectException("Cannot find schema for object with compact fotter [" +
+                                "typeId=" + typeId + ", schemaId=" + schemaId + ']');
+                    }
+                    else
+                        schema0 = createSchema();
+
+                    assert schema0 != null;
 
                     ctx.schemaRegistry(typeId).addSchema(schemaId, schema0);
                 }
 
                 schema = schema0;
             }
-
-            assert schema != null;
 
             int order = schema.order(id);
 

@@ -17,7 +17,12 @@
 
 package org.apache.ignite.internal.portable;
 
-import java.io.Serializable;
+import org.apache.ignite.internal.util.typedef.internal.U;
+
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -29,7 +34,7 @@ import java.util.List;
  * for quick comparisons performed within already fetched L1 cache line.
  * - When there are more fields, we store them inside a hash map.
  */
-public class PortableSchema implements Serializable {
+public class PortableSchema implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -37,37 +42,82 @@ public class PortableSchema implements Serializable {
     public static final int ORDER_NOT_FOUND = -1;
 
     /** Inline flag. */
-    private final boolean inline;
+    private boolean inline;
 
     /** Map with offsets. */
-    private final HashMap<Integer, Integer> map;
+    private HashMap<Integer, Integer> map;
 
     /** ID 1. */
-    private final int id0;
+    private int id0;
 
     /** ID 2. */
-    private final int id1;
+    private int id1;
 
     /** ID 3. */
-    private final int id2;
+    private int id2;
 
     /** ID 4. */
-    private final int id3;
+    private int id3;
 
     /** ID 1. */
-    private final int id4;
+    private int id4;
 
     /** ID 2. */
-    private final int id5;
+    private int id5;
 
     /** ID 3. */
-    private final int id6;
+    private int id6;
 
     /** ID 4. */
-    private final int id7;
+    private int id7;
 
     /** Schema ID. */
-    private final int schemaId;
+    private int schemaId;
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeInt(schemaId);
+
+        if (inline) {
+            out.writeBoolean(true);
+
+            out.writeInt(id0);
+            out.writeInt(id1);
+            out.writeInt(id2);
+            out.writeInt(id3);
+            out.writeInt(id4);
+            out.writeInt(id5);
+            out.writeInt(id6);
+            out.writeInt(id7);
+        }
+        else {
+            out.writeBoolean(false);
+            U.writeMap(out, map);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        schemaId = in.readInt();
+
+        if (in.readBoolean()) {
+            inline = true;
+
+            id0 = in.readInt();
+            id1 = in.readInt();
+            id2 = in.readInt();
+            id3 = in.readInt();
+            id4 = in.readInt();
+            id5 = in.readInt();
+            id6 = in.readInt();
+            id7 = in.readInt();
+        }
+        else {
+            inline = false;
+
+            map = U.readHashMap(in);
+        }
+    }
 
     /**
      * Constructor.

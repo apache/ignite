@@ -4983,6 +4983,31 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Read hash map.
+     *
+     * @param in Input.
+     * @return Read map.
+     * @throws IOException If de-serialization failed.
+     * @throws ClassNotFoundException If deserialized class could not be found.
+     */
+    @SuppressWarnings({"unchecked"})
+    @Nullable public static <K, V> HashMap<K, V> readHashMap(ObjectInput in)
+        throws IOException, ClassNotFoundException {
+        int size = in.readInt();
+
+        // Check null flag.
+        if (size == -1)
+            return null;
+
+        HashMap<K, V> map = U.newHashMap(size);
+
+        for (int i = 0; i < size; i++)
+            map.put((K)in.readObject(), (V)in.readObject());
+
+        return map;
+    }
+
+    /**
      *
      * @param in Input.
      * @return Read map.
