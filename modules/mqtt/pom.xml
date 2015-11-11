@@ -35,13 +35,6 @@
     <version>1.5.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
-    <properties>
-        <paho.version>1.0.2</paho.version>
-        <activemq.version>5.12.0</activemq.version>
-        <guava-retrying.version>2.0.0</guava-retrying.version>
-        <guava.version>18.0</guava.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
@@ -58,7 +51,7 @@
         <dependency>
             <groupId>com.github.rholder</groupId>
             <artifactId>guava-retrying</artifactId>
-            <version>${guava-retrying.version}</version>
+            <version>${guava.retrying.version}</version>
         </dependency>
 
         <dependency>

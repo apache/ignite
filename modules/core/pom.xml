@@ -58,7 +58,7 @@
         <dependency>
             <groupId>javax.cache</groupId>
             <artifactId>cache-api</artifactId>
-            <version>1.0.0</version>
+            <version>${javax.cache.version}</version>
         </dependency>
 
         <dependency>
@@ -99,7 +99,7 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <version>1.3.175</version>
+            <version>${h2.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -148,7 +148,7 @@
         <dependency>
             <groupId>net.sf.json-lib</groupId>
             <artifactId>json-lib</artifactId>
-            <version>2.4</version>
+            <version>${jsonlib.version}</version>
             <classifier>jdk15</classifier>
             <scope>test</scope>
         </dependency>
