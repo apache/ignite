@@ -19,10 +19,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Unmanaged utility classes.
@@ -32,408 +30,118 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Interop factory ID for .Net. */
         private const int InteropFactoryId = 1;
 
-        #region PROCEDURE NAMES
-
-        private const string ProcReallocate = "IgniteReallocate";
-
-        private const string ProcIgnitionStart = "IgniteIgnitionStart";
-        private const string ProcIgnitionStop = "IgniteIgnitionStop";
-        private const string ProcIgnitionStopAll = "IgniteIgnitionStopAll";
-        
-        private const string ProcProcessorReleaseStart = "IgniteProcessorReleaseStart";
-        private const string ProcProcessorProjection = "IgniteProcessorProjection";
-        private const string ProcProcessorCache = "IgniteProcessorCache";
-        private const string ProcProcessorGetOrCreateCache = "IgniteProcessorGetOrCreateCache";
-        private const string ProcProcessorCreateCache = "IgniteProcessorCreateCache";
-        private const string ProcProcessorAffinity = "IgniteProcessorAffinity";
-        private const string ProcProcessorDataStreamer = "IgniteProcessorDataStreamer";
-        private const string ProcProcessorTransactions = "IgniteProcessorTransactions";
-        private const string ProcProcessorCompute = "IgniteProcessorCompute";
-        private const string ProcProcessorMessage = "IgniteProcessorMessage";
-        private const string ProcProcessorEvents = "IgniteProcessorEvents";
-        private const string ProcProcessorServices = "IgniteProcessorServices";
-        private const string ProcProcessorExtensions = "IgniteProcessorExtensions";
-        private const string ProcProcessorAtomicLong = "IgniteProcessorAtomicLong";
-        
-        private const string ProcTargetInStreamOutLong = "IgniteTargetInStreamOutLong";
-        private const string ProcTargetInStreamOutStream = "IgniteTargetInStreamOutStream";
-        private const string ProcTargetInStreamOutObject = "IgniteTargetInStreamOutObject";
-        private const string ProcTargetInObjectStreamOutStream = "IgniteTargetInObjectStreamOutStream";
-        private const string ProcTargetOutLong = "IgniteTargetOutLong";
-        private const string ProcTargetOutStream = "IgniteTargetOutStream";
-        private const string ProcTargetOutObject = "IgniteTargetOutObject";
-        private const string ProcTargetListenFut = "IgniteTargetListenFuture";
-        private const string ProcTargetListenFutForOp = "IgniteTargetListenFutureForOperation";
-
-        private const string ProcAffinityParts = "IgniteAffinityPartitions";
-
-        private const string ProcCacheWithSkipStore = "IgniteCacheWithSkipStore";
-        private const string ProcCacheWithNoRetries = "IgniteCacheWithNoRetries";
-        private const string ProcCacheWithExpiryPolicy = "IgniteCacheWithExpiryPolicy";
-        private const string ProcCacheWithAsync = "IgniteCacheWithAsync";
-        private const string ProcCacheWithKeepBinary = "IgniteCacheWithKeepPortable";
-        private const string ProcCacheClear = "IgniteCacheClear";
-        private const string ProcCacheRemoveAll = "IgniteCacheRemoveAll";
-        private const string ProcCacheOutOpQueryCursor = "IgniteCacheOutOpQueryCursor";
-        private const string ProcCacheOutOpContinuousQuery = "IgniteCacheOutOpContinuousQuery";
-        private const string ProcCacheIterator = "IgniteCacheIterator";
-        private const string ProcCacheLocalIterator = "IgniteCacheLocalIterator";
-        private const string ProcCacheEnterLock = "IgniteCacheEnterLock";
-        private const string ProcCacheExitLock = "IgniteCacheExitLock";
-        private const string ProcCacheTryEnterLock = "IgniteCacheTryEnterLock";
-        private const string ProcCacheCloseLock = "IgniteCacheCloseLock";
-        private const string ProcCacheRebalance = "IgniteCacheRebalance";
-        private const string ProcCacheSize = "IgniteCacheSize";
-
-        private const string ProcCacheStoreCallbackInvoke = "IgniteCacheStoreCallbackInvoke";
-
-        private const string ProcComputeWithNoFailover = "IgniteComputeWithNoFailover";
-        private const string ProcComputeWithTimeout = "IgniteComputeWithTimeout";
-        private const string ProcComputeExecuteNative = "IgniteComputeExecuteNative";
-
-        private const string ProcContinuousQryClose = "IgniteContinuousQueryClose";
-        private const string ProcContinuousQryGetInitialQueryCursor = "IgniteContinuousQueryGetInitialQueryCursor";
-
-        private const string ProcDataStreamerListenTop = "IgniteDataStreamerListenTopology";
-        private const string ProcDataStreamerAllowOverwriteGet = "IgniteDataStreamerAllowOverwriteGet";
-        private const string ProcDataStreamerAllowOverwriteSet = "IgniteDataStreamerAllowOverwriteSet";
-        private const string ProcDataStreamerSkipStoreGet = "IgniteDataStreamerSkipStoreGet";
-        private const string ProcDataStreamerSkipStoreSet = "IgniteDataStreamerSkipStoreSet";
-        private const string ProcDataStreamerPerNodeBufferSizeGet = "IgniteDataStreamerPerNodeBufferSizeGet";
-        private const string ProcDataStreamerPerNodeBufferSizeSet = "IgniteDataStreamerPerNodeBufferSizeSet";
-        private const string ProcDataStreamerPerNodeParallelOpsGet = "IgniteDataStreamerPerNodeParallelOperationsGet";
-        private const string ProcDataStreamerPerNodeParallelOpsSet = "IgniteDataStreamerPerNodeParallelOperationsSet";
-
-        private const string ProcMessagingWithAsync = "IgniteMessagingWithAsync";
-
-        private const string ProcQryCursorIterator = "IgniteQueryCursorIterator";
-        private const string ProcQryCursorClose = "IgniteQueryCursorClose";
-
-        private const string ProcProjectionForOthers = "IgniteProjectionForOthers";
-        private const string ProcProjectionForRemotes = "IgniteProjectionForRemotes";
-        private const string ProcProjectionForDaemons = "IgniteProjectionForDaemons";
-        private const string ProcProjectionForRandom = "IgniteProjectionForRandom";
-        private const string ProcProjectionForOldest = "IgniteProjectionForOldest";
-        private const string ProcProjectionForYoungest = "IgniteProjectionForYoungest";
-        private const string ProcProjectionResetMetrics = "IgniteProjectionResetMetrics";
-        private const string ProcProjectionOutOpRet = "IgniteProjectionOutOpRet";
-
-        private const string ProcAcquire = "IgniteAcquire";
-        private const string ProcRelease = "IgniteRelease";
-
-        private const string ProcTxStart = "IgniteTransactionsStart";
-        private const string ProcTxCommit = "IgniteTransactionsCommit";
-        private const string ProcTxCommitAsync = "IgniteTransactionsCommitAsync";
-        private const string ProcTxRollback = "IgniteTransactionsRollback";
-        private const string ProcTxRollbackAsync = "IgniteTransactionsRollbackAsync";
-        private const string ProcTxClose = "IgniteTransactionsClose";
-        private const string ProcTxState = "IgniteTransactionsState";
-        private const string ProcTxSetRollbackOnly = "IgniteTransactionsSetRollbackOnly";
-        private const string ProcTxResetMetrics = "IgniteTransactionsResetMetrics";
-
-        private const string ProcThrowToJava = "IgniteThrowToJava";
-
-        private const string ProcDestroyJvm = "IgniteDestroyJvm";
-
-        private const string ProcHandlersSize = "IgniteHandlersSize";
-
-        private const string ProcCreateContext = "IgniteCreateContext";
-        
-        private const string ProcEventsWithAsync = "IgniteEventsWithAsync";
-        private const string ProcEventsStopLocalListen = "IgniteEventsStopLocalListen";
-        private const string ProcEventsLocalListen = "IgniteEventsLocalListen";
-        private const string ProcEventsIsEnabled = "IgniteEventsIsEnabled";
-
-        private const string ProcDeleteContext = "IgniteDeleteContext";
-        
-        private const string ProcServicesWithAsync = "IgniteServicesWithAsync";
-        private const string ProcServicesWithServerKeepBinary = "IgniteServicesWithServerKeepPortable";
-        private const string ProcServicesCancel = "IgniteServicesCancel";
-        private const string ProcServicesCancelAll = "IgniteServicesCancelAll";
-        private const string ProcServicesGetServiceProxy = "IgniteServicesGetServiceProxy";
-
-        private const string ProcAtomicLongGet = "IgniteAtomicLongGet";
-        private const string ProcAtomicLongIncrementAndGet = "IgniteAtomicLongIncrementAndGet";
-        private const string ProcAtomicLongAddAndGet = "IgniteAtomicLongAddAndGet";
-        private const string ProcAtomicLongDecrementAndGet = "IgniteAtomicLongDecrementAndGet";
-        private const string ProcAtomicLongGetAndSet = "IgniteAtomicLongGetAndSet";
-        private const string ProcAtomicLongCompareAndSetAndGet = "IgniteAtomicLongCompareAndSetAndGet";
-        private const string ProcAtomicLongIsClosed = "IgniteAtomicLongIsClosed";
-        private const string ProcAtomicLongClose = "IgniteAtomicLongClose";
-
-        #endregion
-
-        #region DELEGATE DEFINITIONS
-
-        private delegate int ReallocateDelegate(long memPtr, int cap);
-
-        private delegate void* IgnitionStartDelegate(void* ctx, sbyte* cfgPath, sbyte* gridName, int factoryId, long dataPtr);
-        private delegate bool IgnitionStopDelegate(void* ctx, sbyte* gridName, bool cancel);
-        private delegate void IgnitionStopAllDelegate(void* ctx, bool cancel);
-
-        private delegate void ProcessorReleaseStartDelegate(void* ctx, void* obj);
-        private delegate void* ProcessorProjectionDelegate(void* ctx, void* obj);
-        private delegate void* ProcessorCacheDelegate(void* ctx, void* obj, sbyte* name);
-        private delegate void* ProcessorCreateCacheDelegate(void* ctx, void* obj, sbyte* name);
-        private delegate void* ProcessorGetOrCreateCacheDelegate(void* ctx, void* obj, sbyte* name);
-        private delegate void* ProcessorAffinityDelegate(void* ctx, void* obj, sbyte* name);
-        private delegate void* ProcessorDataStreamerDelegate(void* ctx, void* obj, sbyte* name, bool keepBinary);
-        private delegate void* ProcessorTransactionsDelegate(void* ctx, void* obj);
-        private delegate void* ProcessorComputeDelegate(void* ctx, void* obj, void* prj);
-        private delegate void* ProcessorMessageDelegate(void* ctx, void* obj, void* prj);
-        private delegate void* ProcessorEventsDelegate(void* ctx, void* obj, void* prj);
-        private delegate void* ProcessorServicesDelegate(void* ctx, void* obj, void* prj);
-        private delegate void* ProcessorExtensionsDelegate(void* ctx, void* obj);
-        private delegate void* ProcessorAtomicLongDelegate(void* ctx, void* obj, sbyte* name, long initVal, bool create);
-        
-        private delegate long TargetInStreamOutLongDelegate(void* ctx, void* target, int opType, long memPtr);
-        private delegate void TargetInStreamOutStreamDelegate(void* ctx, void* target, int opType, long inMemPtr, long outMemPtr);
-        private delegate void* TargetInStreamOutObjectDelegate(void* ctx, void* target, int opType, long memPtr);
-        private delegate void TargetInObjectStreamOutStreamDelegate(void* ctx, void* target, int opType, void* arg, long inMemPtr, long outMemPtr);
-        private delegate long TargetOutLongDelegate(void* ctx, void* target, int opType);
-        private delegate void TargetOutStreamDelegate(void* ctx, void* target, int opType, long memPtr);
-        private delegate void* TargetOutObjectDelegate(void* ctx, void* target, int opType);
-        private delegate void TargetListenFutureDelegate(void* ctx, void* target, long futId, int typ);
-        private delegate void TargetListenFutureForOpDelegate(void* ctx, void* target, long futId, int typ, int opId);
-
-        private delegate int AffinityPartitionsDelegate(void* ctx, void* target);
-
-        private delegate void* CacheWithSkipStoreDelegate(void* ctx, void* obj);
-        private delegate void* CacheNoRetriesDelegate(void* ctx, void* obj);
-        private delegate void* CacheWithExpiryPolicyDelegate(void* ctx, void* obj, long create, long update, long access);
-        private delegate void* CacheWithAsyncDelegate(void* ctx, void* obj);
-        private delegate void* CacheWithKeepBinaryDelegate(void* ctx, void* obj);
-        private delegate void CacheClearDelegate(void* ctx, void* obj);
-        private delegate void CacheRemoveAllDelegate(void* ctx, void* obj);
-        private delegate void* CacheOutOpQueryCursorDelegate(void* ctx, void* obj, int type, long memPtr);
-        private delegate void* CacheOutOpContinuousQueryDelegate(void* ctx, void* obj, int type, long memPtr);
-        private delegate void* CacheIteratorDelegate(void* ctx, void* obj);
-        private delegate void* CacheLocalIteratorDelegate(void* ctx, void* obj, int peekModes);
-        private delegate void CacheEnterLockDelegate(void* ctx, void* obj, long id);
-        private delegate void CacheExitLockDelegate(void* ctx, void* obj, long id);
-        private delegate bool CacheTryEnterLockDelegate(void* ctx, void* obj, long id, long timeout);
-        private delegate void CacheCloseLockDelegate(void* ctx, void* obj, long id);
-        private delegate void CacheRebalanceDelegate(void* ctx, void* obj, long futId);
-        private delegate int CacheSizeDelegate(void* ctx, void* obj, int peekModes, bool loc);
-
-        private delegate void CacheStoreCallbackInvokeDelegate(void* ctx, void* obj, long memPtr);
-
-        private delegate void ComputeWithNoFailoverDelegate(void* ctx, void* target);
-        private delegate void ComputeWithTimeoutDelegate(void* ctx, void* target, long timeout);
-        private delegate void ComputeExecuteNativeDelegate(void* ctx, void* target, long taskPtr, long topVer);
-
-        private delegate void ContinuousQueryCloseDelegate(void* ctx, void* target);
-        private delegate void* ContinuousQueryGetInitialQueryCursorDelegate(void* ctx, void* target);
-
-        private delegate void DataStreamerListenTopologyDelegate(void* ctx, void* obj, long ptr);
-        private delegate bool DataStreamerAllowOverwriteGetDelegate(void* ctx, void* obj);
-        private delegate void DataStreamerAllowOverwriteSetDelegate(void* ctx, void* obj, bool val);
-        private delegate bool DataStreamerSkipStoreGetDelegate(void* ctx, void* obj);
-        private delegate void DataStreamerSkipStoreSetDelegate(void* ctx, void* obj, bool val);
-        private delegate int DataStreamerPerNodeBufferSizeGetDelegate(void* ctx, void* obj);
-        private delegate void DataStreamerPerNodeBufferSizeSetDelegate(void* ctx, void* obj, int val);
-        private delegate int DataStreamerPerNodeParallelOperationsGetDelegate(void* ctx, void* obj);
-        private delegate void DataStreamerPerNodeParallelOperationsSetDelegate(void* ctx, void* obj, int val);
-
-        private delegate void* MessagingWithAsyncDelegate(void* ctx, void* target);
-
-        private delegate void* ProjectionForOthersDelegate(void* ctx, void* obj, void* prj);
-		private delegate void* ProjectionForRemotesDelegate(void* ctx, void* obj);
-		private delegate void* ProjectionForDaemonsDelegate(void* ctx, void* obj);
-		private delegate void* ProjectionForRandomDelegate(void* ctx, void* obj);
-		private delegate void* ProjectionForOldestDelegate(void* ctx, void* obj);
-		private delegate void* ProjectionForYoungestDelegate(void* ctx, void* obj);
-		private delegate void ProjectionResetMetricsDelegate(void* ctx, void* obj);
-		private delegate void* ProjectionOutOpRetDelegate(void* ctx, void* obj, int type, long memPtr);
-
-        private delegate void QueryCursorIteratorDelegate(void* ctx, void* target);
-        private delegate void QueryCursorCloseDelegate(void* ctx, void* target);
-
-        private delegate void* AcquireDelegate(void* ctx, void* target);
-        private delegate void ReleaseDelegate(void* target);
-
-        private delegate long TransactionsStartDelegate(void* ctx, void* target, int concurrency, int isolation, long timeout, int txSize);
-        private delegate int TransactionsCommitDelegate(void* ctx, void* target, long id);
-        private delegate void TransactionsCommitAsyncDelegate(void* ctx, void* target, long id, long futId);
-        private delegate int TransactionsRollbackDelegate(void* ctx, void* target, long id);
-        private delegate void TransactionsRollbackAsyncDelegate(void* ctx, void* target, long id, long futId);
-        private delegate int TransactionsCloseDelegate(void* ctx, void* target, long id);
-        private delegate int TransactionsStateDelegate(void* ctx, void* target, long id);
-        private delegate bool TransactionsSetRollbackOnlyDelegate(void* ctx, void* target, long id);
-        private delegate void TransactionsResetMetricsDelegate(void* ctx, void* target);
-
-        private delegate void ThrowToJavaDelegate(void* ctx, char* msg);
-
-        private delegate void DestroyJvmDelegate(void* ctx);
-
-        private delegate int HandlersSizeDelegate();
-
-        private delegate void* CreateContextDelegate(void* opts, int optsLen, void* cbs);
-        
-        private delegate void* EventsWithAsyncDelegate(void* ctx, void* obj);
-        private delegate bool EventsStopLocalListenDelegate(void* ctx, void* obj, long hnd);
-        private delegate void EventsLocalListenDelegate(void* ctx, void* obj, long hnd, int type);
-        private delegate bool EventsIsEnabledDelegate(void* ctx, void* obj, int type);
-
-        private delegate void DeleteContextDelegate(void* ptr);
-
-        private delegate void* ServicesWithAsyncDelegate(void* ctx, void* target);
-        private delegate void* ServicesWithServerKeepBinaryDelegate(void* ctx, void* target);
-        private delegate long ServicesCancelDelegate(void* ctx, void* target, char* name);
-        private delegate long ServicesCancelAllDelegate(void* ctx, void* target);
-        private delegate void* ServicesGetServiceProxyDelegate(void* ctx, void* target, char* name, bool sticky);
-
-        private delegate long AtomicLongGetDelegate(void* ctx, void* target);
-        private delegate long AtomicLongIncrementAndGetDelegate(void* ctx, void* target);
-        private delegate long AtomicLongAddAndGetDelegate(void* ctx, void* target, long value);
-        private delegate long AtomicLongDecrementAndGetDelegate(void* ctx, void* target);
-        private delegate long AtomicLongGetAndSetDelegate(void* ctx, void* target, long value);
-        private delegate long AtomicLongCompareAndSetAndGetDelegate(void* ctx, void* target, long expVal, long newVal);
-        private delegate bool AtomicLongIsClosedDelegate(void* ctx, void* target);
-        private delegate void AtomicLongCloseDelegate(void* ctx, void* target);
-
-        #endregion
-
         #region DELEGATE MEMBERS
 
         // ReSharper disable InconsistentNaming
-        private static readonly ReallocateDelegate REALLOCATE;
 
-        private static readonly IgnitionStartDelegate IGNITION_START;
-        private static readonly IgnitionStopDelegate IGNITION_STOP;
-        private static readonly IgnitionStopAllDelegate IGNITION_STOP_ALL;
-
-        private static readonly ProcessorReleaseStartDelegate PROCESSOR_RELEASE_START;
-        private static readonly ProcessorProjectionDelegate PROCESSOR_PROJECTION;
-        private static readonly ProcessorCacheDelegate PROCESSOR_CACHE;
-        private static readonly ProcessorCreateCacheDelegate PROCESSOR_CREATE_CACHE;
-        private static readonly ProcessorGetOrCreateCacheDelegate PROCESSOR_GET_OR_CREATE_CACHE;
-        private static readonly ProcessorAffinityDelegate PROCESSOR_AFFINITY;
-        private static readonly ProcessorDataStreamerDelegate PROCESSOR_DATA_STREAMER;
-        private static readonly ProcessorTransactionsDelegate PROCESSOR_TRANSACTIONS;
-        private static readonly ProcessorComputeDelegate PROCESSOR_COMPUTE;
-
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorCompute")]
-        private static extern void* PROCESSOR_COMPUTE2(void* ctx, void* obj, void* prj);
-
-        private static readonly ProcessorMessageDelegate PROCESSOR_MESSAGE;
-        private static readonly ProcessorEventsDelegate PROCESSOR_EVENTS;
-        private static readonly ProcessorServicesDelegate PROCESSOR_SERVICES;
-        private static readonly ProcessorExtensionsDelegate PROCESSOR_EXTENSIONS;
-        private static readonly ProcessorAtomicLongDelegate PROCESSOR_ATOMIC_LONG;
-        
-        private static readonly TargetInStreamOutLongDelegate TARGET_IN_STREAM_OUT_LONG;
-        private static readonly TargetInStreamOutStreamDelegate TARGET_IN_STREAM_OUT_STREAM;
-        private static readonly TargetInStreamOutObjectDelegate TARGET_IN_STREAM_OUT_OBJECT;
-        private static readonly TargetInObjectStreamOutStreamDelegate TARGET_IN_OBJECT_STREAM_OUT_STREAM;
-        private static readonly TargetOutLongDelegate TARGET_OUT_LONG;
-        private static readonly TargetOutStreamDelegate TARGET_OUT_STREAM;
-        private static readonly TargetOutObjectDelegate TARGET_OUT_OBJECT;
-        private static readonly TargetListenFutureDelegate TargetListenFut;
-        private static readonly TargetListenFutureForOpDelegate TargetListenFutForOp;
-
-        private static readonly AffinityPartitionsDelegate AffinityParts;
-
-        private static readonly CacheWithSkipStoreDelegate CACHE_WITH_SKIP_STORE;
-        private static readonly CacheNoRetriesDelegate CACHE_WITH_NO_RETRIES;
-        private static readonly CacheWithExpiryPolicyDelegate CACHE_WITH_EXPIRY_POLICY;
-        private static readonly CacheWithAsyncDelegate CACHE_WITH_ASYNC;
-        private static readonly CacheWithKeepBinaryDelegate CACHE_WITH_KEEP_BINARY;
-        private static readonly CacheClearDelegate CACHE_CLEAR;
-        private static readonly CacheRemoveAllDelegate CACHE_REMOVE_ALL;
-        private static readonly CacheOutOpQueryCursorDelegate CACHE_OUT_OP_QUERY_CURSOR;
-        private static readonly CacheOutOpContinuousQueryDelegate CACHE_OUT_OP_CONTINUOUS_QUERY;
-        private static readonly CacheIteratorDelegate CACHE_ITERATOR;
-        private static readonly CacheLocalIteratorDelegate CACHE_LOCAL_ITERATOR;
-        private static readonly CacheEnterLockDelegate CACHE_ENTER_LOCK;
-        private static readonly CacheExitLockDelegate CACHE_EXIT_LOCK;
-        private static readonly CacheTryEnterLockDelegate CACHE_TRY_ENTER_LOCK;
-        private static readonly CacheCloseLockDelegate CACHE_CLOSE_LOCK;
-        private static readonly CacheRebalanceDelegate CACHE_REBALANCE;
-        private static readonly CacheSizeDelegate CACHE_SIZE;
-
-        private static readonly CacheStoreCallbackInvokeDelegate CACHE_STORE_CALLBACK_INVOKE;
-
-        private static readonly ComputeWithNoFailoverDelegate COMPUTE_WITH_NO_FAILOVER;
-        private static readonly ComputeWithTimeoutDelegate COMPUTE_WITH_TIMEOUT;
-        private static readonly ComputeExecuteNativeDelegate COMPUTE_EXECUTE_NATIVE;
-
-        private static readonly ContinuousQueryCloseDelegate ContinuousQryClose;
-        private static readonly ContinuousQueryGetInitialQueryCursorDelegate ContinuousQryGetInitialQueryCursor;
-
-        private static readonly DataStreamerListenTopologyDelegate DataStreamerListenTop;
-        private static readonly DataStreamerAllowOverwriteGetDelegate DATA_STREAMER_ALLOW_OVERWRITE_GET;
-        private static readonly DataStreamerAllowOverwriteSetDelegate DATA_STREAMER_ALLOW_OVERWRITE_SET;
-        private static readonly DataStreamerSkipStoreGetDelegate DATA_STREAMER_SKIP_STORE_GET;
-        private static readonly DataStreamerSkipStoreSetDelegate DATA_STREAMER_SKIP_STORE_SET;
-        private static readonly DataStreamerPerNodeBufferSizeGetDelegate DATA_STREAMER_PER_NODE_BUFFER_SIZE_GET;
-        private static readonly DataStreamerPerNodeBufferSizeSetDelegate DATA_STREAMER_PER_NODE_BUFFER_SIZE_SET;
-        private static readonly DataStreamerPerNodeParallelOperationsGetDelegate DataStreamerPerNodeParallelOpsGet;
-        private static readonly DataStreamerPerNodeParallelOperationsSetDelegate DataStreamerPerNodeParallelOpsSet;
-
-        private static readonly MessagingWithAsyncDelegate MessagingWithAsync;
-
-        private static readonly ProjectionForOthersDelegate PROJECTION_FOR_OTHERS;
-        private static readonly ProjectionForRemotesDelegate PROJECTION_FOR_REMOTES;
-        private static readonly ProjectionForDaemonsDelegate PROJECTION_FOR_DAEMONS;
-        private static readonly ProjectionForRandomDelegate PROJECTION_FOR_RANDOM;
-        private static readonly ProjectionForOldestDelegate PROJECTION_FOR_OLDEST;
-        private static readonly ProjectionForYoungestDelegate PROJECTION_FOR_YOUNGEST;
-        private static readonly ProjectionResetMetricsDelegate PROJECTION_RESET_METRICS;
-        private static readonly ProjectionOutOpRetDelegate PROJECTION_OUT_OP_RET;
-
-        private static readonly QueryCursorIteratorDelegate QryCursorIterator;
-        private static readonly QueryCursorCloseDelegate QryCursorClose;
-
-        private static readonly AcquireDelegate ACQUIRE;
-        private static readonly ReleaseDelegate RELEASE;
-
-        private static readonly TransactionsStartDelegate TxStart;
-        private static readonly TransactionsCommitDelegate TxCommit;
-        private static readonly TransactionsCommitAsyncDelegate TxCommitAsync;
-        private static readonly TransactionsRollbackDelegate TxRollback;
-        private static readonly TransactionsRollbackAsyncDelegate TxRollbackAsync;
-        private static readonly TransactionsCloseDelegate TxClose;
-        private static readonly TransactionsStateDelegate TxState;
-        private static readonly TransactionsSetRollbackOnlyDelegate TxSetRollbackOnly;
-        private static readonly TransactionsResetMetricsDelegate TxResetMetrics;
-
-        private static readonly ThrowToJavaDelegate THROW_TO_JAVA;
-
-        private static readonly DestroyJvmDelegate DESTROY_JVM;
-
-        private static readonly HandlersSizeDelegate HANDLERS_SIZE;
-
-        private static readonly CreateContextDelegate CREATE_CONTEXT;
-        
-        private static readonly EventsWithAsyncDelegate EVENTS_WITH_ASYNC;
-        private static readonly EventsStopLocalListenDelegate EVENTS_STOP_LOCAL_LISTEN;
-        private static readonly EventsLocalListenDelegate EVENTS_LOCAL_LISTEN;
-        private static readonly EventsIsEnabledDelegate EVENTS_IS_ENABLED;
- 
-        private static readonly DeleteContextDelegate DELETE_CONTEXT;
-        
-        private static readonly ServicesWithAsyncDelegate SERVICES_WITH_ASYNC;
-        private static readonly ServicesWithServerKeepBinaryDelegate SERVICES_WITH_SERVER_KEEP_BINARY;
-        private static readonly ServicesCancelDelegate SERVICES_CANCEL;
-        private static readonly ServicesCancelAllDelegate SERVICES_CANCEL_ALL;
-        private static readonly ServicesGetServiceProxyDelegate SERVICES_GET_SERVICE_PROXY;
-
-        private static readonly AtomicLongGetDelegate ATOMIC_LONG_GET;
-        private static readonly AtomicLongIncrementAndGetDelegate ATOMIC_LONG_INCREMENT_AND_GET;
-        private static readonly AtomicLongAddAndGetDelegate ATOMIC_LONG_ADD_AND_GET;
-        private static readonly AtomicLongDecrementAndGetDelegate ATOMIC_LONG_DECREMENT_AND_GET;
-        private static readonly AtomicLongGetAndSetDelegate ATOMIC_LONG_GET_AND_SET;
-        private static readonly AtomicLongCompareAndSetAndGetDelegate ATOMIC_LONG_COMPARE_AND_SET_AND_GET;
-        private static readonly AtomicLongIsClosedDelegate ATOMIC_LONG_IS_CLOSED;
-        private static readonly AtomicLongCloseDelegate ATOMIC_LONG_CLOSE;
+        private static extern int REALLOCATE(long memPtr, int cap);
+        private static extern void* IGNITION_START(void* ctx, sbyte* cfgPath, sbyte* gridName, int factoryId, long dataPtr);
+        private static extern bool IGNITION_STOP(void* ctx, sbyte* gridName, bool cancel);
+        private static extern void IGNITION_STOP_ALL(void* ctx, bool cancel);
+        private static extern void PROCESSOR_RELEASE_START(void* ctx, void* obj);
+        private static extern void* PROCESSOR_PROJECTION(void* ctx, void* obj);
+        private static extern void* PROCESSOR_CACHE(void* ctx, void* obj, sbyte* name);
+        private static extern void* PROCESSOR_CREATE_CACHE(void* ctx, void* obj, sbyte* name);
+        private static extern void* PROCESSOR_GET_OR_CREATE_CACHE(void* ctx, void* obj, sbyte* name);
+        private static extern void* PROCESSOR_AFFINITY(void* ctx, void* obj, sbyte* name);
+        private static extern void* PROCESSOR_DATA_STREAMER(void* ctx, void* obj, sbyte* name, bool keepBinary);
+        private static extern void* PROCESSOR_TRANSACTIONS(void* ctx, void* obj);
+        private static extern void* PROCESSOR_COMPUTE(void* ctx, void* obj, void* prj);
+        private static extern void* PROCESSOR_MESSAGE(void* ctx, void* obj, void* prj);
+        private static extern void* PROCESSOR_EVENTS(void* ctx, void* obj, void* prj);
+        private static extern void* PROCESSOR_SERVICES(void* ctx, void* obj, void* prj);
+        private static extern void* PROCESSOR_EXTENSIONS(void* ctx, void* obj);
+        private static extern void* PROCESSOR_ATOMIC_LONG(void* ctx, void* obj, sbyte* name, long initVal, bool create);
+        private static extern long TARGET_IN_STREAM_OUT_LONG(void* ctx, void* target, int opType, long memPtr);
+        private static extern void TARGET_IN_STREAM_OUT_STREAM(void* ctx, void* target, int opType, long inMemPtr, long outMemPtr);
+        private static extern void* TARGET_IN_STREAM_OUT_OBJECT(void* ctx, void* target, int opType, long memPtr);
+        private static extern void TARGET_IN_OBJECT_STREAM_OUT_STREAM(void* ctx, void* target, int opType, void* arg, long inMemPtr, long outMemPtr);
+        private static extern long TARGET_OUT_LONG(void* ctx, void* target, int opType);
+        private static extern void TARGET_OUT_STREAM(void* ctx, void* target, int opType, long memPtr);
+        private static extern void* TARGET_OUT_OBJECT(void* ctx, void* target, int opType);
+        private static extern void TargetListenFut(void* ctx, void* target, long futId, int typ);
+        private static extern void TargetListenFutForOp(void* ctx, void* target, long futId, int typ, int opId);
+        private static extern int AffinityParts(void* ctx, void* target);
+        private static extern void* CACHE_WITH_SKIP_STORE(void* ctx, void* obj);
+        private static extern void* CACHE_WITH_NO_RETRIES(void* ctx, void* obj);
+        private static extern void* CACHE_WITH_EXPIRY_POLICY(void* ctx, void* obj, long create, long update, long access);
+        private static extern void* CACHE_WITH_ASYNC(void* ctx, void* obj);
+        private static extern void* CACHE_WITH_KEEP_BINARY(void* ctx, void* obj);
+        private static extern void CACHE_CLEAR(void* ctx, void* obj);
+        private static extern void CACHE_REMOVE_ALL(void* ctx, void* obj);
+        private static extern void* CACHE_OUT_OP_QUERY_CURSOR(void* ctx, void* obj, int type, long memPtr);
+        private static extern void* CACHE_OUT_OP_CONTINUOUS_QUERY(void* ctx, void* obj, int type, long memPtr);
+        private static extern void* CACHE_ITERATOR(void* ctx, void* obj);
+        private static extern void* CACHE_LOCAL_ITERATOR(void* ctx, void* obj, int peekModes);
+        private static extern void CACHE_ENTER_LOCK(void* ctx, void* obj, long id);
+        private static extern void CACHE_EXIT_LOCK(void* ctx, void* obj, long id);
+        private static extern bool CACHE_TRY_ENTER_LOCK(void* ctx, void* obj, long id, long timeout);
+        private static extern void CACHE_CLOSE_LOCK(void* ctx, void* obj, long id);
+        private static extern void CACHE_REBALANCE(void* ctx, void* obj, long futId);
+        private static extern int CACHE_SIZE(void* ctx, void* obj, int peekModes, bool loc);
+        private static extern void CACHE_STORE_CALLBACK_INVOKE(void* ctx, void* obj, long memPtr);
+        private static extern void COMPUTE_WITH_NO_FAILOVER(void* ctx, void* target);
+        private static extern void COMPUTE_WITH_TIMEOUT(void* ctx, void* target, long timeout);
+        private static extern void COMPUTE_EXECUTE_NATIVE(void* ctx, void* target, long taskPtr, long topVer);
+        private static extern void ContinuousQryClose(void* ctx, void* target);
+        private static extern void* ContinuousQryGetInitialQueryCursor(void* ctx, void* target);
+        private static extern void DataStreamerListenTop(void* ctx, void* obj, long ptr);
+        private static extern bool DATA_STREAMER_ALLOW_OVERWRITE_GET(void* ctx, void* obj);
+        private static extern void DATA_STREAMER_ALLOW_OVERWRITE_SET(void* ctx, void* obj, bool val);
+        private static extern bool DATA_STREAMER_SKIP_STORE_GET(void* ctx, void* obj);
+        private static extern void DATA_STREAMER_SKIP_STORE_SET(void* ctx, void* obj, bool val);
+        private static extern int DATA_STREAMER_PER_NODE_BUFFER_SIZE_GET(void* ctx, void* obj);
+        private static extern void DATA_STREAMER_PER_NODE_BUFFER_SIZE_SET(void* ctx, void* obj, int val);
+        private static extern int DataStreamerPerNodeParallelOpsGet(void* ctx, void* obj);
+        private static extern void DataStreamerPerNodeParallelOpsSet(void* ctx, void* obj, int val);
+        private static extern void* MessagingWithAsync(void* ctx, void* target);
+        private static extern void* PROJECTION_FOR_OTHERS(void* ctx, void* obj, void* prj);
+        private static extern void* PROJECTION_FOR_REMOTES(void* ctx, void* obj);
+        private static extern void* PROJECTION_FOR_DAEMONS(void* ctx, void* obj);
+        private static extern void* PROJECTION_FOR_RANDOM(void* ctx, void* obj);
+        private static extern void* PROJECTION_FOR_OLDEST(void* ctx, void* obj);
+        private static extern void* PROJECTION_FOR_YOUNGEST(void* ctx, void* obj);
+        private static extern void PROJECTION_RESET_METRICS(void* ctx, void* obj);
+        private static extern void* PROJECTION_OUT_OP_RET(void* ctx, void* obj, int type, long memPtr);
+        private static extern void QryCursorIterator(void* ctx, void* target);
+        private static extern void QryCursorClose(void* ctx, void* target);
+        private static extern void* ACQUIRE(void* ctx, void* target);
+        private static extern void RELEASE(void* target);
+        private static extern long TxStart(void* ctx, void* target, int concurrency, int isolation, long timeout, int txSize);
+        private static extern int TxCommit(void* ctx, void* target, long id);
+        private static extern void TxCommitAsync(void* ctx, void* target, long id, long futId);
+        private static extern int TxRollback(void* ctx, void* target, long id);
+        private static extern void TxRollbackAsync(void* ctx, void* target, long id, long futId);
+        private static extern int TxClose(void* ctx, void* target, long id);
+        private static extern int TxState(void* ctx, void* target, long id);
+        private static extern bool TxSetRollbackOnly(void* ctx, void* target, long id);
+        private static extern void TxResetMetrics(void* ctx, void* target);
+        private static extern void THROW_TO_JAVA(void* ctx, char* msg);
+        private static extern int HANDLERS_SIZE();
+        private static extern void* CREATE_CONTEXT(void* opts, int optsLen, void* cbs);
+        private static extern void DELETE_CONTEXT(void* ptr);
+        private static extern void DESTROY_JVM(void* ctx);
+        private static extern void* EVENTS_WITH_ASYNC(void* ctx, void* obj);
+        private static extern bool EVENTS_STOP_LOCAL_LISTEN(void* ctx, void* obj, long hnd);
+        private static extern void EVENTS_LOCAL_LISTEN(void* ctx, void* obj, long hnd, int type);
+        private static extern bool EVENTS_IS_ENABLED(void* ctx, void* obj, int type);
+        private static extern void* SERVICES_WITH_ASYNC(void* ctx, void* target);
+        private static extern void* SERVICES_WITH_SERVER_KEEP_BINARY(void* ctx, void* target);
+        private static extern long SERVICES_CANCEL(void* ctx, void* target, char* name);
+        private static extern long SERVICES_CANCEL_ALL(void* ctx, void* target);
+        private static extern void* SERVICES_GET_SERVICE_PROXY(void* ctx, void* target, char* name, bool sticky);
+        private static extern long ATOMIC_LONG_GET(void* ctx, void* target);
+        private static extern long ATOMIC_LONG_INCREMENT_AND_GET(void* ctx, void* target);
+        private static extern long ATOMIC_LONG_ADD_AND_GET(void* ctx, void* target, long value);
+        private static extern long ATOMIC_LONG_DECREMENT_AND_GET(void* ctx, void* target);
+        private static extern long ATOMIC_LONG_GET_AND_SET(void* ctx, void* target, long value);
+        private static extern long ATOMIC_LONG_COMPARE_AND_SET_AND_GET(void* ctx, void* target, long expVal, long newVal);
+        private static extern bool ATOMIC_LONG_IS_CLOSED(void* ctx, void* target);
+        private static extern void ATOMIC_LONG_CLOSE(void* ctx, void* target);
 
         // ReSharper restore InconsistentNaming
 
         #endregion
-
-        /** Library pointer. */
-        private static readonly IntPtr Ptr;
 
         /// <summary>
         /// Initializer.
@@ -444,136 +152,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             var path = IgniteUtils.UnpackEmbeddedResource(IgniteUtils.FileIgniteJniDll);
 
-            Ptr = NativeMethods.LoadLibrary(path);
+            var ptr = NativeMethods.LoadLibrary(path);
 
-            if (Ptr == IntPtr.Zero)
+            if (ptr == IntPtr.Zero)
                 throw new IgniteException("Failed to load " + IgniteUtils.FileIgniteJniDll + ": " + Marshal.GetLastWin32Error());
 
-            REALLOCATE = CreateDelegate<ReallocateDelegate>(ProcReallocate);
-
-            IGNITION_START = CreateDelegate<IgnitionStartDelegate>(ProcIgnitionStart);
-            IGNITION_STOP = CreateDelegate<IgnitionStopDelegate>(ProcIgnitionStop);
-            IGNITION_STOP_ALL = CreateDelegate<IgnitionStopAllDelegate>(ProcIgnitionStopAll);
-            
-            PROCESSOR_RELEASE_START = CreateDelegate<ProcessorReleaseStartDelegate>(ProcProcessorReleaseStart);
-            PROCESSOR_PROJECTION = CreateDelegate<ProcessorProjectionDelegate>(ProcProcessorProjection);
-            PROCESSOR_CACHE = CreateDelegate<ProcessorCacheDelegate>(ProcProcessorCache);
-            PROCESSOR_CREATE_CACHE = CreateDelegate<ProcessorCreateCacheDelegate>(ProcProcessorCreateCache);
-            PROCESSOR_GET_OR_CREATE_CACHE = CreateDelegate<ProcessorGetOrCreateCacheDelegate>(ProcProcessorGetOrCreateCache);
-            PROCESSOR_AFFINITY = CreateDelegate<ProcessorAffinityDelegate>(ProcProcessorAffinity);
-            PROCESSOR_DATA_STREAMER = CreateDelegate<ProcessorDataStreamerDelegate>(ProcProcessorDataStreamer);
-            PROCESSOR_TRANSACTIONS = CreateDelegate<ProcessorTransactionsDelegate>(ProcProcessorTransactions);
-            PROCESSOR_COMPUTE = CreateDelegate<ProcessorComputeDelegate>(ProcProcessorCompute);
-            PROCESSOR_MESSAGE = CreateDelegate<ProcessorMessageDelegate>(ProcProcessorMessage);
-            PROCESSOR_EVENTS = CreateDelegate<ProcessorEventsDelegate>(ProcProcessorEvents);
-            PROCESSOR_SERVICES = CreateDelegate<ProcessorServicesDelegate>(ProcProcessorServices);
-            PROCESSOR_EXTENSIONS = CreateDelegate<ProcessorExtensionsDelegate>(ProcProcessorExtensions);
-            PROCESSOR_ATOMIC_LONG = CreateDelegate<ProcessorAtomicLongDelegate>(ProcProcessorAtomicLong);
-            
-            TARGET_IN_STREAM_OUT_LONG = CreateDelegate<TargetInStreamOutLongDelegate>(ProcTargetInStreamOutLong);
-            TARGET_IN_STREAM_OUT_STREAM = CreateDelegate<TargetInStreamOutStreamDelegate>(ProcTargetInStreamOutStream);
-            TARGET_IN_STREAM_OUT_OBJECT = CreateDelegate<TargetInStreamOutObjectDelegate>(ProcTargetInStreamOutObject);
-            TARGET_IN_OBJECT_STREAM_OUT_STREAM = CreateDelegate<TargetInObjectStreamOutStreamDelegate>(ProcTargetInObjectStreamOutStream);
-            TARGET_OUT_LONG = CreateDelegate<TargetOutLongDelegate>(ProcTargetOutLong);
-            TARGET_OUT_STREAM = CreateDelegate<TargetOutStreamDelegate>(ProcTargetOutStream);
-            TARGET_OUT_OBJECT = CreateDelegate<TargetOutObjectDelegate>(ProcTargetOutObject);
-            TargetListenFut = CreateDelegate<TargetListenFutureDelegate>(ProcTargetListenFut);
-            TargetListenFutForOp = CreateDelegate<TargetListenFutureForOpDelegate>(ProcTargetListenFutForOp);
-
-            AffinityParts = CreateDelegate<AffinityPartitionsDelegate>(ProcAffinityParts);
-
-            CACHE_WITH_SKIP_STORE = CreateDelegate<CacheWithSkipStoreDelegate>(ProcCacheWithSkipStore);
-            CACHE_WITH_NO_RETRIES = CreateDelegate<CacheNoRetriesDelegate>(ProcCacheWithNoRetries);
-            CACHE_WITH_EXPIRY_POLICY = CreateDelegate<CacheWithExpiryPolicyDelegate>(ProcCacheWithExpiryPolicy);
-            CACHE_WITH_ASYNC = CreateDelegate<CacheWithAsyncDelegate>(ProcCacheWithAsync);
-            CACHE_WITH_KEEP_BINARY = CreateDelegate<CacheWithKeepBinaryDelegate>(ProcCacheWithKeepBinary);
-            CACHE_CLEAR = CreateDelegate<CacheClearDelegate>(ProcCacheClear);
-            CACHE_REMOVE_ALL = CreateDelegate<CacheRemoveAllDelegate>(ProcCacheRemoveAll);
-            CACHE_OUT_OP_QUERY_CURSOR = CreateDelegate<CacheOutOpQueryCursorDelegate>(ProcCacheOutOpQueryCursor);
-            CACHE_OUT_OP_CONTINUOUS_QUERY = CreateDelegate<CacheOutOpContinuousQueryDelegate>(ProcCacheOutOpContinuousQuery);
-            CACHE_ITERATOR = CreateDelegate<CacheIteratorDelegate>(ProcCacheIterator);
-            CACHE_LOCAL_ITERATOR = CreateDelegate<CacheLocalIteratorDelegate>(ProcCacheLocalIterator);
-            CACHE_ENTER_LOCK = CreateDelegate<CacheEnterLockDelegate>(ProcCacheEnterLock);
-            CACHE_EXIT_LOCK = CreateDelegate<CacheExitLockDelegate>(ProcCacheExitLock);
-            CACHE_TRY_ENTER_LOCK = CreateDelegate<CacheTryEnterLockDelegate>(ProcCacheTryEnterLock);
-            CACHE_CLOSE_LOCK = CreateDelegate<CacheCloseLockDelegate>(ProcCacheCloseLock);
-            CACHE_REBALANCE = CreateDelegate<CacheRebalanceDelegate>(ProcCacheRebalance);
-            CACHE_SIZE = CreateDelegate<CacheSizeDelegate>(ProcCacheSize);
-
-            CACHE_STORE_CALLBACK_INVOKE = CreateDelegate<CacheStoreCallbackInvokeDelegate>(ProcCacheStoreCallbackInvoke);
-
-            COMPUTE_WITH_NO_FAILOVER = CreateDelegate<ComputeWithNoFailoverDelegate>(ProcComputeWithNoFailover);
-            COMPUTE_WITH_TIMEOUT = CreateDelegate<ComputeWithTimeoutDelegate>(ProcComputeWithTimeout);
-            COMPUTE_EXECUTE_NATIVE = CreateDelegate<ComputeExecuteNativeDelegate>(ProcComputeExecuteNative);
-
-            ContinuousQryClose = CreateDelegate<ContinuousQueryCloseDelegate>(ProcContinuousQryClose);
-            ContinuousQryGetInitialQueryCursor = CreateDelegate<ContinuousQueryGetInitialQueryCursorDelegate>(ProcContinuousQryGetInitialQueryCursor);
-
-            DataStreamerListenTop = CreateDelegate<DataStreamerListenTopologyDelegate>(ProcDataStreamerListenTop); 
-            DATA_STREAMER_ALLOW_OVERWRITE_GET = CreateDelegate<DataStreamerAllowOverwriteGetDelegate>(ProcDataStreamerAllowOverwriteGet);
-            DATA_STREAMER_ALLOW_OVERWRITE_SET = CreateDelegate<DataStreamerAllowOverwriteSetDelegate>(ProcDataStreamerAllowOverwriteSet); 
-            DATA_STREAMER_SKIP_STORE_GET = CreateDelegate<DataStreamerSkipStoreGetDelegate>(ProcDataStreamerSkipStoreGet); 
-            DATA_STREAMER_SKIP_STORE_SET = CreateDelegate<DataStreamerSkipStoreSetDelegate>(ProcDataStreamerSkipStoreSet); 
-            DATA_STREAMER_PER_NODE_BUFFER_SIZE_GET = CreateDelegate<DataStreamerPerNodeBufferSizeGetDelegate>(ProcDataStreamerPerNodeBufferSizeGet); 
-            DATA_STREAMER_PER_NODE_BUFFER_SIZE_SET = CreateDelegate<DataStreamerPerNodeBufferSizeSetDelegate>(ProcDataStreamerPerNodeBufferSizeSet); 
-            DataStreamerPerNodeParallelOpsGet = CreateDelegate<DataStreamerPerNodeParallelOperationsGetDelegate>(ProcDataStreamerPerNodeParallelOpsGet); 
-            DataStreamerPerNodeParallelOpsSet = CreateDelegate<DataStreamerPerNodeParallelOperationsSetDelegate>(ProcDataStreamerPerNodeParallelOpsSet); 
-
-            MessagingWithAsync = CreateDelegate<MessagingWithAsyncDelegate>(ProcMessagingWithAsync);
-
-            PROJECTION_FOR_OTHERS = CreateDelegate<ProjectionForOthersDelegate>(ProcProjectionForOthers);
-            PROJECTION_FOR_REMOTES = CreateDelegate<ProjectionForRemotesDelegate>(ProcProjectionForRemotes);
-            PROJECTION_FOR_DAEMONS = CreateDelegate<ProjectionForDaemonsDelegate>(ProcProjectionForDaemons);
-            PROJECTION_FOR_RANDOM = CreateDelegate<ProjectionForRandomDelegate>(ProcProjectionForRandom);
-            PROJECTION_FOR_OLDEST = CreateDelegate<ProjectionForOldestDelegate>(ProcProjectionForOldest);
-            PROJECTION_FOR_YOUNGEST = CreateDelegate<ProjectionForYoungestDelegate>(ProcProjectionForYoungest);
-            PROJECTION_RESET_METRICS = CreateDelegate<ProjectionResetMetricsDelegate>(ProcProjectionResetMetrics);
-            PROJECTION_OUT_OP_RET = CreateDelegate<ProjectionOutOpRetDelegate>(ProcProjectionOutOpRet);
-
-            QryCursorIterator = CreateDelegate<QueryCursorIteratorDelegate>(ProcQryCursorIterator);
-            QryCursorClose = CreateDelegate<QueryCursorCloseDelegate>(ProcQryCursorClose);
-
-            ACQUIRE = CreateDelegate<AcquireDelegate>(ProcAcquire);
-            RELEASE = CreateDelegate<ReleaseDelegate>(ProcRelease);
-
-            TxStart = CreateDelegate<TransactionsStartDelegate>(ProcTxStart);
-            TxCommit = CreateDelegate<TransactionsCommitDelegate>(ProcTxCommit);
-            TxCommitAsync = CreateDelegate<TransactionsCommitAsyncDelegate>(ProcTxCommitAsync);
-            TxRollback = CreateDelegate<TransactionsRollbackDelegate>(ProcTxRollback);
-            TxRollbackAsync = CreateDelegate<TransactionsRollbackAsyncDelegate>(ProcTxRollbackAsync);
-            TxClose = CreateDelegate<TransactionsCloseDelegate>(ProcTxClose);
-            TxState = CreateDelegate<TransactionsStateDelegate>(ProcTxState);
-            TxSetRollbackOnly = CreateDelegate<TransactionsSetRollbackOnlyDelegate>(ProcTxSetRollbackOnly);
-            TxResetMetrics = CreateDelegate<TransactionsResetMetricsDelegate>(ProcTxResetMetrics);
-
-            THROW_TO_JAVA = CreateDelegate<ThrowToJavaDelegate>(ProcThrowToJava);
-
-            HANDLERS_SIZE = CreateDelegate<HandlersSizeDelegate>(ProcHandlersSize);
-
-            CREATE_CONTEXT = CreateDelegate<CreateContextDelegate>(ProcCreateContext);
-            DELETE_CONTEXT = CreateDelegate<DeleteContextDelegate>(ProcDeleteContext);
-
-            DESTROY_JVM = CreateDelegate<DestroyJvmDelegate>(ProcDestroyJvm);
-
-            EVENTS_WITH_ASYNC = CreateDelegate<EventsWithAsyncDelegate>(ProcEventsWithAsync);
-            EVENTS_STOP_LOCAL_LISTEN = CreateDelegate<EventsStopLocalListenDelegate>(ProcEventsStopLocalListen);
-            EVENTS_LOCAL_LISTEN = CreateDelegate<EventsLocalListenDelegate>(ProcEventsLocalListen);
-            EVENTS_IS_ENABLED = CreateDelegate<EventsIsEnabledDelegate>(ProcEventsIsEnabled);
-            
-            SERVICES_WITH_ASYNC = CreateDelegate<ServicesWithAsyncDelegate>(ProcServicesWithAsync);
-            SERVICES_WITH_SERVER_KEEP_BINARY = CreateDelegate<ServicesWithServerKeepBinaryDelegate>(ProcServicesWithServerKeepBinary);
-            SERVICES_CANCEL = CreateDelegate<ServicesCancelDelegate>(ProcServicesCancel);
-            SERVICES_CANCEL_ALL = CreateDelegate<ServicesCancelAllDelegate>(ProcServicesCancelAll);
-            SERVICES_GET_SERVICE_PROXY = CreateDelegate<ServicesGetServiceProxyDelegate>(ProcServicesGetServiceProxy);
-
-            ATOMIC_LONG_GET = CreateDelegate<AtomicLongGetDelegate>(ProcAtomicLongGet);
-            ATOMIC_LONG_INCREMENT_AND_GET = CreateDelegate<AtomicLongIncrementAndGetDelegate>(ProcAtomicLongIncrementAndGet);
-            ATOMIC_LONG_ADD_AND_GET = CreateDelegate<AtomicLongAddAndGetDelegate>(ProcAtomicLongAddAndGet);
-            ATOMIC_LONG_DECREMENT_AND_GET = CreateDelegate<AtomicLongDecrementAndGetDelegate>(ProcAtomicLongDecrementAndGet);
-            ATOMIC_LONG_GET_AND_SET = CreateDelegate<AtomicLongGetAndSetDelegate>(ProcAtomicLongGetAndSet);
-            ATOMIC_LONG_COMPARE_AND_SET_AND_GET = CreateDelegate<AtomicLongCompareAndSetAndGetDelegate>(ProcAtomicLongCompareAndSetAndGet);
-            ATOMIC_LONG_IS_CLOSED = CreateDelegate<AtomicLongIsClosedDelegate>(ProcAtomicLongIsClosed);
-            ATOMIC_LONG_CLOSE = CreateDelegate<AtomicLongCloseDelegate>(ProcAtomicLongClose);
         }
 
         #region NATIVE METHODS: PROCESSOR
@@ -723,7 +306,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static IUnmanagedTarget ProcessorCompute(IUnmanagedTarget target, IUnmanagedTarget prj)
         {
-            void* res = PROCESSOR_COMPUTE2(target.Context, target.Target, prj.Target);
+            void* res = PROCESSOR_COMPUTE(target.Context, target.Target, prj.Target);
 
             return target.ChangeTarget(res);
         }
@@ -1348,28 +931,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static void Initialize()
         {
             // No-op.
-        }
-
-        /// <summary>
-        /// Create delegate for the given procedure.
-        /// </summary>
-        /// <typeparam name="T">Delegate type.</typeparam>
-        /// <param name="procName">Procedure name.</param>
-        /// <returns></returns>
-        private static T CreateDelegate<T>(string procName)
-        {
-            var procPtr = NativeMethods.GetProcAddress(Ptr, procName);
-
-            if (procPtr == IntPtr.Zero)
-            {
-                var error = Marshal.GetLastWin32Error();
-
-                throw new IgniteException(string.Format(CultureInfo.InvariantCulture,
-                    "Unable to find native function: {0} (Error code: {1}). Make sure that module.def is up to date",
-                    procName, error));
-            }
-
-            return TypeCaster<T>.Cast(Marshal.GetDelegateForFunctionPointer(procPtr, typeof (T)));
         }
     }
 }
