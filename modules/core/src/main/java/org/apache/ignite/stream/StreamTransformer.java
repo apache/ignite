@@ -37,7 +37,7 @@ public abstract class StreamTransformer<K, V> implements StreamReceiver<K, V>, E
     /** {@inheritDoc} */
     @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws IgniteException {
         for (Map.Entry<K, V> entry : entries)
-            cache.invoke(entry.getKey(), this);
+            cache.invoke(entry.getKey(), this, entry.getValue());
     }
 
     /**
