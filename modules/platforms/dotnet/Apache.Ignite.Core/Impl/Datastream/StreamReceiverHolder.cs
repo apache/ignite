@@ -20,19 +20,19 @@ namespace Apache.Ignite.Core.Impl.Datastream
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Datastream;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
-    /// Portable wrapper for <see cref="IStreamReceiver{TK,TV}"/>.
+    /// Binary wrapper for <see cref="IStreamReceiver{TK,TV}"/>.
     /// </summary>
-    internal class StreamReceiverHolder : IPortableWriteAware
+    internal class StreamReceiverHolder : IBinaryWriteAware
     {
         /** */
         private const byte RcvNormal = 0;
@@ -44,13 +44,13 @@ namespace Apache.Ignite.Core.Impl.Datastream
         private readonly object _rcv;
         
         /** Invoker delegate. */
-        private readonly Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool> _invoke;
+        private readonly Action<object, Ignite, IUnmanagedTarget, IBinaryStream, bool> _invoke;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StreamReceiverHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public StreamReceiverHolder(PortableReaderImpl reader)
+        public StreamReceiverHolder(BinaryReader reader)
         {
             var rcvType = reader.ReadByte();
 
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="rcv">Receiver.</param>
         /// <param name="invoke">Invoke delegate.</param>
         public StreamReceiverHolder(object rcv, 
-            Action<object, Ignite, IUnmanagedTarget, IPortableStream, bool> invoke)
+            Action<object, Ignite, IUnmanagedTarget, IBinaryStream, bool> invoke)
         {
             Debug.Assert(rcv != null);
             Debug.Assert(invoke != null);
@@ -87,14 +87,14 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             var w = writer.GetRawWriter();
 
-            var writeAware = _rcv as IPortableWriteAware;
+            var writeAware = _rcv as IBinaryWriteAware;
 
             if (writeAware != null)
-                writeAware.WritePortable(writer);
+                writeAware.WriteBinary(writer);
             else
             {
                 w.WriteByte(RcvNormal);
@@ -108,14 +108,14 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="grid">The grid.</param>
         /// <param name="cache">Cache.</param>
         /// <param name="stream">Stream.</param>
-        /// <param name="keepPortable">Portable flag.</param>
-        public void Receive(Ignite grid, IUnmanagedTarget cache, IPortableStream stream, bool keepPortable)
+        /// <param name="keepBinary">Binary flag.</param>
+        public void Receive(Ignite grid, IUnmanagedTarget cache, IBinaryStream stream, bool keepBinary)
         {
             Debug.Assert(grid != null);
             Debug.Assert(cache != null);
             Debug.Assert(stream != null);
 
-            _invoke(_rcv, grid, cache, stream, keepPortable);
+            _invoke(_rcv, grid, cache, stream, keepBinary);
         }
 
         /// <summary>
@@ -125,11 +125,11 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="grid">Grid.</param>
         /// <param name="cache">Cache.</param>
         /// <param name="stream">Stream.</param>
-        /// <param name="keepPortable">Portable flag.</param>
+        /// <param name="keepBinary">Binary flag.</param>
         public static void InvokeReceiver<TK, TV>(IStreamReceiver<TK, TV> receiver, Ignite grid, IUnmanagedTarget cache,
-            IPortableStream stream, bool keepPortable)
+            IBinaryStream stream, bool keepBinary)
         {
-            var reader = grid.Marshaller.StartUnmarshal(stream, keepPortable);
+            var reader = grid.Marshaller.StartUnmarshal(stream, keepBinary);
 
             var size = reader.ReadInt();
 
@@ -138,7 +138,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             for (var i = 0; i < size; i++)
                 entries.Add(new CacheEntry<TK, TV>(reader.ReadObject<TK>(), reader.ReadObject<TV>()));
 
-            receiver.Receive(grid.Cache<TK, TV>(cache, keepPortable), entries);
+            receiver.Receive(grid.Cache<TK, TV>(cache, keepBinary), entries);
         }
     }
 }

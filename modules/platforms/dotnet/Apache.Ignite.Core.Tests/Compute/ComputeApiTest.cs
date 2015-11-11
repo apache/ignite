@@ -23,11 +23,11 @@ namespace Apache.Ignite.Core.Tests.Compute
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -817,16 +817,16 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             ICompute compute = _grid1.GetCompute();
 
-            compute.WithKeepPortable();
+            compute.WithKeepBinary();
 
-            IPortableObject res = compute.ExecuteJavaTask<IPortableObject>(EchoTask, EchoTypePortableJava);
+            IBinaryObject res = compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypePortableJava);
 
             Assert.AreEqual(1, res.GetField<int>("field"));
 
             // This call must fail because "keepPortable" flag is reset.
-            Assert.Catch(typeof(PortableException), () =>
+            Assert.Catch(typeof(BinaryObjectException), () =>
             {
-                compute.ExecuteJavaTask<IPortableObject>(EchoTask, EchoTypePortableJava);
+                compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypePortableJava);
             });
         }
 
@@ -890,7 +890,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             ICompute compute = _grid1.GetCompute();
 
-            compute.WithKeepPortable();
+            compute.WithKeepBinary();
 
             PlatformComputeNetPortable arg = new PlatformComputeNetPortable();
 
@@ -1095,17 +1095,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             IgniteConfiguration cfg = new IgniteConfiguration();
 
-            PortableConfiguration portCfg = new PortableConfiguration();
+            BinaryConfiguration portCfg = new BinaryConfiguration();
 
-            ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PlatformComputePortable)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PlatformComputeNetPortable)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(JavaPortableCls));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PlatformComputePortable)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PlatformComputeNetPortable)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(JavaPortableCls));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
-            cfg.PortableConfiguration = portCfg;
+            cfg.BinaryConfiguration = portCfg;
 
             cfg.JvmClasspath = Classpath.CreateClasspath(cfg, true);
 

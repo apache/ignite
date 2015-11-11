@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
-    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
     /// Internal future interface.
@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Set result from stream.
         /// </summary>
         /// <param name="stream">Stream.</param>
-        void OnResult(IPortableStream stream);
+        void OnResult(IBinaryStream stream);
 
         /// <summary>
         /// Set null result.

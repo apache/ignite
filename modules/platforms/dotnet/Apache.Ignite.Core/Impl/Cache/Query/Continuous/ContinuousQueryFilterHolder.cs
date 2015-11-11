@@ -17,30 +17,30 @@
 
 namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 {
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
-    /// Continuous query remote filter holder. Wraps real filter into portable object,
+    /// Continuous query remote filter holder. Wraps real filter into binary object,
     /// so that it can be passed over wire to another node.
     /// </summary>
-    public class ContinuousQueryFilterHolder : IPortableWriteAware
+    public class ContinuousQueryFilterHolder : IBinaryWriteAware
     {
         /** Filter object. */
         private readonly object _filter;
 
-        /** Keep portable flag. */
-        private readonly bool _keepPortable;
+        /** Keep binary flag. */
+        private readonly bool _keepBinary;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="filter">Filter.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
-        public ContinuousQueryFilterHolder(object filter, bool keepPortable)
+        /// <param name="keepBinary">Keep binary flag.</param>
+        public ContinuousQueryFilterHolder(object filter, bool keepBinary)
         {
             _filter = filter;
-            _keepPortable = keepPortable;
+            _keepBinary = keepBinary;
         }
 
         /// <summary>
@@ -52,35 +52,35 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Keep portable flag.
+        /// Keep binary flag.
         /// </summary>
-        internal bool KeepPortable
+        internal bool KeepBinary
         {
-            get { return _keepPortable; }
+            get { return _keepBinary; }
         }
 
         /// <summary>
         /// Writes this object to the given writer.
         /// </summary>
         /// <param name="writer">Writer.</param>
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
-            var rawWriter = (PortableWriterImpl) writer.GetRawWriter();
+            var rawWriter = (BinaryWriter) writer.GetRawWriter();
 
             rawWriter.WriteObject(_filter);
-            rawWriter.WriteBoolean(_keepPortable);
+            rawWriter.WriteBoolean(_keepBinary);
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContinuousQueryFilterHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ContinuousQueryFilterHolder(IPortableReader reader)
+        public ContinuousQueryFilterHolder(IBinaryReader reader)
         {
-            var rawReader = (PortableReaderImpl) reader.GetRawReader();
+            var rawReader = (BinaryReader) reader.GetRawReader();
 
             _filter = rawReader.ReadObject<object>();
-            _keepPortable = rawReader.ReadBoolean();
+            _keepBinary = rawReader.ReadBoolean();
         }
     }
 }

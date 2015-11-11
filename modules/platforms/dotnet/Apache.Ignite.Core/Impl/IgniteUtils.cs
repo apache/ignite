@@ -25,13 +25,14 @@ namespace Apache.Ignite.Core.Impl
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Unmanaged;
-    using Apache.Ignite.Core.Portable;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
 
     /// <summary>
     /// Native utility methods.
@@ -384,7 +385,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Reader.</param>
         /// <param name="pred">The predicate.</param>
         /// <returns> Nodes list or null. </returns>
-        public static List<IClusterNode> ReadNodes(IPortableRawReader reader, Func<ClusterNodeImpl, bool> pred = null)
+        public static List<IClusterNode> ReadNodes(IBinaryRawReader reader, Func<ClusterNodeImpl, bool> pred = null)
         {
             var cnt = reader.ReadInt();
 
@@ -393,7 +394,7 @@ namespace Apache.Ignite.Core.Impl
 
             var res = new List<IClusterNode>(cnt);
 
-            var ignite = ((PortableReaderImpl)reader).Marshaller.Ignite;
+            var ignite = ((BinaryReader)reader).Marshaller.Ignite;
 
             if (pred == null)
             {
