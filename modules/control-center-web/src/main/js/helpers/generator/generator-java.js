@@ -1072,7 +1072,7 @@ $generatorJava.metadataQueryIndexes = function (res, meta) {
             $generatorJava.declareVariable(res, 'index', 'org.apache.ignite.cache.QueryIndex');
 
             $generatorJava.property(res, 'index', index, 'name');
-            $generatorJava.property(res, 'index', index, 'type', 'org.apache.ignite.cache.QueryIndexType');
+            $generatorJava.property(res, 'index', index, 'indexType', 'org.apache.ignite.cache.QueryIndexType');
 
             var fields = index.fields;
 

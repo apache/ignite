@@ -49,7 +49,7 @@ $generatorCommon.mainComment = function mainComment() {
 $generatorCommon.builder = function (deep) {
     var res = [];
 
-    res.deep = deep ? deep : 0;
+    res.deep = deep || 0;
     res.needEmptyLine = false;
     res.lineStart = true;
     res.datasources = [];

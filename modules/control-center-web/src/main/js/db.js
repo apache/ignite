@@ -83,7 +83,7 @@ var CacheTypeMetadataSchema = new Schema({
     keepSerialized: Boolean,
     fields: [{name: String, className: String}],
     aliases: [{field: String, alias: String}],
-    indexes: [{name: String, type: {type: String, enum: ['SORTED', 'FULLTEXT', 'GEOSPATIAL']}, fields: [{name: String, direction: Boolean}]}]
+    indexes: [{name: String, indexType: {type: String, enum: ['SORTED', 'FULLTEXT', 'GEOSPATIAL']}, fields: [{name: String, direction: Boolean}]}]
 });
 
 // Define Cache type metadata model.

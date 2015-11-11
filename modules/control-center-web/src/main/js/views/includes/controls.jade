@@ -457,7 +457,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                             tr(ng-repeat='item in #{fieldMdl}')
                                 td
                                     .col-sm-12(ng-show='!tableEditing(field, $index)')
-                                        a.labelFormField(id='{{field.id + $index}}' ng-click='tableStartEdit(backupItem, field, $index)') {{$index + 1}}) {{item.name}} [{{item.type}}]
+                                        a.labelFormField(id='{{field.id + $index}}' ng-click='tableStartEdit(backupItem, field, $index)') {{$index + 1}}) {{item.name}} [{{item.indexType}}]
                                         +btn-remove('tableRemove(backupItem, field, $index)', 'field.removeTip')
                                         +btn-add('tableIndexNewItem(field, $index)', 'field.addItemTip')
                                     div(ng-show='tableEditing(field, $index)')
@@ -477,15 +477,15 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                                                 tr(ng-repeat='itemItem in item.fields')
                                                     td
                                                         div(ng-show='!tableIndexItemEditing(itemIndex, $index)')
-                                                            a.labelFormField(ng-if='item.type == "SORTED"' ng-click='tableIndexItemStartEdit(field, itemIndex, $index)') {{$index + 1}}) {{itemItem.name}} / {{itemItem.direction ? "ASC" : "DESC"}}
-                                                            a.labelFormField(ng-if='item.type != "SORTED"' ng-click='tableIndexItemStartEdit(field, itemIndex, $index)') {{$index + 1}}) {{itemItem.name}}
+                                                            a.labelFormField(ng-if='item.indexType == "SORTED"' ng-click='tableIndexItemStartEdit(field, itemIndex, $index)') {{$index + 1}}) {{itemItem.name}} / {{itemItem.direction ? "ASC" : "DESC"}}
+                                                            a.labelFormField(ng-if='item.indexType != "SORTED"' ng-click='tableIndexItemStartEdit(field, itemIndex, $index)') {{$index + 1}}) {{itemItem.name}}
                                                             +btn-remove('tableRemoveIndexItem(item, $index)', 'field.removeItemTip')
                                                         div(ng-show='tableIndexItemEditing(itemIndex, $index)')
-                                                            +table-index-item-edit('cur', '$index', '{{item.type == "SORTED"}}')
+                                                            +table-index-item-edit('cur', '$index', '{{item.indexType == "SORTED"}}')
                                             tfoot(ng-show='tableIndexNewItemActive(itemIndex)')
                                                 tr(style='padding-left: 18px')
                                                     td
-                                                        +table-index-item-edit('new', '-1', '{{item.type == "SORTED"}}')
+                                                        +table-index-item-edit('new', '-1', '{{item.indexType == "SORTED"}}')
                         tfoot(ng-show='tableNewItemActive(field)')
                             tr
                                 td
