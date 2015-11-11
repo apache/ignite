@@ -949,7 +949,7 @@ $generatorXml.metadataQueryIndexes = function (res, meta) {
             res.startBlock('<bean class="org.apache.ignite.cache.QueryIndex">');
 
             $generatorXml.property(res, index, 'name');
-            $generatorXml.property(res, index, 'type');
+            $generatorXml.property(res, index, 'indexType');
 
             var fields = index.fields;
 

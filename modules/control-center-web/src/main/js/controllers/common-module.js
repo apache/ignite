@@ -1142,7 +1142,7 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
         }
         else if (ui == 'table-indexes') {
             field.curIndexName = val.name;
-            field.curIndexType = val.type;
+            field.curIndexType = val.indexType;
             field.curIndexFields = val.fields;
 
             _tableFocus(field.focusId, index);

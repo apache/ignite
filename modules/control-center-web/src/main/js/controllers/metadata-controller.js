@@ -1147,7 +1147,7 @@ consoleModule.controller('metadataController', [
                 }
 
                 if (curIdx < 0) {
-                    var newIndex = {name: indexName, type: indexType};
+                    var newIndex = {name: indexName, indexType: indexType};
 
                     if (item.indexes)
                         item.indexes.push(newIndex);
@@ -1156,7 +1156,7 @@ consoleModule.controller('metadataController', [
                 }
                 else {
                     item.indexes[curIdx].name = indexName;
-                    item.indexes[curIdx].type = indexType;
+                    item.indexes[curIdx].indexType = indexType;
                 }
 
                 if (curIdx < 0)
