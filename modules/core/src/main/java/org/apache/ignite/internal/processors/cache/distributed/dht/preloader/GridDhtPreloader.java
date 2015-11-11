@@ -207,7 +207,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             });
 
         supplier = new GridDhtPartitionSupplier(cctx);
-        demander = new GridDhtPartitionDemander(cctx, busyLock);
+        demander = new GridDhtPartitionDemander(cctx, demandLock);
 
         supplier.start();
         demander.start();
