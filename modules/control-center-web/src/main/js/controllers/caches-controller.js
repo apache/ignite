@@ -300,8 +300,10 @@ consoleModule.controller('cachesController', [
                                     $scope.preview.query.java = $generatorJava.cacheQuery(val, varName).asString();
                                     $scope.preview.query.allDefaults = $common.isEmptyString($scope.preview.query.xml);
 
-                                    $scope.preview.store.xml = $generatorXml.cacheStore(val).asString();
-                                    $scope.preview.store.java = $generatorJava.cacheStore(val, varName).asString();
+                                    var storeFactory = $generatorXml.cacheStore(val, metas);
+
+                                    $scope.preview.store.xml = $generatorXml.generateDataSources(storeFactory.datasources).asString() + storeFactory.asString();
+                                    $scope.preview.store.java = $generatorJava.cacheStore(val, metas, varName).asString();
                                     $scope.preview.store.allDefaults = $common.isEmptyString($scope.preview.store.xml);
 
                                     $scope.preview.concurrency.xml = $generatorXml.cacheConcurrency(val).asString();

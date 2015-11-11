@@ -728,7 +728,7 @@ $generatorXml.cacheQuery = function(cache, res) {
 };
 
 // Generate cache store group.
-$generatorXml.cacheStore = function(cache, res) {
+$generatorXml.cacheStore = function(cache, metadatas, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -741,16 +741,12 @@ $generatorXml.cacheStore = function(cache, res) {
             if (factoryKind == 'CacheJdbcPojoStoreFactory') {
                 res.startBlock('<property name="cacheStoreFactory">');
                 res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory">');
-                res.startBlock('<property name="configuration">');
-                res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreConfiguration">');
 
                 $generatorXml.property(res, storeFactory, 'dataSourceBean');
 
                 res.startBlock('<property name="dialect">');
                 res.line('<bean class="' + $generatorCommon.jdbcDialectClassName(storeFactory.dialect) + '"/>');
                 res.endBlock('</property>');
-
-                var metadatas = cache.metadatas;
 
                 if (metadatas && metadatas.length > 0) {
                     res.startBlock('<property name="types">');
@@ -763,6 +759,8 @@ $generatorXml.cacheStore = function(cache, res) {
                         $generatorXml.property(res, meta, 'valueType');
                         $generatorXml.property(res, meta, 'keepSerialized', null, null, false);
 
+                        $generatorXml.metadataStore(meta, res);
+
                         res.endBlock('</bean>');
                     });
 
@@ -771,23 +769,20 @@ $generatorXml.cacheStore = function(cache, res) {
                 }
 
                 res.endBlock('</bean>');
-                res.endBlock("</property>");
-                res.endBlock('</bean>');
                 res.endBlock("</property>")
             }
-            else {
+            else
                 $generatorXml.beanProperty(res, storeFactory, 'cacheStoreFactory', $generatorCommon.STORE_FACTORIES[factoryKind], true);
 
-                if (storeFactory.dialect) {
-                    if (_.findIndex(res.datasources, function (ds) {
-                            return ds.dataSourceBean == storeFactory.dataSourceBean;
-                        }) < 0) {
-                        res.datasources.push({
-                            dataSourceBean: storeFactory.dataSourceBean,
-                            className: $generatorCommon.DATA_SOURCES[storeFactory.dialect],
-                            dialect: storeFactory.dialect
-                        });
-                    }
+            if (storeFactory.dialect && storeFactory.dataSourceBean) {
+                if (_.findIndex(res.datasources, function (ds) {
+                        return ds.dataSourceBean == storeFactory.dataSourceBean;
+                    }) < 0) {
+                    res.datasources.push({
+                        dataSourceBean: storeFactory.dataSourceBean,
+                        className: $generatorCommon.DATA_SOURCES[storeFactory.dialect],
+                        dialect: storeFactory.dialect
+                    });
                 }
             }
 
@@ -951,7 +946,7 @@ $generatorXml.metadataQueryIndexes = function (res, meta) {
         res.startBlock('<list>');
 
         _.forEach(indexes, function (index) {
-            res.startBlock('<bean class="org.apache.ignite.cache.store.QueryEntityIndex">');
+            res.startBlock('<bean class="org.apache.ignite.cache.QueryIndex">');
 
             $generatorXml.property(res, index, 'name');
             $generatorXml.property(res, index, 'type');
@@ -994,15 +989,15 @@ $generatorXml.metadataDatabaseFields = function (res, meta, fieldProp) {
         _.forEach(fields, function (field) {
             res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">');
 
-            $generatorXml.property(res, field, 'databaseName');
+            $generatorXml.property(res, field, 'databaseFieldName');
 
-            res.startBlock('<property name="databaseType">');
-            res.line('<util:constant static-field="java.sql.Types.' + field.databaseType + '"/>');
+            res.startBlock('<property name="databaseFieldType">');
+            res.line('<util:constant static-field="java.sql.Types.' + field.databaseFieldType + '"/>');
             res.endBlock('</property>');
 
-            $generatorXml.property(res, field, 'javaName');
+            $generatorXml.property(res, field, 'javaFieldName');
 
-            $generatorXml.classNameProperty(res, field, 'javaType');
+            $generatorXml.classNameProperty(res, field, 'javaFieldType');
 
             res.endBlock('</bean>');
         });
@@ -1068,9 +1063,9 @@ $generatorXml.cacheQueryMetadata = function(meta, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    res.startBlock('<bean class="org.apache.ignite.cache.store.QueryEntity">');
+    res.startBlock('<bean class="org.apache.ignite.cache.QueryEntity">');
 
-    $generatorXml.classNameProperty(res, meta, 'keyType');
+    $generatorXml.property(res, meta, 'keyType');
     $generatorXml.property(res, meta, 'valueType');
 
     $generatorXml.metadataQuery(meta, res);
@@ -1117,7 +1112,7 @@ $generatorXml.cache = function(cache, res) {
 
     $generatorXml.cacheQuery(cache, res);
 
-    $generatorXml.cacheStore(cache, res);
+    $generatorXml.cacheStore(cache, cache.metadatas, res);
 
     $generatorXml.cacheConcurrency(cache, res);
 
@@ -1358,11 +1353,51 @@ $generatorXml.igfsMisc = function(igfs, res) {
 };
 
 // Generate cluster config.
+$generatorXml.generateDataSources = function (datasources, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if (datasources.length > 0) {
+        res.line('<!-- Data source beans will be initialized from external properties file. -->');
+
+        _.forEach(datasources, function (item) {
+            var beanId = item.dataSourceBean;
+
+            res.startBlock('<bean id="' + beanId + '" class="' + item.className + '">');
+
+            switch (item.dialect) {
+                case 'DB2':
+                    res.line('<property name="serverName" value="${' + beanId + '.jdbc.server_name}" />');
+                    res.line('<property name="portNumber" value="${' + beanId + '.jdbc.port_number}" />');
+                    res.line('<property name="databaseName" value="${' + beanId + '.jdbc.database_name}" />');
+                    res.line('<property name="driverType" value="${' + beanId + '.jdbc.driver_type}" />');
+                    break;
+
+                default:
+                    res.line('<property name="URL" value="${' + beanId + '.jdbc.url}" />');
+            }
+
+            res.line('<property name="user" value="${' + beanId + '.jdbc.username}" />');
+            res.line('<property name="password" value="${' + beanId + '.jdbc.password}" />');
+
+            res.endBlock('</bean>');
+
+            res.needEmptyLine = true;
+
+            res.emptyLineIfNeeded();
+        });
+
+        res.needEmptyLine = true;
+
+        res.emptyLineIfNeeded();
+    }
+
+    return res;
+};
+
 $generatorXml.cluster = function (cluster, clientNearCfg) {
     if (cluster) {
-        var res = $generatorCommon.builder();
-
-        res.deep = 1;
+        var res = $generatorCommon.builder(1);
 
         if (clientNearCfg) {
             res.startBlock('<bean id="nearCacheBean" class="org.apache.ignite.configuration.NearCacheConfiguration">');
@@ -1375,7 +1410,9 @@ $generatorXml.cluster = function (cluster, clientNearCfg) {
 
             res.endBlock('</bean>');
 
-            res.line();
+            res.needEmptyLine = true;
+
+            res.emptyLineIfNeeded();
         }
 
         // Generate Ignite Configuration.
@@ -1441,30 +1478,7 @@ $generatorXml.cluster = function (cluster, clientNearCfg) {
         }
 
         // 3. Add data sources.
-        if (res.datasources.length > 0) {
-            xml += '    <!-- Data source beans will be initialized from external properties file. -->\n';
-
-            _.forEach(res.datasources, function (item) {
-                var beanId = item.dataSourceBean;
-
-                xml += '    <bean id="' + beanId + '" class="' + item.className + '">\n';
-                switch (item.dialect) {
-                    case 'DB2':
-                        xml += '        <property name="serverName" value="${' + beanId + '.jdbc.server_name}" />\n';
-                        xml += '        <property name="portNumber" value="${' + beanId + '.jdbc.port_number}" />\n';
-                        xml += '        <property name="databaseName" value="${' + beanId + '.jdbc.database_name}" />\n';
-                        xml += '        <property name="driverType" value="${' + beanId + '.jdbc.driver_type}" />\n';
-                        break;
-
-                    default:
-                        xml += '        <property name="URL" value="${' + beanId + '.jdbc.url}" />\n';
-                }
-
-                xml += '        <property name="user" value="${' + beanId + '.jdbc.username}" />\n';
-                xml += '        <property name="password" value="${' + beanId + '.jdbc.password}" />\n';
-                xml += '    </bean>\n\n';
-            });
-        }
+        xml += $generatorXml.generateDataSources(res.datasources, $generatorCommon.builder(1)).asString();
 
         // 3. Add main content.
         xml += res.asString();

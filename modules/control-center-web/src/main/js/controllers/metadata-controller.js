@@ -503,8 +503,8 @@ consoleModule.controller('metadataController', [
                         }
 
                         function dbField(name, jdbcType) {
-                            return {databaseName: name, databaseType: jdbcType.dbName,
-                                javaName: toJavaName(name), javaType: jdbcType.javaType}
+                            return {databaseFieldName: name, databaseFieldType: jdbcType.dbName,
+                                javaFieldName: toJavaName(name), javaFieldType: jdbcType.javaType}
                         }
 
                         var _containKey = false;
@@ -1043,15 +1043,15 @@ consoleModule.controller('metadataController', [
 
             function tableDbFieldValue(field, index) {
                 return index < 0
-                    ? {databaseName: field.newDatabaseName, databaseType: field.newDatabaseType, javaName: field.newJavaName, javaType: field.newJavaType}
-                    : {databaseName: field.curDatabaseName, databaseType: field.curDatabaseType, javaName: field.curJavaName, javaType: field.curJavaType}
+                    ? {databaseFieldName: field.newDatabaseFieldName, databaseFieldType: field.newDatabaseFieldType, javaFieldName: field.newJavaFieldName, javaFieldType: field.newJavaFieldType}
+                    : {databaseFieldName: field.curDatabaseFieldName, databaseFieldType: field.curDatabaseFieldType, javaFieldName: field.curJavaFieldName, javaFieldType: field.curJavaFieldType}
             }
 
             $scope.tableDbFieldSaveVisible = function (field, index) {
                 var dbFieldValue = tableDbFieldValue(field, index);
 
-                return !$common.isEmptyString(dbFieldValue.databaseName) && $common.isDefined(dbFieldValue.databaseType) &&
-                    !$common.isEmptyString(dbFieldValue.javaName) && $common.isDefined(dbFieldValue.javaType);
+                return !$common.isEmptyString(dbFieldValue.databaseFieldName) && $common.isDefined(dbFieldValue.databaseFieldType) &&
+                    !$common.isEmptyString(dbFieldValue.javaFieldName) && $common.isDefined(dbFieldValue.javaFieldType);
             };
 
             var dbFieldTables = {
@@ -1069,12 +1069,12 @@ consoleModule.controller('metadataController', [
 
                     var model = item[field.model];
 
-                    if (!$common.isValidJavaIdentifier(dbFieldTable.msg + ' java name', dbFieldValue.javaName, $table.tableFieldId(index, 'JavaName' + dbFieldTable.id)))
+                    if (!$common.isValidJavaIdentifier(dbFieldTable.msg + ' java name', dbFieldValue.javaFieldName, $table.tableFieldId(index, 'JavaName' + dbFieldTable.id)))
                         return false;
 
                     if ($common.isDefined(model)) {
                         var idx = _.findIndex(model, function (dbMeta) {
-                            return dbMeta.databaseName == dbFieldValue.databaseName;
+                            return dbMeta.databaseFieldName == dbFieldValue.databaseFieldName;
                         });
 
                         // Found duplicate.
@@ -1082,7 +1082,7 @@ consoleModule.controller('metadataController', [
                             return showPopoverMessage(null, null, $table.tableFieldId(index, 'DatabaseName' + dbFieldTable.id), 'Field with such database name already exists!');
 
                         idx = _.findIndex(model, function (dbMeta) {
-                            return dbMeta.javaName == dbFieldValue.javaName;
+                            return dbMeta.javaFieldName == dbFieldValue.javaFieldName;
                         });
 
                         // Found duplicate.
@@ -1095,10 +1095,10 @@ consoleModule.controller('metadataController', [
                         else {
                             var dbField = model[index];
 
-                            dbField.databaseName = dbFieldValue.databaseName;
-                            dbField.databaseType = dbFieldValue.databaseType;
-                            dbField.javaName = dbFieldValue.javaName;
-                            dbField.javaType = dbFieldValue.javaType;
+                            dbField.databaseFieldName = dbFieldValue.databaseFieldName;
+                            dbField.databaseFieldType = dbFieldValue.databaseFieldType;
+                            dbField.javaFieldName = dbFieldValue.javaFieldName;
+                            dbField.javaFieldType = dbFieldValue.javaFieldType;
                         }
                     }
                     else {

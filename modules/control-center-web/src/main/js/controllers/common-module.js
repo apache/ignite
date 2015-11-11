@@ -1133,10 +1133,10 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
             _tableFocus('Key' + field.focusId, index);
         }
         else if (ui == 'table-db-fields') {
-            field.curDatabaseName = val.databaseName;
-            field.curDatabaseType = val.databaseType;
-            field.curJavaName = val.javaName;
-            field.curJavaType = val.javaType;
+            field.curDatabaseFieldName = val.databaseFieldName;
+            field.curDatabaseFieldType = val.databaseFieldType;
+            field.curJavaFieldName = val.javaFieldName;
+            field.curJavaFieldType = val.javaFieldType;
 
             _tableFocus('DatabaseName' + field.focusId, index);
         }
@@ -1166,10 +1166,10 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
             _tableFocus('Key' + field.focusId, -1);
         }
         else if (ui == 'table-db-fields') {
-            field.newDatabaseName = null;
-            field.newDatabaseType = null;
-            field.newJavaName = null;
-            field.newJavaType = null;
+            field.newDatabaseFieldName = null;
+            field.newDatabaseFieldType = null;
+            field.newJavaFieldName = null;
+            field.newJavaFieldType = null;
 
             _tableFocus('DatabaseName' + field.focusId, -1);
         }

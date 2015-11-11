@@ -92,6 +92,15 @@ $generatorPom.pom = function (caches, igniteVersion, res) {
 
     res.needEmptyLine = true;
 
+    res.startBlock('<repositories>');
+    res.startBlock('<repository>');
+    addProperty('id', 'GridGain External Repository');
+    addProperty('url', 'http://www.gridgainsystems.com/nexus/content/repositories/gridgain_staging-1549');
+    res.endBlock('</repository>');
+    res.endBlock('</repositories>');
+
+    res.needEmptyLine = true;
+
     res.startBlock('<dependencies>');
 
     addDependency('org.apache.ignite', 'ignite-core', igniteVersion);

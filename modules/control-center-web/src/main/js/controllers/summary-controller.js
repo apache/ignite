@@ -215,8 +215,9 @@ consoleModule.controller('summaryController', [
 
         zip.file(srcPath + 'ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'ServerConfigurationFactory'));
         zip.file(srcPath + 'ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'ClientConfigurationFactory', clientNearConfiguration));
+        zip.file(srcPath + 'NodeStartup.java', $generatorJava.nodeStartup(cluster));
 
-        zip.file('pom.xml', $generatorPom.pom(cluster.caches, '1.5.0').asString());
+        zip.file('pom.xml', $generatorPom.pom(cluster.caches, '1.5.0-IWC').asString());
 
         zip.file('README.txt', $generatorReadme.readme().asString());
         zip.file('jdbc-drivers/README.txt', $generatorReadme.readmeJdbc().asString());

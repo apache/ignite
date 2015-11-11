@@ -46,10 +46,10 @@ $generatorCommon.mainComment = function mainComment() {
 };
 
 // Create result holder with service functions and properties for XML and java code generation.
-$generatorCommon.builder = function () {
+$generatorCommon.builder = function (deep) {
     var res = [];
 
-    res.deep = 0;
+    res.deep = deep ? deep : 0;
     res.needEmptyLine = false;
     res.lineStart = true;
     res.datasources = [];

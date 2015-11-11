@@ -237,10 +237,10 @@ mixin details-row
                                         +ico-exclamation('{{detail.model}}', 'ipaddress', 'Invalid address, see help for format description.')
 
 mixin table-db-field-edit(prefix, focusId, index)
-    -var databaseName = prefix + 'DatabaseName'
-    -var databaseType = prefix + 'DatabaseType'
-    -var javaName = prefix + 'JavaName'
-    -var javaType = prefix + 'JavaType'
+    -var databaseName = prefix + 'DatabaseFieldName'
+    -var databaseType = prefix + 'DatabaseFieldType'
+    -var javaName = prefix + 'JavaFieldName'
+    -var javaType = prefix + 'JavaFieldType'
 
     -var databaseNameModel = 'field.' + databaseName
     -var databaseTypeModel = 'field.' + databaseType
@@ -434,7 +434,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                             tr(ng-repeat='item in #{fieldMdl}')
                                 td
                                     div(ng-show='!tableEditing(field, $index)')
-                                        a.labelFormField(ng-click='tableStartEdit(backupItem, field, $index)') {{$index + 1}}) {{item.databaseName}} / {{item.databaseType}} / {{item.javaName}} / {{item.javaType}}
+                                        a.labelFormField(ng-click='tableStartEdit(backupItem, field, $index)') {{$index + 1}}) {{item.databaseFieldName}} / {{item.databaseFieldType}} / {{item.javaFieldName}} / {{item.javaFieldType}}
                                         +btn-remove('tableRemove(backupItem, field, $index)', 'field.removeTip')
                                     div(ng-if='tableEditing(field, $index)')
                                         +table-db-field-edit('cur', '{{::field.focusId}}', '$index')
