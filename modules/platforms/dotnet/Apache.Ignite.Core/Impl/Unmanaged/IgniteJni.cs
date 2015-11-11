@@ -26,6 +26,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     [SuppressUnmanagedCodeSecurity]
     internal unsafe static class IgniteJni
     {
+        // TODO: Fix FxCop
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteReallocate", SetLastError = true,
             CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         public static extern int Reallocate(long memPtr, int cap);
