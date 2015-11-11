@@ -719,7 +719,7 @@ public class PortableClassDescriptor {
             Constructor<?> ctor = U.forceEmptyConstructor(cls);
 
             if (ctor == null)
-                throw new PortableException("Failed to find empty constructor for class: " + cls.getName());
+                throw new BinaryObjectException("Failed to find empty constructor for class: " + cls.getName());
 
             ctor.setAccessible(true);
 

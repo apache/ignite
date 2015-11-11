@@ -2623,7 +2623,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Obje
 
                 if (schema0 == null) {
                     if (fieldIdLen == 0)
-                        throw new PortableException("Cannot find schema for object without field IDs [" +
+                        throw new BinaryObjectException("Cannot find schema for object without field IDs [" +
                             "typeId=" + typeId + ", schemaId=" + schemaId + ']');
 
                     schema0 = createSchema();
