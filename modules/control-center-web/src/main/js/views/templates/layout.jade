@@ -20,10 +20,10 @@ html(ng-app='ignite-web-console')
         title=title
 
         block css
-            // Font Awesome Icons
+            //- Font Awesome Icons
             link(rel='stylesheet', href='//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.css')
 
-            // Font
+            //- Font
             link(rel='stylesheet', href='//fonts.googleapis.com/css?family=Roboto+Slab:700:serif|Roboto+Slab:400:serif')
             link(rel='stylesheet', href='//cdnjs.cloudflare.com/ajax/libs/angular-motion/0.4.2/angular-motion.min.css')
             link(rel='stylesheet', href='//cdn.rawgit.com/wix/angular-tree-control/master/css/tree-control.css')
@@ -43,9 +43,10 @@ html(ng-app='ignite-web-console')
             script(src='//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.7/angular-sanitize.min.js')
             script(src='//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.7/angular-animate.min.js')
 
-            // script(src='//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.3.2/angular-strap.js')
-            // script(src='/js/angular-strap-2.3.2.js')
-            // TODO IGNITE-843: Forked Angular Strap with fix for https://github.com/mgcrea/angular-strap/issues/1852
+            //- script(src='//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.3.2/angular-strap.js')
+            //- script(src='/js/angular-strap-2.3.2.js')
+            //- TODO IGNITE-843: Forked Angular Strap with fix for https://github.com/mgcrea/angular-strap/issues/1852
+
             script(src='//cdn.rawgit.com/akuznetsov-gridgain/angular-strap/fix-1852/dist/angular-strap.min.js')
             script(src='//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.3.2/angular-strap.tpl.min.js')
 
@@ -66,6 +67,13 @@ html(ng-app='ignite-web-console')
 
             script(src='//cdn.rawgit.com/krispo/angular-nvd3/v1.0.3/dist/angular-nvd3.min.js')
 
+            // ignite:modules
+            script(src='/modules/navbar/main.js')
+            // endignite
+
+            // ignite:plugins
+            // endignite
+            
             script(src='/common-module.js')
             script(src='/data-structures.js')
 

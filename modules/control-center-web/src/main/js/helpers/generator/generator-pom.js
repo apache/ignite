@@ -15,13 +15,6 @@
  * limitations under the License.
  */
 
-// For server side we should load required libraries.
-if (typeof window === 'undefined') {
-    _ = require('lodash');
-
-    $generatorCommon = require('./generator-common');
-}
-
 // pom.xml generation entry point.
 $generatorPom = {};
 
@@ -150,8 +143,3 @@ $generatorPom.pom = function (caches, igniteVersion, res) {
 
     return res;
 };
-
-// For server side we should export properties generation entry point.
-if (typeof window === 'undefined') {
-    module.exports = $generatorPom;
-}

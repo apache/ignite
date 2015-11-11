@@ -3,10 +3,10 @@ var sass = require('gulp-sass');
 
 var paths = [
     './public/stylesheets/*.scss'
-]
+];
 
 gulp.task('sass', function () {
-    gulp.src(paths)
+    return gulp.src(paths)
         .pipe(sass({ outputStyle: 'nested' }).on('error', sass.logError))
         .pipe(gulp.dest('./build/stylesheets'));
 });

@@ -81,21 +81,6 @@
             }
           ]
         },
-        "RND": {
-          "expanded": false,
-          "fields": [
-            {
-              "label": "Max size",
-              "type": "number",
-              "path": "nearConfiguration.nearEvictionPolicy.RND",
-              "model": "maxSize",
-              "placeholder": 100000,
-              "tip": [
-                "Maximum allowed size of cache before entry will start getting evicted"
-              ]
-            }
-          ]
-        },
         "FIFO": {
           "expanded": false,
           "fields": [

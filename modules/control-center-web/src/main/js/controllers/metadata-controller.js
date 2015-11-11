@@ -1282,7 +1282,7 @@ consoleModule.controller('metadataController', [
             $scope.resetAll = function() {
                 $table.tableReset();
 
-                $confirm.confirm('Are you sure you want to reset current metadata?')
+                $confirm.confirm('Are you sure you want to undo all changes for current metadata?')
                     .then(function() {
                         $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
                     });

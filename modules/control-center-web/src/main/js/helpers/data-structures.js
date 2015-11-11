@@ -15,11 +15,6 @@
  * limitations under the License.
  */
 
-// For server side we should load required libraries.
-if (typeof window === 'undefined') {
-    $commonUtils = require('./common-utils');
-}
-
 // Entry point for common data structures.
 $dataStructures = {};
 
@@ -104,8 +99,3 @@ $dataStructures.fullClassName = function (clsName) {
 
     return clsName;
 };
-
-// For server side we should export properties generation entry point.
-if (typeof window === 'undefined') {
-    module.exports = $dataStructures;
-}

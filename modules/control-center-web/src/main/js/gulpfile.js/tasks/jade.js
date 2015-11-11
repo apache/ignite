@@ -1,5 +1,6 @@
-var gulp = require('gulp');
-var jade = require('gulp-jade');
+var gulp     = require('gulp');
+var jade     = require('gulp-jade');
+var sequence = require('gulp-sequence');
 
 var paths = [
     '!./views/error.jade',
@@ -7,12 +8,17 @@ var paths = [
     './views/**/*.jade'
 ];
 
+var options = {
+};
+
 gulp.task('jade', function() {
-    gulp.src(paths)
-        .pipe(jade({}))
+    return gulp.src(paths)
+        .pipe(jade(options))
         .pipe(gulp.dest('./build'))
 });
 
 gulp.task('jade:watch', function () {
-    gulp.watch(paths, ['jade']);
+    return gulp.watch(paths, function(e) {
+        sequence('jade', 'inject:plugins:html')()
+    });
 });

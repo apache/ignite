@@ -16,7 +16,14 @@
  */
 
 var consoleModule = angular.module('ignite-web-console',
-    ['ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.loading', 'agGrid', 'nvd3', 'dndLists'])
+    [
+        'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.loading', 'agGrid', 'nvd3', 'dndLists'
+        /* ignite:modules */
+        , 'ignite-web-console.navbar'
+        /* endignite */
+        /* ignite:plugins */
+        /* endignite */
+    ])
     .run(function ($rootScope, $http) {
         $http.post('/user')
             .success(function (user) {

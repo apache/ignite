@@ -4,3 +4,4 @@ node_modules
 *.css
 .npmrc
 build
+app/plugins

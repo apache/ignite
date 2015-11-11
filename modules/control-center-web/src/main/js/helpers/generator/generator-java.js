@@ -15,15 +15,6 @@
  * limitations under the License.
  */
 
-// For server side we should load required libraries.
-if (typeof window === 'undefined') {
-    _ = require('lodash');
-
-    $commonUtils = require('../../helpers/common-utils');
-    $dataStructures = require('../../helpers/data-structures');
-    $generatorCommon = require('./generator-common');
-}
-
 // Java generation entry point.
 $generatorJava = {};
 
@@ -521,7 +512,7 @@ $generatorJava.clusterConnector = function (cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if ($commonUtils.isDefined(cluster.connector) && $commonUtils.isDefined(cluster.connector.enabled)) {
+    if ($commonUtils.isDefined(cluster.connector) && cluster.connector.enabled) {
         var cfg = _.cloneDeep($generatorCommon.CONNECTOR_CONFIGURATION);
 
         if (cluster.connector.sslEnabled) {
@@ -1549,34 +1540,33 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
 $generatorJava.pojos = function (caches, useConstructor, includeKeyFields) {
     var metadataNames = [];
 
-    $generatorJava.metadatas = [];
+    var metadatas = [];
 
     _.forEach(caches, function(cache) {
         _.forEach(cache.metadatas, function(meta) {
             // Skip already generated classes.
-            if (metadataNames.indexOf(meta.valueType) < 0) {
+            if (!_.find(metadatas, {valueType: meta.valueType}) &&
                 // Skip metadata without value fields.
-                if ($commonUtils.isDefined(meta.valueFields) && meta.valueFields.length > 0) {
-                    var metadata = {};
+                $commonUtils.isDefined(meta.valueFields) && meta.valueFields.length > 0) {
+                var metadata = {};
 
-                    // Key class generation only if key is not build in java class.
-                    if ($commonUtils.isDefined(meta.keyFields) && meta.keyFields.length > 0) {
-                        metadata.keyType = meta.keyType;
-                        metadata.keyClass = $generatorJava.javaClassCode(meta, true,
-                            meta.keyType.substring(0, meta.keyType.lastIndexOf('.')), useConstructor, includeKeyFields);
-                    }
-
-                    metadata.valueType = meta.valueType;
-                    metadata.valueClass = $generatorJava.javaClassCode(meta, false,
-                        meta.valueType.substring(0, meta.valueType.lastIndexOf('.')), useConstructor, includeKeyFields);
-
-                    $generatorJava.metadatas.push(metadata);
+                // Key class generation only if key is not build in java class.
+                if ($commonUtils.isDefined(meta.keyFields) && meta.keyFields.length > 0) {
+                    metadata.keyType = meta.keyType;
+                    metadata.keyClass = $generatorJava.javaClassCode(meta, true,
+                        meta.keyType.substring(0, meta.keyType.lastIndexOf('.')), useConstructor, includeKeyFields);
                 }
 
-                metadataNames.push(meta.valueType);
+                metadata.valueType = meta.valueType;
+                metadata.valueClass = $generatorJava.javaClassCode(meta, false,
+                    meta.valueType.substring(0, meta.valueType.lastIndexOf('.')), useConstructor, includeKeyFields);
+
+                metadatas.push(metadata);
             }
         });
     });
+
+    return metadatas;
 };
 
 /**
@@ -1949,8 +1939,3 @@ $generatorJava.cluster = function (cluster, javaClass, clientNearCfg) {
 
     return res.asString();
 };
-
-// For server side we should export Java code generation entry point.
-if (typeof window === 'undefined') {
-    module.exports = $generatorJava;
-}
