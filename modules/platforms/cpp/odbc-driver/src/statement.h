@@ -28,14 +28,12 @@ namespace ignite
 {
     namespace odbc
     {
+        class Connection;
+
         class Statement
         {
+            friend class Connection;
         public:
-            /**
-             * Constructor.
-             */
-            Statement();
-
             /**
              * Destructor.
              */
@@ -60,8 +58,16 @@ namespace ignite
             void BindResultColumn(uint16_t columnIdx, const ApplicationDataBuffer& buffer);
 
         private:
+            /**
+             * Constructor.
+             */
+            Statement(Connection& parent);
+
             /** Column binging map type alias. */
             typedef std::map<uint16_t, ApplicationDataBuffer> ColumnBindingMap;
+
+            /** Connection associated with the statement. */
+            Connection& connection;
 
             /** Column bindings. */
             ColumnBindingMap columnBindings;

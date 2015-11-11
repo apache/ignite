@@ -59,6 +59,15 @@ namespace ignite
              */
             Statement* CreateStatement();
 
+            /**
+             * Send data by established connection.
+             *
+             * @param data Data buffer.
+             * @param len Data length.
+             * @return True on success.
+             */
+            bool Send(const uint8_t* data, size_t len);
+
         private:
             /**
              * Constructor.

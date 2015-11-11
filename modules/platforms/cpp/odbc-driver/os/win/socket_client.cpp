@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <ws2tcpip.h>
+
 #include <cstring>
 
 #include <sstream>

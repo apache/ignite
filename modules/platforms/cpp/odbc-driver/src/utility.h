@@ -22,8 +22,12 @@ extern FILE* log_file;
 void logInit(const char*);
 
 #define LOG_MSG(fmt, ...) \
-    logInit("D:\\odbc.log"); \
-    fprintf(log_file, "%s: " fmt, __FUNCTION__, __VA_ARGS__);
+    do { \
+        logInit("D:\\odbc.log"); \
+        fprintf(log_file, "%s: " fmt, __FUNCTION__, __VA_ARGS__); \
+        fflush(log_file); \
+    } while (false)
+
 
 #include <string>
 #include <stdint.h>

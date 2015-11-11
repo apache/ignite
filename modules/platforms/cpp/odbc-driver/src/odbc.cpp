@@ -361,6 +361,9 @@ SQLRETURN SQL_API SQLExecDirect(SQLHSTMT stmt, SQLCHAR* query, SQLINTEGER queryL
     const char* sql = reinterpret_cast<char*>(query);
     size_t len = queryLen == SQL_NTS ? strlen(sql) : static_cast<size_t>(queryLen);
 
+    LOG_MSG("SQL: %s\n", sql);
+    LOG_MSG("Length: %u\n", len);
+
     bool success = statement->ExecuteSqlQuery(sql, len);
 
     return success ? SQL_SUCCESS : SQL_ERROR;

@@ -59,7 +59,15 @@ namespace ignite
 
         Statement* Connection::CreateStatement()
         {
-            return new Statement;
+            return new Statement(*this);
+        }
+
+        bool Connection::Send(const uint8_t* data, size_t len)
+        {
+            if (!connected)
+                return false;
+
+            return socket.Send(data, len) == len;
         }
     }
 }
