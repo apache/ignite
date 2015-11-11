@@ -18,10 +18,12 @@
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System.Runtime.InteropServices;
+    using System.Security;
 
     /// <summary>
     /// Ignite JNI methods.
     /// </summary>
+    [SuppressUnmanagedCodeSecurity]
     internal unsafe static class IgniteJni
     {
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteReallocate", SetLastError = true,

@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
-    using System.Security;
     using Apache.Ignite.Core.Common;
 
     using JNI = IgniteJni;
@@ -28,7 +27,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     /// <summary>
     /// Unmanaged utility classes.
     /// </summary>
-    [SuppressUnmanagedCodeSecurity]
     internal static unsafe class UnmanagedUtils
     {
         /** Interop factory ID for .Net. */
@@ -38,7 +36,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// Initializer.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
-        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
         static UnmanagedUtils()
         {
             var path = IgniteUtils.UnpackEmbeddedResource(IgniteUtils.FileIgniteJniDll);
